@@ -26,7 +26,7 @@ fn array_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
     let array: ArrayMetadata = serde_json::from_value(json.clone())?;
     println!("{array:#?}");
 
-    let path = tempdir::TempDir::new("")?;
+    let path = tempfile::TempDir::new()?;
     let store = FilesystemStore::new(path.path())?;
 
     create_array(&store, &"/array".try_into()?, &array)?;
@@ -43,7 +43,7 @@ fn group_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
     let group: GroupMetadata = serde_json::from_value(json.clone())?;
     println!("{group:#?}");
 
-    let path = tempdir::TempDir::new("")?;
+    let path = tempfile::TempDir::new()?;
     let store = FilesystemStore::new(path.path())?;
 
     create_group(&store, &"/group".try_into()?, &group)?;
@@ -65,7 +65,7 @@ fn metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn metadata_round_trip_filesystem() -> Result<(), Box<dyn Error>> {
-    let path = tempdir::TempDir::new("")?;
+    let path = tempfile::TempDir::new()?;
     let store = FilesystemStore::new(path.path())?;
     let metadata_in = include_bytes!("data/array_metadata.json");
     store.set(&meta_key(&"/group/array".try_into()?), metadata_in)?;
@@ -95,7 +95,7 @@ fn filesystem_chunk_round_trip_impl(
 
 #[test]
 fn chunk_round_trip_filesystem_key_encoding_default_slash() -> Result<(), Box<dyn Error>> {
-    let path = tempdir::TempDir::new("")?;
+    let path = tempfile::TempDir::new()?;
     let chunk_key_encoding: ChunkKeyEncoding = Box::new(DefaultChunkKeyEncoding::default());
     filesystem_chunk_round_trip_impl(path.path(), &chunk_key_encoding)?;
     let mut path_expect = path.path().to_owned();
@@ -106,7 +106,7 @@ fn chunk_round_trip_filesystem_key_encoding_default_slash() -> Result<(), Box<dy
 
 #[test]
 fn chunk_round_trip_filesystem_key_encoding_default_dot() -> Result<(), Box<dyn Error>> {
-    let path = tempdir::TempDir::new("")?;
+    let path = tempfile::TempDir::new()?;
     let chunk_key_encoding: ChunkKeyEncoding = Box::new(DefaultChunkKeyEncoding::new_dot());
     filesystem_chunk_round_trip_impl(path.path(), &chunk_key_encoding)?;
     let mut path_expect = path.path().to_owned();
@@ -117,7 +117,7 @@ fn chunk_round_trip_filesystem_key_encoding_default_dot() -> Result<(), Box<dyn 
 
 #[test]
 fn chunk_round_trip_filesystem_key_encoding_v2_dot() -> Result<(), Box<dyn Error>> {
-    let path = tempdir::TempDir::new("")?;
+    let path = tempfile::TempDir::new()?;
     let chunk_key_encoding: ChunkKeyEncoding = Box::new(V2ChunkKeyEncoding::default());
     filesystem_chunk_round_trip_impl(path.path(), &chunk_key_encoding)?;
     let mut path_expect = path.path().to_owned();
@@ -128,7 +128,7 @@ fn chunk_round_trip_filesystem_key_encoding_v2_dot() -> Result<(), Box<dyn Error
 
 #[test]
 fn chunk_round_trip_filesystem_key_encoding_v2_slash() -> Result<(), Box<dyn Error>> {
-    let path = tempdir::TempDir::new("")?;
+    let path = tempfile::TempDir::new()?;
     let chunk_key_encoding: ChunkKeyEncoding = Box::new(V2ChunkKeyEncoding::new_slash());
     filesystem_chunk_round_trip_impl(path.path(), &chunk_key_encoding)?;
     let mut path_expect = path.path().to_owned();

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Require the `ndarray` *feature* for examples
  - Remove the `ndarray` dev dependency
  - Remove the `ndarray` dependency for the `sharding` feature
+ - Replace deprecated `tempdir` with `tempfile` for tests
 
 ## [0.2.0] - 2023-09-25
 

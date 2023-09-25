@@ -51,4 +51,4 @@ walkdir = "2.3.3"
 zstd = { version = "0.12.4", optional = true }
 
 [dev-dependencies]
-tempdir = "0.3.7"
+tempfile = "3.8.0"

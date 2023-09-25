@@ -10,7 +10,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a store
-    // let path = tempdir::TempDir::new("example")?;
+    // let path = tempfile::TempDir::new()?;
     // let store = Arc::new(store::filesystem::FilesystemStore::new(path.path())?);
     let store = std::sync::Arc::new(store::MemoryStore::default());
 

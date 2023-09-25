@@ -397,7 +397,7 @@ mod tests {
 
     #[test]
     fn filesystem_set() -> Result<(), Box<dyn Error>> {
-        let path = tempdir::TempDir::new("")?;
+        let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?;
         let key = "a/b".try_into()?;
         store.set(&key, &[0, 1, 2])?;
@@ -409,7 +409,7 @@ mod tests {
 
     #[test]
     fn filesystem_list() -> Result<(), Box<dyn Error>> {
-        let path = tempdir::TempDir::new("")?;
+        let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?;
 
         store.set(&"a/b".try_into()?, &[])?;
@@ -445,7 +445,7 @@ mod tests {
 
     #[test]
     fn filesystem_list_dir() -> Result<(), Box<dyn Error>> {
-        let path = tempdir::TempDir::new("")?;
+        let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?.sorted();
         store.set(&"a/b".try_into()?, &[])?;
         store.set(&"a/c".try_into()?, &[])?;
