@@ -16,7 +16,7 @@ default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "raw_bits
 transpose = ["dep:ndarray"]
 blosc = ["dep:blosc"]
 gzip = ["dep:flate2"]
-sharding = ["dep:ndarray"]
+sharding = []
 crc32c = ["dep:crc32fast"]
 zstd = ["dep:zstd"]
 # Optional/extension data types
