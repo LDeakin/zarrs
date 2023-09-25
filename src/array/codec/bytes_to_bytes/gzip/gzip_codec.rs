@@ -1,0 +1,118 @@
+use std::io::{Cursor, Read};
+
+use flate2::bufread::{GzDecoder, GzEncoder};
+
+use crate::{
+    array::{
+        codec::{
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
+            CodecTraits,
+        },
+        BytesRepresentation,
+    },
+    metadata::Metadata,
+    plugin::PluginCreateError,
+};
+
+use super::{
+    gzip_compression_level::GzipCompressionLevelError,
+    gzip_configuration::GzipCodecConfigurationV1, gzip_partial_decoder, GzipCodecConfiguration,
+    GzipCompressionLevel,
+};
+
+const IDENTIFIER: &str = "gzip";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_gzip, create_codec_gzip)
+}
+
+fn is_name_gzip(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+fn create_codec_gzip(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: GzipCodecConfiguration = metadata.to_configuration()?;
+    let codec = Box::new(GzipCodec::new_with_configuration(&configuration));
+    Ok(Codec::BytesToBytes(codec))
+}
+
+/// A `gzip` codec implementation.
+#[derive(Clone, Debug)]
+pub struct GzipCodec {
+    compression_level: GzipCompressionLevel,
+}
+
+impl GzipCodec {
+    /// Create a new `gzip` codec.
+    ///
+    /// # Errors
+    /// Returns [`GzipCompressionLevelError`] if `compression_level` is not valid.
+    pub fn new(compression_level: u32) -> Result<Self, GzipCompressionLevelError> {
+        let compression_level: GzipCompressionLevel = compression_level.try_into()?;
+        Ok(Self { compression_level })
+    }
+
+    /// Create a new `gzip` codec from configuration.
+    #[must_use]
+    pub fn new_with_configuration(configuration: &GzipCodecConfiguration) -> Self {
+        let GzipCodecConfiguration::V1(configuration) = configuration;
+        Self {
+            compression_level: configuration.level,
+        }
+    }
+}
+
+impl CodecTraits for GzipCodec {
+    fn create_metadata(&self) -> Option<Metadata> {
+        let configuration = GzipCodecConfigurationV1 {
+            level: self.compression_level,
+        };
+        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+    }
+
+    fn partial_decoder_should_cache_input(&self) -> bool {
+        false
+    }
+
+    fn partial_decoder_decodes_all(&self) -> bool {
+        true
+    }
+}
+
+impl BytesToBytesCodecTraits for GzipCodec {
+    fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+        let mut encoder = GzEncoder::new(
+            Cursor::new(decoded_value),
+            flate2::Compression::new(self.compression_level.as_u32()),
+        );
+        let mut out: Vec<u8> = Vec::new();
+        encoder.read_to_end(&mut out)?;
+        Ok(out)
+    }
+
+    fn decode(
+        &self,
+        encoded_value: Vec<u8>,
+        _decoded_representation: &BytesRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        let mut decoder = GzDecoder::new(Cursor::new(encoded_value));
+        let mut out: Vec<u8> = Vec::new();
+        decoder.read_to_end(&mut out)?;
+        Ok(out)
+    }
+
+    fn partial_decoder<'a>(
+        &self,
+        r: Box<dyn BytesPartialDecoderTraits + 'a>,
+    ) -> Box<dyn BytesPartialDecoderTraits + 'a> {
+        Box::new(gzip_partial_decoder::GzipPartialDecoder::new(r))
+    }
+
+    fn compute_encoded_size(
+        &self,
+        _decoded_representation: &BytesRepresentation,
+    ) -> BytesRepresentation {
+        BytesRepresentation::VariableSize
+    }
+}
