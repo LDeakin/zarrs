@@ -1,10 +1,7 @@
-use std::{error::Error, sync::Arc};
-
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use zarrs::{array::DataType, array_subset::ArraySubset, storage::store};
-
 #[cfg(feature = "ndarray")]
-fn rectangular_array_write_read() -> Result<(), Box<dyn Error>> {
+fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+    use zarrs::{array::DataType, array_subset::ArraySubset, storage::store};
     use zarrs::{
         array::{chunk_grid::RectangularChunkGrid, codec, FillValue},
         node::Node,
@@ -13,7 +10,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn Error>> {
     // Create a store
     // let path = tempdir::TempDir::new("example")?;
     // let store = Arc::new(store::filesystem::FilesystemStore::new(path.path())?);
-    let store = Arc::new(store::MemoryStore::default());
+    let store = std::sync::Arc::new(store::MemoryStore::default());
 
     // Create a group and write metadata to filesystem
     let group_path = "/group";
@@ -117,16 +114,12 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn Error>> {
 }
 
 #[cfg(not(feature = "ndarray"))]
-fn rectangular_array_write_read() -> Result<(), Box<dyn Error>> {
-    panic!(
-        "see array_write_read for an example of writing/reading arrays without the ndarray feature"
-    )
+fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
+    panic!("the rectangular_array_write_read example requires the ndarray feature")
 }
 
 fn main() {
-    let result = rectangular_array_write_read();
-    if let Err(err) = &result {
+    if let Err(err) = rectangular_array_write_read() {
         println!("{}", err);
-        result.unwrap();
     }
 }

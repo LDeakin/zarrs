@@ -1,8 +1,5 @@
-use std::error::Error;
-
-#[cfg(feature = "sharding")]
-#[cfg(feature = "ndarray")]
-fn sharded_array_write_read() -> Result<(), Box<dyn Error>> {
+#[cfg(all(feature = "ndarray", feature = "sharding"))]
+fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use zarrs::{
         array::{
             codec::{self, ShardingCodec},
@@ -117,13 +114,13 @@ fn sharded_array_write_read() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[cfg(not(feature = "ndarray"))]
-fn sharded_array_write_read() -> Result<(), Box<dyn Error>> {
-    panic!(
-        "see array_write_read for an example of writing/reading arrays without the ndarray feature"
-    )
+#[cfg(any(not(feature = "ndarray"), not(feature = "sharding")))]
+fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
+    panic!("the sharded_array_write_read example requires the ndarray and sharding feature")
 }
 
 fn main() {
-    sharded_array_write_read().unwrap();
+    if let Err(err) = sharded_array_write_read() {
+        println!("{}", err);
+    }
 }
