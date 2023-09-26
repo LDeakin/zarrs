@@ -18,7 +18,7 @@
 //! - [x] [ZEP0003 - Variable chunking](https://zarr.dev/zeps/draft/ZEP0003.html) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Stores: [`filesystem`](crate::storage::store::FilesystemStore), [`memory`](crate::storage::store::MemoryStore)
 //! - [x] Data types: [core data types](crate::array::data_type::DataType), [`raw bits`](crate::array::data_type::RawBitsDataType), [`float16`](crate::array::data_type::Float16DataType), [`bfloat16`](crate::array::data_type::Bfloat16DataType) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130)
-//! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid) [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid)
+//! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid), [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
 //! - [x] Codecs: [`blosc`](crate::array::codec::BloscCodec), [`bytes`](crate::array::codec::BytesCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/263), [`gzip`](crate::array::codec::GzipCodec), [`transpose`](crate::array::codec::TransposeCodec), [`zstd`](crate::array::codec::ZstdCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [`sharding`](crate::array::codec::ShardingCodec), [`crc32c checksum`](crate::array::codec::Crc32cCodec)
 //! - [x] Storage transformers: [`usage_log`](crate::storage::storage_transformer::UsageLogStorageTransformer), [`performance_metrics`](crate::storage::storage_transformer::PerformanceMetricsStorageTransformer)
@@ -29,6 +29,9 @@
 //!
 //! - `sharded_array_write_read` is similar to `array_read_write`, but with a sharded array.
 //! > `cargo run --example sharded_array_write_read`
+//!
+//! - `rectangular_array_write_read` is similar to `array_read_write`, but with a rectangular chunk grid.
+//! > `cargo run --example rectangular_array_write_read`
 //!
 //! ## Licence
 //! zarrs is licensed under either of
