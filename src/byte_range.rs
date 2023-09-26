@@ -1,8 +1,13 @@
 //! Byte ranges.
 //!
-//! A [`ByteRange`] can be all, an interval, or a length from the start of end of a byte sequence.
+//! A [`ByteRange`] represents a byte range relative to the start or end of a byte sequence.
+//! A byte range has an offset and optional length, which if omitted means to read all remaining bytes.
 //!
-//! This module provides the [`extract_byte_ranges`] convenience function for extracting byte ranges from bytes.
+//! A [codec](crate::array::codec) partially decoding from bytes will retrieve byte ranges from an input handle implementing [`BytesPartialDecoderTraits`](crate::array::codec::BytesPartialDecoderTraits) which can be either:
+//! - a [store](crate::storage::store) or [storage transformer](crate::storage::storage_transformer) wrapped by [`StoragePartialDecoder`](crate::array::codec::StoragePartialDecoder), or
+//! - the bytes partial decoder of the next codec in the codec chain.
+//!
+//! This module provides the [`extract_byte_ranges`] convenience function for extracting byte ranges from a slice of bytes.
 //!
 
 use thiserror::Error;
@@ -84,7 +89,7 @@ fn validate_byte_ranges(byte_ranges: &[ByteRange], bytes_len: usize) -> bool {
 ///
 /// # Errors
 ///
-/// Returns [`InvalidByteRangeError`] if any byte range is invalid.
+/// Returns [`InvalidByteRangeError`] if any bytes are requested beyond the end of `bytes`.
 pub fn extract_byte_ranges(
     bytes: &[u8],
     byte_ranges: &[ByteRange],
