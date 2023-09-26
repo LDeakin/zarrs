@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Remove the `ndarray` dev dependency
  - Remove the `ndarray` dependency for the `sharding` feature
  - Replace deprecated `tempdir` with `tempfile` for tests
+ - **Breaking**: Change `ByteRange` enum to have `FromStart` and `FromEnd` variants
 
 ## [0.2.0] - 2023-09-25
 

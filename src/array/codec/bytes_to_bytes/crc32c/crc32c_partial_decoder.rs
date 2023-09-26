@@ -33,10 +33,15 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
         // Drop trailing checksum
         for (bytes, byte_range) in bytes.iter_mut().zip(decoded_regions) {
             match byte_range {
-                ByteRange::All | ByteRange::FromEnd(_) => {
+                ByteRange::FromStart(_, Some(_)) => {}
+                ByteRange::FromStart(_, None) => {
                     bytes.resize(bytes.len() - CHECKSUM_SIZE, 0);
                 }
-                _ => {}
+                ByteRange::FromEnd(offset, _) => {
+                    if *offset < CHECKSUM_SIZE {
+                        bytes.resize(bytes.len() - (CHECKSUM_SIZE - offset), 0);
+                    }
+                }
             };
         }
 

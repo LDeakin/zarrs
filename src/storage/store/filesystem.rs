@@ -171,23 +171,23 @@ impl FilesystemStore {
         let buffer = {
             // Seek
             match byte_range {
-                ByteRange::All | ByteRange::FromStart(_) => file.seek(SeekFrom::Start(0)),
-                ByteRange::Interval(start, _) => file.seek(SeekFrom::Start(*start as u64)),
-                ByteRange::FromEnd(length) => file.seek(SeekFrom::End(
-                    -(i64::try_from(*length).map_err(|_| InvalidByteRangeError)?),
+                ByteRange::FromStart(offset, _) => file.seek(SeekFrom::Start(*offset as u64)),
+                ByteRange::FromEnd(_, None) => file.seek(SeekFrom::Start(0u64)),
+                ByteRange::FromEnd(offset, Some(length)) => file.seek(SeekFrom::End(
+                    -(i64::try_from(*offset + *length).map_err(|_| InvalidByteRangeError)?),
                 )),
             }?;
 
             // Read
             match byte_range {
-                ByteRange::FromStart(length) | ByteRange::Interval(_, length) => {
-                    let mut buffer = vec![0; *length];
-                    file.read_exact(&mut buffer)?;
-                    buffer
-                }
-                ByteRange::All | ByteRange::FromEnd(_) => {
+                ByteRange::FromStart(_, None) | ByteRange::FromEnd(_, None) => {
                     let mut buffer = Vec::new();
                     file.read_to_end(&mut buffer)?;
+                    buffer
+                }
+                ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => {
+                    let mut buffer = vec![0; *length];
+                    file.read_exact(&mut buffer)?;
                     buffer
                 }
             }
@@ -237,7 +237,7 @@ impl FilesystemStore {
 
 impl ReadableStorageTraits for FilesystemStore {
     fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
-        self.get_impl(key, &ByteRange::All)
+        self.get_impl(key, &ByteRange::FromStart(0, None))
     }
 
     fn get_partial_values(

@@ -59,7 +59,7 @@ mod tests {
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
         let encoded = codec.encode(bytes.clone()).unwrap();
-        let decoded_regions = [ByteRange::Interval(3, 2)];
+        let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec.partial_decoder(input_handle);
         let decoded_partial_chunk = partial_decoder

@@ -196,11 +196,7 @@ impl ArraySubset {
         {
             let byte_index = array_index * element_size;
             let byte_length = element_size * contiguous_elements;
-            if byte_index == 0 {
-                byte_ranges.push(ByteRange::FromStart(byte_length));
-            } else {
-                byte_ranges.push(ByteRange::Interval(byte_index, byte_length));
-            }
+            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length)));
         }
         byte_ranges
     }

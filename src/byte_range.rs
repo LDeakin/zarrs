@@ -16,14 +16,14 @@ pub type ByteLength = usize;
 /// A byte range.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ByteRange {
-    /// All bytes.
-    All,
-    /// A byte interval.
-    Interval(ByteOffset, ByteLength),
-    /// A length of bytes from the start.
-    FromStart(ByteLength),
-    /// A length of bytes from the end.
-    FromEnd(ByteLength),
+    /// A byte range from the start.
+    ///
+    /// If the byte length is [`None`], reads to the end of the value.
+    FromStart(ByteOffset, Option<ByteLength>),
+    /// A byte range from the end.
+    ///
+    /// If the byte length is [`None`], reads to the start of the value.
+    FromEnd(ByteOffset, Option<ByteLength>),
 }
 
 impl ByteRange {
@@ -31,10 +31,11 @@ impl ByteRange {
     #[must_use]
     pub fn start(&self, size: usize) -> usize {
         match self {
-            ByteRange::All => 0,
-            ByteRange::FromStart(_offset) => 0,
-            ByteRange::FromEnd(length) => size - *length,
-            ByteRange::Interval(start, _length) => *start,
+            ByteRange::FromStart(offset, _) => *offset,
+            ByteRange::FromEnd(offset, length) => match length {
+                Some(length) => size - *offset - *length,
+                None => 0,
+            },
         }
     }
 
@@ -42,10 +43,11 @@ impl ByteRange {
     #[must_use]
     pub fn end(&self, size: usize) -> usize {
         match self {
-            ByteRange::All => size,
-            ByteRange::FromStart(offset) => *offset,
-            ByteRange::FromEnd(_length) => size,
-            ByteRange::Interval(start, length) => start + length,
+            ByteRange::FromStart(offset, length) => match length {
+                Some(length) => offset + length,
+                None => size,
+            },
+            ByteRange::FromEnd(offset, _) => size - offset,
         }
     }
 
@@ -53,9 +55,8 @@ impl ByteRange {
     #[must_use]
     pub fn length(&self, size: usize) -> usize {
         match self {
-            ByteRange::All => size,
-            ByteRange::FromStart(length) | ByteRange::FromEnd(length) => *length,
-            ByteRange::Interval(_start, length) => *length,
+            ByteRange::FromStart(offset, None) | ByteRange::FromEnd(offset, None) => size - offset,
+            ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => *length,
         }
     }
 }
@@ -68,9 +69,9 @@ pub struct InvalidByteRangeError;
 fn validate_byte_ranges(byte_ranges: &[ByteRange], bytes_len: usize) -> bool {
     for byte_range in byte_ranges {
         let valid = match byte_range {
-            ByteRange::All => true,
-            ByteRange::FromStart(length) | ByteRange::FromEnd(length) => *length <= bytes_len,
-            ByteRange::Interval(offset, length) => offset + length <= bytes_len,
+            ByteRange::FromStart(offset, length) | ByteRange::FromEnd(offset, length) => {
+                offset + length.unwrap_or(0) <= bytes_len
+            }
         };
         if !valid {
             return false;
@@ -109,10 +110,14 @@ pub unsafe fn extract_byte_ranges_unchecked(
     for byte_range in byte_ranges {
         out.push(
             match byte_range {
-                ByteRange::All => bytes,
-                ByteRange::FromStart(length) => &bytes[0..*length],
-                ByteRange::FromEnd(length) => &bytes[bytes.len() - length..],
-                ByteRange::Interval(offset, length) => &bytes[*offset..offset + length],
+                ByteRange::FromStart(offset, length) => match length {
+                    Some(length) => &bytes[*offset..offset + length],
+                    None => &bytes[*offset..],
+                },
+                ByteRange::FromEnd(offset, length) => match length {
+                    Some(length) => &bytes[bytes.len() - offset - length..bytes.len() - offset],
+                    None => &bytes[..bytes.len() - offset],
+                },
             }
             .to_vec(),
         );

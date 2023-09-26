@@ -73,12 +73,12 @@ impl<'a> ShardingPartialDecoder<'a> {
         let encoded_shard_index = if parallel {
             self.input_handle.par_partial_decode(
                 &BytesRepresentation::VariableSize,
-                &[ByteRange::FromEnd(index_encoded_size)],
+                &[ByteRange::FromEnd(0, Some(index_encoded_size))],
             )
         } else {
             self.input_handle.partial_decode(
                 &BytesRepresentation::VariableSize,
-                &[ByteRange::FromEnd(index_encoded_size)],
+                &[ByteRange::FromEnd(0, Some(index_encoded_size))],
             )
         }?
         .remove(0);

@@ -88,7 +88,7 @@ impl MemoryStore {
 
 impl ReadableStorageTraits for MemoryStore {
     fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
-        self.get_impl(key, &ByteRange::All)
+        self.get_impl(key, &ByteRange::FromStart(0, None))
     }
 
     fn get_partial_values(

@@ -189,7 +189,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     /// Returns [`CodecError`] if a codec fails.
     fn decode(&self, decoded_representation: &BytesRepresentation) -> Result<Vec<u8>, CodecError> {
         Ok(self
-            .partial_decode(decoded_representation, &[ByteRange::All])?
+            .partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
             .remove(0))
     }
 
@@ -203,7 +203,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
         decoded_representation: &BytesRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
         Ok(self
-            .par_partial_decode(decoded_representation, &[ByteRange::All])?
+            .par_partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
             .remove(0))
     }
 }
@@ -453,26 +453,26 @@ fn extract_byte_ranges_rs<T: Read + Seek>(
     let mut out = Vec::with_capacity(byte_ranges.len());
     for byte_range in byte_ranges {
         let data: Vec<u8> = match byte_range {
-            ByteRange::All => {
-                bytes.seek(SeekFrom::Start(0))?;
+            ByteRange::FromStart(offset, None) => {
+                bytes.seek(SeekFrom::Start(*offset as u64))?;
                 let mut data = vec![0; len];
                 bytes.read_exact(&mut data)?;
                 data
             }
-            ByteRange::FromStart(length) => {
+            ByteRange::FromStart(offset, Some(length)) => {
+                bytes.seek(SeekFrom::Start(*offset as u64))?;
+                let mut data = vec![0; *length];
+                bytes.read_exact(&mut data)?;
+                data
+            }
+            ByteRange::FromEnd(offset, None) => {
                 bytes.seek(SeekFrom::Start(0))?;
-                let mut data = vec![0; *length];
+                let mut data = vec![0; len - offset];
                 bytes.read_exact(&mut data)?;
                 data
             }
-            ByteRange::FromEnd(length) => {
-                bytes.seek(SeekFrom::End(-i64::try_from(*length).unwrap()))?;
-                let mut data = vec![0; *length];
-                bytes.read_exact(&mut data)?;
-                data
-            }
-            ByteRange::Interval(offset, length) => {
-                bytes.seek(SeekFrom::Start(u64::try_from(*offset).unwrap()))?;
+            ByteRange::FromEnd(offset, Some(length)) => {
+                bytes.seek(SeekFrom::End(-i64::try_from(*offset + *length).unwrap()))?;
                 let mut data = vec![0; *length];
                 bytes.read_exact(&mut data)?;
                 data

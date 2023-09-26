@@ -38,14 +38,19 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
         let byte_ranges: Vec<ByteRange> = byte_ranges
             .iter()
             .map(|byte_range| match byte_range {
-                ByteRange::All => ByteRange::Interval(self.byte_offset, self.byte_length),
-                ByteRange::FromStart(length) => ByteRange::Interval(self.byte_offset, *length),
-                ByteRange::FromEnd(length) => {
-                    ByteRange::Interval(self.byte_offset + self.byte_length - *length, *length)
+                ByteRange::FromStart(offset, None) => {
+                    ByteRange::FromStart(self.byte_offset + offset, Some(self.byte_length))
                 }
-                ByteRange::Interval(start, length) => {
-                    ByteRange::Interval(self.byte_offset + start, *length)
+                ByteRange::FromStart(offset, Some(length)) => {
+                    ByteRange::FromStart(self.byte_offset + offset, Some(*length))
                 }
+                ByteRange::FromEnd(offset, None) => {
+                    ByteRange::FromStart(self.byte_offset, Some(self.byte_length - *offset))
+                }
+                ByteRange::FromEnd(offset, Some(length)) => ByteRange::FromEnd(
+                    self.byte_offset + self.byte_length - offset - *length,
+                    Some(*length),
+                ),
             })
             .collect();
         self.inner
@@ -54,7 +59,7 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
 
     fn decode(&self, decoded_representation: &BytesRepresentation) -> Result<Vec<u8>, CodecError> {
         Ok(self
-            .partial_decode(decoded_representation, &[ByteRange::All])?
+            .partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
             .remove(0))
     }
 }

@@ -53,7 +53,10 @@ mod tests {
         let codec = ZstdCodec::new_with_configuration(&configuration);
 
         let encoded = codec.encode(bytes.clone()).unwrap();
-        let decoded_regions = [ByteRange::Interval(4, 4), ByteRange::Interval(10, 2)];
+        let decoded_regions = [
+            ByteRange::FromStart(4, Some(4)),
+            ByteRange::FromStart(10, Some(2)),
+        ];
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec.partial_decoder(input_handle);
