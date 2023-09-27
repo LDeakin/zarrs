@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Replace deprecated `tempdir` with `tempfile` for tests
  - **Breaking**: Change `ByteRange` enum to have `FromStart` and `FromEnd` variants
  - Substitute `blosc` dependency for `blosc-src` which builds blosc from source
+ - **Breaking**: Rename `compression` field to `cname` in `BloscCodecConfigurationV1` for consistency with the zarr spec
 
 ## [0.2.0] - 2023-09-25
 

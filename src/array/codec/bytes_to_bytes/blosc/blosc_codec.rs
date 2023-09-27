@@ -83,7 +83,7 @@ impl BloscCodec {
         }
 
         let configuration = BloscCodecConfigurationV1 {
-            compressor: cname,
+            cname,
             clevel,
             blocksize,
             shuffle: shuffle_mode,
@@ -103,7 +103,7 @@ impl BloscCodec {
     ) -> Result<Self, PluginCreateError> {
         let BloscCodecConfiguration::V1(configuration) = configuration;
         Self::new(
-            configuration.compressor,
+            configuration.cname,
             configuration.clevel,
             configuration.blocksize,
             configuration.shuffle,
@@ -135,7 +135,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
             self.configuration.clevel,
             self.configuration.shuffle,
             self.configuration.typesize,
-            self.configuration.compressor,
+            self.configuration.cname,
             self.configuration.blocksize.unwrap_or(0),
         )
         .map_err(|err: BloscError| CodecError::Other(err.to_string()))

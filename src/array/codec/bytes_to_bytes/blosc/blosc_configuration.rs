@@ -17,8 +17,7 @@ pub enum BloscCodecConfiguration {
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct BloscCodecConfigurationV1 {
     /// The compressor.
-    #[serde(rename = "cname")]
-    pub compressor: BloscCompressor,
+    pub cname: BloscCompressor,
     /// The compression level.
     pub clevel: BloscCompressionLevel,
     /// The shuffle mode.
