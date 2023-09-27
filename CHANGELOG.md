@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2023-09-27
+
 ### Added
  - Add `CHANGELOG.md`
 
@@ -24,5 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.2.0
