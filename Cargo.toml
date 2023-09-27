@@ -30,7 +30,7 @@ ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
 crate-type = ["lib"]
 
 [dependencies]
-blosc-sys = { version = "0.2.1", package = "blosc-src", features = ["lz4", "zlib"], optional = true }
+blosc-sys = { version = "0.2.1", package = "blosc-src", features = ["lz4", "zlib", "zstd"], optional = true }
 crc32fast = { version = "1.3.2", optional = true }
 derive_more = "0.99.17"
 dyn-clone = "1.0.13"
