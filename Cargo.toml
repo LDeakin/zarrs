@@ -14,7 +14,7 @@ exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.
 default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "raw_bits", "float16", "bfloat16", "ndarray"]
 # Codecs
 transpose = ["dep:ndarray"]
-blosc = ["dep:blosc"]
+blosc = ["dep:blosc-sys"]
 gzip = ["dep:flate2"]
 sharding = []
 crc32c = ["dep:crc32fast"]
@@ -30,7 +30,7 @@ ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
 crate-type = ["lib"]
 
 [dependencies]
-blosc = { version = "0.2.0", optional = true }
+blosc-sys = { version = "0.2.1", package = "blosc-src", features = ["lz4", "zlib"], optional = true }
 crc32fast = { version = "1.3.2", optional = true }
 derive_more = "0.99.17"
 dyn-clone = "1.0.13"

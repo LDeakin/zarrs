@@ -1,3 +1,7 @@
+use std::ffi::c_char;
+
+use blosc_sys::blosc_get_complib_info;
+
 use crate::{
     array::{
         codec::{
@@ -11,7 +15,9 @@ use crate::{
 };
 
 use super::{
-    blosc_partial_decoder, decompress_bytes, BloscCodecConfiguration, BloscCodecConfigurationV1,
+    blosc_partial_decoder, compress_bytes, decompress_bytes, BloscCodecConfiguration,
+    BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor, BloscError,
+    BloscShuffleMode,
 };
 
 const IDENTIFIER: &str = "blosc";
@@ -34,8 +40,6 @@ fn create_codec_blosc(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
 /// A `blosc` codec implementation.
 #[derive(Clone, Debug)]
 pub struct BloscCodec {
-    ctx: blosc::Context,
-    // configuration is mostly just the fields in ctx, which are private
     configuration: BloscCodecConfigurationV1,
 }
 
@@ -51,38 +55,42 @@ impl BloscCodec {
     ///  - the compressor is not supported, or
     ///  - the typesize has not been specified and shuffling is enabled.
     pub fn new(
-        compressor: blosc::Compressor,
-        clevel: blosc::Clevel,
+        cname: BloscCompressor,
+        clevel: BloscCompressionLevel,
         blocksize: Option<usize>,
-        shuffle_mode: blosc::ShuffleMode,
+        shuffle_mode: BloscShuffleMode,
         typesize: Option<usize>,
     ) -> Result<Self, PluginCreateError> {
-        if shuffle_mode != blosc::ShuffleMode::None && typesize.is_none() {
+        if shuffle_mode != BloscShuffleMode::NoShuffle && typesize.is_none() {
             return Err(PluginCreateError::Other {
                 error_str: "typesize is a positive integer required if shuffle mode is not none."
                     .into(),
             });
         }
 
-        let ctx = blosc::Context::new()
-            .compressor(compressor)
-            .map_err(|_| PluginCreateError::Other {
-                error_str: format!("blosc compressor {compressor:?} is not available"),
-            })?
-            .blocksize(blocksize)
-            .clevel(clevel)
-            .shuffle(shuffle_mode)
-            .typesize(typesize);
+        // Check that the compressor is available
+        let support = unsafe {
+            blosc_get_complib_info(
+                cname.as_cstr().cast::<c_char>(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            )
+        };
+        if support < 0 {
+            return Err(PluginCreateError::Other {
+                error_str: format!("compressor {cname:?} is not supported."),
+            });
+        }
 
         let configuration = BloscCodecConfigurationV1 {
-            compressor,
+            compressor: cname,
             clevel,
             blocksize,
             shuffle: shuffle_mode,
             typesize: typesize.unwrap_or_default(),
         };
 
-        Ok(BloscCodec { ctx, configuration })
+        Ok(BloscCodec { configuration })
     }
 
     /// Create a new `blosc` codec from configuration.
@@ -122,7 +130,15 @@ impl CodecTraits for BloscCodec {
 
 impl BytesToBytesCodecTraits for BloscCodec {
     fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        Ok(self.ctx.compress(&decoded_value).into())
+        compress_bytes(
+            &decoded_value,
+            self.configuration.clevel,
+            self.configuration.shuffle,
+            self.configuration.typesize,
+            self.configuration.compressor,
+            self.configuration.blocksize.unwrap_or(0),
+        )
+        .map_err(|err: BloscError| CodecError::Other(err.to_string()))
     }
 
     fn decode(

@@ -1,9 +1,3 @@
-## Dependencies
-This crate currently has the following C dependencies wrapped by `-sys` crates:
-- Zstd [`zstd-sys`]: builds from source, and
-- [Blosc](https://www.blosc.org/) [`blosc-sys`]: does **not** build from source
-  - Blosc is available through most package managers on linux (e.g. `libblosc-dev` on Ubuntu).
-
 ## Building
 ```bash
 cargo build --release
