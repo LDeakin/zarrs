@@ -10,7 +10,7 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 - [Examples](./examples)
 - [Build instructions (BUILD.md)](./BUILD.md)
 
-A subset of zarrs is exposed as a C API in the [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi) crate.
+A subset of zarrs is exposed as a C API by [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi). This is a work in progress.
 
 ## Licence
 zarrs is licensed under either of
