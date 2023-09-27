@@ -1,9 +1,10 @@
 [package]
 name = "zarrs"
 description = "A library for the Zarr V3 storage format for multidimensional arrays and metadata"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
+rust-version = "1.70"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LDeakin/zarrs"
 keywords = ["zarr"]
@@ -31,24 +32,24 @@ crate-type = ["lib"]
 
 [dependencies]
 blosc-sys = { version = "0.2.1", package = "blosc-src", features = ["lz4", "zlib", "zstd"], optional = true }
-crc32fast = { version = "1.3.2", optional = true }
-derive_more = "0.99.17"
-dyn-clone = "1.0.13"
-flate2 = { version = "1.0.27", optional = true }
-half = { version = "2.3.1", optional = true }
-inventory = "0.3.12"
-itertools = "0.11.0"
-ndarray = { version = "0.15.6", optional = true }
-num = { version = "0.4.1" }
-parking_lot = "0.12.1"
-pathdiff = "0.2.1"
-rayon = "1.7.0"
-safe-transmute = "0.11.2"
-serde = { version = "1.0.185", features = ["derive"] }
-serde_json = { version = "1.0.105", features = ["preserve_order"] }
-thiserror = "1.0.47"
-walkdir = "2.3.3"
-zstd = { version = "0.12.4", optional = true }
+crc32fast = { version = "1.3", optional = true }
+derive_more = "0.99"
+dyn-clone = "1"
+flate2 = { version = "1", optional = true }
+half = { version = "2", optional = true }
+inventory = "0.3"
+itertools = "0.11"
+ndarray = { version = "0.15", optional = true }
+num = { version = "0.4" }
+parking_lot = "0.12"
+pathdiff = "0.2"
+rayon = "1.6"
+safe-transmute = "0.11"
+serde = { version = "1.0.100", features = ["derive"] }
+serde_json = { version = "1.0.71", features = ["preserve_order"] }
+thiserror = "1.0.7"
+walkdir = "2.3.2"
+zstd = { version = "0.12", optional = true }
 
 [dev-dependencies]
-tempfile = "3.8.0"
+tempfile = "3.0.2"

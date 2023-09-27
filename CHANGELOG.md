@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - Set MSRV to 1.70 and relax some dependency minimum versions
+
 ## [0.3.0] - 2023-09-27
 
 ### Added
