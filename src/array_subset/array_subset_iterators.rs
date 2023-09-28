@@ -48,6 +48,11 @@ impl Iterator for IndicesIterator {
         }
         current
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let num_elements = self.subset.num_elements();
+        (num_elements, Some(num_elements))
+    }
 }
 
 /// Iterates over linearised element indices in an array subset.
@@ -72,6 +77,10 @@ impl Iterator for LinearisedIndicesIterator {
             Some(indices) => Some(ravel_indices(&indices, &self.inner.subset.shape)),
             None => None,
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
     }
 }
 
@@ -207,6 +216,10 @@ impl Iterator for ChunksIterator<'_> {
             let chunk_subset = unsafe { ArraySubset::new_with_start_shape_unchecked(start, shape) };
             (chunk_indices, chunk_subset)
         })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
     }
 }
 
