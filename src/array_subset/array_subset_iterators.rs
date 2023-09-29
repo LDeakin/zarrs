@@ -1,7 +1,6 @@
 use itertools::izip;
-use thiserror::Error;
 
-use crate::array::{ravel_indices, ArrayIndices, ArrayShape};
+use crate::array::{ravel_indices, ArrayIndices};
 
 use super::ArraySubset;
 
@@ -177,6 +176,7 @@ impl Iterator for ContiguousLinearisedIndicesIterator<'_> {
 }
 
 /// Iterates over the regular sized chunks overlapping this array subset.
+/// All chunks have the same size, and may extend over the bounds of the array subset.
 ///
 /// The iterator item is a ([`ArrayIndices`], [`ArraySubset`]) tuple corresponding to the chunk indices and array subset.
 pub struct ChunksIterator<'a> {
@@ -224,17 +224,101 @@ impl Iterator for ChunksIterator<'_> {
     }
 }
 
-/// A chunks iterator error.
-#[derive(Error, Debug)]
-#[error(
-    "array shape {_1:?} is not a multiple of chunk shape {_0:?} or it differs in dimensionality"
-)]
-pub struct ChunksIteratorError(ArrayShape, ArrayShape);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl ChunksIteratorError {
-    /// Create a new [`ChunksIteratorError`]
-    #[must_use]
-    pub fn new(chunk_shape: Vec<usize>, array_shape: Vec<usize>) -> Self {
-        Self(chunk_shape, array_shape)
+    #[test]
+    fn array_subset_iter_indices() {
+        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let mut iter = subset.iter_indices();
+        assert_eq!(iter.next(), Some(vec![1, 1]));
+        assert_eq!(iter.next(), Some(vec![1, 2]));
+        assert_eq!(iter.next(), Some(vec![2, 1]));
+        assert_eq!(iter.next(), Some(vec![2, 2]));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn array_subset_iter_linearised_indices() {
+        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let mut iter = subset.iter_linearised_indices(&[4, 4]);
+        //  0  1  2  3
+        //  4  5  6  7
+        //  8  9 10 11
+        // 12 13 14 15
+        assert_eq!(iter.next(), Some(5));
+        assert_eq!(iter.next(), Some(6));
+        assert_eq!(iter.next(), Some(9));
+        assert_eq!(iter.next(), Some(10));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn array_subset_iter_contiguous_indices1() {
+        let subset = ArraySubset::new_with_start_shape(vec![0, 0], vec![2, 2]).unwrap();
+        let mut iter = subset.iter_contiguous_indices(&[2, 2]).unwrap();
+        assert_eq!(iter.next(), Some((vec![0, 0], 4)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn array_subset_iter_contiguous_indices2() {
+        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let mut iter = subset.iter_contiguous_indices(&[4, 4]).unwrap();
+        assert_eq!(iter.next(), Some((vec![1, 1], 2)));
+        assert_eq!(iter.next(), Some((vec![2, 1], 2)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn array_subset_iter_contiguous_indices3() {
+        let subset = ArraySubset::new_with_start_shape(vec![1, 0, 0, 0], vec![2, 1, 2, 2]).unwrap();
+        let mut iter = subset.iter_contiguous_indices(&[2, 2, 2, 2]).unwrap();
+        assert_eq!(iter.next(), Some((vec![1, 0, 0, 0], 4)));
+        assert_eq!(iter.next(), Some((vec![2, 0, 0, 0], 4)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn array_subset_iter_continguous_linearised_indices() {
+        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let mut iter = subset.iter_contiguous_linearised_indices(&[4, 4]).unwrap();
+        //  0  1  2  3
+        //  4  5  6  7
+        //  8  9 10 11
+        // 12 13 14 15
+        assert_eq!(iter.next(), Some((5, 2)));
+        assert_eq!(iter.next(), Some((9, 2)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn array_subset_iter_chunks1() {
+        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![4, 4]).unwrap();
+        let mut iter = subset.iter_chunks(&[2, 2]).unwrap();
+        assert_eq!(iter.next(), Some((vec![0, 0], ArraySubset::new_with_start_shape(vec![0, 0], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![0, 1], ArraySubset::new_with_start_shape(vec![0, 2], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![0, 2], ArraySubset::new_with_start_shape(vec![0, 4], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_start_shape(vec![2, 0], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_start_shape(vec![2, 2], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![1, 2], ArraySubset::new_with_start_shape(vec![2, 4], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_start_shape(vec![4, 0], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_start_shape(vec![4, 2], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![2, 2], ArraySubset::new_with_start_shape(vec![4, 4], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn array_subset_iter_chunks2() {
+        let subset = ArraySubset::new_with_start_shape(vec![2, 2], vec![3, 4]).unwrap();
+        let mut iter = subset.iter_chunks(&[2, 3]).unwrap();
+        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_start_shape(vec![2, 0], vec![2, 3]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_start_shape(vec![2, 3], vec![2, 3]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_start_shape(vec![4, 0], vec![2, 3]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_start_shape(vec![4, 3], vec![2, 3]).unwrap())));
+        assert_eq!(iter.next(), None);
     }
 }

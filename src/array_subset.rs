@@ -10,13 +10,12 @@
 mod array_subset_iterators;
 
 pub use array_subset_iterators::{
-    ChunksIterator, ChunksIteratorError, ContiguousIndicesIterator,
-    ContiguousLinearisedIndicesIterator, IndicesIterator, LinearisedIndicesIterator,
+    ChunksIterator, ContiguousIndicesIterator, ContiguousLinearisedIndicesIterator,
+    IndicesIterator, LinearisedIndicesIterator,
 };
 
 use derive_more::Display;
 use itertools::izip;
-use num::Integer;
 use thiserror::Error;
 
 use crate::{
@@ -342,30 +341,34 @@ impl ArraySubset {
 
     /// Returns an iterator over chunks with shape `chunk_shape` in the array subset.
     ///
+    /// All chunks overlapping the array subset are returned, and they all have the same shape `chunk_shape`.
+    /// Thus, the subsets of the chunks may extend out over the subset.
+    ///
     /// # Errors
     ///
-    /// Returns an error if `chunk_shape` does not match the array subset dimensionality or it is not divisible by the array subset shape.
+    /// Returns an error if `chunk_shape` does not match the array subset dimensionality.
     pub fn iter_chunks<'a>(
         &'a self,
         chunk_shape: &'a [usize],
-    ) -> Result<ChunksIterator, ChunksIteratorError> {
-        if self.dimensionality() != chunk_shape.len()
-            || std::iter::zip(chunk_shape, self.shape()).any(|(c, s)| !s.is_multiple_of(c))
-        {
-            Err(ChunksIteratorError::new(
-                chunk_shape.to_vec(),
-                self.shape().to_vec(),
-            ))
-        } else {
+    ) -> Result<ChunksIterator, IncompatibleDimensionalityError> {
+        if chunk_shape.len() == self.dimensionality() {
             Ok(unsafe { self.iter_chunks_unchecked(chunk_shape) })
+        } else {
+            Err(IncompatibleDimensionalityError::new(
+                chunk_shape.len(),
+                self.dimensionality(),
+            ))
         }
     }
 
     /// Returns an iterator over chunks with shape `chunk_shape` in the array subset.
     ///
+    /// All chunks overlapping the array subset are returned, and they all have the same shape `chunk_shape`.
+    /// Thus, the subsets of the chunks may extend out over the subset.
+    ///
     /// # Safety
     ///
-    /// `chunk_shape` must evenly divide the array subset shape.
+    /// The length of `chunk_shape` must match the array subset dimensionality.
     #[doc(hidden)]
     #[must_use]
     pub unsafe fn iter_chunks_unchecked<'a>(&'a self, chunk_shape: &'a [usize]) -> ChunksIterator {
