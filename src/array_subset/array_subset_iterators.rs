@@ -55,26 +55,27 @@ impl Iterator for IndicesIterator {
     }
 }
 
-/// Iterates over linearised element indices in an array subset.
-pub struct LinearisedIndicesIterator {
+/// Iterates over linearised element indices of an array subset in an array.
+pub struct LinearisedIndicesIterator<'a> {
     inner: IndicesIterator,
+    array_shape: &'a [usize],
 }
 
-impl LinearisedIndicesIterator {
+impl<'a> LinearisedIndicesIterator<'a> {
     /// Create a new linearised indices iterator.
     #[must_use]
-    pub fn new(inner: IndicesIterator) -> Self {
-        Self { inner }
+    pub fn new(inner: IndicesIterator, array_shape: &'a [usize]) -> Self {
+        Self { inner, array_shape }
     }
 }
 
-impl Iterator for LinearisedIndicesIterator {
+impl Iterator for LinearisedIndicesIterator<'_> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
         let indices = self.inner.next();
         match indices {
-            Some(indices) => Some(ravel_indices(&indices, &self.inner.subset.shape)),
+            Some(indices) => Some(ravel_indices(&indices, self.array_shape)),
             None => None,
         }
     }

@@ -263,8 +263,11 @@ impl ArraySubset {
 
     /// Returns an iterator over the linearised indices of elements within the subset.
     #[must_use]
-    pub fn iter_linearised_indices(&self) -> LinearisedIndicesIterator {
-        LinearisedIndicesIterator::new(self.iter_indices())
+    pub fn iter_linearised_indices<'a>(
+        &self,
+        array_shape: &'a [usize],
+    ) -> LinearisedIndicesIterator<'a> {
+        LinearisedIndicesIterator::new(self.iter_indices(), array_shape)
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
