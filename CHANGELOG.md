@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Fix `LinearisedIndicesIterator` to use array shape instead of subset shape
  - **Breaking**: Array subset shape no longer needs to be evenly divisible by chunk shape when creating a chunk iterator, removes `ChunksIteratorError`
  - Add array subset iterator tests
+ - **Breaking**: Remove unvalidated `from(String)` for store key/prefix
 
 ## [0.3.0] - 2023-09-27
 

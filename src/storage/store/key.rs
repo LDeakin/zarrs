@@ -6,7 +6,7 @@ use super::StorePrefix;
 /// A Zarr abstract store key.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#abstract-store-interface>.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, From)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display)]
 pub struct StoreKey(String);
 
 /// An invalid store key.
