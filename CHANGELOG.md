@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add array subset iterator tests
  - **Breaking**: Remove unvalidated `from(String)` for store key/prefix
  - Validate that store prefixes do not start with `/`
+ - **Breaking**: Add `StorageError::Other` variant
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa

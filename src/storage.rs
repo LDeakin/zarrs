@@ -224,6 +224,9 @@ pub enum StorageError {
     /// An invalid byte range.
     #[error("invalid byte range {0}")]
     InvalidByteRangeError(#[from] InvalidByteRangeError),
+    /// Any other error.
+    #[error("{0}")]
+    Other(String),
 }
 
 /// Return the metadata key given a node path.
