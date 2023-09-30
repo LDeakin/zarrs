@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Read only `ZipStore` behind `zip` feature
+
 ### Changed
  - Relax some dependency minimum versions
  - Add `size_hint()` to some array subset iterators

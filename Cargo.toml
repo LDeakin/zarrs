@@ -1,7 +1,7 @@
 [package]
 name = "zarrs"
 description = "A library for the Zarr V3 storage format for multidimensional arrays and metadata"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -11,7 +11,7 @@ categories = ["encoding"]
 exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.sh", "TODO.md"]
 
 [features]
-default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "raw_bits", "float16", "bfloat16", "ndarray"]
+default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "raw_bits", "float16", "bfloat16", "zip", "ndarray"]
 # Codecs
 transpose = ["dep:ndarray"]
 blosc = ["dep:blosc-sys"]
@@ -23,6 +23,8 @@ zstd = ["dep:zstd"]
 raw_bits = []
 float16 = ["dep:half"]
 bfloat16 = ["dep:half"]
+# Stores
+zip = ["dep:zip"]
 # Utilities
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
 
@@ -48,6 +50,7 @@ serde = { version = "1.0.100", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["preserve_order"] }
 thiserror = "1.0.7"
 walkdir = "2.3.2"
+zip = { version = "0.6", optional = true }
 zstd = { version = "0.12", optional = true }
 
 [dev-dependencies]

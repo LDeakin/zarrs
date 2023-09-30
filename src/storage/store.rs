@@ -1,4 +1,4 @@
-//! Zarr stores. Includes [filesystem](FilesystemStore) and [memory](MemoryStore) implementations.
+//! Zarr stores. Includes [filesystem](FilesystemStore), [memory](MemoryStore), and [zip](ZipStore) (read only) implementations.
 //!
 //! All stores must be Send + Sync with internally managed synchronisation.
 //!
@@ -10,10 +10,17 @@ mod memory;
 mod prefix;
 // mod store_plugin;
 
-pub use filesystem::{FilesystemStore, FilesystemStoreCreateError};
 pub use key::{StoreKey, StoreKeyError, StoreKeys};
 pub use memory::MemoryStore;
 pub use prefix::{StorePrefix, StorePrefixError, StorePrefixes};
+
+pub use filesystem::{FilesystemStore, FilesystemStoreCreateError};
+
+#[cfg(feature = "zip")]
+mod zip;
+#[cfg(feature = "zip")]
+pub use zip::{ZipStore, ZipStoreCreateError};
+
 // pub use store_plugin::{StorePlugin, StorePluginCreateError}; // Currently disabled.
 
 use std::sync::Arc;
