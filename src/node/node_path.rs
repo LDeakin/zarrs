@@ -63,7 +63,7 @@ impl TryFrom<&StorePrefix> for NodePath {
     type Error = NodePathError;
 
     fn try_from(prefix: &StorePrefix) -> Result<NodePath, Self::Error> {
-        let path = prefix.as_str().strip_suffix('/').unwrap().to_string();
+        let path = "/".to_string() + prefix.as_str().strip_suffix('/').unwrap();
         NodePath::new(&path)
     }
 }

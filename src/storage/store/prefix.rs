@@ -67,7 +67,7 @@ impl StorePrefix {
     /// - and ending with a trailing / character.
     #[must_use]
     pub fn validate(prefix: &str) -> bool {
-        prefix.is_empty() || prefix.ends_with('/')
+        prefix.is_empty() || (prefix.ends_with('/') && !prefix.starts_with('/'))
     }
 
     /// Returns the prefix of the parent, it if has one.
@@ -93,9 +93,9 @@ impl TryFrom<&NodePath> for StorePrefix {
     fn try_from(path: &NodePath) -> Result<StorePrefix, StorePrefixError> {
         let path = path.as_str();
         if path.eq("/") {
-            StorePrefix::new(path)
+            StorePrefix::new("")
         } else {
-            StorePrefix::new(&(path.to_string() + "/"))
+            StorePrefix::new(&(path.strip_prefix('/').unwrap_or(path).to_string() + "/"))
         }
     }
 }
