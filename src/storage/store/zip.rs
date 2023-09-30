@@ -46,8 +46,6 @@ use std::{
 // }
 
 /// A zip store.
-///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/zip/v1.0.html>.
 pub struct ZipStore {
     path: PathBuf,
     zip_archive: Arc<Mutex<ZipArchive<File>>>,
