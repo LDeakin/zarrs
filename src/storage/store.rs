@@ -50,7 +50,7 @@ pub type ReadableWritableStore = Arc<dyn ReadableWritableStoreExtension>;
 // inventory::collect!(ReadableWritableStorePlugin);
 
 /// A store with [`Send`], [`Sync`] and an optional [`uri_scheme`](StoreExtension::uri_scheme).
-pub trait StoreExtension: Send + Sync + core::fmt::Debug {
+pub trait StoreExtension: Send + Sync {
     /// The URI scheme of the store, if it has one.
     fn uri_scheme(&self) -> Option<&'static str>;
 }

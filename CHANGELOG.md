@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `FilesystemStore` now accepts a file and does not create directory on creation
  - **Breaking**: `ReadableStorageTraits::size()` to `u64` from `usize`
  - **Breaking**: Add `ReadableStorageTraits::size_key()`
- - Storage traits no longer require `Debug`
+ - Storage and store traits no longer require `Debug`
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa
