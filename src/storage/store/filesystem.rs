@@ -90,9 +90,15 @@ impl FilesystemStore {
             return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
         }
 
-        let readonly = {
+        let readonly = if base_path.exists() {
+            // the path already exists, check if it is read only
             let md = std::fs::metadata(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
             md.permissions().readonly()
+        } else {
+            // the path does not exist, so try and create it. If this succeeds, the filesystem is not read only
+            std::fs::create_dir_all(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
+            std::fs::remove_dir(&base_path)?;
+            false
         };
 
         Ok(FilesystemStore {
