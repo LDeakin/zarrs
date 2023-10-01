@@ -282,6 +282,7 @@ impl WritableStorageTraits for FilesystemStore {
         }
         Ok(())
     }
+
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);
@@ -290,16 +291,7 @@ impl WritableStorageTraits for FilesystemStore {
         let key_path = self.key_to_fspath(key);
         Ok(std::fs::remove_file(key_path)?)
     }
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
-        if self.readonly {
-            return Err(StorageError::ReadOnly);
-        }
 
-        for key in keys {
-            self.erase(key)?;
-        }
-        Ok(())
-    }
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);

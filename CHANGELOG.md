@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `ReadableStorageTraits::size()` to `u64` from `usize`
  - **Breaking**: Add `ReadableStorageTraits::size_key()`
  - Storage and store traits no longer require `Debug`
+ - Add a default implementation for `WritableStorageTraits::erase_values`
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa

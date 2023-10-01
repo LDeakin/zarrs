@@ -152,13 +152,6 @@ impl WritableStorageTraits for MemoryStore {
         }
     }
 
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
-        for key in keys {
-            self.erase(key)?;
-        }
-        Ok(())
-    }
-
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         let mut data_map = self.data_map.write();
         let keys: Vec<StoreKey> = data_map.keys().cloned().collect();

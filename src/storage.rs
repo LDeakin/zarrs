@@ -135,7 +135,12 @@ pub trait WritableStorageTraits: Send + Sync {
     /// # Errors
     ///
     /// Returns a [`StorageError`] if a store key is not in the store, or the erase otherwise fails.
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError>;
+    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
+        for key in keys {
+            self.erase(key)?;
+        }
+        Ok(())
+    }
 
     /// Erase all [`StoreKey`] under [`StorePrefix`].
     ///
