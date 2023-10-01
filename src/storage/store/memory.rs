@@ -186,6 +186,7 @@ impl ListableStorageTraits for MemoryStore {
         for key in data_map.keys() {
             if key.has_prefix(prefix) {
                 let key_strip = key.as_str().strip_prefix(prefix.as_str()).unwrap();
+                let key_strip = key_strip.strip_prefix('/').unwrap_or(key_strip);
                 let components: Vec<_> = key_strip.split('/').collect();
                 if components.len() > 1 {
                     prefixes.insert(StorePrefix::new(
