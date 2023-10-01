@@ -11,6 +11,7 @@
 //!
 //! This module defines abstract store interfaces, includes various store and storage transformers, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
 
+mod storage_value_io;
 pub mod storage_transformer;
 pub mod store;
 
@@ -30,6 +31,8 @@ pub use self::store::{
 };
 
 pub use self::storage_transformer::StorageTransformerChain;
+
+pub use storage_value_io::StorageValueIO;
 
 /// [`Arc`] wrapped readable storage.
 pub type ReadableStorage<'a> = Arc<dyn ReadableStorageTraits + 'a>;
