@@ -1,17 +1,11 @@
 //! A sequence of storage transformers.
 
-use std::sync::Arc;
-
 use derive_more::From;
 
 use crate::{
     metadata::Metadata,
     plugin::PluginCreateError,
-    storage::{
-        ListableStorage, ListableStorageTraits, ReadableStorage, ReadableStorageTraits,
-        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, WritableStorage,
-        WritableStorageTraits,
-    },
+    storage::{ListableStorage, ReadableStorage, ReadableWritableStorage, WritableStorage},
 };
 
 use super::{try_create_storage_transformer, StorageTransformer};
@@ -55,9 +49,8 @@ impl StorageTransformerChain {
     /// Create a readable storage transformer.
     pub fn create_readable_transformer<'a>(
         &'a self,
-        storage: &'a dyn ReadableStorageTraits,
+        mut storage: ReadableStorage<'a>,
     ) -> ReadableStorage<'a> {
-        let mut storage: ReadableStorage<'a> = Arc::new(ReadableStorageHandle(storage));
         for transformer in &self.0 {
             storage = transformer.create_readable_transformer(storage);
         }
@@ -67,9 +60,8 @@ impl StorageTransformerChain {
     /// Create a writable storage transformer.
     pub fn create_writable_transformer<'a>(
         &'a self,
-        storage: &'a dyn WritableStorageTraits,
+        mut storage: WritableStorage<'a>,
     ) -> WritableStorage<'a> {
-        let mut storage: WritableStorage<'a> = Arc::new(WritableStorageHandle(storage));
         for transformer in &self.0 {
             storage = transformer.create_writable_transformer(storage);
         }
@@ -79,9 +71,8 @@ impl StorageTransformerChain {
     /// Create a listable storage transformer.
     pub fn create_listable_transformer<'a>(
         &'a self,
-        storage: &'a dyn ListableStorageTraits,
+        mut storage: ListableStorage<'a>,
     ) -> ListableStorage<'a> {
-        let mut storage: ListableStorage<'a> = Arc::new(ListableStorageHandle(storage));
         for transformer in &self.0 {
             storage = transformer.create_listable_transformer(storage);
         }
@@ -91,135 +82,11 @@ impl StorageTransformerChain {
     /// Create a readable and writable storage transformer.
     pub fn create_readable_writable_transformer<'a>(
         &'a self,
-        storage: &'a dyn ReadableWritableStorageTraits,
+        mut storage: ReadableWritableStorage<'a>,
     ) -> ReadableWritableStorage<'a> {
-        let mut storage: ReadableWritableStorage<'a> =
-            Arc::new(ReadableWritableStorageHandle(storage));
         for transformer in &self.0 {
             storage = transformer.create_readable_writable_transformer(storage);
         }
         storage
     }
 }
-
-struct ReadableStorageHandle<'a>(&'a dyn ReadableStorageTraits);
-
-impl ReadableStorageTraits for ReadableStorageHandle<'_> {
-    fn get(&self, key: &crate::storage::StoreKey) -> Result<Vec<u8>, StorageError> {
-        self.0.get(key)
-    }
-
-    fn get_partial_values(
-        &self,
-        key_ranges: &[crate::storage::StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        self.0.get_partial_values(key_ranges)
-    }
-
-    fn size(&self) -> u64 {
-        self.0.size()
-    }
-
-    fn size_key(&self, key: &crate::storage::StoreKey) -> Result<u64, StorageError> {
-        self.0.size_key(key)
-    }
-}
-
-struct WritableStorageHandle<'a>(&'a dyn WritableStorageTraits);
-
-impl WritableStorageTraits for WritableStorageHandle<'_> {
-    fn set(&self, key: &crate::storage::StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        self.0.set(key, value)
-    }
-
-    fn set_partial_values(
-        &self,
-        key_start_values: &[crate::storage::StoreKeyStartValue],
-    ) -> Result<(), StorageError> {
-        self.0.set_partial_values(key_start_values)
-    }
-
-    fn erase(&self, key: &crate::storage::StoreKey) -> Result<(), StorageError> {
-        self.0.erase(key)
-    }
-
-    fn erase_values(&self, keys: &[crate::storage::StoreKey]) -> Result<(), StorageError> {
-        self.0.erase_values(keys)
-    }
-
-    fn erase_prefix(&self, prefix: &crate::storage::StorePrefix) -> Result<(), StorageError> {
-        self.0.erase_prefix(prefix)
-    }
-}
-
-struct ListableStorageHandle<'a>(&'a dyn ListableStorageTraits);
-
-impl ListableStorageTraits for ListableStorageHandle<'_> {
-    fn list(&self) -> Result<crate::storage::StoreKeys, StorageError> {
-        self.0.list()
-    }
-
-    fn list_prefix(
-        &self,
-        prefix: &crate::storage::StorePrefix,
-    ) -> Result<crate::storage::StoreKeys, StorageError> {
-        self.0.list_prefix(prefix)
-    }
-
-    fn list_dir(
-        &self,
-        prefix: &crate::storage::StorePrefix,
-    ) -> Result<crate::storage::StoreKeysPrefixes, StorageError> {
-        self.0.list_dir(prefix)
-    }
-}
-
-struct ReadableWritableStorageHandle<'a>(&'a dyn ReadableWritableStorageTraits);
-
-impl ReadableStorageTraits for ReadableWritableStorageHandle<'_> {
-    fn get(&self, key: &crate::storage::StoreKey) -> Result<Vec<u8>, StorageError> {
-        self.0.get(key)
-    }
-
-    fn get_partial_values(
-        &self,
-        key_ranges: &[crate::storage::StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        self.0.get_partial_values(key_ranges)
-    }
-
-    fn size(&self) -> u64 {
-        self.0.size()
-    }
-
-    fn size_key(&self, key: &crate::storage::StoreKey) -> Result<u64, StorageError> {
-        self.0.size_key(key)
-    }
-}
-
-impl WritableStorageTraits for ReadableWritableStorageHandle<'_> {
-    fn set(&self, key: &crate::storage::StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        self.0.set(key, value)
-    }
-
-    fn set_partial_values(
-        &self,
-        key_start_values: &[crate::storage::StoreKeyStartValue],
-    ) -> Result<(), StorageError> {
-        self.0.set_partial_values(key_start_values)
-    }
-
-    fn erase(&self, key: &crate::storage::StoreKey) -> Result<(), StorageError> {
-        self.0.erase(key)
-    }
-
-    fn erase_values(&self, keys: &[crate::storage::StoreKey]) -> Result<(), StorageError> {
-        self.0.erase_values(keys)
-    }
-
-    fn erase_prefix(&self, prefix: &crate::storage::StorePrefix) -> Result<(), StorageError> {
-        self.0.erase_prefix(prefix)
-    }
-}
-
-impl ReadableWritableStorageTraits for ReadableWritableStorageHandle<'_> {}

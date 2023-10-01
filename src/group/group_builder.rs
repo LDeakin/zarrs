@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::metadata::AdditionalFields;
 
 use super::{Group, GroupCreateError, GroupMetadata, GroupMetadataV3};
@@ -45,7 +47,7 @@ impl GroupBuilder {
     /// Returns [`GroupCreateError`] if the group could not be created.
     pub fn build<TStorage>(
         self,
-        storage: TStorage,
+        storage: Arc<TStorage>,
         path: &str,
     ) -> Result<Group<TStorage>, GroupCreateError> {
         Group::new_with_metadata(storage, path, self.metadata)

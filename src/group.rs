@@ -22,6 +22,8 @@
 mod group_builder;
 mod group_metadata;
 
+use std::sync::Arc;
+
 use derive_more::Display;
 use thiserror::Error;
 
@@ -45,7 +47,7 @@ pub use self::{
 pub struct Group<TStorage> {
     /// The storage.
     #[allow(dead_code)]
-    storage: TStorage,
+    storage: Arc<TStorage>,
     /// The path of the group in the store.
     #[allow(dead_code)]
     path: NodePath,
@@ -61,7 +63,7 @@ impl<TStorage> Group<TStorage> {
     ///
     /// Returns [`GroupCreateError`] if any metadata is invalid.
     pub fn new_with_metadata(
-        storage: TStorage,
+        storage: Arc<TStorage>,
         path: &str,
         metadata: GroupMetadata,
     ) -> Result<Self, GroupCreateError> {
@@ -76,21 +78,25 @@ impl<TStorage> Group<TStorage> {
     }
 
     /// Get path.
+    #[must_use]
     pub fn path(&self) -> &NodePath {
         &self.path
     }
 
     /// Get attributes.
+    #[must_use]
     pub fn attributes(&self) -> &serde_json::Map<String, serde_json::Value> {
         &self.metadata.attributes
     }
 
     /// Get additional fields.
+    #[must_use]
     pub fn additional_fields(&self) -> &AdditionalFields {
         &self.metadata.additional_fields
     }
 
     /// Get metadata.
+    #[must_use]
     pub fn metadata(&self) -> GroupMetadata {
         self.metadata.clone().into()
     }
@@ -114,7 +120,7 @@ impl<TStorage: ReadableStorageTraits> Group<TStorage> {
     /// # Errors
     ///
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
-    pub fn new(storage: TStorage, path: &str) -> Result<Self, GroupCreateError> {
+    pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
         let node_path = path.try_into()?;
         let metadata: GroupMetadata = serde_json::from_slice(&storage.get(&meta_key(&node_path))?)?;
         Self::new_with_metadata(storage, path, metadata)
@@ -225,14 +231,14 @@ mod tests {
     fn group_metadata1() {
         let group_metadata: GroupMetadata = serde_json::from_str(JSON_VALID1).unwrap();
         let store = MemoryStore::default();
-        Group::new_with_metadata(store, "/", group_metadata).unwrap();
+        Group::new_with_metadata(store.into(), "/", group_metadata).unwrap();
     }
 
     #[test]
     fn group_metadata2() {
         let group_metadata: GroupMetadata = serde_json::from_str(JSON_VALID2).unwrap();
         let store = MemoryStore::default();
-        Group::new_with_metadata(store, "/", group_metadata).unwrap();
+        Group::new_with_metadata(store.into(), "/", group_metadata).unwrap();
     }
 
     #[test]
@@ -240,7 +246,7 @@ mod tests {
         let group_metadata: GroupMetadata = serde_json::from_str(JSON_INVALID_FORMAT).unwrap();
         print!("{group_metadata:?}");
         let store = MemoryStore::default();
-        let group_metadata = Group::new_with_metadata(store, "/", group_metadata);
+        let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
         assert!(group_metadata.is_err());
     }
 
@@ -250,7 +256,7 @@ mod tests {
             serde_json::from_str(JSON_INVALID_ADDITIONAL_FIELD).unwrap();
         print!("{group_metadata:?}");
         let store = MemoryStore::default();
-        let group_metadata = Group::new_with_metadata(store, "/", group_metadata);
+        let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
         assert!(group_metadata.is_err());
     }
 

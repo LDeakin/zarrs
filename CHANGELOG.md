@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Add `ReadableStorageTraits::size_key()`
  - Storage and store traits no longer require `Debug`
  - Add a default implementation for `WritableStorageTraits::erase_values`
+ - Make array/group explicitly store `Arc<TStorage>`
+ - `StorageTransformerChain` now only accepts `Arc` storage.
+ - Various group methods are now `#[must_use]`
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa

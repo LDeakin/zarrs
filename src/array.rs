@@ -39,6 +39,8 @@ mod dimension_name;
 mod fill_value;
 mod fill_value_metadata;
 
+use std::sync::Arc;
+
 pub use self::{
     array_builder::ArrayBuilder,
     array_errors::{ArrayCreateError, ArrayError},
@@ -88,7 +90,7 @@ pub type ArrayShape = Vec<usize>;
 #[derive(Debug)]
 pub struct Array<TStorage> {
     /// The storage (including storage transformers).
-    storage: TStorage,
+    storage: Arc<TStorage>,
     /// The path of the array in a store.
     path: NodePath,
     /// An array of integers providing the length of each dimension of the Zarr array.
@@ -125,7 +127,7 @@ impl<TStorage> Array<TStorage> {
     ///  - any metadata is invalid or,
     ///  - a plugin (e.g. data type/chunk grid/chunk key encoding/codec/storage transformer) is invalid.
     pub fn new_with_metadata(
-        storage: TStorage,
+        storage: Arc<TStorage>,
         path: &str,
         metadata: ArrayMetadata,
     ) -> Result<Array<TStorage>, ArrayCreateError> {
@@ -347,7 +349,7 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     /// # Errors
     ///
     /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
-    pub fn new(storage: TStorage, path: &str) -> Result<Self, ArrayCreateError> {
+    pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
         let metadata: ArrayMetadata = serde_json::from_slice(&storage.get(&meta_key(&node_path))?)?;
         Self::new_with_metadata(storage, path, metadata)
@@ -364,7 +366,7 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     pub fn retrieve_chunk(&self, chunk_indices: &[usize]) -> Result<Vec<u8>, ArrayError> {
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(&self.storage);
+            .create_readable_transformer(self.storage.clone());
         let chunk_encoded = crate::storage::retrieve_chunk(
             &*storage_transformer,
             self.path(),
@@ -599,7 +601,7 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
 
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(&self.storage);
+            .create_readable_transformer(self.storage.clone());
         let input_handle = Box::new(StoragePartialDecoder::new(
             &*storage_transformer,
             data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
@@ -686,7 +688,7 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
     pub fn store_metadata(&self) -> Result<(), StorageError> {
         let storage_transformer = self
             .storage_transformers()
-            .create_writable_transformer(&self.storage);
+            .create_writable_transformer(self.storage.clone());
         crate::storage::create_array(&*storage_transformer, self.path(), &self.metadata())
     }
 
@@ -723,7 +725,7 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
         if any_non_fill_value {
             let storage_transformer = self
                 .storage_transformers()
-                .create_writable_transformer(&self.storage);
+                .create_writable_transformer(self.storage.clone());
             let chunk_encoded: Vec<u8> = if self.parallel_codecs() {
                 self.codecs()
                     .par_encode(chunk_bytes.to_vec(), &chunk_array_representation)
@@ -1087,7 +1089,7 @@ mod tests {
 
     #[test]
     fn test_array_metadata_write_read() {
-        let store = std::sync::Arc::new(MemoryStore::new());
+        let store = Arc::new(MemoryStore::new());
 
         let array_path = "/array";
         let array = ArrayBuilder::new(
@@ -1122,7 +1124,7 @@ mod tests {
             #[cfg(feature = "gzip")]
             Box::new(codec::GzipCodec::new(5).unwrap()),
         ])
-        .build(store, array_path)
+        .build(store.into(), array_path)
         .unwrap();
 
         array.set_shape(vec![16, 16]);
@@ -1142,7 +1144,7 @@ mod tests {
 
     #[test]
     fn array_subset_round_trip() {
-        let store = std::sync::Arc::new(MemoryStore::default());
+        let store = Arc::new(MemoryStore::default());
         let array_path = "/array";
         let array = ArrayBuilder::new(
             vec![8, 8], // array shape

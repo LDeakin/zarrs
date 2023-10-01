@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     metadata::AdditionalFields,
     node::NodePath,
@@ -188,7 +190,7 @@ impl ArrayBuilder {
     /// This can be due to a storage error, an invalid path, or a problem with array configuration.
     pub fn build<TStorage>(
         self,
-        storage: TStorage,
+        storage: Arc<TStorage>,
         path: &str,
     ) -> Result<Array<TStorage>, ArrayCreateError> {
         let path: NodePath = path.try_into()?;

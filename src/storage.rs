@@ -558,7 +558,7 @@ mod tests {
     fn transformers_multithreaded() {
         use rayon::prelude::*;
 
-        let store = MemoryStore::default();
+        let store = Arc::new(MemoryStore::default());
 
         let log_writer = Arc::new(std::sync::Mutex::new(std::io::BufWriter::new(
             std::io::stdout(),
@@ -574,8 +574,10 @@ mod tests {
             // storage_transformer_usage_log.clone(),
             storage_transformer_performance_metrics.clone(),
         ]);
-        let transformer = storage_transformer_chain.create_readable_writable_transformer(&store);
-        let transformer_listable = storage_transformer_chain.create_listable_transformer(&store);
+        let transformer =
+            storage_transformer_chain.create_readable_writable_transformer(store.clone());
+        let transformer_listable =
+            storage_transformer_chain.create_listable_transformer(store.clone());
 
         (0..10).into_par_iter().for_each(|_| {
             transformer_listable.list().unwrap();
