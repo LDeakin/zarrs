@@ -65,7 +65,7 @@ pub trait ReadableStorageTraits: Send + Sync + core::fmt::Debug {
     ) -> Vec<Result<Vec<u8>, StorageError>>;
 
     /// Return the size in bytes of the readable storage.
-    fn size(&self) -> usize;
+    fn size(&self) -> u64;
 }
 
 /// Listable storage traits.
@@ -494,7 +494,7 @@ impl<R: ReadableStorageTraits + ?Sized> ReadableStorageTraits for Arc<R> {
         (**self).get_partial_values(key_ranges)
     }
 
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         (**self).size()
     }
 }

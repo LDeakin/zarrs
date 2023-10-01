@@ -117,7 +117,7 @@ impl ReadableStorageTraits for ReadableStorageHandle<'_> {
         self.0.get_partial_values(key_ranges)
     }
 
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         self.0.size()
     }
 }
@@ -188,7 +188,7 @@ impl ReadableStorageTraits for ReadableWritableStorageHandle<'_> {
         self.0.get_partial_values(key_ranges)
     }
 
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         self.0.size()
     }
 }

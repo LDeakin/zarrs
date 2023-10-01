@@ -102,11 +102,11 @@ impl ReadableStorageTraits for MemoryStore {
         out
     }
 
-    fn size(&self) -> usize {
-        let mut out: usize = 0;
+    fn size(&self) -> u64 {
+        let mut out: u64 = 0;
         let data_map = self.data_map.read();
         for values in data_map.values() {
-            out += values.read().len();
+            out += values.read().len() as u64;
         }
         out
     }

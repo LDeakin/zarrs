@@ -140,7 +140,7 @@ impl<TStorage: ReadableStorageTraits> ReadableStorageTraits
         values
     }
 
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         self.storage.size()
     }
 }

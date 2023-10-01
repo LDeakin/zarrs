@@ -49,7 +49,7 @@ use std::{
 pub struct ZipStore {
     path: PathBuf,
     zip_archive: Arc<Mutex<ZipArchive<File>>>,
-    size: usize,
+    size: u64,
 }
 
 impl std::fmt::Debug for ZipStore {
@@ -80,8 +80,7 @@ impl ZipStore {
             Err(ZipStoreCreateError::ExistingDir(path))
         } else {
             let zip_file = File::open(&path)?;
-            let size = usize::try_from(zip_file.metadata()?.len())
-                .map_err(|_| ZipError::UnsupportedArchive("zip file is too large"))?;
+            let size = zip_file.metadata()?.len();
             let zip_archive = Arc::new(Mutex::new(ZipArchive::new(zip_file)?));
             Ok(ZipStore {
                 path,
@@ -138,7 +137,7 @@ impl ReadableStorageTraits for ZipStore {
         out
     }
 
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         self.size
     }
 }

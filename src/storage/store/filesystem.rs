@@ -230,13 +230,13 @@ impl ReadableStorageTraits for FilesystemStore {
         out
     }
 
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         WalkDir::new(&self.base_path)
             .into_iter()
             .filter_map(std::result::Result::ok)
             .filter_map(|v| {
                 if v.path().is_file() {
-                    Some(usize::try_from(std::fs::metadata(v.path()).unwrap().len()).unwrap())
+                    Some(std::fs::metadata(v.path()).unwrap().len())
                 } else {
                     None
                 }
