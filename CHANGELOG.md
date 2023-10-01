@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Remove unvalidated `from(String)` for store key/prefix
  - Validate that store prefixes do not start with `/`
  - **Breaking**: Add `StorageError::Other` variant
+ - `FilesystemStore` now accepts a file and does not create directory on creation
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa

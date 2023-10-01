@@ -54,7 +54,7 @@ use std::{
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
 #[derive(Debug)]
 pub struct FilesystemStore {
-    base_directory: PathBuf,
+    base_path: PathBuf,
     sort: bool,
     readonly: bool,
     files: RwLock<HashMap<StoreKey, Mutex<()>>>,
@@ -75,8 +75,7 @@ impl StoreExtension for FilesystemStore {
 }
 
 impl FilesystemStore {
-    /// Create a new file system store at a given `base_directory`.
-    /// The base directory will be created if it does not exist.
+    /// Create a new file system store at a given `base_path`.
     ///
     /// # Errors
     ///
@@ -84,34 +83,20 @@ impl FilesystemStore {
     ///   - is not valid, or
     ///   - it points to an existing file rather than a directory.
     pub fn new<P: AsRef<Path>>(
-        base_directory: P,
+        base_path: P,
     ) -> Result<FilesystemStore, FilesystemStoreCreateError> {
-        let mut base_directory = base_directory.as_ref().to_path_buf();
-        if !base_directory.ends_with("/") {
-            base_directory.push("");
+        let base_path = base_path.as_ref().to_path_buf();
+        if base_path.to_str().is_none() {
+            return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
         }
 
-        if base_directory.to_str().is_none() {
-            return Err(FilesystemStoreCreateError::InvalidBaseDirectory(
-                base_directory,
-            ));
-        }
-        if base_directory.is_file() {
-            return Err(FilesystemStoreCreateError::ExistingFile(base_directory));
-        }
-        let readonly = if base_directory.is_dir() {
-            // the directory already exists, check if it is read only
-            let md =
-                std::fs::metadata(&base_directory).map_err(FilesystemStoreCreateError::IOError)?;
+        let readonly = {
+            let md = std::fs::metadata(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
             md.permissions().readonly()
-        } else {
-            // base directory does not exist, so create it. If this succeeds, the filesystem is not read only
-            std::fs::create_dir_all(&base_directory)
-                .map_err(FilesystemStoreCreateError::IOError)?;
-            false
         };
+
         Ok(FilesystemStore {
-            base_directory,
+            base_path,
             sort: false,
             readonly,
             files: RwLock::new(HashMap::new()),
@@ -126,38 +111,32 @@ impl FilesystemStore {
     }
 
     /// Maps a [`StoreKey`] to a filesystem [`PathBuf`].
+    ///
+    /// If key is empty `""` then this is the top level file/directory
     #[must_use]
     pub fn key_to_fspath(&self, key: &StoreKey) -> PathBuf {
-        let path = PathBuf::from(self.base_directory_as_str().to_owned() + "/" + key.as_str());
+        let mut path = self.base_path.clone();
+        if !key.as_str().is_empty() {
+            path.push(key.as_str().strip_prefix('/').unwrap_or(key.as_str()));
+        }
         path
     }
 
     /// Maps a filesystem [`PathBuf`] to a [`StoreKey`].
     fn fspath_to_key(&self, path: &std::path::Path) -> Result<StoreKey, StoreKeyError> {
-        let path = pathdiff::diff_paths(path, &self.base_directory)
-            .ok_or(StoreKeyError::from(
-                path.to_str().unwrap_or_default().to_string(),
-            ))?
-            .to_str()
-            .ok_or(StoreKeyError::from(
-                path.to_str().unwrap_or_default().to_string(),
-            ))?
-            .to_owned();
-        StoreKey::new(&path)
+        let path = pathdiff::diff_paths(path, &self.base_path).ok_or(StoreKeyError::from(
+            path.to_str().unwrap_or_default().to_string(),
+        ))?;
+        let path_str = path.to_string_lossy();
+        StoreKey::new(&path_str)
     }
 
     /// Maps a store [`StorePrefix`] to a filesystem [`PathBuf`].
     #[must_use]
     pub fn prefix_to_fs_path(&self, prefix: &StorePrefix) -> PathBuf {
-        let path = PathBuf::from(self.base_directory_as_str().to_owned() + prefix.as_str());
+        let mut path = self.base_path.clone();
+        path.push(prefix.as_str());
         path
-    }
-
-    fn base_directory_as_str(&self) -> &str {
-        let Some(base_directory) = self.base_directory.to_str() else {
-            unreachable!() // checked in new()
-        };
-        base_directory
     }
 
     fn get_impl(&self, key: &StoreKey, byte_range: &ByteRange) -> Result<Vec<u8>, StorageError> {
@@ -252,7 +231,7 @@ impl ReadableStorageTraits for FilesystemStore {
     }
 
     fn size(&self) -> usize {
-        WalkDir::new(&self.base_directory)
+        WalkDir::new(&self.base_path)
             .into_iter()
             .filter_map(std::result::Result::ok)
             .filter_map(|v| {
@@ -324,7 +303,7 @@ impl WritableStorageTraits for FilesystemStore {
 
 impl ListableStorageTraits for FilesystemStore {
     fn list(&self) -> Result<StoreKeys, StorageError> {
-        Ok(WalkDir::new(&self.base_directory)
+        Ok(WalkDir::new(&self.base_path)
             .sort_by_file_name()
             .into_iter()
             .filter_map(std::result::Result::ok)
@@ -382,12 +361,9 @@ pub enum FilesystemStoreCreateError {
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    /// Base directory is an existing file.
-    #[error("{0} is an existing file")]
-    ExistingFile(PathBuf),
     /// The path is not valid on this system.
-    #[error("base directory {0} is not valid")]
-    InvalidBaseDirectory(PathBuf),
+    #[error("base path {0} is not valid")]
+    InvalidBasePath(PathBuf),
 }
 
 #[cfg(test)]
