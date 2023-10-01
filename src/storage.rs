@@ -66,6 +66,13 @@ pub trait ReadableStorageTraits: Send + Sync + core::fmt::Debug {
 
     /// Return the size in bytes of the readable storage.
     fn size(&self) -> u64;
+
+    /// Return the size in bytes of the value at `key` if it exists.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the key does not exist or there is an underlying error with the store.
+    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError>;
 }
 
 /// Listable storage traits.
@@ -496,6 +503,10 @@ impl<R: ReadableStorageTraits + ?Sized> ReadableStorageTraits for Arc<R> {
 
     fn size(&self) -> u64 {
         (**self).size()
+    }
+
+    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+        (**self).size_key(key)
     }
 }
 

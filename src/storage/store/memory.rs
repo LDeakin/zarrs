@@ -110,6 +110,15 @@ impl ReadableStorageTraits for MemoryStore {
         }
         out
     }
+
+    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+        let data_map = self.data_map.read();
+        if let Some(entry) = data_map.get(key) {
+            Ok(entry.read().len() as u64)
+        } else {
+            Err(StorageError::KeyNotFound(key.clone()))
+        }
+    }
 }
 
 impl WritableStorageTraits for MemoryStore {

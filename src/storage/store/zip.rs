@@ -140,6 +140,16 @@ impl ReadableStorageTraits for ZipStore {
     fn size(&self) -> u64 {
         self.size
     }
+
+    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+        Ok(self
+            .zip_archive
+            .lock()
+            .unwrap()
+            .by_name(key.as_str())
+            .map_err(|err| StorageError::Other(err.to_string()))?
+            .compressed_size())
+    }
 }
 
 impl ListableStorageTraits for ZipStore {

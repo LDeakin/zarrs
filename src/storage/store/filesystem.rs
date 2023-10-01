@@ -243,6 +243,15 @@ impl ReadableStorageTraits for FilesystemStore {
             })
             .sum()
     }
+
+    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+        let key_path = self.key_to_fspath(key);
+        if let Ok(metadata) = std::fs::metadata(key_path) {
+            Ok(metadata.len())
+        } else {
+            Err(StorageError::KeyNotFound(key.clone()))
+        }
+    }
 }
 
 impl WritableStorageTraits for FilesystemStore {

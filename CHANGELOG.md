@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Add `StorageError::Other` variant
  - `FilesystemStore` now accepts a file and does not create directory on creation
  - **Breaking**: `ReadableStorageTraits::size()` to `u64` from `usize`
+ - **Breaking**: Add `ReadableStorageTraits::size_key()`
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa

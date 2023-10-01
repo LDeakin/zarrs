@@ -117,6 +117,10 @@ impl<TStorage: ReadableStorageTraits> ReadableStorageTraits
     fn size(&self) -> u64 {
         self.storage.size()
     }
+
+    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+        self.storage.size_key(key)
+    }
 }
 
 impl<TStorage: ListableStorageTraits> ListableStorageTraits

@@ -120,6 +120,10 @@ impl ReadableStorageTraits for ReadableStorageHandle<'_> {
     fn size(&self) -> u64 {
         self.0.size()
     }
+
+    fn size_key(&self, key: &crate::storage::StoreKey) -> Result<u64, StorageError> {
+        self.0.size_key(key)
+    }
 }
 
 #[derive(Debug)]
@@ -190,6 +194,10 @@ impl ReadableStorageTraits for ReadableWritableStorageHandle<'_> {
 
     fn size(&self) -> u64 {
         self.0.size()
+    }
+
+    fn size_key(&self, key: &crate::storage::StoreKey) -> Result<u64, StorageError> {
+        self.0.size_key(key)
     }
 }
 
