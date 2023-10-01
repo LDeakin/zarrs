@@ -20,7 +20,7 @@ use std::{io::Read, path::PathBuf};
 pub struct ZipStorageAdapter<TStorage: ReadableStorageTraits> {
     size: u64,
     zip_archive: Mutex<ZipArchive<StorageValueIO<TStorage>>>,
-    // zip_path: PathBuf,
+    zip_path: PathBuf,
 }
 
 impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
@@ -32,17 +32,36 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     pub fn new(
         storage: TStorage,
     ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
+        Self::new_with_path(storage, "")
+    }
+
+    /// Create a new zip storage adapter to `path` within the zip file.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ZipStorageAdapterCreateError`] if `zip_path` is not valid zip file.
+    pub fn new_with_path<T: Into<PathBuf>>(
+        storage: TStorage,
+        path: T,
+    ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
+        let zip_path = path.into();
         let key = unsafe { StoreKey::new_unchecked(String::new()) };
         let size = storage.size_key(&key)?;
         let storage_io = StorageValueIO::new(storage, key)?;
         let zip_archive = Mutex::new(ZipArchive::new(storage_io)?);
-        Ok(ZipStorageAdapter { size, zip_archive })
+        Ok(ZipStorageAdapter {
+            size,
+            zip_archive,
+            zip_path,
+        })
     }
 
     fn get_impl(&self, key: &StoreKey, byte_range: &ByteRange) -> Result<Vec<u8>, StorageError> {
         let mut zip_archive = self.zip_archive.lock();
+        let mut zip_name = self.zip_path.clone();
+        zip_name.push(key.as_str());
         let file = zip_archive
-            .by_name(key.as_str())
+            .by_name(&zip_name.to_string_lossy())
             .map_err(|err| StorageError::Other(err.to_string()))?;
         let size = usize::try_from(file.size()).map_err(|_| {
             StorageError::Other("zip archive internal file larger than usize".to_string())
@@ -67,6 +86,11 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         };
 
         Ok(buffer)
+    }
+
+    fn zip_file_to_key_str<'a>(&self, name: &'a str) -> Option<&'a str> {
+        name.strip_prefix(self.zip_path.to_str().unwrap())
+            .filter(|&name| !name.is_empty())
     }
 }
 
@@ -106,6 +130,7 @@ impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapte
             .zip_archive
             .lock()
             .file_names()
+            .filter_map(|name| self.zip_file_to_key_str(name))
             .filter_map(|v| StoreKey::try_from(v).ok())
             .sorted()
             .collect())
@@ -115,13 +140,16 @@ impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapte
         let mut zip_archive = self.zip_archive.lock();
         let file_names: Vec<String> = zip_archive
             .file_names()
+            .filter_map(|name| self.zip_file_to_key_str(name))
             .map(std::string::ToString::to_string)
             .collect();
         Ok(file_names
             .into_iter()
             .filter_map(|name| {
                 if name.starts_with(prefix.as_str()) {
-                    if let Ok(file) = zip_archive.by_name(&name) {
+                    let mut zip_name = self.zip_path.clone();
+                    zip_name.push(&name);
+                    if let Ok(file) = zip_archive.by_name(&zip_name.to_string_lossy()) {
                         if file.is_file() {
                             let name = name.strip_suffix('/').unwrap_or(&name);
                             if let Ok(store_key) = StoreKey::try_from(name) {
@@ -142,11 +170,14 @@ impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapte
         let mut prefixes: StorePrefixes = vec![];
         let file_names: Vec<String> = zip_archive
             .file_names()
+            .filter_map(|name| self.zip_file_to_key_str(name))
             .map(std::string::ToString::to_string)
             .collect();
         for name in file_names {
             if name.starts_with(prefix.as_str()) {
-                if let Ok(file) = zip_archive.by_name(&name) {
+                let mut zip_name = self.zip_path.clone();
+                zip_name.push(&name);
+                if let Ok(file) = zip_archive.by_name(&zip_name.to_string_lossy()) {
                     if file.is_file() {
                         let name = name.strip_suffix('/').unwrap_or(&name);
                         if let Ok(store_key) = StoreKey::try_from(name) {
@@ -252,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn zip_list() -> Result<(), Box<dyn Error>> {
+    fn zip_root() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let mut path = path.path().to_path_buf();
         path.push("test.zip");
@@ -331,6 +362,66 @@ mod tests {
 
         assert_eq!(store.get(&"a/b".try_into()?)?, &[0, 1, 2, 3]);
         assert_eq!(store.get(&"a/c".try_into()?)?, Vec::<u8>::new().as_slice());
+
+        Ok(())
+    }
+
+    #[test]
+    fn zip_path() -> Result<(), Box<dyn Error>> {
+        let path = tempfile::TempDir::new()?;
+        let mut path = path.path().to_path_buf();
+        path.push("test.zip");
+        zip_write(&path).unwrap();
+
+        println!("{path:?}");
+
+        let store = FilesystemStore::new(path)?;
+        let store = ZipStorageAdapter::new_with_path(store, "a/")?;
+
+        assert_eq!(
+            store.list()?,
+            &[
+                "b".try_into()?,
+                "c".try_into()?,
+                "d/e".try_into()?,
+                "f/g".try_into()?,
+                "f/h".try_into()?,
+            ]
+        );
+        assert_eq!(store.list_prefix(&"a/".try_into()?)?, &[]);
+        assert_eq!(store.list_prefix(&"d/".try_into()?)?, &["d/e".try_into()?]);
+        assert_eq!(
+            store.list_prefix(&"".try_into()?)?,
+            &[
+                "b".try_into()?,
+                "c".try_into()?,
+                "d/e".try_into()?,
+                "f/g".try_into()?,
+                "f/h".try_into()?,
+            ]
+        );
+
+        let list = store.list_dir(&"".try_into()?)?;
+        assert_eq!(
+            list.keys(),
+            &[
+                "b".try_into()?,
+                "c".try_into()?,
+                "d/e".try_into()?,
+                "f/g".try_into()?,
+                "f/h".try_into()?,
+            ]
+        );
+        assert_eq!(list.prefixes(), &["d/".try_into()?, "f/".try_into()?,]);
+
+        assert!(crate::storage::node_exists(&store, &"/b".try_into()?)?);
+        assert!(crate::storage::node_exists_listable(
+            &store,
+            &"/b".try_into()?
+        )?);
+
+        assert_eq!(store.get(&"b".try_into()?)?, &[0, 1, 2, 3]);
+        // assert_eq!(store.get(&"c".try_into()?)?, Vec::<u8>::new().as_slice());
 
         Ok(())
     }
