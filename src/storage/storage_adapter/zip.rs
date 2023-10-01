@@ -3,95 +3,44 @@
 use crate::{
     byte_range::ByteRange,
     storage::{
-        ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKeyRange,
-        StoreKeysPrefixes,
+        storage_value_io::StorageValueIO, ListableStorageTraits, ReadableStorageTraits,
+        StorageError, StoreKey, StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        StorePrefixes,
     },
 };
 
-use super::{
-    ListableStoreExtension, ReadableStoreExtension, StoreExtension, StoreKey, StoreKeys,
-    StorePrefix, StorePrefixes,
-};
-
 use itertools::Itertools;
+use parking_lot::Mutex;
 use thiserror::Error;
 use zip::{result::ZipError, ZipArchive};
 
-use std::{
-    fs::File,
-    io::Read,
-    path::{Path, PathBuf},
-    sync::{Arc, Mutex},
-};
+use std::{io::Read, path::PathBuf};
 
-// // Register the store.
-// inventory::submit! {
-//     ReadableStorePlugin::new("zip", |uri| Ok(Arc::new(create_store_zip(uri)?)))
-// }
-// inventory::submit! {
-//     WritableStorePlugin::new("zip", |uri| Ok(Arc::new(create_store_zip(uri)?)))
-// }
-// inventory::submit! {
-//     ListableStorePlugin::new("zip", |uri| Ok(Arc::new(create_store_zip(uri)?)))
-// }
-// inventory::submit! {
-//     ReadableWritableStorePlugin::new("zip", |uri| Ok(Arc::new(create_store_zip(uri)?)))
-// }
-
-// #[allow(clippy::similar_names)]
-// fn create_store_zip(uri: &str) -> Result<ZipStore, StorePluginCreateError> {
-//     let url = url::Url::parse(uri)?;
-//     let path = std::path::PathBuf::from(url.path());
-//     ZipStore::new(path).map_err(|e| StorePluginCreateError::Other(e.to_string()))
-// }
-
-/// A zip store.
-pub struct ZipStore {
-    path: PathBuf,
-    zip_archive: Arc<Mutex<ZipArchive<File>>>,
+/// A zip storage adapter.
+pub struct ZipStorageAdapter<TStorage: ReadableStorageTraits> {
     size: u64,
+    zip_archive: Mutex<ZipArchive<StorageValueIO<TStorage>>>,
+    // zip_path: PathBuf,
 }
 
-impl std::fmt::Debug for ZipStore {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.path.fmt(f)
-    }
-}
-
-impl ReadableStoreExtension for ZipStore {}
-
-impl ListableStoreExtension for ZipStore {}
-
-impl StoreExtension for ZipStore {
-    fn uri_scheme(&self) -> Option<&'static str> {
-        Some("zip")
-    }
-}
-
-impl ZipStore {
-    /// Create a new zip store for the zip file at `zip_path`.
+impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
+    /// Create a new zip storage adapter.
     ///
     /// # Errors
     ///
-    /// Returns a [`ZipStoreCreateError`] if `zip_path` is not valid zip file.
-    pub fn new<P: AsRef<Path>>(zip_path: P) -> Result<ZipStore, ZipStoreCreateError> {
-        let path = zip_path.as_ref().to_path_buf();
-        if path.is_dir() {
-            Err(ZipStoreCreateError::ExistingDir(path))
-        } else {
-            let zip_file = File::open(&path)?;
-            let size = zip_file.metadata()?.len();
-            let zip_archive = Arc::new(Mutex::new(ZipArchive::new(zip_file)?));
-            Ok(ZipStore {
-                path,
-                zip_archive,
-                size,
-            })
-        }
+    /// Returns a [`ZipStorageAdapterCreateError`] if `zip_path` is not valid zip file.
+    pub fn new(
+        storage: TStorage,
+    ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
+        let key = unsafe { StoreKey::new_unchecked(String::new()) };
+        let size = storage.size_key(&key)?;
+        let storage_io = StorageValueIO::new(storage, key)?;
+        let zip_archive = Mutex::new(ZipArchive::new(storage_io)?);
+        Ok(ZipStorageAdapter { size, zip_archive })
     }
 
     fn get_impl(&self, key: &StoreKey, byte_range: &ByteRange) -> Result<Vec<u8>, StorageError> {
-        let mut zip_archive = self.zip_archive.lock().unwrap();
+        let mut zip_archive = self.zip_archive.lock();
         let file = zip_archive
             .by_name(key.as_str())
             .map_err(|err| StorageError::Other(err.to_string()))?;
@@ -121,7 +70,7 @@ impl ZipStore {
     }
 }
 
-impl ReadableStorageTraits for ZipStore {
+impl<TStorage: ReadableStorageTraits> ReadableStorageTraits for ZipStorageAdapter<TStorage> {
     fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
         self.get_impl(key, &ByteRange::FromStart(0, None))
     }
@@ -145,17 +94,17 @@ impl ReadableStorageTraits for ZipStore {
         Ok(self
             .zip_archive
             .lock()
-            .unwrap()
             .by_name(key.as_str())
             .map_err(|err| StorageError::Other(err.to_string()))?
             .compressed_size())
     }
 }
 
-impl ListableStorageTraits for ZipStore {
+impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapter<TStorage> {
     fn list(&self) -> Result<StoreKeys, StorageError> {
-        let zip_archive = self.zip_archive.lock().unwrap();
-        Ok(zip_archive
+        Ok(self
+            .zip_archive
+            .lock()
             .file_names()
             .filter_map(|v| StoreKey::try_from(v).ok())
             .sorted()
@@ -163,7 +112,7 @@ impl ListableStorageTraits for ZipStore {
     }
 
     fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
-        let mut zip_archive = self.zip_archive.lock().unwrap();
+        let mut zip_archive = self.zip_archive.lock();
         let file_names: Vec<String> = zip_archive
             .file_names()
             .map(std::string::ToString::to_string)
@@ -188,7 +137,7 @@ impl ListableStorageTraits for ZipStore {
     }
 
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
-        let mut zip_archive = self.zip_archive.lock().unwrap();
+        let mut zip_archive = self.zip_archive.lock();
         let mut keys: StoreKeys = vec![];
         let mut prefixes: StorePrefixes = vec![];
         let file_names: Vec<String> = zip_archive
@@ -220,7 +169,7 @@ impl ListableStorageTraits for ZipStore {
 
 /// A zip store creation error.
 #[derive(Debug, Error)]
-pub enum ZipStoreCreateError {
+pub enum ZipStorageAdapterCreateError {
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
@@ -230,6 +179,9 @@ pub enum ZipStoreCreateError {
     /// A zip error.
     #[error(transparent)]
     ZipError(#[from] ZipError),
+    /// A storage error.
+    #[error(transparent)]
+    StorageError(#[from] StorageError),
 }
 
 #[cfg(test)]
@@ -239,7 +191,12 @@ mod tests {
     use crate::storage::{store::FilesystemStore, WritableStorageTraits};
 
     use super::*;
-    use std::{error::Error, io::Write};
+    use std::{
+        error::Error,
+        fs::File,
+        io::{Read, Write},
+        path::Path,
+    };
 
     // https://github.com/zip-rs/zip/blob/master/examples/write_dir.rs
     fn zip_dir(
@@ -303,7 +260,8 @@ mod tests {
 
         println!("{path:?}");
 
-        let store = ZipStore::new(path)?;
+        let store = FilesystemStore::new(path)?;
+        let store = ZipStorageAdapter::new(store)?;
 
         assert_eq!(
             store.list()?,
