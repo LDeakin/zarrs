@@ -11,8 +11,9 @@
 //!
 //! This module defines abstract store interfaces, includes various store and storage transformers, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
 
-mod storage_value_io;
+pub mod storage_adapter;
 pub mod storage_transformer;
+mod storage_value_io;
 pub mod store;
 
 use std::sync::Arc;
@@ -47,7 +48,7 @@ pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
 pub type ReadableWritableStorage<'a> = Arc<dyn ReadableWritableStorageTraits + 'a>;
 
 /// Readable storage traits.
-pub trait ReadableStorageTraits: Send + Sync + core::fmt::Debug {
+pub trait ReadableStorageTraits: Send + Sync {
     /// Retrieve the value (bytes) associated with a given [`StoreKey`].
     ///
     /// # Errors
@@ -79,7 +80,7 @@ pub trait ReadableStorageTraits: Send + Sync + core::fmt::Debug {
 }
 
 /// Listable storage traits.
-pub trait ListableStorageTraits: Send + Sync + core::fmt::Debug {
+pub trait ListableStorageTraits: Send + Sync {
     /// Retrieve all [`StoreKeys`] in the store.
     ///
     /// # Errors
@@ -104,7 +105,7 @@ pub trait ListableStorageTraits: Send + Sync + core::fmt::Debug {
 }
 
 /// Writable storage traits.
-pub trait WritableStorageTraits: Send + Sync + core::fmt::Debug {
+pub trait WritableStorageTraits: Send + Sync {
     /// Store bytes at a [`StoreKey`].
     ///
     /// # Errors

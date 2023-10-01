@@ -102,7 +102,6 @@ impl StorageTransformerChain {
     }
 }
 
-#[derive(Debug)]
 struct ReadableStorageHandle<'a>(&'a dyn ReadableStorageTraits);
 
 impl ReadableStorageTraits for ReadableStorageHandle<'_> {
@@ -126,7 +125,6 @@ impl ReadableStorageTraits for ReadableStorageHandle<'_> {
     }
 }
 
-#[derive(Debug)]
 struct WritableStorageHandle<'a>(&'a dyn WritableStorageTraits);
 
 impl WritableStorageTraits for WritableStorageHandle<'_> {
@@ -154,7 +152,6 @@ impl WritableStorageTraits for WritableStorageHandle<'_> {
     }
 }
 
-#[derive(Debug)]
 struct ListableStorageHandle<'a>(&'a dyn ListableStorageTraits);
 
 impl ListableStorageTraits for ListableStorageHandle<'_> {
@@ -177,7 +174,6 @@ impl ListableStorageTraits for ListableStorageHandle<'_> {
     }
 }
 
-#[derive(Debug)]
 struct ReadableWritableStorageHandle<'a>(&'a dyn ReadableWritableStorageTraits);
 
 impl ReadableStorageTraits for ReadableWritableStorageHandle<'_> {
