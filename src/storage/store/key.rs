@@ -52,7 +52,7 @@ impl StoreKey {
     /// Additionally, a key which starts with '/' is invalid even though this is not explicit in the specification.
     #[must_use]
     pub fn validate(key: &str) -> bool {
-        !key.starts_with("/") && !key.ends_with('/')
+        !key.starts_with('/') && !key.ends_with('/')
     }
 
     /// Returns true if the key has prefix `prefix`.
@@ -91,8 +91,7 @@ impl TryFrom<&str> for StoreKey {
 impl From<&StorePrefix> for StoreKey {
     fn from(prefix: &StorePrefix) -> StoreKey {
         let prefix = prefix.as_str();
-        let prefix = prefix.strip_suffix('/').unwrap_or(prefix);
-        let prefix = prefix.strip_prefix('/').unwrap_or(prefix);
-        unsafe { StoreKey::new_unchecked(prefix.to_string()) }
+        let key = prefix.strip_suffix('/').unwrap_or(prefix);
+        unsafe { StoreKey::new_unchecked(key.to_string()) }
     }
 }
