@@ -62,7 +62,10 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         zip_name.push(key.as_str());
         let file = zip_archive
             .by_name(&zip_name.to_string_lossy())
-            .map_err(|err| StorageError::Other(err.to_string()))?;
+            .map_err(|err| match err {
+                ZipError::FileNotFound => StorageError::KeyNotFound(key.clone()),
+                _ => StorageError::Other(err.to_string()),
+            })?;
         let size = usize::try_from(file.size()).map_err(|_| {
             StorageError::Other("zip archive internal file larger than usize".to_string())
         })?;
