@@ -15,19 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Relax some dependency minimum versions
  - Add `size_hint()` to some array subset iterators
  - **Breaking**: Fix `LinearisedIndicesIterator` to use array shape instead of subset shape
- - **Breaking**: Array subset shape no longer needs to be evenly divisible by chunk shape when creating a chunk iterator, removes `ChunksIteratorError`
+   - `LinearisedIndicesIterator::new` and `ArraySubset::iter_linearised_indices` now require `array_shape` parameter
+ - **Breaking**: Array subset shape no longer needs to be evenly divisible by chunk shape when creating a chunk iterator
+   - Removes `ChunksIteratorError`
  - Add array subset iterator tests
  - **Breaking**: Remove unvalidated `from(String)` for store key/prefix
  - Validate that store prefixes and keys do not start with `/`
  - **Breaking**: Add `StorageError::Other` variant
- - `FilesystemStore` now accepts a file and does not create directory on creation
+ - **Breaking** `FilesystemStore` now accepts a file and does not create directory on creation
+   - adds `FilesystemStoreCreateError:InvalidBasePath` and removes `FilesystemStoreCreateError:InvalidBaseDirectory/ExistingFile`
  - **Breaking**: `ReadableStorageTraits::size()` to `u64` from `usize`
  - **Breaking**: Add `ReadableStorageTraits::size_key()`
  - Storage and store traits no longer require `Debug`
  - Add a default implementation for `WritableStorageTraits::erase_values`
  - Make array/group explicitly store `Arc<TStorage>`
  - `StorageTransformerChain` now only accepts `Arc` storage.
- - Various group methods are now `#[must_use]`
+ - **Breaking**: Various group methods are now `#[must_use]`
  - Change `NodePath` internal representation to `PathBuf`
  - Remove unneeded '/' prefix strip in `StorePrefix`
 
