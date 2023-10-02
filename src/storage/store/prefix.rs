@@ -47,6 +47,7 @@ impl StorePrefix {
     /// `prefix` is not validated, so this can result in an invalid store prefix.
     #[must_use]
     pub unsafe fn new_unchecked(prefix: &str) -> StorePrefix {
+        debug_assert!(Self::validate(prefix));
         StorePrefix(prefix.to_string())
     }
 

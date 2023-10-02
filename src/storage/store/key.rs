@@ -38,6 +38,7 @@ impl StoreKey {
     /// `key` is not validated, so this can result in an invalid store key.
     #[must_use]
     pub unsafe fn new_unchecked(key: String) -> StoreKey {
+        debug_assert!(Self::validate(&key));
         StoreKey(key)
     }
 
