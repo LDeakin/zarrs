@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Make array/group explicitly store `Arc<TStorage>`
  - `StorageTransformerChain` now only accepts `Arc` storage.
  - Various group methods are now `#[must_use]`
+ - Change `NodePath` internal representation to `PathBuf`
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa
