@@ -73,8 +73,13 @@ impl StorePrefix {
     /// Returns the prefix of the parent, it if has one.
     #[must_use]
     pub fn parent(&self) -> Option<StorePrefix> {
-        Path::new(&self.0).parent().map(|parent| unsafe {
-            StorePrefix::new_unchecked(parent.to_str().unwrap_or_default())
+        Path::new(&self.0).parent().map(|parent| {
+            let parent = parent.to_str().unwrap_or_default();
+            if parent.is_empty() {
+                unsafe { StorePrefix::new_unchecked("") }
+            } else {
+                unsafe { StorePrefix::new_unchecked(&(parent.to_string() + "/")) }
+            }
         })
     }
 }
