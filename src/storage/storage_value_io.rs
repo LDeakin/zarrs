@@ -1,4 +1,7 @@
-use std::io::{Read, Seek, SeekFrom};
+use std::{
+    io::{Read, Seek, SeekFrom},
+    sync::Arc,
+};
 
 use crate::byte_range::ByteRange;
 
@@ -7,7 +10,7 @@ use super::{ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange};
 /// Provides a [`Read`] interface to a storage value.
 #[derive(Clone)]
 pub struct StorageValueIO<TStorage: ReadableStorageTraits> {
-    storage: TStorage,
+    storage: Arc<TStorage>,
     key: StoreKey,
     pos: u64,
     size: u64,
@@ -19,7 +22,7 @@ impl<TStorage: ReadableStorageTraits> StorageValueIO<TStorage> {
     /// # Errors
     ///
     /// Returns a `StorageError` if the the size of the value at key cannot be determined.
-    pub fn new(storage: TStorage, key: StoreKey) -> Result<Self, StorageError> {
+    pub fn new(storage: Arc<TStorage>, key: StoreKey) -> Result<Self, StorageError> {
         let size = storage.size_key(&key)?;
         Ok(Self {
             storage,

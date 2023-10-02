@@ -14,7 +14,7 @@ use parking_lot::Mutex;
 use thiserror::Error;
 use zip::{result::ZipError, ZipArchive};
 
-use std::{io::Read, path::PathBuf};
+use std::{io::Read, path::PathBuf, sync::Arc};
 
 /// A zip storage adapter.
 pub struct ZipStorageAdapter<TStorage: ReadableStorageTraits> {
@@ -30,7 +30,7 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     ///
     /// Returns a [`ZipStorageAdapterCreateError`] if `zip_path` is not valid zip file.
     pub fn new(
-        storage: TStorage,
+        storage: Arc<TStorage>,
     ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
         Self::new_with_path(storage, "")
     }
@@ -41,7 +41,7 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     ///
     /// Returns a [`ZipStorageAdapterCreateError`] if `zip_path` is not valid zip file.
     pub fn new_with_path<T: Into<PathBuf>>(
-        storage: TStorage,
+        storage: Arc<TStorage>,
         path: T,
     ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
         let zip_path = path.into();
@@ -295,7 +295,7 @@ mod tests {
         println!("{path:?}");
 
         let store = FilesystemStore::new(path)?;
-        let store = ZipStorageAdapter::new(store)?;
+        let store = ZipStorageAdapter::new(store.into())?;
 
         assert_eq!(
             store.list()?,
@@ -362,7 +362,7 @@ mod tests {
         println!("{path:?}");
 
         let store = FilesystemStore::new(path)?;
-        let store = ZipStorageAdapter::new_with_path(store, "a/")?;
+        let store = ZipStorageAdapter::new_with_path(store.into(), "a/")?;
 
         assert_eq!(
             store.list()?,

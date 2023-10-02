@@ -106,7 +106,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("The middle 2x2 subset is:\n{:?}\n", data_2x2);
 
     // Show the hierarchy
-    let node = Node::new_with_store(&store, "/").unwrap();
+    let node = Node::new_with_store(&*store, "/").unwrap();
     let tree = node.hierarchy_tree();
     println!("The zarr hierarchy tree is:\n{}", tree);
 

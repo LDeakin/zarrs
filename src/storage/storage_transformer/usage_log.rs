@@ -39,9 +39,9 @@ impl UsageLogStorageTransformer {
         }
     }
 
-    fn create_transformer<TStorage>(
+    fn create_transformer<TStorage: ?Sized>(
         &self,
-        storage: TStorage,
+        storage: Arc<TStorage>,
     ) -> Arc<UsageLogStorageTransformerImpl<TStorage>> {
         Arc::new(UsageLogStorageTransformerImpl {
             storage,
@@ -76,8 +76,8 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
     }
 }
 
-struct UsageLogStorageTransformerImpl<TStorage> {
-    storage: TStorage,
+struct UsageLogStorageTransformerImpl<TStorage: ?Sized> {
+    storage: Arc<TStorage>,
     prefix: String,
     handle: Arc<Mutex<dyn Write + Send + Sync>>,
 }
@@ -88,7 +88,7 @@ impl<TStorage> core::fmt::Debug for UsageLogStorageTransformerImpl<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits> ReadableStorageTraits
+impl<TStorage: ReadableStorageTraits + ?Sized> ReadableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
     fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
@@ -123,7 +123,7 @@ impl<TStorage: ReadableStorageTraits> ReadableStorageTraits
     }
 }
 
-impl<TStorage: ListableStorageTraits> ListableStorageTraits
+impl<TStorage: ListableStorageTraits + ?Sized> ListableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
     fn list(&self) -> Result<StoreKeys, StorageError> {
@@ -150,7 +150,7 @@ impl<TStorage: ListableStorageTraits> ListableStorageTraits
     }
 }
 
-impl<TStorage: WritableStorageTraits> WritableStorageTraits
+impl<TStorage: WritableStorageTraits + ?Sized> WritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
@@ -199,7 +199,7 @@ impl<TStorage: WritableStorageTraits> WritableStorageTraits
     }
 }
 
-impl<TStorage: ReadableStorageTraits + WritableStorageTraits> ReadableWritableStorageTraits
+impl<TStorage: ReadableStorageTraits + WritableStorageTraits + ?Sized> ReadableWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
 }

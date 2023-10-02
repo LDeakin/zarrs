@@ -485,68 +485,6 @@ pub fn node_exists_listable<TStorage: ListableStorageTraits>(
     }
 }
 
-impl<L: ListableStorageTraits + ?Sized> ListableStorageTraits for Arc<L> {
-    fn list(&self) -> Result<StoreKeys, StorageError> {
-        (**self).list()
-    }
-
-    fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
-        (**self).list_prefix(prefix)
-    }
-
-    fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
-        (**self).list_dir(prefix)
-    }
-}
-
-impl<R: ReadableStorageTraits + ?Sized> ReadableStorageTraits for Arc<R> {
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
-        (**self).get(key)
-    }
-
-    fn get_partial_values(
-        &self,
-        key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        (**self).get_partial_values(key_ranges)
-    }
-
-    fn size(&self) -> u64 {
-        (**self).size()
-    }
-
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
-        (**self).size_key(key)
-    }
-}
-
-impl<W: WritableStorageTraits + ?Sized> WritableStorageTraits for Arc<W> {
-    fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        (**self).set(key, value)
-    }
-
-    fn set_partial_values(
-        &self,
-        key_start_values: &[StoreKeyStartValue],
-    ) -> Result<(), StorageError> {
-        (**self).set_partial_values(key_start_values)
-    }
-
-    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
-        (**self).erase(key)
-    }
-
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
-        (**self).erase_values(keys)
-    }
-
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
-        (**self).erase_prefix(prefix)
-    }
-}
-
-impl<RW: ReadableWritableStorageTraits + ?Sized> ReadableWritableStorageTraits for Arc<RW> {}
-
 #[cfg(test)]
 mod tests {
     use std::io::Write;

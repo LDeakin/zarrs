@@ -177,7 +177,7 @@ impl<TStorage: WritableStorageTraits> Group<TStorage> {
     ///
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata(&self) -> Result<(), StorageError> {
-        crate::storage::create_group(&self.storage, self.path(), &self.metadata())
+        crate::storage::create_group(&*self.storage, self.path(), &self.metadata())
     }
 }
 

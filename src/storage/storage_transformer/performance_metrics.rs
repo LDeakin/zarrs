@@ -52,9 +52,9 @@ impl PerformanceMetricsStorageTransformer {
         self.writes.load(Ordering::Relaxed)
     }
 
-    fn create_transformer<TStorage>(
+    fn create_transformer<TStorage: ?Sized>(
         &self,
-        storage: TStorage,
+        storage: Arc<TStorage>,
     ) -> Arc<PerformanceMetricsStorageTransformerImpl<TStorage>> {
         Arc::new(PerformanceMetricsStorageTransformerImpl {
             storage,
@@ -98,12 +98,12 @@ impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
 }
 
 #[derive(Debug)]
-struct PerformanceMetricsStorageTransformerImpl<'a, TStorage> {
-    storage: TStorage,
+struct PerformanceMetricsStorageTransformerImpl<'a, TStorage: ?Sized> {
+    storage: Arc<TStorage>,
     transformer: &'a PerformanceMetricsStorageTransformer,
 }
 
-impl<TStorage: ReadableStorageTraits> ReadableStorageTraits
+impl<TStorage: ReadableStorageTraits + ?Sized> ReadableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
     fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
@@ -149,7 +149,7 @@ impl<TStorage: ReadableStorageTraits> ReadableStorageTraits
     }
 }
 
-impl<TStorage: ListableStorageTraits> ListableStorageTraits
+impl<TStorage: ListableStorageTraits + ?Sized> ListableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
     fn list(&self) -> Result<StoreKeys, StorageError> {
@@ -165,7 +165,7 @@ impl<TStorage: ListableStorageTraits> ListableStorageTraits
     }
 }
 
-impl<TStorage: WritableStorageTraits> WritableStorageTraits
+impl<TStorage: WritableStorageTraits + ?Sized> WritableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
@@ -206,7 +206,7 @@ impl<TStorage: WritableStorageTraits> WritableStorageTraits
     }
 }
 
-impl<TStorage: ReadableStorageTraits + WritableStorageTraits> ReadableWritableStorageTraits
+impl<TStorage: ReadableStorageTraits + WritableStorageTraits + ?Sized> ReadableWritableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
 }

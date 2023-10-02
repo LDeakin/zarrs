@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Various group methods are now `#[must_use]`
  - Change `NodePath` internal representation to `PathBuf`
  - Remove unneeded '/' prefix strip in `StorePrefix`
+ - **Breaking**: Remove storage trait implementations for `Arc<TStorage>`, now must explicitly deref
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa
