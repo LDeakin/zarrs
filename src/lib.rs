@@ -33,6 +33,9 @@
 //! - `rectangular_array_write_read` is similar to `array_read_write`, but with a rectangular chunk grid.
 //! > `cargo run --example rectangular_array_write_read`
 //!
+//! - `zip_array_write_read` demonstrates writing an array to a filesystem, zip it, then read it directly.
+//! > `cargo run --example zip_array_write_read`
+//!
 //! ## Licence
 //! zarrs is licensed under either of
 //!  - the Apache License, Version 2.0 [LICENSE-APACHE](./LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
