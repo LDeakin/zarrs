@@ -91,7 +91,7 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         Ok(buffer)
     }
 
-    fn zip_file_to_key_str<'a>(&self, name: &'a str) -> Option<&'a str> {
+    fn zip_file_strip_prefix<'a>(&self, name: &'a str) -> Option<&'a str> {
         name.strip_prefix(self.zip_path.to_str().unwrap())
             .filter(|&name| !name.is_empty())
     }
@@ -133,7 +133,7 @@ impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapte
             .zip_archive
             .lock()
             .file_names()
-            .filter_map(|name| self.zip_file_to_key_str(name))
+            .filter_map(|name| self.zip_file_strip_prefix(name))
             .filter_map(|v| StoreKey::try_from(v).ok())
             .sorted()
             .collect())
@@ -143,7 +143,7 @@ impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapte
         let mut zip_archive = self.zip_archive.lock();
         let file_names: Vec<String> = zip_archive
             .file_names()
-            .filter_map(|name| self.zip_file_to_key_str(name))
+            .filter_map(|name| self.zip_file_strip_prefix(name))
             .map(std::string::ToString::to_string)
             .collect();
         Ok(file_names
@@ -168,27 +168,26 @@ impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapte
     }
 
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
-        let mut zip_archive = self.zip_archive.lock();
+        let zip_archive = self.zip_archive.lock();
         let mut keys: StoreKeys = vec![];
         let mut prefixes: StorePrefixes = vec![];
-        let file_names: Vec<String> = zip_archive
+        for name in zip_archive
             .file_names()
-            .filter_map(|name| self.zip_file_to_key_str(name))
-            .map(std::string::ToString::to_string)
-            .collect();
-        for name in file_names {
+            .filter_map(|name| self.zip_file_strip_prefix(name))
+        {
             if name.starts_with(prefix.as_str()) {
-                let mut zip_name = self.zip_path.clone();
-                zip_name.push(&name);
-                if let Ok(file) = zip_archive.by_name(&zip_name.to_string_lossy()) {
-                    if file.is_file() {
-                        let name = name.strip_suffix('/').unwrap_or(&name);
-                        if let Ok(store_key) = StoreKey::try_from(name) {
-                            keys.push(store_key);
+                if name.ends_with('/') {
+                    if let Ok(store_prefix) = StorePrefix::try_from(name) {
+                        if let Some(parent) = store_prefix.parent() {
+                            if &parent == prefix {
+                                prefixes.push(store_prefix);
+                            }
                         }
-                    } else if file.is_dir() {
-                        if let Ok(store_prefix) = StorePrefix::try_from(name.as_str()) {
-                            prefixes.push(store_prefix);
+                    }
+                } else if let Ok(store_key) = StoreKey::try_from(name) {
+                    if let Some(parent) = store_key.parent() {
+                        if &parent == prefix {
+                            keys.push(store_key);
                         }
                     }
                 }
@@ -271,6 +270,7 @@ mod tests {
         store.set(&"a/f/g".try_into()?, &[])?;
         store.set(&"a/f/h".try_into()?, &[])?;
         store.set(&"b/c/d".try_into()?, &[])?;
+        store.set(&"c".try_into()?, &[])?;
 
         let walkdir = WalkDir::new(tmp_path);
 
@@ -305,7 +305,8 @@ mod tests {
                 "a/d/e".try_into()?,
                 "a/f/g".try_into()?,
                 "a/f/h".try_into()?,
-                "b/c/d".try_into()?
+                "b/c/d".try_into()?,
+                "c".try_into()?,
             ]
         );
         assert_eq!(
@@ -330,32 +331,14 @@ mod tests {
                 "a/d/e".try_into()?,
                 "a/f/g".try_into()?,
                 "a/f/h".try_into()?,
-                "b/c/d".try_into()?
+                "b/c/d".try_into()?,
+                "c".try_into()?,
             ]
         );
 
-        let list = store.list_dir(&"".try_into()?)?;
-        assert_eq!(
-            list.keys(),
-            &[
-                "a/b".try_into()?,
-                "a/c".try_into()?,
-                "a/d/e".try_into()?,
-                "a/f/g".try_into()?,
-                "a/f/h".try_into()?,
-                "b/c/d".try_into()?
-            ]
-        );
-        assert_eq!(
-            list.prefixes(),
-            &[
-                "a/".try_into()?,
-                "a/d/".try_into()?,
-                "a/f/".try_into()?,
-                "b/".try_into()?,
-                "b/c/".try_into()?
-            ]
-        );
+        let list = store.list_dir(&"a/".try_into()?)?;
+        assert_eq!(list.keys(), &["a/b".try_into()?, "a/c".try_into()?]);
+        assert_eq!(list.prefixes(), &["a/d/".try_into()?, "a/f/".try_into()?,]);
 
         assert!(crate::storage::node_exists(&store, &"/a/b".try_into()?)?);
         assert!(crate::storage::node_exists_listable(
@@ -405,16 +388,7 @@ mod tests {
         );
 
         let list = store.list_dir(&"".try_into()?)?;
-        assert_eq!(
-            list.keys(),
-            &[
-                "b".try_into()?,
-                "c".try_into()?,
-                "d/e".try_into()?,
-                "f/g".try_into()?,
-                "f/h".try_into()?,
-            ]
-        );
+        assert_eq!(list.keys(), &["b".try_into()?, "c".try_into()?]);
         assert_eq!(list.prefixes(), &["d/".try_into()?, "f/".try_into()?,]);
 
         assert!(crate::storage::node_exists(&store, &"/b".try_into()?)?);
