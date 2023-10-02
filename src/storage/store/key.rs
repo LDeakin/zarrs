@@ -71,12 +71,15 @@ impl StoreKey {
     /// Returns the parent of this key, or [`None`] this key is the root key and it has no parent.
     #[must_use]
     pub fn parent(&self) -> Option<StorePrefix> {
-        let key_split: Vec<_> = self.as_str().split('/').collect();
-        if key_split.len() > 1 {
-            let parent = key_split[0..key_split.len() - 1].join("/").to_string() + "/";
-            Some(unsafe { StorePrefix::new_unchecked(&parent) })
-        } else {
+        if self.0.is_empty() {
             None
+        } else {
+            let key_split: Vec<_> = self.as_str().split('/').collect();
+            let mut parent = key_split[..key_split.len() - 1].join("/").to_string();
+            if !parent.is_empty() {
+                parent.push('/');
+            }
+            Some(unsafe { StorePrefix::new_unchecked(&parent) })
         }
     }
 }
