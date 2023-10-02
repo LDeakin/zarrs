@@ -252,6 +252,12 @@ pub enum StorageError {
     Other(String),
 }
 
+impl From<&str> for StorageError {
+    fn from(err: &str) -> Self {
+        Self::Other(err.to_string())
+    }
+}
+
 /// Return the metadata key given a node path.
 #[must_use]
 pub fn meta_key(path: &NodePath) -> StoreKey {

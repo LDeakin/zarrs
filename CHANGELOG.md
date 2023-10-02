@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Read only `ZipStorageAdapter` behind `zip` feature
+ - Readable and listable `ZipStorageAdapter` behind `zip` feature
+ - Readable `HTTPStore` behind `http` feature
  - Add `StorageValueIO`, a [`std::io::Read`] interface to a storage value.
 
 ### Changed

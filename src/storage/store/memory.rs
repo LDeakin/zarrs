@@ -39,11 +39,7 @@ impl Default for MemoryStore {
     }
 }
 
-impl StoreExtension for MemoryStore {
-    fn uri_scheme(&self) -> Option<&'static str> {
-        None
-    }
-}
+impl StoreExtension for MemoryStore {}
 
 impl ReadableStoreExtension for MemoryStore {}
 

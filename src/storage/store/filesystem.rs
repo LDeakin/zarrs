@@ -68,11 +68,7 @@ impl ListableStoreExtension for FilesystemStore {}
 
 impl ReadableWritableStoreExtension for FilesystemStore {}
 
-impl StoreExtension for FilesystemStore {
-    fn uri_scheme(&self) -> Option<&'static str> {
-        Some("file")
-    }
-}
+impl StoreExtension for FilesystemStore {}
 
 impl FilesystemStore {
     /// Create a new file system store at a given `base_path`.

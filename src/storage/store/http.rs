@@ -131,30 +131,31 @@ pub enum HTTPStoreCreateError {
 mod tests {
     use crate::{
         array::{Array, DataType},
+        array_subset::ArraySubset,
         node::NodePath,
         storage::meta_key,
     };
 
     use super::*;
 
-    const HTTP_TEST_PATH: &'static str =
+    const HTTP_TEST_PATH_REF: &'static str =
         "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/hierarchy.zarr";
-    const ARRAY_PATH: &'static str = "/a/baz";
+    const ARRAY_PATH_REF: &'static str = "/a/baz";
 
     #[test]
     fn http_store_size() {
-        let store = HTTPStore::new(HTTP_TEST_PATH).unwrap();
+        let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let len = store
-            .size_key(&meta_key(&NodePath::new(ARRAY_PATH).unwrap()))
+            .size_key(&meta_key(&NodePath::new(ARRAY_PATH_REF).unwrap()))
             .unwrap();
         assert_eq!(len, 691);
     }
 
     #[test]
     fn http_store_get() {
-        let store = HTTPStore::new(HTTP_TEST_PATH).unwrap();
+        let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let metadata = store
-            .get(&meta_key(&NodePath::new(ARRAY_PATH).unwrap()))
+            .get(&meta_key(&NodePath::new(ARRAY_PATH_REF).unwrap()))
             .unwrap();
         let metadata: crate::array::ArrayMetadataV3 = serde_json::from_slice(&metadata).unwrap();
         assert_eq!(metadata.data_type.name(), "float64");
@@ -162,8 +163,52 @@ mod tests {
 
     #[test]
     fn http_store_array() {
+        let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
+        let array = Array::new(store.into(), ARRAY_PATH_REF).unwrap();
+        assert_eq!(array.data_type(), &DataType::Float64);
+    }
+
+    #[cfg(feature = "gzip")]
+    #[test]
+    fn http_store_array_get() {
+        const HTTP_TEST_PATH: &'static str =
+            "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/array_write_read.zarr";
+        const ARRAY_PATH: &'static str = "/group/array";
+
         let store = HTTPStore::new(HTTP_TEST_PATH).unwrap();
         let array = Array::new(store.into(), ARRAY_PATH).unwrap();
-        assert_eq!(array.data_type(), &DataType::Float64);
+        assert_eq!(array.data_type(), &DataType::Float32);
+
+        // Read the central 2x2 subset of the array
+        let subset_2x2 = ArraySubset::new_with_start_shape(vec![3, 3], vec![2, 2]).unwrap(); // the center 2x2 region
+        let data_2x2 = array
+            .retrieve_array_subset_elements::<f32>(&subset_2x2)
+            .unwrap();
+        assert_eq!(data_2x2, &[0.1, 0.2, 0.4, 0.5]);
+
+        // let data = array.retrieve_array_subset_ndarray::<f32>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
+        // println!("{data:?}");
+    }
+
+    #[cfg(all(feature = "sharding", feature = "gzip", feature = "crc32c"))]
+    #[test]
+    fn http_store_sharded_array_get() {
+        const HTTP_TEST_PATH_SHARDED: &'static str =
+            "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/sharded_array_write_read.zarr";
+        const ARRAY_PATH_SHARDED: &'static str = "/group/array";
+
+        let store = HTTPStore::new(HTTP_TEST_PATH_SHARDED).unwrap();
+        let array = Array::new(store.into(), ARRAY_PATH_SHARDED).unwrap();
+        assert_eq!(array.data_type(), &DataType::UInt16);
+
+        // Read the central 2x2 subset of the array
+        let subset_2x2 = ArraySubset::new_with_start_shape(vec![3, 3], vec![2, 2]).unwrap(); // the center 2x2 region
+        let data_2x2 = array
+            .retrieve_array_subset_elements::<u16>(&subset_2x2)
+            .unwrap();
+        assert_eq!(data_2x2, &[27, 28, 35, 36]);
+
+        // let data = array.retrieve_array_subset_ndarray::<u16>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
+        // println!("{data:?}");
     }
 }
