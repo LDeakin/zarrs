@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
  - Fix store prefix to node path conversion and vice versa
  - Fix `StorePrefix::parent()` so it outputs a valid `StorePrefix`
+ - Print root node with `Node::hierarchy_tree`
 
 ## [0.3.0] - 2023-09-27
 

@@ -10,10 +10,11 @@ fn hierarchy_tree() {
     println!("{:?}", tree);
     assert_eq!(
         tree,
-        "a
-  baz [10000, 1000] float64
-  foo [10000, 1000] float64
-b
+        "/
+  a
+    baz [10000, 1000] float64
+    foo [10000, 1000] float64
+  b
 "
     );
 }
