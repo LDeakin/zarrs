@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Array subset shape no longer needs to be evenly divisible by chunk shape when creating a chunk iterator, removes `ChunksIteratorError`
  - Add array subset iterator tests
  - **Breaking**: Remove unvalidated `from(String)` for store key/prefix
- - Validate that store prefixes do not start with `/`
+ - Validate that store prefixes and keys do not start with `/`
  - **Breaking**: Add `StorageError::Other` variant
  - `FilesystemStore` now accepts a file and does not create directory on creation
  - **Breaking**: `ReadableStorageTraits::size()` to `u64` from `usize`

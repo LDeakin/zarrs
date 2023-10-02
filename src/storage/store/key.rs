@@ -47,11 +47,12 @@ impl StoreKey {
         &self.0
     }
 
-    /// Validates a key according to the following rules from the specification:
-    /// - a key is a Unicode string, where the final character is not a / character.
+    /// Validates a key according to the following rule from the specification:
+    /// - a key is a Unicode string, where the final character is not a `/` character.
+    /// Additionally, a key which starts with '/' is invalid even though this is not explicit in the specification.
     #[must_use]
     pub fn validate(key: &str) -> bool {
-        !key.ends_with('/')
+        !key.starts_with("/") && !key.ends_with('/')
     }
 
     /// Returns true if the key has prefix `prefix`.
