@@ -16,7 +16,7 @@ pub mod storage_transformer;
 mod storage_value_io;
 pub mod store;
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use thiserror::Error;
 
@@ -248,13 +248,12 @@ pub enum StorageError {
 /// Return the metadata key given a node path.
 #[must_use]
 pub fn meta_key(path: &NodePath) -> StoreKey {
-    let path = path.as_str().to_owned();
-    unsafe {
-        if path.eq("/") {
-            StoreKey::new_unchecked(path + "zarr.json")
-        } else {
-            StoreKey::new_unchecked(path + "/zarr.json")
-        }
+    let path = path.as_str();
+    if path.eq("/") {
+        unsafe { StoreKey::new_unchecked("zarr.json".to_string()) }
+    } else {
+        let path = path.strip_prefix('/').unwrap_or(path);
+        unsafe { StoreKey::new_unchecked(path.to_string() + "/zarr.json") }
     }
 }
 
@@ -265,9 +264,11 @@ pub fn data_key(
     chunk_grid_indices: &[usize],
     chunk_key_encoding: &ChunkKeyEncoding,
 ) -> StoreKey {
-    let path = path.as_str().to_owned();
-    let key = path + "/" + chunk_key_encoding.encode(chunk_grid_indices).as_str();
-    unsafe { StoreKey::new_unchecked(key) }
+    let path = path.as_str();
+    let path = path.strip_prefix('/').unwrap_or(path);
+    let mut key_path = PathBuf::from(path);
+    key_path.push(chunk_key_encoding.encode(chunk_grid_indices).as_str());
+    unsafe { StoreKey::new_unchecked(key_path.to_string_lossy().to_string()) }
 }
 
 /// Get the child nodes.
