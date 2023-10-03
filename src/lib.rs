@@ -16,7 +16,7 @@
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/draft/ZEP0001.html)
 //! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/draft/ZEP0002.html) ([under review](https://github.com/zarr-developers/zarr-specs/issues/254))
 //! - [x] [ZEP0003 - Variable chunking](https://zarr.dev/zeps/draft/ZEP0003.html) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
-//! - [x] Stores: [`filesystem`](crate::storage::store::FilesystemStore), [`memory`](crate::storage::store::MemoryStore), [`zip`](crate::storage::storage_adapter::ZipStorageAdapter)
+//! - [x] Stores: [`filesystem`](crate::storage::store::FilesystemStore), [`memory`](crate::storage::store::MemoryStore), [`http`](crate::storage::store::HTTPStore), [`zip`](crate::storage::storage_adapter::ZipStorageAdapter)
 //! - [x] Data types: [core data types](crate::array::data_type::DataType), [`raw bits`](crate::array::data_type::RawBitsDataType), [`float16`](crate::array::data_type::Float16DataType), [`bfloat16`](crate::array::data_type::Bfloat16DataType) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130)
 //! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid), [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
@@ -24,17 +24,13 @@
 //! - [x] Storage transformers: [`usage_log`](crate::storage::storage_transformer::UsageLogStorageTransformer), [`performance_metrics`](crate::storage::storage_transformer::PerformanceMetricsStorageTransformer)
 //!
 //! ## Examples
-//! - `array_read_write` demonstrates creating an array, writing its metadata, writing chunks in parallel, reading the whole array, reading a chunk, and partially reading a subset.
-//! > `cargo run --example array_write_read`
+//! Examples can be run with `cargo run --example EXAMPLE_NAME`
 //!
-//! - `sharded_array_write_read` is similar to `array_read_write`, but with a sharded array.
-//! > `cargo run --example sharded_array_write_read`
-//!
-//! - `rectangular_array_write_read` is similar to `array_read_write`, but with a rectangular chunk grid.
-//! > `cargo run --example rectangular_array_write_read`
-//!
-//! - `zip_array_write_read` demonstrates writing an array to a filesystem, zip it, then read it directly.
-//! > `cargo run --example zip_array_write_read`
+//! - `array_read_write`: create an array, write its metadata, write chunks in parallel, read the whole array, read a chunk, and partially read a subset.
+//! - `sharded_array_write_read`: write and read a sharded array.
+//! - `rectangular_array_write_read`: write and read an array with a rectangular chunk grid.
+//! - `zip_array_write_read`: write an array to a filesystem, zip it, then read it from the zipped file.
+//! - `http_array_read`: read an array over HTTP.
 //!
 //! ## Licence
 //! zarrs is licensed under either of
