@@ -16,6 +16,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Create a store
     // let path = tempfile::TempDir::new()?;
     // let store = Arc::new(store::FilesystemStore::new(path.path())?);
+    // let store = Arc::new(store::FilesystemStore::new("tests/data/sharded_array_write_read.zarr")?);
     let store = Arc::new(store::MemoryStore::default());
 
     // Create a group and write metadata to filesystem

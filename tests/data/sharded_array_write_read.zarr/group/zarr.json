@@ -1,0 +1,7 @@
+{
+  "node_type": "group",
+  "zarr_format": 3,
+  "attributes": {
+    "foo": "bar"
+  }
+}

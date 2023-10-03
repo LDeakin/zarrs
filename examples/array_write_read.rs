@@ -1,6 +1,7 @@
 #[cfg(feature = "ndarray")]
 fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+    use std::sync::Arc;
     use zarrs::{
         array::{chunk_grid::ChunkGridTraits, DataType},
         array::{codec, FillValue},
@@ -12,7 +13,8 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Create a store
     // let path = tempfile::TempDir::new()?;
     // let store = Arc::new(store::FilesystemStore::new(path.path())?);
-    let store = std::sync::Arc::new(store::MemoryStore::default());
+    // let store = Arc::new(store::FilesystemStore::new("tests/data/array_write_read.zarr")?);
+    let store = Arc::new(store::MemoryStore::default());
 
     // Create a group and write metadata to filesystem
     let group_path = "/group";
