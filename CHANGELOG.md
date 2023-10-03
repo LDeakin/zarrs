@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2023-10-04
+
 ### Added
  - Readable and listable `ZipStorageAdapter` behind `zip` feature
  - Readable `HTTPStore` behind `http` feature
- - Add `StorageValueIO`, a [`std::io::Read`] interface to a storage value.
+ - Add `StorageValueIO`, a `std::io::Read` interface to a storage value.
+ - Add `zip_array_write_read` and `http_array_read` examples
 
 ### Changed
  - Relax some dependency minimum versions
@@ -63,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.3.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.2.0
