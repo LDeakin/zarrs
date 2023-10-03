@@ -236,8 +236,8 @@ impl ReadableStorageTraits for FilesystemStore {
         out
     }
 
-    fn size(&self) -> u64 {
-        WalkDir::new(&self.base_path)
+    fn size(&self) -> Result<u64, StorageError> {
+        Ok(WalkDir::new(&self.base_path)
             .into_iter()
             .filter_map(std::result::Result::ok)
             .filter_map(|v| {
@@ -247,7 +247,7 @@ impl ReadableStorageTraits for FilesystemStore {
                     None
                 }
             })
-            .sum()
+            .sum())
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {

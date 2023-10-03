@@ -113,8 +113,8 @@ impl<TStorage: ReadableStorageTraits> ReadableStorageTraits for ZipStorageAdapte
         out
     }
 
-    fn size(&self) -> u64 {
-        self.size
+    fn size(&self) -> Result<u64, StorageError> {
+        Ok(self.size)
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {

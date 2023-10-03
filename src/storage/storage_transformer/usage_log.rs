@@ -114,7 +114,7 @@ impl<TStorage: ReadableStorageTraits + ?Sized> ReadableStorageTraits
         self.storage.get_partial_values(key_ranges)
     }
 
-    fn size(&self) -> u64 {
+    fn size(&self) -> Result<u64, StorageError> {
         self.storage.size()
     }
 

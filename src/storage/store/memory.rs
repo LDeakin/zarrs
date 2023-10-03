@@ -102,13 +102,13 @@ impl ReadableStorageTraits for MemoryStore {
         out
     }
 
-    fn size(&self) -> u64 {
+    fn size(&self) -> Result<u64, StorageError> {
         let mut out: u64 = 0;
         let data_map = self.data_map.read();
         for values in data_map.values() {
             out += values.read().len() as u64;
         }
-        out
+        Ok(out)
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {

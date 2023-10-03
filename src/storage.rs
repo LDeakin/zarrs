@@ -69,7 +69,11 @@ pub trait ReadableStorageTraits: Send + Sync {
     ) -> Vec<Result<Vec<u8>, StorageError>>;
 
     /// Return the size in bytes of the readable storage.
-    fn size(&self) -> u64;
+    ///
+    /// # Errors
+    ///
+    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
+    fn size(&self) -> Result<u64, StorageError>;
 
     /// Return the size in bytes of the value at `key` if it exists.
     ///
