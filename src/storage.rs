@@ -240,6 +240,9 @@ pub enum StorageError {
     /// An invalid byte range.
     #[error("invalid byte range {0}")]
     InvalidByteRangeError(#[from] InvalidByteRangeError),
+    /// The requested method is not supported.
+    #[error("{0}")]
+    Unsupported(String),
     /// Any other error.
     #[error("{0}")]
     Other(String),

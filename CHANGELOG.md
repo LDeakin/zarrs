@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add array subset iterator tests
  - **Breaking**: Remove unvalidated `from(String)` for store key/prefix
  - Validate that store prefixes and keys do not start with `/`
- - **Breaking**: Add `StorageError::Other` variant
+ - **Breaking**: Add `StorageError::Other` and `StorageError::Unsupported` variants
  - **Breaking** `FilesystemStore` now accepts a file and does not create directory on creation
    - adds `FilesystemStoreCreateError:InvalidBasePath` and removes `FilesystemStoreCreateError:InvalidBaseDirectory/ExistingFile`
  - **Breaking**: `ReadableStorageTraits::size()` to `u64` from `usize`
