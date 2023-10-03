@@ -47,7 +47,7 @@ pub trait ChunkKeyEncodingTraits: dyn_clone::DynClone + core::fmt::Debug + Send 
     fn create_metadata(&self) -> Metadata;
 
     /// Encode chunk grid indices (grid cell coordinates) into a store key.
-    fn encode(&self, chunk_grid_indices: &[usize]) -> StoreKey;
+    fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey;
 }
 
 dyn_clone::clone_trait_object!(ChunkKeyEncodingTraits);

@@ -57,7 +57,7 @@ impl RegularChunkGrid {
 
     /// Return the chunk shape.
     #[must_use]
-    pub fn chunk_shape(&self) -> &[usize] {
+    pub fn chunk_shape(&self) -> &[u64] {
         &self.chunk_shape
     }
 }
@@ -75,26 +75,26 @@ impl ChunkGridTraits for RegularChunkGrid {
     }
 
     /// The chunk shape. Fixed for a regular grid.
-    unsafe fn chunk_shape_unchecked(&self, chunk_indices: &[usize]) -> ArrayShape {
+    unsafe fn chunk_shape_unchecked(&self, chunk_indices: &[u64]) -> ArrayShape {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         self.chunk_shape.clone()
     }
 
-    unsafe fn chunk_origin_unchecked(&self, chunk_indices: &[usize]) -> ArrayIndices {
+    unsafe fn chunk_origin_unchecked(&self, chunk_indices: &[u64]) -> ArrayIndices {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         std::iter::zip(chunk_indices, &self.chunk_shape)
             .map(|(i, s)| i * s)
             .collect()
     }
 
-    unsafe fn chunk_indices_unchecked(&self, array_indices: &[usize]) -> ArrayIndices {
+    unsafe fn chunk_indices_unchecked(&self, array_indices: &[u64]) -> ArrayIndices {
         debug_assert_eq!(self.dimensionality(), array_indices.len());
         std::iter::zip(array_indices, &self.chunk_shape)
             .map(|(i, s)| i / s)
             .collect()
     }
 
-    fn grid_shape(&self, array_shape: &[usize]) -> Result<ArrayShape, ChunkGridShapeError> {
+    fn grid_shape(&self, array_shape: &[u64]) -> Result<ArrayShape, ChunkGridShapeError> {
         if array_shape.len() == self.dimensionality() {
             Ok(std::iter::zip(array_shape, &self.chunk_shape)
                 .map(|(a, s)| if *s == 0 { 0 } else { (a + s - 1) / s })
@@ -107,7 +107,7 @@ impl ChunkGridTraits for RegularChunkGrid {
         }
     }
 
-    unsafe fn element_indices_unchecked(&self, array_indices: &[usize]) -> ArrayIndices {
+    unsafe fn element_indices_unchecked(&self, array_indices: &[u64]) -> ArrayIndices {
         debug_assert_eq!(self.dimensionality(), array_indices.len());
         std::iter::zip(array_indices, &self.chunk_shape)
             .map(|(i, s)| i % s)

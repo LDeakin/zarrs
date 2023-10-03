@@ -73,9 +73,14 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
             let chunk_grid = array.chunk_grid();
             let chunk_indices = vec![s, 0];
             let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
-            let chunk_array = ndarray::ArrayD::<u16>::from_shape_fn(chunk_shape.clone(), |ij| {
-                (s * chunk_shape[0] * chunk_shape[1] + ij[0] * chunk_shape[1] + ij[1]) as u16
-            });
+            let chunk_array = ndarray::ArrayD::<u16>::from_shape_fn(
+                chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
+                |ij| {
+                    (s * chunk_shape[0] * chunk_shape[1]
+                        + ij[0] as u64 * chunk_shape[1]
+                        + ij[1] as u64) as u16
+                },
+            );
             array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
         })
         .collect::<Vec<_>>();

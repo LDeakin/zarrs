@@ -7,19 +7,19 @@ use super::ArraySubset;
 /// Iterates over element indices in an array subset.
 pub struct IndicesIterator {
     subset: ArraySubset,
-    next: Option<Vec<usize>>,
+    next: Option<ArrayIndices>,
 }
 
 impl IndicesIterator {
     /// Create a new indices iterator.
     #[must_use]
-    pub fn new(subset: ArraySubset, next: Option<Vec<usize>>) -> Self {
+    pub fn new(subset: ArraySubset, next: Option<ArrayIndices>) -> Self {
         Self { subset, next }
     }
 }
 
 impl Iterator for IndicesIterator {
-    type Item = Vec<usize>;
+    type Item = ArrayIndices;
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.next.clone();
@@ -49,7 +49,7 @@ impl Iterator for IndicesIterator {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let num_elements = self.subset.num_elements();
+        let num_elements = self.subset.num_elements_usize();
         (num_elements, Some(num_elements))
     }
 }
@@ -57,19 +57,19 @@ impl Iterator for IndicesIterator {
 /// Iterates over linearised element indices of an array subset in an array.
 pub struct LinearisedIndicesIterator<'a> {
     inner: IndicesIterator,
-    array_shape: &'a [usize],
+    array_shape: &'a [u64],
 }
 
 impl<'a> LinearisedIndicesIterator<'a> {
     /// Create a new linearised indices iterator.
     #[must_use]
-    pub fn new(inner: IndicesIterator, array_shape: &'a [usize]) -> Self {
+    pub fn new(inner: IndicesIterator, array_shape: &'a [u64]) -> Self {
         Self { inner, array_shape }
     }
 }
 
 impl Iterator for LinearisedIndicesIterator<'_> {
-    type Item = usize;
+    type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
         let indices = self.inner.next();
@@ -89,8 +89,8 @@ impl Iterator for LinearisedIndicesIterator<'_> {
 /// The iterator item is a tuple: (indices, # contigous elements).
 pub struct ContiguousIndicesIterator<'a> {
     subset: &'a ArraySubset,
-    array_shape: &'a [usize],
-    next: Option<Vec<usize>>,
+    array_shape: &'a [u64],
+    next: Option<ArrayIndices>,
 }
 
 impl<'a> ContiguousIndicesIterator<'a> {
@@ -98,8 +98,8 @@ impl<'a> ContiguousIndicesIterator<'a> {
     #[must_use]
     pub fn new(
         subset: &'a ArraySubset,
-        array_shape: &'a [usize],
-        next: Option<Vec<usize>>,
+        array_shape: &'a [u64],
+        next: Option<ArrayIndices>,
     ) -> Self {
         Self {
             subset,
@@ -110,11 +110,11 @@ impl<'a> ContiguousIndicesIterator<'a> {
 }
 
 impl Iterator for ContiguousIndicesIterator<'_> {
-    type Item = (Vec<usize>, usize);
+    type Item = (ArrayIndices, u64);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let current: Option<Vec<usize>> = self.next.clone();
-        let mut contiguous_elements: usize = 1;
+        let current: Option<ArrayIndices> = self.next.clone();
+        let mut contiguous_elements: u64 = 1;
         let mut last_dim_span = true;
         if let Some(next) = self.next.as_mut() {
             let mut carry = true;
@@ -166,7 +166,7 @@ impl<'a> ContiguousLinearisedIndicesIterator<'a> {
 }
 
 impl Iterator for ContiguousLinearisedIndicesIterator<'_> {
-    type Item = (usize, usize);
+    type Item = (u64, u64);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
@@ -181,7 +181,7 @@ impl Iterator for ContiguousLinearisedIndicesIterator<'_> {
 /// The iterator item is a ([`ArrayIndices`], [`ArraySubset`]) tuple corresponding to the chunk indices and array subset.
 pub struct ChunksIterator<'a> {
     inner: IndicesIterator,
-    chunk_shape: &'a [usize],
+    chunk_shape: &'a [u64],
 }
 
 impl<'a> ChunksIterator<'a> {
@@ -189,13 +189,13 @@ impl<'a> ChunksIterator<'a> {
     #[must_use]
     pub fn new(
         subset: &ArraySubset,
-        chunk_shape: &'a [usize],
-        first_chunk: Option<Vec<usize>>,
+        chunk_shape: &'a [u64],
+        first_chunk: Option<ArrayIndices>,
     ) -> Self {
-        let chunk_start = std::iter::zip(subset.start(), chunk_shape)
+        let chunk_start: ArrayIndices = std::iter::zip(subset.start(), chunk_shape)
             .map(|(s, c)| s / c)
             .collect();
-        let chunk_end_inc: Vec<usize> = std::iter::zip(subset.end_inc(), chunk_shape)
+        let chunk_end_inc: ArrayIndices = std::iter::zip(subset.end_inc(), chunk_shape)
             .map(|(e, c)| e / c)
             .collect();
         let subset_chunks =

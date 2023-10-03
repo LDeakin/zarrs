@@ -60,7 +60,7 @@ impl ArrayRepresentation {
 
     /// Return the shape of the array.
     #[must_use]
-    pub fn shape(&self) -> &[usize] {
+    pub fn shape(&self) -> &[u64] {
         &self.array_shape
     }
 
@@ -80,13 +80,21 @@ impl ArrayRepresentation {
     ///
     /// Equal to the product of its shape.
     #[must_use]
-    pub fn num_elements(&self) -> usize {
+    pub fn num_elements(&self) -> u64 {
         self.array_shape.iter().product()
     }
 
-    /// Return the element size.
+    /// Return the number of elements of the array as a `usize`.
     ///
-    /// Equal to the product of each element of its shape.
+    /// # Panics
+    ///
+    /// Panics if [`num_elements()`](Self::num_elements()) is greater than [`usize::MAX`].
+    #[must_use]
+    pub fn num_elements_usize(&self) -> usize {
+        usize::try_from(self.num_elements()).unwrap()
+    }
+
+    /// Return the element size.
     #[must_use]
     pub fn element_size(&self) -> usize {
         self.fill_value.size()
@@ -96,7 +104,7 @@ impl ArrayRepresentation {
     ///
     /// Equal to the product of each element of its shape and the element size.
     #[must_use]
-    pub fn size(&self) -> usize {
-        self.num_elements() * self.element_size()
+    pub fn size(&self) -> u64 {
+        self.num_elements() * self.element_size() as u64
     }
 }

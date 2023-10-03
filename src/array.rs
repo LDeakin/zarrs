@@ -76,10 +76,10 @@ use self::{
 };
 
 /// An ND index to an element in an array.
-pub type ArrayIndices = Vec<usize>;
+pub type ArrayIndices = Vec<u64>;
 
 /// The shape of an array.
-pub type ArrayShape = Vec<usize>;
+pub type ArrayShape = Vec<u64>;
 
 /// A Zarr array.
 ///
@@ -94,7 +94,7 @@ pub struct Array<TStorage> {
     /// The path of the array in a store.
     path: NodePath,
     /// An array of integers providing the length of each dimension of the Zarr array.
-    shape: Vec<usize>,
+    shape: ArrayShape,
     /// The data type of the Zarr array.
     data_type: DataType,
     /// The chunk grid of the Zarr array.
@@ -194,7 +194,7 @@ impl<TStorage> Array<TStorage> {
     }
 
     /// Set the shape of the array.
-    pub fn set_shape(&mut self, shape: Vec<usize>) {
+    pub fn set_shape(&mut self, shape: ArrayShape) {
         self.shape = shape;
     }
 
@@ -224,7 +224,7 @@ impl<TStorage> Array<TStorage> {
 
     /// Get the array shape.
     #[must_use]
-    pub fn shape(&self) -> &[usize] {
+    pub fn shape(&self) -> &[u64] {
         &self.shape
     }
 
@@ -308,8 +308,8 @@ impl<TStorage> Array<TStorage> {
     /// Returns [`InvalidChunkGridIndicesError`] if the `chunk_indices` or `array_shape` are incompatible with the chunk grid.
     pub fn chunk_array_representation(
         &self,
-        chunk_indices: &[usize],
-        array_shape: &[usize],
+        chunk_indices: &[u64],
+        array_shape: &[u64],
     ) -> Result<ArrayRepresentation, InvalidChunkGridIndicesError> {
         Ok(unsafe {
             ArrayRepresentation::new_unchecked(
@@ -363,7 +363,11 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - `chunk_indices` are invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
-    pub fn retrieve_chunk(&self, chunk_indices: &[usize]) -> Result<Vec<u8>, ArrayError> {
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
+    pub fn retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
         let storage_transformer = self
             .storage_transformers()
             .create_readable_transformer(self.storage.clone());
@@ -392,7 +396,9 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
                             StorageError::KeyNotFound(_) => {
                                 // Chunk does not exist should return an array of fill values
                                 let fill_value = chunk_representation.fill_value().as_ne_bytes();
-                                Ok(fill_value.repeat(chunk_representation.num_elements()))
+                                Ok(fill_value.repeat(
+                                    chunk_representation.num_elements().try_into().unwrap(),
+                                ))
                             }
                             _ => Err(error.into()),
                         }
@@ -415,7 +421,7 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - an underlying store error.
     pub fn retrieve_chunk_elements<T: TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
     ) -> Result<Vec<T>, ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
             return Err(ArrayError::IncompatibleElementSize(
@@ -442,9 +448,13 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - an array subsets is invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if a chunk dimension is larger than `usize::MAX`.
     pub fn retrieve_chunk_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
             return Err(ArrayError::IncompatibleElementSize(
@@ -456,12 +466,14 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
         let shape = self.chunk_grid().chunk_shape(chunk_indices, self.shape())?;
         let elements = self.retrieve_chunk_elements(chunk_indices)?;
         let length = elements.len();
-        ndarray::ArrayD::<T>::from_shape_vec(shape.clone(), elements).map_err(|_| {
-            ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
-                length * std::mem::size_of::<T>(),
-                shape.iter().product::<usize>() * std::mem::size_of::<T>(),
-            ))
-        })
+        ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(
+            |_| {
+                ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
+                    length * std::mem::size_of::<T>(),
+                    shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
+                ))
+            },
+        )
     }
 
     /// Read and decode the `array_subset` of array into its bytes.
@@ -472,6 +484,10 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - an array subset is invalid or out of bounds of the array,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    ///
+    /// # Panics
+    ///
+    /// Panics if attempting to reference a byte beyond `usize::MAX`.
     pub fn retrieve_array_subset(&self, array_subset: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
         if !validate_array_subset(array_subset, self.shape()) {
             return Err(ArrayError::InvalidArraySubset(
@@ -481,8 +497,8 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
         }
 
         // Allocate the output data
-        let element_size = self.fill_value().size();
-        let size_output = array_subset.num_elements() * element_size;
+        let element_size = self.fill_value().size() as u64;
+        let size_output = usize::try_from(array_subset.num_elements() * element_size).unwrap();
         let mut output: Vec<u8> = vec![0; size_output];
 
         // Find the chunks intersecting this array subset
@@ -508,8 +524,11 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
                 chunk_subset_in_array_subset
                     .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
             } {
-                let output_offset = array_subset_element_index * element_size;
-                let length = num_elements * element_size;
+                let output_offset =
+                    usize::try_from(array_subset_element_index * element_size).unwrap();
+                let length = usize::try_from(num_elements * element_size).unwrap();
+                debug_assert!((output_offset + length) <= output.len());
+                debug_assert!((decoded_offset + length) <= decoded_bytes.len());
                 output[output_offset..output_offset + length]
                     .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
                 decoded_offset += length;
@@ -556,6 +575,10 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - an array subset is invalid or out of bounds of the array,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
     pub fn retrieve_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
@@ -569,10 +592,14 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
 
         let elements = self.retrieve_array_subset_elements(array_subset)?;
         let length = elements.len();
-        ndarray::ArrayD::<T>::from_shape_vec(array_subset.shape(), elements).map_err(|_| {
+        ndarray::ArrayD::<T>::from_shape_vec(
+            iter_u64_to_usize(array_subset.shape().iter()),
+            elements,
+        )
+        .map_err(|_| {
             ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
                 length * self.data_type().size(),
-                array_subset.num_elements() * self.data_type().size(),
+                array_subset.num_elements() * self.data_type().size() as u64,
             ))
         })
     }
@@ -586,9 +613,13 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - the chunk subset is invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
     pub fn retrieve_chunk_subset(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<u8>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices, self.shape())?;
@@ -619,7 +650,7 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
                 CodecError::StorageError(_) => Ok(self
                     .fill_value()
                     .as_ne_bytes()
-                    .repeat(chunk_subset.num_elements())),
+                    .repeat(chunk_subset.num_elements_usize())),
                 _ => Err(error.into()),
             },
         }
@@ -636,7 +667,7 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - an underlying store error.
     pub fn retrieve_chunk_subset_elements<T: TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
@@ -663,19 +694,24 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///  - the chunk subset is invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
     pub fn retrieve_chunk_subset_ndarray<T: TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         let elements = self.retrieve_chunk_subset_elements(chunk_indices, chunk_subset)?;
         let length = elements.len();
-        ndarray::ArrayD::from_shape_vec(chunk_subset.shape().to_vec(), elements).map_err(|_| {
-            ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
-                length * std::mem::size_of::<T>(),
-                chunk_subset.shape().iter().product::<usize>() * std::mem::size_of::<T>(),
-            ))
-        })
+        ndarray::ArrayD::from_shape_vec(iter_u64_to_usize(chunk_subset.shape().iter()), elements)
+            .map_err(|_| {
+                ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
+                    length * std::mem::size_of::<T>(),
+                    chunk_subset.shape().iter().product::<u64>() * std::mem::size_of::<T>() as u64,
+                ))
+            })
     }
 }
 
@@ -703,15 +739,11 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
     ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
-    pub fn store_chunk(
-        &self,
-        chunk_indices: &[usize],
-        chunk_bytes: &[u8],
-    ) -> Result<(), ArrayError> {
+    pub fn store_chunk(&self, chunk_indices: &[u64], chunk_bytes: &[u8]) -> Result<(), ArrayError> {
         // Validation
         let chunk_array_representation =
             self.chunk_array_representation(chunk_indices, self.shape())?;
-        if chunk_bytes.len() != chunk_array_representation.size() {
+        if chunk_bytes.len() as u64 != chunk_array_representation.size() {
             return Err(ArrayError::InvalidBytesInputSize(
                 chunk_bytes.len(),
                 chunk_array_representation.size(),
@@ -758,7 +790,7 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
     ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
     pub fn store_chunk_elements<T: TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
         chunk_elements: &[T],
     ) -> Result<(), ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
@@ -780,7 +812,7 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     pub fn store_chunk_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
         chunk_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
@@ -789,12 +821,10 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
                 std::mem::size_of::<T>(),
             ));
         }
+        let shape = chunk_array.shape().iter().map(|u| *u as u64).collect();
         let chunk_shape = self.chunk_grid().chunk_shape(chunk_indices, self.shape())?;
-        if chunk_array.shape() != chunk_shape {
-            return Err(ArrayError::UnexpectedChunkDecodedShape(
-                chunk_array.shape().to_vec(),
-                chunk_shape,
-            ));
+        if shape != chunk_shape {
+            return Err(ArrayError::UnexpectedChunkDecodedShape(shape, chunk_shape));
         }
 
         let chunk_bytes = chunk_array.as_standard_layout();
@@ -829,8 +859,8 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
                 self.shape().to_vec(),
             ));
         }
-        let expected_size = array_subset.num_elements() * self.data_type().size();
-        if subset_bytes.len() != expected_size {
+        let expected_size = array_subset.num_elements() * self.data_type().size() as u64;
+        if subset_bytes.len() as u64 != expected_size {
             return Err(ArrayError::InvalidBytesInputSize(
                 subset_bytes.len(),
                 expected_size,
@@ -904,7 +934,7 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
     #[allow(clippy::missing_panics_doc)]
     pub fn store_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
-        subset_start: &[usize],
+        subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
         if subset_start.len() != self.chunk_grid().dimensionality() {
@@ -924,7 +954,7 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
         let subset = unsafe {
             ArraySubset::new_with_start_shape_unchecked(
                 subset_start.to_vec(),
-                subset_array.shape().to_vec(),
+                subset_array.shape().iter().map(|u| *u as u64).collect(),
             )
         };
         let array_standard = subset_array.as_standard_layout();
@@ -942,9 +972,13 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
     ///  - `chunk_subset` is invalid or out of bounds of the chunk,
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
+    ///
+    /// # Panics
+    ///
+    /// Panics if attempting to reference a byte beyond `usize::MAX`.
     pub fn store_chunk_subset(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_bytes: &[u8],
     ) -> Result<(), ArrayError> {
@@ -960,8 +994,8 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
             ));
         }
         let expected_length =
-            self.data_type().size() * chunk_subset.shape().iter().product::<usize>();
-        if chunk_subset_bytes.len() != expected_length {
+            chunk_subset.shape().iter().product::<u64>() * self.data_type().size() as u64;
+        if chunk_subset_bytes.len() as u64 != expected_length {
             return Err(ArrayError::InvalidBytesInputSize(
                 chunk_subset_bytes.len(),
                 expected_length,
@@ -972,13 +1006,15 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
         let mut chunk_bytes = self.retrieve_chunk(chunk_indices)?;
 
         // Update the intersecting subset of the chunk
-        let element_size = self.data_type().size();
+        let element_size = self.data_type().size() as u64;
         let mut offset = 0;
         for (chunk_element_index, num_elements) in
             unsafe { chunk_subset.iter_contiguous_linearised_indices_unchecked(&chunk_shape) }
         {
-            let chunk_offset = chunk_element_index * element_size;
-            let length = num_elements * element_size;
+            let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
+            let length = usize::try_from(num_elements * element_size).unwrap();
+            debug_assert!(chunk_offset + length <= chunk_bytes.len());
+            debug_assert!(offset + length <= chunk_subset_bytes.len());
             chunk_bytes[chunk_offset..chunk_offset + length]
                 .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
             offset += length;
@@ -999,7 +1035,7 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
     ///  - a [`store_chunk_subset`](Array::store_chunk_subset) error condition is met.
     pub fn store_chunk_subset_elements<T: TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
+        chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_elements: &[T],
     ) -> Result<(), ArrayError> {
@@ -1025,8 +1061,8 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
     #[allow(clippy::missing_panics_doc)]
     pub fn store_chunk_subset_ndarray<T: TriviallyTransmutable>(
         &self,
-        chunk_indices: &[usize],
-        chunk_subset_start: &[usize],
+        chunk_indices: &[u64],
+        chunk_subset_start: &[u64],
         chunk_subset_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
         if chunk_subset_start.len() != self.chunk_grid().dimensionality() {
@@ -1046,7 +1082,11 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
         let subset = unsafe {
             ArraySubset::new_with_start_shape_unchecked(
                 chunk_subset_start.to_vec(),
-                chunk_subset_array.shape().to_vec(),
+                chunk_subset_array
+                    .shape()
+                    .iter()
+                    .map(|u| *u as u64)
+                    .collect(),
             )
         };
         let array_standard = chunk_subset_array.as_standard_layout();
@@ -1058,7 +1098,7 @@ impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
 /// Unravel a linearised index to ND indices.
 #[doc(hidden)]
 #[must_use]
-pub fn unravel_index(mut index: usize, shape: &[usize]) -> Vec<usize> {
+pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {
     let mut indices = Vec::with_capacity(shape.len());
     for dim in shape.iter().rev() {
         indices.push(index % dim);
@@ -1071,14 +1111,20 @@ pub fn unravel_index(mut index: usize, shape: &[usize]) -> Vec<usize> {
 /// Ravel ND indices to a linearised index.
 #[doc(hidden)]
 #[must_use]
-pub fn ravel_indices(indices: &[usize], shape: &[usize]) -> usize {
-    let mut index: usize = 0;
+pub fn ravel_indices(indices: &[u64], shape: &[u64]) -> u64 {
+    let mut index: u64 = 0;
     let mut count = 1;
     for (i, s) in std::iter::zip(indices, shape).rev() {
         index += i * count;
         count *= s;
     }
     index
+}
+
+#[cfg(feature = "ndarray")]
+fn iter_u64_to_usize<'a, I: Iterator<Item = &'a u64>>(iter: I) -> Vec<usize> {
+    iter.map(|v| usize::try_from(*v).unwrap())
+        .collect::<Vec<_>>()
 }
 
 #[cfg(test)]

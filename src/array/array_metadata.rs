@@ -10,7 +10,7 @@ use crate::{
     metadata::{AdditionalFields, Metadata},
 };
 
-use super::DimensionName;
+use super::{ArrayShape, DimensionName};
 
 /// Zarr array metadata.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
@@ -66,7 +66,7 @@ pub struct ArrayMetadataV3 {
     #[serde(skip_serializing)]
     pub node_type: String, // Ideally this is serialized after zarr format, and tag serialization is skipped
     /// An array of integers providing the length of each dimension of the Zarr array.
-    pub shape: Vec<usize>,
+    pub shape: ArrayShape,
     /// The data type of the Zarr array.
     pub data_type: Metadata,
     /// The chunk grid of the Zarr array.
@@ -118,7 +118,7 @@ impl ArrayMetadataV3 {
     #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn new(
-        shape: Vec<usize>,
+        shape: ArrayShape,
         data_type: Metadata,
         chunk_grid: Metadata,
         chunk_key_encoding: Metadata,

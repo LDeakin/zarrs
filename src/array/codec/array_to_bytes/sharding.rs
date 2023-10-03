@@ -13,20 +13,20 @@ use thiserror::Error;
 
 use crate::array::{
     codec::{ArrayToBytesCodecTraits, CodecError},
-    ArrayRepresentation, BytesRepresentation, DataType, FillValue,
+    ArrayRepresentation, ArrayShape, BytesRepresentation, DataType, FillValue,
 };
 
 #[derive(Debug, Error)]
 #[error("invalid inner chunk shape {chunk_shape:?}, it must evenly divide {shard_shape:?}")]
 struct ChunksPerShardError {
-    chunk_shape: Vec<usize>,
-    shard_shape: Vec<usize>,
+    chunk_shape: Vec<u64>,
+    shard_shape: Vec<u64>,
 }
 
 fn calculate_chunks_per_shard(
-    shard_shape: &[usize],
-    chunk_shape: &[usize],
-) -> Result<Vec<usize>, ChunksPerShardError> {
+    shard_shape: &[u64],
+    chunk_shape: &[u64],
+) -> Result<ArrayShape, ChunksPerShardError> {
     use num::Integer;
 
     std::iter::zip(shard_shape, chunk_shape)
@@ -43,7 +43,7 @@ fn calculate_chunks_per_shard(
         .collect()
 }
 
-fn sharding_index_decoded_representation(chunks_per_shard: &[usize]) -> ArrayRepresentation {
+fn sharding_index_decoded_representation(chunks_per_shard: &[u64]) -> ArrayRepresentation {
     let mut index_shape = Vec::with_capacity(chunks_per_shard.len() + 1);
     index_shape.extend(chunks_per_shard);
     index_shape.push(2);
@@ -53,10 +53,10 @@ fn sharding_index_decoded_representation(chunks_per_shard: &[usize]) -> ArrayRep
 fn compute_index_encoded_size(
     index_codecs: &dyn ArrayToBytesCodecTraits,
     index_array_representation: &ArrayRepresentation,
-) -> Result<usize, CodecError> {
+) -> Result<u64, CodecError> {
     let bytes_representation = index_codecs.compute_encoded_size(index_array_representation);
     match bytes_representation {
-        BytesRepresentation::KnownSize(usize) => Ok(usize),
+        BytesRepresentation::KnownSize(size) => Ok(size),
         BytesRepresentation::VariableSize => Err(CodecError::Other(
             "the array index cannot include a variable size output codec".to_string(),
         )),
@@ -163,7 +163,7 @@ mod tests {
     ]
 }"#;
 
-    fn codec_sharding_round_trip_impl(json: &str, chunk_shape: Vec<usize>) {
+    fn codec_sharding_round_trip_impl(json: &str, chunk_shape: Vec<u64>) {
         let array_representation =
             ArrayRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(0u16)).unwrap();
         let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
@@ -202,7 +202,7 @@ mod tests {
         let bytes = array_representation
             .fill_value()
             .as_ne_bytes()
-            .repeat(array_representation.num_elements());
+            .repeat(array_representation.num_elements() as usize);
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID1).unwrap();

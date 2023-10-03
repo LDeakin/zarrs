@@ -91,7 +91,7 @@ pub enum ArrayError {
     UnexpectedChunkDecodedSize(usize, usize),
     /// An unexpected bytes input size.
     #[error("got bytes with size {_0:?}, expected {_1:?}")]
-    InvalidBytesInputSize(usize, usize),
+    InvalidBytesInputSize(usize, u64),
     /// An unexpected chunk decoded shape.
     #[error("got chunk decoded shape {_0:?}, expected {_1:?}")]
     UnexpectedChunkDecodedShape(ArrayShape, ArrayShape),

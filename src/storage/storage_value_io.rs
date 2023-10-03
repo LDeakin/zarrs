@@ -57,15 +57,9 @@ impl<TStorage: ReadableStorageTraits> Seek for StorageValueIO<TStorage> {
 
 impl<TStorage: ReadableStorageTraits> Read for StorageValueIO<TStorage> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        use std::io::{Error, ErrorKind};
-        let len = buf.len();
-        let key_range = StoreKeyRange::new(
-            self.key.clone(),
-            ByteRange::FromStart(
-                usize::try_from(self.pos).map_err(|_| Error::from(ErrorKind::InvalidInput))?,
-                Some(len),
-            ),
-        );
+        let len = buf.len() as u64;
+        let key_range =
+            StoreKeyRange::new(self.key.clone(), ByteRange::FromStart(self.pos, Some(len)));
         let data = self
             .storage
             .get_partial_values(&[key_range])

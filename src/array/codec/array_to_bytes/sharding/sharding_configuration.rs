@@ -19,7 +19,7 @@ pub enum ShardingCodecConfiguration {
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct ShardingCodecConfigurationV1 {
     /// An array of integers specifying the shape of the inner chunks in a shard along each dimension of the outer array.
-    pub chunk_shape: Vec<usize>,
+    pub chunk_shape: Vec<u64>,
     /// A list of codecs to be used for encoding and decoding inner chunks.
     pub codecs: Vec<Metadata>,
     /// A list of codecs to be used for encoding and decoding shard index.

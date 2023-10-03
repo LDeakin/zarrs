@@ -3,7 +3,7 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
 
 use crate::{
-    byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
+    byte_range::{ByteOffset, ByteRange},
     storage::{
         ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
         StoreKeyRange, StoreKeyStartValue, StoreKeysPrefixes,
@@ -156,11 +156,11 @@ impl FilesystemStore {
         let buffer = {
             // Seek
             match byte_range {
-                ByteRange::FromStart(offset, _) => file.seek(SeekFrom::Start(*offset as u64)),
+                ByteRange::FromStart(offset, _) => file.seek(SeekFrom::Start(*offset)),
                 ByteRange::FromEnd(_, None) => file.seek(SeekFrom::Start(0u64)),
-                ByteRange::FromEnd(offset, Some(length)) => file.seek(SeekFrom::End(
-                    -(i64::try_from(*offset + *length).map_err(|_| InvalidByteRangeError)?),
-                )),
+                ByteRange::FromEnd(offset, Some(length)) => {
+                    file.seek(SeekFrom::End(-(i64::try_from(*offset + *length).unwrap())))
+                }
             }?;
 
             // Read
@@ -171,7 +171,8 @@ impl FilesystemStore {
                     buffer
                 }
                 ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => {
-                    let mut buffer = vec![0; *length];
+                    let length = usize::try_from(*length).unwrap();
+                    let mut buffer = vec![0; length];
                     file.read_exact(&mut buffer)?;
                     buffer
                 }
@@ -211,8 +212,8 @@ impl FilesystemStore {
             })?;
 
         // Write
-        if offset.is_some() {
-            file.seek(SeekFrom::Start(offset.unwrap() as u64))?;
+        if let Some(offset) = offset {
+            file.seek(SeekFrom::Start(offset))?;
         }
         file.write_all(value)?;
 

@@ -13,10 +13,10 @@
 use thiserror::Error;
 
 /// A byte offset.
-pub type ByteOffset = usize;
+pub type ByteOffset = u64;
 
 /// A byte length.
-pub type ByteLength = usize;
+pub type ByteLength = u64;
 
 /// A byte range.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -34,7 +34,7 @@ pub enum ByteRange {
 impl ByteRange {
     /// Return the start of a byte range. `size` is the size of the entire bytes.
     #[must_use]
-    pub fn start(&self, size: usize) -> usize {
+    pub fn start(&self, size: u64) -> u64 {
         match self {
             ByteRange::FromStart(offset, _) => *offset,
             ByteRange::FromEnd(offset, length) => match length {
@@ -46,7 +46,7 @@ impl ByteRange {
 
     /// Return the exclusive end of a byte range. `size` is the size of the entire bytes.
     #[must_use]
-    pub fn end(&self, size: usize) -> usize {
+    pub fn end(&self, size: u64) -> u64 {
         match self {
             ByteRange::FromStart(offset, length) => match length {
                 Some(length) => offset + length,
@@ -58,7 +58,7 @@ impl ByteRange {
 
     /// Return the length of a byte range. `size` is the size of the entire bytes.
     #[must_use]
-    pub fn length(&self, size: usize) -> usize {
+    pub fn length(&self, size: u64) -> u64 {
         match self {
             ByteRange::FromStart(offset, None) | ByteRange::FromEnd(offset, None) => size - offset,
             ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => *length,
@@ -71,7 +71,7 @@ impl ByteRange {
 #[error("invalid byte range")]
 pub struct InvalidByteRangeError;
 
-fn validate_byte_ranges(byte_ranges: &[ByteRange], bytes_len: usize) -> bool {
+fn validate_byte_ranges(byte_ranges: &[ByteRange], bytes_len: u64) -> bool {
     for byte_range in byte_ranges {
         let valid = match byte_range {
             ByteRange::FromStart(offset, length) | ByteRange::FromEnd(offset, length) => {
@@ -94,7 +94,7 @@ pub fn extract_byte_ranges(
     bytes: &[u8],
     byte_ranges: &[ByteRange],
 ) -> Result<Vec<Vec<u8>>, InvalidByteRangeError> {
-    if !validate_byte_ranges(byte_ranges, bytes.len()) {
+    if !validate_byte_ranges(byte_ranges, bytes.len() as u64) {
         return Err(InvalidByteRangeError);
     }
     Ok(unsafe { extract_byte_ranges_unchecked(bytes, byte_ranges) })
@@ -105,6 +105,7 @@ pub fn extract_byte_ranges(
 /// # Safety
 ///
 /// All byte ranges in `byte_ranges` must specify a range within `bytes`.
+///
 #[doc(hidden)]
 #[must_use]
 pub unsafe fn extract_byte_ranges_unchecked(
@@ -113,19 +114,11 @@ pub unsafe fn extract_byte_ranges_unchecked(
 ) -> Vec<Vec<u8>> {
     let mut out = Vec::with_capacity(byte_ranges.len());
     for byte_range in byte_ranges {
-        out.push(
-            match byte_range {
-                ByteRange::FromStart(offset, length) => match length {
-                    Some(length) => &bytes[*offset..offset + length],
-                    None => &bytes[*offset..],
-                },
-                ByteRange::FromEnd(offset, length) => match length {
-                    Some(length) => &bytes[bytes.len() - offset - length..bytes.len() - offset],
-                    None => &bytes[..bytes.len() - offset],
-                },
-            }
-            .to_vec(),
-        );
+        out.push({
+            let start = usize::try_from(byte_range.start(bytes.len() as u64)).unwrap();
+            let end = usize::try_from(byte_range.end(bytes.len() as u64)).unwrap();
+            bytes[start..end].to_vec()
+        });
     }
     out
 }

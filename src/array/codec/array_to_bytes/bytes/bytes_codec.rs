@@ -92,7 +92,7 @@ impl ArrayCodecTraits for BytesCodec {
         mut decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() != decoded_representation.size() {
+        if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
                 decoded_value.len(),
                 decoded_representation.size(),
@@ -142,7 +142,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         decoded_representation: &ArrayRepresentation,
     ) -> BytesRepresentation {
         BytesRepresentation::KnownSize(
-            decoded_representation.element_size() * decoded_representation.num_elements(),
+            decoded_representation.num_elements() * decoded_representation.element_size() as u64,
         )
     }
 }

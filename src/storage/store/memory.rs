@@ -54,7 +54,9 @@ impl MemoryStore {
         let data_map = self.data_map.read();
         if let Some(data) = data_map.get(key) {
             let data = data.read();
-            Ok(data[byte_range.start(data.len())..byte_range.end(data.len())].to_vec())
+            let start = usize::try_from(byte_range.start(data.len() as u64)).unwrap();
+            let end = usize::try_from(byte_range.end(data.len() as u64)).unwrap();
+            Ok(data[start..end].to_vec())
         } else {
             Err(StorageError::KeyNotFound(key.clone()))
         }
@@ -77,10 +79,11 @@ impl MemoryStore {
             // fast path
             *data = value.to_vec();
         } else {
-            let length: usize = offset + value.len();
+            let length = usize::try_from(offset + value.len() as u64).unwrap();
             if data.len() < length {
                 data.resize(length, 0);
             }
+            let offset = usize::try_from(offset).unwrap();
             data[offset..offset + value.len()].copy_from_slice(value);
         }
     }

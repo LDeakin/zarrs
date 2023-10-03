@@ -96,7 +96,7 @@ impl ChunkKeyEncodingTraits for V2ChunkKeyEncoding {
         Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
     }
 
-    fn encode(&self, chunk_grid_indices: &[usize]) -> StoreKey {
+    fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey {
         let key = chunk_grid_indices
             .iter()
             .map(std::string::ToString::to_string)

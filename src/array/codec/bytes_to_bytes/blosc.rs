@@ -211,7 +211,7 @@ mod tests {
     fn codec_blosc_round_trip1() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
-        let bytes_representation = BytesRepresentation::KnownSize(bytes.len());
+        let bytes_representation = BytesRepresentation::KnownSize(bytes.len() as u64);
 
         let codec_configuration: BloscCodecConfiguration =
             serde_json::from_str(JSON_VALID1).unwrap();
@@ -228,7 +228,7 @@ mod tests {
     fn codec_blosc_round_trip2() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
-        let bytes_representation = BytesRepresentation::KnownSize(bytes.len());
+        let bytes_representation = BytesRepresentation::KnownSize(bytes.len() as u64);
 
         let codec_configuration: BloscCodecConfiguration =
             serde_json::from_str(JSON_VALID2).unwrap();

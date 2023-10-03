@@ -46,7 +46,8 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
             // Decode
             let decoded = self.input_handle.partial_decode(
                 &BytesRepresentation::KnownSize(
-                    decoded_representation.element_size() * decoded_representation.num_elements(),
+                    decoded_representation.num_elements()
+                        * decoded_representation.element_size() as u64,
                 ),
                 &byte_ranges,
             )?;

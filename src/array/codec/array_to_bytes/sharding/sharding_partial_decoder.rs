@@ -124,33 +124,31 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
 
-        let element_size = decoded_representation.element_size();
+        let element_size = decoded_representation.element_size() as u64;
         let fill_value = chunk_representation.fill_value().as_ne_bytes();
 
         let mut out = Vec::with_capacity(decoded_regions.len());
         for array_subset in decoded_regions {
-            let array_subset_size = array_subset.num_elements() * element_size;
+            let array_subset_size =
+                usize::try_from(array_subset.num_elements() * element_size).unwrap();
             let mut out_array_subset = vec![0; array_subset_size];
 
             // Decode those chunks if required and put in chunk cache
             for (chunk_indices, chunk_subset) in
                 unsafe { array_subset.iter_chunks_unchecked(chunk_representation.shape()) }
             {
-                let shard_index_index: usize = ravel_indices(&chunk_indices, &chunks_per_shard) * 2;
+                let shard_index_index: usize =
+                    usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2).unwrap();
                 let offset = shard_index[shard_index_index];
                 let size = shard_index[shard_index_index + 1];
 
                 let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
                     // The chunk is just the fill value
-                    fill_value.repeat(chunk_subset.num_elements())
+                    fill_value.repeat(chunk_subset.num_elements_usize())
                 } else {
                     // The chunk must be decoded
                     let partial_decoder = self.inner_codecs.partial_decoder(Box::new(
-                        ByteIntervalPartialDecoder::new(
-                            &*self.input_handle,
-                            offset.try_into().unwrap(),
-                            size.try_into().unwrap(),
-                        ),
+                        ByteIntervalPartialDecoder::new(&*self.input_handle, offset, size),
                     ));
                     let array_subset_in_chunk_subset =
                         unsafe { array_subset.in_subset_unchecked(&chunk_subset) };
@@ -170,8 +168,9 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                     chunk_subset_in_array_subset
                         .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
                 } {
-                    let output_offset = array_subset_element_index * element_size;
-                    let length = num_elements * element_size;
+                    let output_offset =
+                        usize::try_from(array_subset_element_index * element_size).unwrap();
+                    let length = usize::try_from(num_elements * element_size).unwrap();
                     out_array_subset[output_offset..output_offset + length]
                         .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
                     decoded_offset += length;
@@ -213,12 +212,13 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
 
-        let element_size = decoded_representation.element_size();
+        let element_size = decoded_representation.element_size() as u64;
         let fill_value = chunk_representation.fill_value().as_ne_bytes();
 
         let mut out = Vec::with_capacity(decoded_regions.len());
         for array_subset in decoded_regions {
-            let array_subset_size = array_subset.num_elements() * element_size;
+            let array_subset_size =
+                usize::try_from(array_subset.num_elements() * element_size).unwrap();
             let mut out_array_subset = vec![0; array_subset_size];
             let out_array_subset_slice = UnsafeCellSlice::new(out_array_subset.as_mut_slice());
 
@@ -226,10 +226,11 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             unsafe { array_subset.iter_chunks_unchecked(chunk_representation.shape()) }
                 .par_bridge()
                 .map(|(chunk_indices, chunk_subset)| {
-                    let shard_index_index: usize =
-                        ravel_indices(&chunk_indices, &chunks_per_shard) * 2;
-                    let offset = shard_index[shard_index_index];
-                    let size = shard_index[shard_index_index + 1];
+                    let shard_index_idx: usize =
+                        usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
+                            .unwrap();
+                    let offset = shard_index[shard_index_idx];
+                    let size = shard_index[shard_index_idx + 1];
 
                     // Get the subset of bytes from the chunk which intersect the array
                     let array_subset_in_chunk_subset =
@@ -237,15 +238,11 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
 
                     let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
                         // The chunk is just the fill value
-                        fill_value.repeat(array_subset_in_chunk_subset.num_elements())
+                        fill_value.repeat(array_subset_in_chunk_subset.num_elements_usize())
                     } else {
                         // The chunk must be decoded
                         let partial_decoder = self.inner_codecs.partial_decoder(Box::new(
-                            ByteIntervalPartialDecoder::new(
-                                &*self.input_handle,
-                                offset.try_into().unwrap(),
-                                size.try_into().unwrap(),
-                            ),
+                            ByteIntervalPartialDecoder::new(&*self.input_handle, offset, size),
                         ));
                         // NOTE: Intentionally using single threaded decode, since parallelisation is in the loop
                         partial_decoder
@@ -261,8 +258,9 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         chunk_subset_in_array_subset
                             .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
                     } {
-                        let output_offset = array_subset_element_index * element_size;
-                        let length = num_elements * element_size;
+                        let output_offset =
+                            usize::try_from(array_subset_element_index * element_size).unwrap();
+                        let length = usize::try_from(num_elements * element_size).unwrap();
                         unsafe {
                             out_array_subset_slice.copy_from_slice(
                                 output_offset,

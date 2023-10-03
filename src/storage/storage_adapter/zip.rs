@@ -60,32 +60,43 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         let mut zip_archive = self.zip_archive.lock();
         let mut zip_name = self.zip_path.clone();
         zip_name.push(key.as_str());
-        let file = zip_archive
-            .by_name(&zip_name.to_string_lossy())
-            .map_err(|err| match err {
-                ZipError::FileNotFound => StorageError::KeyNotFound(key.clone()),
-                _ => StorageError::Other(err.to_string()),
-            })?;
-        let size = usize::try_from(file.size()).map_err(|_| {
-            StorageError::Other("zip archive internal file larger than usize".to_string())
-        })?;
-        let bytes = file.bytes();
+        let mut file =
+            zip_archive
+                .by_name(&zip_name.to_string_lossy())
+                .map_err(|err| match err {
+                    ZipError::FileNotFound => StorageError::KeyNotFound(key.clone()),
+                    _ => StorageError::Other(err.to_string()),
+                })?;
+        let size = file.size();
 
         let buffer = match byte_range {
             ByteRange::FromStart(offset, None) => {
-                bytes.skip(*offset).collect::<Result<Vec<_>, _>>()?
+                std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
+                let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
+                file.read_to_end(&mut buffer)?;
+                buffer
             }
-            ByteRange::FromStart(offset, Some(length)) => bytes
-                .skip(*offset)
-                .take(*length)
-                .collect::<Result<Vec<_>, _>>()?,
+            ByteRange::FromStart(offset, Some(length)) => {
+                std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
+                let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
+                file.take(*length).read_to_end(&mut buffer)?;
+                buffer
+            }
             ByteRange::FromEnd(offset, None) => {
-                bytes.take(size - offset).collect::<Result<Vec<_>, _>>()?
+                let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
+                file.take(size - offset).read_to_end(&mut buffer)?;
+                buffer
             }
-            ByteRange::FromEnd(offset, Some(length)) => bytes
-                .skip(size - length - offset)
-                .take(*length)
-                .collect::<Result<Vec<_>, _>>()?,
+            ByteRange::FromEnd(offset, Some(length)) => {
+                std::io::copy(
+                    &mut file.by_ref().take(size - length - offset),
+                    &mut std::io::sink(),
+                )
+                .unwrap();
+                let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
+                file.take(*length).read_to_end(&mut buffer)?;
+                buffer
+            }
         };
 
         Ok(buffer)

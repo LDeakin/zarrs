@@ -268,7 +268,7 @@ pub fn meta_key(path: &NodePath) -> StoreKey {
 #[must_use]
 pub fn data_key(
     path: &NodePath,
-    chunk_grid_indices: &[usize],
+    chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
 ) -> StoreKey {
     let path = path.as_str();
@@ -371,7 +371,7 @@ pub fn create_array(
 pub fn store_chunk(
     storage: &dyn WritableStorageTraits,
     array_path: &NodePath,
-    chunk_grid_indices: &[usize],
+    chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
     chunk_serialised: &[u8],
 ) -> Result<(), StorageError> {
@@ -390,7 +390,7 @@ pub fn store_chunk(
 pub fn retrieve_chunk(
     storage: &dyn ReadableStorageTraits,
     array_path: &NodePath,
-    chunk_grid_indices: &[usize],
+    chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
 ) -> Result<Vec<u8>, StorageError> {
     storage.get(&data_key(
@@ -404,7 +404,7 @@ pub fn retrieve_chunk(
 pub fn retrieve_partial_values(
     storage: &dyn ReadableStorageTraits,
     array_path: &NodePath,
-    chunk_grid_indices: &[usize],
+    chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
     bytes_ranges: &[ByteRange],
 ) -> Vec<Result<Vec<u8>, StorageError>> {

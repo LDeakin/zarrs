@@ -55,7 +55,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
             .map_err(|_| {
                 CodecError::UnexpectedChunkDecodedSize(
                     bytes.len(),
-                    subset.num_elements() * decoded_representation.element_size(),
+                    subset.num_elements() * decoded_representation.element_size() as u64,
                 )
             })?;
         }

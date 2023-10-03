@@ -5,7 +5,7 @@ use derive_more::{Display, From};
 pub enum BytesRepresentation {
     /// The output size is known.
     #[display(fmt = "bytes: {_0}")]
-    KnownSize(usize),
+    KnownSize(u64),
     /// The output size may vary.
     #[display(fmt = "bytes: variable")]
     VariableSize,

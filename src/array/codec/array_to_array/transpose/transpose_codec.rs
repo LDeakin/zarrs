@@ -143,7 +143,7 @@ impl ArrayCodecTraits for TransposeCodec {
         decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() != decoded_representation.size() {
+        if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
                 decoded_value.len(),
                 decoded_representation.size(),

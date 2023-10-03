@@ -32,9 +32,9 @@ pub type ChunkGrid = Box<dyn ChunkGridTraits>;
 pub type ChunkGridPlugin = Plugin<ChunkGrid>;
 inventory::collect!(ChunkGridPlugin);
 
-impl From<Vec<usize>> for ChunkGrid {
+impl From<ArrayShape> for ChunkGrid {
     /// Create a regular chunk grid from a chunk shape.
-    fn from(regular_chunk_shape: Vec<usize>) -> Self {
+    fn from(regular_chunk_shape: ArrayShape) -> Self {
         Box::new(RegularChunkGrid::new(regular_chunk_shape))
     }
 }
@@ -69,7 +69,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///
     /// Returns an error if the length of `array_shape` does not match the dimensionality of the chunk grid.
     /// An implementation may return an error if
-    fn grid_shape(&self, array_shape: &[usize]) -> Result<ArrayShape, ChunkGridShapeError>;
+    fn grid_shape(&self, array_shape: &[u64]) -> Result<ArrayShape, ChunkGridShapeError>;
 
     /// The shape of the chunk at `chunk_indices`.
     ///
@@ -78,8 +78,8 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     /// Returns [`InvalidChunkGridIndicesError`] if the either the length of `chunk_indices` or the `array_shape` do not match the dimensionality of the chunk grid.
     fn chunk_shape(
         &self,
-        chunk_indices: &[usize],
-        array_shape: &[usize],
+        chunk_indices: &[u64],
+        array_shape: &[u64],
     ) -> Result<ArrayShape, InvalidChunkGridIndicesError> {
         if self.validate_chunk_indices(chunk_indices, array_shape) {
             Ok(unsafe { self.chunk_shape_unchecked(chunk_indices) })
@@ -97,7 +97,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///
     /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
     #[doc(hidden)]
-    unsafe fn chunk_shape_unchecked(&self, chunk_indices: &[usize]) -> ArrayShape;
+    unsafe fn chunk_shape_unchecked(&self, chunk_indices: &[u64]) -> ArrayShape;
 
     /// The origin of the chunk at `chunk_indices`.
     ///
@@ -108,8 +108,8 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///  - `chunk_indices` are out of boudns of the chunk grid.
     fn chunk_origin(
         &self,
-        chunk_indices: &[usize],
-        array_shape: &[usize],
+        chunk_indices: &[u64],
+        array_shape: &[u64],
     ) -> Result<ArrayIndices, InvalidChunkGridIndicesError> {
         if self.validate_chunk_indices(chunk_indices, array_shape) {
             Ok(unsafe { self.chunk_origin_unchecked(chunk_indices) })
@@ -127,7 +127,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///
     /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
     #[doc(hidden)]
-    unsafe fn chunk_origin_unchecked(&self, chunk_indices: &[usize]) -> ArrayIndices;
+    unsafe fn chunk_origin_unchecked(&self, chunk_indices: &[u64]) -> ArrayIndices;
 
     /// The indices of a chunk which has the element at `array_indices`.
     ///
@@ -136,8 +136,8 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     /// Returns [`InvalidArrayIndicesError`] if the either the length of `array_indices` or the `array_shape` do not match the dimensionality of the chunk grid.
     fn chunk_indices(
         &self,
-        array_indices: &[usize],
-        array_shape: &[usize],
+        array_indices: &[u64],
+        array_shape: &[u64],
     ) -> Result<ArrayIndices, InvalidArrayIndicesError> {
         if self.validate_array_indices(array_indices, array_shape) {
             Ok(unsafe { self.chunk_indices_unchecked(array_indices) })
@@ -155,7 +155,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///
     /// The length of `array_indices` must match the dimensionality of the chunk grid.
     #[doc(hidden)]
-    unsafe fn chunk_indices_unchecked(&self, array_indices: &[usize]) -> ArrayIndices;
+    unsafe fn chunk_indices_unchecked(&self, array_indices: &[u64]) -> ArrayIndices;
 
     /// The indices within the chunk of the element at `array_indices`.
     ///
@@ -164,8 +164,8 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     /// Returns [`InvalidArrayIndicesError`] if the either the length of `array_indices` or the `array_shape` do not match the dimensionality of the chunk grid.
     fn chunk_element_indices(
         &self,
-        array_indices: &[usize],
-        array_shape: &[usize],
+        array_indices: &[u64],
+        array_shape: &[u64],
     ) -> Result<ArrayIndices, InvalidArrayIndicesError> {
         if self.validate_array_indices(array_indices, array_shape) {
             Ok(unsafe { self.element_indices_unchecked(array_indices) })
@@ -183,14 +183,14 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///
     /// The length of `array_indices` must match the dimensionality of the chunk grid.
     #[doc(hidden)]
-    unsafe fn element_indices_unchecked(&self, array_indices: &[usize]) -> ArrayIndices;
+    unsafe fn element_indices_unchecked(&self, array_indices: &[u64]) -> ArrayIndices;
 
     /// Check if array indices are valid.
     ///
     /// Ensures array indices are within the array shape.
     /// Zero sized dimensions are ignored in this test to enable writing array chunks without knowing the array shape on initialisation.
     #[must_use]
-    fn validate_array_indices(&self, array_indices: &[usize], array_shape: &[usize]) -> bool {
+    fn validate_array_indices(&self, array_indices: &[u64], array_shape: &[u64]) -> bool {
         array_indices.len() == self.dimensionality()
             && array_shape.len() == self.dimensionality()
             && std::iter::zip(array_indices, array_shape)
@@ -202,7 +202,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     /// Ensures chunk grid indices are within the chunk grid shape.
     /// Zero sized dimensions are ignored in this test to enable writing array chunks without knowing the array shape on initialisation.
     #[must_use]
-    fn validate_chunk_indices(&self, chunk_indices: &[usize], array_shape: &[usize]) -> bool {
+    fn validate_chunk_indices(&self, chunk_indices: &[u64], array_shape: &[u64]) -> bool {
         chunk_indices.len() == self.dimensionality()
             && array_shape.len() == self.dimensionality()
             && self.grid_shape(array_shape).is_ok_and(|chunk_grid_shape| {
@@ -218,8 +218,8 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     /// Returns [`InvalidChunkGridIndicesError`] if the either the length of `chunk_indices` or the `array_shape` do not match the dimensionality of the chunk grid.
     fn subset(
         &self,
-        chunk_indices: &[usize],
-        array_shape: &[usize],
+        chunk_indices: &[u64],
+        array_shape: &[u64],
     ) -> Result<ArraySubset, InvalidChunkGridIndicesError> {
         if self.validate_chunk_indices(chunk_indices, array_shape) {
             Ok(unsafe { self.subset_unchecked(chunk_indices) })
@@ -237,7 +237,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///
     /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
     #[doc(hidden)]
-    unsafe fn subset_unchecked(&self, chunk_indices: &[usize]) -> ArraySubset {
+    unsafe fn subset_unchecked(&self, chunk_indices: &[u64]) -> ArraySubset {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         let chunk_origin = self.chunk_origin_unchecked(chunk_indices);
         let chunk_size = self.chunk_shape_unchecked(chunk_indices);
@@ -250,12 +250,12 @@ dyn_clone::clone_trait_object!(ChunkGridTraits);
 /// An invalid array indices error.
 #[derive(Debug, Error)]
 #[error("array indices {0:?} are incompatible with the array shape {1:?}")]
-pub struct InvalidArrayIndicesError(Vec<usize>, Vec<usize>);
+pub struct InvalidArrayIndicesError(ArrayIndices, ArrayShape);
 
 /// An invalid chunk indices error.
 #[derive(Debug, Error)]
 #[error("chunk grid indices {0:?} are invalid for array with shape {1:?}")]
-pub struct InvalidChunkGridIndicesError(Vec<usize>, Vec<usize>);
+pub struct InvalidChunkGridIndicesError(ArrayIndices, ArrayShape);
 
 /// A chunk grid shape error.
 #[derive(Debug, Error)]

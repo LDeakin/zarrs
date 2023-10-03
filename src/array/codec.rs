@@ -431,7 +431,7 @@ pub enum CodecError {
     InvalidArraySubsetError(#[from] InvalidArraySubsetError),
     /// The decoded size of a chunk did not match what was expected.
     #[error("the size of a decoded chunk is {_0}, expected {_1}")]
-    UnexpectedChunkDecodedSize(usize, usize),
+    UnexpectedChunkDecodedSize(usize, u64),
     /// An embedded checksum does not match the decoded value.
     #[error("the checksum is invalid")]
     InvalidChecksum,
@@ -445,35 +445,42 @@ pub enum CodecError {
 
 trait ReadSeek: Read + Seek {}
 
+/// # Panics
+///
+/// Panics if the byte range exceeds .
 fn extract_byte_ranges_rs<T: Read + Seek>(
     bytes: &mut T,
     byte_ranges: &[ByteRange],
 ) -> Result<Vec<Vec<u8>>, CodecError> {
-    let len: usize = bytes.seek(SeekFrom::End(0))?.try_into().unwrap();
+    let len: u64 = bytes.seek(SeekFrom::End(0))?;
     let mut out = Vec::with_capacity(byte_ranges.len());
     for byte_range in byte_ranges {
         let data: Vec<u8> = match byte_range {
             ByteRange::FromStart(offset, None) => {
-                bytes.seek(SeekFrom::Start(*offset as u64))?;
-                let mut data = vec![0; len];
+                bytes.seek(SeekFrom::Start(*offset))?;
+                let length = usize::try_from(len).unwrap();
+                let mut data = vec![0; length];
                 bytes.read_exact(&mut data)?;
                 data
             }
             ByteRange::FromStart(offset, Some(length)) => {
-                bytes.seek(SeekFrom::Start(*offset as u64))?;
-                let mut data = vec![0; *length];
+                bytes.seek(SeekFrom::Start(*offset))?;
+                let length = usize::try_from(*length).unwrap();
+                let mut data = vec![0; length];
                 bytes.read_exact(&mut data)?;
                 data
             }
             ByteRange::FromEnd(offset, None) => {
                 bytes.seek(SeekFrom::Start(0))?;
-                let mut data = vec![0; len - offset];
+                let length = usize::try_from(len - offset).unwrap();
+                let mut data = vec![0; length];
                 bytes.read_exact(&mut data)?;
                 data
             }
             ByteRange::FromEnd(offset, Some(length)) => {
                 bytes.seek(SeekFrom::End(-i64::try_from(*offset + *length).unwrap()))?;
-                let mut data = vec![0; *length];
+                let length = usize::try_from(*length).unwrap();
+                let mut data = vec![0; length];
                 bytes.read_exact(&mut data)?;
                 data
             }

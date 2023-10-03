@@ -72,7 +72,7 @@ fn calculate_order_decode(order: &TransposeOrder, array_dimensions: usize) -> Tr
 
 fn transpose_array(
     transpose_order: &TransposeOrderImpl,
-    untransposed_shape: &[usize],
+    untransposed_shape: &[u64],
     bytes_per_element: usize,
     data: &[u8],
 ) -> Result<Vec<u8>, ndarray::ShapeError> {
@@ -81,7 +81,9 @@ fn transpose_array(
         TransposeOrderImpl::Permutation(permutation) => {
             // Create an array view of the data
             let mut shape_n = Vec::with_capacity(untransposed_shape.len() + 1);
-            shape_n.extend(untransposed_shape);
+            for size in untransposed_shape {
+                shape_n.push(usize::try_from(*size).unwrap());
+            }
             shape_n.push(bytes_per_element);
             let array: ndarray::ArrayViewD<u8> = ndarray::ArrayView::from_shape(shape_n, data)?;
 
@@ -93,7 +95,7 @@ fn transpose_array(
     }
 }
 
-fn permute(v: &[usize], order: &TransposeOrder) -> Vec<usize> {
+fn permute(v: &[u64], order: &TransposeOrder) -> Vec<u64> {
     match order {
         TransposeOrder::C => v.to_owned(),
         TransposeOrder::F => {

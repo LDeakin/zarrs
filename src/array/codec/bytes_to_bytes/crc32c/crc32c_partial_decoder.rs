@@ -38,8 +38,9 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
                     bytes.resize(bytes.len() - CHECKSUM_SIZE, 0);
                 }
                 ByteRange::FromEnd(offset, _) => {
-                    if *offset < CHECKSUM_SIZE {
-                        bytes.resize(bytes.len() - (CHECKSUM_SIZE - offset), 0);
+                    if *offset < CHECKSUM_SIZE as u64 {
+                        let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64 - offset);
+                        bytes.resize(usize::try_from(length).unwrap(), 0);
                     }
                 }
             };

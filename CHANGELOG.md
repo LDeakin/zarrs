@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Remove unneeded '/' prefix strip in `StorePrefix`
  - **Breaking**: Remove storage trait implementations for `Arc<TStorage>`, now must explicitly deref
  - Implement `Eq` and `PartialEq` for `DataType`
+ - **Breaking**: Use `u64` instead of `usize` for byte ranges/array index/shape etc. This makes it possible to index into larger arrays on 32-bit systems.
 
 ### Fixed
  - Fix store prefix to node path conversion and vice versa
