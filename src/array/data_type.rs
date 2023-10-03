@@ -62,6 +62,14 @@ pub enum DataType {
     Extension(Box<dyn DataTypeExtension>),
 }
 
+impl PartialEq for DataType {
+    fn eq(&self, other: &Self) -> bool {
+        self.name() == other.name()
+    }
+}
+
+impl Eq for DataType {}
+
 /// A data type plugin.
 pub type DataTypePlugin = Plugin<Box<dyn DataTypeExtension>>;
 inventory::collect!(DataTypePlugin);
