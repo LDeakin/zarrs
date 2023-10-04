@@ -268,6 +268,18 @@ pub enum ChunkGridShapeError {
     Other(String),
 }
 
+impl From<&str> for ChunkGridShapeError {
+    fn from(err: &str) -> Self {
+        Self::Other(err.to_string())
+    }
+}
+
+impl From<String> for ChunkGridShapeError {
+    fn from(err: String) -> Self {
+        Self::Other(err)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

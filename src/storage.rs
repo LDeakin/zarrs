@@ -261,6 +261,12 @@ impl From<&str> for StorageError {
     }
 }
 
+impl From<String> for StorageError {
+    fn from(err: String) -> Self {
+        Self::Other(err)
+    }
+}
+
 /// Return the metadata key given a node path.
 #[must_use]
 pub fn meta_key(path: &NodePath) -> StoreKey {

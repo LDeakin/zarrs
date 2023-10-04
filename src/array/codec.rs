@@ -439,8 +439,20 @@ pub enum CodecError {
     #[error(transparent)]
     StorageError(#[from] StorageError),
     /// Other
-    #[error("{}", _0)]
+    #[error("{_0}")]
     Other(String),
+}
+
+impl From<&str> for CodecError {
+    fn from(err: &str) -> Self {
+        Self::Other(err.to_string())
+    }
+}
+
+impl From<String> for CodecError {
+    fn from(err: String) -> Self {
+        Self::Other(err)
+    }
 }
 
 trait ReadSeek: Read + Seek {}

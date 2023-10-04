@@ -25,6 +25,18 @@ pub enum StorePluginCreateError {
     Other(String),
 }
 
+impl From<&str> for StorePluginCreateError {
+    fn from(err: &str) -> Self {
+        Self::Other(err.to_string())
+    }
+}
+
+impl From<String> for StorePluginCreateError {
+    fn from(err: String) -> Self {
+        Self::Other(err)
+    }
+}
+
 impl<T> StorePlugin<T> {
     /// Create a new plugin.
     pub const fn new(
