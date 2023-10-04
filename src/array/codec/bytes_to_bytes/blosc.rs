@@ -5,6 +5,7 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/blosc/v1.0.html>.
 
 // NOTE: Zarr implementations MAY provide users an option to choose a shuffle mode automatically based on the typesize or other information, but MUST record in the metadata the mode that is chosen.
+// TODO: Need to validate blosc typesize matches element size and also that endianness is specified if typesize > 1
 
 mod blosc_codec;
 mod blosc_configuration;
@@ -18,17 +19,24 @@ use std::{
 pub use blosc_codec::BloscCodec;
 pub use blosc_configuration::{BloscCodecConfiguration, BloscCodecConfigurationV1};
 use blosc_sys::{
-    blosc_cbuffer_validate, blosc_compress_ctx, blosc_decompress_ctx, BLOSC_BITSHUFFLE,
-    BLOSC_BLOSCLZ_COMPNAME, BLOSC_LZ4HC_COMPNAME, BLOSC_LZ4_COMPNAME, BLOSC_MAX_OVERHEAD,
-    BLOSC_NOSHUFFLE, BLOSC_SHUFFLE, BLOSC_SNAPPY_COMPNAME, BLOSC_ZLIB_COMPNAME,
-    BLOSC_ZSTD_COMPNAME,
+    blosc_cbuffer_metainfo, blosc_cbuffer_sizes, blosc_cbuffer_validate, blosc_compress_ctx,
+    blosc_decompress_ctx, blosc_getitem, BLOSC_BITSHUFFLE, BLOSC_BLOSCLZ_COMPNAME,
+    BLOSC_LZ4HC_COMPNAME, BLOSC_LZ4_COMPNAME, BLOSC_MAX_OVERHEAD, BLOSC_NOSHUFFLE, BLOSC_SHUFFLE,
+    BLOSC_SNAPPY_COMPNAME, BLOSC_ZLIB_COMPNAME, BLOSC_ZSTD_COMPNAME,
 };
+use derive_more::From;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Debug, Error)]
-#[error("blosc error")]
-struct BloscError;
+#[derive(Debug, Error, From)]
+#[error("{0}")]
+struct BloscError(String);
+
+impl From<&str> for BloscError {
+    fn from(err: &str) -> Self {
+        Self(err.to_string())
+    }
+}
 
 /// An integer from 0 to 9 controlling the compression level
 ///
@@ -105,7 +113,7 @@ impl BloscCompressor {
     }
 }
 
-fn compress_bytes(
+fn blosc_compress_bytes(
     src: &[u8],
     clevel: BloscCompressionLevel,
     shuffle_mode: BloscShuffleMode,
@@ -138,41 +146,121 @@ fn compress_bytes(
         dest.shrink_to_fit();
         Ok(dest)
     } else {
-        Err(BloscError)
+        Err(BloscError::from(format!("blosc_compress_ctx(clevel: {}, doshuffle: {shuffle_mode:?}, typesize: {typesize}, nbytes: {}, destsize {destsize}, compressor {compressor:?}, bloscksize: {blocksize}) -> {destsize} (failure)", clevel.0, src.len())))
     }
 }
 
-fn decompress_bytes(src: &[u8]) -> Result<Vec<u8>, BloscError> {
+fn blosc_validate(src: &[u8]) -> Option<usize> {
     let mut destsize: usize = 0;
-    let bytes_safe: bool = unsafe {
+    let valid = unsafe {
         blosc_cbuffer_validate(
             src.as_ptr().cast::<c_void>(),
             src.len(),
             std::ptr::addr_of_mut!(destsize),
         )
     } == 0;
-    if bytes_safe {
-        let mut dest: Vec<u8> = Vec::with_capacity(destsize);
-        let destsize = unsafe {
-            blosc_decompress_ctx(
-                src.as_ptr().cast::<c_void>(),
-                dest.as_mut_ptr().cast::<c_void>(),
-                destsize,
-                1,
-            )
-        };
-        if destsize <= 0 {
-            Err(BloscError)
-        } else {
-            unsafe {
-                #[allow(clippy::cast_sign_loss)]
-                dest.set_len(destsize as usize);
-            }
-            dest.shrink_to_fit();
-            Ok(dest)
-        }
+    if valid {
+        Some(destsize)
     } else {
-        Err(BloscError)
+        None
+    }
+}
+
+/// # Safety
+///
+/// Validate first
+fn blosc_typesize(src: &[u8]) -> Option<usize> {
+    let mut typesize: usize = 0;
+    let mut flags: i32 = 0;
+    unsafe {
+        blosc_cbuffer_metainfo(
+            src.as_ptr().cast::<c_void>(),
+            std::ptr::addr_of_mut!(typesize),
+            std::ptr::addr_of_mut!(flags),
+        );
+    };
+    if typesize != 0 && flags != 0 {
+        Some(typesize)
+    } else {
+        None
+    }
+}
+
+/// Returns the length of the uncompress bytes of a blosc buffer.
+///
+/// # Safety
+///
+/// Validate first
+fn blosc_nbytes(src: &[u8]) -> Option<usize> {
+    let mut uncompressed_bytes: usize = 0;
+    let mut cbytes: usize = 0;
+    let mut blocksize: usize = 0;
+    unsafe {
+        blosc_cbuffer_sizes(
+            src.as_ptr().cast::<c_void>(),
+            std::ptr::addr_of_mut!(uncompressed_bytes),
+            std::ptr::addr_of_mut!(cbytes),
+            std::ptr::addr_of_mut!(blocksize),
+        );
+    };
+    if uncompressed_bytes > 0 && cbytes > 0 && blocksize > 0 {
+        Some(uncompressed_bytes)
+    } else {
+        None
+    }
+}
+
+fn blosc_decompress_bytes(src: &[u8], destsize: usize) -> Result<Vec<u8>, BloscError> {
+    let mut dest: Vec<u8> = Vec::with_capacity(destsize);
+    let destsize = unsafe {
+        blosc_decompress_ctx(
+            src.as_ptr().cast::<c_void>(),
+            dest.as_mut_ptr().cast::<c_void>(),
+            destsize,
+            1,
+        )
+    };
+    if destsize > 0 {
+        unsafe {
+            #[allow(clippy::cast_sign_loss)]
+            dest.set_len(destsize as usize);
+        }
+        dest.shrink_to_fit();
+        Ok(dest)
+    } else {
+        Err(BloscError::from("blosc_decompress_ctx failed"))
+    }
+}
+
+fn blosc_decompress_bytes_partial(
+    src: &[u8],
+    offset: usize,
+    length: usize,
+    typesize: usize,
+) -> Result<Vec<u8>, BloscError> {
+    let start = i32::try_from(offset / typesize).unwrap();
+    let nitems = i32::try_from(length / typesize).unwrap();
+    let mut dest: Vec<u8> = Vec::with_capacity(length);
+    let destsize = unsafe {
+        blosc_getitem(
+            src.as_ptr().cast::<c_void>(),
+            start,
+            nitems,
+            dest.as_mut_ptr().cast::<c_void>(),
+        )
+    };
+    if destsize <= 0 {
+        Err(BloscError::from(format!(
+            "blosc_getitem(src: len {}, start: {start}, nitems: {nitems}) -> {destsize} (failure)",
+            src.len()
+        )))
+    } else {
+        unsafe {
+            #[allow(clippy::cast_sign_loss)]
+            dest.set_len(destsize as usize);
+        }
+        dest.shrink_to_fit();
+        Ok(dest)
     }
 }
 

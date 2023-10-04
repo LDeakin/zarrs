@@ -15,9 +15,9 @@ use crate::{
 };
 
 use super::{
-    blosc_partial_decoder, compress_bytes, decompress_bytes, BloscCodecConfiguration,
-    BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor, BloscError,
-    BloscShuffleMode,
+    blosc_compress_bytes, blosc_decompress_bytes, blosc_partial_decoder, blosc_validate,
+    BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
+    BloscError, BloscShuffleMode,
 };
 
 const IDENTIFIER: &str = "blosc";
@@ -124,13 +124,13 @@ impl CodecTraits for BloscCodec {
     }
 
     fn partial_decoder_decodes_all(&self) -> bool {
-        true
+        false
     }
 }
 
 impl BytesToBytesCodecTraits for BloscCodec {
     fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        compress_bytes(
+        blosc_compress_bytes(
             &decoded_value,
             self.configuration.clevel,
             self.configuration.shuffle,
@@ -146,7 +146,12 @@ impl BytesToBytesCodecTraits for BloscCodec {
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        decompress_bytes(&encoded_value).map_err(|e| CodecError::Other(e.to_string()))
+        if let Some(destsize) = blosc_validate(&encoded_value) {
+            blosc_decompress_bytes(&encoded_value, destsize)
+                .map_err(|e| CodecError::from(e.to_string()))
+        } else {
+            Err(CodecError::from("blosc encoded value is invalid"))
+        }
     }
 
     fn partial_decoder<'a>(
