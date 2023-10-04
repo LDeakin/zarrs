@@ -110,6 +110,28 @@ impl BloscCodec {
             Some(configuration.typesize),
         )
     }
+
+    fn do_encode(&self, decoded_value: &[u8], n_threads: usize) -> Result<Vec<u8>, CodecError> {
+        blosc_compress_bytes(
+            decoded_value,
+            self.configuration.clevel,
+            self.configuration.shuffle,
+            self.configuration.typesize,
+            self.configuration.cname,
+            self.configuration.blocksize.unwrap_or(0),
+            n_threads,
+        )
+        .map_err(|err: BloscError| CodecError::Other(err.to_string()))
+    }
+
+    fn do_decode(encoded_value: &[u8], n_threads: usize) -> Result<Vec<u8>, CodecError> {
+        if let Some(destsize) = blosc_validate(encoded_value) {
+            blosc_decompress_bytes(encoded_value, destsize, n_threads)
+                .map_err(|e| CodecError::from(e.to_string()))
+        } else {
+            Err(CodecError::from("blosc encoded value is invalid"))
+        }
+    }
 }
 
 impl CodecTraits for BloscCodec {
@@ -130,15 +152,12 @@ impl CodecTraits for BloscCodec {
 
 impl BytesToBytesCodecTraits for BloscCodec {
     fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        blosc_compress_bytes(
-            &decoded_value,
-            self.configuration.clevel,
-            self.configuration.shuffle,
-            self.configuration.typesize,
-            self.configuration.cname,
-            self.configuration.blocksize.unwrap_or(0),
-        )
-        .map_err(|err: BloscError| CodecError::Other(err.to_string()))
+        self.do_encode(&decoded_value, 1)
+    }
+
+    fn par_encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+        let n_threads = std::thread::available_parallelism().unwrap().get();
+        self.do_encode(&decoded_value, n_threads)
     }
 
     fn decode(
@@ -146,12 +165,16 @@ impl BytesToBytesCodecTraits for BloscCodec {
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        if let Some(destsize) = blosc_validate(&encoded_value) {
-            blosc_decompress_bytes(&encoded_value, destsize)
-                .map_err(|e| CodecError::from(e.to_string()))
-        } else {
-            Err(CodecError::from("blosc encoded value is invalid"))
-        }
+        Self::do_decode(&encoded_value, 1)
+    }
+
+    fn par_decode(
+        &self,
+        encoded_value: Vec<u8>,
+        _decoded_representation: &BytesRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        let n_threads = std::thread::available_parallelism().unwrap().get();
+        Self::do_decode(&encoded_value, n_threads)
     }
 
     fn partial_decoder<'a>(

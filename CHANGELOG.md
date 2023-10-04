@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
  - Add `From<&str>` and `From<String>` for `Other` variants of `CodecError`, `StorageError`, `ChunkGridShapeError`, `StorePluginCreateError`
- - Support true partial decoding with the `blosc` codec, previously the whole chunk was always decoded
+ - Support parallel encoding, parallel decoding, and partial decoding with the `blosc` codec
+   - Previously the blosc codec would read the whole chunk when partial decoding
 
 ## [0.4.1] - 2023-10-04
 

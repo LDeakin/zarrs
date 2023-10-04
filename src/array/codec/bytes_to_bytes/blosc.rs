@@ -21,8 +21,9 @@ pub use blosc_configuration::{BloscCodecConfiguration, BloscCodecConfigurationV1
 use blosc_sys::{
     blosc_cbuffer_metainfo, blosc_cbuffer_sizes, blosc_cbuffer_validate, blosc_compress_ctx,
     blosc_decompress_ctx, blosc_getitem, BLOSC_BITSHUFFLE, BLOSC_BLOSCLZ_COMPNAME,
-    BLOSC_LZ4HC_COMPNAME, BLOSC_LZ4_COMPNAME, BLOSC_MAX_OVERHEAD, BLOSC_NOSHUFFLE, BLOSC_SHUFFLE,
-    BLOSC_SNAPPY_COMPNAME, BLOSC_ZLIB_COMPNAME, BLOSC_ZSTD_COMPNAME,
+    BLOSC_LZ4HC_COMPNAME, BLOSC_LZ4_COMPNAME, BLOSC_MAX_OVERHEAD, BLOSC_MAX_THREADS,
+    BLOSC_NOSHUFFLE, BLOSC_SHUFFLE, BLOSC_SNAPPY_COMPNAME, BLOSC_ZLIB_COMPNAME,
+    BLOSC_ZSTD_COMPNAME,
 };
 use derive_more::From;
 use serde::{Deserialize, Serialize};
@@ -120,7 +121,9 @@ fn blosc_compress_bytes(
     typesize: usize,
     compressor: BloscCompressor,
     blocksize: usize,
+    numinternalthreads: usize,
 ) -> Result<Vec<u8>, BloscError> {
+    let numinternalthreads = std::cmp::min(numinternalthreads, BLOSC_MAX_THREADS as usize);
     // let mut dest = vec![0; src.len() + BLOSC_MAX_OVERHEAD as usize];
     let destsize = src.len() + BLOSC_MAX_OVERHEAD as usize;
     let mut dest: Vec<u8> = Vec::with_capacity(destsize);
@@ -135,7 +138,7 @@ fn blosc_compress_bytes(
             destsize,
             compressor.as_cstr().cast::<c_char>(),
             blocksize,
-            1,
+            i32::try_from(numinternalthreads).unwrap(),
         )
     };
     if destsize > 0 {
@@ -210,14 +213,19 @@ fn blosc_nbytes(src: &[u8]) -> Option<usize> {
     }
 }
 
-fn blosc_decompress_bytes(src: &[u8], destsize: usize) -> Result<Vec<u8>, BloscError> {
+fn blosc_decompress_bytes(
+    src: &[u8],
+    destsize: usize,
+    numinternalthreads: usize,
+) -> Result<Vec<u8>, BloscError> {
+    let numinternalthreads = std::cmp::min(numinternalthreads, BLOSC_MAX_THREADS as usize);
     let mut dest: Vec<u8> = Vec::with_capacity(destsize);
     let destsize = unsafe {
         blosc_decompress_ctx(
             src.as_ptr().cast::<c_void>(),
             dest.as_mut_ptr().cast::<c_void>(),
             destsize,
-            1,
+            i32::try_from(numinternalthreads).unwrap(),
         )
     };
     if destsize > 0 {
