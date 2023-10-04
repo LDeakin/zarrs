@@ -28,12 +28,6 @@
       "configuration": {
         "endian": "little"
       }
-    },
-    {
-      "name": "gzip",
-      "configuration": {
-        "level": 5
-      }
     }
   ],
   "dimension_names": [

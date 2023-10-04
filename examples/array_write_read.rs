@@ -3,8 +3,8 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
     use std::sync::Arc;
     use zarrs::{
+        array::FillValue,
         array::{chunk_grid::ChunkGridTraits, DataType},
-        array::{codec, FillValue},
         array_subset::ArraySubset,
         node::Node,
         storage::store,
@@ -13,7 +13,9 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Create a store
     // let path = tempfile::TempDir::new()?;
     // let store = Arc::new(store::FilesystemStore::new(path.path())?);
-    // let store = Arc::new(store::FilesystemStore::new("tests/data/array_write_read.zarr")?);
+    // let store = Arc::new(store::FilesystemStore::new(
+    //     "tests/data/array_write_read.zarr",
+    // )?);
     let store = Arc::new(store::MemoryStore::default());
 
     // Create a group and write metadata to filesystem
@@ -41,10 +43,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         vec![4, 4].into(), // regular chunk shape
         FillValue::from(f32::NAN),
     )
-    .bytes_to_bytes_codecs(vec![
-        #[cfg(feature = "gzip")]
-        Box::new(codec::GzipCodec::new(5)?),
-    ])
+    // .bytes_to_bytes_codecs(vec![]) // uncompressed
     .dimension_names(vec!["y".into(), "x".into()])
     .storage_transformers(vec![])
     .build(store.clone(), array_path)?;
