@@ -194,7 +194,7 @@ mod tests {
     "cname": "lz4",
     "clevel": 5,
     "shuffle": "shuffle",
-    "typesize": 4,
+    "typesize": 2,
     "blocksize": 0
 }"#;
 
@@ -203,7 +203,7 @@ mod tests {
     "cname": "lz4",
     "clevel": 4,
     "shuffle": "bitshuffle",
-    "typesize": 4,
+    "typesize": 2,
     "blocksize": 0
 }"#;
 

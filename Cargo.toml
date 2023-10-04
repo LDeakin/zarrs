@@ -1,7 +1,7 @@
 [package]
 name = "zarrs"
 description = "A library for the Zarr V3 storage format for multidimensional arrays and metadata"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
