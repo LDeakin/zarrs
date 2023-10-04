@@ -1,7 +1,14 @@
-#[cfg(all(feature = "ndarray", feature = "gzip"))]
+#[cfg(feature = "ndarray")]
 fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
-    use zarrs::{array::Array, array_subset::ArraySubset, storage::store};
+    use zarrs::{
+        array::Array,
+        array_subset::ArraySubset,
+        storage::{
+            storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+            store,
+        },
+    };
 
     const HTTP_URL: &'static str =
         "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/array_write_read.zarr";
@@ -9,9 +16,23 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a HTTP store
     let store = Arc::new(store::HTTPStore::new(HTTP_URL)?);
+    let log_writer = Arc::new(std::sync::Mutex::new(
+        // std::io::BufWriter::new(
+        std::io::stdout(),
+        //    )
+    ));
+    let usage_log = UsageLogStorageTransformer::new(log_writer, || {
+        chrono::Utc::now().format("[%T%.3f] ").to_string()
+    });
+    let store = usage_log.create_readable_transformer(store);
 
     // Init the existing array, reading metadata
     let array = Array::new(store, ARRAY_PATH)?;
+
+    println!(
+        "The array metadata is:\n{}\n",
+        serde_json::to_string_pretty(&array.metadata()).unwrap()
+    );
 
     // Read the whole array
     let subset_all = ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec())?;
@@ -31,9 +52,9 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(any(not(feature = "ndarray"), not(feature = "gzip")))]
+#[cfg(not(feature = "ndarray"))]
 fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the http_array_read example requires the ndarray and gzip feature")
+    panic!("the http_array_read example requires the ndarray feature")
 }
 
 fn main() {

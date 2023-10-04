@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: `UsageLogStorageTransformer` now takes a prefix function rather than a string
+  - The `http_array_read` example now logs store requests to stdout using `UsageLogStorageTransformer`
+
 ## [0.4.2] - 2023-10-06
 
 ### Added

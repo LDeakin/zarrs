@@ -526,7 +526,7 @@ mod tests {
         )));
 
         // let storage_transformer_usage_log = Arc::new(self::storage_transformer::UsageLogStorageTransformer::new(
-        //     "mt_log: ",
+        //     || "mt_log: ".to_string(),
         //     log_writer.clone(),
         // ));
         let storage_transformer_performance_metrics =

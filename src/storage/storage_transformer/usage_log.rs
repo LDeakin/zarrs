@@ -18,24 +18,23 @@ use crate::{
 use super::StorageTransformerExtension;
 
 /// The usage log storage transformer.
-#[derive()]
 pub struct UsageLogStorageTransformer {
-    prefix: String,
     handle: Arc<Mutex<dyn Write + Send + Sync>>,
+    prefix_func: fn() -> String,
 }
 
 impl core::fmt::Debug for UsageLogStorageTransformer {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        writeln!(f, "{}", self.prefix)
+        writeln!(f, "usage log")
     }
 }
 
 impl UsageLogStorageTransformer {
     /// Create a new usage log storage transformer.
-    pub fn new(prefix: &str, handle: Arc<Mutex<dyn Write + Send + Sync>>) -> Self {
+    pub fn new(handle: Arc<Mutex<dyn Write + Send + Sync>>, prefix_func: fn() -> String) -> Self {
         Self {
-            prefix: prefix.to_string(),
             handle,
+            prefix_func,
         }
     }
 
@@ -45,7 +44,7 @@ impl UsageLogStorageTransformer {
     ) -> Arc<UsageLogStorageTransformerImpl<TStorage>> {
         Arc::new(UsageLogStorageTransformerImpl {
             storage,
-            prefix: self.prefix.clone(),
+            prefix_func: self.prefix_func,
             handle: self.handle.clone(),
         })
     }
@@ -78,14 +77,8 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
 
 struct UsageLogStorageTransformerImpl<TStorage: ?Sized> {
     storage: Arc<TStorage>,
-    prefix: String,
+    prefix_func: fn() -> String,
     handle: Arc<Mutex<dyn Write + Send + Sync>>,
-}
-
-impl<TStorage> core::fmt::Debug for UsageLogStorageTransformerImpl<TStorage> {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        writeln!(f, "{}", self.prefix)
-    }
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
@@ -96,7 +89,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         writeln!(
             self.handle.lock().unwrap(),
             "{}get({key:?}) -> len={:?}",
-            self.prefix,
+            (self.prefix_func)(),
             result.as_ref().map(Vec::len)
         )?;
         result
@@ -109,7 +102,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         let _ = writeln!(
             self.handle.lock().unwrap(),
             "{}get({key_ranges:?})",
-            self.prefix
+            (self.prefix_func)()
         );
         self.storage.get_partial_values(key_ranges)
     }
@@ -127,7 +120,11 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
     fn list(&self) -> Result<StoreKeys, StorageError> {
-        writeln!(self.handle.lock().unwrap(), "{}list()", self.prefix)?;
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}list()",
+            (self.prefix_func)()
+        )?;
         self.storage.list()
     }
 
@@ -135,7 +132,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
         writeln!(
             self.handle.lock().unwrap(),
             "{}list_prefix({prefix:?})",
-            self.prefix
+            (self.prefix_func)()
         )?;
         self.storage.list_prefix(prefix)
     }
@@ -144,7 +141,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
         writeln!(
             self.handle.lock().unwrap(),
             "{}list_dir({prefix:?})",
-            self.prefix
+            (self.prefix_func)()
         )?;
         self.storage.list_dir(prefix)
     }
@@ -157,7 +154,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         writeln!(
             self.handle.lock().unwrap(),
             "{}set({key:?}, len={})",
-            self.prefix,
+            (self.prefix_func)(),
             value.len()
         )?;
         self.storage.set(key, value)
@@ -170,13 +167,17 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         writeln!(
             self.handle.lock().unwrap(),
             "{}set_partial_values({key_start_values:?}",
-            self.prefix
+            (self.prefix_func)()
         )?;
         self.storage.set_partial_values(key_start_values)
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
-        writeln!(self.handle.lock().unwrap(), "{}erase({key:?}", self.prefix)?;
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}erase({key:?}",
+            (self.prefix_func)()
+        )?;
         self.storage.erase(key)
     }
 
@@ -184,7 +185,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_values({keys:?}",
-            self.prefix
+            (self.prefix_func)()
         )?;
         self.storage.erase_values(keys)
     }
@@ -193,7 +194,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_prefix({prefix:?}",
-            self.prefix
+            (self.prefix_func)()
         )?;
         self.storage.erase_prefix(prefix)
     }
