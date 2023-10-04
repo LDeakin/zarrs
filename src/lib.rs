@@ -6,12 +6,6 @@
 //!
 //! A subset of zarrs is exposed as a C API in the [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi) crate.
 //!
-//! ## Features
-//! All features are enabled by default.
-//!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
-//!  - Data types: `raw_bits`, `float16`, `bfloat16`.
-//!  - `ndarray`: adds [`ndarray`] utility functions to [`Array`](crate::array::Array).
-//!
 //! ## Implementation Status
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/draft/ZEP0001.html)
 //! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/draft/ZEP0002.html) ([under review](https://github.com/zarr-developers/zarr-specs/issues/254))
@@ -22,6 +16,13 @@
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
 //! - [x] Codecs: [`blosc`](crate::array::codec::BloscCodec), [`bytes`](crate::array::codec::BytesCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/263), [`gzip`](crate::array::codec::GzipCodec), [`transpose`](crate::array::codec::TransposeCodec), [`zstd`](crate::array::codec::ZstdCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [`sharding`](crate::array::codec::ShardingCodec), [`crc32c checksum`](crate::array::codec::Crc32cCodec)
 //! - [x] Storage transformers: [`usage_log`](crate::storage::storage_transformer::UsageLogStorageTransformer), [`performance_metrics`](crate::storage::storage_transformer::PerformanceMetricsStorageTransformer)
+//!
+//! ## Features
+//! All features are enabled by default.
+//!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
+//!  - Data types: `raw_bits`, `float16`, `bfloat16`.
+//!  - Stores: `http`, `zip`.
+//!  - `ndarray`: adds [`ndarray`] utility functions to [`Array`](crate::array::Array).
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`
