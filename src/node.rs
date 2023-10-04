@@ -68,7 +68,7 @@ impl Node {
     /// # Errors
     ///
     /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub fn new_with_store<TStorage: ReadableStorageTraits + ListableStorageTraits>(
+    pub fn new_with_store<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
         storage: &TStorage,
         path: &str,
     ) -> Result<Self, NodeCreateError> {

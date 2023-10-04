@@ -17,13 +17,13 @@ use zip::{result::ZipError, ZipArchive};
 use std::{io::Read, path::PathBuf, sync::Arc};
 
 /// A zip storage adapter.
-pub struct ZipStorageAdapter<TStorage: ReadableStorageTraits> {
+pub struct ZipStorageAdapter<TStorage: ?Sized + ReadableStorageTraits> {
     size: u64,
     zip_archive: Mutex<ZipArchive<StorageValueIO<TStorage>>>,
     zip_path: PathBuf,
 }
 
-impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     /// Create a new zip storage adapter.
     ///
     /// # Errors
@@ -108,7 +108,9 @@ impl<TStorage: ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits> ReadableStorageTraits for ZipStorageAdapter<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
+    for ZipStorageAdapter<TStorage>
+{
     fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
         self.get_impl(key, &ByteRange::FromStart(0, None))
     }
@@ -138,7 +140,9 @@ impl<TStorage: ReadableStorageTraits> ReadableStorageTraits for ZipStorageAdapte
     }
 }
 
-impl<TStorage: ReadableStorageTraits> ListableStorageTraits for ZipStorageAdapter<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
+    for ZipStorageAdapter<TStorage>
+{
     fn list(&self) -> Result<StoreKeys, StorageError> {
         Ok(self
             .zip_archive

@@ -9,14 +9,14 @@ use super::{ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange};
 
 /// Provides a [`Read`] interface to a storage value.
 #[derive(Clone)]
-pub struct StorageValueIO<TStorage: ReadableStorageTraits> {
+pub struct StorageValueIO<TStorage: ?Sized + ReadableStorageTraits> {
     storage: Arc<TStorage>,
     key: StoreKey,
     pos: u64,
     size: u64,
 }
 
-impl<TStorage: ReadableStorageTraits> StorageValueIO<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> StorageValueIO<TStorage> {
     /// Create a new `StorageValueIO` for the `key` in `storage`.
     ///
     /// # Errors
@@ -33,7 +33,7 @@ impl<TStorage: ReadableStorageTraits> StorageValueIO<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits> Seek for StorageValueIO<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> Seek for StorageValueIO<TStorage> {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         use std::io::{Error, ErrorKind};
         self.pos = match pos {
@@ -55,7 +55,7 @@ impl<TStorage: ReadableStorageTraits> Seek for StorageValueIO<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits> Read for StorageValueIO<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> Read for StorageValueIO<TStorage> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let len = buf.len() as u64;
         let key_range =

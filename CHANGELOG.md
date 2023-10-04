@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - Support unsized storage (`TStorage: ?Sized` everywhere)
+   - Adds `StorageHandle` to support this, a clonable handle to borrowed unsized storage
+
 ## [0.4.0] - 2023-10-04
 
 ### Added

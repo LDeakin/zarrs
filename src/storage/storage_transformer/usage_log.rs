@@ -88,7 +88,7 @@ impl<TStorage> core::fmt::Debug for UsageLogStorageTransformerImpl<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits + ?Sized> ReadableStorageTraits
+impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
     fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
@@ -123,7 +123,7 @@ impl<TStorage: ReadableStorageTraits + ?Sized> ReadableStorageTraits
     }
 }
 
-impl<TStorage: ListableStorageTraits + ?Sized> ListableStorageTraits
+impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
     fn list(&self) -> Result<StoreKeys, StorageError> {
@@ -150,7 +150,7 @@ impl<TStorage: ListableStorageTraits + ?Sized> ListableStorageTraits
     }
 }
 
-impl<TStorage: WritableStorageTraits + ?Sized> WritableStorageTraits
+impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
@@ -199,7 +199,7 @@ impl<TStorage: WritableStorageTraits + ?Sized> WritableStorageTraits
     }
 }
 
-impl<TStorage: ReadableStorageTraits + WritableStorageTraits + ?Sized> ReadableWritableStorageTraits
+impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> ReadableWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
 }

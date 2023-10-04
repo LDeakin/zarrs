@@ -64,7 +64,7 @@ use crate::{
     node::NodePath,
     storage::{
         data_key, meta_key, storage_transformer::StorageTransformerChain, ReadableStorageTraits,
-        StorageError, WritableStorageTraits,
+        StorageError, StorageHandle, WritableStorageTraits,
     },
 };
 
@@ -88,7 +88,7 @@ pub type ArrayShape = Vec<u64>;
 /// The `shape` and `attributes` of an array are mutable and can be updated after construction.
 /// Array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata), which can be done before or after chunks are written.
 #[derive(Debug)]
-pub struct Array<TStorage> {
+pub struct Array<TStorage: ?Sized> {
     /// The storage (including storage transformers).
     storage: Arc<TStorage>,
     /// The path of the array in a store.
@@ -117,7 +117,7 @@ pub struct Array<TStorage> {
     parallel_codecs: bool,
 }
 
-impl<TStorage> Array<TStorage> {
+impl<TStorage: ?Sized> Array<TStorage> {
     /// Create an array in `storage` at `path` with `metadata`.
     /// This does **not** write to the store, use [`store_metadata`](Array<WritableStorageTraits>::store_metadata) to write `metadata` to `storage`.
     ///
@@ -343,7 +343,7 @@ impl<TStorage> Array<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     /// Create an array in `storage` at `path`. The metadata is read from the store.
     ///
     /// # Errors
@@ -368,9 +368,10 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     ///
     /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
     pub fn retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
+        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(self.storage.clone());
+            .create_readable_transformer(storage_handle);
         let chunk_encoded = crate::storage::retrieve_chunk(
             &*storage_transformer,
             self.path(),
@@ -630,9 +631,10 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
             ));
         }
 
+        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(self.storage.clone());
+            .create_readable_transformer(storage_handle);
         let input_handle = Box::new(StoragePartialDecoder::new(
             &*storage_transformer,
             data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
@@ -715,16 +717,17 @@ impl<TStorage: ReadableStorageTraits> Array<TStorage> {
     }
 }
 
-impl<TStorage: WritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     /// Store metadata.
     ///
     /// # Errors
     ///
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata(&self) -> Result<(), StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
         let storage_transformer = self
             .storage_transformers()
-            .create_writable_transformer(self.storage.clone());
+            .create_writable_transformer(storage_handle);
         crate::storage::create_array(&*storage_transformer, self.path(), &self.metadata())
     }
 
@@ -755,9 +758,10 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
             .chunks_exact(fill_value.len())
             .any(|f| f != fill_value);
         if any_non_fill_value {
+            let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
             let storage_transformer = self
                 .storage_transformers()
-                .create_writable_transformer(self.storage.clone());
+                .create_writable_transformer(storage_handle);
             let chunk_encoded: Vec<u8> = if self.parallel_codecs() {
                 self.codecs()
                     .par_encode(chunk_bytes.to_vec(), &chunk_array_representation)
@@ -836,7 +840,7 @@ impl<TStorage: WritableStorageTraits> Array<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
     ///
     /// Prefer to use [`store_chunk`](Array<WritableStorageTraits>::store_chunk) since this will decode and encode each chunk intersecting `array_subset`.

@@ -12,6 +12,7 @@
 //! This module defines abstract store interfaces, includes various store and storage transformers, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
 
 pub mod storage_adapter;
+mod storage_handle;
 pub mod storage_transformer;
 mod storage_value_io;
 pub mod store;
@@ -32,6 +33,8 @@ pub use self::store::{
 };
 
 pub use self::storage_transformer::StorageTransformerChain;
+
+pub use self::storage_handle::StorageHandle;
 
 pub use storage_value_io::StorageValueIO;
 
@@ -289,7 +292,7 @@ pub fn data_key(
 /// # Errors
 ///
 /// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn get_child_nodes<TStorage: ReadableStorageTraits + ListableStorageTraits>(
+pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
     storage: &TStorage,
     path: &NodePath,
 ) -> Result<Vec<Node>, StorageError> {
@@ -319,7 +322,7 @@ pub fn get_child_nodes<TStorage: ReadableStorageTraits + ListableStorageTraits>(
 // /// # Errors
 // ///
 // /// Returns a [`StorageError`] if there is an underlying error with the store.
-// pub fn create_hierarchy<TStorage: ReadableStorageTraits + ListableStorageTraits>(
+// pub fn create_hierarchy<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
 //     storage: &TStorage,
 // ) -> Result<Hierarchy, StorageError> {
 //     let root_path: NodePath = NodePath::new("/")?;
@@ -427,7 +430,7 @@ pub fn retrieve_partial_values(
 /// # Errors
 ///
 /// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn discover_children<TStorage: ReadableStorageTraits + ListableStorageTraits>(
+pub fn discover_children<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
     storage: &TStorage,
     path: &NodePath,
 ) -> Result<StorePrefixes, StorageError> {
@@ -470,7 +473,7 @@ pub fn erase_node(
 /// # Errors
 ///
 /// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn node_exists<TStorage: ReadableStorageTraits + ListableStorageTraits>(
+pub fn node_exists<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
     storage: &TStorage,
     path: &NodePath,
 ) -> Result<bool, StorageError> {
@@ -484,7 +487,7 @@ pub fn node_exists<TStorage: ReadableStorageTraits + ListableStorageTraits>(
 /// # Errors
 ///
 /// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn node_exists_listable<TStorage: ListableStorageTraits>(
+pub fn node_exists_listable<TStorage: ?Sized + ListableStorageTraits>(
     storage: &TStorage,
     path: &NodePath,
 ) -> Result<bool, StorageError> {

@@ -30,7 +30,9 @@ use thiserror::Error;
 use crate::{
     metadata::{AdditionalFields, UnsupportedAdditionalFieldError},
     node::{NodePath, NodePathError},
-    storage::{meta_key, ReadableStorageTraits, StorageError, WritableStorageTraits},
+    storage::{
+        meta_key, ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits,
+    },
 };
 
 pub use self::{
@@ -44,7 +46,7 @@ pub use self::{
     fmt = "path {path} metadata {}",
     "serde_json::to_string(metadata).unwrap_or_default()"
 )]
-pub struct Group<TStorage> {
+pub struct Group<TStorage: ?Sized> {
     /// The storage.
     #[allow(dead_code)]
     storage: Arc<TStorage>,
@@ -55,7 +57,7 @@ pub struct Group<TStorage> {
     metadata: GroupMetadataV3,
 }
 
-impl<TStorage> Group<TStorage> {
+impl<TStorage: ?Sized> Group<TStorage> {
     /// Create a group in `storage` at `path` with `metadata`.
     /// This does **not** write to the store, use [`store_metadata`](Group<WritableStorageTraits>::store_metadata) to write `metadata` to `storage`.
     ///
@@ -114,7 +116,7 @@ impl<TStorage> Group<TStorage> {
     }
 }
 
-impl<TStorage: ReadableStorageTraits> Group<TStorage> {
+impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     /// Create a group in `storage` at `path`. The metadata is read from the store.
     ///
     /// # Errors
@@ -168,16 +170,17 @@ fn validate_group_metadata(metadata: &GroupMetadataV3) -> Result<(), GroupCreate
     }
 }
 
-impl<TStorage: ReadableStorageTraits> Group<TStorage> {}
+impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {}
 
-impl<TStorage: WritableStorageTraits> Group<TStorage> {
+impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
     /// Store metadata.
     ///
     /// # Errors
     ///
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata(&self) -> Result<(), StorageError> {
-        crate::storage::create_group(&*self.storage, self.path(), &self.metadata())
+        let storage_handle = StorageHandle::new(&*self.storage);
+        crate::storage::create_group(&storage_handle, self.path(), &self.metadata())
     }
 }
 
