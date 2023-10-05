@@ -162,11 +162,7 @@ fn blosc_validate(src: &[u8]) -> Option<usize> {
             std::ptr::addr_of_mut!(destsize),
         )
     } == 0;
-    if valid {
-        Some(destsize)
-    } else {
-        None
-    }
+    valid.then_some(destsize)
 }
 
 /// # Safety
@@ -182,11 +178,7 @@ fn blosc_typesize(src: &[u8]) -> Option<usize> {
             std::ptr::addr_of_mut!(flags),
         );
     };
-    if typesize != 0 && flags != 0 {
-        Some(typesize)
-    } else {
-        None
-    }
+    (typesize != 0 && flags != 0).then_some(typesize)
 }
 
 /// Returns the length of the uncompress bytes of a blosc buffer.
@@ -206,11 +198,7 @@ fn blosc_nbytes(src: &[u8]) -> Option<usize> {
             std::ptr::addr_of_mut!(blocksize),
         );
     };
-    if uncompressed_bytes > 0 && cbytes > 0 && blocksize > 0 {
-        Some(uncompressed_bytes)
-    } else {
-        None
-    }
+    (uncompressed_bytes > 0 && cbytes > 0 && blocksize > 0).then_some(uncompressed_bytes)
 }
 
 fn blosc_decompress_bytes(
