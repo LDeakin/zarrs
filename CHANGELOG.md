@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Support parallel encoding, parallel decoding, and partial decoding with the `blosc` codec
    - Previously the blosc codec would read the whole chunk when partial decoding
 
+### Fixed
+
+ - Fixed `retrieve_chunk_subset` returning fill values on any `StorageError` instead of just `StorageError::KeyNotFound`
+
 ## [0.4.1] - 2023-10-04
 
 ### Added

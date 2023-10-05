@@ -397,9 +397,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                             StorageError::KeyNotFound(_) => {
                                 // Chunk does not exist should return an array of fill values
                                 let fill_value = chunk_representation.fill_value().as_ne_bytes();
-                                Ok(fill_value.repeat(
-                                    chunk_representation.num_elements().try_into().unwrap(),
-                                ))
+                                Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
                             }
                             _ => Err(error.into()),
                         }
@@ -649,10 +647,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         match decoded_bytes {
             Ok(decoded_bytes) => Ok(decoded_bytes.concat()),
             Err(error) => match error {
-                CodecError::StorageError(_) => Ok(self
-                    .fill_value()
-                    .as_ne_bytes()
-                    .repeat(chunk_subset.num_elements_usize())),
+                CodecError::StorageError(error) => {
+                    match error {
+                        StorageError::KeyNotFound(_) => {
+                            // Chunk does not exist should return an array of fill values
+                            let fill_value = chunk_representation.fill_value().as_ne_bytes();
+                            Ok(fill_value.repeat(chunk_subset.num_elements_usize()))
+                        }
+                        _ => Err(error.into()),
+                    }
+                }
                 _ => Err(error.into()),
             },
         }
