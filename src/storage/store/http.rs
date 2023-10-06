@@ -256,7 +256,7 @@ mod tests {
         let data_2x2 = array
             .retrieve_array_subset_elements::<f32>(&subset_2x2)
             .unwrap();
-        assert_eq!(data_2x2, &[0.1, 0.2, 0.4, 0.5]);
+        assert_eq!(data_2x2, &[0.1, f32::NAN, 0.4, 0.5]);
 
         // let data = array.retrieve_array_subset_ndarray::<f32>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
         // println!("{data:?}");

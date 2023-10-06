@@ -94,6 +94,9 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         &vec![-4.0; 4],
     )?;
 
+    // Erase a chunk
+    array.erase_chunk(&[0, 1])?;
+
     // Read the whole array
     let subset_all = ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec())?;
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;

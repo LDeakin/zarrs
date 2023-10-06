@@ -490,6 +490,24 @@ pub fn retrieve_chunk(
     ))
 }
 
+/// Erase a chunk.
+///
+/// # Errors
+///
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn erase_chunk(
+    storage: &dyn WritableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+) -> Result<bool, StorageError> {
+    storage.erase(&data_key(
+        array_path,
+        chunk_grid_indices,
+        chunk_key_encoding,
+    ))
+}
+
 /// Retrieve byte ranges from a chunk.
 ///
 /// Returns [`None`] where keys are not found.

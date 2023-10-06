@@ -828,6 +828,26 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             unreachable!()
         }
     }
+
+    /// Erase the chunk at `chunk_indices`.
+    ///
+    /// Returns true if the chunk was erased, or false if it did not exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    pub fn erase_chunk(&self, chunk_indices: &[u64]) -> Result<bool, StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_writable_transformer(storage_handle);
+        crate::storage::erase_chunk(
+            &*storage_transformer,
+            self.path(),
+            chunk_indices,
+            self.chunk_key_encoding(),
+        )
+    }
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
