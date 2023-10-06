@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - The `http_array_read` example now logs store requests to stdout using `UsageLogStorageTransformer`
  - **Breaking**: `WritableStorageTraits::erase/erase_values/erase_prefix` return a boolean indicating if they actually deleted something
  - **Breaking**: Add `ReadableStorageTraits::get_partial_values_key` which reads byte ranges for a store key
+ - **Breaking**: Changed `data_type::try_create_data_type` to `DataType::from_metadata`
 
 ### Fixed
 
