@@ -7,6 +7,7 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 **zarrs is experimental and in limited production use. Use at your own risk!**
 
 - [API documentation](https://docs.rs/zarrs/latest/zarrs/)
+- [Changelog](./CHANGELOG.md)
 - [Examples](./examples)
 - [Build instructions (BUILD.md)](./BUILD.md)
 

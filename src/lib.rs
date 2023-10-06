@@ -6,6 +6,14 @@
 //!
 //! A subset of zarrs is exposed as a C API in the [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi) crate.
 //!
+//! ## Stability
+//! Zarrs is unstable and will remain unstable in the near future.
+//!  - The API surface for typical use (e.g. array reading and writing) *should* remain quite stable.
+//!  - Breaking changes are more likely to impact custom codecs, stores, storage transformers, etc.
+//!  - Zarr V3 has been approved but still has some pending revisions.
+//!
+//! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
+//!
 //! ## Implementation Status
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/draft/ZEP0001.html)
 //! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/draft/ZEP0002.html) ([under review](https://github.com/zarr-developers/zarr-specs/issues/254))
@@ -27,11 +35,11 @@
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`
 //!
-//! - `array_read_write`: create an array, write its metadata, write chunks in parallel, read the whole array, read a chunk, and partially read a subset.
-//! - `sharded_array_write_read`: write and read a sharded array.
-//! - `rectangular_array_write_read`: write and read an array with a rectangular chunk grid.
-//! - `zip_array_write_read`: write an array to a filesystem, zip it, then read it from the zipped file.
-//! - `http_array_read`: read an array over HTTP.
+//! - [`array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs): create an array, write its metadata, write chunks in parallel, delete a chunk, read the whole array, read a chunk, and partially read a subset.
+//! - [`sharded_array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs): write and read a sharded array.
+//! - [`rectangular_array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/rectangular_array_write_read.rs): write and read an array with a rectangular chunk grid.
+//! - [`zip_array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs): write an array to a filesystem, zip it, then read it from the zipped file.
+//! - [`http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/http_array_read.rs): read an array over HTTP.
 //!
 //! ## Licence
 //! zarrs is licensed under either of
