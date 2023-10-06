@@ -7,10 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2023-10-06
+
+### Added
+
  - Add `From<&str>` and `From<String>` for `Other` variants of `CodecError`, `StorageError`, `ChunkGridShapeError`, `StorePluginCreateError`
+
+### Changed
+
  - Support parallel encoding, parallel decoding, and partial decoding with the `blosc` codec
    - Previously the blosc codec would read the whole chunk when partial decoding
- - `HTTPStore` range requests are now batched, but this can be optionall disabled
+ - `HTTPStore` range requests are now batched by default
 
 ### Fixed
 
@@ -83,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.4.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.2
 [0.4.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.1
 [0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.3.0
