@@ -46,16 +46,16 @@ num = { version = "0.4" }
 parking_lot = "0.12"
 pathdiff = "0.2"
 rayon = "1.6"
-reqwest = { version = "0.11.21", features = ["blocking"], optional = true }
+reqwest = { version = "0.11", features = ["blocking"], optional = true }
 safe-transmute = "0.11"
 serde = { version = "1.0.100", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["preserve_order"] }
 thiserror = "1.0.7"
-url = { version = "2.4.1", optional = true }
+url = { version = "2", optional = true }
 walkdir = "2.3.2"
 zip = { version = "0.6", optional = true }
 zstd = { version = "0.12", optional = true }
 
 [dev-dependencies]
-chrono = "0.4.31"
-tempfile = "3.0.2"
+chrono = "0.4"
+tempfile = "3"
