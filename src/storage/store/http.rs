@@ -99,9 +99,9 @@ impl ReadableStorageTraits for HTTPStore {
     ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
         let url = self.key_to_url(key)?;
         let client = reqwest::blocking::Client::new();
-        let size = self
-            .size_key(key)?
-            .ok_or(StorageError::UnknownKeySize(key.clone()))?;
+        let Some(size) = self.size_key(key)? else {
+            return Ok(None);
+        };
         let bytes_strs = byte_ranges
             .iter()
             .map(|byte_range| format!("{}-{}", byte_range.start(size), byte_range.end(size) - 1))
@@ -111,7 +111,7 @@ impl ReadableStorageTraits for HTTPStore {
         let response = client.get(url).header(RANGE, range).send()?;
 
         match response.status() {
-            StatusCode::NOT_FOUND => Ok(None),
+            StatusCode::NOT_FOUND => Err(StorageError::from("the http server returned a NOT FOUND status for the byte range request, but returned a non zero size for CONTENT_LENGTH")),
             StatusCode::PARTIAL_CONTENT => {
                 // TODO: Gracefully handle a response from the server which does not include all requested by ranges
                 let mut bytes = response.bytes()?;
@@ -179,6 +179,7 @@ impl ReadableStorageTraits for HTTPStore {
                     .ok_or(StorageError::from("content length response is invalid"))?;
                 Ok(Some(length))
             }
+            StatusCode::NOT_FOUND => Ok(None),
             _ => Err(StorageError::from(format!(
                 "http size_key has status code {}",
                 response.status()
@@ -256,7 +257,11 @@ mod tests {
         let data_2x2 = array
             .retrieve_array_subset_elements::<f32>(&subset_2x2)
             .unwrap();
-        assert_eq!(data_2x2, &[0.1, f32::NAN, 0.4, 0.5]);
+        // assert_eq!(data_2x2, &[0.1, f32::NAN, 0.4, 0.5]);
+        assert_eq!(data_2x2[0], 0.1);
+        assert!(data_2x2[1].is_nan());
+        assert_eq!(data_2x2[2], 0.4);
+        assert_eq!(data_2x2[3], 0.5);
 
         // let data = array.retrieve_array_subset_ndarray::<f32>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
         // println!("{data:?}");
