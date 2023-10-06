@@ -7,9 +7,10 @@ use crate::{
 
 use super::{ReadableStoreExtension, StoreExtension, StoreKey};
 
+use itertools::Itertools;
 use reqwest::{
     header::{HeaderValue, CONTENT_LENGTH, RANGE},
-    Url,
+    StatusCode, Url,
 };
 use std::str::FromStr;
 use thiserror::Error;
@@ -18,6 +19,7 @@ use thiserror::Error;
 #[derive(Debug)]
 pub struct HTTPStore {
     base_url: Url,
+    batch_range_requests: bool,
 }
 
 impl ReadableStoreExtension for HTTPStore {}
@@ -45,7 +47,19 @@ impl HTTPStore {
     pub fn new(base_url: &str) -> Result<HTTPStore, HTTPStoreCreateError> {
         let base_url = Url::from_str(base_url)
             .map_err(|_| HTTPStoreCreateError::InvalidBaseURL(base_url.into()))?;
-        Ok(HTTPStore { base_url })
+        Ok(HTTPStore {
+            base_url,
+            batch_range_requests: true,
+        })
+    }
+
+    /// Set whether to batch range requests.
+    ///
+    /// Defaults to true.
+    /// Some servers do not fully support multipart ranges and might return an entire resource given such a request.
+    /// It may be preferable to disable batched range requests in this case, so that each range request is a single part range.
+    pub fn set_batch_range_requests(&mut self, batch_range_requests: bool) {
+        self.batch_range_requests = batch_range_requests;
     }
 
     /// Maps a [`StoreKey`] to a HTTP [`Url`].
@@ -61,18 +75,79 @@ impl HTTPStore {
         Url::parse(&url)
     }
 
-    fn get_impl(&self, key: &StoreKey, byte_range: &ByteRange) -> Result<Vec<u8>, StorageError> {
+    fn get_impl(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Vec<Vec<u8>>, StorageError> {
         let url = self.key_to_url(key)?;
         let client = reqwest::blocking::Client::new();
         let size = self.size_key(key)?;
-        let range = HeaderValue::from_str(&format!(
-            "bytes={}-{}",
-            byte_range.start(size),
-            byte_range.end(size) - 1
-        ))
-        .unwrap();
+        let bytes_strs = byte_ranges
+            .iter()
+            .map(|byte_range| format!("{}-{}", byte_range.start(size), byte_range.end(size) - 1))
+            .join(", ");
+
+        let range = HeaderValue::from_str(&format!("bytes={bytes_strs}")).unwrap();
         let response = client.get(url).header(RANGE, range).send()?;
-        Ok(response.bytes()?.to_vec())
+
+        match response.status() {
+            StatusCode::NOT_FOUND => Err(StorageError::KeyNotFound(key.clone())),
+            StatusCode::PARTIAL_CONTENT => {
+                // TODO: Gracefully handle a response from the server which does not include all requested by ranges
+                let mut bytes = response.bytes()?;
+                if bytes.len() as u64
+                    == byte_ranges
+                        .iter()
+                        .map(|byte_range| byte_range.length(size))
+                        .sum::<u64>()
+                {
+                    let mut out = Vec::with_capacity(byte_ranges.len());
+                    for byte_range in byte_ranges {
+                        let bytes_range =
+                            bytes.split_to(usize::try_from(byte_range.length(size)).unwrap());
+                        out.push(bytes_range.to_vec());
+                    }
+                    Ok(out)
+                } else {
+                    Err(StorageError::from(
+                        "http partial content response did not include all requested byte ranges",
+                    ))
+                }
+            }
+            StatusCode::OK => {
+                // Received all bytes
+                let bytes = response.bytes()?;
+                let mut out = Vec::with_capacity(byte_ranges.len());
+                for byte_range in byte_ranges {
+                    let start = usize::try_from(byte_range.start(size)).unwrap();
+                    let end = usize::try_from(byte_range.end(size)).unwrap();
+                    out.push(bytes[start..end].to_vec());
+                }
+                Ok(out)
+            }
+            _ => Err(StorageError::from(format!(
+                "the http server responded with status {:?} for the byte range request",
+                response.status()
+            ))),
+        }
+    }
+
+    fn get_impl_err(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Vec<Result<Vec<u8>, StorageError>> {
+        let bytes = self.get_impl(key, byte_ranges);
+        match bytes {
+            Ok(bytes) => bytes.into_iter().map(Ok).collect(),
+            Err(err) => (0..byte_ranges.len())
+                .map(|_| match &err {
+                    StorageError::KeyNotFound(key) => Err(StorageError::KeyNotFound(key.clone())),
+                    _ => Err(StorageError::from(err.to_string())),
+                })
+                .collect(),
+        }
     }
 }
 
@@ -88,11 +163,42 @@ impl ReadableStorageTraits for HTTPStore {
         &self,
         key_ranges: &[StoreKeyRange],
     ) -> Vec<Result<Vec<u8>, StorageError>> {
-        // TODO: Batch multiple byte ranges for a single key into a single request
-        let mut out = Vec::with_capacity(key_ranges.len());
-        for key_range in key_ranges {
-            out.push(self.get_impl(&key_range.key, &key_range.byte_range));
+        let mut out: Vec<Result<Vec<u8>, StorageError>> = Vec::with_capacity(key_ranges.len());
+
+        if self.batch_range_requests {
+            let mut last_key = None;
+            let mut byte_ranges_group = Vec::new();
+            for key_range in key_ranges {
+                if last_key.is_none() {
+                    last_key = Some(&key_range.key);
+                }
+                let last_key_val = last_key.unwrap();
+
+                if key_range.key != *last_key_val {
+                    // Found a new key, so do a batched get of the byte ranges of the last key
+                    out.extend(self.get_impl_err(last_key_val, &byte_ranges_group));
+
+                    last_key = Some(&key_range.key);
+                    byte_ranges_group.clear();
+                }
+
+                byte_ranges_group.push(key_range.byte_range);
+            }
+
+            if !byte_ranges_group.is_empty() {
+                // Get the byte ranges of the last key
+                let last_key_val = last_key.unwrap();
+                out.extend(self.get_impl_err(last_key_val, &byte_ranges_group));
+            }
+        } else {
+            for key_range in key_ranges {
+                out.push(
+                    self.get_impl_err(&key_range.key, &[key_range.byte_range])
+                        .remove(0),
+                );
+            }
         }
+
         out
     }
 
