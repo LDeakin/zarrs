@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - When a value is read from the store but the key is not found, the returned value is now `None` instead of an error indicating a missing key
  - Add `storage::erase_chunk` and `Array::erase_chunk`
    - The `array_write_read` example is updated to demonstrate `erase_chunk`
+ - Add `TryFrom::<&str>` for `FillValueMetadata`
 
 ### Changed
 

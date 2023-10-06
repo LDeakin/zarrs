@@ -31,6 +31,14 @@ pub enum FillValueMetadata {
     ByteArray(Vec<u8>),
 }
 
+impl TryFrom<&str> for FillValueMetadata {
+    type Error = serde_json::Error;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        serde_json::from_str(s)
+    }
+}
+
 /// A float fill value.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, From, Display)]
 #[serde(untagged)]
