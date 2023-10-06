@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+ - `BytesCodec` now defaults to native endian encoding as opposed to no encoding (only valid for 8 bit data types).
  - `storage::get_child_nodes` and `Node::new_with_store` now correctly propagate storage errors instead of treating all errors as missing metadata
  - `Group::new` now handles an implicit group (with a missing `zarr.json`)
  - `ZipStore` handle missing files

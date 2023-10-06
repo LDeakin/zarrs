@@ -17,7 +17,7 @@ use super::{
 /// An [`Array`] builder.
 ///
 /// The array builder is initialised from an array shape, data type, chunk grid, and fill value.
-///  - The only codec enabled by default is `bytes` (little endian), so the output is uncompressed.
+///  - The only codec enabled by default is `bytes` (with native endian encoding), so the output is uncompressed.
 ///  - The default chunk key encoding is `default` with the `/` chunk key separator.
 ///  - Attributes, storage transformers, and dimension names are empty.
 ///  - Codecs are configured to use multiple threads where possible.
@@ -90,7 +90,7 @@ impl ArrayBuilder {
             chunk_key_encoding: Box::<DefaultChunkKeyEncoding>::default(),
             fill_value,
             array_to_array_codecs: Vec::default(),
-            array_to_bytes_codec: Box::new(BytesCodec::little()),
+            array_to_bytes_codec: Box::<BytesCodec>::default(),
             bytes_to_bytes_codecs: Vec::default(),
             attributes: serde_json::Map::default(),
             storage_transformers: Vec::default().into(),
@@ -114,7 +114,7 @@ impl ArrayBuilder {
 
     /// Set the array to bytes codec.
     ///
-    /// If left unmodified, the array will default to using the `bytes` codec with little endian encoding.
+    /// If left unmodified, the array will default to using the `bytes` codec with native endian encoding.
     #[must_use]
     pub fn array_to_bytes_codec(
         mut self,

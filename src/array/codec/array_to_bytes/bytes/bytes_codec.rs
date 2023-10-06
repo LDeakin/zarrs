@@ -14,7 +14,7 @@ use crate::{
 
 use super::{
     bytes_configuration::BytesCodecConfigurationV1, bytes_partial_decoder, reverse_endianness,
-    BytesCodecConfiguration, Endianness,
+    BytesCodecConfiguration, Endianness, NATIVE_ENDIAN,
 };
 
 const IDENTIFIER: &str = "bytes";
@@ -35,9 +35,15 @@ fn create_codec_bytes(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
 }
 
 /// A `bytes` codec implementation.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct BytesCodec {
     endian: Option<Endianness>,
+}
+
+impl Default for BytesCodec {
+    fn default() -> Self {
+        Self::new(Some(NATIVE_ENDIAN))
+    }
 }
 
 impl BytesCodec {
