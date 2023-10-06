@@ -352,6 +352,7 @@ mod tests {
         let partial_decoder = codec.partial_decoder(input_handle);
         let decoded = partial_decoder
             .partial_decode(&bytes_representation, &decoded_regions)
+            .unwrap()
             .unwrap();
 
         let decoded: Vec<u16> = decoded

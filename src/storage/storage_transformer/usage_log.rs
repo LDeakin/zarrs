@@ -6,6 +6,8 @@ use std::{
 };
 
 use crate::{
+    array::MaybeBytes,
+    byte_range::ByteRange,
     metadata::Metadata,
     storage::{
         store::{StoreKey, StoreKeys, StorePrefix},
@@ -84,35 +86,62 @@ struct UsageLogStorageTransformerImpl<TStorage: ?Sized> {
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let result = self.storage.get(key);
         writeln!(
             self.handle.lock().unwrap(),
             "{}get({key:?}) -> len={:?}",
             (self.prefix_func)(),
-            result.as_ref().map(Vec::len)
+            result
+                .as_ref()
+                .map(|v| if let Some(v) = v { v.len() } else { 0 })
         )?;
         result
+    }
+
+    fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        let _ = writeln!(
+            self.handle.lock().unwrap(),
+            "{}get_partial_values_key({key}, {byte_ranges:?})",
+            (self.prefix_func)()
+        );
+        self.storage.get_partial_values_key(key, byte_ranges)
     }
 
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
         let _ = writeln!(
             self.handle.lock().unwrap(),
-            "{}get({key_ranges:?})",
+            "{}get_partial_values({key_ranges:?})",
             (self.prefix_func)()
         );
         self.storage.get_partial_values(key_ranges)
     }
 
     fn size(&self) -> Result<u64, StorageError> {
-        self.storage.size()
+        let size = self.storage.size();
+        let _ = writeln!(
+            self.handle.lock().unwrap(),
+            "{}size() -> {size:?}",
+            (self.prefix_func)()
+        );
+        size
     }
 
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
-        self.storage.size_key(key)
+    fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
+        let size = self.storage.size_key(key);
+        let _ = writeln!(
+            self.handle.lock().unwrap(),
+            "{}size_key({key}) -> {size:?}",
+            (self.prefix_func)()
+        );
+        size
     }
 }
 
@@ -172,7 +201,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.storage.set_partial_values(key_start_values)
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
+    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase({key:?}",
@@ -181,7 +210,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.storage.erase(key)
     }
 
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
+    fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_values({keys:?}",
@@ -190,7 +219,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.storage.erase_values(keys)
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_prefix({prefix:?}",

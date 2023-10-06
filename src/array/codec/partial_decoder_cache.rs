@@ -3,7 +3,7 @@
 use parking_lot::RwLock;
 
 use crate::{
-    array::{ArrayRepresentation, BytesRepresentation},
+    array::{ArrayRepresentation, BytesRepresentation, MaybeBytes},
     array_subset::InvalidArraySubsetError,
     byte_range::{extract_byte_ranges, ByteRange},
 };
@@ -13,7 +13,7 @@ use super::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, C
 /// A bytes partial decoder cache.
 pub struct BytesPartialDecoderCache<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    cache: RwLock<Option<Vec<u8>>>,
+    cache: RwLock<Option<MaybeBytes>>,
 }
 
 impl<'a> BytesPartialDecoderCache<'a> {
@@ -32,7 +32,7 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
         &self,
         decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let mut read_cache = self.cache.read();
         if read_cache.is_none() {
             drop(read_cache);
@@ -43,9 +43,14 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
             drop(write_cache);
             read_cache = self.cache.read();
         }
-        let cache = read_cache.as_ref().unwrap();
-
-        extract_byte_ranges(cache, decoded_regions).map_err(CodecError::InvalidByteRangeError)
+        let bytes = read_cache.as_ref().unwrap();
+        Ok(match bytes {
+            Some(bytes) => Some(
+                extract_byte_ranges(bytes, decoded_regions)
+                    .map_err(CodecError::InvalidByteRangeError)?,
+            ),
+            None => None,
+        })
     }
 }
 

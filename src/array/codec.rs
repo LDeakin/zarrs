@@ -52,11 +52,11 @@ use crate::{
     byte_range::{ByteRange, InvalidByteRangeError},
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
-    storage::{ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange},
+    storage::{ReadableStorageTraits, StorageError, StoreKey},
 };
 use std::io::{Read, Seek, SeekFrom};
 
-use super::{ArrayRepresentation, BytesRepresentation};
+use super::{ArrayRepresentation, BytesRepresentation, MaybeBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -160,6 +160,8 @@ pub trait ArrayCodecTraits: CodecTraits {
 pub trait BytesPartialDecoderTraits: Send + Sync {
     /// Partially decode bytes.
     ///
+    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
+    ///
     /// # Errors
     ///
     /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
@@ -167,9 +169,11 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
         &self,
         decoded_representation: &BytesRepresentation,
         byte_ranges: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError>;
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError>;
 
     /// Partially decode bytes using multithreading (if supported).
+    ///
+    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
     ///
     /// # Errors
     ///
@@ -178,22 +182,29 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
         &self,
         decoded_representation: &BytesRepresentation,
         byte_ranges: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         self.partial_decode(decoded_representation, byte_ranges)
     }
 
     /// Decode all bytes.
     ///
+    /// Returns [`None`] if decoding of the input handle returns [`None`].
+    ///
     /// # Errors
     ///
     /// Returns [`CodecError`] if a codec fails.
-    fn decode(&self, decoded_representation: &BytesRepresentation) -> Result<Vec<u8>, CodecError> {
+    fn decode(
+        &self,
+        decoded_representation: &BytesRepresentation,
+    ) -> Result<MaybeBytes, CodecError> {
         Ok(self
             .partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
-            .remove(0))
+            .map(|mut v| v.remove(0)))
     }
 
     /// Decode all bytes using multithreading (if supported).
+    ///
+    /// Returns [`None`] if decoding of the input handle returns [`None`].
     ///
     /// # Errors
     ///
@@ -201,16 +212,18 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     fn par_decode(
         &self,
         decoded_representation: &BytesRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<MaybeBytes, CodecError> {
         Ok(self
             .par_partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
-            .remove(0))
+            .map(|mut v| v.remove(0)))
     }
 }
 
 /// Partial array decoder traits.
 pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// Partially decode an array.
+    ///
+    /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///
     /// # Errors
     ///
@@ -222,6 +235,8 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     ) -> Result<Vec<Vec<u8>>, CodecError>;
 
     /// Partially decode an array using multithreading (if supported).
+    ///
+    /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///
     /// # Errors
     ///
@@ -235,6 +250,8 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     }
 
     /// Decode the entire array.
+    ///
+    /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array has the fill value.
     ///
     /// # Errors
     ///
@@ -288,17 +305,10 @@ impl BytesPartialDecoderTraits for StoragePartialDecoder<'_> {
         &self,
         _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let key_ranges: Vec<StoreKeyRange> = decoded_regions
-            .iter()
-            .map(|byte_range| StoreKeyRange::new(self.key.clone(), *byte_range))
-            .collect();
-
-        self.storage
-            .get_partial_values(&key_ranges)
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(CodecError::StorageError)
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        Ok(self
+            .storage
+            .get_partial_values_key(&self.key, decoded_regions)?)
     }
 }
 
@@ -402,8 +412,11 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
         &self,
         _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
-        extract_byte_ranges_rs(&mut self.clone(), decoded_regions)
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        Ok(Some(extract_byte_ranges_rs(
+            &mut self.clone(),
+            decoded_regions,
+        )?))
     }
 }
 
@@ -412,8 +425,11 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
         &self,
         _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
-        extract_byte_ranges_rs(&mut self.clone(), decoded_regions)
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        Ok(Some(extract_byte_ranges_rs(
+            &mut self.clone(),
+            decoded_regions,
+        )?))
     }
 }
 
@@ -435,7 +451,7 @@ pub enum CodecError {
     /// An embedded checksum does not match the decoded value.
     #[error("the checksum is invalid")]
     InvalidChecksum,
-    /// Store error. I.e. missing chunk.
+    /// A store error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
     /// Other

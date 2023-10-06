@@ -60,6 +60,9 @@ pub enum ArrayCreateError {
     /// An error deserializing the metadata.
     #[error(transparent)]
     MetadataDeserializationError(#[from] serde_json::Error),
+    /// Missing metadata.
+    #[error("array metadata is missing")]
+    MissingMetadata,
 }
 
 /// Array errors.

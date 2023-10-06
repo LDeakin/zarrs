@@ -124,7 +124,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
         let node_path = path.try_into()?;
-        let metadata: GroupMetadata = serde_json::from_slice(&storage.get(&meta_key(&node_path))?)?;
+        let metadata: GroupMetadata = match storage.get(&meta_key(&node_path))? {
+            Some(metadata) => serde_json::from_slice(&metadata)?,
+            None => GroupMetadataV3::default().into(),
+        };
         Self::new_with_metadata(storage, path, metadata)
     }
 }

@@ -64,6 +64,7 @@ mod tests {
         let partial_decoder = codec.partial_decoder(input_handle);
         let decoded_partial_chunk = partial_decoder
             .partial_decode(&bytes_representation, &decoded_regions)
+            .unwrap()
             .unwrap();
         let answer: &[Vec<u8>] = &[vec![3, 4]];
         assert_eq!(answer, decoded_partial_chunk);

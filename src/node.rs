@@ -73,11 +73,11 @@ impl Node {
         path: &str,
     ) -> Result<Self, NodeCreateError> {
         let path: NodePath = path.try_into()?;
-        let metadata = storage.get(&meta_key(&path));
+        let metadata = storage.get(&meta_key(&path))?;
         let metadata: NodeMetadata = match metadata {
-            Ok(metadata) => serde_json::from_slice(metadata.as_slice())
+            Some(metadata) => serde_json::from_slice(metadata.as_slice())
                 .map_err(|e| NodeCreateError::Metadata(e.to_string()))?,
-            Err(..) => NodeMetadata::Group(GroupMetadataV3::default().into()),
+            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
         };
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),

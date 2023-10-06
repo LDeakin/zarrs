@@ -31,7 +31,7 @@ fn array_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
 
     create_array(&store, &"/array".try_into()?, &array)?;
 
-    let json_cmp = to_json(&store.get(&meta_key(&"/array".try_into()?))?);
+    let json_cmp = to_json(&store.get(&meta_key(&"/array".try_into()?))?.unwrap());
     assert_eq!(json, json_cmp);
     Ok(())
 }
@@ -48,7 +48,7 @@ fn group_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
 
     create_group(&store, &"/group".try_into()?, &group)?;
 
-    let json_cmp = to_json(&store.get(&meta_key(&"/group".try_into()?))?);
+    let json_cmp = to_json(&store.get(&meta_key(&"/group".try_into()?))?.unwrap());
     assert_eq!(json, json_cmp);
     Ok(())
 }
@@ -58,7 +58,7 @@ fn metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
     let store = MemoryStore::new();
     let metadata_in = include_bytes!("data/array_metadata.json");
     store.set(&meta_key(&"/group/array".try_into()?), metadata_in)?;
-    let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?;
+    let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?.unwrap();
     assert_eq!(metadata_in.as_slice(), metadata_out);
     Ok(())
 }
@@ -69,7 +69,7 @@ fn metadata_round_trip_filesystem() -> Result<(), Box<dyn Error>> {
     let store = FilesystemStore::new(path.path())?;
     let metadata_in = include_bytes!("data/array_metadata.json");
     store.set(&meta_key(&"/group/array".try_into()?), metadata_in)?;
-    let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?;
+    let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?.unwrap();
     assert_eq!(metadata_in.as_slice(), metadata_out);
     Ok(())
 }
@@ -84,11 +84,13 @@ fn filesystem_chunk_round_trip_impl(
         &data_key(&"/group/array".try_into()?, &[0, 0, 0], chunk_key_encoding),
         &data_serialised_in,
     )?;
-    let data_serialised_out = store.get(&data_key(
-        &"/group/array".try_into()?,
-        &[0, 0, 0],
-        chunk_key_encoding,
-    ))?;
+    let data_serialised_out = store
+        .get(&data_key(
+            &"/group/array".try_into()?,
+            &[0, 0, 0],
+            chunk_key_encoding,
+        ))?
+        .unwrap();
     assert_eq!(data_serialised_in, data_serialised_out);
     Ok(())
 }

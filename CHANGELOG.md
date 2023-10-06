@@ -7,10 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - `MaybeBytes` an alias for `Option<Vec<u8>>`
+   - When a value is read from the store but the key is not found, the returned value is now `None` instead of an error indicating a missing key.
+
 ### Changed
 
-- **Breaking**: `UsageLogStorageTransformer` now takes a prefix function rather than a string
-  - The `http_array_read` example now logs store requests to stdout using `UsageLogStorageTransformer`
+ - **Breaking**: Remove `StorageError::KeyNotFound` in favour of returning `MaybeBytes`
+ - **Breaking**: Add `StorageError::UnknownKeySize` if a method requires a known key size, but the key size cannot be determined
+ - **Breaking**: Add `ArrayCreateError::MissingMetadata` if attempting to create an array in a store without specifying metadata, and the metadata does not exist
+ - **Breaking**: `UsageLogStorageTransformer` now takes a prefix function rather than a string
+   - The `http_array_read` example now logs store requests to stdout using `UsageLogStorageTransformer`
+ - **Breaking**: `WritableStorageTraits::erase/erase_values/erase_prefix` return a boolean indicating if they actually deleted something
+ - **Breaking**: Add `ReadableStorageTraits::get_partial_values_key` which reads byte ranges for a store key
+
+### Fixed
+
+ - `storage::get_child_nodes` and `Node::new_with_store` now correctly propagate storage errors instead of treating all errors as missing metadata
+ - `Group::new` now handles an implicit group (with a missing `zarr.json`)
+ - `ZipStore` handle missing files
+ - `HTTPStore` improve error handling, check status codes
 
 ## [0.4.2] - 2023-10-06
 

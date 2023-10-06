@@ -23,10 +23,17 @@ impl BytesPartialDecoderTraits for ZstdPartialDecoder<'_> {
         &self,
         decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let compressed = self.input_handle.decode(decoded_representation)?;
+        let Some(compressed) = compressed else {
+            return Ok(None);
+        };
+
         let decompressed = zstd::decode_all(compressed.as_slice()).map_err(CodecError::IOError)?;
-        extract_byte_ranges(&decompressed, decoded_regions)
-            .map_err(CodecError::InvalidByteRangeError)
+
+        Ok(Some(
+            extract_byte_ranges(&decompressed, decoded_regions)
+                .map_err(CodecError::InvalidByteRangeError)?,
+        ))
     }
 }

@@ -22,7 +22,7 @@ use std::{path::PathBuf, sync::Arc};
 use thiserror::Error;
 
 use crate::{
-    array::{ArrayMetadata, ChunkKeyEncoding},
+    array::{ArrayMetadata, ChunkKeyEncoding, MaybeBytes},
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     group::{GroupMetadata, GroupMetadataV3},
     node::{Node, NodeMetadata, NodeNameError, NodePath, NodePathError},
@@ -54,10 +54,25 @@ pub type ReadableWritableStorage<'a> = Arc<dyn ReadableWritableStorageTraits + '
 pub trait ReadableStorageTraits: Send + Sync {
     /// Retrieve the value (bytes) associated with a given [`StoreKey`].
     ///
+    /// Returns [`None`] if the key is not found.
+    ///
     /// # Errors
     ///
     /// Returns a [`StorageError`] if the store key does not exist or there is an error with the underlying store.
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError>;
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError>;
+
+    /// Retrieve partial bytes from a list of byte ranges for a store key.
+    ///
+    /// Returns [`None`] if the key is not found.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`StorageError`] if there is an underlying storage error.
+    fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError>;
 
     /// Retrieve partial bytes from a list of [`StoreKeyRange`].
     ///
@@ -65,11 +80,16 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// * `key_ranges`: ordered set of ([`StoreKey`], [`ByteRange`]) pairs. A key may occur multiple times with different ranges.
     ///
     /// # Output
-    /// A a list of values in the order of the `key_ranges`. It will be empty for missing keys.
+    ///
+    /// A a list of values in the order of the `key_ranges`. It will be [`None`] for missing keys.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`StorageError`] if there is an underlying storage error.
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>>;
+    ) -> Result<Vec<MaybeBytes>, StorageError>;
 
     /// Return the size in bytes of the readable storage.
     ///
@@ -78,12 +98,61 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
     fn size(&self) -> Result<u64, StorageError>;
 
-    /// Return the size in bytes of the value at `key` if it exists.
+    /// Return the size in bytes of the value at `key`.
+    ///
+    /// Returns [`None`] if the key is not found.
     ///
     /// # Errors
     ///
-    /// Returns an error if the key does not exist or there is an underlying error with the store.
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError>;
+    /// Returns a [`StorageError`] if there is an underlying storage error.
+    fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError>;
+
+    /// A utility method with the same input and output as [`get_partial_values`](ReadableStorageTraits::get_partial_values) that internally calls [`get_partial_values_key`](ReadableStorageTraits::get_partial_values_key) with byte ranges grouped by key.
+    ///
+    /// Readable storage can use this function in the implementation of [`get_partial_values`](ReadableStorageTraits::get_partial_values) if that is optimal.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`StorageError`] if there is an underlying storage error.
+    fn get_partial_values_batched_by_key(
+        &self,
+        key_ranges: &[StoreKeyRange],
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        let mut out: Vec<MaybeBytes> = Vec::with_capacity(key_ranges.len());
+        let mut last_key = None;
+        let mut byte_ranges_key = Vec::new();
+        for key_range in key_ranges {
+            if last_key.is_none() {
+                last_key = Some(&key_range.key);
+            }
+            let last_key_val = last_key.unwrap();
+
+            if key_range.key != *last_key_val {
+                // Found a new key, so do a batched get of the byte ranges of the last key
+                let bytes =
+                    match self.get_partial_values_key(last_key.unwrap(), &byte_ranges_key)? {
+                        Some(partial_values) => partial_values.into_iter().map(Some).collect(),
+                        None => vec![None; byte_ranges_key.len()],
+                    };
+                out.extend(bytes);
+                last_key = Some(&key_range.key);
+                byte_ranges_key.clear();
+            }
+
+            byte_ranges_key.push(key_range.byte_range);
+        }
+
+        if !byte_ranges_key.is_empty() {
+            // Get the byte ranges of the last key
+            let bytes = match self.get_partial_values_key(last_key.unwrap(), &byte_ranges_key)? {
+                Some(partial_values) => partial_values.into_iter().map(Some).collect(),
+                None => vec![None; byte_ranges_key.len()],
+            };
+            out.extend(bytes);
+        }
+
+        Ok(out)
+    }
 }
 
 /// Listable storage traits.
@@ -132,28 +201,35 @@ pub trait WritableStorageTraits: Send + Sync {
 
     /// Erase a [`StoreKey`].
     ///
+    /// Returns true if the key exists and was erased, or false if the key does not exist.
+    ///
     /// # Errors
     ///
-    /// Returns a [`StorageError`] if the store key is not in the store, or the erase otherwise fails.
-    fn erase(&self, key: &StoreKey) -> Result<(), StorageError>;
+    /// Returns a [`StorageError`] if there is an underlying storage error.
+    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError>;
 
     /// Erase a list of [`StoreKey`].
     ///
+    /// Returns true if all keys existed and were erased, or false if any key does not exist.
+    ///
     /// # Errors
     ///
-    /// Returns a [`StorageError`] if a store key is not in the store, or the erase otherwise fails.
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
+    /// Returns a [`StorageError`] if there is an underlying storage error.
+    fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
+        let mut all_deleted = true;
         for key in keys {
-            self.erase(key)?;
+            all_deleted = all_deleted && self.erase(key)?;
         }
-        Ok(())
+        Ok(all_deleted)
     }
 
     /// Erase all [`StoreKey`] under [`StorePrefix`].
     ///
+    /// Returns true if the prefix and all its children were removed.
+    ///
     /// # Errors
     /// Returns a [`StorageError`] is the prefix is not in the store, or the erase otherwise fails.
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError>;
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError>;
 }
 
 /// A supertrait of [`ReadableStorageTraits`] and [`WritableStorageTraits`].
@@ -223,9 +299,6 @@ pub enum StorageError {
     /// A write operation was attempted on a read only store.
     #[error("a write operation was attempted on a read only store")]
     ReadOnly,
-    /// A key was not found.
-    #[error("key {0} was not found")]
-    KeyNotFound(StoreKey),
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
@@ -250,6 +323,9 @@ pub enum StorageError {
     /// The requested method is not supported.
     #[error("{0}")]
     Unsupported(String),
+    /// Unknown key size where the key size must be known.
+    #[error("{0}")]
+    UnknownKeySize(StoreKey),
     /// Any other error.
     #[error("{0}")]
     Other(String),
@@ -305,13 +381,12 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
     let prefixes = discover_children(storage, path)?;
     let mut nodes: Vec<Node> = Vec::new();
     for prefix in &prefixes {
-        let child_metadata_bytes = storage.get(&meta_key(&prefix.try_into()?));
-        let child_metadata = match child_metadata_bytes {
-            Ok(child_metadata) => {
+        let child_metadata = match storage.get(&meta_key(&prefix.try_into()?))? {
+            Some(child_metadata) => {
                 let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())?;
                 metadata
             }
-            Err(_) => NodeMetadata::Group(GroupMetadataV3::default().into()),
+            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
         };
         let path: NodePath = prefix.try_into()?;
         let children = match child_metadata {
@@ -407,7 +482,7 @@ pub fn retrieve_chunk(
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<Vec<u8>, StorageError> {
+) -> Result<MaybeBytes, StorageError> {
     storage.get(&data_key(
         array_path,
         chunk_grid_indices,
@@ -416,13 +491,19 @@ pub fn retrieve_chunk(
 }
 
 /// Retrieve byte ranges from a chunk.
+///
+/// Returns [`None`] where keys are not found.
+///
+/// # Errors
+///
+/// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn retrieve_partial_values(
     storage: &dyn ReadableStorageTraits,
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
     bytes_ranges: &[ByteRange],
-) -> Vec<Result<Vec<u8>, StorageError>> {
+) -> Result<Vec<MaybeBytes>, StorageError> {
     let key = data_key(array_path, chunk_grid_indices, chunk_key_encoding);
     let key_ranges: Vec<StoreKeyRange> = bytes_ranges
         .iter()
@@ -461,7 +542,9 @@ pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, 
     storage.list_prefix(&"/".try_into()?)
 }
 
-/// Erase a node.
+/// Erase a node (group or array) and all of its children.
+///
+/// Returns true if the node existed and was removed.
 ///
 /// # Errors
 ///
@@ -469,7 +552,7 @@ pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, 
 pub fn erase_node(
     storage: &dyn WritableStorageTraits,
     path: &NodePath,
-) -> Result<(), StorageError> {
+) -> Result<bool, StorageError> {
     let prefix = path.try_into()?;
     storage.erase_prefix(&prefix)
 }

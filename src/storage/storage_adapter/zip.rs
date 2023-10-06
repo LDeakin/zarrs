@@ -1,6 +1,7 @@
 //! A zip store.
 
 use crate::{
+    array::MaybeBytes,
     byte_range::ByteRange,
     storage::{
         storage_value_io::StorageValueIO, ListableStorageTraits, ReadableStorageTraits,
@@ -45,9 +46,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         path: T,
     ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
         let zip_path = path.into();
-        let key = unsafe { StoreKey::new_unchecked(String::new()) };
-        let size = storage.size_key(&key)?;
-        let storage_io = StorageValueIO::new(storage, key)?;
+        let root_key = unsafe { StoreKey::new_unchecked(String::new()) };
+        let size = storage
+            .size_key(&root_key)?
+            .ok_or::<ZipStorageAdapterCreateError>(
+                StorageError::UnknownKeySize(root_key.clone()).into(),
+            )?;
+        let storage_io = StorageValueIO::new(storage, root_key, size);
         let zip_archive = Mutex::new(ZipArchive::new(storage_io)?);
         Ok(ZipStorageAdapter {
             size,
@@ -56,50 +61,62 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         })
     }
 
-    fn get_impl(&self, key: &StoreKey, byte_range: &ByteRange) -> Result<Vec<u8>, StorageError> {
+    fn get_impl(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
         let mut zip_archive = self.zip_archive.lock();
         let mut zip_name = self.zip_path.clone();
         zip_name.push(key.as_str());
-        let mut file =
-            zip_archive
-                .by_name(&zip_name.to_string_lossy())
-                .map_err(|err| match err {
-                    ZipError::FileNotFound => StorageError::KeyNotFound(key.clone()),
-                    _ => StorageError::Other(err.to_string()),
-                })?;
-        let size = file.size();
+        let mut out = Vec::with_capacity(byte_ranges.len());
+        for byte_range in byte_ranges {
+            // FIXME: Only read the zip file once!
+            let mut file = {
+                let zip_file = zip_archive.by_name(&zip_name.to_string_lossy());
+                match zip_file {
+                    Ok(zip_file) => zip_file,
+                    Err(err) => match err {
+                        ZipError::FileNotFound => return Ok(None),
+                        _ => return Err(StorageError::Other(err.to_string())),
+                    },
+                }
+            };
+            let size = file.size();
 
-        let buffer = match byte_range {
-            ByteRange::FromStart(offset, None) => {
-                std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
-                let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
-                file.read_to_end(&mut buffer)?;
-                buffer
-            }
-            ByteRange::FromStart(offset, Some(length)) => {
-                std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
-                let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
-                file.take(*length).read_to_end(&mut buffer)?;
-                buffer
-            }
-            ByteRange::FromEnd(offset, None) => {
-                let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
-                file.take(size - offset).read_to_end(&mut buffer)?;
-                buffer
-            }
-            ByteRange::FromEnd(offset, Some(length)) => {
-                std::io::copy(
-                    &mut file.by_ref().take(size - length - offset),
-                    &mut std::io::sink(),
-                )
-                .unwrap();
-                let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
-                file.take(*length).read_to_end(&mut buffer)?;
-                buffer
-            }
-        };
+            let buffer = match byte_range {
+                ByteRange::FromStart(offset, None) => {
+                    std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
+                    let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
+                    file.read_to_end(&mut buffer)?;
+                    buffer
+                }
+                ByteRange::FromStart(offset, Some(length)) => {
+                    std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
+                    let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
+                    file.take(*length).read_to_end(&mut buffer)?;
+                    buffer
+                }
+                ByteRange::FromEnd(offset, None) => {
+                    let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
+                    file.take(size - offset).read_to_end(&mut buffer)?;
+                    buffer
+                }
+                ByteRange::FromEnd(offset, Some(length)) => {
+                    std::io::copy(
+                        &mut file.by_ref().take(size - length - offset),
+                        &mut std::io::sink(),
+                    )
+                    .unwrap();
+                    let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
+                    file.take(*length).read_to_end(&mut buffer)?;
+                    buffer
+                }
+            };
+            out.push(buffer);
+        }
 
-        Ok(buffer)
+        Ok(Some(out))
     }
 
     fn zip_file_strip_prefix<'a>(&self, name: &'a str) -> Option<&'a str> {
@@ -111,32 +128,41 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     for ZipStorageAdapter<TStorage>
 {
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
-        self.get_impl(key, &ByteRange::FromStart(0, None))
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+        Ok(self.get_impl(key, &[ByteRange::FromStart(0, None)])?.map(
+            |mut bytes| bytes.remove(0), // extract single byte range
+        ))
+    }
+
+    fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        self.get_impl(key, byte_ranges)
     }
 
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        let mut out = Vec::with_capacity(key_ranges.len());
-        for key_range in key_ranges {
-            out.push(self.get_impl(&key_range.key, &key_range.byte_range));
-        }
-        out
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size(&self) -> Result<u64, StorageError> {
         Ok(self.size)
     }
 
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
-        Ok(self
-            .zip_archive
-            .lock()
-            .by_name(key.as_str())
-            .map_err(|err| StorageError::Other(err.to_string()))?
-            .compressed_size())
+    fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
+        let mut zip_archive = self.zip_archive.lock();
+        let file = zip_archive.by_name(key.as_str());
+        match file {
+            Ok(file) => Ok(Some(file.compressed_size())),
+            Err(err) => match err {
+                ZipError::FileNotFound => Ok(None),
+                _ => Err(StorageError::Other(err.to_string())),
+            },
+        }
     }
 }
 
@@ -361,8 +387,11 @@ mod tests {
             &"/a/b".try_into()?
         )?);
 
-        assert_eq!(store.get(&"a/b".try_into()?)?, &[0, 1, 2, 3]);
-        assert_eq!(store.get(&"a/c".try_into()?)?, Vec::<u8>::new().as_slice());
+        assert_eq!(store.get(&"a/b".try_into()?)?.unwrap(), &[0, 1, 2, 3]);
+        assert_eq!(
+            store.get(&"a/c".try_into()?)?.unwrap(),
+            Vec::<u8>::new().as_slice()
+        );
 
         Ok(())
     }
@@ -412,7 +441,7 @@ mod tests {
             &"/b".try_into()?
         )?);
 
-        assert_eq!(store.get(&"b".try_into()?)?, &[0, 1, 2, 3]);
+        assert_eq!(store.get(&"b".try_into()?)?.unwrap(), &[0, 1, 2, 3]);
         // assert_eq!(store.get(&"c".try_into()?)?, Vec::<u8>::new().as_slice());
 
         Ok(())

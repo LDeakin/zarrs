@@ -3,6 +3,7 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
 
 use crate::{
+    array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
         ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
@@ -141,43 +142,6 @@ impl FilesystemStore {
         path
     }
 
-    fn get_impl(&self, key: &StoreKey, byte_range: &ByteRange) -> Result<Vec<u8>, StorageError> {
-        let mut files = self.files.write();
-        let _lock = files.entry(key.clone()).or_default();
-        let mut file = File::open(self.key_to_fspath(key)).map_err(|err| match err.kind() {
-            std::io::ErrorKind::NotFound => StorageError::KeyNotFound(key.clone()),
-            _ => err.into(),
-        })?;
-
-        let buffer = {
-            // Seek
-            match byte_range {
-                ByteRange::FromStart(offset, _) => file.seek(SeekFrom::Start(*offset)),
-                ByteRange::FromEnd(_, None) => file.seek(SeekFrom::Start(0u64)),
-                ByteRange::FromEnd(offset, Some(length)) => {
-                    file.seek(SeekFrom::End(-(i64::try_from(*offset + *length).unwrap())))
-                }
-            }?;
-
-            // Read
-            match byte_range {
-                ByteRange::FromStart(_, None) | ByteRange::FromEnd(_, None) => {
-                    let mut buffer = Vec::new();
-                    file.read_to_end(&mut buffer)?;
-                    buffer
-                }
-                ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => {
-                    let length = usize::try_from(*length).unwrap();
-                    let mut buffer = vec![0; length];
-                    file.read_exact(&mut buffer)?;
-                    buffer
-                }
-            }
-        };
-
-        Ok(buffer)
-    }
-
     fn set_impl(
         &self,
         key: &StoreKey,
@@ -201,11 +165,7 @@ impl FilesystemStore {
             .write(true)
             .create(true)
             .truncate(truncate)
-            .open(key_path.clone())
-            .map_err(|err| match err.kind() {
-                std::io::ErrorKind::NotFound => StorageError::KeyNotFound(key.clone()),
-                _ => err.into(),
-            })?;
+            .open(key_path.clone())?;
 
         // Write
         if let Some(offset) = offset {
@@ -218,19 +178,67 @@ impl FilesystemStore {
 }
 
 impl ReadableStorageTraits for FilesystemStore {
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
-        self.get_impl(key, &ByteRange::FromStart(0, None))
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+        Ok(self
+            .get_partial_values_key(key, &[ByteRange::FromStart(0, None)])?
+            .map(|mut v| v.remove(0)))
+    }
+
+    fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        let mut files = self.files.write();
+        let _lock = files.entry(key.clone()).or_default();
+        let mut file = match File::open(self.key_to_fspath(key)) {
+            Ok(file) => file,
+            Err(err) => {
+                if err.kind() == std::io::ErrorKind::NotFound {
+                    return Ok(None);
+                }
+                return Err(err.into());
+            }
+        };
+
+        let mut out = Vec::with_capacity(byte_ranges.len());
+        for byte_range in byte_ranges {
+            let bytes = {
+                // Seek
+                match byte_range {
+                    ByteRange::FromStart(offset, _) => file.seek(SeekFrom::Start(*offset)),
+                    ByteRange::FromEnd(_, None) => file.seek(SeekFrom::Start(0u64)),
+                    ByteRange::FromEnd(offset, Some(length)) => {
+                        file.seek(SeekFrom::End(-(i64::try_from(*offset + *length).unwrap())))
+                    }
+                }?;
+
+                // Read
+                match byte_range {
+                    ByteRange::FromStart(_, None) | ByteRange::FromEnd(_, None) => {
+                        let mut buffer = Vec::new();
+                        file.read_to_end(&mut buffer)?;
+                        buffer
+                    }
+                    ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => {
+                        let length = usize::try_from(*length).unwrap();
+                        let mut buffer = vec![0; length];
+                        file.read_exact(&mut buffer)?;
+                        buffer
+                    }
+                }
+            };
+            out.push(bytes);
+        }
+
+        Ok(Some(out))
     }
 
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        let mut out = Vec::with_capacity(key_ranges.len());
-        for key_range in key_ranges {
-            out.push(self.get_impl(&key_range.key, &key_range.byte_range));
-        }
-        out
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size(&self) -> Result<u64, StorageError> {
@@ -247,12 +255,12 @@ impl ReadableStorageTraits for FilesystemStore {
             .sum())
     }
 
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+    fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let key_path = self.key_to_fspath(key);
         if let Ok(metadata) = std::fs::metadata(key_path) {
-            Ok(metadata.len())
+            Ok(Some(metadata.len()))
         } else {
-            Err(StorageError::KeyNotFound(key.clone()))
+            Ok(None)
         }
     }
 }
@@ -286,22 +294,30 @@ impl WritableStorageTraits for FilesystemStore {
         Ok(())
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
+    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);
         }
 
         let key_path = self.key_to_fspath(key);
-        Ok(std::fs::remove_file(key_path)?)
+        Ok(std::fs::remove_file(key_path).is_ok())
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);
         }
 
         let prefix_path = self.prefix_to_fs_path(prefix);
-        Ok(std::fs::remove_dir(prefix_path)?)
+        let result = std::fs::remove_dir(prefix_path);
+        if let Err(err) = result {
+            match err.kind() {
+                std::io::ErrorKind::NotFound => Ok(false),
+                _ => Err(err.into()),
+            }
+        } else {
+            Ok(true)
+        }
     }
 }
 
@@ -381,9 +397,9 @@ mod tests {
         let store = FilesystemStore::new(path.path())?;
         let key = "a/b".try_into()?;
         store.set(&key, &[0, 1, 2])?;
-        assert_eq!(store.get(&key)?, &[0, 1, 2]);
+        assert_eq!(store.get(&key)?.unwrap(), &[0, 1, 2]);
         store.set_partial_values(&[StoreKeyStartValue::new(key.clone(), 1, &[3, 4])])?;
-        assert_eq!(store.get(&key)?, &[0, 3, 4]);
+        assert_eq!(store.get(&key)?.unwrap(), &[0, 3, 4]);
         Ok(())
     }
 

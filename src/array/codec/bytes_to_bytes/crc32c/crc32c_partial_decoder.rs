@@ -25,10 +25,13 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
         &self,
         decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let mut bytes = self
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        let bytes = self
             .input_handle
             .partial_decode(decoded_representation, decoded_regions)?;
+        let Some(mut bytes) = bytes else {
+            return Ok(None);
+        };
 
         // Drop trailing checksum
         for (bytes, byte_range) in bytes.iter_mut().zip(decoded_regions) {
@@ -46,6 +49,6 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
             };
         }
 
-        Ok(bytes)
+        Ok(Some(bytes))
     }
 }

@@ -1,4 +1,8 @@
-use super::{ListableStorageTraits, ReadableStorageTraits, WritableStorageTraits};
+use crate::{array::MaybeBytes, byte_range::ByteRange};
+
+use super::{
+    ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, WritableStorageTraits,
+};
 
 /// A storage handle.
 ///
@@ -16,14 +20,22 @@ impl<'a, TStorage: ?Sized> StorageHandle<'a, TStorage> {
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     for StorageHandle<'_, TStorage>
 {
-    fn get(&self, key: &super::StoreKey) -> Result<Vec<u8>, super::StorageError> {
+    fn get(&self, key: &super::StoreKey) -> Result<MaybeBytes, super::StorageError> {
         self.0.get(key)
+    }
+
+    fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        self.0.get_partial_values_key(key, byte_ranges)
     }
 
     fn get_partial_values(
         &self,
         key_ranges: &[super::StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, super::StorageError>> {
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
         self.0.get_partial_values(key_ranges)
     }
 
@@ -31,7 +43,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         self.0.size()
     }
 
-    fn size_key(&self, key: &super::StoreKey) -> Result<u64, super::StorageError> {
+    fn size_key(&self, key: &super::StoreKey) -> Result<Option<u64>, super::StorageError> {
         self.0.size_key(key)
     }
 }
@@ -72,15 +84,15 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.0.set_partial_values(key_start_values)
     }
 
-    fn erase(&self, key: &super::StoreKey) -> Result<(), super::StorageError> {
+    fn erase(&self, key: &super::StoreKey) -> Result<bool, super::StorageError> {
         self.0.erase(key)
     }
 
-    fn erase_values(&self, keys: &[super::StoreKey]) -> Result<(), super::StorageError> {
+    fn erase_values(&self, keys: &[super::StoreKey]) -> Result<bool, super::StorageError> {
         self.0.erase_values(keys)
     }
 
-    fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<(), super::StorageError> {
+    fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<bool, super::StorageError> {
         self.0.erase_prefix(prefix)
     }
 }

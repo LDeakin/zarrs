@@ -1,6 +1,7 @@
 //! A HTTP store.
 
 use crate::{
+    array::MaybeBytes,
     byte_range::ByteRange,
     storage::{ReadableStorageTraits, StorageError, StoreKeyRange},
 };
@@ -74,15 +75,33 @@ impl HTTPStore {
         }
         Url::parse(&url)
     }
+}
 
-    fn get_impl(
+impl ReadableStorageTraits for HTTPStore {
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+        let url = self.key_to_url(key)?;
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(url).send()?;
+        match response.status() {
+            StatusCode::OK => Ok(Some(response.bytes()?.to_vec())),
+            StatusCode::NOT_FOUND => Ok(None),
+            _ => Err(StorageError::from(format!(
+                "http unexpected status code: {}",
+                response.status()
+            ))),
+        }
+    }
+
+    fn get_partial_values_key(
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, StorageError> {
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
         let url = self.key_to_url(key)?;
         let client = reqwest::blocking::Client::new();
-        let size = self.size_key(key)?;
+        let size = self
+            .size_key(key)?
+            .ok_or(StorageError::UnknownKeySize(key.clone()))?;
         let bytes_strs = byte_ranges
             .iter()
             .map(|byte_range| format!("{}-{}", byte_range.start(size), byte_range.end(size) - 1))
@@ -92,7 +111,7 @@ impl HTTPStore {
         let response = client.get(url).header(RANGE, range).send()?;
 
         match response.status() {
-            StatusCode::NOT_FOUND => Err(StorageError::KeyNotFound(key.clone())),
+            StatusCode::NOT_FOUND => Ok(None),
             StatusCode::PARTIAL_CONTENT => {
                 // TODO: Gracefully handle a response from the server which does not include all requested by ranges
                 let mut bytes = response.bytes()?;
@@ -108,7 +127,7 @@ impl HTTPStore {
                             bytes.split_to(usize::try_from(byte_range.length(size)).unwrap());
                         out.push(bytes_range.to_vec());
                     }
-                    Ok(out)
+                    Ok(Some(out))
                 } else {
                     Err(StorageError::from(
                         "http partial content response did not include all requested byte ranges",
@@ -124,82 +143,20 @@ impl HTTPStore {
                     let end = usize::try_from(byte_range.end(size)).unwrap();
                     out.push(bytes[start..end].to_vec());
                 }
-                Ok(out)
+                Ok(Some(out))
             }
             _ => Err(StorageError::from(format!(
-                "the http server responded with status {:?} for the byte range request",
+                "the http server responded with status {} for the byte range request",
                 response.status()
             ))),
         }
     }
 
-    fn get_impl_err(
-        &self,
-        key: &StoreKey,
-        byte_ranges: &[ByteRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        let bytes = self.get_impl(key, byte_ranges);
-        match bytes {
-            Ok(bytes) => bytes.into_iter().map(Ok).collect(),
-            Err(err) => (0..byte_ranges.len())
-                .map(|_| match &err {
-                    StorageError::KeyNotFound(key) => Err(StorageError::KeyNotFound(key.clone())),
-                    _ => Err(StorageError::from(err.to_string())),
-                })
-                .collect(),
-        }
-    }
-}
-
-impl ReadableStorageTraits for HTTPStore {
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
-        let url = self.key_to_url(key)?;
-        let client = reqwest::blocking::Client::new();
-        let response = client.get(url).send()?;
-        Ok(response.bytes()?.to_vec())
-    }
-
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        let mut out: Vec<Result<Vec<u8>, StorageError>> = Vec::with_capacity(key_ranges.len());
-
-        if self.batch_range_requests {
-            let mut last_key = None;
-            let mut byte_ranges_group = Vec::new();
-            for key_range in key_ranges {
-                if last_key.is_none() {
-                    last_key = Some(&key_range.key);
-                }
-                let last_key_val = last_key.unwrap();
-
-                if key_range.key != *last_key_val {
-                    // Found a new key, so do a batched get of the byte ranges of the last key
-                    out.extend(self.get_impl_err(last_key_val, &byte_ranges_group));
-
-                    last_key = Some(&key_range.key);
-                    byte_ranges_group.clear();
-                }
-
-                byte_ranges_group.push(key_range.byte_range);
-            }
-
-            if !byte_ranges_group.is_empty() {
-                // Get the byte ranges of the last key
-                let last_key_val = last_key.unwrap();
-                out.extend(self.get_impl_err(last_key_val, &byte_ranges_group));
-            }
-        } else {
-            for key_range in key_ranges {
-                out.push(
-                    self.get_impl_err(&key_range.key, &[key_range.byte_range])
-                        .remove(0),
-                );
-            }
-        }
-
-        out
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size(&self) -> Result<u64, StorageError> {
@@ -208,17 +165,25 @@ impl ReadableStorageTraits for HTTPStore {
         ))
     }
 
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+    fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let url = self.key_to_url(key)?;
         let client = reqwest::blocking::Client::new();
         let response = client.head(url).send()?;
-        let length = response
-            .headers()
-            .get(CONTENT_LENGTH)
-            .and_then(|header_value| header_value.to_str().ok())
-            .and_then(|header_str| u64::from_str(header_str).ok())
-            .ok_or(StorageError::from("content length response is invalid"))?;
-        Ok(length)
+        match response.status() {
+            StatusCode::OK => {
+                let length = response
+                    .headers()
+                    .get(CONTENT_LENGTH)
+                    .and_then(|header_value| header_value.to_str().ok())
+                    .and_then(|header_str| u64::from_str(header_str).ok())
+                    .ok_or(StorageError::from("content length response is invalid"))?;
+                Ok(Some(length))
+            }
+            _ => Err(StorageError::from(format!(
+                "http size_key has status code {}",
+                response.status()
+            ))),
+        }
     }
 }
 
@@ -254,7 +219,7 @@ mod tests {
         let len = store
             .size_key(&meta_key(&NodePath::new(ARRAY_PATH_REF).unwrap()))
             .unwrap();
-        assert_eq!(len, 691);
+        assert_eq!(len.unwrap(), 691);
     }
 
     #[test]
@@ -262,6 +227,7 @@ mod tests {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let metadata = store
             .get(&meta_key(&NodePath::new(ARRAY_PATH_REF).unwrap()))
+            .unwrap()
             .unwrap();
         let metadata: crate::array::ArrayMetadataV3 = serde_json::from_slice(&metadata).unwrap();
         assert_eq!(metadata.data_type.name(), "float64");

@@ -23,8 +23,12 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
         &self,
         decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let encoded_value = self.input_handle.decode(decoded_representation)?;
+        let Some(encoded_value) = encoded_value else {
+            return Ok(None);
+        };
+
         if let Some(_destsize) = blosc_validate(&encoded_value) {
             let nbytes = blosc_nbytes(&encoded_value);
             let typesize = blosc_typesize(&encoded_value);
@@ -43,7 +47,7 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
                         .map_err(|err| CodecError::from(err.to_string()))?,
                     );
                 }
-                return Ok(decoded_byte_ranges);
+                return Ok(Some(decoded_byte_ranges));
             }
         }
         Err(CodecError::from("blosc encoded value is invalid"))

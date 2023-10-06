@@ -1,5 +1,5 @@
 use crate::{
-    array::BytesRepresentation,
+    array::{BytesRepresentation, MaybeBytes},
     byte_range::{ByteLength, ByteOffset, ByteRange},
 };
 
@@ -34,7 +34,7 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
         &self,
         decoded_representation: &BytesRepresentation,
         byte_ranges: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let byte_ranges: Vec<ByteRange> = byte_ranges
             .iter()
             .map(|byte_range| match byte_range {
@@ -57,9 +57,12 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
             .partial_decode(decoded_representation, &byte_ranges)
     }
 
-    fn decode(&self, decoded_representation: &BytesRepresentation) -> Result<Vec<u8>, CodecError> {
+    fn decode(
+        &self,
+        decoded_representation: &BytesRepresentation,
+    ) -> Result<MaybeBytes, CodecError> {
         Ok(self
             .partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
-            .remove(0))
+            .map(|mut v| v.remove(0)))
     }
 }

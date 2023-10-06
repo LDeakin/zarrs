@@ -27,12 +27,19 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
         &self,
         decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let compressed = self.input_handle.decode(decoded_representation)?;
+        let Some(compressed) = compressed else {
+            return Ok(None);
+        };
+
         let mut decoder = GzDecoder::new(Cursor::new(&compressed));
         let mut decompressed = Vec::new();
         decoder.read_to_end(&mut decompressed)?;
-        extract_byte_ranges(&decompressed, decoded_regions)
-            .map_err(CodecError::InvalidByteRangeError)
+
+        Ok(Some(
+            extract_byte_ranges(&decompressed, decoded_regions)
+                .map_err(CodecError::InvalidByteRangeError)?,
+        ))
     }
 }

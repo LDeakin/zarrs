@@ -1,6 +1,7 @@
 //! A storage transformer which records performance metrics.
 
 use crate::{
+    array::MaybeBytes,
     metadata::Metadata,
     storage::{
         ListableStorage, ListableStorageTraits, ReadableStorage, ReadableStorageTraits,
@@ -106,9 +107,11 @@ struct PerformanceMetricsStorageTransformerImpl<'a, TStorage: ?Sized> {
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let value = self.storage.get(key);
-        let bytes_read = value.as_ref().map_or(0, Vec::len);
+        let bytes_read = value
+            .as_ref()
+            .map_or(0, |v| if let Some(v) = v { v.len() } else { 0 });
         self.transformer
             .bytes_read
             .fetch_add(bytes_read, Ordering::Relaxed);
@@ -116,20 +119,32 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         value
     }
 
+    fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[crate::byte_range::ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        let values = self.storage.get_partial_values_key(key, byte_ranges)?;
+        if let Some(values) = &values {
+            let bytes_read = values.iter().map(Vec::len).sum();
+            self.transformer
+                .bytes_read
+                .fetch_add(bytes_read, Ordering::Relaxed);
+            self.transformer
+                .reads
+                .fetch_add(byte_ranges.len(), Ordering::Relaxed);
+        }
+        Ok(values)
+    }
+
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        let values = self.storage.get_partial_values(key_ranges);
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        let values = self.storage.get_partial_values(key_ranges)?;
         let bytes_read = values
             .iter()
-            .map(|value| {
-                if let Ok(value) = value {
-                    value.len()
-                } else {
-                    0
-                }
-            })
+            .map(|value| value.as_ref().map_or(0, Vec::len))
             .sum::<usize>();
         self.transformer
             .bytes_read
@@ -137,14 +152,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         self.transformer
             .reads
             .fetch_add(key_ranges.len(), Ordering::Relaxed);
-        values
+        Ok(values)
     }
 
     fn size(&self) -> Result<u64, StorageError> {
         self.storage.size()
     }
 
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+    fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         self.storage.size_key(key)
     }
 }
@@ -193,15 +208,15 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.storage.set_partial_values(key_start_values)
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
+    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
         self.storage.erase(key)
     }
 
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
+    fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
         self.storage.erase_values(keys)
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         self.storage.erase_prefix(prefix)
     }
 }

@@ -44,11 +44,12 @@ impl<'a> ShardingPartialDecoder<'a> {
         }
     }
 
+    /// Returns `None` if there is no shard.
     fn decode_shard_index(
         &self,
         decoded_representation: &ArrayRepresentation,
         parallel: bool,
-    ) -> Result<Vec<u64>, CodecError> {
+    ) -> Result<Option<Vec<u64>>, CodecError> {
         let shard_shape = decoded_representation.shape();
         let chunk_representation = unsafe {
             ArrayRepresentation::new_unchecked(
@@ -81,14 +82,17 @@ impl<'a> ShardingPartialDecoder<'a> {
                 &[ByteRange::FromEnd(0, Some(index_encoded_size))],
             )
         }?
-        .remove(0);
+        .map(|mut v| v.remove(0));
 
-        decode_shard_index(
-            &encoded_shard_index,
-            &index_array_representation,
-            self.index_codecs,
-            parallel,
-        )
+        Ok(match encoded_shard_index {
+            Some(encoded_shard_index) => Some(decode_shard_index(
+                &encoded_shard_index,
+                &index_array_representation,
+                self.index_codecs,
+                parallel,
+            )?),
+            None => None,
+        })
     }
 }
 
@@ -103,7 +107,21 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             drop(read_shard_index);
             let mut write_shard_index = self.shard_index.write();
             if write_shard_index.is_none() {
-                *write_shard_index = Some(self.decode_shard_index(decoded_representation, false)?);
+                let decoded_shard_index = self.decode_shard_index(decoded_representation, false)?;
+                if let Some(decoded_shard_index) = decoded_shard_index {
+                    *write_shard_index = Some(decoded_shard_index);
+                } else {
+                    // return fill values
+                    return Ok(decoded_regions
+                        .iter()
+                        .map(|decoded_region| {
+                            decoded_representation
+                                .fill_value()
+                                .as_ne_bytes()
+                                .repeat(decoded_region.num_elements_usize())
+                        })
+                        .collect());
+                }
             }
             drop(write_shard_index);
             read_shard_index = self.shard_index.read();
@@ -191,7 +209,21 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             drop(read_shard_index);
             let mut write_shard_index = self.shard_index.write();
             if write_shard_index.is_none() {
-                *write_shard_index = Some(self.decode_shard_index(decoded_representation, false)?);
+                let decoded_shard_index = self.decode_shard_index(decoded_representation, false)?;
+                if let Some(decoded_shard_index) = decoded_shard_index {
+                    *write_shard_index = Some(decoded_shard_index);
+                } else {
+                    // return fill values
+                    return Ok(decoded_regions
+                        .iter()
+                        .map(|decoded_region| {
+                            decoded_representation
+                                .fill_value()
+                                .as_ne_bytes()
+                                .repeat(decoded_region.num_elements_usize())
+                        })
+                        .collect());
+                }
             }
             drop(write_shard_index);
             read_shard_index = self.shard_index.read();

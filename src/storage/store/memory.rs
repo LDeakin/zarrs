@@ -3,6 +3,7 @@
 use parking_lot::RwLock;
 
 use crate::{
+    array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
         ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
@@ -46,18 +47,6 @@ impl ReadableStoreExtension for MemoryStore {}
 impl WritableStoreExtension for MemoryStore {}
 
 impl MemoryStore {
-    fn get_impl(&self, key: &StoreKey, byte_range: &ByteRange) -> Result<Vec<u8>, StorageError> {
-        let data_map = self.data_map.read();
-        if let Some(data) = data_map.get(key) {
-            let data = data.read();
-            let start = usize::try_from(byte_range.start(data.len() as u64)).unwrap();
-            let end = usize::try_from(byte_range.end(data.len() as u64)).unwrap();
-            Ok(data[start..end].to_vec())
-        } else {
-            Err(StorageError::KeyNotFound(key.clone()))
-        }
-    }
-
     fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, _truncate: bool) {
         let mut data_map_read = self.data_map.read();
         if !data_map_read.contains_key(key) {
@@ -86,19 +75,42 @@ impl MemoryStore {
 }
 
 impl ReadableStorageTraits for MemoryStore {
-    fn get(&self, key: &StoreKey) -> Result<Vec<u8>, StorageError> {
-        self.get_impl(key, &ByteRange::FromStart(0, None))
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+        let data_map = self.data_map.read();
+        if let Some(data) = data_map.get(key) {
+            let data = data.read();
+            Ok(Some(data.clone()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        let data_map = self.data_map.read();
+        if let Some(data) = data_map.get(key) {
+            let data = data.read();
+            let mut out = Vec::with_capacity(byte_ranges.len());
+            for byte_range in byte_ranges {
+                let start = usize::try_from(byte_range.start(data.len() as u64)).unwrap();
+                let end = usize::try_from(byte_range.end(data.len() as u64)).unwrap();
+                let bytes = data[start..end].to_vec();
+                out.push(bytes);
+            }
+            Ok(Some(out))
+        } else {
+            Ok(None)
+        }
     }
 
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Vec<Result<Vec<u8>, StorageError>> {
-        let mut out = Vec::with_capacity(key_ranges.len());
-        for key_range in key_ranges {
-            out.push(self.get_impl(&key_range.key, &key_range.byte_range));
-        }
-        out
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size(&self) -> Result<u64, StorageError> {
@@ -110,12 +122,12 @@ impl ReadableStorageTraits for MemoryStore {
         Ok(out)
     }
 
-    fn size_key(&self, key: &StoreKey) -> Result<u64, StorageError> {
+    fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let data_map = self.data_map.read();
         if let Some(entry) = data_map.get(key) {
-            Ok(entry.read().len() as u64)
+            Ok(Some(entry.read().len() as u64))
         } else {
-            Err(StorageError::KeyNotFound(key.clone()))
+            Ok(None)
         }
     }
 }
@@ -142,24 +154,22 @@ impl WritableStorageTraits for MemoryStore {
         Ok(())
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
+    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
         let mut data_map = self.data_map.write();
-        if data_map.remove(key).is_none() {
-            Err(StorageError::KeyNotFound(key.clone()))
-        } else {
-            Ok(())
-        }
+        Ok(data_map.remove(key).is_some())
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         let mut data_map = self.data_map.write();
         let keys: Vec<StoreKey> = data_map.keys().cloned().collect();
+        let mut any_deletions = false;
         for key in keys {
             if key.has_prefix(prefix) {
                 data_map.remove(&key);
+                any_deletions = true;
             }
         }
-        Ok(())
+        Ok(any_deletions)
     }
 }
 
@@ -215,9 +225,9 @@ mod tests {
         let store = MemoryStore::new();
         let key = "a/b".try_into()?;
         store.set(&key, &[0, 1, 2])?;
-        assert_eq!(store.get(&key)?, &[0, 1, 2]);
+        assert_eq!(store.get(&key)?.unwrap(), &[0, 1, 2]);
         store.set_partial_values(&[StoreKeyStartValue::new(key.clone(), 1, &[3, 4])])?;
-        assert_eq!(store.get(&key)?, &[0, 3, 4]);
+        assert_eq!(store.get(&key)?.unwrap(), &[0, 3, 4]);
         Ok(())
     }
 

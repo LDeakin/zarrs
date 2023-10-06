@@ -72,7 +72,7 @@ use self::{
     array_errors::TransmuteError,
     chunk_grid::{try_create_chunk_grid, InvalidChunkGridIndicesError},
     chunk_key_encoding::try_create_chunk_key_encoding,
-    codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecError, StoragePartialDecoder},
+    codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, StoragePartialDecoder},
 };
 
 /// An ND index to an element in an array.
@@ -80,6 +80,13 @@ pub type ArrayIndices = Vec<u64>;
 
 /// The shape of an array.
 pub type ArrayShape = Vec<u64>;
+
+/// An alias for bytes which may or may not be available.
+///
+/// When a value is read from a store, it returns `MaybeBytes` which is [`None`] if the key is not available.
+/// A bytes to bytes codec only decodes `MaybeBytes` holding actual bytes, otherwise the bytes are propagated to the next decoder.
+/// An array to bytes partial decoder must take care of converting missing chunks to the fill value.
+pub type MaybeBytes = Option<Vec<u8>>;
 
 /// A Zarr array.
 ///
@@ -351,7 +358,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
-        let metadata: ArrayMetadata = serde_json::from_slice(&storage.get(&meta_key(&node_path))?)?;
+        let metadata: ArrayMetadata = serde_json::from_slice(
+            &storage
+                .get(&meta_key(&node_path))?
+                .ok_or(ArrayCreateError::MissingMetadata)?,
+        )?;
         Self::new_with_metadata(storage, path, metadata)
     }
 
@@ -381,7 +392,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         .map_err(ArrayError::StorageError);
         let chunk_representation = self.chunk_array_representation(chunk_indices, self.shape())?;
         match chunk_encoded {
-            Ok(chunk_encoded) => {
+            Ok(Some(chunk_encoded)) => {
                 let chunk_decoded = if self.parallel_codecs() {
                     self.codecs()
                         .par_decode(chunk_encoded, &chunk_representation)
@@ -390,21 +401,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                 };
                 chunk_decoded.map_err(ArrayError::CodecError)
             }
-            Err(error) => {
-                match error {
-                    ArrayError::StorageError(error) => {
-                        match error {
-                            StorageError::KeyNotFound(_) => {
-                                // Chunk does not exist should return an array of fill values
-                                let fill_value = chunk_representation.fill_value().as_ne_bytes();
-                                Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
-                            }
-                            _ => Err(error.into()),
-                        }
-                    }
-                    _ => Err(error),
-                }
+            Ok(None) => {
+                let fill_value = chunk_representation.fill_value().as_ne_bytes();
+                Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
             }
+            Err(error) => Err(error),
         }
     }
 
@@ -467,7 +468,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         let length = elements.len();
         ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(
             |_| {
-                ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
+                ArrayError::CodecError(crate::array::codec::CodecError::UnexpectedChunkDecodedSize(
                     length * std::mem::size_of::<T>(),
                     shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
                 ))
@@ -596,7 +597,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             elements,
         )
         .map_err(|_| {
-            ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
+            ArrayError::CodecError(crate::array::codec::CodecError::UnexpectedChunkDecodedSize(
                 length * self.data_type().size(),
                 array_subset.num_elements() * self.data_type().size() as u64,
             ))
@@ -643,23 +644,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             partial_decoder.par_partial_decode(&chunk_representation, &[chunk_subset.clone()])
         } else {
             partial_decoder.partial_decode(&chunk_representation, &[chunk_subset.clone()])
-        };
-        match decoded_bytes {
-            Ok(decoded_bytes) => Ok(decoded_bytes.concat()),
-            Err(error) => match error {
-                CodecError::StorageError(error) => {
-                    match error {
-                        StorageError::KeyNotFound(_) => {
-                            // Chunk does not exist should return an array of fill values
-                            let fill_value = chunk_representation.fill_value().as_ne_bytes();
-                            Ok(fill_value.repeat(chunk_subset.num_elements_usize()))
-                        }
-                        _ => Err(error.into()),
-                    }
-                }
-                _ => Err(error.into()),
-            },
-        }
+        }?;
+        Ok(decoded_bytes.concat())
     }
 
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements.
@@ -713,7 +699,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         let length = elements.len();
         ndarray::ArrayD::from_shape_vec(iter_u64_to_usize(chunk_subset.shape().iter()), elements)
             .map_err(|_| {
-                ArrayError::CodecError(CodecError::UnexpectedChunkDecodedSize(
+                ArrayError::CodecError(crate::array::codec::CodecError::UnexpectedChunkDecodedSize(
                     length * std::mem::size_of::<T>(),
                     chunk_subset.shape().iter().product::<u64>() * std::mem::size_of::<T>() as u64,
                 ))
