@@ -42,6 +42,14 @@ pub struct Metadata {
     configuration: Option<MetadataConfiguration>,
 }
 
+impl TryFrom<&str> for Metadata {
+    type Error = serde_json::Error;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        serde_json::from_str(s)
+    }
+}
+
 impl core::fmt::Display for Metadata {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if let Some(configuration) = &self.configuration {
