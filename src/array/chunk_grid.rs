@@ -295,7 +295,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn try_create_chunk_grid_regular() {
+    fn chunk_grid_configuration_regular() {
         let json = r#"
     {
         "name": "regular",
@@ -308,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    fn try_create_chunk_grid_rectangular() {
+    fn chunk_grid_configuration_rectangular() {
         let json = r#"
     {
         "name": "rectangular",
