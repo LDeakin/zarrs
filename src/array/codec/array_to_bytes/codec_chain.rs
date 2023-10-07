@@ -98,12 +98,12 @@ impl CodecChain {
     ///  - a codec could not be created,
     ///  - no array to bytes codec is suplied, or
     ///  - more than one array to bytes codec is supplied.
-    pub fn new_with_metadatas(metadatas: Vec<Metadata>) -> Result<Self, PluginCreateError> {
+    pub fn from_metadata(metadatas: &[Metadata]) -> Result<Self, PluginCreateError> {
         let mut array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>> = vec![];
         let mut array_to_bytes: Option<Box<dyn ArrayToBytesCodecTraits>> = None;
         let mut bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>> = vec![];
         for metadata in metadatas {
-            let codec = Codec::from_metadata(&metadata)?;
+            let codec = Codec::from_metadata(metadata)?;
             match codec {
                 Codec::ArrayToArray(codec) => {
                     array_to_array.push(codec);
@@ -492,7 +492,7 @@ mod tests {
         ];
         println!("{:?}", codec_configurations);
         let not_just_bytes = codec_configurations.len() > 1;
-        let codec = CodecChain::new_with_metadatas(codec_configurations).unwrap();
+        let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
 
         let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
         let decoded = codec
@@ -530,7 +530,7 @@ mod tests {
             serde_json::from_str(JSON_CRC32C).unwrap(),
         ];
         println!("{:?}", codec_configurations);
-        let codec = CodecChain::new_with_metadatas(codec_configurations).unwrap();
+        let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
 
         let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
         let decoded_regions =

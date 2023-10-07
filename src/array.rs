@@ -163,10 +163,10 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let fill_value = data_type
             .try_create_fill_value(&metadata.fill_value)
             .map_err(ArrayCreateError::InvalidFillValue)?;
-        let codecs = CodecChain::new_with_metadatas(metadata.codecs)
+        let codecs = CodecChain::from_metadata(&metadata.codecs)
             .map_err(ArrayCreateError::CodecsCreateError)?;
         let storage_transformers =
-            StorageTransformerChain::new_with_metadatas(&metadata.storage_transformers)
+            StorageTransformerChain::from_metadata(&metadata.storage_transformers)
                 .map_err(ArrayCreateError::StorageTransformersCreateError)?;
         let chunk_key_encoding = ChunkKeyEncoding::from_metadata(&metadata.chunk_key_encoding)
             .map_err(ArrayCreateError::ChunkKeyEncodingCreateError)?;

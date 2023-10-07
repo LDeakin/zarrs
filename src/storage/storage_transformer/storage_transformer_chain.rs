@@ -26,7 +26,7 @@ impl StorageTransformerChain {
     /// # Errors
     ///
     /// Returns [`PluginCreateError`] if there is a configuration issue or attempt to create an unregistered storage transformer.
-    pub fn new_with_metadatas(metadatas: &[Metadata]) -> Result<Self, PluginCreateError> {
+    pub fn from_metadata(metadatas: &[Metadata]) -> Result<Self, PluginCreateError> {
         let mut storage_transformers = Vec::with_capacity(metadatas.len());
         for metadata in metadatas {
             let storage_transformer = try_create_storage_transformer(metadata)?;

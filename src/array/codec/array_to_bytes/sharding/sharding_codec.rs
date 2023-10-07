@@ -69,8 +69,8 @@ impl ShardingCodec {
         configuration: &ShardingCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         let ShardingCodecConfiguration::V1(configuration) = configuration;
-        let inner_codecs = CodecChain::new_with_metadatas(configuration.codecs.clone())?;
-        let index_codecs = CodecChain::new_with_metadatas(configuration.index_codecs.clone())?;
+        let inner_codecs = CodecChain::from_metadata(&configuration.codecs)?;
+        let index_codecs = CodecChain::from_metadata(&configuration.index_codecs)?;
         Ok(Self::new(
             configuration.chunk_shape.clone(),
             inner_codecs,
