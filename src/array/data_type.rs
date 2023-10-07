@@ -111,7 +111,7 @@ pub trait DataTypeExtension: dyn_clone::DynClone + core::fmt::Debug + Send + Syn
     /// # Errors
     ///
     /// Returns [`IncompatibleFillValueError`] if the fill value is incompatible with the data type.
-    fn try_create_fill_value(
+    fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadata,
     ) -> Result<FillValue, IncompatibleFillValueErrorMetadataError>;
@@ -216,7 +216,7 @@ impl DataType {
     /// # Errors
     ///
     /// Returns [`IncompatibleFillValueErrorMetadataError`] if the fill value is incompatible with the data type.
-    pub fn try_create_fill_value(
+    pub fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadata,
     ) -> Result<FillValue, IncompatibleFillValueErrorMetadataError> {
@@ -243,7 +243,7 @@ impl DataType {
                 fill_value.try_as_float::<f64>().ok_or_else(err)?,
                 fill_value.try_as_float::<f64>().ok_or_else(err)?,
             ))),
-            Self::Extension(extension) => extension.try_create_fill_value(fill_value),
+            Self::Extension(extension) => extension.fill_value_from_metadata(fill_value),
         }
     }
 

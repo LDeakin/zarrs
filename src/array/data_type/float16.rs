@@ -58,7 +58,7 @@ impl DataTypeExtension for Float16DataType {
         Metadata::new(IDENTIFIER)
     }
 
-    fn try_create_fill_value(
+    fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadata,
     ) -> Result<FillValue, IncompatibleFillValueErrorMetadataError> {

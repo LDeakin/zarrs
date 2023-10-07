@@ -161,7 +161,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             ));
         }
         let fill_value = data_type
-            .try_create_fill_value(&metadata.fill_value)
+            .fill_value_from_metadata(&metadata.fill_value)
             .map_err(ArrayCreateError::InvalidFillValue)?;
         let codecs = CodecChain::from_metadata(&metadata.codecs)
             .map_err(ArrayCreateError::CodecsCreateError)?;

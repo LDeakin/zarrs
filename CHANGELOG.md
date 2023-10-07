@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking**: Changed `try_create_chunk_grid` to `ChunkGrid::from_metadata`.
  - **Breaking**: Rename `StorageTransformerChain::new_with_metadatas` to `from_metadata`
  - **Breaking**: Rename `CodecChain::new_with_metadatas` to `from_metadata`
+ - **Breaking**: Rename `DataTypeExtension::try_create_fill_value` to `fill_value_from_metadata`
 
 ### Fixed
 

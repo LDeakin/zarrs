@@ -4,7 +4,7 @@
 //!
 //! Fill values metadata is serialized/deserialized into [`FillValueMetadata`].
 //!
-//! The interpretation of fill values is data type dependent, so this is handled in [`DataTypeExtension::try_create_fill_value`](crate::array::data_type::DataTypeExtension::try_create_fill_value).
+//! The interpretation of fill values is data type dependent, so this is handled in [`DataTypeExtension::fill_value_from_metadata`](crate::array::data_type::DataTypeExtension::fill_value_from_metadata).
 //! Fill value metadata is created with [`DataTypeExtension::metadata_fill_value`](crate::array::data_type::DataTypeExtension::metadata_fill_value).
 
 use derive_more::{Display, From};

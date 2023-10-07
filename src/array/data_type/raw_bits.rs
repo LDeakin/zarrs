@@ -61,7 +61,7 @@ impl DataTypeExtension for RawBitsDataType {
         Metadata::new(&self.name())
     }
 
-    fn try_create_fill_value(
+    fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadata,
     ) -> Result<FillValue, IncompatibleFillValueErrorMetadataError> {
