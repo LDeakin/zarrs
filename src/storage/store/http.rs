@@ -252,16 +252,20 @@ mod tests {
         let array = Array::new(store.into(), ARRAY_PATH).unwrap();
         assert_eq!(array.data_type(), &DataType::Float32);
 
-        // Read the central 2x2 subset of the array
-        let subset_2x2 = ArraySubset::new_with_start_shape(vec![3, 3], vec![2, 2]).unwrap(); // the center 2x2 region
-        let data_2x2 = array
-            .retrieve_array_subset_elements::<f32>(&subset_2x2)
+        // Read the central 4x2 subset of the array
+        let subset_4x2 = ArraySubset::new_with_start_shape(vec![2, 3], vec![4, 2]).unwrap(); // the center 4x2 region
+        let data_4x2 = array
+            .retrieve_array_subset_elements::<f32>(&subset_4x2)
             .unwrap();
-        // assert_eq!(data_2x2, &[0.1, f32::NAN, 0.4, 0.5]);
-        assert_eq!(data_2x2[0], 0.1);
-        assert!(data_2x2[1].is_nan());
-        assert_eq!(data_2x2[2], 0.4);
-        assert_eq!(data_2x2[3], 0.5);
+        // assert_eq!(data_4x2, &[0.0, f32::NAN, 0.1, f32::NAN, 0.4, 0.5, 0.7, 0.8]);
+        assert_eq!(data_4x2[0], 0.0);
+        assert!(data_4x2[1].is_nan());
+        assert_eq!(data_4x2[2], 0.1);
+        assert!(data_4x2[3].is_nan());
+        assert_eq!(data_4x2[4], 0.4);
+        assert_eq!(data_4x2[5], 0.5);
+        assert_eq!(data_4x2[6], 0.7);
+        assert_eq!(data_4x2[7], 0.8);
 
         // let data = array.retrieve_array_subset_ndarray::<f32>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
         // println!("{data:?}");
@@ -278,12 +282,12 @@ mod tests {
         let array = Array::new(store.into(), ARRAY_PATH_SHARDED).unwrap();
         assert_eq!(array.data_type(), &DataType::UInt16);
 
-        // Read the central 2x2 subset of the array
-        let subset_2x2 = ArraySubset::new_with_start_shape(vec![3, 3], vec![2, 2]).unwrap(); // the center 2x2 region
-        let data_2x2 = array
-            .retrieve_array_subset_elements::<u16>(&subset_2x2)
+        // Read the central 4x2 subset of the array
+        let subset_4x2 = ArraySubset::new_with_start_shape(vec![2, 3], vec![4, 2]).unwrap(); // the center 4x2 region
+        let data_4x2 = array
+            .retrieve_array_subset_elements::<u16>(&subset_4x2)
             .unwrap();
-        assert_eq!(data_2x2, &[27, 28, 35, 36]);
+        assert_eq!(data_4x2, &[19, 20, 27, 28, 35, 36, 43, 44]);
 
         // let data = array.retrieve_array_subset_ndarray::<u16>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
         // println!("{data:?}");
