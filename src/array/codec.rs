@@ -39,6 +39,7 @@ pub use bytes_to_bytes::gzip::{GzipCodec, GzipCodecConfiguration, GzipCodecConfi
 #[cfg(feature = "zstd")]
 pub use bytes_to_bytes::zstd::{ZstdCodec, ZstdCodecConfiguration, ZstdCodecConfigurationV1};
 
+use itertools::Itertools;
 use thiserror::Error;
 
 mod partial_decoder_cache;
@@ -49,12 +50,15 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 
 use crate::{
     array_subset::{ArraySubset, InvalidArraySubsetError},
-    byte_range::{ByteRange, InvalidByteRangeError},
+    byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
     storage::{ReadableStorageTraits, StorageError, StoreKey},
 };
-use std::io::{Read, Seek, SeekFrom};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    io::{Read, Seek, SeekFrom},
+};
 
 use super::{ArrayRepresentation, BytesRepresentation, MaybeBytes};
 
@@ -415,7 +419,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
         _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        Ok(Some(extract_byte_ranges_rs(
+        Ok(Some(extract_byte_ranges_read_seek(
             &mut self.clone(),
             decoded_regions,
         )?))
@@ -428,7 +432,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
         _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        Ok(Some(extract_byte_ranges_rs(
+        Ok(Some(extract_byte_ranges_read_seek(
             &mut self.clone(),
             decoded_regions,
         )?))
@@ -473,15 +477,20 @@ impl From<String> for CodecError {
     }
 }
 
-trait ReadSeek: Read + Seek {}
-
+/// Extract byte ranges from bytes implementing [`Read`] + [`Seek`].
+///
+/// # Errors
+///
+/// Returns a [`std::io::Error`] if there is an error reading or seeking from `bytes`.
+/// This can occur if the byte range is out-of-bounds of the `bytes`.
+///
 /// # Panics
 ///
-/// Panics if the byte range exceeds .
-fn extract_byte_ranges_rs<T: Read + Seek>(
+/// Panics if a byte has length exceeding [`usize::MAX`].
+pub fn extract_byte_ranges_read_seek<T: Read + Seek>(
     bytes: &mut T,
     byte_ranges: &[ByteRange],
-) -> Result<Vec<Vec<u8>>, CodecError> {
+) -> std::io::Result<Vec<Vec<u8>>> {
     let len: u64 = bytes.seek(SeekFrom::End(0))?;
     let mut out = Vec::with_capacity(byte_ranges.len());
     for byte_range in byte_ranges {
@@ -517,6 +526,84 @@ fn extract_byte_ranges_rs<T: Read + Seek>(
         };
         out.push(data);
     }
+    Ok(out)
+}
+
+/// Extract byte ranges from bytes implementing [`Read`].
+///
+/// # Errors
+///
+/// Returns a [`std::io::Error`] if there is an error reading from `bytes`.
+/// This can occur if the byte range is out-of-bounds of the `bytes`.
+///
+/// # Panics
+///
+/// Panics if a byte has length exceeding [`usize::MAX`].
+pub fn extract_byte_ranges_read<T: Read>(
+    bytes: &mut T,
+    size: u64,
+    byte_ranges: &[ByteRange],
+) -> std::io::Result<Vec<Vec<u8>>> {
+    // Could this be cleaner/more efficient?
+
+    // Allocate output and find the endpoints of the "segments" of bytes which must be read
+    let mut out = Vec::with_capacity(byte_ranges.len());
+    let mut segments_endpoints = BTreeSet::<u64>::new();
+    for byte_range in byte_ranges {
+        out.push(vec![0; usize::try_from(byte_range.length(size)).unwrap()]);
+        segments_endpoints.insert(byte_range.start(size));
+        segments_endpoints.insert(byte_range.end(size));
+    }
+
+    // Find the overlapping part of each byte range with each segment
+    //                 SEGMENT start     , end        OUTPUT index, offset
+    let mut overlap: BTreeMap<(ByteOffset, ByteOffset), Vec<(usize, ByteOffset)>> = BTreeMap::new();
+    for (byte_range_index, byte_range) in byte_ranges.iter().enumerate() {
+        let byte_range_start = byte_range.start(size);
+        let range = segments_endpoints.range((
+            std::ops::Bound::Included(byte_range_start),
+            std::ops::Bound::Included(byte_range.end(size)),
+        ));
+        for (segment_start, segment_end) in range.tuple_windows() {
+            let byte_range_offset = *segment_start - byte_range_start;
+            overlap
+                .entry((*segment_start, *segment_end))
+                .or_default()
+                .push((byte_range_index, byte_range_offset));
+        }
+    }
+
+    let mut bytes_offset = 0u64;
+    for ((segment_start, segment_end), outputs) in overlap {
+        // Go to the start of the segment
+        if segment_start > bytes_offset {
+            std::io::copy(
+                &mut bytes.take(segment_start - bytes_offset),
+                &mut std::io::sink(),
+            )
+            .unwrap();
+        }
+
+        let segment_length = segment_end - segment_start;
+        if outputs.is_empty() {
+            // No byte ranges are associated with this segment, so just read it to sink
+            std::io::copy(&mut bytes.take(segment_length), &mut std::io::sink()).unwrap();
+        } else {
+            // Populate all byte ranges in this segment with data
+            let segment_length_usize = usize::try_from(segment_length).unwrap();
+            let mut segment_bytes = vec![0; segment_length_usize];
+            bytes.take(segment_length).read_exact(&mut segment_bytes)?;
+            for (byte_range_index, byte_range_offset) in outputs {
+                let byte_range_offset = usize::try_from(byte_range_offset).unwrap();
+                out[byte_range_index][byte_range_offset..byte_range_offset + segment_length_usize]
+                    .copy_from_slice(&segment_bytes);
+            }
+        }
+
+        // Offset is now the end of the segment
+        bytes_offset = segment_end;
+    }
+
     Ok(out)
 }
 
@@ -578,5 +665,23 @@ mod tests {
         assert_eq!(iter.next().unwrap(), (vec![1, 0, 1], 2));
         assert_eq!(iter.next().unwrap(), (vec![1, 1, 1], 2));
         assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn test_extract_byte_ranges_read() {
+        let data: Vec<u8> = (0..10).collect();
+        let size = data.len() as u64;
+        let mut read = std::io::Cursor::new(data);
+        let byte_ranges = vec![
+            ByteRange::FromStart(3, Some(3)),
+            ByteRange::FromStart(4, Some(1)),
+            ByteRange::FromStart(1, Some(1)),
+            ByteRange::FromEnd(1, Some(5)),
+        ];
+        let out = extract_byte_ranges_read(&mut read, size, &byte_ranges).unwrap();
+        assert_eq!(
+            out,
+            vec![vec![3, 4, 5], vec![4], vec![1], vec![4, 5, 6, 7, 8]]
+        );
     }
 }

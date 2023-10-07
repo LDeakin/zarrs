@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `chunk_key_encoding` and `chunk_key_encoding_default_separator` to `ArrayBuilder`
  - Add `TryFrom<char>` for `ChunkKeySeparator`
  - Add `ArraySubset::new_with_start_end_inc/new_with_start_end_exc`
+ - Add `codec::extract_byte_ranges_read` utility function to read byte ranges from a `Read` source which does not support `Seek`
 
 ### Changed
 
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Rename `StorageTransformerChain::new_with_metadatas` to `from_metadata`
  - **Breaking**: Rename `CodecChain::new_with_metadatas` to `from_metadata`
  - **Breaking**: Rename `DataTypeExtension::try_create_fill_value` to `fill_value_from_metadata`
+ - **Breaking**: Rename `codec::extract_byte_ranges_rs` to `extract_byte_ranges_read_seek`
 
 ### Fixed
 
@@ -44,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `storage::get_child_nodes` and `Node::new_with_store` now correctly propagate storage errors instead of treating all errors as missing metadata
  - `Group::new` now handles an implicit group (with a missing `zarr.json`)
  - `ZipStore` handle missing files
+ - `ZipStore` no longer reads an internal file multiple times when extracting multiple byte ranges
  - `HTTPStore` improve error handling, check status codes
 
 ## [0.4.2] - 2023-10-06

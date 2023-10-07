@@ -1,7 +1,7 @@
 //! A zip store.
 
 use crate::{
-    array::MaybeBytes,
+    array::{codec::extract_byte_ranges_read, MaybeBytes},
     byte_range::ByteRange,
     storage::{
         storage_value_io::StorageValueIO, ListableStorageTraits, ReadableStorageTraits,
@@ -15,7 +15,7 @@ use parking_lot::Mutex;
 use thiserror::Error;
 use zip::{result::ZipError, ZipArchive};
 
-use std::{io::Read, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 /// A zip storage adapter.
 pub struct ZipStorageAdapter<TStorage: ?Sized + ReadableStorageTraits> {
@@ -69,53 +69,20 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         let mut zip_archive = self.zip_archive.lock();
         let mut zip_name = self.zip_path.clone();
         zip_name.push(key.as_str());
-        let mut out = Vec::with_capacity(byte_ranges.len());
-        for byte_range in byte_ranges {
-            // FIXME: Only read the zip file once!
-            let mut file = {
-                let zip_file = zip_archive.by_name(&zip_name.to_string_lossy());
-                match zip_file {
-                    Ok(zip_file) => zip_file,
-                    Err(err) => match err {
-                        ZipError::FileNotFound => return Ok(None),
-                        _ => return Err(StorageError::Other(err.to_string())),
-                    },
-                }
-            };
-            let size = file.size();
 
-            let buffer = match byte_range {
-                ByteRange::FromStart(offset, None) => {
-                    std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
-                    let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
-                    file.read_to_end(&mut buffer)?;
-                    buffer
-                }
-                ByteRange::FromStart(offset, Some(length)) => {
-                    std::io::copy(&mut file.by_ref().take(*offset), &mut std::io::sink()).unwrap();
-                    let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
-                    file.take(*length).read_to_end(&mut buffer)?;
-                    buffer
-                }
-                ByteRange::FromEnd(offset, None) => {
-                    let mut buffer = Vec::with_capacity(usize::try_from(size - *offset).unwrap());
-                    file.take(size - offset).read_to_end(&mut buffer)?;
-                    buffer
-                }
-                ByteRange::FromEnd(offset, Some(length)) => {
-                    std::io::copy(
-                        &mut file.by_ref().take(size - length - offset),
-                        &mut std::io::sink(),
-                    )
-                    .unwrap();
-                    let mut buffer = Vec::with_capacity(usize::try_from(*length).unwrap());
-                    file.take(*length).read_to_end(&mut buffer)?;
-                    buffer
-                }
-            };
-            out.push(buffer);
-        }
+        let mut file = {
+            let zip_file = zip_archive.by_name(&zip_name.to_string_lossy());
+            match zip_file {
+                Ok(zip_file) => zip_file,
+                Err(err) => match err {
+                    ZipError::FileNotFound => return Ok(None),
+                    _ => return Err(StorageError::Other(err.to_string())),
+                },
+            }
+        };
+        let size = file.size();
 
+        let out = extract_byte_ranges_read(&mut file, size, byte_ranges)?;
         Ok(Some(out))
     }
 
