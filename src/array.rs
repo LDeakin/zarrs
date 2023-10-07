@@ -150,9 +150,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             .additional_fields
             .validate()
             .map_err(ArrayCreateError::UnsupportedAdditionalFieldError)?;
-        let data_type: DataType = metadata
-            .data_type
-            .try_into()
+        let data_type = DataType::from_metadata(&metadata.data_type)
             .map_err(ArrayCreateError::DataTypeCreateError)?;
         let chunk_grid = ChunkGrid::from_metadata(&metadata.chunk_grid)
             .map_err(ArrayCreateError::ChunkGridCreateError)?;
