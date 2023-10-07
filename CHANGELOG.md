@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2023-10-08
+
 ### Added
  - `MaybeBytes` an alias for `Option<Vec<u8>>`
    - When a value is read from the store but the key is not found, the returned value is now `None` instead of an error indicating a missing key
@@ -132,7 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.4.2...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.5.0
 [0.4.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.2
 [0.4.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.1
 [0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.0
