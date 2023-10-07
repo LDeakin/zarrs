@@ -12,7 +12,7 @@ use crate::{
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
-use super::{ChunkGridShapeError, ChunkGridTraits};
+use super::{ChunkGrid, ChunkGridShapeError, ChunkGridTraits};
 
 const IDENTIFIER: &str = "regular";
 
@@ -25,12 +25,10 @@ fn is_name_regular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-fn create_chunk_grid_regular(
-    metadata: &Metadata,
-) -> Result<Box<dyn ChunkGridTraits>, PluginCreateError> {
+fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata.to_configuration()?;
     let chunk_grid = RegularChunkGrid::new(configuration.chunk_shape.clone());
-    Ok(Box::new(chunk_grid))
+    Ok(ChunkGrid::new(chunk_grid))
 }
 
 /// Configuration parameters for a `regular` chunk grid.

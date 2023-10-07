@@ -1,6 +1,7 @@
 #[cfg(feature = "ndarray")]
 fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+    use zarrs::array::ChunkGrid;
     use zarrs::{array::DataType, array_subset::ArraySubset, storage::store};
     use zarrs::{
         array::{chunk_grid::RectangularChunkGrid, codec, FillValue},
@@ -34,7 +35,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
         DataType::Float32,
-        Box::new(RectangularChunkGrid::new(&[[1, 2, 3, 2].into(), 4.into()])),
+        ChunkGrid::new(RectangularChunkGrid::new(&[[1, 2, 3, 2].into(), 4.into()])),
         FillValue::from(f32::NAN),
     )
     .bytes_to_bytes_codecs(vec![

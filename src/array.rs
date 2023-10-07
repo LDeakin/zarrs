@@ -70,7 +70,7 @@ use crate::{
 
 use self::{
     array_errors::TransmuteError,
-    chunk_grid::{try_create_chunk_grid, InvalidChunkGridIndicesError},
+    chunk_grid::InvalidChunkGridIndicesError,
     codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, StoragePartialDecoder},
 };
 
@@ -154,7 +154,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             .data_type
             .try_into()
             .map_err(ArrayCreateError::DataTypeCreateError)?;
-        let chunk_grid: ChunkGrid = try_create_chunk_grid(&metadata.chunk_grid)
+        let chunk_grid = ChunkGrid::from_metadata(&metadata.chunk_grid)
             .map_err(ArrayCreateError::ChunkGridCreateError)?;
         if chunk_grid.dimensionality() != metadata.shape.len() {
             return Err(ArrayCreateError::InvalidChunkGridDimensionality(

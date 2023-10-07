@@ -15,6 +15,7 @@ mod regular;
 pub use rectangular::{RectangularChunkGrid, RectangularChunkGridConfiguration};
 pub use regular::{RegularChunkGrid, RegularChunkGridConfiguration};
 
+use derive_more::{Deref, From};
 use thiserror::Error;
 
 use crate::{
@@ -26,33 +27,42 @@ use crate::{
 use super::{ArrayIndices, ArrayShape};
 
 /// A chunk grid.
-pub type ChunkGrid = Box<dyn ChunkGridTraits>;
+#[derive(Debug, Clone, Deref, From)]
+pub struct ChunkGrid(Box<dyn ChunkGridTraits>);
 
 /// A chunk grid plugin.
 pub type ChunkGridPlugin = Plugin<ChunkGrid>;
 inventory::collect!(ChunkGridPlugin);
 
-impl From<ArrayShape> for ChunkGrid {
-    /// Create a regular chunk grid from a chunk shape.
-    fn from(regular_chunk_shape: ArrayShape) -> Self {
-        Box::new(RegularChunkGrid::new(regular_chunk_shape))
+impl ChunkGrid {
+    /// Create a chunk key encoding.
+    pub fn new<T: ChunkGridTraits + 'static>(chunk_grid: T) -> Self {
+        let chunk_grid: Box<dyn ChunkGridTraits> = Box::new(chunk_grid);
+        chunk_grid.into()
+    }
+
+    /// Create a chunk grid from metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`PluginCreateError`] if the metadata is invalid or not associated with a registered chunk grid plugin.
+    pub fn from_metadata(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
+        for plugin in inventory::iter::<ChunkGridPlugin> {
+            if plugin.match_name(metadata.name()) {
+                return plugin.create(metadata);
+            }
+        }
+        Err(PluginCreateError::Unsupported {
+            name: metadata.name().to_string(),
+        })
     }
 }
 
-/// Create a chunk grid from metadata.
-///
-/// # Errors
-///
-/// Returns a [`PluginCreateError`] if the metadata is invalid or not associated with a registered chunk grid plugin.
-pub fn try_create_chunk_grid(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
-    for plugin in inventory::iter::<ChunkGridPlugin> {
-        if plugin.match_name(metadata.name()) {
-            return plugin.create(metadata);
-        }
+impl From<ArrayShape> for ChunkGrid {
+    /// Create a regular chunk grid from a chunk shape.
+    fn from(regular_chunk_shape: ArrayShape) -> Self {
+        ChunkGrid::new(RegularChunkGrid::new(regular_chunk_shape))
     }
-    Err(PluginCreateError::Unsupported {
-        name: metadata.name().to_string(),
-    })
 }
 
 /// Chunk grid traits.
@@ -294,7 +304,7 @@ mod tests {
         }
     }"#;
         let metadata = serde_json::from_str::<Metadata>(json).unwrap();
-        try_create_chunk_grid(&metadata).unwrap();
+        ChunkGrid::from_metadata(&metadata).unwrap();
     }
 
     #[test]
@@ -307,6 +317,6 @@ mod tests {
         }
     }"#;
         let metadata = serde_json::from_str::<Metadata>(json).unwrap();
-        try_create_chunk_grid(&metadata).unwrap();
+        ChunkGrid::from_metadata(&metadata).unwrap();
     }
 }

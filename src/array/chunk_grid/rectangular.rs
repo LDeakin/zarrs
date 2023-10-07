@@ -12,7 +12,7 @@ use crate::{
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use super::{ChunkGridShapeError, ChunkGridTraits};
+use super::{ChunkGrid, ChunkGridShapeError, ChunkGridTraits};
 
 const IDENTIFIER: &str = "rectangular";
 
@@ -25,12 +25,10 @@ fn is_name_rectangular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-fn create_chunk_grid_rectangular(
-    metadata: &Metadata,
-) -> Result<Box<dyn ChunkGridTraits>, PluginCreateError> {
+fn create_chunk_grid_rectangular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RectangularChunkGridConfiguration = metadata.to_configuration()?;
     let chunk_grid = RectangularChunkGrid::new(&configuration.chunk_shape);
-    Ok(Box::new(chunk_grid))
+    Ok(ChunkGrid::new(chunk_grid))
 }
 
 /// Configuration parameters for a `rectangular` chunk grid.
