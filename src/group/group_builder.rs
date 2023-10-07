@@ -26,7 +26,10 @@ impl GroupBuilder {
 
     /// Set the attributes.
     #[must_use]
-    pub fn attributes(mut self, attributes: serde_json::Map<String, serde_json::Value>) -> Self {
+    pub fn attributes(
+        &mut self,
+        attributes: serde_json::Map<String, serde_json::Value>,
+    ) -> &mut Self {
         let GroupMetadata::V3(metadata) = &mut self.metadata;
         metadata.attributes = attributes;
         self
@@ -34,7 +37,7 @@ impl GroupBuilder {
 
     /// Set the additional fields.
     #[must_use]
-    pub fn additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+    pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         let GroupMetadata::V3(metadata) = &mut self.metadata;
         metadata.additional_fields = additional_fields;
         self
@@ -46,10 +49,10 @@ impl GroupBuilder {
     ///
     /// Returns [`GroupCreateError`] if the group could not be created.
     pub fn build<TStorage>(
-        self,
+        &self,
         storage: Arc<TStorage>,
         path: &str,
     ) -> Result<Group<TStorage>, GroupCreateError> {
-        Group::new_with_metadata(storage, path, self.metadata)
+        Group::new_with_metadata(storage, path, self.metadata.clone())
     }
 }

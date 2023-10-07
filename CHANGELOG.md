@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `WritableStorageTraits::erase/erase_values/erase_prefix` return a boolean indicating if they actually deleted something
  - **Breaking**: Add `ReadableStorageTraits::get_partial_values_key` which reads byte ranges for a store key
  - **Breaking**: Changed `data_type::try_create_data_type` to `DataType::from_metadata`
+ - Make `ArrayBuilder` and `GroupBuilder` non-consuming
 
 ### Fixed
 

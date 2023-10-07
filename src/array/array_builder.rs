@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    metadata::AdditionalFields,
-    node::NodePath,
-    storage::storage_transformer::{StorageTransformer, StorageTransformerChain},
+    metadata::AdditionalFields, node::NodePath, storage::storage_transformer::StorageTransformer,
 };
 
 use super::{
@@ -64,7 +62,7 @@ pub struct ArrayBuilder {
     array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
     array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
     bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
-    storage_transformers: StorageTransformerChain,
+    storage_transformers: Vec<StorageTransformer>,
     attributes: serde_json::Map<String, serde_json::Value>,
     dimension_names: Option<Vec<DimensionName>>,
     additional_fields: AdditionalFields,
@@ -93,7 +91,7 @@ impl ArrayBuilder {
             array_to_bytes_codec: Box::<BytesCodec>::default(),
             bytes_to_bytes_codecs: Vec::default(),
             attributes: serde_json::Map::default(),
-            storage_transformers: Vec::default().into(),
+            storage_transformers: Vec::default(),
             dimension_names: None,
             additional_fields: AdditionalFields::default(),
             parallel_codecs: true,
@@ -103,11 +101,10 @@ impl ArrayBuilder {
     /// Set the array to array codecs.
     ///
     /// If left unmodified, the array will have no array to array codecs.
-    #[must_use]
     pub fn array_to_array_codecs(
-        mut self,
+        &mut self,
         array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
-    ) -> Self {
+    ) -> &mut Self {
         self.array_to_array_codecs = array_to_array_codecs;
         self
     }
@@ -115,11 +112,10 @@ impl ArrayBuilder {
     /// Set the array to bytes codec.
     ///
     /// If left unmodified, the array will default to using the `bytes` codec with native endian encoding.
-    #[must_use]
     pub fn array_to_bytes_codec(
-        mut self,
+        &mut self,
         array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
-    ) -> Self {
+    ) -> &mut Self {
         self.array_to_bytes_codec = array_to_bytes_codec;
         self
     }
@@ -127,11 +123,10 @@ impl ArrayBuilder {
     /// Set the bytes to bytes codecs.
     ///
     /// If left unmodified, the array will have no bytes to bytes codecs.
-    #[must_use]
     pub fn bytes_to_bytes_codecs(
-        mut self,
+        &mut self,
         bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
-    ) -> Self {
+    ) -> &mut Self {
         self.bytes_to_bytes_codecs = bytes_to_bytes_codecs;
         self
     }
@@ -139,8 +134,10 @@ impl ArrayBuilder {
     /// Set the user defined attributes.
     ///
     /// If left unmodified, the user defined attributes of the array will be empty.
-    #[must_use]
-    pub fn attributes(mut self, attributes: serde_json::Map<String, serde_json::Value>) -> Self {
+    pub fn attributes(
+        &mut self,
+        attributes: serde_json::Map<String, serde_json::Value>,
+    ) -> &mut Self {
         self.attributes = attributes;
         self
     }
@@ -149,8 +146,7 @@ impl ArrayBuilder {
     ///
     /// Set additional fields not defined in the Zarr specification.
     /// Use this cautiously. In general, store user defined attributes using [`ArrayBuilder::attributes`].
-    #[must_use]
-    pub fn additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+    pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         self.additional_fields = additional_fields;
         self
     }
@@ -158,8 +154,7 @@ impl ArrayBuilder {
     /// Set the dimension names.
     ///
     /// If left unmodified, all dimension names are "unnamed".
-    #[must_use]
-    pub fn dimension_names(mut self, dimension_names: Vec<DimensionName>) -> Self {
+    pub fn dimension_names(&mut self, dimension_names: Vec<DimensionName>) -> &mut Self {
         self.dimension_names = Some(dimension_names);
         self
     }
@@ -168,16 +163,18 @@ impl ArrayBuilder {
     ///
     /// If left unmodified, there are no storage transformers.
     #[must_use]
-    pub fn storage_transformers(mut self, storage_transformers: Vec<StorageTransformer>) -> Self {
-        self.storage_transformers = storage_transformers.into();
+    pub fn storage_transformers(
+        &mut self,
+        storage_transformers: Vec<StorageTransformer>,
+    ) -> &mut Self {
+        self.storage_transformers = storage_transformers;
         self
     }
 
     /// Set whether or not to use multithreaded codec encoding and decoding.
     ///
     /// If parallel codecs is not set, it defaults to true.
-    #[must_use]
-    pub fn parallel_codecs(mut self, parallel_codecs: bool) -> Self {
+    pub fn parallel_codecs(&mut self, parallel_codecs: bool) -> &mut Self {
         self.parallel_codecs = parallel_codecs;
         self
     }
@@ -189,7 +186,7 @@ impl ArrayBuilder {
     /// Returns [`ArrayCreateError`] if there is an error creating the array.
     /// This can be due to a storage error, an invalid path, or a problem with array configuration.
     pub fn build<TStorage>(
-        self,
+        &self,
         storage: Arc<TStorage>,
         path: &str,
     ) -> Result<Array<TStorage>, ArrayCreateError> {
@@ -212,20 +209,20 @@ impl ArrayBuilder {
         Ok(Array {
             storage,
             path,
-            shape: self.shape,
-            data_type: self.data_type,
-            chunk_grid: self.chunk_grid,
-            chunk_key_encoding: self.chunk_key_encoding,
-            fill_value: self.fill_value,
+            shape: self.shape.clone(),
+            data_type: self.data_type.clone(),
+            chunk_grid: self.chunk_grid.clone(),
+            chunk_key_encoding: self.chunk_key_encoding.clone(),
+            fill_value: self.fill_value.clone(),
             codecs: CodecChain::new(
-                self.array_to_array_codecs,
-                self.array_to_bytes_codec,
-                self.bytes_to_bytes_codecs,
+                self.array_to_array_codecs.clone(),
+                self.array_to_bytes_codec.clone(),
+                self.bytes_to_bytes_codecs.clone(),
             ),
-            storage_transformers: self.storage_transformers,
-            attributes: self.attributes,
-            dimension_names: self.dimension_names,
-            additional_fields: self.additional_fields,
+            storage_transformers: self.storage_transformers.clone().into(),
+            attributes: self.attributes.clone(),
+            dimension_names: self.dimension_names.clone(),
+            additional_fields: self.additional_fields.clone(),
             parallel_codecs: self.parallel_codecs,
         })
     }
