@@ -5,7 +5,7 @@ use crate::{
 };
 
 use super::{
-    chunk_key_encoding::{ChunkKeyEncoding, DefaultChunkKeyEncoding},
+    chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator, DefaultChunkKeyEncoding},
     codec::{
         ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
     },
@@ -96,6 +96,28 @@ impl ArrayBuilder {
             additional_fields: AdditionalFields::default(),
             parallel_codecs: true,
         }
+    }
+
+    /// Set the chunk key encoding.
+    ///
+    /// If left unmodified, the array will use `default` chunk key encoding with the `/` chunk key separator.
+    pub fn chunk_key_encoding(
+        &mut self,
+        chunk_key_encoding: ChunkKeyEncoding,
+    ) -> &mut Self {
+        self.chunk_key_encoding = chunk_key_encoding;
+        self
+    }
+
+    /// Set the chunk key encoding to default with `separator`.
+    ///
+    /// If left unmodified, the array will use `default` chunk key encoding with the `/` chunk key separator.
+    pub fn chunk_key_encoding_default_separator(
+        &mut self,
+        separator: ChunkKeySeparator,
+    ) -> &mut Self {
+        self.chunk_key_encoding = Box::new(DefaultChunkKeyEncoding::new(separator));
+        self
     }
 
     /// Set the array to array codecs.
