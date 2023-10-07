@@ -63,6 +63,20 @@ pub enum ChunkKeySeparator {
     Dot,
 }
 
+impl TryFrom<char> for ChunkKeySeparator {
+    type Error = char;
+
+    fn try_from(separator: char) -> Result<Self, Self::Error> {
+        if separator == '/' {
+            Ok(Self::Slash)
+        } else if separator == '.' {
+            Ok(Self::Dot)
+        } else {
+            Err(separator)
+        }
+    }
+}
+
 impl serde::Serialize for ChunkKeySeparator {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {

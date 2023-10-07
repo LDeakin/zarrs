@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `storage::erase_chunk` and `Array::erase_chunk`
    - The `array_write_read` example is updated to demonstrate `erase_chunk`
  - Add `TryFrom::<&str>` for `Metadata` and `FillValueMetadata`
+ - Add `chunk_key_encoding` and `chunk_key_encoding_default_separator` to `ArrayBuilder`
+ - Add `TryFrom<char>` for `ChunkKeySeparator`
 
 ### Changed
 
