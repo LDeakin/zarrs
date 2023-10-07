@@ -4,7 +4,7 @@ use crate::{
     array::{
         codec::{
             partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache},
-            try_create_codec, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
             ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
             CodecError, CodecTraits,
         },
@@ -103,7 +103,7 @@ impl CodecChain {
         let mut array_to_bytes: Option<Box<dyn ArrayToBytesCodecTraits>> = None;
         let mut bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>> = vec![];
         for metadata in metadatas {
-            let codec = try_create_codec(&metadata)?;
+            let codec = Codec::from_metadata(&metadata)?;
             match codec {
                 Codec::ArrayToArray(codec) => {
                     array_to_array.push(codec);

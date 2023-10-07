@@ -62,22 +62,6 @@ use super::{ArrayRepresentation, BytesRepresentation, MaybeBytes};
 pub type CodecPlugin = Plugin<Codec>;
 inventory::collect!(CodecPlugin);
 
-/// Create a codec from metadata.
-///
-/// # Errors
-///
-/// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered codec plugin.
-pub fn try_create_codec(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    for plugin in inventory::iter::<CodecPlugin> {
-        if plugin.match_name(metadata.name()) {
-            return plugin.create(metadata);
-        }
-    }
-    Err(PluginCreateError::Unsupported {
-        name: metadata.name().to_string(),
-    })
-}
-
 /// A generic `array->array`, `array->bytes`, or `bytes->bytes` codec.
 #[derive(Debug)]
 pub enum Codec {
@@ -87,6 +71,24 @@ pub enum Codec {
     ArrayToBytes(Box<dyn ArrayToBytesCodecTraits>),
     /// A `bytes->bytes` codec.
     BytesToBytes(Box<dyn BytesToBytesCodecTraits>),
+}
+
+impl Codec {
+    /// Create a codec from metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered codec plugin.
+    pub fn from_metadata(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+        for plugin in inventory::iter::<CodecPlugin> {
+            if plugin.match_name(metadata.name()) {
+                return plugin.create(metadata);
+            }
+        }
+        Err(PluginCreateError::Unsupported {
+            name: metadata.name().to_string(),
+        })
+    }
 }
 
 /// Codec traits.
