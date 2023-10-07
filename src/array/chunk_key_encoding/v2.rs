@@ -8,7 +8,7 @@ use crate::{
     plugin::PluginCreateError, storage::store::StoreKey,
 };
 
-use super::{ChunkKeyEncodingTraits, ChunkKeySeparator};
+use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator};
 
 const IDENTIFIER: &str = "v2";
 
@@ -23,10 +23,10 @@ fn is_name_v2(name: &str) -> bool {
 
 fn create_chunk_key_encoding_v2(
     metadata: &Metadata,
-) -> Result<Box<dyn ChunkKeyEncodingTraits>, PluginCreateError> {
+) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: V2ChunkKeyEncodingConfiguration = metadata.to_configuration()?;
-    let chunk_key_encoding = V2ChunkKeyEncoding::new(configuration.separator);
-    Ok(Box::new(chunk_key_encoding))
+    let v2 = V2ChunkKeyEncoding::new(configuration.separator);
+    Ok(ChunkKeyEncoding::new(v2))
 }
 
 /// A `v2` chunk key encoding configuration.

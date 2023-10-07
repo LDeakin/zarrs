@@ -14,31 +14,38 @@ use crate::{
     storage::store::StoreKey,
 };
 
-use derive_more::Display;
+use derive_more::{Deref, Display, From};
 
 /// A chunk key encoding.
-pub type ChunkKeyEncoding = Box<dyn ChunkKeyEncodingTraits>;
+#[derive(Debug, Clone, From, Deref)]
+pub struct ChunkKeyEncoding(Box<dyn ChunkKeyEncodingTraits>);
 
 /// A chunk key encoding plugin.
 pub type ChunkKeyEncodingPlugin = Plugin<ChunkKeyEncoding>;
 inventory::collect!(ChunkKeyEncodingPlugin);
 
-/// Create a chunk key encoding from metadata.
-///
-/// # Errors
-///
-/// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered chunk key encoding plugin.
-pub fn try_create_chunk_key_encoding(
-    metadata: &Metadata,
-) -> Result<ChunkKeyEncoding, PluginCreateError> {
-    for plugin in inventory::iter::<ChunkKeyEncodingPlugin> {
-        if plugin.match_name(metadata.name()) {
-            return plugin.create(metadata);
-        }
+impl ChunkKeyEncoding {
+    /// Create a chunk key encoding.
+    pub fn new<T: ChunkKeyEncodingTraits + 'static>(chunk_key_encoding: T) -> Self {
+        let chunk_key_encoding: Box<dyn ChunkKeyEncodingTraits> = Box::new(chunk_key_encoding);
+        chunk_key_encoding.into()
     }
-    Err(PluginCreateError::Unsupported {
-        name: metadata.name().to_string(),
-    })
+
+    /// Create a chunk key encoding from metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered chunk key encoding plugin.
+    pub fn from_metadata(metadata: &Metadata) -> Result<Self, PluginCreateError> {
+        for plugin in inventory::iter::<ChunkKeyEncodingPlugin> {
+            if plugin.match_name(metadata.name()) {
+                return plugin.create(metadata);
+            }
+        }
+        Err(PluginCreateError::Unsupported {
+            name: metadata.name().to_string(),
+        })
+    }
 }
 
 /// Chunk key encoding traits.

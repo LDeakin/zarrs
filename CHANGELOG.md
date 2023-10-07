@@ -26,9 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `WritableStorageTraits::erase/erase_values/erase_prefix` return a boolean indicating if they actually deleted something
  - **Breaking**: Add `ReadableStorageTraits::get_partial_values_key` which reads byte ranges for a store key
  - **Breaking**: Changed `data_type::try_create_data_type` to `DataType::from_metadata`
- - **Breaking**: Changed `codec::try_create_codec` to `Codec::from_metadata`
+ - **Breaking**: Changed `try_create_codec` to `Codec::from_metadata`
  - Make `ArrayBuilder` and `GroupBuilder` non-consuming
- - Add a fast-path to `Array::store_array_subset` if the array subset matches a chunk subset 
+ - Add a fast-path to `Array::store_array_subset` if the array subset matches a chunk subset
+ - **Breaking**: Make `ChunkKeyEncoding` a newtype.
+ - **Breaking**: Changed `try_create_chunk_key_encoding` to `ChunkKeyEncoding::from_metadata`.
 
 ### Fixed
 

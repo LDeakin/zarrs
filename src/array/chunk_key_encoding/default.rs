@@ -10,7 +10,7 @@ use crate::{
     storage::store::StoreKey,
 };
 
-use super::ChunkKeyEncodingTraits;
+use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits};
 
 const IDENTIFIER: &str = "default";
 
@@ -25,10 +25,10 @@ fn is_name_default(name: &str) -> bool {
 
 fn create_chunk_key_encoding_default(
     metadata: &Metadata,
-) -> Result<Box<dyn ChunkKeyEncodingTraits>, PluginCreateError> {
+) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: DefaultChunkKeyEncodingConfiguration = metadata.to_configuration()?;
-    let chunk_key_encoding = DefaultChunkKeyEncoding::new(configuration.separator);
-    Ok(Box::new(chunk_key_encoding))
+    let default = DefaultChunkKeyEncoding::new(configuration.separator);
+    Ok(ChunkKeyEncoding::new(default))
 }
 
 /// A `default` chunk key encoding configuration.

@@ -71,7 +71,6 @@ use crate::{
 use self::{
     array_errors::TransmuteError,
     chunk_grid::{try_create_chunk_grid, InvalidChunkGridIndicesError},
-    chunk_key_encoding::try_create_chunk_key_encoding,
     codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, StoragePartialDecoder},
 };
 
@@ -171,9 +170,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let storage_transformers =
             StorageTransformerChain::new_with_metadatas(&metadata.storage_transformers)
                 .map_err(ArrayCreateError::StorageTransformersCreateError)?;
-        let chunk_key_encoding: ChunkKeyEncoding =
-            try_create_chunk_key_encoding(&metadata.chunk_key_encoding)
-                .map_err(ArrayCreateError::ChunkKeyEncodingCreateError)?;
+        let chunk_key_encoding = ChunkKeyEncoding::from_metadata(&metadata.chunk_key_encoding)
+            .map_err(ArrayCreateError::ChunkKeyEncodingCreateError)?;
         if let Some(dimension_names) = &metadata.dimension_names {
             if dimension_names.len() != metadata.shape.len() {
                 return Err(ArrayCreateError::InvalidDimensionNames(

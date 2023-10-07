@@ -5,7 +5,9 @@ use crate::{
 };
 
 use super::{
-    chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator, DefaultChunkKeyEncoding},
+    chunk_key_encoding::{
+        ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator, DefaultChunkKeyEncoding,
+    },
     codec::{
         ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
     },
@@ -85,7 +87,7 @@ impl ArrayBuilder {
             shape,
             data_type,
             chunk_grid,
-            chunk_key_encoding: Box::<DefaultChunkKeyEncoding>::default(),
+            chunk_key_encoding: ChunkKeyEncoding::new(DefaultChunkKeyEncoding::default()),
             fill_value,
             array_to_array_codecs: Vec::default(),
             array_to_bytes_codec: Box::<BytesCodec>::default(),
@@ -103,9 +105,9 @@ impl ArrayBuilder {
     /// If left unmodified, the array will use `default` chunk key encoding with the `/` chunk key separator.
     pub fn chunk_key_encoding(
         &mut self,
-        chunk_key_encoding: ChunkKeyEncoding,
+        chunk_key_encoding: Box<dyn ChunkKeyEncodingTraits>,
     ) -> &mut Self {
-        self.chunk_key_encoding = chunk_key_encoding;
+        self.chunk_key_encoding = chunk_key_encoding.into();
         self
     }
 
@@ -116,7 +118,7 @@ impl ArrayBuilder {
         &mut self,
         separator: ChunkKeySeparator,
     ) -> &mut Self {
-        self.chunk_key_encoding = Box::new(DefaultChunkKeyEncoding::new(separator));
+        self.chunk_key_encoding = ChunkKeyEncoding::new(DefaultChunkKeyEncoding::new(separator));
         self
     }
 
