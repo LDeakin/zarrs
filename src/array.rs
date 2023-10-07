@@ -889,27 +889,31 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
             let chunk_subset_in_array =
                 unsafe { self.chunk_grid().subset_unchecked(&chunk_indices) };
 
-            // Extract the bytes from subset_bytes which intersect this chunk
-            // TODO: Could add a fast path to avoid this allocation if subset bytes are entirely within the chunk.
-            //       Or a mutual iter_contiguous_linearised_indices_unchecked.
-            let chunk_subset_in_array_subset =
-                unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
-            let chunk_subset_bytes = unsafe {
-                chunk_subset_in_array_subset.extract_bytes_unchecked(
-                    subset_bytes,
-                    array_subset.shape(),
-                    element_size,
-                )
-            };
+            if array_subset == &chunk_subset_in_array {
+                // A fast path if the array subset matches the chunk subset
+                // This skips the internal decoding occuring in store_chunk_subset
+                self.store_chunk(&chunk_indices, subset_bytes)?;
+            } else {
+                let chunk_subset_in_array_subset =
+                    unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
+                let chunk_subset_bytes = unsafe {
+                    chunk_subset_in_array_subset.extract_bytes_unchecked(
+                        subset_bytes,
+                        array_subset.shape(),
+                        element_size,
+                    )
+                };
 
-            // Store the chunk subset
-            let array_subset_in_chunk_subset =
-                unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
-            self.store_chunk_subset(
-                &chunk_indices,
-                &array_subset_in_chunk_subset,
-                &chunk_subset_bytes,
-            )?;
+                // Store the chunk subset
+                let array_subset_in_chunk_subset =
+                    unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
+
+                self.store_chunk_subset(
+                    &chunk_indices,
+                    &array_subset_in_chunk_subset,
+                    &chunk_subset_bytes,
+                )?;
+            }
         }
         Ok(())
     }

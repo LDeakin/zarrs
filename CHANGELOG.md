@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Changed `data_type::try_create_data_type` to `DataType::from_metadata`
  - **Breaking**: Changed `codec::try_create_codec` to `Codec::from_metadata`
  - Make `ArrayBuilder` and `GroupBuilder` non-consuming
+ - Add a fast-path to `Array::store_array_subset` if the array subset matches a chunk subset 
 
 ### Fixed
 
