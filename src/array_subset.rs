@@ -79,7 +79,23 @@ impl ArraySubset {
         ArraySubset { start, shape }
     }
 
-    /// Create a new array subset from a stard and end (inclusive).
+    /// Create a new array subset from a start and end (inclusive).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`IncompatibleDimensionalityError`] if the size of `start` and `size` do not match.
+    pub fn new_with_start_end_inc(
+        start: ArrayIndices,
+        end: &[u64],
+    ) -> Result<Self, IncompatibleDimensionalityError> {
+        if start.len() == end.len() {
+            Ok(unsafe { Self::new_with_start_end_inc_unchecked(start, end) })
+        } else {
+            Err(IncompatibleDimensionalityError::new(start.len(), end.len()))
+        }
+    }
+
+    /// Create a new array subset from a start and end (inclusive).
     ///
     /// # Safety
     ///
@@ -95,6 +111,22 @@ impl ArraySubset {
             })
             .collect();
         ArraySubset { start, shape }
+    }
+
+    /// Create a new array subset from a start and end (exclusive).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`IncompatibleDimensionalityError`] if the size of `start` and `size` do not match.
+    pub fn new_with_start_end_exc(
+        start: ArrayIndices,
+        end: &[u64],
+    ) -> Result<Self, IncompatibleDimensionalityError> {
+        if start.len() == end.len() {
+            Ok(unsafe { Self::new_with_start_end_exc_unchecked(start, end) })
+        } else {
+            Err(IncompatibleDimensionalityError::new(start.len(), end.len()))
+        }
     }
 
     /// Create a new array subset from a start and end (exclusive).

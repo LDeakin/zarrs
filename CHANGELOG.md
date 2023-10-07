@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `TryFrom::<&str>` for `Metadata` and `FillValueMetadata`
  - Add `chunk_key_encoding` and `chunk_key_encoding_default_separator` to `ArrayBuilder`
  - Add `TryFrom<char>` for `ChunkKeySeparator`
+ - Add `ArraySubset::new_with_start_end_inc/new_with_start_end_exc`
 
 ### Changed
 
