@@ -887,7 +887,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
 
             if array_subset == &chunk_subset_in_array {
                 // A fast path if the array subset matches the chunk subset
-                // This skips the internal decoding occuring in store_chunk_subset
+                // This skips the internal decoding occurring in store_chunk_subset
                 self.store_chunk(&chunk_indices, subset_bytes)?;
             } else {
                 let chunk_subset_in_array_subset =

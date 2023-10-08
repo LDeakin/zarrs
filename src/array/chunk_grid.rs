@@ -70,7 +70,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     /// Create metadata.
     fn create_metadata(&self) -> Metadata;
 
-    /// The dimensonality of the grid.
+    /// The dimensionality of the grid.
     fn dimensionality(&self) -> usize;
 
     /// The grid shape (i.e. number of chunks).
@@ -115,7 +115,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
     ///
     /// Returns [`InvalidChunkGridIndicesError`] if
     ///  - either the length of `chunk_indices` or the `array_shape` do not match the dimensionality of the chunk grid, or
-    ///  - `chunk_indices` are out of boudns of the chunk grid.
+    ///  - `chunk_indices` are out of bounds of the chunk grid.
     fn chunk_origin(
         &self,
         chunk_indices: &[u64],

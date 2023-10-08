@@ -96,7 +96,7 @@ impl CodecChain {
     ///
     /// Returns a [`PluginCreateError`] if:
     ///  - a codec could not be created,
-    ///  - no array to bytes codec is suplied, or
+    ///  - no array to bytes codec is supplied, or
     ///  - more than one array to bytes codec is supplied.
     pub fn from_metadata(metadatas: &[Metadata]) -> Result<Self, PluginCreateError> {
         let mut array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>> = vec![];

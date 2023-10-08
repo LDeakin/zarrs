@@ -86,7 +86,7 @@ impl Iterator for LinearisedIndicesIterator<'_> {
 
 /// Iterates over contiguous element indices in an array subset.
 ///
-/// The iterator item is a tuple: (indices, # contigous elements).
+/// The iterator item is a tuple: (indices, # contiguous elements).
 pub struct ContiguousIndicesIterator<'a> {
     subset: &'a ArraySubset,
     array_shape: &'a [u64],
@@ -152,7 +152,7 @@ impl Iterator for ContiguousIndicesIterator<'_> {
 
 /// Iterates over contiguous linearised element indices in an array subset.
 ///
-/// The iterator item is a tuple: (linearised index, # contigous elements).
+/// The iterator item is a tuple: (linearised index, # contiguous elements).
 pub struct ContiguousLinearisedIndicesIterator<'a> {
     inner: ContiguousIndicesIterator<'a>,
 }

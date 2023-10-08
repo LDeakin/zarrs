@@ -29,7 +29,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     ///
     /// # Errors
     ///
-    /// Returns a [`ZipStorageAdapterCreateError`] if `zip_path` is not valid zip file.
+    /// Returns a [`ZipStorageAdapterCreateError`] if the root path of the store is not a valid zip file.
     pub fn new(
         storage: Arc<TStorage>,
     ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
@@ -40,7 +40,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     ///
     /// # Errors
     ///
-    /// Returns a [`ZipStorageAdapterCreateError`] if `zip_path` is not valid zip file.
+    /// Returns a [`ZipStorageAdapterCreateError`] if the root path of the store is not a valid zip file.
     pub fn new_with_path<T: Into<PathBuf>>(
         storage: Arc<TStorage>,
         path: T,
