@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
  - `Array::store_chunk` now erases empty chunks
  - Fixed a race in `Array::store_chunk_subset` and add a fast path if the subset spans the whole chunk
+ - Fix complex number handling in `fill_value_from_metadata`
+ - Fix byte arrays being interpreted as complex number fill value metadata
 
 ## [0.5.0] - 2023-10-08
 

@@ -235,14 +235,14 @@ impl DataType {
             Self::UInt64 => Ok(FV::from(fill_value.try_as_uint::<u64>().ok_or_else(err)?)),
             Self::Float32 => Ok(FV::from(fill_value.try_as_float::<f32>().ok_or_else(err)?)),
             Self::Float64 => Ok(FV::from(fill_value.try_as_float::<f64>().ok_or_else(err)?)),
-            Self::Complex64 => Ok(FV::from(num::complex::Complex32::new(
-                fill_value.try_as_float::<f32>().ok_or_else(err)?,
-                fill_value.try_as_float::<f32>().ok_or_else(err)?,
-            ))),
-            Self::Complex128 => Ok(FV::from(num::complex::Complex64::new(
-                fill_value.try_as_float::<f64>().ok_or_else(err)?,
-                fill_value.try_as_float::<f64>().ok_or_else(err)?,
-            ))),
+            Self::Complex64 => {
+                let (re, im) = fill_value.try_as_float_pair::<f32>().ok_or_else(err)?;
+                Ok(FV::from(num::complex::Complex32::new(re, im)))
+            }
+            Self::Complex128 => {
+                let (re, im) = fill_value.try_as_float_pair::<f64>().ok_or_else(err)?;
+                Ok(FV::from(num::complex::Complex64::new(re, im)))
+            }
             Self::Extension(extension) => extension.fill_value_from_metadata(fill_value),
         }
     }
@@ -349,10 +349,26 @@ mod tests {
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
-        match data_type {
-            DataType::Bool => {}
-            _ => panic!(),
-        }
+        assert_eq!(data_type, DataType::Bool);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#"true"#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            &[true as u8]
+        );
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#"false"#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            &[false as u8]
+        );
     }
 
     #[test]
@@ -361,10 +377,23 @@ mod tests {
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
-        match data_type {
-            DataType::Int8 => {}
-            _ => panic!(),
-        }
+        assert_eq!(data_type, DataType::Int8);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(&serde_json::from_str::<FillValueMetadata>("7").unwrap())
+                .unwrap()
+                .as_ne_bytes(),
+            7i8.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(&serde_json::from_str::<FillValueMetadata>("-7").unwrap())
+                .unwrap()
+                .as_ne_bytes(),
+            (-7i8).to_ne_bytes()
+        );
     }
 
     #[test]
@@ -373,10 +402,15 @@ mod tests {
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
-        match data_type {
-            DataType::UInt8 => {}
-            _ => panic!(),
-        }
+        assert_eq!(data_type, DataType::UInt8);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(&serde_json::from_str::<FillValueMetadata>("7").unwrap())
+                .unwrap()
+                .as_ne_bytes(),
+            7u8.to_ne_bytes()
+        );
     }
 
     #[test]
@@ -385,30 +419,210 @@ mod tests {
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
-        match data_type {
-            DataType::Float32 => {}
-            _ => panic!(),
-        }
+        assert_eq!(data_type, DataType::Float32);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>("-7.0").unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            (-7.0f32).to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""NaN""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f32::NAN.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""0x7fc00000""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f32::NAN.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f32::INFINITY.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""-Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f32::NEG_INFINITY.to_ne_bytes()
+        );
+    }
+
+    #[test]
+    fn data_type_float64() {
+        let json = r#""float64""#;
+        let metadata: Metadata = serde_json::from_str(json).unwrap();
+        let data_type = DataType::from_metadata(&metadata).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::Float64);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>("-7.0").unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            (-7.0f64).to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""NaN""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f64::NAN.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f64::INFINITY.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""-Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f64::NEG_INFINITY.to_ne_bytes()
+        );
     }
 
     #[cfg(feature = "float16")]
     #[test]
     fn data_type_float16() {
+        use half::f16;
+
         let json = r#""float16""#;
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "float16");
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>("-7.0").unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            (f16::from_f32_const(-7.0)).to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""NaN""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f16::NAN.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f16::INFINITY.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""-Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            f16::NEG_INFINITY.to_ne_bytes()
+        );
     }
 
     #[cfg(feature = "bfloat16")]
     #[test]
     fn data_type_bfloat16() {
+        use half::bf16;
+
         let json = r#""bfloat16""#;
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "bfloat16");
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>("-7.0").unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            (bf16::from_f32_const(-7.0)).to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""NaN""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            bf16::NAN.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            bf16::INFINITY.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""-Infinity""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            bf16::NEG_INFINITY.to_ne_bytes()
+        );
     }
 
     #[test]
@@ -417,10 +631,22 @@ mod tests {
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
-        match data_type {
-            DataType::Complex64 => {}
-            _ => panic!(),
-        }
+        assert_eq!(data_type, DataType::Complex64);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#"[-7.0, "Infinity"]"#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            (-7.0f32)
+                .to_ne_bytes()
+                .iter()
+                .chain(f32::INFINITY.to_ne_bytes().iter())
+                .map(|b| *b)
+                .collect::<Vec<u8>>()
+        );
     }
 
     #[test]
@@ -429,10 +655,22 @@ mod tests {
         let metadata: Metadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
-        match data_type {
-            DataType::Complex128 => {}
-            _ => panic!(),
-        }
+        assert_eq!(data_type, DataType::Complex128);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#"[-7.0, "Infinity"]"#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            (-7.0f64)
+                .to_ne_bytes()
+                .iter()
+                .chain(f64::INFINITY.to_ne_bytes().iter())
+                .map(|b| *b)
+                .collect::<Vec<u8>>()
+        );
     }
 
     #[cfg(feature = "raw_bits")]
@@ -445,6 +683,16 @@ mod tests {
         assert_eq!(data_type.identifier(), "r*");
         assert_eq!(data_type.name().as_str(), "r8");
         assert_eq!(data_type.size(), 1);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#"[7]"#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            (7u8).to_ne_bytes()
+        );
     }
 
     #[cfg(feature = "raw_bits")]
@@ -457,6 +705,16 @@ mod tests {
         assert_eq!(data_type.identifier(), "r*");
         assert_eq!(data_type.name().as_str(), "r16");
         assert_eq!(data_type.size(), 2);
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#"[0, 255]"#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(), // FIXME: All other fill values can go straight to ne bytes, but the endianness of the bytes array is unknown. This depends on the array->bytes codec?
+            &[0u8, 255u8]
+        );
     }
 
     #[test]

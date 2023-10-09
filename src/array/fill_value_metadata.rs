@@ -23,12 +23,12 @@ pub enum FillValueMetadata {
     Int(i64),
     /// A float.
     Float(FillValueFloat),
-    /// A complex number.
-    #[display(fmt = "{{re:{_0}, im:{_1}}}")]
-    Complex(FillValueFloat, FillValueFloat),
     /// A raw data type.
     #[display(fmt = "{_0:?}")]
     ByteArray(Vec<u8>),
+    /// A complex number.
+    #[display(fmt = "{{re:{_0}, im:{_1}}}")]
+    Complex(FillValueFloat, FillValueFloat),
 }
 
 impl TryFrom<&str> for FillValueMetadata {
@@ -49,6 +49,37 @@ pub enum FillValueFloat {
     HexString(HexString),
     /// A string representation of a non finite value.
     NonFinite(FillValueFloatStringNonFinite),
+}
+
+impl FillValueFloat {
+    fn to_float<T: FloatCore>(&self) -> Option<T> {
+        match self {
+            Self::Float(float) => T::from(*float),
+            Self::HexString(hex_string) => {
+                let bytes: &[u8] = hex_string.as_bytes();
+                if bytes.len() == core::mem::size_of::<T>() {
+                    // NOTE: Cleaner way of doing this?
+                    if core::mem::size_of::<T>() == core::mem::size_of::<f32>() {
+                        T::from(f32::from_be_bytes(bytes.try_into().unwrap_or_default()))
+                    } else if core::mem::size_of::<T>() == core::mem::size_of::<f64>() {
+                        T::from(f64::from_be_bytes(bytes.try_into().unwrap_or_default()))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            Self::NonFinite(nonfinite) => {
+                use FillValueFloatStringNonFinite as NF;
+                match nonfinite {
+                    NF::PosInfinity => Some(T::infinity()),
+                    NF::NegInfinity => Some(T::neg_infinity()),
+                    NF::NaN => Some(T::nan()),
+                }
+            }
+        }
+    }
 }
 
 /// A hex string.
@@ -123,7 +154,7 @@ pub enum FillValueFloatStringNonFinite {
 }
 
 impl FillValueMetadata {
-    /// Convert the fill value to bool.
+    /// Convert the fill value to a bool.
     #[must_use]
     pub fn try_as_bool(&self) -> Option<bool> {
         match self {
@@ -132,7 +163,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to int.
+    /// Convert the fill value to an int.
     #[must_use]
     pub fn try_as_int<T: std::convert::TryFrom<i64> + std::convert::TryFrom<u64>>(
         &self,
@@ -144,7 +175,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to uint.
+    /// Convert the fill value to a uint.
     #[must_use]
     pub fn try_as_uint<T: std::convert::TryFrom<i64> + std::convert::TryFrom<u64>>(
         &self,
@@ -156,7 +187,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to float.
+    /// Convert the fill value to a float.
     #[must_use]
     pub fn try_as_float<T: FloatCore>(&self) -> Option<T> {
         match self {
@@ -187,6 +218,21 @@ impl FillValueMetadata {
                             NF::NaN => T::nan(),
                         })
                     }
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Convert the fill value to a complex number (float pair).
+    #[must_use]
+    pub fn try_as_float_pair<T: FloatCore>(&self) -> Option<(T, T)> {
+        match self {
+            FillValueMetadata::Complex(re, im) => {
+                if let (Some(re), Some(im)) = (re.to_float::<T>(), im.to_float::<T>()) {
+                    Some((re, im))
+                } else {
+                    None
                 }
             }
             _ => None,

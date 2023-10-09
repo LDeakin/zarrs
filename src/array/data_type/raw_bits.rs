@@ -1,5 +1,7 @@
 //! `r*` raw bits data type. Variable size in bits given by *.
 
+// TODO: Make this a standard part of DataType and don't lock behind a feature
+
 use crate::{
     array::{data_type::DataTypePlugin, FillValue, FillValueMetadata},
     metadata::{ConfigurationInvalidError, Metadata},
