@@ -248,6 +248,7 @@ impl ArrayBuilder {
             dimension_names: self.dimension_names.clone(),
             additional_fields: self.additional_fields.clone(),
             parallel_codecs: self.parallel_codecs,
+            chunk_locks: parking_lot::Mutex::default(),
         })
     }
 }

@@ -39,7 +39,7 @@ mod dimension_name;
 mod fill_value;
 mod fill_value_metadata;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub use self::{
     array_builder::ArrayBuilder,
@@ -56,6 +56,7 @@ pub use self::{
     fill_value_metadata::FillValueMetadata,
 };
 
+use parking_lot::Mutex;
 use safe_transmute::TriviallyTransmutable;
 
 use crate::{
@@ -121,6 +122,8 @@ pub struct Array<TStorage: ?Sized> {
     additional_fields: AdditionalFields,
     /// If true, codecs run with multithreading (where supported)
     parallel_codecs: bool,
+    /// Chunk locks.
+    chunk_locks: Mutex<HashMap<Vec<u64>, Arc<Mutex<()>>>>,
 }
 
 impl<TStorage: ?Sized> Array<TStorage> {
@@ -193,6 +196,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             storage_transformers,
             dimension_names: metadata.dimension_names,
             parallel_codecs: true,
+            chunk_locks: Mutex::default(),
         })
     }
 
@@ -343,6 +347,18 @@ impl<TStorage: ?Sized> Array<TStorage> {
             .chunk_indices(&array_subset.end_inc(), self.shape())
             .map_err(|_| err())?;
         Ok(unsafe { ArraySubset::new_with_start_end_inc_unchecked(chunks_start, &chunks_end) })
+    }
+
+    #[must_use]
+    fn chunk_mutex(&self, chunk_indices: &[u64]) -> Arc<Mutex<()>> {
+        let mut chunk_locks = self.chunk_locks.lock();
+        // TODO: Cleanup old locks
+        let chunk_mutex = chunk_locks
+            .entry(chunk_indices.to_vec())
+            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .clone();
+        drop(chunk_locks);
+        chunk_mutex
     }
 }
 
@@ -979,7 +995,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
 
     /// Encode `chunk_subset_bytes` and store in `chunk_subset` of the chunk at `chunk_indices`.
     ///
-    /// Prefer to use [`store_chunk`](Array<WritableStorageTraits>::store_chunk) since this will decode the chunk before updating it and reencoding it.
+    /// Prefer to use [`store_chunk`](Array<WritableStorageTraits>::store_chunk) since this function may decode the chunk before updating it and reencoding it.
     ///
     /// # Errors
     ///
@@ -1017,26 +1033,35 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
             ));
         }
 
-        // Decode the entire chunk
-        let mut chunk_bytes = self.retrieve_chunk(chunk_indices)?;
+        if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
+            // The subset spans the whole chunk, so store the bytes directly and skip decoding
+            self.store_chunk(chunk_indices, chunk_subset_bytes)
+        } else {
+            // Lock the chunk
+            let chunk_mutex = self.chunk_mutex(chunk_indices);
+            let _lock = chunk_mutex.lock();
 
-        // Update the intersecting subset of the chunk
-        let element_size = self.data_type().size() as u64;
-        let mut offset = 0;
-        for (chunk_element_index, num_elements) in
-            unsafe { chunk_subset.iter_contiguous_linearised_indices_unchecked(&chunk_shape) }
-        {
-            let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
-            let length = usize::try_from(num_elements * element_size).unwrap();
-            debug_assert!(chunk_offset + length <= chunk_bytes.len());
-            debug_assert!(offset + length <= chunk_subset_bytes.len());
-            chunk_bytes[chunk_offset..chunk_offset + length]
-                .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
-            offset += length;
+            // Decode the entire chunk
+            let mut chunk_bytes = self.retrieve_chunk(chunk_indices)?;
+
+            // Update the intersecting subset of the chunk
+            let element_size = self.data_type().size() as u64;
+            let mut offset = 0;
+            for (chunk_element_index, num_elements) in
+                unsafe { chunk_subset.iter_contiguous_linearised_indices_unchecked(&chunk_shape) }
+            {
+                let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
+                let length = usize::try_from(num_elements * element_size).unwrap();
+                debug_assert!(chunk_offset + length <= chunk_bytes.len());
+                debug_assert!(offset + length <= chunk_subset_bytes.len());
+                chunk_bytes[chunk_offset..chunk_offset + length]
+                    .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
+                offset += length;
+            }
+
+            // Store the updated chunk
+            self.store_chunk(chunk_indices, &chunk_bytes)
         }
-
-        // Store the updated chunk
-        self.store_chunk(chunk_indices, &chunk_bytes)
     }
 
     /// Encode `chunk_subset_elements` and store in `chunk_subset` of the chunk at `chunk_indices`.
@@ -1144,6 +1169,9 @@ fn iter_u64_to_usize<'a, I: Iterator<Item = &'a u64>>(iter: I) -> Vec<usize> {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+
     use crate::storage::store::MemoryStore;
 
     use super::*;
@@ -1248,5 +1276,31 @@ mod tests {
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 7
             ]
         );
+    }
+
+    #[test]
+    fn array_subset_locking() {
+        let store = Arc::new(MemoryStore::new());
+
+        let array_path = "/array";
+        let array = ArrayBuilder::new(
+            vec![100, 4],
+            DataType::UInt8,
+            vec![10, 2].into(),
+            FillValue::from(0u8),
+        )
+        .build(store.clone(), array_path)
+        .unwrap();
+
+        for j in 1..10 {
+            (0..100).into_par_iter().for_each(|i| {
+                let subset = ArraySubset::new_with_start_shape(vec![i, 0], vec![1, 4]).unwrap();
+                array.store_array_subset(&subset, &vec![j; 4]).unwrap();
+            });
+            let subset_all =
+                ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec()).unwrap();
+            let data_all = array.retrieve_array_subset(&subset_all).unwrap();
+            assert_eq!(data_all.iter().all_equal_value(), Ok(&j));
+        }
     }
 }
