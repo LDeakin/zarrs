@@ -765,6 +765,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             )
             .map_err(ArrayError::StorageError)
         } else {
+            self.erase_chunk(chunk_indices)?;
             Ok(())
         }
     }
