@@ -7,13 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2023-10-10
+
+### Added
+ - Tests for `DataType::fill_value_from_metadata`
+
 ### Changed
- - `FillValueMetadata::try_as_uint/int` can both now handle `FillValueMetadata::Uint/Int`
+ - Fix some docs typos
 
 ### Fixed
+ - `FillValueMetadata::try_as_uint/int` can both now handle `FillValueMetadata::Uint/Int`
  - `Array::store_chunk` now erases empty chunks
  - Fixed a race in `Array::store_chunk_subset` and add a fast path if the subset spans the whole chunk
- - Fix complex number handling in `fill_value_from_metadata`
+ - Fix complex number handling in `DataType::fill_value_from_metadata`
  - Fix byte arrays being interpreted as complex number fill value metadata
 
 ## [0.5.0] - 2023-10-08
@@ -143,7 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.5.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.5.0
 [0.4.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.2
 [0.4.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.1
