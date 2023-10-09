@@ -1,6 +1,7 @@
 //! An in-memory store.
 
 use parking_lot::RwLock;
+use std::sync::Mutex;
 
 use crate::{
     array::MaybeBytes,
@@ -11,7 +12,10 @@ use crate::{
     },
 };
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 use super::{
     ReadableStoreExtension, StoreExtension, StoreKey, StoreKeys, StorePrefix,
@@ -21,7 +25,7 @@ use super::{
 /// An in-memory store.
 #[derive(Debug)]
 pub struct MemoryStore {
-    data_map: RwLock<BTreeMap<StoreKey, RwLock<Vec<u8>>>>,
+    data_map: Mutex<BTreeMap<StoreKey, Arc<RwLock<Vec<u8>>>>>,
 }
 
 impl MemoryStore {
@@ -29,7 +33,7 @@ impl MemoryStore {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            data_map: RwLock::new(BTreeMap::default()),
+            data_map: Mutex::default(),
         }
     }
 }
@@ -48,18 +52,15 @@ impl WritableStoreExtension for MemoryStore {}
 
 impl MemoryStore {
     fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, _truncate: bool) {
-        let mut data_map_read = self.data_map.read();
-        if !data_map_read.contains_key(key) {
-            drop(data_map_read);
-            let mut data_map_write = self.data_map.write();
-            data_map_write.entry(key.clone()).or_default();
-            drop(data_map_write);
-            data_map_read = self.data_map.read();
-        }
-        let mut data = data_map_read.get(key).unwrap().write();
+        let mut data_map = self.data_map.lock().unwrap();
+        let data = data_map
+            .entry(key.clone())
+            .or_insert_with(|| Arc::new(RwLock::default()))
+            .clone();
+        drop(data_map);
+        let mut data = data.write();
 
         let offset = offset.unwrap_or(0);
-
         if offset == 0 && data.is_empty() {
             // fast path
             *data = value.to_vec();
@@ -76,8 +77,11 @@ impl MemoryStore {
 
 impl ReadableStorageTraits for MemoryStore {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        let data_map = self.data_map.read();
-        if let Some(data) = data_map.get(key) {
+        let data_map = self.data_map.lock().unwrap();
+        let data = data_map.get(key);
+        if let Some(data) = data {
+            let data = data.clone();
+            drop(data_map);
             let data = data.read();
             Ok(Some(data.clone()))
         } else {
@@ -90,8 +94,11 @@ impl ReadableStorageTraits for MemoryStore {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
-        let data_map = self.data_map.read();
-        if let Some(data) = data_map.get(key) {
+        let data_map = self.data_map.lock().unwrap();
+        let data = data_map.get(key);
+        if let Some(data) = data {
+            let data = data.clone();
+            drop(data_map);
             let data = data.read();
             let mut out = Vec::with_capacity(byte_ranges.len());
             for byte_range in byte_ranges {
@@ -115,7 +122,7 @@ impl ReadableStorageTraits for MemoryStore {
 
     fn size(&self) -> Result<u64, StorageError> {
         let mut out: u64 = 0;
-        let data_map = self.data_map.read();
+        let data_map = self.data_map.lock().unwrap();
         for values in data_map.values() {
             out += values.read().len() as u64;
         }
@@ -123,7 +130,7 @@ impl ReadableStorageTraits for MemoryStore {
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
-        let data_map = self.data_map.read();
+        let data_map = self.data_map.lock().unwrap();
         if let Some(entry) = data_map.get(key) {
             Ok(Some(entry.read().len() as u64))
         } else {
@@ -155,12 +162,12 @@ impl WritableStorageTraits for MemoryStore {
     }
 
     fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
-        let mut data_map = self.data_map.write();
+        let mut data_map = self.data_map.lock().unwrap();
         Ok(data_map.remove(key).is_some())
     }
 
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
-        let mut data_map = self.data_map.write();
+        let mut data_map = self.data_map.lock().unwrap();
         let keys: Vec<StoreKey> = data_map.keys().cloned().collect();
         let mut any_deletions = false;
         for key in keys {
@@ -175,12 +182,12 @@ impl WritableStorageTraits for MemoryStore {
 
 impl ListableStorageTraits for MemoryStore {
     fn list(&self) -> Result<StoreKeys, StorageError> {
-        let data_map = self.data_map.read();
+        let data_map = self.data_map.lock().unwrap();
         Ok(data_map.keys().cloned().collect())
     }
 
     fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
-        let data_map = self.data_map.read();
+        let data_map = self.data_map.lock().unwrap();
         Ok(data_map
             .keys()
             .filter(|&key| key.has_prefix(prefix))
@@ -191,7 +198,7 @@ impl ListableStorageTraits for MemoryStore {
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
         let mut keys: StoreKeys = vec![];
         let mut prefixes: BTreeSet<StorePrefix> = BTreeSet::default();
-        let data_map = self.data_map.read();
+        let data_map = self.data_map.lock().unwrap();
         for key in data_map.keys() {
             if key.has_prefix(prefix) {
                 let key_strip = key.as_str().strip_prefix(prefix.as_str()).unwrap();

@@ -26,7 +26,7 @@ use std::{
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
-    sync::Mutex,
+    sync::{Arc, Mutex},
 };
 
 // // Register the store.
@@ -58,7 +58,7 @@ pub struct FilesystemStore {
     base_path: PathBuf,
     sort: bool,
     readonly: bool,
-    files: RwLock<HashMap<StoreKey, Mutex<()>>>,
+    files: Mutex<HashMap<StoreKey, Arc<RwLock<()>>>>,
 }
 
 impl ReadableStoreExtension for FilesystemStore {}
@@ -102,7 +102,7 @@ impl FilesystemStore {
             base_path,
             sort: false,
             readonly,
-            files: RwLock::new(HashMap::new()),
+            files: Mutex::default(),
         })
     }
 
@@ -142,6 +142,16 @@ impl FilesystemStore {
         path
     }
 
+    fn get_file_mutex(&self, key: &StoreKey) -> Arc<RwLock<()>> {
+        let mut files = self.files.lock().unwrap();
+        let file = files
+            .entry(key.clone())
+            .or_insert_with(|| Arc::new(RwLock::default()))
+            .clone();
+        drop(files);
+        file
+    }
+
     fn set_impl(
         &self,
         key: &StoreKey,
@@ -149,12 +159,11 @@ impl FilesystemStore {
         offset: Option<ByteOffset>,
         truncate: bool,
     ) -> Result<(), StorageError> {
-        let key_path = self.key_to_fspath(key);
-
-        let mut files = self.files.write();
-        let _lock = files.entry(key.clone()).or_default();
+        let file = self.get_file_mutex(key);
+        let _lock = file.write();
 
         // Create directories
+        let key_path = self.key_to_fspath(key);
         if let Some(parent) = key_path.parent() {
             if !parent.exists() {
                 std::fs::create_dir_all(parent)?;
@@ -189,8 +198,9 @@ impl ReadableStorageTraits for FilesystemStore {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
-        let mut files = self.files.write();
-        let _lock = files.entry(key.clone()).or_default();
+        let file = self.get_file_mutex(key);
+        let _lock = file.read();
+
         let mut file = match File::open(self.key_to_fspath(key)) {
             Ok(file) => file,
             Err(err) => {
@@ -299,6 +309,9 @@ impl WritableStorageTraits for FilesystemStore {
             return Err(StorageError::ReadOnly);
         }
 
+        let file = self.get_file_mutex(key);
+        let _lock = file.write();
+
         let key_path = self.key_to_fspath(key);
         Ok(std::fs::remove_file(key_path).is_ok())
     }
@@ -307,6 +320,8 @@ impl WritableStorageTraits for FilesystemStore {
         if self.readonly {
             return Err(StorageError::ReadOnly);
         }
+
+        let _lock = self.files.lock(); // lock all operations
 
         let prefix_path = self.prefix_to_fs_path(prefix);
         let result = std::fs::remove_dir(prefix_path);
