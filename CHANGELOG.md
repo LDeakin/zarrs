@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - `FillValueMetadata::try_as_uint/int` can both now handle `FillValueMetadata::Uint/Int`
+
 ## [0.5.0] - 2023-10-08
 
 ### Added

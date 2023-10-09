@@ -18,7 +18,7 @@ pub enum FillValueMetadata {
     /// A boolean value.
     Bool(bool),
     /// An unsigned integer.
-    Uint(u64),
+    Uint(u64), // FIXME: UInt for consistency?
     /// A signed integer.
     Int(i64),
     /// A float.
@@ -132,25 +132,31 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value an int.
+    /// Convert the fill value to int.
     #[must_use]
-    pub fn try_as_int<T: std::convert::TryFrom<i64>>(&self) -> Option<T> {
+    pub fn try_as_int<T: std::convert::TryFrom<i64> + std::convert::TryFrom<u64>>(
+        &self,
+    ) -> Option<T> {
         match self {
             FillValueMetadata::Int(int) => T::try_from(*int).ok(),
-            _ => None,
-        }
-    }
-
-    /// Convert the fill value a uint.
-    #[must_use]
-    pub fn try_as_uint<T: std::convert::TryFrom<u64>>(&self) -> Option<T> {
-        match self {
             FillValueMetadata::Uint(uint) => T::try_from(*uint).ok(),
             _ => None,
         }
     }
 
-    /// Convert the fill value a float.
+    /// Convert the fill value to uint.
+    #[must_use]
+    pub fn try_as_uint<T: std::convert::TryFrom<i64> + std::convert::TryFrom<u64>>(
+        &self,
+    ) -> Option<T> {
+        match self {
+            FillValueMetadata::Int(int) => T::try_from(*int).ok(),
+            FillValueMetadata::Uint(uint) => T::try_from(*uint).ok(),
+            _ => None,
+        }
+    }
+
+    /// Convert the fill value to float.
     #[must_use]
     pub fn try_as_float<T: FloatCore>(&self) -> Option<T> {
         match self {
