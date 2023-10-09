@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - Tests for `DataType::fill_value_from_metadata`
+ - A paragraph on concurrency in the `Array` docs
 
 ### Changed
  - Fix some docs typos

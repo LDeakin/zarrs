@@ -94,6 +94,48 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///
 /// The `shape` and `attributes` of an array are mutable and can be updated after construction.
 /// Array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata), which can be done before or after chunks are written.
+///
+/// # Concurrency
+///
+/// ### A Single Array Instance (Internal Synchronisation)
+/// Arrays support parallel reading and writing, with the level of concurrency dependent on the underlying store.
+/// A store must guarantee the following for operations which retrieve or store data from a chunk (or any store value):
+///  - a store *may* support multiple concurrent readers of a chunk, and
+///  - a store *must* permit only one writer of a chunk at any one time (with no concurrent readers).
+///
+/// A chunk is locked for writing within the [`Array::store_chunk_subset`] function (which may be called from any of the `store_array_subset` and `store_chunk_subset` variants).
+/// This is necessary because this function may internally decode a chunk and later update it. The chunk must not be updated by another thread until this operation has completed.
+///
+/// For optimum write performance, an array should be written chunk-by-chunk.
+/// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
+///
+/// Array elements can alternatively be written using the `store_array_subset`/`store_chunk_subset` methods, although this is less efficient.
+/// Provided that the array subsets are non-overlapping, all elements are guaranteed to hold the values written.
+/// If any array subsets overlap (which ideally should be avoided!), the value of an element in the overlap region depends on whichever operation wrote to its associated chunk last.
+/// Consider the case of parallel writing of the following subsets to a 1x6 array and a 1x3 chunk size (**do not do this, it is just an example**):
+/// ```text
+///    |subset0| < stores element values of 0
+/// [ A B C | D E F ] < fill value of 9
+///      |subset1| < stores element values of 1
+///      |ss2| < stores element values of 2
+/// ```
+/// Depending on the order in which the chunks were updated within each subset, the array elements could take on the following values:
+/// ```text
+/// [ A B C | D E F ]
+///   9 0 0   0 1 9
+///       1   1
+///       2
+/// ```
+///
+/// ### Multiple Array Instances (External Synchronisation)
+/// The internal synchronisation guarantees provided by an [`Array`] and its underlying store are not applicable if there are multiple array instances referencing the same data.
+/// An [`Array`] should only be created once and shared between multiple threads where possible.
+///
+/// This is not applicable if an array is being written from multiple independent **processes** (e.g. a distributed program on a cluster).
+/// For example, without *internal synchronisation* it is possible that elements `B` and `E`  in the above example could end up with the fill value, despite them explicitly being set to `0` and `1` respectively.
+///
+/// A distributed program with multiple [`Array`] instances should do chunk-by-chunk writing.
+/// If a chunk needs to be updated, then external synchronisation is necessary to ensure that only one process updates it at any one time.
 #[derive(Debug)]
 pub struct Array<TStorage: ?Sized> {
     /// The storage (including storage transformers).
