@@ -112,7 +112,7 @@ impl ArrayCodecTraits for BytesCodec {
 
         if let Some(endian) = &self.endian {
             if !endian.is_native() {
-                reverse_endianness(&mut decoded_value, decoded_representation.element_size());
+                reverse_endianness(&mut decoded_value, decoded_representation.data_type());
             }
         }
         Ok(decoded_value)
@@ -125,7 +125,7 @@ impl ArrayCodecTraits for BytesCodec {
     ) -> Result<Vec<u8>, CodecError> {
         if let Some(endian) = &self.endian {
             if !endian.is_native() {
-                reverse_endianness(&mut encoded_value, decoded_representation.element_size());
+                reverse_endianness(&mut encoded_value, decoded_representation.data_type());
             }
         }
         Ok(encoded_value)

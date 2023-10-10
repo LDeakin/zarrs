@@ -11,7 +11,7 @@ use crate::{
 use super::{
     chunk_grid::{InvalidArrayIndicesError, InvalidChunkGridIndicesError},
     codec::CodecError,
-    data_type::IncompatibleFillValueErrorMetadataError,
+    data_type::{IncompatibleFillValueErrorMetadataError, UnsupportedDataTypeError},
     ArrayIndices, ArrayShape,
 };
 
@@ -32,7 +32,7 @@ pub enum ArrayCreateError {
     UnsupportedAdditionalFieldError(#[from] UnsupportedAdditionalFieldError),
     /// Unsupported data type.
     #[error(transparent)]
-    DataTypeCreateError(PluginCreateError),
+    DataTypeCreateError(UnsupportedDataTypeError),
     /// Invalid fill value.
     #[error(transparent)]
     InvalidFillValue(#[from] IncompatibleFillValueErrorMetadataError),

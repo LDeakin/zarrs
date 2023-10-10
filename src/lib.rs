@@ -19,7 +19,7 @@
 //! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/draft/ZEP0002.html) ([under review](https://github.com/zarr-developers/zarr-specs/issues/254))
 //! - [x] [ZEP0003 - Variable chunking](https://zarr.dev/zeps/draft/ZEP0003.html) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Stores: [`filesystem`](crate::storage::store::FilesystemStore), [`memory`](crate::storage::store::MemoryStore), [`http`](crate::storage::store::HTTPStore), [`zip`](crate::storage::storage_adapter::ZipStorageAdapter)
-//! - [x] Data types: [core data types](crate::array::data_type::DataType), [`raw bits`](crate::array::data_type::RawBitsDataType), [`float16`](crate::array::data_type::Float16DataType), [`bfloat16`](crate::array::data_type::Bfloat16DataType) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130)
+//! - [x] Data types: [core data types](crate::array::data_type::DataType), [`raw bits`](crate::array::data_type::DataType::RawBits), [`float16`](crate::array::data_type::DataType::Float16), [`bfloat16`](crate::array::data_type::DataType::BFloat16) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130)
 //! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid), [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
 //! - [x] Codecs: [`blosc`](crate::array::codec::BloscCodec), [`bytes`](crate::array::codec::BytesCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/263), [`gzip`](crate::array::codec::GzipCodec), [`transpose`](crate::array::codec::TransposeCodec), [`zstd`](crate::array::codec::ZstdCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [`sharding`](crate::array::codec::ShardingCodec), [`crc32c checksum`](crate::array::codec::Crc32cCodec)
@@ -28,7 +28,6 @@
 //! ## Features
 //! All features are enabled by default.
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
-//!  - Data types: `raw_bits`, `float16`, `bfloat16`.
 //!  - Stores: `http`, `zip`.
 //!  - `ndarray`: adds [`ndarray`] utility functions to [`Array`](crate::array::Array).
 //!

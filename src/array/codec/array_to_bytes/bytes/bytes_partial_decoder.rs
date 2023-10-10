@@ -61,7 +61,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                         if !endian.is_native() {
                             reverse_endianness(
                                 &mut bytes_subset,
-                                decoded_representation.element_size(),
+                                decoded_representation.data_type(),
                             );
                         }
                     }

@@ -1,14 +1,13 @@
 //! Plugin utilities for supporting [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points).
 //!
 //! A [`Plugin`] creates objects from [`Metadata`] (consisting of a name and optional configuration).
-//! It is used to implement [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points), such as [data types](`crate::array::data_type`), [chunk grids][`crate::array::chunk_grid`], [chunk key encodings](`crate::array::chunk_key_encoding`), [codecs](`crate::array::codec`), and [storage transformers](`crate::storage::storage_transformer`).
+//! It is used to implement [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points), such as [chunk grids][`crate::array::chunk_grid`], [chunk key encodings](`crate::array::chunk_key_encoding`), [codecs](`crate::array::codec`), and [storage transformers](`crate::storage::storage_transformer`).
+//!
+//! [Data types](`crate::array::data_type`) are not currently supported as an extension point.
 //!
 //! Plugins are registered at compile time using the [inventory] crate.
 //! At runtime, a name matching function is applied to identify which registered plugin is associated with the metadata.
 //! If a match is found, the plugin is created from the metadata.
-//!
-//! For example, the raw bits data type [`RawBitsDataType`](crate::array::data_type::RawBitsDataType) has the `"r*"` identifier and matches any `"rX"` name where `X` is a positive integer that is a multiple of 8.
-//! The size of the raw bits data type is derived from the metadata name, but most plugins are configured by the metadata configuration.
 
 use thiserror::Error;
 

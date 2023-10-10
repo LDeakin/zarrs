@@ -74,14 +74,12 @@ impl From<i64> for FillValue {
     }
 }
 
-#[cfg(feature = "float16")]
 impl From<half::f16> for FillValue {
     fn from(value: half::f16) -> Self {
         FillValue(value.to_ne_bytes().to_vec())
     }
 }
 
-#[cfg(feature = "bfloat16")]
 impl From<half::bf16> for FillValue {
     fn from(value: half::bf16) -> Self {
         FillValue(value.to_ne_bytes().to_vec())

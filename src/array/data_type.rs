@@ -2,27 +2,11 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#data-types>.
 
-#[cfg(feature = "raw_bits")]
-mod raw_bits;
-#[cfg(feature = "raw_bits")]
-pub use raw_bits::RawBitsDataType;
-
-#[cfg(feature = "float16")]
-mod float16;
-#[cfg(feature = "float16")]
-pub use float16::Float16DataType;
-
-#[cfg(feature = "bfloat16")]
-mod bfloat16;
-#[cfg(feature = "bfloat16")]
-pub use bfloat16::Bfloat16DataType;
-
+use derive_more::From;
+use half::{bf16, f16};
 use thiserror::Error;
 
-use crate::{
-    metadata::Metadata,
-    plugin::{Plugin, PluginCreateError},
-};
+use crate::metadata::Metadata;
 
 use super::{
     fill_value_metadata::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
@@ -31,6 +15,7 @@ use super::{
 
 /// A data type.
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum DataType {
     /// `bool` Boolean.
     Bool,
@@ -50,17 +35,29 @@ pub enum DataType {
     UInt32,
     /// `uint64` Integer in `[0, 2^64-1]`.
     UInt64,
+    /// `float16` IEEE 754 half-precision floating point: sign bit, 5 bits exponent, 10 bits mantissa.
+    Float16,
     /// `float32` IEEE 754 single-precision floating point: sign bit, 8 bits exponent, 23 bits mantissa.
     Float32,
     /// `float64` IEEE 754 double-precision floating point: sign bit, 11 bits exponent, 52 bits mantissa.
     Float64,
+    /// `bfloat16` brain floating point data type: sign bit, 5 bits exponent, 10 bits mantissa.
+    BFloat16,
     /// `complex64` real and complex components are each IEEE 754 single-precision floating point.
     Complex64,
     /// `complex128` real and complex components are each IEEE 754 double-precision floating point.
     Complex128,
-    /// An optional or extension data type.
-    Extension(Box<dyn DataTypeExtension>),
+    /// `r*` raw bits, variable size given by *, limited to be a multiple of 8.
+    RawBits(usize), // the stored usize is the size in bytes
+
+                    // /// An extension data type.
+                    // Extension(Box<dyn DataTypeExtension>),
 }
+
+/// An unsupported data type error.
+#[derive(Debug, Error, From)]
+#[error("data type {_0} is unsupported")]
+pub struct UnsupportedDataTypeError(String);
 
 impl PartialEq for DataType {
     fn eq(&self, other: &Self) -> bool {
@@ -70,9 +67,9 @@ impl PartialEq for DataType {
 
 impl Eq for DataType {}
 
-/// A data type plugin.
-pub type DataTypePlugin = Plugin<Box<dyn DataTypeExtension>>;
-inventory::collect!(DataTypePlugin);
+// /// A data type plugin.
+// pub type DataTypePlugin = Plugin<Box<dyn DataTypeExtension>>;
+// inventory::collect!(DataTypePlugin);
 
 /// A fill value metadata incompatibility error.
 #[derive(Debug, Error)]
@@ -137,11 +134,14 @@ impl DataType {
             Self::UInt16 => "uint16",
             Self::UInt32 => "uint32",
             Self::UInt64 => "uint64",
+            Self::Float16 => "float16",
             Self::Float32 => "float32",
             Self::Float64 => "float64",
+            Self::BFloat16 => "bfloat16",
             Self::Complex64 => "complex64",
             Self::Complex128 => "complex128",
-            Self::Extension(extension) => extension.identifier(),
+            Self::RawBits(_usize) => "r*",
+            // Self::Extension(extension) => extension.identifier(),
         }
     }
 
@@ -149,7 +149,8 @@ impl DataType {
     #[must_use]
     pub fn name(&self) -> String {
         match self {
-            Self::Extension(extension) => extension.name(),
+            Self::RawBits(size) => format!("r{}", size * 8),
+            // Self::Extension(extension) => extension.name(),
             _ => self.identifier().to_string(),
         }
     }
@@ -157,10 +158,11 @@ impl DataType {
     /// Returns the metadata.
     #[must_use]
     pub fn metadata(&self) -> Metadata {
-        match self {
-            Self::Extension(extension) => extension.metadata(),
-            _ => Metadata::new(self.identifier()),
-        }
+        Metadata::new(&self.name())
+        // match self {
+        //     // Self::Extension(extension) => extension.metadata(),
+        //     _ => Metadata::new(&self.name()),
+        // }
     }
 
     /// Returns the size in bytes.
@@ -168,11 +170,12 @@ impl DataType {
     pub fn size(&self) -> usize {
         match self {
             Self::Bool | Self::Int8 | Self::UInt8 => 1,
-            Self::Int16 | Self::UInt16 => 2,
+            Self::Int16 | Self::UInt16 | Self::Float16 | Self::BFloat16 => 2,
             Self::Int32 | Self::UInt32 | Self::Float32 => 4,
             Self::Int64 | Self::UInt64 | Self::Float64 | Self::Complex64 => 8,
             Self::Complex128 => 16,
-            Self::Extension(extension) => extension.size(),
+            Self::RawBits(size) => *size,
+            // Self::Extension(extension) => extension.size(),
         }
     }
 
@@ -180,8 +183,8 @@ impl DataType {
     ///
     /// # Errors
     ///
-    /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered data type plugin.
-    pub fn from_metadata(metadata: &Metadata) -> Result<Self, PluginCreateError> {
+    /// Returns [`UnsupportedDataTypeError`] if the metadata is invalid or not associated with a registered data type plugin.
+    pub fn from_metadata(metadata: &Metadata) -> Result<Self, UnsupportedDataTypeError> {
         let name = metadata.name();
 
         match name {
@@ -194,21 +197,34 @@ impl DataType {
             "uint16" => return Ok(Self::UInt16),
             "uint32" => return Ok(Self::UInt32),
             "uint64" => return Ok(Self::UInt64),
+            "float16" => return Ok(Self::Float16),
             "float32" => return Ok(Self::Float32),
             "float64" => return Ok(Self::Float64),
+            "bfloat16" => return Ok(Self::BFloat16),
             "complex64" => return Ok(Self::Complex64),
             "complex128" => return Ok(Self::Complex128),
             _ => {}
         };
 
-        for plugin in inventory::iter::<DataTypePlugin> {
-            if plugin.match_name(metadata.name()) {
-                return Ok(DataType::Extension(plugin.create(metadata)?));
+        if name.starts_with('r') {
+            if let Ok(size_bits) = metadata.name()[1..].parse::<usize>() {
+                if size_bits % 8 == 0 {
+                    let size_bytes = size_bits / 8;
+                    return Ok(DataType::RawBits(size_bytes));
+                }
             }
         }
-        Err(PluginCreateError::Unsupported {
-            name: metadata.name().to_string(),
-        })
+
+        Err(UnsupportedDataTypeError(name.to_string()))
+
+        // for plugin in inventory::iter::<DataTypePlugin> {
+        //     if plugin.match_name(metadata.name()) {
+        //         return Ok(DataType::Extension(plugin.create(metadata)?));
+        //     }
+        // }
+        // Err(PluginCreateError::Unsupported {
+        //     name: metadata.name().to_string(),
+        // })
     }
 
     /// Create a fill value from metadata.
@@ -233,8 +249,10 @@ impl DataType {
             Self::UInt16 => Ok(FV::from(fill_value.try_as_uint::<u16>().ok_or_else(err)?)),
             Self::UInt32 => Ok(FV::from(fill_value.try_as_uint::<u32>().ok_or_else(err)?)),
             Self::UInt64 => Ok(FV::from(fill_value.try_as_uint::<u64>().ok_or_else(err)?)),
+            Self::Float16 => Ok(FV::from(fill_value.try_as_float16().ok_or_else(err)?)),
             Self::Float32 => Ok(FV::from(fill_value.try_as_float::<f32>().ok_or_else(err)?)),
             Self::Float64 => Ok(FV::from(fill_value.try_as_float::<f64>().ok_or_else(err)?)),
+            Self::BFloat16 => Ok(FV::from(fill_value.try_as_bfloat16().ok_or_else(err)?)),
             Self::Complex64 => {
                 let (re, im) = fill_value.try_as_float_pair::<f32>().ok_or_else(err)?;
                 Ok(FV::from(num::complex::Complex32::new(re, im)))
@@ -243,7 +261,17 @@ impl DataType {
                 let (re, im) = fill_value.try_as_float_pair::<f64>().ok_or_else(err)?;
                 Ok(FV::from(num::complex::Complex64::new(re, im)))
             }
-            Self::Extension(extension) => extension.fill_value_from_metadata(fill_value),
+            Self::RawBits(size) => {
+                if let FillValueMetadata::ByteArray(bytes) = fill_value {
+                    if bytes.len() == *size {
+                        return Ok(FillValue::new(bytes.clone()));
+                    }
+                }
+                Err(IncompatibleFillValueErrorMetadataError(
+                    self.name().to_string(),
+                    fill_value.clone(),
+                ))
+            } // Self::Extension(extension) => extension.fill_value_from_metadata(fill_value),
         }
     }
 
@@ -282,12 +310,20 @@ impl DataType {
             DataType::UInt64 => {
                 FillValueMetadata::Uint(u64::from_ne_bytes(bytes.try_into().unwrap()))
             }
+            DataType::Float16 => {
+                let fill_value = f16::from_ne_bytes(fill_value.as_ne_bytes().try_into().unwrap());
+                FillValueMetadata::Float(float16_to_fill_value_float(fill_value))
+            }
             DataType::Float32 => FillValueMetadata::Float(float_to_fill_value(f32::from_ne_bytes(
                 bytes.try_into().unwrap(),
             ))),
             DataType::Float64 => FillValueMetadata::Float(float_to_fill_value(f64::from_ne_bytes(
                 bytes.try_into().unwrap(),
             ))),
+            DataType::BFloat16 => {
+                let fill_value = bf16::from_ne_bytes(fill_value.as_ne_bytes().try_into().unwrap());
+                FillValueMetadata::Float(bfloat16_to_fill_value_float(fill_value))
+            }
             DataType::Complex64 => {
                 let re = f32::from_ne_bytes(bytes[0..4].try_into().unwrap());
                 let im = f32::from_ne_bytes(bytes[4..8].try_into().unwrap());
@@ -298,7 +334,10 @@ impl DataType {
                 let im = f64::from_ne_bytes(bytes[8..16].try_into().unwrap());
                 FillValueMetadata::Complex(float_to_fill_value(re), float_to_fill_value(im))
             }
-            DataType::Extension(extension) => extension.metadata_fill_value(fill_value),
+            DataType::RawBits(size) => {
+                debug_assert_eq!(fill_value.as_ne_bytes().len(), *size);
+                FillValueMetadata::ByteArray(fill_value.as_ne_bytes().to_vec())
+            } // DataType::Extension(extension) => extension.metadata_fill_value(fill_value),
         }
     }
 }
@@ -318,8 +357,32 @@ where
     }
 }
 
+fn float16_to_fill_value_float(f: f16) -> FillValueFloat {
+    if f.is_infinite() && f.is_sign_positive() {
+        FillValueFloatStringNonFinite::PosInfinity.into()
+    } else if f.is_infinite() && f.is_sign_negative() {
+        FillValueFloatStringNonFinite::NegInfinity.into()
+    } else if f.is_nan() {
+        FillValueFloatStringNonFinite::NaN.into()
+    } else {
+        f64::from(f).into()
+    }
+}
+
+fn bfloat16_to_fill_value_float(f: bf16) -> FillValueFloat {
+    if f.is_infinite() && f.is_sign_positive() {
+        FillValueFloatStringNonFinite::PosInfinity.into()
+    } else if f.is_infinite() && f.is_sign_negative() {
+        FillValueFloatStringNonFinite::NegInfinity.into()
+    } else if f.is_nan() {
+        FillValueFloatStringNonFinite::NaN.into()
+    } else {
+        f64::from(f).into()
+    }
+}
+
 impl TryFrom<Metadata> for DataType {
-    type Error = PluginCreateError;
+    type Error = UnsupportedDataTypeError;
 
     fn try_from(metadata: Metadata) -> Result<Self, Self::Error> {
         DataType::from_metadata(&metadata)
@@ -521,7 +584,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "float16")]
     #[test]
     fn data_type_float16() {
         use half::f16;
@@ -573,7 +635,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "bfloat16")]
     #[test]
     fn data_type_bfloat16() {
         use half::bf16;
@@ -673,7 +734,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "raw_bits")]
     #[test]
     fn data_type_r8() {
         let json = r#""r8""#;
@@ -695,7 +755,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "raw_bits")]
     #[test]
     fn data_type_r16() {
         let json = r#""r16""#;
@@ -753,7 +812,6 @@ mod tests {
         assert!(serde_json::from_str::<Metadata>(json).is_err());
     }
 
-    #[cfg(feature = "raw_bits")]
     #[test]
     pub fn data_type_raw_bits1() {
         let json = r#""r16""#;
@@ -762,7 +820,6 @@ mod tests {
         assert_eq!(data_type.size(), 2);
     }
 
-    #[cfg(feature = "raw_bits")]
     #[test]
     pub fn data_type_raw_bits2() {
         let json = r#"

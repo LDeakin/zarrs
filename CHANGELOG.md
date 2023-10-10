@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - **Breaking**: Added `UnsupportedDataTypeError`
+
+### Changed
+ - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
+ - **Breaking**: Promote the `r*` (raw bits), `float16` and `bfloat16` data types to standard data types in `array::data_type::DataType`, rather than extension data types
+   - **Breaking**: Remove the crate features: `raw_bits`, `float16`, `bfloat16`
+   - **Breaking**: Removes `array::data_type::RawBitsDataType/Bfloat16DataType/Float16DataType`
+   - **Breaking**: `half` is now a required dependency
+
+### Fixed
+ - Bytes codec handling of complex and raw bits data types
+
+### Removed
+ - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
+
 ## [0.5.1] - 2023-10-10
 
 ### Added

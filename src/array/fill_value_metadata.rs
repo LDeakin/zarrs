@@ -8,6 +8,7 @@
 //! Fill value metadata is created with [`DataTypeExtension::metadata_fill_value`](crate::array::data_type::DataTypeExtension::metadata_fill_value).
 
 use derive_more::{Display, From};
+use half::{bf16, f16};
 use num::traits::float::FloatCore;
 use serde::{Deserialize, Serialize};
 
@@ -233,6 +234,66 @@ impl FillValueMetadata {
                     Some((re, im))
                 } else {
                     None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Convert the fill value to a float16.
+    #[must_use]
+    pub fn try_as_float16(&self) -> Option<f16> {
+        match self {
+            FillValueMetadata::Float(float) => {
+                use FillValueFloat as F;
+                match float {
+                    F::Float(float) => Some(f16::from_f64(*float)),
+                    F::HexString(hex_string) => {
+                        let bytes = hex_string.as_bytes();
+                        if let Ok(bytes) = bytes.try_into() {
+                            Some(f16::from_be_bytes(bytes))
+                        } else {
+                            None
+                        }
+                    }
+                    F::NonFinite(nonfinite) => {
+                        use FillValueFloatStringNonFinite as NF;
+                        Some(match nonfinite {
+                            NF::PosInfinity => f16::INFINITY,
+                            NF::NegInfinity => f16::NEG_INFINITY,
+                            NF::NaN => f16::NAN,
+                        })
+                    }
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Convert the fill value to a float16.
+    #[must_use]
+    pub fn try_as_bfloat16(&self) -> Option<bf16> {
+        match self {
+            FillValueMetadata::Float(float) => {
+                use FillValueFloat as F;
+                match float {
+                    F::Float(float) => Some(bf16::from_f64(*float)),
+                    F::HexString(hex_string) => {
+                        let bytes = hex_string.as_bytes();
+                        if let Ok(bytes) = bytes.try_into() {
+                            Some(bf16::from_be_bytes(bytes))
+                        } else {
+                            None
+                        }
+                    }
+                    F::NonFinite(nonfinite) => {
+                        use FillValueFloatStringNonFinite as NF;
+                        Some(match nonfinite {
+                            NF::PosInfinity => bf16::INFINITY,
+                            NF::NegInfinity => bf16::NEG_INFINITY,
+                            NF::NaN => bf16::NAN,
+                        })
+                    }
                 }
             }
             _ => None,

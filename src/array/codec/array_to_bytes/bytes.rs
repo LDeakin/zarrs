@@ -14,6 +14,8 @@ pub use bytes_codec::BytesCodec;
 
 use derive_more::Display;
 
+use crate::array::DataType;
+
 /// The endianness of each element in an array, either `big` or `little`.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 pub enum Endianness {
@@ -60,10 +62,26 @@ const NATIVE_ENDIAN: Endianness = Endianness::Big;
 #[cfg(target_endian = "little")]
 const NATIVE_ENDIAN: Endianness = Endianness::Little;
 
-fn reverse_endianness(v: &mut [u8], bytes_per_element: usize) {
-    if bytes_per_element > 1 {
-        v.chunks_exact_mut(bytes_per_element)
-            .for_each(<[u8]>::reverse);
+fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
+    match data_type {
+        DataType::Bool | DataType::Int8 | DataType::UInt8 | DataType::RawBits(_) => {}
+        DataType::Int16
+        | DataType::Int32
+        | DataType::Int64
+        | DataType::UInt16
+        | DataType::UInt32
+        | DataType::UInt64
+        | DataType::Float16
+        | DataType::Float32
+        | DataType::Float64
+        | DataType::BFloat16 => {
+            v.chunks_exact_mut(data_type.size())
+                .for_each(<[u8]>::reverse);
+        }
+        DataType::Complex64 | DataType::Complex128 => {
+            v.chunks_exact_mut(data_type.size() / 2)
+                .for_each(<[u8]>::reverse);
+        }
     }
 }
 
