@@ -6,11 +6,12 @@ cargo build --release
 ## Testing
 ```bash
 # Must have no warnings/errors to pass CI
-cargo build && \
-cargo test && \
-cargo doc && \
+cargo build --all-features && \
+cargo test --all-features && \
+cargo doc --all-features && \
 cargo fmt --all -- --check && \
 cargo clippy -- -D warnings && \
+cargo check && \
 cargo check --no-default-features
 ```
 

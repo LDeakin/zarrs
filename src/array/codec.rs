@@ -23,10 +23,13 @@ pub use array_to_array::transpose::{
 pub use array_to_bytes::sharding::{
     ShardingCodec, ShardingCodecConfiguration, ShardingCodecConfigurationV1,
 };
+#[cfg(feature = "zfp")]
+pub use array_to_bytes::zfp::{ZfpCodec, ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use array_to_bytes::{
     bytes::{BytesCodec, BytesCodecConfiguration, BytesCodecConfigurationV1},
     codec_chain::CodecChain,
 };
+// pub use array_to_bytes::zfp::{ZfpCodec, ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 
 #[cfg(feature = "blosc")]
 pub use bytes_to_bytes::blosc::{BloscCodec, BloscCodecConfiguration, BloscCodecConfigurationV1};

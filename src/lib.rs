@@ -22,14 +22,19 @@
 //! - [x] Data types: [core data types](crate::array::data_type::DataType), [`raw bits`](crate::array::data_type::DataType::RawBits), [`float16`](crate::array::data_type::DataType::Float16), [`bfloat16`](crate::array::data_type::DataType::BFloat16) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130)
 //! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid), [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
-//! - [x] Codecs: [`blosc`](crate::array::codec::BloscCodec), [`bytes`](crate::array::codec::BytesCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/263), [`gzip`](crate::array::codec::GzipCodec), [`transpose`](crate::array::codec::TransposeCodec), [`zstd`](crate::array::codec::ZstdCodec) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [`sharding`](crate::array::codec::ShardingCodec), [`crc32c checksum`](crate::array::codec::Crc32cCodec)
+//! - [x] Codecs:
+//!   - array->array: [`transpose`](crate::array::codec::array_to_array::transpose),
+//!   - array->bytes: [`bytes`](crate::array::codec::array_to_bytes::bytes) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/263), [`sharding`](crate::array::codec::array_to_bytes::sharding), [`zfp`](crate::array::codec::array_to_bytes::zfp) (experimental)
+//!   - bytes->bytes: [`blosc`](crate::array::codec::bytes_to_bytes::blosc), [`gzip`](crate::array::codec::bytes_to_bytes::gzip), [`zstd`](crate::array::codec::bytes_to_bytes::zstd) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [`crc32c checksum`](crate::array::codec::bytes_to_bytes::crc32c)
 //! - [x] Storage transformers: [`usage_log`](crate::storage::storage_transformer::UsageLogStorageTransformer), [`performance_metrics`](crate::storage::storage_transformer::PerformanceMetricsStorageTransformer)
 //!
 //! ## Features
-//! All features are enabled by default.
+//! The following features are enabled by default:
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!  - Stores: `http`, `zip`.
 //!  - `ndarray`: adds [`ndarray`] utility functions to [`Array`](crate::array::Array).
+//! The following features are disabled by default:
+//!  - Codecs: `zfp`
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`

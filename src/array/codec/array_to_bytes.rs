@@ -5,3 +5,6 @@ pub mod codec_chain;
 
 #[cfg(feature = "sharding")]
 pub mod sharding;
+
+#[cfg(feature = "zfp")]
+pub mod zfp;

@@ -18,12 +18,16 @@ blosc = ["dep:blosc-sys"]
 gzip = ["dep:flate2"]
 sharding = []
 crc32c = ["dep:crc32fast"]
+zfp = ["dep:zfp-sys"]
 zstd = ["dep:zstd"]
 # Stores
 http = ["dep:reqwest", "dep:url"]
 zip = ["dep:zip"]
 # Utilities
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
+
+[package.metadata.docs.rs]
+all-features = true
 
 [lib]
 crate-type = ["lib"]
@@ -50,6 +54,7 @@ serde_json = { version = "1.0.71", features = ["preserve_order"] }
 thiserror = "1.0.7"
 url = { version = "2", optional = true }
 walkdir = "2.3.2"
+zfp-sys = {version = "0.1.4", features = ["static"], optional = true }
 zip = { version = "0.6", optional = true }
 zstd = { version = "0.12", optional = true }
 
