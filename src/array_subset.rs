@@ -14,7 +14,7 @@ pub use array_subset_iterators::{
     IndicesIterator, LinearisedIndicesIterator,
 };
 
-use derive_more::Display;
+use derive_more::{Display, From};
 use itertools::izip;
 use thiserror::Error;
 
@@ -202,20 +202,21 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleDimensionalityError`] if the length of `array_shape` does not match the array subset dimensionality.
+    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn byte_ranges(
         &self,
         array_shape: &[u64],
         element_size: usize,
-    ) -> Result<Vec<ByteRange>, IncompatibleDimensionalityError> {
-        if array_shape.len() == self.dimensionality() {
-            Ok(unsafe { self.byte_ranges_unchecked(array_shape, element_size) })
-        } else {
-            Err(IncompatibleDimensionalityError(
-                array_shape.len(),
-                self.dimensionality(),
-            ))
+    ) -> Result<Vec<ByteRange>, IncompatibleArrayShapeError> {
+        let mut byte_ranges: Vec<ByteRange> = Vec::new();
+        for (array_index, contiguous_elements) in
+            self.iter_contiguous_linearised_indices(array_shape)?
+        {
+            let byte_index = array_index * element_size as u64;
+            let byte_length = contiguous_elements * element_size as u64;
+            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length)));
         }
+        Ok(byte_ranges)
     }
 
     /// Return the byte ranges of an array subset in an array with `array_shape` and `element_size`.
@@ -230,7 +231,6 @@ impl ArraySubset {
         array_shape: &[u64],
         element_size: usize,
     ) -> Vec<ByteRange> {
-        debug_assert_eq!(array_shape.len(), self.dimensionality());
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
         for (array_index, contiguous_elements) in
             self.iter_contiguous_linearised_indices_unchecked(array_shape)
@@ -247,16 +247,29 @@ impl ArraySubset {
     /// # Errors
     ///
     /// Returns [`ArrayExtractBytesError`] if the length of `array_shape` does not match the array subset dimensionality or the array subset is out side of the the bounds of `array_shape`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if attempting to access a byte index beyond [`usize::MAX`].
     pub fn extract_bytes(
         &self,
         bytes: &[u8],
         array_shape: &[u64],
         element_size: usize,
     ) -> Result<Vec<u8>, ArrayExtractBytesError> {
-        if array_shape.len() == self.dimensionality()
-            && (bytes.len() as u64 == array_shape.iter().product::<u64>() * element_size as u64)
-        {
-            Ok(unsafe { self.extract_bytes_unchecked(bytes, array_shape, element_size) })
+        let element_size_u64 = element_size as u64;
+        if bytes.len() as u64 == array_shape.iter().product::<u64>() * element_size_u64 {
+            let mut bytes_subset: Vec<u8> = Vec::new();
+            for (array_index, contiguous_elements) in self
+                .iter_contiguous_linearised_indices(array_shape)
+                .map_err(|err| ArrayExtractBytesError(err.1, err.0, element_size))?
+            {
+                let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
+                let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
+                debug_assert!(byte_index + byte_length <= bytes.len());
+                bytes_subset.extend(&bytes[byte_index..byte_index + byte_length]);
+            }
+            Ok(bytes_subset)
         } else {
             Err(ArrayExtractBytesError(
                 self.clone(),
@@ -284,7 +297,6 @@ impl ArraySubset {
         element_size: usize,
     ) -> Vec<u8> {
         let element_size = element_size as u64;
-        debug_assert_eq!(array_shape.len(), self.dimensionality());
         debug_assert_eq!(
             bytes.len() as u64,
             array_shape.iter().product::<u64>() * element_size
@@ -308,31 +320,41 @@ impl ArraySubset {
     }
 
     /// Returns an iterator over the linearised indices of elements within the subset.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn iter_linearised_indices<'a>(
         &self,
         array_shape: &'a [u64],
-    ) -> LinearisedIndicesIterator<'a> {
+    ) -> Result<LinearisedIndicesIterator<'a>, IncompatibleArrayShapeError> {
         LinearisedIndicesIterator::new(self.iter_indices(), array_shape)
+    }
+
+    /// Returns an iterator over the indices of elements within the subset.
+    ///
+    /// # Safety
+    ///
+    /// `array_shape` must match the dimensionality and encapsulate this array subset.
+    #[doc(hidden)]
+    #[must_use]
+    pub unsafe fn iter_linearised_indices_unchecked<'a>(
+        &'a self,
+        array_shape: &'a [u64],
+    ) -> LinearisedIndicesIterator<'a> {
+        LinearisedIndicesIterator::new_unchecked(self.iter_indices(), array_shape)
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleDimensionalityError`] if the length of `array_shape` does not match the array subset dimensionality.
+    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn iter_contiguous_indices<'a>(
         &'a self,
         array_shape: &'a [u64],
-    ) -> Result<ContiguousIndicesIterator, IncompatibleDimensionalityError> {
-        if self.dimensionality() == array_shape.len() {
-            Ok(unsafe { self.iter_contiguous_indices_unchecked(array_shape) })
-        } else {
-            Err(IncompatibleDimensionalityError(
-                array_shape.len(),
-                self.dimensionality(),
-            ))
-        }
+    ) -> Result<ContiguousIndicesIterator, IncompatibleArrayShapeError> {
+        ContiguousIndicesIterator::new(self, array_shape, Some(self.start.clone()))
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
@@ -346,27 +368,21 @@ impl ArraySubset {
         &'a self,
         array_shape: &'a [u64],
     ) -> ContiguousIndicesIterator {
-        debug_assert_eq!(self.dimensionality(), array_shape.len());
-        ContiguousIndicesIterator::new(self, array_shape, Some(self.start.clone()))
+        ContiguousIndicesIterator::new_unchecked(self, array_shape, Some(self.start.clone()))
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleDimensionalityError`] if the length of `array_shape` does not match the array subset dimensionality.
+    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn iter_contiguous_linearised_indices<'a>(
         &'a self,
         array_shape: &'a [u64],
-    ) -> Result<ContiguousLinearisedIndicesIterator, IncompatibleDimensionalityError> {
-        if self.dimensionality() == array_shape.len() {
-            Ok(unsafe { self.iter_contiguous_linearised_indices_unchecked(array_shape) })
-        } else {
-            Err(IncompatibleDimensionalityError(
-                array_shape.len(),
-                self.dimensionality(),
-            ))
-        }
+    ) -> Result<ContiguousLinearisedIndicesIterator, IncompatibleArrayShapeError> {
+        Ok(ContiguousLinearisedIndicesIterator::new(
+            self.iter_contiguous_indices(array_shape)?,
+        ))
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
@@ -380,7 +396,6 @@ impl ArraySubset {
         &'a self,
         array_shape: &'a [u64],
     ) -> ContiguousLinearisedIndicesIterator {
-        debug_assert_eq!(self.dimensionality(), array_shape.len());
         ContiguousLinearisedIndicesIterator::new(unsafe {
             self.iter_contiguous_indices_unchecked(array_shape)
         })
@@ -398,14 +413,10 @@ impl ArraySubset {
         &'a self,
         chunk_shape: &'a [u64],
     ) -> Result<ChunksIterator, IncompatibleDimensionalityError> {
-        if chunk_shape.len() == self.dimensionality() {
-            Ok(unsafe { self.iter_chunks_unchecked(chunk_shape) })
-        } else {
-            Err(IncompatibleDimensionalityError::new(
-                chunk_shape.len(),
-                self.dimensionality(),
-            ))
-        }
+        let first_chunk = std::iter::zip(self.start(), chunk_shape)
+            .map(|(i, s)| i / s)
+            .collect();
+        ChunksIterator::new(self, chunk_shape, Some(first_chunk))
     }
 
     /// Returns an iterator over chunks with shape `chunk_shape` in the array subset.
@@ -419,11 +430,10 @@ impl ArraySubset {
     #[doc(hidden)]
     #[must_use]
     pub unsafe fn iter_chunks_unchecked<'a>(&'a self, chunk_shape: &'a [u64]) -> ChunksIterator {
-        debug_assert_eq!(self.dimensionality(), chunk_shape.len());
         let first_chunk = std::iter::zip(self.start(), chunk_shape)
             .map(|(i, s)| i / s)
             .collect();
-        ChunksIterator::new(self, chunk_shape, Some(first_chunk))
+        ChunksIterator::new_unchecked(self, chunk_shape, Some(first_chunk))
     }
 
     /// Return the subset of this array subset in `subset_other`.
@@ -436,13 +446,14 @@ impl ArraySubset {
         &self,
         subset_other: &ArraySubset,
     ) -> Result<ArraySubset, IncompatibleDimensionalityError> {
-        if subset_other.dimensionality() != self.dimensionality() {
-            return Err(IncompatibleDimensionalityError::new(
+        if subset_other.dimensionality() == self.dimensionality() {
+            Ok(unsafe { self.in_subset_unchecked(subset_other) })
+        } else {
+            Err(IncompatibleDimensionalityError::new(
                 subset_other.dimensionality(),
                 self.dimensionality(),
-            ));
+            ))
         }
-        Ok(unsafe { self.in_subset_unchecked(subset_other) })
     }
 
     /// Return the subset of this array subset in `subset_other`.
@@ -478,6 +489,11 @@ impl ArraySubset {
 #[derive(Copy, Clone, Debug, Error)]
 #[error("incompatible dimensionality {0}, expected {1}")]
 pub struct IncompatibleDimensionalityError(usize, usize);
+
+/// An incompatible array shape error.
+#[derive(Clone, Debug, Error, From)]
+#[error("incompatible array shape {0:?} with array subset {1}")]
+pub struct IncompatibleArrayShapeError(ArrayShape, ArraySubset);
 
 impl IncompatibleDimensionalityError {
     /// Create a new incompatible dimensionality error.

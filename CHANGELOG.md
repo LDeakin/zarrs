@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - **Breaking**: Added `UnsupportedDataTypeError`
  - **Breaking**: Added `CodecError::UnsupportedDataType`
+ - Added `array_subset::IncompatibleArrayShapeError`
+ - Added `array_subset::iter_linearised_indices_unchecked`
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
@@ -18,9 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking**: Removes `array::data_type::RawBitsDataType/Bfloat16DataType/Float16DataType`
    - **Breaking**: `half` is now a required dependency
  - **Breaking**: Rename `TransposeCodec::new` to `new_with_configuration`
+ - **Breaking**: Array subset methods dependent on an `array_shape` now use the `IncompatibleArrayShapeError` error type instead of `IncompatibleDimensionalityError`
+ - **Breaking**: Various array subset iterators now have validated `new` and unvalidated `new_unchecked` constructors
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
+ - Additional debug assertions to validate input in array subset `_unchecked` functions
+ - **Breaking**: `array_subset::iter_linearised_indices` now returns a `Result<_, IncompatibleArrayShapeError>`, previously it could not fail even if the `array_shape` did not enclose the array subset
+ - The `array_subset_iter_contiguous_indices3` test was incorrect as the array shape was invalid for the array subset
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
