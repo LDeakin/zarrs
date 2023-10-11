@@ -443,23 +443,19 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             chunk_indices,
             self.chunk_key_encoding(),
         )
-        .map_err(ArrayError::StorageError);
+        .map_err(ArrayError::StorageError)?;
         let chunk_representation = self.chunk_array_representation(chunk_indices, self.shape())?;
-        match chunk_encoded {
-            Ok(Some(chunk_encoded)) => {
-                let chunk_decoded = if self.parallel_codecs() {
-                    self.codecs()
-                        .par_decode(chunk_encoded, &chunk_representation)
-                } else {
-                    self.codecs().decode(chunk_encoded, &chunk_representation)
-                };
-                chunk_decoded.map_err(ArrayError::CodecError)
-            }
-            Ok(None) => {
-                let fill_value = chunk_representation.fill_value().as_ne_bytes();
-                Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
-            }
-            Err(error) => Err(error),
+        if let Some(chunk_encoded) = chunk_encoded {
+            let chunk_decoded = if self.parallel_codecs() {
+                self.codecs()
+                    .par_decode(chunk_encoded, &chunk_representation)
+            } else {
+                self.codecs().decode(chunk_encoded, &chunk_representation)
+            };
+            chunk_decoded.map_err(ArrayError::CodecError)
+        } else {
+            let fill_value = chunk_representation.fill_value().as_ne_bytes();
+            Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
         }
     }
 

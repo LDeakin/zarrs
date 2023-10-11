@@ -50,29 +50,21 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                         * decoded_representation.element_size() as u64,
                 ),
                 &byte_ranges,
-            );
+            )?;
 
-            let bytes_subset = match decoded {
-                Ok(Some(decoded)) => {
-                    let mut bytes_subset = decoded.concat();
-
-                    // Reverse endianness
-                    if let Some(endian) = &self.endian {
-                        if !endian.is_native() {
-                            reverse_endianness(
-                                &mut bytes_subset,
-                                decoded_representation.data_type(),
-                            );
-                        }
+            let bytes_subset = if let Some(decoded) = decoded {
+                let mut bytes_subset = decoded.concat();
+                if let Some(endian) = &self.endian {
+                    if !endian.is_native() {
+                        reverse_endianness(&mut bytes_subset, decoded_representation.data_type());
                     }
-
-                    bytes_subset
                 }
-                Ok(None) => decoded_representation
+                bytes_subset
+            } else {
+                decoded_representation
                     .fill_value()
                     .as_ne_bytes()
-                    .repeat(array_subset.num_elements_usize()),
-                Err(err) => return Err(err),
+                    .repeat(array_subset.num_elements_usize())
             };
 
             bytes.push(bytes_subset);
