@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-
 use crate::{
     array::{
         codec::{
@@ -127,7 +125,7 @@ impl ArrayCodecTraits for ShardingCodec {
         let mut shard_index = vec![u64::MAX; index_decoded_representation.num_elements_usize()];
 
         // Iterate over chunk indices
-        let mut encoded_shard: Vec<u8> = Vec::new();
+        let mut shard_inner_chunks = Vec::new();
         let mut encoded_shard_offset: usize = 0;
         let fill_value_bytes = chunk_representation.fill_value().as_ne_bytes();
         for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
@@ -151,10 +149,10 @@ impl ArrayCodecTraits for ShardingCodec {
                 let chunk_encoded = self.inner_codecs.encode(bytes, &chunk_representation)?;
 
                 // Append chunk, update array index and offset
-                encoded_shard.extend(&chunk_encoded);
                 shard_index[chunk_index * 2] = encoded_shard_offset.try_into().unwrap();
                 shard_index[chunk_index * 2 + 1] = chunk_encoded.len().try_into().unwrap();
                 encoded_shard_offset += chunk_encoded.len();
+                shard_inner_chunks.push(chunk_encoded);
             }
         }
 
@@ -163,9 +161,16 @@ impl ArrayCodecTraits for ShardingCodec {
         let encoded_array_index = self
             .index_codecs
             .encode(shard_index.to_vec(), &index_decoded_representation)?;
-        encoded_shard.extend(&encoded_array_index);
 
-        Ok(encoded_shard)
+        // Encode the shard
+        let shard_size =
+            shard_inner_chunks.iter().map(Vec::len).sum::<usize>() + encoded_array_index.len();
+        let mut shard = Vec::with_capacity(shard_size);
+        for chunk in shard_inner_chunks {
+            shard.extend(chunk);
+        }
+        shard.extend(encoded_array_index);
+        Ok(shard)
     }
 
     fn par_encode(
@@ -173,7 +178,6 @@ impl ArrayCodecTraits for ShardingCodec {
         decoded_value: Vec<u8>,
         shard_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        struct ShardAndIndex(Vec<u8>, Vec<u64>);
         if decoded_value.len() as u64 != shard_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
                 decoded_value.len(),
@@ -192,16 +196,9 @@ impl ArrayCodecTraits for ShardingCodec {
             calculate_chunks_per_shard(shard_representation.shape(), chunk_representation.shape())
                 .map_err(|e| CodecError::Other(e.to_string()))?;
 
-        // Create array index
-        let index_decoded_representation = sharding_index_decoded_representation(&chunks_per_shard);
-        let shard_and_index = Mutex::new(ShardAndIndex(
-            Vec::<u8>::new(),
-            vec![u64::MAX; index_decoded_representation.num_elements_usize()],
-        ));
-
         // Iterate over chunk indices
         let fill_value_bytes = chunk_representation.fill_value().as_ne_bytes();
-        unsafe {
+        let shard_inner_chunks = unsafe {
             ArraySubset::new_with_shape(shard_representation.shape().to_vec())
                 .iter_chunks_unchecked(&self.chunk_shape)
         }
@@ -221,32 +218,49 @@ impl ArrayCodecTraits for ShardingCodec {
             {
                 // Encode chunk
                 let chunk_encoded = self.inner_codecs.encode(bytes, &chunk_representation)?;
-
-                // Append chunk, update array index and offset
-                let mut shard_and_index = shard_and_index.lock().unwrap();
-                let encoded_shard = &mut shard_and_index.0;
-                let encoded_shard_offset = encoded_shard.len();
-                encoded_shard.extend(&chunk_encoded);
-                let shard_index = &mut shard_and_index.1;
-                shard_index[chunk_index * 2] = encoded_shard_offset.try_into().unwrap();
-                shard_index[chunk_index * 2 + 1] = chunk_encoded.len().try_into().unwrap();
+                Ok((chunk_index, Some(chunk_encoded)))
+            } else {
+                Ok((chunk_index, None))
             }
-            Ok::<_, CodecError>(())
         })
         .collect::<Result<Vec<_>, CodecError>>()?;
 
-        let shard_and_index = shard_and_index.into_inner().unwrap();
-        let mut encoded_shard = shard_and_index.0;
-        let shard_index = shard_and_index.1;
+        // Sort into chunk order
+        // shard_inner_chunks.sort_by(|a, b| Ord::cmp(&a.0, &b.0));
+
+        // Write the shard index
+        let index_decoded_representation = sharding_index_decoded_representation(&chunks_per_shard);
+        let mut shard_index = vec![u64::MAX; index_decoded_representation.num_elements_usize()];
+        let mut offset = 0;
+        for (chunk_index, chunk) in &shard_inner_chunks {
+            if let Some(chunk) = chunk {
+                shard_index[chunk_index * 2] = offset.try_into().unwrap();
+                shard_index[chunk_index * 2 + 1] = chunk.len().try_into().unwrap();
+                offset += chunk.len();
+            }
+        }
 
         // Encode array index
         let shard_index = safe_transmute::transmute_to_bytes(&shard_index);
         let encoded_array_index = self
             .index_codecs
             .par_encode(shard_index.to_vec(), &index_decoded_representation)?;
-        encoded_shard.extend(&encoded_array_index);
 
-        Ok(encoded_shard)
+        // Encode the shard
+        let shard_size = shard_inner_chunks
+            .iter()
+            .map(|(_, chunk)| chunk.as_ref().map_or(0, Vec::len))
+            .sum::<usize>()
+            + encoded_array_index.len();
+        let mut shard = Vec::with_capacity(shard_size);
+        for chunk in shard_inner_chunks
+            .into_iter()
+            .filter_map(|(_, chunk)| chunk)
+        {
+            shard.extend(chunk);
+        }
+        shard.extend(encoded_array_index);
+        Ok(shard)
     }
 
     fn decode(
