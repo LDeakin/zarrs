@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - **Breaking**: Added `UnsupportedDataTypeError`
+ - **Breaking**: Added `CodecError::UnsupportedDataType`
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`

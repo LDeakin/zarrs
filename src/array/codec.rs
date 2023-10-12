@@ -60,7 +60,7 @@ use std::{
     io::{Read, Seek, SeekFrom},
 };
 
-use super::{ArrayRepresentation, BytesRepresentation, MaybeBytes};
+use super::{ArrayRepresentation, BytesRepresentation, DataType, MaybeBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -460,6 +460,9 @@ pub enum CodecError {
     /// A store error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
+    /// Unsupported data type
+    #[error("Unsupported data type {0} for codec {1}")]
+    UnsupportedDataType(DataType, String),
     /// Other
     #[error("{_0}")]
     Other(String),
