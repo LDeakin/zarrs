@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking**: Remove the crate features: `raw_bits`, `float16`, `bfloat16`
    - **Breaking**: Removes `array::data_type::RawBitsDataType/Bfloat16DataType/Float16DataType`
    - **Breaking**: `half` is now a required dependency
+ - **Breaking**: Rename `TransposeCodec::new` to `new_with_configuration`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

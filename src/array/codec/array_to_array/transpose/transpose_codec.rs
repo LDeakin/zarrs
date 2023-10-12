@@ -31,7 +31,7 @@ fn is_name_transpose(name: &str) -> bool {
 
 fn create_codec_transpose(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
     let configuration: TransposeCodecConfiguration = metadata.to_configuration()?;
-    let codec = Box::new(TransposeCodec::new(&configuration)?);
+    let codec = Box::new(TransposeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }
 
@@ -52,7 +52,7 @@ impl TransposeCodec {
     /// # Errors
     ///
     /// Returns [`PluginCreateError`] if there is a configuration issue.
-    pub fn new(
+    pub fn new_with_configuration(
         configuration: &TransposeCodecConfiguration,
     ) -> Result<TransposeCodec, PluginCreateError> {
         let TransposeCodecConfiguration::V1(configuration) = configuration;

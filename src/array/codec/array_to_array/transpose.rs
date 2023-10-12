@@ -137,7 +137,7 @@ mod tests {
         let bytes: Vec<u8> = (0..array_representation.size()).map(|s| s as u8).collect();
 
         let configuration: TransposeCodecConfiguration = serde_json::from_str(json).unwrap();
-        let codec = TransposeCodec::new(&configuration).unwrap();
+        let codec = TransposeCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
         let decoded = codec
