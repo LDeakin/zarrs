@@ -259,7 +259,9 @@ impl ArraySubset {
     ) -> Result<Vec<u8>, ArrayExtractBytesError> {
         let element_size_u64 = element_size as u64;
         if bytes.len() as u64 == array_shape.iter().product::<u64>() * element_size_u64 {
-            let mut bytes_subset: Vec<u8> = Vec::new();
+            let mut bytes_subset: Vec<u8> = Vec::with_capacity(
+                usize::try_from(self.num_elements() * element_size_u64).unwrap(),
+            );
             for (array_index, contiguous_elements) in self
                 .iter_contiguous_linearised_indices(array_shape)
                 .map_err(|err| ArrayExtractBytesError(err.1, err.0, element_size))?
@@ -301,7 +303,8 @@ impl ArraySubset {
             bytes.len() as u64,
             array_shape.iter().product::<u64>() * element_size
         );
-        let mut bytes_subset: Vec<u8> = Vec::new();
+        let mut bytes_subset: Vec<u8> =
+            Vec::with_capacity(usize::try_from(self.num_elements() * element_size).unwrap());
         for (array_index, contiguous_elements) in
             self.iter_contiguous_linearised_indices_unchecked(array_shape)
         {

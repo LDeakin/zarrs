@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Additional debug assertions to validate input in array subset `_unchecked` functions
  - **Breaking**: `array_subset::iter_linearised_indices` now returns a `Result<_, IncompatibleArrayShapeError>`, previously it could not fail even if the `array_shape` did not enclose the array subset
  - The `array_subset_iter_contiguous_indices3` test was incorrect as the array shape was invalid for the array subset
+ - `ArraySubset::extract_bytes` now reserves the appropriate amount of memory
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
