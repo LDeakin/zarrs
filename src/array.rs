@@ -451,8 +451,18 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                     .par_decode(chunk_encoded, &chunk_representation)
             } else {
                 self.codecs().decode(chunk_encoded, &chunk_representation)
-            };
-            chunk_decoded.map_err(ArrayError::CodecError)
+            }
+            .map_err(ArrayError::CodecError)?;
+            let chunk_decoded_size =
+                chunk_representation.num_elements_usize() * chunk_representation.data_type().size();
+            if chunk_decoded.len() == chunk_decoded_size {
+                Ok(chunk_decoded)
+            } else {
+                Err(ArrayError::UnexpectedChunkDecodedSize(
+                    chunk_decoded.len(),
+                    chunk_decoded_size,
+                ))
+            }
         } else {
             let fill_value = chunk_representation.fill_value().as_ne_bytes();
             Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
@@ -695,7 +705,17 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         } else {
             partial_decoder.partial_decode(&chunk_representation, &[chunk_subset.clone()])
         }?;
-        Ok(decoded_bytes.concat())
+
+        let total_size = decoded_bytes.iter().map(Vec::len).sum::<usize>();
+        let expected_size = chunk_subset.num_elements_usize() * self.data_type().size();
+        if total_size == chunk_subset.num_elements_usize() * self.data_type().size() {
+            Ok(decoded_bytes.concat())
+        } else {
+            Err(ArrayError::UnexpectedChunkDecodedSize(
+                total_size,
+                expected_size,
+            ))
+        }
     }
 
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements.
