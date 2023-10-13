@@ -38,6 +38,7 @@ pub mod data_type;
 mod dimension_name;
 mod fill_value;
 mod fill_value_metadata;
+mod unsafe_cell_slice;
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -57,6 +58,7 @@ pub use self::{
 };
 
 use parking_lot::Mutex;
+use rayon::prelude::{ParallelBridge, ParallelIterator};
 use safe_transmute::TriviallyTransmutable;
 
 use crate::{
@@ -73,6 +75,7 @@ use self::{
     array_errors::TransmuteError,
     chunk_grid::InvalidChunkGridIndicesError,
     codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, StoragePartialDecoder},
+    unsafe_cell_slice::UnsafeCellSlice,
 };
 
 /// An ND index to an element in an array.
@@ -164,6 +167,8 @@ pub struct Array<TStorage: ?Sized> {
     additional_fields: AdditionalFields,
     /// If true, codecs run with multithreading (where supported)
     parallel_codecs: bool,
+    /// If true, chunks are encoded and stored in parallel
+    parallel_chunks: bool,
     /// Chunk locks.
     chunk_locks: Mutex<HashMap<Vec<u64>, Arc<Mutex<()>>>>,
 }
@@ -238,6 +243,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             storage_transformers,
             dimension_names: metadata.dimension_names,
             parallel_codecs: true,
+            parallel_chunks: true,
             chunk_locks: Mutex::default(),
         })
     }
@@ -319,17 +325,30 @@ impl<TStorage: ?Sized> Array<TStorage> {
         &self.additional_fields
     }
 
-    /// Returns true if codecs should use multiple threads for encoding and decoding where supported.
+    /// Returns true if codecs can use multiple threads for encoding and decoding (where supported).
     #[must_use]
     pub fn parallel_codecs(&self) -> bool {
         self.parallel_codecs
     }
 
-    /// Set whether or not to use multithreaded codec encoding/decoding.
+    /// Enable or disable multithreaded codec encoding/decoding. Enabled by default.
     ///
-    /// It may be advantageous to turn this off if parallelisation is external (e.g. parallel chunk decoding).
+    /// It may be advantageous to turn this off if parallelisation is external to avoid thrashing.
     pub fn set_parallel_codecs(&mut self, parallel_codecs: bool) {
         self.parallel_codecs = parallel_codecs;
+    }
+
+    /// Returns true if chunks are encoded/decoded in parallel by the [`store_array_subset`](Self::store_array_subset), [`retrieve_array_subset`](Self::retrieve_array_subset), and their variants.
+    #[must_use]
+    pub fn parallel_chunks(&self) -> bool {
+        self.parallel_chunks
+    }
+
+    /// Enable or disable multithreaded chunk encoding/decoding. Enabled by default.
+    ///
+    /// It may be advantageous to disable parallel codecs if parallel chunks is enabled.
+    pub fn set_parallel_chunks(&mut self, parallel_chunks: bool) {
+        self.parallel_chunks = parallel_chunks;
     }
 
     /// Create [`ArrayMetadata`].
@@ -556,16 +575,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             ));
         }
 
-        // Allocate the output data
         let element_size = self.fill_value().size() as u64;
-        let size_output = usize::try_from(array_subset.num_elements() * element_size).unwrap();
-        let mut output: Vec<u8> = vec![0; size_output];
-
-        // Find the chunks intersecting this array subset
-        let chunks = self.chunks_in_array_subset(array_subset)?;
-
-        // Read those chunks
-        for chunk_indices in chunks.iter_indices() {
+        let decode_chunk = |chunk_indices: Vec<u64>, output: &mut [u8]| -> Result<(), ArrayError> {
             // Get the subset of the array corresponding to the chunk
             let chunk_subset_in_array =
                 unsafe { self.chunk_grid().subset_unchecked(&chunk_indices) };
@@ -592,6 +603,26 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                 output[output_offset..output_offset + length]
                     .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
                 decoded_offset += length;
+            }
+            Ok(())
+        };
+
+        // Find the chunks intersecting this array subset
+        let chunks = self.chunks_in_array_subset(array_subset)?;
+
+        // Decode chunks and copy to output
+        let size_output = usize::try_from(array_subset.num_elements() * element_size).unwrap();
+        let mut output: Vec<u8> = vec![0; size_output];
+        if self.parallel_chunks {
+            let output = UnsafeCellSlice::new(output.as_mut_slice());
+            chunks
+                .iter_indices()
+                .par_bridge()
+                .map(|chunk_indices| decode_chunk(chunk_indices, unsafe { output.get() }))
+                .collect::<Result<Vec<_>, ArrayError>>()?;
+        } else {
+            for chunk_indices in chunks.iter_indices() {
+                decode_chunk(chunk_indices, &mut output)?;
             }
         }
 
@@ -930,6 +961,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     ///
     /// Returns an [`ArrayError`] if
     ///  - `array_subset` is invalid or out of bounds of the array,
+    ///  - the length of `subset_bytes` does not match the expected length governed by the shape of the array subset and the data type size,
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
     pub fn store_array_subset(
@@ -956,7 +988,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
         let chunks = self.chunks_in_array_subset(array_subset)?;
 
         let element_size = self.data_type().size();
-        for chunk_indices in chunks.iter_indices() {
+        let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
             let chunk_subset_in_array =
                 unsafe { self.chunk_grid().subset_unchecked(&chunk_indices) };
 
@@ -985,6 +1017,19 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
                     &chunk_subset_bytes,
                 )?;
             }
+            Ok(())
+        };
+
+        if self.parallel_chunks {
+            chunks
+                .iter_indices()
+                .par_bridge()
+                .map(store_chunk)
+                .collect::<Result<Vec<_>, _>>()?;
+        } else {
+            for chunk_indices in chunks.iter_indices() {
+                store_chunk(chunk_indices)?;
+            }
         }
         Ok(())
     }
@@ -996,7 +1041,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     /// # Errors
     ///
     /// Returns an [`ArrayError`] if
-    ///  - the size of  `T` does not match the data type size, or
+    ///  - the size of `T` does not match the data type size, or
     ///  - a [`store_array_subset`](Array::store_array_subset) error condition is met.
     pub fn store_array_subset_elements<T: TriviallyTransmutable>(
         &self,

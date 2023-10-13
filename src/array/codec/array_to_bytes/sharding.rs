@@ -81,35 +81,6 @@ fn decode_shard_index(
         .collect())
 }
 
-/// An unsafe cell slice.
-///
-/// This is used internally by the sharding codec for parallel decoding and partial decoding.
-/// It is used to write to subsets of a slice from multiple threads without locking.
-/// This enables inner chunks to be decoded and written to an output array in parallel.
-#[derive(Copy, Clone)]
-struct UnsafeCellSlice<'a, T>(&'a [std::cell::UnsafeCell<T>]);
-
-unsafe impl<'a, T: Send + Sync> Send for UnsafeCellSlice<'a, T> {}
-unsafe impl<'a, T: Send + Sync> Sync for UnsafeCellSlice<'a, T> {}
-
-impl<'a, T: Copy> UnsafeCellSlice<'a, T> {
-    pub fn new(slice: &'a mut [T]) -> Self {
-        let ptr = slice as *mut [T] as *const [std::cell::UnsafeCell<T>];
-        Self(unsafe { &*ptr })
-    }
-
-    /// Copies all elements from `src` into `self`, using a memcpy.
-    ///
-    /// # Safety
-    ///
-    /// Undefined behaviour if two threads write to the same region without sync.
-    pub unsafe fn copy_from_slice(&self, offset: usize, src: &[T]) {
-        let ptr = self.0[offset].get();
-        let slice = std::slice::from_raw_parts_mut(ptr, src.len());
-        slice.copy_from_slice(src);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{array::codec::ArrayCodecTraits, array_subset::ArraySubset};

@@ -4,7 +4,7 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderTraits, Codec, CodecChain, CodecError, CodecPlugin, CodecTraits,
         },
-        ArrayRepresentation, BytesRepresentation,
+        ArrayRepresentation, BytesRepresentation, UnsafeCellSlice,
     },
     array_subset::ArraySubset,
     metadata::Metadata,
@@ -14,7 +14,7 @@ use crate::{
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
     sharding_index_decoded_representation, sharding_partial_decoder, ShardingCodecConfiguration,
-    ShardingCodecConfigurationV1, UnsafeCellSlice,
+    ShardingCodecConfigurationV1,
 };
 
 use rayon::prelude::*;
@@ -426,6 +426,8 @@ impl ShardingCodec {
         .enumerate()
         .par_bridge()
         .map(|(chunk_index, (_chunk_indices, chunk_subset))| {
+            let shard_slice = unsafe { shard_slice.get() };
+
             // Read the offset/size
             let offset = shard_index[chunk_index * 2];
             let size = shard_index[chunk_index * 2 + 1];
@@ -445,12 +447,8 @@ impl ShardingCodec {
                 } {
                     let shard_offset = usize::try_from(index * element_size).unwrap();
                     let length = usize::try_from(num_elements * element_size).unwrap();
-                    unsafe {
-                        shard_slice.copy_from_slice(
-                            shard_offset,
-                            &decoded_chunk[data_idx..data_idx + length],
-                        );
-                    }
+                    shard_slice[shard_offset..shard_offset + length]
+                        .copy_from_slice(&decoded_chunk[data_idx..data_idx + length]);
                     data_idx += length;
                 }
             }

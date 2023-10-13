@@ -132,5 +132,11 @@ fn array_read_all_sharded(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, array_write_all, array_read_all, array_write_all_sharded, array_read_all_sharded);
+criterion_group!(
+    benches,
+    array_write_all,
+    array_read_all,
+    array_write_all_sharded,
+    array_read_all_sharded
+);
 criterion_main!(benches);

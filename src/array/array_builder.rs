@@ -69,6 +69,7 @@ pub struct ArrayBuilder {
     dimension_names: Option<Vec<DimensionName>>,
     additional_fields: AdditionalFields,
     parallel_codecs: bool,
+    parallel_chunks: bool,
 }
 
 impl ArrayBuilder {
@@ -97,6 +98,7 @@ impl ArrayBuilder {
             dimension_names: None,
             additional_fields: AdditionalFields::default(),
             parallel_codecs: true,
+            parallel_chunks: true,
         }
     }
 
@@ -203,6 +205,14 @@ impl ArrayBuilder {
         self
     }
 
+    /// Set whether or not to use multithreaded chunk encoding and decoding.
+    ///
+    /// If parallel chunks is not set, it defaults to true.
+    pub fn parallel_chunks(&mut self, parallel_chunks: bool) -> &mut Self {
+        self.parallel_chunks = parallel_chunks;
+        self
+    }
+
     /// Build into an [`Array`].
     ///
     /// # Errors
@@ -248,6 +258,7 @@ impl ArrayBuilder {
             dimension_names: self.dimension_names.clone(),
             additional_fields: self.additional_fields.clone(),
             parallel_codecs: self.parallel_codecs,
+            parallel_chunks: self.parallel_chunks,
             chunk_locks: parking_lot::Mutex::default(),
         })
     }

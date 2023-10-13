@@ -8,14 +8,14 @@ use crate::{
             ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
             ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
         },
-        ravel_indices, ArrayRepresentation, ArrayShape, BytesRepresentation,
+        ravel_indices, ArrayRepresentation, ArrayShape, BytesRepresentation, UnsafeCellSlice,
     },
     byte_range::ByteRange,
 };
 
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
-    sharding_index_decoded_representation, UnsafeCellSlice,
+    sharding_index_decoded_representation,
 };
 
 /// The partial decoder for the sharding codec.
@@ -258,6 +258,8 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             unsafe { array_subset.iter_chunks_unchecked(chunk_representation.shape()) }
                 .par_bridge()
                 .map(|(chunk_indices, chunk_subset)| {
+                    let out_array_subset_slice = unsafe { out_array_subset_slice.get() };
+
                     let shard_index_idx: usize =
                         usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
                             .unwrap();
@@ -293,12 +295,10 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         let output_offset =
                             usize::try_from(array_subset_element_index * element_size).unwrap();
                         let length = usize::try_from(num_elements * element_size).unwrap();
-                        unsafe {
-                            out_array_subset_slice.copy_from_slice(
-                                output_offset,
+                        out_array_subset_slice[output_offset..output_offset + length]
+                            .copy_from_slice(
                                 &decoded_bytes[decoded_offset..decoded_offset + length],
                             );
-                        }
                         decoded_offset += length;
                     }
                     Ok::<_, CodecError>(())
