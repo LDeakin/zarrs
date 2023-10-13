@@ -14,6 +14,14 @@ cargo clippy -- -D warnings && \
 cargo check --no-default-features
 ```
 
+## Performance
+```bash
+# Set a baseline
+cargo bench -- --save-baseline baseline
+# Implement changes and compare against baseline
+cargo bench -- --baseline baseline
+```
+
 ## Coverage report
 ```bash
 # on ubuntu..
