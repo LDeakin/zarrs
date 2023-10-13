@@ -324,7 +324,7 @@ impl WritableStorageTraits for FilesystemStore {
         let _lock = self.files.lock(); // lock all operations
 
         let prefix_path = self.prefix_to_fs_path(prefix);
-        let result = std::fs::remove_dir(prefix_path);
+        let result = std::fs::remove_dir_all(prefix_path);
         if let Err(err) = result {
             match err.kind() {
                 std::io::ErrorKind::NotFound => Ok(false),

@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - The `array_subset_iter_contiguous_indices3` test was incorrect as the array shape was invalid for the array subset
  - `ArraySubset::extract_bytes` now reserves the appropriate amount of memory
  - Sharding codec performance optimisations
+ - `FilesystemStore::erase_prefix` now correctly removes non-empty directories
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
