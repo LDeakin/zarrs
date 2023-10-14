@@ -38,6 +38,20 @@ pub struct ArraySubset {
 #[error("array subset {_0} is incompatible with array of shape {_1:?} and element size {_2}")]
 pub struct ArrayExtractBytesError(ArraySubset, ArrayShape, usize);
 
+/// An array extract bytes error.
+#[derive(Debug, Error)]
+pub enum ArrayStoreBytesError {
+    /// Invalid array shape.
+    #[error("array shape {_1:?} is incompatible with array subset {_0:?}")]
+    InvalidArrayShape(ArraySubset, ArrayShape),
+    /// Invalid subset bytes.
+    #[error("expected subset bytes to have length {_1}, got {_0}")]
+    InvalidSubsetBytes(usize, usize),
+    /// Invalid array bytes.
+    #[error("expected array bytes to have length {_1}, got {_0}")]
+    InvalidArrayBytes(usize, usize),
+}
+
 impl ArraySubset {
     /// Create a new array subset with `size` starting at the origin.
     #[must_use]
@@ -246,7 +260,7 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`ArrayExtractBytesError`] if the length of `array_shape` does not match the array subset dimensionality or the array subset is out side of the the bounds of `array_shape`.
+    /// Returns [`ArrayExtractBytesError`] if the length of `array_shape` does not match the array subset dimensionality or the array subset is outside of the bounds of `array_shape`.
     ///
     /// # Panics
     ///
@@ -314,6 +328,97 @@ impl ArraySubset {
             bytes_subset.extend(&bytes[byte_index..byte_index + byte_length]);
         }
         bytes_subset
+    }
+
+    /// Store `bytes_subset` corresponding to the bytes of an array (`array_bytes`) with shape `array_shape` and `element_size`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ArrayStoreBytesError`] if:
+    ///  - the length of `array_shape` does not match the array subset dimensionality or the array subset is outside of the bounds of `array_shape`.
+    ///  - the length of `bytes_array` is not compatible with the `array_shape` and `element size`, or
+    ///  - the length of `bytes_subset` is not compatible with the shape of this subset and `element_size`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if attempting to reference a byte beyond `usize::MAX`.
+    pub fn store_bytes(
+        &self,
+        bytes_subset: &[u8],
+        bytes_array: &mut [u8],
+        array_shape: &[u64],
+        element_size: usize,
+    ) -> Result<(), ArrayStoreBytesError> {
+        let element_size_u64 = element_size as u64;
+        let expected_subset_size = self.num_elements() * element_size_u64;
+        let expected_array_size = array_shape.iter().product::<u64>() * element_size_u64;
+        if bytes_subset.len() as u64 != expected_subset_size {
+            Err(ArrayStoreBytesError::InvalidSubsetBytes(
+                bytes_subset.len(),
+                usize::try_from(expected_subset_size).unwrap(),
+            ))
+        } else if bytes_array.len() as u64 != expected_array_size {
+            Err(ArrayStoreBytesError::InvalidSubsetBytes(
+                bytes_array.len(),
+                usize::try_from(expected_array_size).unwrap(),
+            ))
+        } else {
+            let mut offset = 0;
+            for (array_index, contiguous_elements) in self
+                .iter_contiguous_linearised_indices(array_shape)
+                .map_err(|err| ArrayStoreBytesError::InvalidArrayShape(err.1, err.0))?
+            {
+                let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
+                let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
+                debug_assert!(byte_index + byte_length <= bytes_array.len());
+                debug_assert!(offset + byte_length <= bytes_subset.len());
+                bytes_array[byte_index..byte_index + byte_length]
+                    .copy_from_slice(&bytes_subset[offset..offset + byte_length]);
+                offset += byte_length;
+            }
+            Ok(())
+        }
+    }
+
+    /// Store `bytes_subset` corresponding to the bytes of an array (`array_bytes`) with shape `array_shape` and `element_size`.
+    ///
+    /// # Safety
+    ///
+    /// The length of `array_shape` must match the array subset dimensionality and the array subset must be within the bounds of `array_shape`.
+    /// The length of `bytes_array` must match the product of the `array_shape` components and `element_size`.
+    /// The length of `bytes_subset` must match the product of the array subset shape components and `element_size`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if attempting to reference a byte beyond `usize::MAX`.
+    pub unsafe fn store_bytes_unchecked(
+        &self,
+        bytes_subset: &[u8],
+        bytes_array: &mut [u8],
+        array_shape: &[u64],
+        element_size: usize,
+    ) {
+        let element_size_u64 = element_size as u64;
+        debug_assert_eq!(
+            bytes_subset.len() as u64,
+            self.num_elements() * element_size_u64
+        );
+        debug_assert_eq!(
+            bytes_array.len() as u64,
+            array_shape.iter().product::<u64>() * element_size_u64
+        );
+        let mut offset = 0;
+        for (array_index, contiguous_elements) in
+            self.iter_contiguous_linearised_indices_unchecked(array_shape)
+        {
+            let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
+            let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
+            debug_assert!(byte_index + byte_length <= bytes_array.len());
+            debug_assert!(offset + byte_length <= bytes_subset.len());
+            bytes_array[byte_index..byte_index + byte_length]
+                .copy_from_slice(&bytes_subset[offset..offset + byte_length]);
+            offset += byte_length;
+        }
     }
 
     /// Returns an iterator over the indices of elements within the subset.
