@@ -503,6 +503,17 @@ mod tests {
         }
         assert_eq!(bytes, decoded);
 
+        let encoded = codec
+            .par_encode(bytes.clone(), &array_representation)
+            .unwrap();
+        let decoded = codec
+            .par_decode(encoded.clone(), &array_representation)
+            .unwrap();
+        if not_just_bytes {
+            assert_ne!(encoded, decoded);
+        }
+        assert_eq!(bytes, decoded);
+
         // println!("{} {}", encoded_chunk.len(), decoded_chunk.len());
     }
 

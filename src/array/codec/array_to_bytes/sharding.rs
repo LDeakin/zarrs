@@ -178,6 +178,18 @@ mod tests {
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
+
+        // println!("bytes {bytes:?}");
+        let encoded = codec
+            .par_encode(bytes.clone(), &array_representation)
+            .unwrap();
+        // println!("encoded {encoded:?}");
+        let decoded = codec
+            .par_decode(encoded.clone(), &array_representation)
+            .unwrap();
+        // println!("decoded {decoded:?}");
+        assert_ne!(encoded, decoded);
+        assert_eq!(bytes, decoded);
     }
 
     #[test]

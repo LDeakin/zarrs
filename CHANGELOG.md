@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Added `CodecError::UnsupportedDataType`
  - Added `array_subset::IncompatibleArrayShapeError`
  - Added `array_subset::iter_linearised_indices_unchecked`
+ - Added parallel encoding/decoding to tests
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
