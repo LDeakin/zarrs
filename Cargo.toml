@@ -29,10 +29,6 @@ ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
 crate-type = ["lib"]
 bench = false
 
-[[bench]]
-name = "array_uncompressed"
-harness = false
-
 [dependencies]
 blosc-sys = { version = "0.2.1", package = "blosc-src", features = ["lz4", "zlib", "zstd"], optional = true }
 crc32fast = { version = "1.3", optional = true }
@@ -61,3 +57,11 @@ zstd = { version = "0.12", optional = true }
 chrono = "0.4"
 criterion = "0.5.1"
 tempfile = "3"
+
+[[bench]]
+name = "array_uncompressed"
+harness = false
+
+[[bench]]
+name = "codecs"
+harness = false

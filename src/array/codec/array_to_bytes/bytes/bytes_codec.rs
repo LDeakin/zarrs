@@ -73,6 +73,32 @@ impl BytesCodec {
         let BytesCodecConfiguration::V1(configuration) = configuration;
         Self::new(configuration.endian)
     }
+
+    fn do_encode_or_decode(
+        &self,
+        mut value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        if value.len() as u64 != decoded_representation.size() {
+            return Err(CodecError::UnexpectedChunkDecodedSize(
+                value.len(),
+                decoded_representation.size(),
+            ));
+        } else if decoded_representation.element_size() > 1 && self.endian.is_none() {
+            return Err(CodecError::Other(format!(
+                "tried to encode an array with element size {} with endianness None",
+                decoded_representation.size()
+            )));
+        }
+
+        if let Some(endian) = &self.endian {
+            if !endian.is_native() {
+                reverse_endianness(&mut value, decoded_representation.data_type(), parallel);
+            }
+        }
+        Ok(value)
+    }
 }
 
 impl CodecTraits for BytesCodec {
@@ -95,40 +121,34 @@ impl CodecTraits for BytesCodec {
 impl ArrayCodecTraits for BytesCodec {
     fn encode(
         &self,
-        mut decoded_value: Vec<u8>,
+        decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        } else if decoded_representation.element_size() > 1 && self.endian.is_none() {
-            return Err(CodecError::Other(format!(
-                "tried to encode an array with element size {} with endianness None",
-                decoded_representation.size()
-            )));
-        }
+        self.do_encode_or_decode(decoded_value, decoded_representation, false)
+    }
 
-        if let Some(endian) = &self.endian {
-            if !endian.is_native() {
-                reverse_endianness(&mut decoded_value, decoded_representation.data_type());
-            }
-        }
-        Ok(decoded_value)
+    fn par_encode(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.do_encode_or_decode(decoded_value, decoded_representation, true)
     }
 
     fn decode(
         &self,
-        mut encoded_value: Vec<u8>,
+        encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        if let Some(endian) = &self.endian {
-            if !endian.is_native() {
-                reverse_endianness(&mut encoded_value, decoded_representation.data_type());
-            }
-        }
-        Ok(encoded_value)
+        self.do_encode_or_decode(encoded_value, decoded_representation, false)
+    }
+
+    fn par_decode(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.do_encode_or_decode(encoded_value, decoded_representation, true)
     }
 }
 

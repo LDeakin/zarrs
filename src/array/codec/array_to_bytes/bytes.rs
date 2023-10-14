@@ -13,6 +13,7 @@ pub use bytes_configuration::{BytesCodecConfiguration, BytesCodecConfigurationV1
 pub use bytes_codec::BytesCodec;
 
 use derive_more::Display;
+use rayon::{prelude::ParallelIterator, slice::ParallelSliceMut};
 
 use crate::array::DataType;
 
@@ -62,7 +63,10 @@ const NATIVE_ENDIAN: Endianness = Endianness::Big;
 #[cfg(target_endian = "little")]
 const NATIVE_ENDIAN: Endianness = Endianness::Little;
 
-fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
+/// The input length needed to invoke rayon for parallel endianness conversion, if `parallel` is true in `reverse_endianness`.
+const MIN_PARALLEL_LENGTH: usize = 4_000_000;
+
+fn reverse_endianness(v: &mut [u8], data_type: &DataType, parallel: bool) {
     match data_type {
         DataType::Bool | DataType::Int8 | DataType::UInt8 | DataType::RawBits(_) => {}
         DataType::Int16
@@ -75,12 +79,22 @@ fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
         | DataType::Float32
         | DataType::Float64
         | DataType::BFloat16 => {
-            v.chunks_exact_mut(data_type.size())
-                .for_each(<[u8]>::reverse);
+            if parallel && v.len() >= MIN_PARALLEL_LENGTH {
+                v.par_chunks_exact_mut(data_type.size())
+                    .for_each(<[u8]>::reverse);
+            } else {
+                v.chunks_exact_mut(data_type.size())
+                    .for_each(<[u8]>::reverse);
+            }
         }
         DataType::Complex64 | DataType::Complex128 => {
-            v.chunks_exact_mut(data_type.size() / 2)
-                .for_each(<[u8]>::reverse);
+            if parallel && v.len() >= MIN_PARALLEL_LENGTH {
+                v.par_chunks_exact_mut(data_type.size() / 2)
+                    .for_each(<[u8]>::reverse);
+            } else {
+                v.chunks_exact_mut(data_type.size() / 2)
+                    .for_each(<[u8]>::reverse);
+            }
         }
     }
 }

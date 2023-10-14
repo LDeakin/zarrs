@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Rename `TransposeCodec::new` to `new_with_configuration`
  - **Breaking**: Array subset methods dependent on an `array_shape` now use the `IncompatibleArrayShapeError` error type instead of `IncompatibleDimensionalityError`
  - **Breaking**: Various array subset iterators now have validated `new` and unvalidated `new_unchecked` constructors
+ - Support parallel decoding/partial decoding in:
+   - Endian codec 
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
