@@ -11,6 +11,11 @@ mod blosc_codec;
 mod blosc_configuration;
 mod blosc_partial_decoder;
 
+/// The input length needed to to run `blosc_compress_bytes` in parallel,
+/// and the output length needed to run `blosc_decompress_bytes` in parallel.
+/// Otherwise, these functions will use one thread regardless of the `numinternalthreads` parameter.
+const MIN_PARALLEL_LENGTH: usize = 4_000_000;
+
 use std::{
     ffi::c_int,
     ffi::{c_char, c_void},
@@ -123,7 +128,12 @@ fn blosc_compress_bytes(
     blocksize: usize,
     numinternalthreads: usize,
 ) -> Result<Vec<u8>, BloscError> {
-    let numinternalthreads = std::cmp::min(numinternalthreads, BLOSC_MAX_THREADS as usize);
+    let numinternalthreads = if src.len() >= MIN_PARALLEL_LENGTH {
+        std::cmp::min(numinternalthreads, BLOSC_MAX_THREADS as usize)
+    } else {
+        1
+    };
+
     // let mut dest = vec![0; src.len() + BLOSC_MAX_OVERHEAD as usize];
     let destsize = src.len() + BLOSC_MAX_OVERHEAD as usize;
     let mut dest: Vec<u8> = Vec::with_capacity(destsize);
@@ -206,7 +216,12 @@ fn blosc_decompress_bytes(
     destsize: usize,
     numinternalthreads: usize,
 ) -> Result<Vec<u8>, BloscError> {
-    let numinternalthreads = std::cmp::min(numinternalthreads, BLOSC_MAX_THREADS as usize);
+    let numinternalthreads = if destsize >= MIN_PARALLEL_LENGTH {
+        std::cmp::min(numinternalthreads, BLOSC_MAX_THREADS as usize)
+    } else {
+        1
+    };
+
     let mut dest: Vec<u8> = Vec::with_capacity(destsize);
     let destsize = unsafe {
         blosc_decompress_ctx(

@@ -3,8 +3,12 @@ use criterion::{
     Throughput,
 };
 use zarrs::array::{
-    codec::{array_to_bytes::bytes::Endianness, ArrayCodecTraits, BytesCodec},
-    ArrayRepresentation, DataType,
+    codec::{
+        array_to_bytes::bytes::Endianness,
+        bytes_to_bytes::blosc::{BloscCompressor, BloscShuffleMode},
+        ArrayCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits,
+    },
+    ArrayRepresentation, BytesRepresentation, DataType,
 };
 
 fn codec_bytes(c: &mut Criterion) {
@@ -24,7 +28,7 @@ fn codec_bytes(c: &mut Criterion) {
         let rep =
             ArrayRepresentation::new(vec![num_elements; 1], DataType::UInt16, 0u16.into()).unwrap();
 
-        let data = vec![0u8; (size3).try_into().unwrap()];
+        let data = vec![0u8; size3.try_into().unwrap()];
         group.throughput(Throughput::Bytes(size3));
         group.bench_function(BenchmarkId::new("encode", size3), |b| {
             b.iter(|| codec.encode(data.clone(), &rep).unwrap());
@@ -41,5 +45,41 @@ fn codec_bytes(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, codec_bytes);
+fn codec_blosc(c: &mut Criterion) {
+    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
+    let mut group = c.benchmark_group("codec_blosc");
+    group.plot_config(plot_config);
+
+    let codec = BloscCodec::new(
+        BloscCompressor::BloscLZ,
+        9.try_into().unwrap(),
+        None,
+        BloscShuffleMode::BitShuffle,
+        Some(2),
+    )
+    .unwrap();
+
+    for size in [32, 64, 128, 256, 512].iter() {
+        let size3 = size * size * size;
+        let rep = BytesRepresentation::KnownSize(size3);
+
+        let data_decoded: Vec<u8> = (0..size3).map(|i| i as u8).collect();
+        let data_encoded = codec.encode(data_decoded.clone()).unwrap();
+        group.throughput(Throughput::Bytes(size3));
+        group.bench_function(BenchmarkId::new("encode", size3), |b| {
+            b.iter(|| codec.encode(data_decoded.clone()).unwrap());
+        });
+        group.bench_function(BenchmarkId::new("decode", size3), |b| {
+            b.iter(|| codec.decode(data_encoded.clone(), &rep).unwrap());
+        });
+        group.bench_function(BenchmarkId::new("par_encode", size3), |b| {
+            b.iter(|| codec.par_encode(data_decoded.clone()).unwrap());
+        });
+        group.bench_function(BenchmarkId::new("par_decode", size3), |b| {
+            b.iter(|| codec.par_decode(data_encoded.clone(), &rep).unwrap());
+        });
+    }
+}
+
+criterion_group!(benches, codec_bytes, codec_blosc);
 criterion_main!(benches);
