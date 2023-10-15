@@ -30,17 +30,9 @@ fn codec_bytes(c: &mut Criterion) {
 
         let data = vec![0u8; size3.try_into().unwrap()];
         group.throughput(Throughput::Bytes(size3));
-        group.bench_function(BenchmarkId::new("encode", size3), |b| {
+        // encode and decode have the same implementation
+        group.bench_function(BenchmarkId::new("encode_decode", size3), |b| {
             b.iter(|| codec.encode(data.clone(), &rep).unwrap());
-        });
-        group.bench_function(BenchmarkId::new("decode", size3), |b| {
-            b.iter(|| codec.decode(data.clone(), &rep).unwrap());
-        });
-        group.bench_function(BenchmarkId::new("par_encode", size3), |b| {
-            b.iter(|| codec.par_encode(data.clone(), &rep).unwrap());
-        });
-        group.bench_function(BenchmarkId::new("par_decode", size3), |b| {
-            b.iter(|| codec.par_decode(data.clone(), &rep).unwrap());
         });
     }
 }

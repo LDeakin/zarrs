@@ -30,7 +30,6 @@ impl<'a> BytesPartialDecoder<'a> {
         &self,
         decoded_representation: &ArrayRepresentation,
         decoded_regions: &[ArraySubset],
-        parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         for array_subset in decoded_regions {
@@ -55,11 +54,7 @@ impl<'a> BytesPartialDecoder<'a> {
                 let mut bytes_subset = decoded.concat();
                 if let Some(endian) = &self.endian {
                     if !endian.is_native() {
-                        reverse_endianness(
-                            &mut bytes_subset,
-                            decoded_representation.data_type(),
-                            parallel,
-                        );
+                        reverse_endianness(&mut bytes_subset, decoded_representation.data_type());
                     }
                 }
                 bytes_subset
@@ -82,14 +77,6 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
         decoded_representation: &ArrayRepresentation,
         decoded_regions: &[ArraySubset],
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        self.do_partial_decode(decoded_representation, decoded_regions, false)
-    }
-
-    fn par_partial_decode(
-        &self,
-        decoded_representation: &ArrayRepresentation,
-        decoded_regions: &[ArraySubset],
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
-        self.do_partial_decode(decoded_representation, decoded_regions, true)
+        self.do_partial_decode(decoded_representation, decoded_regions)
     }
 }

@@ -78,7 +78,6 @@ impl BytesCodec {
         &self,
         mut value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
-        parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -94,7 +93,7 @@ impl BytesCodec {
 
         if let Some(endian) = &self.endian {
             if !endian.is_native() {
-                reverse_endianness(&mut value, decoded_representation.data_type(), parallel);
+                reverse_endianness(&mut value, decoded_representation.data_type());
             }
         }
         Ok(value)
@@ -124,15 +123,7 @@ impl ArrayCodecTraits for BytesCodec {
         decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        self.do_encode_or_decode(decoded_value, decoded_representation, false)
-    }
-
-    fn par_encode(
-        &self,
-        decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.do_encode_or_decode(decoded_value, decoded_representation, true)
+        self.do_encode_or_decode(decoded_value, decoded_representation)
     }
 
     fn decode(
@@ -140,15 +131,7 @@ impl ArrayCodecTraits for BytesCodec {
         encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        self.do_encode_or_decode(encoded_value, decoded_representation, false)
-    }
-
-    fn par_decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.do_encode_or_decode(encoded_value, decoded_representation, true)
+        self.do_encode_or_decode(encoded_value, decoded_representation)
     }
 }
 

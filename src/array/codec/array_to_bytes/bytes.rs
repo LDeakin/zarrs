@@ -13,7 +13,6 @@ pub use bytes_configuration::{BytesCodecConfiguration, BytesCodecConfigurationV1
 pub use bytes_codec::BytesCodec;
 
 use derive_more::Display;
-use rayon::{prelude::ParallelIterator, slice::ParallelSliceMut};
 
 use crate::array::DataType;
 
@@ -63,38 +62,29 @@ const NATIVE_ENDIAN: Endianness = Endianness::Big;
 #[cfg(target_endian = "little")]
 const NATIVE_ENDIAN: Endianness = Endianness::Little;
 
-/// The input length needed to invoke rayon for parallel endianness conversion, if `parallel` is true in `reverse_endianness`.
-const MIN_PARALLEL_LENGTH: usize = 4_000_000;
-
-fn reverse_endianness(v: &mut [u8], data_type: &DataType, parallel: bool) {
+fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
     match data_type {
         DataType::Bool | DataType::Int8 | DataType::UInt8 | DataType::RawBits(_) => {}
-        DataType::Int16
-        | DataType::Int32
-        | DataType::Int64
-        | DataType::UInt16
-        | DataType::UInt32
-        | DataType::UInt64
-        | DataType::Float16
-        | DataType::Float32
-        | DataType::Float64
-        | DataType::BFloat16 => {
-            if parallel && v.len() >= MIN_PARALLEL_LENGTH {
-                v.par_chunks_exact_mut(data_type.size())
-                    .for_each(<[u8]>::reverse);
-            } else {
-                v.chunks_exact_mut(data_type.size())
-                    .for_each(<[u8]>::reverse);
-            }
+        DataType::Int16 | DataType::UInt16 | DataType::Float16 | DataType::BFloat16 => {
+            let swap = |chunk: &mut [u8]| {
+                let bytes = u16::from_ne_bytes(chunk.try_into().unwrap());
+                chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
+            };
+            v.chunks_exact_mut(2).for_each(swap);
         }
-        DataType::Complex64 | DataType::Complex128 => {
-            if parallel && v.len() >= MIN_PARALLEL_LENGTH {
-                v.par_chunks_exact_mut(data_type.size() / 2)
-                    .for_each(<[u8]>::reverse);
-            } else {
-                v.chunks_exact_mut(data_type.size() / 2)
-                    .for_each(<[u8]>::reverse);
-            }
+        DataType::Int32 | DataType::UInt32 | DataType::Float32 | DataType::Complex64 => {
+            let swap = |chunk: &mut [u8]| {
+                let bytes = u32::from_ne_bytes(chunk.try_into().unwrap());
+                chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
+            };
+            v.chunks_exact_mut(4).for_each(swap);
+        }
+        DataType::Int64 | DataType::UInt64 | DataType::Float64 | DataType::Complex128 => {
+            let swap = |chunk: &mut [u8]| {
+                let bytes = u64::from_ne_bytes(chunk.try_into().unwrap());
+                chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
+            };
+            v.chunks_exact_mut(8).for_each(swap);
         }
     }
 }
