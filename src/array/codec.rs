@@ -14,11 +14,17 @@ pub mod array_to_array;
 pub mod array_to_bytes;
 pub mod bytes_to_bytes;
 
+// Array to array
+#[cfg(feature = "bitround")]
+pub use array_to_array::bitround::{
+    BitroundCodec, BitroundCodecConfiguration, BitroundCodecConfigurationV1,
+};
 #[cfg(feature = "transpose")]
 pub use array_to_array::transpose::{
     TransposeCodec, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
 };
 
+// Array to bytes
 #[cfg(feature = "sharding")]
 pub use array_to_bytes::sharding::{
     ShardingCodec, ShardingCodecConfiguration, ShardingCodecConfigurationV1,
@@ -29,8 +35,8 @@ pub use array_to_bytes::{
     bytes::{BytesCodec, BytesCodecConfiguration, BytesCodecConfigurationV1},
     codec_chain::CodecChain,
 };
-// pub use array_to_bytes::zfp::{ZfpCodec, ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 
+// Bytes to bytes
 #[cfg(feature = "blosc")]
 pub use bytes_to_bytes::blosc::{BloscCodec, BloscCodecConfiguration, BloscCodecConfigurationV1};
 #[cfg(feature = "crc32c")]

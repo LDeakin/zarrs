@@ -23,7 +23,7 @@
 //! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid), [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
 //! - [x] Codecs:
-//!   - array->array: [`transpose`](crate::array::codec::array_to_array::transpose),
+//!   - array->array: [`transpose`](crate::array::codec::array_to_array::transpose), [`bitround`](crate::array::codec::array_to_array::bitround) (experimental)
 //!   - array->bytes: [`bytes`](crate::array::codec::array_to_bytes::bytes) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/263), [`sharding`](crate::array::codec::array_to_bytes::sharding), [`zfp`](crate::array::codec::array_to_bytes::zfp) (experimental)
 //!   - bytes->bytes: [`blosc`](crate::array::codec::bytes_to_bytes::blosc), [`gzip`](crate::array::codec::bytes_to_bytes::gzip), [`zstd`](crate::array::codec::bytes_to_bytes::zstd) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [`crc32c checksum`](crate::array::codec::bytes_to_bytes::crc32c)
 //! - [x] Storage transformers: [`usage_log`](crate::storage::storage_transformer::UsageLogStorageTransformer), [`performance_metrics`](crate::storage::storage_transformer::PerformanceMetricsStorageTransformer)
@@ -33,8 +33,9 @@
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!  - Stores: `http`, `zip`.
 //!  - `ndarray`: adds [`ndarray`] utility functions to [`Array`](crate::array::Array).
+//!
 //! The following features are disabled by default:
-//!  - Codecs: `zfp`
+//!  - Codecs:  `bitround`, `zfp`
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`

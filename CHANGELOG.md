@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `array_subset::ArrayStoreBytesError`, `store_bytes`, and `store_bytes_unchecked`
  - Added `parallel_chunks` option to `Array`, enabled by default. Lets `store_array_subset` and `retrieve_array_subset` (and their variants) encode/decode chunks in parallel
  - Added experimental `zfp` codec implementation behind `zfp` feature flag (disabled by default)
+ - Added experimental `bitround` codec implementation behind `bitround` feature flag (disabled by default)
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`

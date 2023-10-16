@@ -13,11 +13,12 @@ exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.
 [features]
 default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "http", "zip", "ndarray"]
 # Codecs
-transpose = ["dep:ndarray"]
+bitround = []
 blosc = ["dep:blosc-sys"]
+crc32c = ["dep:crc32fast"]
 gzip = ["dep:flate2"]
 sharding = []
-crc32c = ["dep:crc32fast"]
+transpose = ["dep:ndarray"]
 zfp = ["dep:zfp-sys"]
 zstd = ["dep:zstd"]
 # Stores
