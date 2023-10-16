@@ -125,15 +125,15 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     fn compute_encoded_size(
         &self,
         decoded_representation: &ArrayRepresentation,
-    ) -> ArrayRepresentation {
+    ) -> Result<ArrayRepresentation, CodecError> {
         let transposed_shape = permute(decoded_representation.shape(), &self.order);
-        unsafe {
+        Ok(unsafe {
             ArrayRepresentation::new_unchecked(
                 transposed_shape,
                 decoded_representation.data_type().clone(),
                 decoded_representation.fill_value().clone(),
             )
-        }
+        })
     }
 }
 

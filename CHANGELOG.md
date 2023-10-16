@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Various array subset iterators now have validated `new` and unvalidated `new_unchecked` constructors
  - Blosc codec: disable parallel encoding/decoding for small inputs/outputs
  - Bytes codec: optimise implementation
+ - **Breaking**: `ArrayToArrayCodecTraits::compute_encoded_size` and `ArrayToBytesCodecTraits::compute_encoded_size` can now return a `CodecError`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

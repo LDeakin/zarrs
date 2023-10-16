@@ -54,7 +54,7 @@ fn compute_index_encoded_size(
     index_codecs: &dyn ArrayToBytesCodecTraits,
     index_array_representation: &ArrayRepresentation,
 ) -> Result<u64, CodecError> {
-    let bytes_representation = index_codecs.compute_encoded_size(index_array_representation);
+    let bytes_representation = index_codecs.compute_encoded_size(index_array_representation)?;
     match bytes_representation {
         BytesRepresentation::KnownSize(size) => Ok(size),
         BytesRepresentation::VariableSize => Err(CodecError::Other(

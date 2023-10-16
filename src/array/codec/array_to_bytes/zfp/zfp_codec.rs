@@ -8,7 +8,7 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
-        ArrayRepresentation, BytesRepresentation,
+        ArrayRepresentation, BytesRepresentation, DataType,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -205,8 +205,20 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
 
     fn compute_encoded_size(
         &self,
-        _decoded_representation: &ArrayRepresentation,
-    ) -> BytesRepresentation {
-        BytesRepresentation::VariableSize
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<BytesRepresentation, CodecError> {
+        let data_type = decoded_representation.data_type();
+        match data_type {
+            DataType::Int32
+            | DataType::UInt32
+            | DataType::Int64
+            | DataType::UInt64
+            | DataType::Float32
+            | DataType::Float64 => Ok(BytesRepresentation::VariableSize),
+            _ => Err(CodecError::UnsupportedDataType(
+                data_type.clone(),
+                IDENTIFIER.to_string(),
+            )),
+        }
     }
 }

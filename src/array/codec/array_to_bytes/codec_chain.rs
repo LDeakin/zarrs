@@ -160,30 +160,30 @@ impl CodecChain {
     fn get_array_representations(
         &self,
         decoded_representation: ArrayRepresentation,
-    ) -> Vec<ArrayRepresentation> {
+    ) -> Result<Vec<ArrayRepresentation>, CodecError> {
         let mut array_representations = Vec::with_capacity(self.array_to_array.len() + 1);
         array_representations.push(decoded_representation);
         for codec in &self.array_to_array {
             array_representations
-                .push(codec.compute_encoded_size(array_representations.last().unwrap()));
+                .push(codec.compute_encoded_size(array_representations.last().unwrap())?);
         }
-        array_representations
+        Ok(array_representations)
     }
 
     fn get_bytes_representations(
         &self,
         array_representation_last: &ArrayRepresentation,
-    ) -> Vec<BytesRepresentation> {
+    ) -> Result<Vec<BytesRepresentation>, CodecError> {
         let mut bytes_representations = Vec::with_capacity(self.bytes_to_bytes.len() + 1);
         bytes_representations.push(
             self.array_to_bytes
-                .compute_encoded_size(array_representation_last),
+                .compute_encoded_size(array_representation_last)?,
         );
         for codec in &self.bytes_to_bytes {
             bytes_representations
                 .push(codec.compute_encoded_size(bytes_representations.last().unwrap()));
         }
-        bytes_representations
+        Ok(bytes_representations)
     }
 
     fn do_encode(
@@ -200,7 +200,7 @@ impl CodecChain {
             } else {
                 codec.encode(value, &decoded_representation)
             }?;
-            decoded_representation = codec.compute_encoded_size(&decoded_representation);
+            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
         }
 
         // array->bytes
@@ -212,7 +212,7 @@ impl CodecChain {
         }?;
         let mut decoded_representation = self
             .array_to_bytes
-            .compute_encoded_size(&decoded_representation);
+            .compute_encoded_size(&decoded_representation)?;
 
         // bytes->bytes
         for codec in &self.bytes_to_bytes {
@@ -233,9 +233,9 @@ impl CodecChain {
         decoded_representation: ArrayRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
-        let array_representations = self.get_array_representations(decoded_representation);
+        let array_representations = self.get_array_representations(decoded_representation)?;
         let bytes_representations =
-            self.get_bytes_representations(array_representations.last().unwrap());
+            self.get_bytes_representations(array_representations.last().unwrap())?;
 
         // bytes->bytes
         for (codec, bytes_representation) in std::iter::zip(
@@ -332,21 +332,21 @@ impl ArrayToBytesCodecTraits for CodecChain {
     fn compute_encoded_size(
         &self,
         decoded_representation: &ArrayRepresentation,
-    ) -> BytesRepresentation {
+    ) -> Result<BytesRepresentation, CodecError> {
         let mut decoded_representation = decoded_representation.clone();
         for codec in &self.array_to_array {
-            decoded_representation = codec.compute_encoded_size(&decoded_representation);
+            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
         }
 
         let mut bytes_representation = self
             .array_to_bytes
-            .compute_encoded_size(&decoded_representation);
+            .compute_encoded_size(&decoded_representation)?;
 
         for codec in &self.bytes_to_bytes {
             bytes_representation = codec.compute_encoded_size(&bytes_representation);
         }
 
-        bytes_representation
+        Ok(bytes_representation)
     }
 }
 

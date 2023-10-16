@@ -307,8 +307,8 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
     fn compute_encoded_size(
         &self,
         _decoded_representation: &ArrayRepresentation,
-    ) -> BytesRepresentation {
-        BytesRepresentation::VariableSize
+    ) -> Result<BytesRepresentation, CodecError> {
+        Ok(BytesRepresentation::VariableSize)
     }
 }
 

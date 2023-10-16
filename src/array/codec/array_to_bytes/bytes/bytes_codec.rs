@@ -149,9 +149,9 @@ impl ArrayToBytesCodecTraits for BytesCodec {
     fn compute_encoded_size(
         &self,
         decoded_representation: &ArrayRepresentation,
-    ) -> BytesRepresentation {
-        BytesRepresentation::KnownSize(
+    ) -> Result<BytesRepresentation, CodecError> {
+        Ok(BytesRepresentation::KnownSize(
             decoded_representation.num_elements() * decoded_representation.element_size() as u64,
-        )
+        ))
     }
 }

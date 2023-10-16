@@ -332,10 +332,14 @@ pub trait ArrayToArrayCodecTraits:
     ) -> Box<dyn ArrayPartialDecoderTraits + 'a>;
 
     /// Returns the size of the encoded representation given a size of the decoded representation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CodecError`] if the decoded representation is not supported by this codec.
     fn compute_encoded_size(
         &self,
         decoded_representation: &ArrayRepresentation,
-    ) -> ArrayRepresentation;
+    ) -> Result<ArrayRepresentation, CodecError>;
 }
 
 dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
@@ -351,10 +355,14 @@ pub trait ArrayToBytesCodecTraits:
     ) -> Box<dyn ArrayPartialDecoderTraits + 'a>;
 
     /// Returns the size of the encoded representation given a size of the decoded representation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CodecError`] if the decoded representation is not supported by this codec.
     fn compute_encoded_size(
         &self,
         decoded_representation: &ArrayRepresentation,
-    ) -> BytesRepresentation;
+    ) -> Result<BytesRepresentation, CodecError>;
 }
 
 dyn_clone::clone_trait_object!(ArrayToBytesCodecTraits);
