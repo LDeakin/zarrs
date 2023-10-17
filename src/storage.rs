@@ -19,6 +19,7 @@ pub mod store;
 
 use std::{path::PathBuf, sync::Arc};
 
+use itertools::Itertools;
 use thiserror::Error;
 
 use crate::{
@@ -184,7 +185,7 @@ pub trait ListableStorageTraits: Send + Sync {
 }
 
 /// Writable storage traits.
-pub trait WritableStorageTraits: Send + Sync {
+pub trait WritableStorageTraits: Send + Sync + ReadableStorageTraits {
     /// Store bytes at a [`StoreKey`].
     ///
     /// # Errors
@@ -200,7 +201,30 @@ pub trait WritableStorageTraits: Send + Sync {
     fn set_partial_values(
         &self,
         key_start_values: &[StoreKeyStartValue],
-    ) -> Result<(), StorageError>;
+    ) -> Result<(), StorageError> {
+        // Group by store key
+        for (key, group) in &key_start_values
+            .iter()
+            .group_by(|key_start_value| &key_start_value.key)
+        {
+            // Read the store key
+            let mut bytes = self.get(key)?.unwrap_or_default();
+
+            // Update the store key
+            for key_start_value in group {
+                let start: usize = key_start_value.start.try_into().unwrap();
+                let end: usize = key_start_value.end().try_into().unwrap();
+                if bytes.len() < end {
+                    bytes.resize(end, 0);
+                }
+                bytes[start..end].copy_from_slice(key_start_value.value);
+            }
+
+            // Write the store key
+            self.set(key, &bytes)?;
+        }
+        Ok(())
+    }
 
     /// Erase a [`StoreKey`].
     ///
