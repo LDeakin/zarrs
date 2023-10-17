@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `ArrayToArrayCodecTraits::compute_encoded_size` and `ArrayToBytesCodecTraits::compute_encoded_size` can now return a `CodecError`
  - `ArrayBuilder::build()` and `GroupBuilder::build` now accept unsized storage
  - **Breaking**: `StoragePartialDecoder` now takes a `ReadableStorage` input
+ - `sharded_array_write_read` example now prints storage operations and demonstrates retrieving inner chunks directly from a partial decoder
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
