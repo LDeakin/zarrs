@@ -275,6 +275,12 @@ impl StoreKeyStartValue<'_> {
     pub fn new(key: StoreKey, start: ByteOffset, value: &[u8]) -> StoreKeyStartValue {
         StoreKeyStartValue { key, start, value }
     }
+
+    /// Get the offset of exclusive end of the [`StoreKeyStartValue`].
+    #[must_use]
+    pub fn end(&self) -> ByteOffset {
+        self.start + self.value.len() as u64
+    }
 }
 
 /// [`StoreKeys`] and [`StorePrefixes`].
