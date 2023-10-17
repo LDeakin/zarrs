@@ -4,7 +4,8 @@ use crate::{
     array::MaybeBytes,
     metadata::Metadata,
     storage::{
-        ListableStorage, ListableStorageTraits, ReadableStorage, ReadableStorageTraits,
+        ListableStorage, ListableStorageTraits, ReadableListableStorage,
+        ReadableListableStorageTraits, ReadableStorage, ReadableStorageTraits,
         ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
         StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
         WritableStorage, WritableStorageTraits,
@@ -94,6 +95,13 @@ impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
         &'a self,
         storage: ReadableWritableStorage<'a>,
     ) -> ReadableWritableStorage<'a> {
+        self.create_transformer(storage)
+    }
+
+    fn create_readable_listable_transformer<'a>(
+        &'a self,
+        storage: ReadableListableStorage<'a>,
+    ) -> ReadableListableStorage<'a> {
         self.create_transformer(storage)
     }
 }
@@ -222,6 +230,11 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> ReadableWritableStorageTraits
+    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+{
+}
+
+impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> ReadableListableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
 }

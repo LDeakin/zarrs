@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added experimental `zfp` codec implementation behind `zfp` feature flag (disabled by default)
  - Added experimental `bitround` codec implementation behind `bitround` feature flag (disabled by default)
  - Added `ShardingCodecBuilder`
+ - Added `ReadableListableStorage`, `ReadableListableStorageTraits`, `StorageTransformerExtension::create_readable_listable_transformer`
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`

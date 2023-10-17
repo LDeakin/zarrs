@@ -6,8 +6,9 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
-        ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
-        StoreKeyRange, StoreKeyStartValue, StoreKeysPrefixes,
+        ListableStorageTraits, ReadableListableStorageTraits, ReadableStorageTraits,
+        ReadableWritableStorageTraits, StorageError, StoreKeyRange, StoreKeyStartValue,
+        StoreKeysPrefixes,
     },
 };
 
@@ -389,6 +390,8 @@ impl ListableStorageTraits for FilesystemStore {
 }
 
 impl ReadableWritableStorageTraits for FilesystemStore {}
+
+impl ReadableListableStorageTraits for FilesystemStore {}
 
 /// A filesystem store creation error.
 #[derive(Debug, Error)]

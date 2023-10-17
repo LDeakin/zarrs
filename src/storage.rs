@@ -50,6 +50,9 @@ pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
 /// [`Arc`] wrapped readable and writable storage.
 pub type ReadableWritableStorage<'a> = Arc<dyn ReadableWritableStorageTraits + 'a>;
 
+/// [`Arc`] wrapped readable and listable storage.
+pub type ReadableListableStorage<'a> = Arc<dyn ReadableListableStorageTraits + 'a>;
+
 /// Readable storage traits.
 pub trait ReadableStorageTraits: Send + Sync {
     /// Retrieve the value (bytes) associated with a given [`StoreKey`].
@@ -234,6 +237,9 @@ pub trait WritableStorageTraits: Send + Sync {
 
 /// A supertrait of [`ReadableStorageTraits`] and [`WritableStorageTraits`].
 pub trait ReadableWritableStorageTraits: ReadableStorageTraits + WritableStorageTraits {}
+
+/// A supertrait of [`ReadableStorageTraits`] and [`ListableStorageTraits`].
+pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorageTraits {}
 
 /// A [`StoreKey`] and [`ByteRange`].
 #[derive(Debug)]

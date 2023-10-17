@@ -7,8 +7,9 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
-        ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
-        StoreKeyRange, StoreKeyStartValue, StoreKeysPrefixes, WritableStorageTraits,
+        ListableStorageTraits, ReadableListableStorageTraits, ReadableStorageTraits,
+        ReadableWritableStorageTraits, StorageError, StoreKeyRange, StoreKeyStartValue,
+        StoreKeysPrefixes, WritableStorageTraits,
     },
 };
 
@@ -221,6 +222,8 @@ impl ListableStorageTraits for MemoryStore {
 }
 
 impl ReadableWritableStorageTraits for MemoryStore {}
+
+impl ReadableListableStorageTraits for MemoryStore {}
 
 #[cfg(test)]
 mod tests {

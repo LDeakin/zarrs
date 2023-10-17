@@ -4,9 +4,9 @@ use crate::{
     array::{codec::extract_byte_ranges_read, MaybeBytes},
     byte_range::ByteRange,
     storage::{
-        storage_value_io::StorageValueIO, ListableStorageTraits, ReadableStorageTraits,
-        StorageError, StoreKey, StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        StorePrefixes,
+        storage_value_io::StorageValueIO, ListableStorageTraits, ReadableListableStorageTraits,
+        ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeys, StoreKeysPrefixes,
+        StorePrefix, StorePrefixes,
     },
 };
 
@@ -206,6 +206,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
 
         Ok(StoreKeysPrefixes { keys, prefixes })
     }
+}
+
+impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> ReadableListableStorageTraits
+    for ZipStorageAdapter<TStorage>
+{
 }
 
 /// A zip store creation error.
