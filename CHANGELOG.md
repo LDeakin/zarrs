@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Blosc codec: disable parallel encoding/decoding for small inputs/outputs
  - Bytes codec: optimise implementation
  - **Breaking**: `ArrayToArrayCodecTraits::compute_encoded_size` and `ArrayToBytesCodecTraits::compute_encoded_size` can now return a `CodecError`
+ - `ArrayBuilder::build()` and `GroupBuilder::build` now accept unsized storage
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

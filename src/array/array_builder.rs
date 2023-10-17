@@ -220,7 +220,7 @@ impl ArrayBuilder {
     ///
     /// Returns [`ArrayCreateError`] if there is an error creating the array.
     /// This can be due to a storage error, an invalid path, or a problem with array configuration.
-    pub fn build<TStorage>(
+    pub fn build<TStorage: ?Sized>(
         &self,
         storage: Arc<TStorage>,
         path: &str,

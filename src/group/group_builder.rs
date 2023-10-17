@@ -48,7 +48,7 @@ impl GroupBuilder {
     /// # Errors
     ///
     /// Returns [`GroupCreateError`] if the group could not be created.
-    pub fn build<TStorage>(
+    pub fn build<TStorage: ?Sized>(
         &self,
         storage: Arc<TStorage>,
         path: &str,
