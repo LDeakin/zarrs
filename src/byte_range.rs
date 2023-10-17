@@ -10,6 +10,8 @@
 //! This module provides the [`extract_byte_ranges`] convenience function for extracting byte ranges from a slice of bytes.
 //!
 
+use std::ops::Range;
+
 use thiserror::Error;
 
 /// A byte offset.
@@ -63,6 +65,22 @@ impl ByteRange {
             ByteRange::FromStart(offset, None) | ByteRange::FromEnd(offset, None) => size - offset,
             ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => *length,
         }
+    }
+
+    /// Convert the byte range to a [`Range<u64>`].
+    #[must_use]
+    pub fn to_range(&self, size: u64) -> Range<u64> {
+        self.start(size)..self.end(size)
+    }
+
+    /// Convert the byte range to a [`Range<usize>`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the byte range exceeds [`usize::MAX`].
+    #[must_use]
+    pub fn to_range_usize(&self, size: u64) -> core::ops::Range<usize> {
+        self.start(size).try_into().unwrap()..self.end(size).try_into().unwrap()
     }
 }
 
