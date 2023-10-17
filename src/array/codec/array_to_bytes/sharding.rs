@@ -1,14 +1,24 @@
 //! The sharding `array->bytes` codec.
 //!
+//! Sharding logically splits chunks (shards) into sub-chunks (inner chunks) that can be individually compressed and accessed.
+//! This allows to colocate multiple chunks within one storage object, bundling them in shards.
+//!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/v1.0.html>.
+//!
+//! This codec requires the `sharding` feature, which is enabled by default.
+//!
+//! See [`ShardingCodecConfigurationV1`] for example `JSON` metadata.
+//! The [`ShardingCodecBuilder`] can help with creating a [`ShardingCodec`].
 
 mod sharding_codec;
+mod sharding_codec_builder;
 mod sharding_configuration;
 mod sharding_partial_decoder;
 
 pub use sharding_configuration::{ShardingCodecConfiguration, ShardingCodecConfigurationV1};
 
 pub use sharding_codec::ShardingCodec;
+pub use sharding_codec_builder::ShardingCodecBuilder;
 use thiserror::Error;
 
 use crate::array::{

@@ -2,8 +2,8 @@
 fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use zarrs::{
         array::{
-            codec::{self, ShardingCodec},
-            CodecChain, DataType, FillValue,
+            codec::{self, array_to_bytes::sharding::ShardingCodecBuilder},
+            DataType, FillValue,
         },
         array_subset::ArraySubset,
         node::Node,
@@ -33,33 +33,19 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create an array
     let array_path = "/group/array";
-    let inner_codecs = CodecChain::new(
-        vec![],
-        Box::new(codec::BytesCodec::little()),
-        vec![
-            #[cfg(feature = "gzip")]
-            Box::new(codec::GzipCodec::new(5)?),
-        ],
-    );
-    let index_codecs = CodecChain::new(
-        vec![],
-        Box::new(codec::BytesCodec::little()),
-        vec![
-            #[cfg(feature = "crc32c")]
-            Box::new(codec::Crc32cCodec::new()),
-        ],
-    );
+    let mut sharding_codec_builder = ShardingCodecBuilder::new(vec![4, 4]);
+    sharding_codec_builder.bytes_to_bytes_codecs(vec![
+        #[cfg(feature = "gzip")]
+        Box::new(codec::GzipCodec::new(5)?),
+    ]);
+
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
         DataType::UInt16,
         vec![4, 8].into(), // shard shape,
         FillValue::from(0u16),
     )
-    .array_to_bytes_codec(Box::new(ShardingCodec::new(
-        vec![4, 4], // inner chunk shape
-        inner_codecs,
-        index_codecs,
-    )))
+    .array_to_bytes_codec(Box::new(sharding_codec_builder.build()))
     .dimension_names(vec!["y".into(), "x".into()])
     .storage_transformers(vec![])
     .build(store.clone(), array_path)?;

@@ -55,6 +55,7 @@ use super::{
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Debug)]
 pub struct ArrayBuilder {
     shape: ArrayShape,
     data_type: DataType,

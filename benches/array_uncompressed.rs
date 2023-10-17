@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use zarrs::array::{
-    codec::{self, ShardingCodec},
+    codec::{self, array_to_bytes::sharding::ShardingCodecBuilder, ShardingCodec},
     CodecChain,
 };
 
@@ -37,15 +37,7 @@ fn array_write_all_sharded(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| {
                 let store = zarrs::storage::store::MemoryStore::new();
-                let inner_codecs =
-                    CodecChain::new(vec![], Box::new(codec::BytesCodec::default()), vec![]);
-                let index_codecs =
-                    CodecChain::new(vec![], Box::new(codec::BytesCodec::default()), vec![]);
-                let sharding_codec = Box::new(ShardingCodec::new(
-                    vec![32; 3].into(),
-                    inner_codecs,
-                    index_codecs,
-                ));
+                let sharding_codec = Box::new(ShardingCodecBuilder::new(vec![32; 3]).build());
                 let array = zarrs::array::ArrayBuilder::new(
                     vec![size; 3],
                     zarrs::array::DataType::UInt8,
@@ -101,15 +93,7 @@ fn array_read_all_sharded(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             // Write the data
             let store = zarrs::storage::store::MemoryStore::new();
-            let inner_codecs =
-                CodecChain::new(vec![], Box::new(codec::BytesCodec::default()), vec![]);
-            let index_codecs =
-                CodecChain::new(vec![], Box::new(codec::BytesCodec::default()), vec![]);
-            let sharding_codec = Box::new(ShardingCodec::new(
-                vec![32; 3].into(),
-                inner_codecs,
-                index_codecs,
-            ));
+            let sharding_codec = Box::new(ShardingCodecBuilder::new(vec![32; 3]).build());
             let array = zarrs::array::ArrayBuilder::new(
                 vec![size; 3],
                 zarrs::array::DataType::UInt8,
