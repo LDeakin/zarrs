@@ -25,6 +25,9 @@
 //!  - [`ReadableStorageTraits`] storage can read array data and metadata.
 //!  - [`WritableStorageTraits`] storage can write array data and metadata, and
 //!  - both traits are needed to update chunk subsets, such as with [`Array::store_array_subset`].
+//!
+//! By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata.
+//! This functionality can be disabled with [`set_include_zarrs_metadata(false)`](Array::set_include_zarrs_metadata).
 
 mod array_builder;
 mod array_errors;
@@ -60,6 +63,7 @@ pub use self::{
 use parking_lot::Mutex;
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use safe_transmute::TriviallyTransmutable;
+use serde::Serialize;
 
 use crate::{
     array_subset::{validate_array_subset, ArraySubset},
@@ -173,6 +177,8 @@ pub struct Array<TStorage: ?Sized> {
     parallel_chunks: bool,
     /// Chunk locks.
     chunk_locks: Mutex<HashMap<Vec<u64>, Arc<Mutex<()>>>>,
+    /// Zarrs metadata.
+    include_zarrs_metadata: bool,
 }
 
 impl<TStorage: ?Sized> Array<TStorage> {
@@ -247,6 +253,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             parallel_codecs: true,
             parallel_chunks: true,
             chunk_locks: Mutex::default(),
+            include_zarrs_metadata: true,
         })
     }
 
@@ -353,9 +360,37 @@ impl<TStorage: ?Sized> Array<TStorage> {
         self.parallel_chunks = parallel_chunks;
     }
 
+    /// Enable or disable the inclusion of zarrs metadata in the array attributes. Enabled by default.
+    ///
+    /// Zarrs metadata includes the zarrs version and some parameters.
+    pub fn set_include_zarrs_metadata(&mut self, include_zarrs_metadata: bool) {
+        self.include_zarrs_metadata = include_zarrs_metadata;
+    }
+
     /// Create [`ArrayMetadata`].
     #[must_use]
     pub fn metadata(&self) -> ArrayMetadata {
+        let attributes = if self.include_zarrs_metadata {
+            #[derive(Serialize)]
+            struct ZarrsMetadata {
+                description: String,
+                repository: String,
+                version: String,
+            }
+            let zarrs_metadata = ZarrsMetadata {
+                description: "This array was created with zarrs".to_string(),
+                repository: env!("CARGO_PKG_REPOSITORY").to_string(),
+                version: env!("CARGO_PKG_VERSION").to_string(),
+            };
+            let mut attributes = self.attributes().clone();
+            attributes.insert("_zarrs".to_string(), unsafe {
+                serde_json::to_value(zarrs_metadata).unwrap_unchecked()
+            });
+            attributes
+        } else {
+            self.attributes().clone()
+        };
+
         ArrayMetadataV3::new(
             self.shape().to_vec(),
             self.data_type().metadata(),
@@ -363,7 +398,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             self.chunk_key_encoding().create_metadata(),
             self.data_type().metadata_fill_value(self.fill_value()),
             self.codecs().create_metadatas(),
-            self.attributes().clone(),
+            attributes,
             self.storage_transformers().create_metadatas(),
             self.dimension_names().clone(),
             self.additional_fields().clone(),

@@ -261,6 +261,7 @@ impl ArrayBuilder {
             parallel_codecs: self.parallel_codecs,
             parallel_chunks: self.parallel_chunks,
             chunk_locks: parking_lot::Mutex::default(),
+            include_zarrs_metadata: true,
         })
     }
 }
