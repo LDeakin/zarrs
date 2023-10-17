@@ -62,7 +62,7 @@ use crate::{
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
-    storage::{ReadableStorageTraits, StorageError, StoreKey},
+    storage::{ReadableStorage, StorageError, StoreKey},
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -302,15 +302,15 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     }
 }
 
-/// A [`ReadableStorageTraits`] partial decoder.
+/// A [`ReadableStorage`] partial decoder.
 pub struct StoragePartialDecoder<'a> {
-    storage: &'a dyn ReadableStorageTraits,
+    storage: ReadableStorage<'a>,
     key: StoreKey,
 }
 
 impl<'a> StoragePartialDecoder<'a> {
     /// Create a new storage partial decoder.
-    pub fn new(storage: &'a dyn ReadableStorageTraits, key: StoreKey) -> Self {
+    pub fn new(storage: ReadableStorage<'a>, key: StoreKey) -> Self {
         Self { storage, key }
     }
 }

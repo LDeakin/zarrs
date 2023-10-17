@@ -74,7 +74,9 @@ use crate::{
 use self::{
     array_errors::TransmuteError,
     chunk_grid::InvalidChunkGridIndicesError,
-    codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, StoragePartialDecoder},
+    codec::{
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, StoragePartialDecoder,
+    },
     unsafe_cell_slice::UnsafeCellSlice,
 };
 
@@ -726,7 +728,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             .storage_transformers()
             .create_readable_transformer(storage_handle);
         let input_handle = Box::new(StoragePartialDecoder::new(
-            &*storage_transformer,
+            storage_transformer,
             data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
         ));
 
@@ -805,6 +807,23 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                     chunk_subset.shape().iter().product::<u64>() * std::mem::size_of::<T>() as u64,
                 ))
             })
+    }
+
+    /// Returns an array partial decoder for the chunk at `chunk_indices`.
+    #[must_use]
+    pub fn partial_decoder<'a>(
+        &'a self,
+        chunk_indices: &[u64],
+    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
+        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_readable_transformer(storage_handle);
+        let input_handle = Box::new(StoragePartialDecoder::new(
+            storage_transformer,
+            data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
+        ));
+        self.codecs().partial_decoder(input_handle)
     }
 }
 
