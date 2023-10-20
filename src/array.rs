@@ -960,6 +960,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     /// # Errors
     ///
     /// Returns an [`ArrayError`] if a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
+    #[allow(clippy::missing_panics_doc)]
     pub fn store_chunk_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
         chunk_indices: &[u64],
@@ -977,12 +978,9 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             return Err(ArrayError::UnexpectedChunkDecodedShape(shape, chunk_shape));
         }
 
-        let chunk_bytes = chunk_array.as_standard_layout();
-        if let Some(slice) = chunk_bytes.as_slice() {
-            self.store_chunk_elements(chunk_indices, slice)
-        } else {
-            unreachable!()
-        }
+        let chunk_array = chunk_array.as_standard_layout();
+        let slice = chunk_array.as_slice().expect("it is in standard layout");
+        self.store_chunk_elements(chunk_indices, slice)
     }
 
     /// Erase the chunk at `chunk_indices`.

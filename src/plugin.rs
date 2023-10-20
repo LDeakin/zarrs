@@ -14,7 +14,6 @@ use thiserror::Error;
 use crate::metadata::{ConfigurationInvalidError, Metadata};
 
 /// A plugin.
-
 pub struct Plugin<TPlugin> {
     /// the identifier of the plugin.
     identifier: &'static str,

@@ -50,20 +50,26 @@ impl<'a> BytesPartialDecoder<'a> {
                 &byte_ranges,
             )?;
 
-            let bytes_subset = if let Some(decoded) = decoded {
-                let mut bytes_subset = decoded.concat();
-                if let Some(endian) = &self.endian {
-                    if !endian.is_native() {
-                        reverse_endianness(&mut bytes_subset, decoded_representation.data_type());
+            let bytes_subset = decoded.map_or_else(
+                || {
+                    decoded_representation
+                        .fill_value()
+                        .as_ne_bytes()
+                        .repeat(array_subset.num_elements_usize())
+                },
+                |decoded| {
+                    let mut bytes_subset = decoded.concat();
+                    if let Some(endian) = &self.endian {
+                        if !endian.is_native() {
+                            reverse_endianness(
+                                &mut bytes_subset,
+                                decoded_representation.data_type(),
+                            );
+                        }
                     }
-                }
-                bytes_subset
-            } else {
-                decoded_representation
-                    .fill_value()
-                    .as_ne_bytes()
-                    .repeat(array_subset.num_elements_usize())
-            };
+                    bytes_subset
+                },
+            );
 
             bytes.push(bytes_subset);
         }

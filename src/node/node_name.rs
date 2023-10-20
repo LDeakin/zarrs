@@ -77,10 +77,10 @@ impl From<&StorePrefix> for NodeName {
         let name = prefix
             .as_str()
             .strip_suffix('/')
-            .unwrap()
+            .expect("a store prefix must end with /")
             .split('/')
             .last()
-            .unwrap()
+            .expect("an empty string to split returns a single \"\" element")
             .to_string();
         Self(name)
     }

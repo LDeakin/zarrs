@@ -220,13 +220,9 @@ impl ChunkGridTraits for RectangularChunkGrid {
                     (*array_size == 0 || array_index < array_size)
                         && match chunks {
                             RectangularChunkGridDimension::Fixed(_) => true,
-                            RectangularChunkGridDimension::Varying(offsets_sizes) => {
-                                if let Some(last) = offsets_sizes.last() {
-                                    *array_index < last.offset + last.size
-                                } else {
-                                    false
-                                }
-                            }
+                            RectangularChunkGridDimension::Varying(offsets_sizes) => offsets_sizes
+                                .last()
+                                .map_or(false, |last| *array_index < last.offset + last.size),
                         }
                 },
             )

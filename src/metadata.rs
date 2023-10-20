@@ -150,23 +150,26 @@ impl Metadata {
     pub fn to_configuration<TConfiguration: DeserializeOwned>(
         &self,
     ) -> Result<TConfiguration, ConfigurationInvalidError> {
-        match &self.configuration {
-            Some(configuration) => {
-                match serde_json::from_value(
-                    serde_json::to_value(configuration).unwrap_or_default(),
-                ) {
-                    Ok(configuration) => Ok(configuration),
-                    Err(_) => Err(ConfigurationInvalidError::new(
-                        &self.name,
-                        self.configuration.clone(),
-                    )),
-                }
-            }
-            None => Err(ConfigurationInvalidError::new(
-                &self.name,
-                self.configuration.clone(),
-            )),
-        }
+        self.configuration.as_ref().map_or_else(
+            || {
+                Err(ConfigurationInvalidError::new(
+                    &self.name,
+                    self.configuration.clone(),
+                ))
+            },
+            |configuration| {
+                serde_json::from_value(serde_json::to_value(configuration).unwrap_or_default())
+                    .map_or_else(
+                        |_| {
+                            Err(ConfigurationInvalidError::new(
+                                &self.name,
+                                self.configuration.clone(),
+                            ))
+                        },
+                        |configuration| Ok(configuration),
+                    )
+            },
+        )
     }
 
     /// Returns the metadata name.
@@ -257,7 +260,7 @@ impl AdditionalFields {
     /// Returns an [`UnsupportedAdditionalFieldError`] if an unsupported additional field is identified.
     pub fn validate(&self) -> Result<(), UnsupportedAdditionalFieldError> {
         fn is_unknown_field_allowed(field: &serde_json::Value) -> bool {
-            if let Some(value) = field.as_object() {
+            field.as_object().map_or(false, |value| {
                 if value.contains_key("must_understand") {
                     let must_understand = &value["must_understand"];
                     match must_understand {
@@ -267,9 +270,7 @@ impl AdditionalFields {
                 } else {
                     false
                 }
-            } else {
-                false
-            }
+            })
         }
 
         for (key, value) in &self.0 {

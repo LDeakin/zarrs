@@ -125,12 +125,13 @@ impl BloscCodec {
     }
 
     fn do_decode(encoded_value: &[u8], n_threads: usize) -> Result<Vec<u8>, CodecError> {
-        if let Some(destsize) = blosc_validate(encoded_value) {
-            blosc_decompress_bytes(encoded_value, destsize, n_threads)
-                .map_err(|e| CodecError::from(e.to_string()))
-        } else {
-            Err(CodecError::from("blosc encoded value is invalid"))
-        }
+        blosc_validate(encoded_value).map_or_else(
+            || Err(CodecError::from("blosc encoded value is invalid")),
+            |destsize| {
+                blosc_decompress_bytes(encoded_value, destsize, n_threads)
+                    .map_err(|e| CodecError::from(e.to_string()))
+            },
+        )
     }
 }
 

@@ -123,13 +123,14 @@ impl CodecChain {
             }
         }
 
-        if let Some(array_to_bytes) = array_to_bytes {
-            Ok(Self::new(array_to_array, array_to_bytes, bytes_to_bytes))
-        } else {
-            Err(PluginCreateError::Other {
-                error_str: "missing array to bytes codec".to_string(),
-            })
-        }
+        array_to_bytes.map_or_else(
+            || {
+                Err(PluginCreateError::Other {
+                    error_str: "missing array to bytes codec".to_string(),
+                })
+            },
+            |array_to_bytes| Ok(Self::new(array_to_array, array_to_bytes, bytes_to_bytes)),
+        )
     }
 
     /// Create codec chain metadata.

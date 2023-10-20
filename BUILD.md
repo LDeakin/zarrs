@@ -15,6 +15,12 @@ cargo check && \
 cargo check --no-default-features
 ```
 
+```bash
+# Additional checks
+cargo clippy -- -D warnings -W clippy::nursery -A clippy::significant_drop_tightening -A clippy::significant_drop_in_scrutinee
+# cargo clippy -- -D warnings -W clippy::unwrap_used -W clippy::expect_used
+```
+
 ## Performance
 ```bash
 # Set a baseline

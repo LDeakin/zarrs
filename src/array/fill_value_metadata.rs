@@ -134,9 +134,9 @@ impl serde::Serialize for HexString {
 impl<'de> serde::Deserialize<'de> for HexString {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let s = String::deserialize(d)?;
-        Ok(Self(hex_string_to_bytes(&s).ok_or(
-            serde::de::Error::custom("not a valid hex string"),
-        )?))
+        Ok(Self(hex_string_to_bytes(&s).ok_or_else(|| {
+            serde::de::Error::custom("not a valid hex string")
+        })?))
     }
 }
 
@@ -250,11 +250,9 @@ impl FillValueMetadata {
                     F::Float(float) => Some(f16::from_f64(*float)),
                     F::HexString(hex_string) => {
                         let bytes = hex_string.as_bytes();
-                        if let Ok(bytes) = bytes.try_into() {
-                            Some(f16::from_be_bytes(bytes))
-                        } else {
-                            None
-                        }
+                        bytes
+                            .try_into()
+                            .map_or(None, |bytes| Some(f16::from_be_bytes(bytes)))
                     }
                     F::NonFinite(nonfinite) => {
                         use FillValueFloatStringNonFinite as NF;
@@ -280,11 +278,9 @@ impl FillValueMetadata {
                     F::Float(float) => Some(bf16::from_f64(*float)),
                     F::HexString(hex_string) => {
                         let bytes = hex_string.as_bytes();
-                        if let Ok(bytes) = bytes.try_into() {
-                            Some(bf16::from_be_bytes(bytes))
-                        } else {
-                            None
-                        }
+                        bytes
+                            .try_into()
+                            .map_or(None, |bytes| Some(bf16::from_be_bytes(bytes)))
                     }
                     F::NonFinite(nonfinite) => {
                         use FillValueFloatStringNonFinite as NF;
