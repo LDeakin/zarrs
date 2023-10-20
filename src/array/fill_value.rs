@@ -16,85 +16,85 @@ impl core::fmt::Display for FillValue {
 
 impl From<Vec<u8>> for FillValue {
     fn from(value: Vec<u8>) -> Self {
-        FillValue(value)
+        Self(value)
     }
 }
 
 impl From<bool> for FillValue {
     fn from(value: bool) -> Self {
-        FillValue(vec![u8::from(value)])
+        Self(vec![u8::from(value)])
     }
 }
 
 impl From<u8> for FillValue {
     fn from(value: u8) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<u16> for FillValue {
     fn from(value: u16) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<u32> for FillValue {
     fn from(value: u32) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<u64> for FillValue {
     fn from(value: u64) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<i8> for FillValue {
     fn from(value: i8) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<i16> for FillValue {
     fn from(value: i16) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<i32> for FillValue {
     fn from(value: i32) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<i64> for FillValue {
     fn from(value: i64) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<half::f16> for FillValue {
     fn from(value: half::f16) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<half::bf16> for FillValue {
     fn from(value: half::bf16) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<f32> for FillValue {
     fn from(value: f32) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
 impl From<f64> for FillValue {
     fn from(value: f64) -> Self {
-        FillValue(value.to_ne_bytes().to_vec())
+        Self(value.to_ne_bytes().to_vec())
     }
 }
 
@@ -103,7 +103,7 @@ impl From<num::complex::Complex32> for FillValue {
         let mut bytes = Vec::with_capacity(std::mem::size_of::<num::complex::Complex32>());
         bytes.extend(value.re.to_ne_bytes());
         bytes.extend(value.im.to_ne_bytes());
-        FillValue(bytes)
+        Self(bytes)
     }
 }
 
@@ -112,15 +112,15 @@ impl From<num::complex::Complex64> for FillValue {
         let mut bytes = Vec::with_capacity(std::mem::size_of::<num::complex::Complex64>());
         bytes.extend(value.re.to_ne_bytes());
         bytes.extend(value.im.to_ne_bytes());
-        FillValue(bytes)
+        Self(bytes)
     }
 }
 
 impl FillValue {
     /// Create a new fill value composed of `bytes`.
     #[must_use]
-    pub fn new(bytes: Vec<u8>) -> FillValue {
-        FillValue(bytes)
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
     }
 
     /// Returns the size in bytes of the fill value.

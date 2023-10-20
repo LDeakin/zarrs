@@ -142,7 +142,7 @@ impl ReadableStorageTraits for MemoryStore {
 
 impl WritableStorageTraits for MemoryStore {
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        MemoryStore::set_impl(self, key, value, None, true);
+        Self::set_impl(self, key, value, None, true);
         Ok(())
     }
 
@@ -151,7 +151,7 @@ impl WritableStorageTraits for MemoryStore {
         key_start_values: &[StoreKeyStartValue],
     ) -> Result<(), StorageError> {
         for key_start_value in key_start_values {
-            MemoryStore::set_impl(
+            Self::set_impl(
                 self,
                 &key_start_value.key,
                 key_start_value.value,

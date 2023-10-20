@@ -119,30 +119,28 @@ mod tests {
 
     use super::*;
 
-    const JSON_C: &'static str = r#"{
+    const JSON_C: &str = r#"{
     "order": "C"
 }"#;
 
-    const JSON_F: &'static str = r#"{
+    const JSON_F: &str = r#"{
     "order": "F"
 }"#;
 
-    const JSON_ARRAY: &'static str = r#"{
+    const JSON_ARRAY: &str = r#"{
     "order": [0, 2, 1]
 }"#;
 
     fn codec_transpose_round_trip_impl(json: &str, data_type: DataType, fill_value: FillValue) {
         let array_representation =
-            ArrayRepresentation::new(vec![2, 2, 3], data_type.clone(), fill_value.clone()).unwrap();
+            ArrayRepresentation::new(vec![2, 2, 3], data_type, fill_value).unwrap();
         let bytes: Vec<u8> = (0..array_representation.size()).map(|s| s as u8).collect();
 
         let configuration: TransposeCodecConfiguration = serde_json::from_str(json).unwrap();
         let codec = TransposeCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
-        let decoded = codec
-            .decode(encoded.clone(), &array_representation)
-            .unwrap();
+        let decoded = codec.decode(encoded, &array_representation).unwrap();
         assert_eq!(bytes, decoded);
 
         // let array = ndarray::ArrayViewD::from_shape(array_representation.shape(), &bytes).unwrap();

@@ -87,8 +87,8 @@ impl TryFrom<char> for ChunkKeySeparator {
 impl serde::Serialize for ChunkKeySeparator {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {
-            ChunkKeySeparator::Slash => s.serialize_char('/'),
-            ChunkKeySeparator::Dot => s.serialize_char('.'),
+            Self::Slash => s.serialize_char('/'),
+            Self::Dot => s.serialize_char('.'),
         }
     }
 }
@@ -98,9 +98,9 @@ impl<'de> serde::Deserialize<'de> for ChunkKeySeparator {
         let value = serde_json::Value::deserialize(d)?;
         if let serde_json::Value::String(separator) = value {
             if separator == "/" {
-                return Ok(ChunkKeySeparator::Slash);
+                return Ok(Self::Slash);
             } else if separator == "." {
-                return Ok(ChunkKeySeparator::Dot);
+                return Ok(Self::Dot);
             }
         }
         Err(serde::de::Error::custom(

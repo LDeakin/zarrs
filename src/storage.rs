@@ -277,8 +277,8 @@ pub struct StoreKeyRange {
 impl StoreKeyRange {
     /// Create a new [`StoreKeyRange`].
     #[must_use]
-    pub fn new(key: StoreKey, byte_range: ByteRange) -> StoreKeyRange {
-        StoreKeyRange { key, byte_range }
+    pub fn new(key: StoreKey, byte_range: ByteRange) -> Self {
+        Self { key, byte_range }
     }
 }
 
@@ -674,8 +674,7 @@ mod tests {
         ]);
         let transformer =
             storage_transformer_chain.create_readable_writable_transformer(store.clone());
-        let transformer_listable =
-            storage_transformer_chain.create_listable_transformer(store.clone());
+        let transformer_listable = storage_transformer_chain.create_listable_transformer(store);
 
         (0..10).into_par_iter().for_each(|_| {
             transformer_listable.list().unwrap();

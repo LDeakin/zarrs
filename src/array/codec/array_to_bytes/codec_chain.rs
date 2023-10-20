@@ -124,11 +124,7 @@ impl CodecChain {
         }
 
         if let Some(array_to_bytes) = array_to_bytes {
-            Ok(CodecChain::new(
-                array_to_array,
-                array_to_bytes,
-                bytes_to_bytes,
-            ))
+            Ok(Self::new(array_to_array, array_to_bytes, bytes_to_bytes))
         } else {
             Err(PluginCreateError::Other {
                 error_str: "missing array to bytes codec".to_string(),
@@ -411,7 +407,7 @@ mod tests {
     use super::*;
 
     #[cfg(feature = "transpose")]
-    const JSON_TRANSPOSE1: &'static str = r#"{
+    const JSON_TRANSPOSE1: &str = r#"{
     "name": "transpose",
     "configuration": {
       "order": [0, 2, 1]
@@ -419,7 +415,7 @@ mod tests {
 }"#;
 
     #[cfg(feature = "transpose")]
-    const JSON_TRANSPOSE2: &'static str = r#"{
+    const JSON_TRANSPOSE2: &str = r#"{
     "name": "transpose",
     "configuration": {
         "order": [2, 0, 1]
@@ -427,7 +423,7 @@ mod tests {
 }"#;
 
     #[cfg(feature = "blosc")]
-    const JSON_BLOSC: &'static str = r#"{
+    const JSON_BLOSC: &str = r#"{
     "name": "blosc",
     "configuration": {
         "cname": "lz4",
@@ -439,7 +435,7 @@ mod tests {
 }"#;
 
     #[cfg(feature = "gzip")]
-    const JSON_GZIP: &'static str = r#"{
+    const JSON_GZIP: &str = r#"{
     "name": "gzip",
     "configuration": {
         "level": 1
@@ -447,7 +443,7 @@ mod tests {
 }"#;
 
     #[cfg(feature = "zstd")]
-    const JSON_ZSTD: &'static str = r#"{
+    const JSON_ZSTD: &str = r#"{
     "name": "zstd",
     "configuration": {
         "level": 1,
@@ -455,7 +451,7 @@ mod tests {
     }
 }"#;
 
-    const JSON_BYTES: &'static str = r#"{
+    const JSON_BYTES: &str = r#"{
     "name": "bytes",
     "configuration": {
         "endian": "big"
@@ -463,7 +459,7 @@ mod tests {
 }"#;
 
     #[cfg(feature = "crc32c")]
-    const JSON_CRC32C: &'static str = r#"{ 
+    const JSON_CRC32C: &str = r#"{ 
     "name": "crc32c"
 }"#;
 
@@ -490,7 +486,7 @@ mod tests {
             #[cfg(feature = "crc32c")]
             serde_json::from_str(JSON_CRC32C).unwrap(),
         ];
-        println!("{:?}", codec_configurations);
+        println!("{codec_configurations:?}");
         let not_just_bytes = codec_configurations.len() > 1;
         let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
 
@@ -540,10 +536,10 @@ mod tests {
             #[cfg(feature = "crc32c")]
             serde_json::from_str(JSON_CRC32C).unwrap(),
         ];
-        println!("{:?}", codec_configurations);
+        println!("{codec_configurations:?}");
         let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes, &array_representation).unwrap();
         let decoded_regions =
             [ArraySubset::new_with_start_shape(vec![0, 1, 0], vec![2, 1, 1]).unwrap()];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -559,7 +555,7 @@ mod tests {
             .chunks(std::mem::size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
-        println!("decoded_partial_chunk {:?}", decoded_partial_chunk);
+        println!("decoded_partial_chunk {decoded_partial_chunk:?}");
         let answer: Vec<u16> = vec![2, 6];
         assert_eq!(answer, decoded_partial_chunk);
 

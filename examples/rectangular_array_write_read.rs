@@ -55,7 +55,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         .map(|i| {
             let chunk_grid = array.chunk_grid();
             let chunk_indices = vec![i, 0];
-            let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
+            let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, array.shape())?;
             let chunk_array = ndarray::ArrayD::<f32>::from_elem(
                 chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
                 i as f32,
@@ -82,7 +82,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Store elements directly, in this case set the 7th column to 123.0
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_start_shape(vec![0, 6], vec![8, 1])?,
-        &vec![123.0; 8],
+        &[123.0; 8],
     )?;
 
     // Store elements directly in a chunk, in this case set the last row of the bottom right chunk
@@ -91,7 +91,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         &[3, 1],
         // subset within chunk
         &ArraySubset::new_with_start_shape(vec![1, 0], vec![1, 4])?,
-        &vec![-4.0; 4],
+        &[-4.0; 4],
     )?;
 
     // Read the whole array

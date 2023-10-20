@@ -2,7 +2,7 @@ use derive_more::From;
 use serde::{Deserialize, Serialize};
 
 /// A dimension name.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, From)]
 pub struct DimensionName(Option<String>);
 
 impl Default for DimensionName {
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn dimension_default_is_none() {
         let dimension_name = DimensionName::default();
-        assert!(dimension_name.as_str() == None);
+        assert!(dimension_name.as_str().is_none());
     }
 
     #[test]

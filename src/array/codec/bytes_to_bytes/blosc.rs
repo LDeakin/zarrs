@@ -109,12 +109,12 @@ pub enum BloscCompressor {
 impl BloscCompressor {
     fn as_cstr(&self) -> *const u8 {
         match self {
-            BloscCompressor::BloscLZ => BLOSC_BLOSCLZ_COMPNAME.as_ptr(),
-            BloscCompressor::LZ4 => BLOSC_LZ4_COMPNAME.as_ptr(),
-            BloscCompressor::LZ4HC => BLOSC_LZ4HC_COMPNAME.as_ptr(),
-            BloscCompressor::Snappy => BLOSC_SNAPPY_COMPNAME.as_ptr(),
-            BloscCompressor::Zlib => BLOSC_ZLIB_COMPNAME.as_ptr(),
-            BloscCompressor::Zstd => BLOSC_ZSTD_COMPNAME.as_ptr(),
+            Self::BloscLZ => BLOSC_BLOSCLZ_COMPNAME.as_ptr(),
+            Self::LZ4 => BLOSC_LZ4_COMPNAME.as_ptr(),
+            Self::LZ4HC => BLOSC_LZ4HC_COMPNAME.as_ptr(),
+            Self::Snappy => BLOSC_SNAPPY_COMPNAME.as_ptr(),
+            Self::Zlib => BLOSC_ZLIB_COMPNAME.as_ptr(),
+            Self::Zstd => BLOSC_ZSTD_COMPNAME.as_ptr(),
         }
     }
 }
@@ -288,7 +288,7 @@ mod tests {
 
     use super::*;
 
-    const JSON_VALID1: &'static str = r#"
+    const JSON_VALID1: &str = r#"
 {
     "cname": "lz4",
     "clevel": 5,
@@ -297,7 +297,7 @@ mod tests {
     "blocksize": 0
 }"#;
 
-    const JSON_VALID2: &'static str = r#"
+    const JSON_VALID2: &str = r#"
 {
     "cname": "lz4",
     "clevel": 4,
@@ -317,9 +317,7 @@ mod tests {
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec.encode(bytes.clone()).unwrap();
-        let decoded = codec
-            .decode(encoded.clone(), &bytes_representation)
-            .unwrap();
+        let decoded = codec.decode(encoded, &bytes_representation).unwrap();
         assert_eq!(bytes, decoded);
     }
 
@@ -334,9 +332,7 @@ mod tests {
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec.encode(bytes.clone()).unwrap();
-        let decoded = codec
-            .decode(encoded.clone(), &bytes_representation)
-            .unwrap();
+        let decoded = codec.decode(encoded, &bytes_representation).unwrap();
         assert_eq!(bytes, decoded);
     }
 
@@ -354,7 +350,7 @@ mod tests {
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes.clone()).unwrap();
+        let encoded = codec.encode(bytes).unwrap();
         let decoded_regions: Vec<ByteRange> =
             ArraySubset::new_with_start_shape(vec![0, 1, 0], vec![2, 1, 1])
                 .unwrap()

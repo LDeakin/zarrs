@@ -73,7 +73,7 @@ mod tests {
         "blocksize": 0
     }"#;
         let codec_configuration = serde_json::from_str::<BloscCodecConfiguration>(json);
-        assert!(codec_configuration.is_err())
+        assert!(codec_configuration.is_err());
     }
 
     #[test]
@@ -87,7 +87,7 @@ mod tests {
         "blocksize": 0
     }"#;
         let codec_configuration = serde_json::from_str::<BloscCodecConfiguration>(json);
-        assert!(codec_configuration.is_err())
+        assert!(codec_configuration.is_err());
     }
 
     #[test]
@@ -101,6 +101,6 @@ mod tests {
         "blocksize": 0
     }"#;
         let codec_configuration = serde_json::from_str::<BloscCodecConfiguration>(json);
-        assert!(codec_configuration.is_err())
+        assert!(codec_configuration.is_err());
     }
 }

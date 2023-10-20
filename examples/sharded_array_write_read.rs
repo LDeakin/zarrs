@@ -30,7 +30,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         chrono::Utc::now().format("[%T%.3f] ").to_string()
     });
     let store_readable_listable = usage_log.create_readable_listable_transformer(store.clone());
-    let store = usage_log.create_readable_writable_transformer(store.clone());
+    let store = usage_log.create_readable_writable_transformer(store);
 
     // Create a group and write metadata to filesystem
     let group_path = "/group";
@@ -79,7 +79,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         .map(|s| {
             let chunk_grid = array.chunk_grid();
             let chunk_indices = vec![s, 0];
-            let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
+            let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, array.shape())?;
             let chunk_array = ndarray::ArrayD::<u16>::from_shape_fn(
                 chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
                 |ij| {

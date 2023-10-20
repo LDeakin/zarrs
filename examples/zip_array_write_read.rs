@@ -12,7 +12,7 @@ use zarrs::{
 };
 
 // const ARRAY_PATH: &'static str = "/array";
-const ARRAY_PATH: &'static str = "/";
+const ARRAY_PATH: &str = "/";
 
 fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
     storage: Arc<TStorage>,
@@ -32,19 +32,18 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
     ])
     .dimension_names(vec!["y".into(), "x".into()])
     .storage_transformers(vec![])
-    .build(storage.clone(), ARRAY_PATH)?;
+    .build(storage, ARRAY_PATH)?;
 
     // Write array metadata to store
     array.store_metadata()?;
 
     // Write some chunks (in parallel)
     let _ = (0..2)
-        .into_iter()
         // .into_par_iter()
         .map(|i| {
             let chunk_grid: &Box<dyn ChunkGridTraits> = array.chunk_grid();
             let chunk_indices: Vec<u64> = vec![i, 0];
-            let chunk_subset: ArraySubset = chunk_grid.subset(&chunk_indices, &array.shape())?;
+            let chunk_subset: ArraySubset = chunk_grid.subset(&chunk_indices, array.shape())?;
             array.store_chunk_elements(
                 &chunk_indices,
                 &vec![i as f32; chunk_subset.num_elements() as usize],
@@ -63,13 +62,13 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
     // Write a subset spanning multiple chunks, including updating chunks already written
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_start_shape(vec![3, 3], vec![3, 3]).unwrap(),
-        &vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        &[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     )?;
 
     // Store elements directly, in this case set the 7th column to 123.0
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_start_shape(vec![0, 6], vec![8, 1])?,
-        &vec![123.0; 8],
+        &[123.0; 8],
     )?;
 
     // Store elements directly in a chunk, in this case set the last row of the bottom right chunk
@@ -78,7 +77,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
         &[1, 1],
         // subset within chunk
         &ArraySubset::new_with_start_shape(vec![3, 0], vec![1, 4])?,
-        &vec![-4.0; 4],
+        &[-4.0; 4],
     )?;
 
     Ok(array)
@@ -149,7 +148,7 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let mut zarr_dir = path.path().to_path_buf();
     zarr_dir.push("hierarchy.zarr");
     let store = Arc::new(store::FilesystemStore::new(&zarr_dir)?);
-    write_array_to_storage(store.clone())?;
+    write_array_to_storage(store)?;
 
     // Write the store to zip
     let mut path_zip = path.path().to_path_buf();

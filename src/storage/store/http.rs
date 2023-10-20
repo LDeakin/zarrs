@@ -45,10 +45,10 @@ impl HTTPStore {
     /// # Errors
     ///
     /// Returns a [`HTTPStoreCreateError`] if `base_url` is not a valid URL.
-    pub fn new(base_url: &str) -> Result<HTTPStore, HTTPStoreCreateError> {
+    pub fn new(base_url: &str) -> Result<Self, HTTPStoreCreateError> {
         let base_url = Url::from_str(base_url)
             .map_err(|_| HTTPStoreCreateError::InvalidBaseURL(base_url.into()))?;
-        Ok(HTTPStore {
+        Ok(Self {
             base_url,
             batch_range_requests: true,
         })
@@ -210,9 +210,9 @@ mod tests {
 
     use super::*;
 
-    const HTTP_TEST_PATH_REF: &'static str =
+    const HTTP_TEST_PATH_REF: &str =
         "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/hierarchy.zarr";
-    const ARRAY_PATH_REF: &'static str = "/a/baz";
+    const ARRAY_PATH_REF: &str = "/a/baz";
 
     #[test]
     fn http_store_size() {
@@ -244,9 +244,9 @@ mod tests {
     #[cfg(feature = "gzip")]
     #[test]
     fn http_store_array_get() {
-        const HTTP_TEST_PATH: &'static str =
+        const HTTP_TEST_PATH: &str =
             "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/array_write_read.zarr";
-        const ARRAY_PATH: &'static str = "/group/array";
+        const ARRAY_PATH: &str = "/group/array";
 
         let store = HTTPStore::new(HTTP_TEST_PATH).unwrap();
         let array = Array::new(store.into(), ARRAY_PATH).unwrap();
@@ -274,9 +274,9 @@ mod tests {
     #[cfg(all(feature = "sharding", feature = "gzip", feature = "crc32c"))]
     #[test]
     fn http_store_sharded_array_get() {
-        const HTTP_TEST_PATH_SHARDED: &'static str =
+        const HTTP_TEST_PATH_SHARDED: &str =
             "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/sharded_array_write_read.zarr";
-        const ARRAY_PATH_SHARDED: &'static str = "/group/array";
+        const ARRAY_PATH_SHARDED: &str = "/group/array";
 
         let store = HTTPStore::new(HTTP_TEST_PATH_SHARDED).unwrap();
         let array = Array::new(store.into(), ARRAY_PATH_SHARDED).unwrap();

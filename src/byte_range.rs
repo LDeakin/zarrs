@@ -38,8 +38,8 @@ impl ByteRange {
     #[must_use]
     pub fn start(&self, size: u64) -> u64 {
         match self {
-            ByteRange::FromStart(offset, _) => *offset,
-            ByteRange::FromEnd(offset, length) => match length {
+            Self::FromStart(offset, _) => *offset,
+            Self::FromEnd(offset, length) => match length {
                 Some(length) => size - *offset - *length,
                 None => 0,
             },
@@ -50,11 +50,11 @@ impl ByteRange {
     #[must_use]
     pub fn end(&self, size: u64) -> u64 {
         match self {
-            ByteRange::FromStart(offset, length) => match length {
+            Self::FromStart(offset, length) => match length {
                 Some(length) => offset + length,
                 None => size,
             },
-            ByteRange::FromEnd(offset, _) => size - offset,
+            Self::FromEnd(offset, _) => size - offset,
         }
     }
 
@@ -62,8 +62,8 @@ impl ByteRange {
     #[must_use]
     pub fn length(&self, size: u64) -> u64 {
         match self {
-            ByteRange::FromStart(offset, None) | ByteRange::FromEnd(offset, None) => size - offset,
-            ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => *length,
+            Self::FromStart(offset, None) | Self::FromEnd(offset, None) => size - offset,
+            Self::FromStart(_, Some(length)) | Self::FromEnd(_, Some(length)) => *length,
         }
     }
 

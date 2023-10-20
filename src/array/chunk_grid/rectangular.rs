@@ -80,9 +80,7 @@ enum RectangularChunkGridDimension {
 impl RectangularChunkGrid {
     /// Create a new rectangular chunk grid with chunk shapes `chunk_shapes`.
     #[must_use]
-    pub fn new(
-        chunk_shapes: &[RectangularChunkGridDimensionConfiguration],
-    ) -> RectangularChunkGrid {
+    pub fn new(chunk_shapes: &[RectangularChunkGridDimensionConfiguration]) -> Self {
         let chunks = chunk_shapes
             .iter()
             .map(|s| match s {
@@ -106,7 +104,7 @@ impl RectangularChunkGrid {
                 }
             })
             .collect();
-        RectangularChunkGrid { chunks }
+        Self { chunks }
     }
 }
 

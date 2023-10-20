@@ -22,7 +22,7 @@ mod tests {
 
     use super::*;
 
-    const JSON_VALID: &'static str = r#"{
+    const JSON_VALID: &str = r#"{
     "level": 22,
     "checksum": false
 }"#;
@@ -37,9 +37,7 @@ mod tests {
         let codec = ZstdCodec::new_with_configuration(&configuration);
 
         let encoded = codec.encode(bytes.clone()).unwrap();
-        let decoded = codec
-            .decode(encoded.clone(), &bytes_representation)
-            .unwrap();
+        let decoded = codec.decode(encoded, &bytes_representation).unwrap();
         assert_eq!(bytes, decoded);
     }
 
@@ -52,7 +50,7 @@ mod tests {
         let configuration: ZstdCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZstdCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone()).unwrap();
+        let encoded = codec.encode(bytes).unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
             ByteRange::FromStart(10, Some(2)),

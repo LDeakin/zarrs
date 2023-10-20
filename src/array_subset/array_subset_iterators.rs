@@ -83,7 +83,7 @@ impl<'a> LinearisedIndicesIterator<'a> {
         } else {
             Err(IncompatibleArrayShapeError(
                 array_shape.to_vec(),
-                inner.subset.clone(),
+                inner.subset,
             ))
         }
     }

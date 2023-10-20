@@ -97,7 +97,7 @@ mod tests {
 
     use super::*;
 
-    const JSON_VALID1: &'static str = r#"{
+    const JSON_VALID1: &str = r#"{
     "chunk_shape": [2, 2],
     "codecs": [
         {
@@ -117,7 +117,7 @@ mod tests {
     ]
 }"#;
 
-    const JSON_VALID2: &'static str = r#"{
+    const JSON_VALID2: &str = r#"{
     "chunk_shape": [1, 2, 2],
     "codecs": [
         {
@@ -226,7 +226,7 @@ mod tests {
             serde_json::from_str(JSON_VALID1).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes, &array_representation).unwrap();
         let decoded_regions = [ArraySubset::new_with_start_shape(vec![1, 0], vec![2, 1]).unwrap()];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec.partial_decoder(input_handle);
@@ -261,7 +261,7 @@ mod tests {
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes, &array_representation).unwrap();
         let decoded_regions =
             [ArraySubset::new_with_start_shape(vec![1, 0, 0], vec![1, 2, 3]).unwrap()];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -269,7 +269,7 @@ mod tests {
         let decoded_partial_chunk = partial_decoder
             .partial_decode(&array_representation, &decoded_regions)
             .unwrap();
-        println!("decoded_partial_chunk {:?}", decoded_partial_chunk);
+        println!("decoded_partial_chunk {decoded_partial_chunk:?}");
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .into_iter()
             .flatten()

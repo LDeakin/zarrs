@@ -7,7 +7,7 @@ use crate::storage::store::StorePrefix;
 /// See
 /// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#name>, and
 /// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#node-names>.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct NodeName(String);
 
 /// An invalid node name.
@@ -21,9 +21,9 @@ impl NodeName {
     /// # Errors
     ///
     /// Returns [`NodeNameError`] if `name` is not valid according to [`NodeName::validate`()].
-    pub fn new(name: &str) -> Result<NodeName, NodeNameError> {
-        if NodeName::validate(name) {
-            Ok(NodeName(name.to_string()))
+    pub fn new(name: &str) -> Result<Self, NodeNameError> {
+        if Self::validate(name) {
+            Ok(Self(name.to_string()))
         } else {
             Err(NodeNameError(name.to_string()))
         }
@@ -35,14 +35,14 @@ impl NodeName {
     ///
     /// `name` is not validated, so this can result in an invalid node name.
     #[must_use]
-    pub unsafe fn new_unchecked(name: &str) -> NodeName {
-        NodeName(name.to_string())
+    pub unsafe fn new_unchecked(name: &str) -> Self {
+        Self(name.to_string())
     }
 
     /// The root node.
     #[must_use]
-    pub fn root() -> NodeName {
-        NodeName(String::new())
+    pub fn root() -> Self {
+        Self(String::new())
     }
 
     /// Extracts a string slice containing the node name `String`.
@@ -73,7 +73,7 @@ impl NodeName {
 }
 
 impl From<&StorePrefix> for NodeName {
-    fn from(prefix: &StorePrefix) -> NodeName {
+    fn from(prefix: &StorePrefix) -> Self {
         let name = prefix
             .as_str()
             .strip_suffix('/')
@@ -82,6 +82,6 @@ impl From<&StorePrefix> for NodeName {
             .last()
             .unwrap()
             .to_string();
-        NodeName(name)
+        Self(name)
     }
 }

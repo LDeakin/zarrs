@@ -194,7 +194,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         storage: Arc<TStorage>,
         path: &str,
         metadata: ArrayMetadata,
-    ) -> Result<Array<TStorage>, ArrayCreateError> {
+    ) -> Result<Self, ArrayCreateError> {
         let path = NodePath::new(path)?;
 
         let ArrayMetadata::V3(metadata) = metadata;
@@ -1403,13 +1403,13 @@ mod tests {
             Box::new(codec::GzipCodec::new(5).unwrap()),
         ])
         .storage_transformers(vec![])
-        .build(store.clone(), array_path)
+        .build(store, array_path)
         .unwrap();
 
         array
             .store_array_subset_elements::<f32>(
                 &ArraySubset::new_with_start_shape(vec![3, 3], vec![3, 3]).unwrap(),
-                &vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+                &[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
             )
             .unwrap();
 
@@ -1446,13 +1446,13 @@ mod tests {
             vec![10, 2].into(),
             FillValue::from(0u8),
         )
-        .build(store.clone(), array_path)
+        .build(store, array_path)
         .unwrap();
 
         for j in 1..10 {
             (0..100).into_par_iter().for_each(|i| {
                 let subset = ArraySubset::new_with_start_shape(vec![i, 0], vec![1, 4]).unwrap();
-                array.store_array_subset(&subset, &vec![j; 4]).unwrap();
+                array.store_array_subset(&subset, &[j; 4]).unwrap();
             });
             let subset_all =
                 ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec()).unwrap();

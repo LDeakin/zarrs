@@ -30,9 +30,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     /// # Errors
     ///
     /// Returns a [`ZipStorageAdapterCreateError`] if the root path of the store is not a valid zip file.
-    pub fn new(
-        storage: Arc<TStorage>,
-    ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
+    pub fn new(storage: Arc<TStorage>) -> Result<Self, ZipStorageAdapterCreateError> {
         Self::new_with_path(storage, "")
     }
 
@@ -44,7 +42,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     pub fn new_with_path<T: Into<PathBuf>>(
         storage: Arc<TStorage>,
         path: T,
-    ) -> Result<ZipStorageAdapter<TStorage>, ZipStorageAdapterCreateError> {
+    ) -> Result<Self, ZipStorageAdapterCreateError> {
         let zip_path = path.into();
         let root_key = unsafe { StoreKey::new_unchecked(String::new()) };
         let size = storage
@@ -54,7 +52,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
             )?;
         let storage_io = StorageValueIO::new(storage, root_key, size);
         let zip_archive = Mutex::new(ZipArchive::new(storage_io)?);
-        Ok(ZipStorageAdapter {
+        Ok(Self {
             size,
             zip_archive,
             zip_path,
@@ -289,7 +287,7 @@ mod tests {
 
         let file = File::create(path).unwrap();
         zip_dir(
-            &mut walkdir.into_iter().filter_map(|e| e.ok()),
+            &mut walkdir.into_iter().filter_map(std::result::Result::ok),
             tmp_path.to_str().unwrap(),
             file,
             zip::CompressionMethod::Stored,

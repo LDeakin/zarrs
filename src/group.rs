@@ -193,7 +193,7 @@ mod tests {
 
     use super::*;
 
-    const JSON_VALID1: &'static str = r#"{
+    const JSON_VALID1: &str = r#"{
     "zarr_format": 3,
     "node_type": "group",
     "attributes": {
@@ -202,7 +202,7 @@ mod tests {
     }
 }"#;
 
-    const JSON_VALID2: &'static str = r#"{
+    const JSON_VALID2: &str = r#"{
     "zarr_format": 3,
     "node_type": "group",
     "attributes": {
@@ -214,7 +214,7 @@ mod tests {
     }
 }"#;
 
-    const JSON_INVALID_ADDITIONAL_FIELD: &'static str = r#"{
+    const JSON_INVALID_ADDITIONAL_FIELD: &str = r#"{
     "zarr_format": 3,
     "node_type": "group",
     "attributes": {
@@ -224,7 +224,7 @@ mod tests {
     "unknown": "fail"
 }"#;
 
-    const JSON_INVALID_FORMAT: &'static str = r#"{
+    const JSON_INVALID_FORMAT: &str = r#"{
     "zarr_format": 2,
     "node_type": "group",
     "attributes": {
@@ -274,7 +274,7 @@ mod tests {
             .build(store.clone(), group_path)
             .unwrap();
         group.store_metadata().unwrap();
-        let metadata = Group::new(store.clone(), group_path).unwrap().metadata();
+        let metadata = Group::new(store, group_path).unwrap().metadata();
         assert_eq!(metadata, group.metadata());
     }
 }

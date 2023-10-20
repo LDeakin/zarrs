@@ -126,12 +126,10 @@ pub enum TransmuteError {
 impl<'a, S, T> From<safe_transmute::Error<'a, S, T>> for TransmuteError {
     fn from(error: safe_transmute::Error<'a, S, T>) -> Self {
         match error {
-            safe_transmute::Error::Guard(guard) => TransmuteError::Guard(guard),
-            safe_transmute::Error::Unaligned(_) => TransmuteError::Unaligned,
-            safe_transmute::Error::IncompatibleVecTarget(_) => {
-                TransmuteError::IncompatibleVecTarget
-            }
-            safe_transmute::Error::InvalidValue => TransmuteError::InvalidValue,
+            safe_transmute::Error::Guard(guard) => Self::Guard(guard),
+            safe_transmute::Error::Unaligned(_) => Self::Unaligned,
+            safe_transmute::Error::IncompatibleVecTarget(_) => Self::IncompatibleVecTarget,
+            safe_transmute::Error::InvalidValue => Self::InvalidValue,
         }
     }
 }

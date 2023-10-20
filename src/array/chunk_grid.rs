@@ -46,7 +46,7 @@ impl ChunkGrid {
     /// # Errors
     ///
     /// Returns a [`PluginCreateError`] if the metadata is invalid or not associated with a registered chunk grid plugin.
-    pub fn from_metadata(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
+    pub fn from_metadata(metadata: &Metadata) -> Result<Self, PluginCreateError> {
         for plugin in inventory::iter::<ChunkGridPlugin> {
             if plugin.match_name(metadata.name()) {
                 return plugin.create(metadata);
@@ -61,7 +61,7 @@ impl ChunkGrid {
 impl From<ArrayShape> for ChunkGrid {
     /// Create a regular chunk grid from a chunk shape.
     fn from(regular_chunk_shape: ArrayShape) -> Self {
-        ChunkGrid::new(RegularChunkGrid::new(regular_chunk_shape))
+        Self::new(RegularChunkGrid::new(regular_chunk_shape))
     }
 }
 

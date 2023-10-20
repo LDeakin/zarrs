@@ -159,7 +159,7 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_bool(&self) -> Option<bool> {
         match self {
-            FillValueMetadata::Bool(bool) => Some(*bool),
+            Self::Bool(bool) => Some(*bool),
             _ => None,
         }
     }
@@ -170,8 +170,8 @@ impl FillValueMetadata {
         &self,
     ) -> Option<T> {
         match self {
-            FillValueMetadata::Int(int) => T::try_from(*int).ok(),
-            FillValueMetadata::Uint(uint) => T::try_from(*uint).ok(),
+            Self::Int(int) => T::try_from(*int).ok(),
+            Self::Uint(uint) => T::try_from(*uint).ok(),
             _ => None,
         }
     }
@@ -182,8 +182,8 @@ impl FillValueMetadata {
         &self,
     ) -> Option<T> {
         match self {
-            FillValueMetadata::Int(int) => T::try_from(*int).ok(),
-            FillValueMetadata::Uint(uint) => T::try_from(*uint).ok(),
+            Self::Int(int) => T::try_from(*int).ok(),
+            Self::Uint(uint) => T::try_from(*uint).ok(),
             _ => None,
         }
     }
@@ -192,7 +192,7 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_float<T: FloatCore>(&self) -> Option<T> {
         match self {
-            FillValueMetadata::Float(float) => {
+            Self::Float(float) => {
                 use FillValueFloat as F;
                 match float {
                     F::Float(float) => T::from(*float),
@@ -229,7 +229,7 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_float_pair<T: FloatCore>(&self) -> Option<(T, T)> {
         match self {
-            FillValueMetadata::Complex(re, im) => {
+            Self::Complex(re, im) => {
                 if let (Some(re), Some(im)) = (re.to_float::<T>(), im.to_float::<T>()) {
                     Some((re, im))
                 } else {
@@ -244,7 +244,7 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_float16(&self) -> Option<f16> {
         match self {
-            FillValueMetadata::Float(float) => {
+            Self::Float(float) => {
                 use FillValueFloat as F;
                 match float {
                     F::Float(float) => Some(f16::from_f64(*float)),
@@ -274,7 +274,7 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_bfloat16(&self) -> Option<bf16> {
         match self {
-            FillValueMetadata::Float(float) => {
+            Self::Float(float) => {
                 use FillValueFloat as F;
                 match float {
                     F::Float(float) => Some(bf16::from_f64(*float)),
@@ -403,7 +403,7 @@ mod tests {
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
             FillValueMetadata::Float(FillValueFloat::NonFinite(fill_value)) => {
-                assert_eq!(fill_value, FillValueFloatStringNonFinite::NaN)
+                assert_eq!(fill_value, FillValueFloatStringNonFinite::NaN);
             }
             _ => panic!(),
         }
@@ -416,7 +416,7 @@ mod tests {
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
             FillValueMetadata::Float(FillValueFloat::HexString(fill_value)) => {
-                assert_eq!(fill_value.0, f32::NAN.to_be_bytes())
+                assert_eq!(fill_value.0, f32::NAN.to_be_bytes());
             }
             _ => panic!(),
         }

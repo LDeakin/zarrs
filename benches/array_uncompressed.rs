@@ -1,8 +1,5 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use zarrs::array::{
-    codec::{self, array_to_bytes::sharding::ShardingCodecBuilder, ShardingCodec},
-    CodecChain,
-};
+use zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder;
 
 fn array_write_all(c: &mut Criterion) {
     let mut group = c.benchmark_group("array_write_all");

@@ -21,9 +21,9 @@ impl NodePath {
     /// # Errors
     ///
     /// Returns [`NodePathError`] if `path` is not valid according to [`NodePath::validate`()].
-    pub fn new(path: &str) -> Result<NodePath, NodePathError> {
-        if NodePath::validate(path) {
-            Ok(NodePath(PathBuf::from(path)))
+    pub fn new(path: &str) -> Result<Self, NodePathError> {
+        if Self::validate(path) {
+            Ok(Self(PathBuf::from(path)))
         } else {
             Err(NodePathError(path.to_string()))
         }
@@ -31,8 +31,8 @@ impl NodePath {
 
     /// The root node.
     #[must_use]
-    pub fn root() -> NodePath {
-        NodePath(PathBuf::from("/"))
+    pub fn root() -> Self {
+        Self(PathBuf::from("/"))
     }
 
     /// Extracts a string slice containing the node path `String`.
@@ -62,16 +62,16 @@ impl NodePath {
 impl TryFrom<&str> for NodePath {
     type Error = NodePathError;
 
-    fn try_from(path: &str) -> Result<NodePath, Self::Error> {
-        NodePath::new(path)
+    fn try_from(path: &str) -> Result<Self, Self::Error> {
+        Self::new(path)
     }
 }
 
 impl TryFrom<&StorePrefix> for NodePath {
     type Error = NodePathError;
 
-    fn try_from(prefix: &StorePrefix) -> Result<NodePath, Self::Error> {
+    fn try_from(prefix: &StorePrefix) -> Result<Self, Self::Error> {
         let path = "/".to_string() + prefix.as_str().strip_suffix('/').unwrap();
-        NodePath::new(&path)
+        Self::new(&path)
     }
 }

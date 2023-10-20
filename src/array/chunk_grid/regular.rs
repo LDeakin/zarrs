@@ -27,7 +27,7 @@ fn is_name_regular(name: &str) -> bool {
 
 fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata.to_configuration()?;
-    let chunk_grid = RegularChunkGrid::new(configuration.chunk_shape.clone());
+    let chunk_grid = RegularChunkGrid::new(configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))
 }
 
@@ -49,8 +49,8 @@ pub struct RegularChunkGrid {
 impl RegularChunkGrid {
     /// Create a new regular chunk grid with chunk shape `chunk_shape`.
     #[must_use]
-    pub fn new(chunk_shape: ArrayShape) -> RegularChunkGrid {
-        RegularChunkGrid { chunk_shape }
+    pub fn new(chunk_shape: ArrayShape) -> Self {
+        Self { chunk_shape }
     }
 
     /// Return the chunk shape.
@@ -154,7 +154,7 @@ mod tests {
     fn chunk_grid_regular_out_of_bounds() {
         let array_shape: ArrayShape = vec![5, 7, 52];
         let chunk_shape: ArrayShape = vec![1, 2, 3];
-        let chunk_grid = RegularChunkGrid::new(chunk_shape.clone());
+        let chunk_grid = RegularChunkGrid::new(chunk_shape);
 
         let array_indices: ArrayIndices = vec![3, 5, 53];
         assert!(chunk_grid
@@ -172,7 +172,7 @@ mod tests {
     fn chunk_grid_regular_unlimited() {
         let array_shape: ArrayShape = vec![5, 7, 0];
         let chunk_shape: ArrayShape = vec![1, 2, 3];
-        let chunk_grid = RegularChunkGrid::new(chunk_shape.clone());
+        let chunk_grid = RegularChunkGrid::new(chunk_shape);
 
         let array_indices: ArrayIndices = vec![3, 5, 1000];
         assert!(chunk_grid

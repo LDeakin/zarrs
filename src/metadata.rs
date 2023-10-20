@@ -96,7 +96,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                 name,
                 configuration: None,
             }),
-            MetadataIntermediate::NameConfiguration(metadata) => Ok(Metadata {
+            MetadataIntermediate::NameConfiguration(metadata) => Ok(Self {
                 name: metadata.name,
                 configuration: metadata.configuration,
             }),
@@ -132,14 +132,14 @@ impl Metadata {
     pub fn new_with_serializable_configuration<TConfiguration: serde::Serialize>(
         name: &str,
         configuration: &TConfiguration,
-    ) -> Result<Metadata, serde_json::Error> {
+    ) -> Result<Self, serde_json::Error> {
         let configuration = serde_json::to_value(configuration)?;
         let serde_json::Value::Object(configuration) = configuration else {
             return Err(serde::ser::Error::custom(
                 "this should not happen, indicates the configuration is not a JSON struct",
             ));
         };
-        Ok(Metadata::new_with_configuration(name, configuration))
+        Ok(Self::new_with_configuration(name, configuration))
     }
 
     /// Try and convert [`Metadata`] to a serializable configuration.

@@ -85,7 +85,7 @@ impl IncompatibleFillValueError {
     /// Create a new incompatible fill value error.
     #[must_use]
     pub fn new(data_type_name: String, fill_value: FillValue) -> Self {
-        IncompatibleFillValueError(data_type_name, fill_value)
+        Self(data_type_name, fill_value)
     }
 }
 
@@ -210,7 +210,7 @@ impl DataType {
             if let Ok(size_bits) = metadata.name()[1..].parse::<usize>() {
                 if size_bits % 8 == 0 {
                     let size_bytes = size_bits / 8;
-                    return Ok(DataType::RawBits(size_bytes));
+                    return Ok(Self::RawBits(size_bytes));
                 }
             }
         }
@@ -237,8 +237,7 @@ impl DataType {
         fill_value: &FillValueMetadata,
     ) -> Result<FillValue, IncompatibleFillValueErrorMetadataError> {
         use FillValue as FV;
-        let err =
-            || IncompatibleFillValueErrorMetadataError(self.name().to_string(), fill_value.clone());
+        let err = || IncompatibleFillValueErrorMetadataError(self.name(), fill_value.clone());
         match self {
             Self::Bool => Ok(FV::from(fill_value.try_as_bool().ok_or_else(err)?)),
             Self::Int8 => Ok(FV::from(fill_value.try_as_int::<i8>().ok_or_else(err)?)),
@@ -268,7 +267,7 @@ impl DataType {
                     }
                 }
                 Err(IncompatibleFillValueErrorMetadataError(
-                    self.name().to_string(),
+                    self.name(),
                     fill_value.clone(),
                 ))
             } // Self::Extension(extension) => extension.fill_value_from_metadata(fill_value),
@@ -285,56 +284,52 @@ impl DataType {
     pub fn metadata_fill_value(&self, fill_value: &FillValue) -> FillValueMetadata {
         let bytes = fill_value.as_ne_bytes();
         match self {
-            DataType::Bool => FillValueMetadata::Bool(bytes[0] != 0),
-            DataType::Int8 => {
+            Self::Bool => FillValueMetadata::Bool(bytes[0] != 0),
+            Self::Int8 => {
                 FillValueMetadata::Int(i64::from(i8::from_ne_bytes(bytes.try_into().unwrap())))
             }
-            DataType::Int16 => {
+            Self::Int16 => {
                 FillValueMetadata::Int(i64::from(i16::from_ne_bytes(bytes.try_into().unwrap())))
             }
-            DataType::Int32 => {
+            Self::Int32 => {
                 FillValueMetadata::Int(i64::from(i32::from_ne_bytes(bytes.try_into().unwrap())))
             }
-            DataType::Int64 => {
-                FillValueMetadata::Int(i64::from_ne_bytes(bytes.try_into().unwrap()))
-            }
-            DataType::UInt8 => {
+            Self::Int64 => FillValueMetadata::Int(i64::from_ne_bytes(bytes.try_into().unwrap())),
+            Self::UInt8 => {
                 FillValueMetadata::Uint(u64::from(u8::from_ne_bytes(bytes.try_into().unwrap())))
             }
-            DataType::UInt16 => {
+            Self::UInt16 => {
                 FillValueMetadata::Uint(u64::from(u16::from_ne_bytes(bytes.try_into().unwrap())))
             }
-            DataType::UInt32 => {
+            Self::UInt32 => {
                 FillValueMetadata::Uint(u64::from(u32::from_ne_bytes(bytes.try_into().unwrap())))
             }
-            DataType::UInt64 => {
-                FillValueMetadata::Uint(u64::from_ne_bytes(bytes.try_into().unwrap()))
-            }
-            DataType::Float16 => {
+            Self::UInt64 => FillValueMetadata::Uint(u64::from_ne_bytes(bytes.try_into().unwrap())),
+            Self::Float16 => {
                 let fill_value = f16::from_ne_bytes(fill_value.as_ne_bytes().try_into().unwrap());
                 FillValueMetadata::Float(float16_to_fill_value_float(fill_value))
             }
-            DataType::Float32 => FillValueMetadata::Float(float_to_fill_value(f32::from_ne_bytes(
+            Self::Float32 => FillValueMetadata::Float(float_to_fill_value(f32::from_ne_bytes(
                 bytes.try_into().unwrap(),
             ))),
-            DataType::Float64 => FillValueMetadata::Float(float_to_fill_value(f64::from_ne_bytes(
+            Self::Float64 => FillValueMetadata::Float(float_to_fill_value(f64::from_ne_bytes(
                 bytes.try_into().unwrap(),
             ))),
-            DataType::BFloat16 => {
+            Self::BFloat16 => {
                 let fill_value = bf16::from_ne_bytes(fill_value.as_ne_bytes().try_into().unwrap());
                 FillValueMetadata::Float(bfloat16_to_fill_value_float(fill_value))
             }
-            DataType::Complex64 => {
+            Self::Complex64 => {
                 let re = f32::from_ne_bytes(bytes[0..4].try_into().unwrap());
                 let im = f32::from_ne_bytes(bytes[4..8].try_into().unwrap());
                 FillValueMetadata::Complex(float_to_fill_value(re), float_to_fill_value(im))
             }
-            DataType::Complex128 => {
+            Self::Complex128 => {
                 let re = f64::from_ne_bytes(bytes[0..8].try_into().unwrap());
                 let im = f64::from_ne_bytes(bytes[8..16].try_into().unwrap());
                 FillValueMetadata::Complex(float_to_fill_value(re), float_to_fill_value(im))
             }
-            DataType::RawBits(size) => {
+            Self::RawBits(size) => {
                 debug_assert_eq!(fill_value.as_ne_bytes().len(), *size);
                 FillValueMetadata::ByteArray(fill_value.as_ne_bytes().to_vec())
             } // DataType::Extension(extension) => extension.metadata_fill_value(fill_value),
@@ -385,7 +380,7 @@ impl TryFrom<Metadata> for DataType {
     type Error = UnsupportedDataTypeError;
 
     fn try_from(metadata: Metadata) -> Result<Self, Self::Error> {
-        DataType::from_metadata(&metadata)
+        Self::from_metadata(&metadata)
     }
 }
 
@@ -421,7 +416,7 @@ mod tests {
                 )
                 .unwrap()
                 .as_ne_bytes(),
-            &[true as u8]
+            &[u8::from(true)]
         );
         assert_eq!(
             data_type
@@ -430,7 +425,7 @@ mod tests {
                 )
                 .unwrap()
                 .as_ne_bytes(),
-            &[false as u8]
+            &[u8::from(false)]
         );
     }
 
@@ -705,7 +700,7 @@ mod tests {
                 .to_ne_bytes()
                 .iter()
                 .chain(f32::INFINITY.to_ne_bytes().iter())
-                .map(|b| *b)
+                .copied()
                 .collect::<Vec<u8>>()
         );
     }
@@ -729,7 +724,7 @@ mod tests {
                 .to_ne_bytes()
                 .iter()
                 .chain(f64::INFINITY.to_ne_bytes().iter())
-                .map(|b| *b)
+                .copied()
                 .collect::<Vec<u8>>()
         );
     }

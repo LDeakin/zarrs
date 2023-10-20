@@ -22,7 +22,7 @@ mod tests {
 
     use super::*;
 
-    const JSON1: &'static str = r#"{}"#;
+    const JSON1: &str = r#"{}"#;
 
     #[test]
     fn codec_crc32c() {
@@ -44,7 +44,7 @@ mod tests {
             [encoded.len() - core::mem::size_of::<u32>()..encoded.len()]
             .try_into()
             .unwrap();
-        println!("checksum {:?}", checksum);
+        println!("checksum {checksum:?}");
         assert_eq!(checksum, &[74, 207, 235, 48]);
         // println!("checksum {:?}", checksum);
     }
@@ -58,7 +58,7 @@ mod tests {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes.clone()).unwrap();
+        let encoded = codec.encode(bytes).unwrap();
         let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec.partial_decoder(input_handle);

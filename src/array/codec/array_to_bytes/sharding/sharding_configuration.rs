@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn codec_sharding_configuration() {
-        const JSON: &'static str = r#"{
+        const JSON: &str = r#"{
             "chunk_shape": [2, 2],
             "codecs": [
                 {

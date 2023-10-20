@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn codec_bytes_configuration_big() {
-        const JSON_BIG: &'static str = r#"{
+        const JSON_BIG: &str = r#"{
         "endian": "big"
     }"#;
         let codec_configuration: BytesCodecConfiguration = serde_json::from_str(JSON_BIG).unwrap();
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn codec_bytes_configuration_little() {
-        const JSON_LITTLE: &'static str = r#"{
+        const JSON_LITTLE: &str = r#"{
         "endian": "little"
     }"#;
         let codec_configuration: BytesCodecConfiguration =
@@ -126,9 +126,7 @@ mod tests {
         let codec = BytesCodec::new(endianness);
 
         let encoded = codec.encode(bytes.clone(), &array_representation)?;
-        let decoded = codec
-            .decode(encoded.clone(), &array_representation)
-            .unwrap();
+        let decoded = codec.decode(encoded, &array_representation).unwrap();
         assert_eq!(bytes, decoded);
         Ok(())
     }

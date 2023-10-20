@@ -54,7 +54,7 @@ impl TransposeCodec {
     /// Returns [`PluginCreateError`] if there is a configuration issue.
     pub fn new_with_configuration(
         configuration: &TransposeCodecConfiguration,
-    ) -> Result<TransposeCodec, PluginCreateError> {
+    ) -> Result<Self, PluginCreateError> {
         let TransposeCodecConfiguration::V1(configuration) = configuration;
         Self::new_with_order(configuration.order.clone()).map_err(|e| PluginCreateError::Other {
             error_str: e.to_string(),
@@ -66,15 +66,13 @@ impl TransposeCodec {
     /// # Errors
     ///
     /// Returns [`InvalidPermutationError`] if the permutation order is invalid.
-    pub fn new_with_order(
-        order: TransposeOrder,
-    ) -> Result<TransposeCodec, InvalidPermutationError> {
+    pub fn new_with_order(order: TransposeOrder) -> Result<Self, InvalidPermutationError> {
         if let TransposeOrder::Permutation(permutation) = &order {
             if !validate_permutation(permutation) {
                 return Err(InvalidPermutationError(permutation.clone()));
             }
         }
-        Ok(TransposeCodec { order })
+        Ok(Self { order })
     }
 }
 

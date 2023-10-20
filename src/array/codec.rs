@@ -92,7 +92,7 @@ impl Codec {
     /// # Errors
     ///
     /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered codec plugin.
-    pub fn from_metadata(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    pub fn from_metadata(metadata: &Metadata) -> Result<Self, PluginCreateError> {
         for plugin in inventory::iter::<CodecPlugin> {
             if plugin.match_name(metadata.name()) {
                 return plugin.create(metadata);

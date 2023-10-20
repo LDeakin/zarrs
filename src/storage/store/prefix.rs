@@ -19,7 +19,7 @@ impl StorePrefixError {
     /// Create a new invalid store prefix.
     #[must_use]
     pub fn new(prefix: String) -> Self {
-        StorePrefixError(prefix)
+        Self(prefix)
     }
 }
 
@@ -32,9 +32,9 @@ impl StorePrefix {
     /// # Errors
     ///
     /// Returns [`StorePrefixError`] if `prefix` is not valid according to [`StorePrefix::validate`()].
-    pub fn new(prefix: &str) -> Result<StorePrefix, StorePrefixError> {
+    pub fn new(prefix: &str) -> Result<Self, StorePrefixError> {
         if Self::validate(prefix) {
-            Ok(StorePrefix(prefix.to_string()))
+            Ok(Self(prefix.to_string()))
         } else {
             Err(StorePrefixError(prefix.to_string()))
         }
@@ -46,15 +46,15 @@ impl StorePrefix {
     ///
     /// `prefix` is not validated, so this can result in an invalid store prefix.
     #[must_use]
-    pub unsafe fn new_unchecked(prefix: &str) -> StorePrefix {
+    pub unsafe fn new_unchecked(prefix: &str) -> Self {
         debug_assert!(Self::validate(prefix));
-        StorePrefix(prefix.to_string())
+        Self(prefix.to_string())
     }
 
     /// The root prefix.
     #[must_use]
-    pub fn root() -> StorePrefix {
-        StorePrefix(String::new())
+    pub fn root() -> Self {
+        Self(String::new())
     }
 
     /// Extracts a string slice containing the Prefix `String`.
@@ -73,13 +73,13 @@ impl StorePrefix {
 
     /// Returns the prefix of the parent, it if has one.
     #[must_use]
-    pub fn parent(&self) -> Option<StorePrefix> {
+    pub fn parent(&self) -> Option<Self> {
         Path::new(&self.0).parent().map(|parent| {
             let parent = parent.to_str().unwrap_or_default();
             if parent.is_empty() {
-                unsafe { StorePrefix::new_unchecked("") }
+                unsafe { Self::new_unchecked("") }
             } else {
-                unsafe { StorePrefix::new_unchecked(&(parent.to_string() + "/")) }
+                unsafe { Self::new_unchecked(&(parent.to_string() + "/")) }
             }
         })
     }
@@ -88,20 +88,20 @@ impl StorePrefix {
 impl TryFrom<&str> for StorePrefix {
     type Error = StorePrefixError;
 
-    fn try_from(prefix: &str) -> Result<StorePrefix, StorePrefixError> {
-        StorePrefix::new(prefix)
+    fn try_from(prefix: &str) -> Result<Self, StorePrefixError> {
+        Self::new(prefix)
     }
 }
 
 impl TryFrom<&NodePath> for StorePrefix {
     type Error = StorePrefixError;
 
-    fn try_from(path: &NodePath) -> Result<StorePrefix, StorePrefixError> {
+    fn try_from(path: &NodePath) -> Result<Self, StorePrefixError> {
         let path = path.as_str();
         if path.eq("/") {
-            StorePrefix::new("")
+            Self::new("")
         } else {
-            StorePrefix::new(&(path.strip_prefix('/').unwrap_or(path).to_string() + "/"))
+            Self::new(&(path.strip_prefix('/').unwrap_or(path).to_string() + "/"))
         }
     }
 }

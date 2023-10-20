@@ -23,9 +23,9 @@ impl StoreKey {
     /// # Errors
     ///
     /// Returns [`StoreKeyError`] if `key` is not valid according to [`StoreKey::validate()`].
-    pub fn new(key: &str) -> Result<StoreKey, StoreKeyError> {
-        if StoreKey::validate(key) {
-            Ok(StoreKey(key.to_string()))
+    pub fn new(key: &str) -> Result<Self, StoreKeyError> {
+        if Self::validate(key) {
+            Ok(Self(key.to_string()))
         } else {
             Err(StoreKeyError(key.to_string()))
         }
@@ -37,9 +37,9 @@ impl StoreKey {
     ///
     /// `key` is not validated, so this can result in an invalid store key.
     #[must_use]
-    pub unsafe fn new_unchecked(key: String) -> StoreKey {
+    pub unsafe fn new_unchecked(key: String) -> Self {
         debug_assert!(Self::validate(&key));
-        StoreKey(key)
+        Self(key)
     }
 
     /// Extracts a string slice of the underlying Key [String].
@@ -75,7 +75,7 @@ impl StoreKey {
             None
         } else {
             let key_split: Vec<_> = self.as_str().split('/').collect();
-            let mut parent = key_split[..key_split.len() - 1].join("/").to_string();
+            let mut parent = key_split[..key_split.len() - 1].join("/");
             if !parent.is_empty() {
                 parent.push('/');
             }
@@ -88,14 +88,14 @@ impl TryFrom<&str> for StoreKey {
     type Error = StoreKeyError;
 
     fn try_from(key: &str) -> Result<Self, Self::Error> {
-        StoreKey::new(key)
+        Self::new(key)
     }
 }
 
 impl From<&StorePrefix> for StoreKey {
-    fn from(prefix: &StorePrefix) -> StoreKey {
+    fn from(prefix: &StorePrefix) -> Self {
         let prefix = prefix.as_str();
         let key = prefix.strip_suffix('/').unwrap_or(prefix);
-        unsafe { StoreKey::new_unchecked(key.to_string()) }
+        unsafe { Self::new_unchecked(key.to_string()) }
     }
 }

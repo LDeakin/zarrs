@@ -56,7 +56,7 @@ impl ArraySubset {
     /// Create a new array subset with `size` starting at the origin.
     #[must_use]
     pub fn new_with_shape(shape: ArrayShape) -> Self {
-        ArraySubset {
+        Self {
             start: vec![0; shape.len()],
             shape,
         }
@@ -72,7 +72,7 @@ impl ArraySubset {
         shape: ArrayShape,
     ) -> Result<Self, IncompatibleDimensionalityError> {
         if start.len() == shape.len() {
-            Ok(ArraySubset { start, shape })
+            Ok(Self { start, shape })
         } else {
             Err(IncompatibleDimensionalityError::new(
                 start.len(),
@@ -90,7 +90,7 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn new_with_start_shape_unchecked(start: ArrayIndices, shape: ArrayShape) -> Self {
         debug_assert_eq!(start.len(), shape.len());
-        ArraySubset { start, shape }
+        Self { start, shape }
     }
 
     /// Create a new array subset from a start and end (inclusive).
@@ -124,7 +124,7 @@ impl ArraySubset {
                 end.saturating_sub(*start) + 1
             })
             .collect();
-        ArraySubset { start, shape }
+        Self { start, shape }
     }
 
     /// Create a new array subset from a start and end (exclusive).
@@ -158,7 +158,7 @@ impl ArraySubset {
                 end.saturating_sub(*start)
             })
             .collect();
-        ArraySubset { start, shape }
+        Self { start, shape }
     }
 
     /// Return the start of the array subset.
@@ -550,10 +550,7 @@ impl ArraySubset {
     /// # Errors
     ///
     /// Returns [`IncompatibleDimensionalityError`] if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
-    pub fn in_subset(
-        &self,
-        subset_other: &ArraySubset,
-    ) -> Result<ArraySubset, IncompatibleDimensionalityError> {
+    pub fn in_subset(&self, subset_other: &Self) -> Result<Self, IncompatibleDimensionalityError> {
         if subset_other.dimensionality() == self.dimensionality() {
             Ok(unsafe { self.in_subset_unchecked(subset_other) })
         } else {
@@ -572,7 +569,7 @@ impl ArraySubset {
     /// Panics if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
     #[doc(hidden)]
     #[must_use]
-    pub unsafe fn in_subset_unchecked(&self, subset_other: &ArraySubset) -> ArraySubset {
+    pub unsafe fn in_subset_unchecked(&self, subset_other: &Self) -> Self {
         debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
         let mut starts = Vec::with_capacity(self.start.len());
         let mut shapes = Vec::with_capacity(self.start.len());
@@ -589,7 +586,7 @@ impl ArraySubset {
             starts.push(output_start);
             shapes.push(output_size);
         }
-        unsafe { ArraySubset::new_with_start_shape_unchecked(starts, shapes) }
+        unsafe { Self::new_with_start_shape_unchecked(starts, shapes) }
     }
 }
 
@@ -607,7 +604,7 @@ impl IncompatibleDimensionalityError {
     /// Create a new incompatible dimensionality error.
     #[must_use]
     pub fn new(got: usize, expected: usize) -> Self {
-        IncompatibleDimensionalityError(got, expected)
+        Self(got, expected)
     }
 }
 

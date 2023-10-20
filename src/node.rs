@@ -55,7 +55,7 @@ pub enum NodeCreateError {
 impl Node {
     /// Create a new node at `path` with `metadata` and `children`.
     #[must_use]
-    pub fn new(path: NodePath, metadata: NodeMetadata, children: Vec<Node>) -> Self {
+    pub fn new(path: NodePath, metadata: NodeMetadata, children: Vec<Self>) -> Self {
         Self {
             path,
             metadata,
@@ -83,7 +83,7 @@ impl Node {
             NodeMetadata::Array(_) => Vec::default(),
             NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
         };
-        let node = Node {
+        let node = Self {
             path,
             metadata,
             children,
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn node_metadata_array() {
-        const JSON_ARRAY: &'static str = r#"{
+        const JSON_ARRAY: &str = r#"{
             "zarr_format": 3,
             "node_type": "array",
             "shape": [
@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn node_metadata_group() {
-        const JSON_GROUP: &'static str = r#"{
+        const JSON_GROUP: &str = r#"{
         "zarr_format": 3,
         "node_type": "group",
         "attributes": {

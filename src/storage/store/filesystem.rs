@@ -80,9 +80,7 @@ impl FilesystemStore {
     /// Returns a [`FilesystemStoreCreateError`] if `base_directory`:
     ///   - is not valid, or
     ///   - it points to an existing file rather than a directory.
-    pub fn new<P: AsRef<Path>>(
-        base_path: P,
-    ) -> Result<FilesystemStore, FilesystemStoreCreateError> {
+    pub fn new<P: AsRef<Path>>(base_path: P) -> Result<Self, FilesystemStoreCreateError> {
         let base_path = base_path.as_ref().to_path_buf();
         if base_path.to_str().is_none() {
             return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
@@ -99,7 +97,7 @@ impl FilesystemStore {
             false
         };
 
-        Ok(FilesystemStore {
+        Ok(Self {
             base_path,
             sort: false,
             readonly,
@@ -175,7 +173,7 @@ impl FilesystemStore {
             .write(true)
             .create(true)
             .truncate(truncate)
-            .open(key_path.clone())?;
+            .open(key_path)?;
 
         // Write
         if let Some(offset) = offset {
@@ -281,7 +279,7 @@ impl WritableStorageTraits for FilesystemStore {
         if self.readonly {
             Err(StorageError::ReadOnly)
         } else {
-            FilesystemStore::set_impl(self, key, value, None, true)
+            Self::set_impl(self, key, value, None, true)
         }
     }
 
@@ -294,7 +292,7 @@ impl WritableStorageTraits for FilesystemStore {
         }
 
         for key_start_value in key_start_values {
-            FilesystemStore::set_impl(
+            Self::set_impl(
                 self,
                 &key_start_value.key,
                 key_start_value.value,

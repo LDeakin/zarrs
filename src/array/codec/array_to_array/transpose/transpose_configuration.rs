@@ -21,8 +21,8 @@ pub struct TransposeCodecConfigurationV1 {
 impl TransposeCodecConfigurationV1 {
     /// Create a new Transpose codec configuration given a [`TransposeOrder`].
     #[must_use]
-    pub fn new(order: TransposeOrder) -> TransposeCodecConfigurationV1 {
-        TransposeCodecConfigurationV1 { order }
+    pub fn new(order: TransposeOrder) -> Self {
+        Self { order }
     }
 }
 
@@ -87,15 +87,15 @@ impl<'de> serde::Deserialize<'de> for TransposeOrder {
 mod tests {
     use super::*;
 
-    const JSON_C: &'static str = r#"{
+    const JSON_C: &str = r#"{
         "order": "C"
     }"#;
 
-    const JSON_F: &'static str = r#"{
+    const JSON_F: &str = r#"{
         "order": "F"
     }"#;
 
-    const JSON_ARRAY: &'static str = r#"{
+    const JSON_ARRAY: &str = r#"{
         "order": [0, 2, 1]
     }"#;
 

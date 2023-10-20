@@ -10,9 +10,9 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
         },
     };
 
-    const HTTP_URL: &'static str =
+    const HTTP_URL: &str =
         "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/array_write_read.zarr";
-    const ARRAY_PATH: &'static str = "/group/array";
+    const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store
     let store = Arc::new(store::HTTPStore::new(HTTP_URL)?);

@@ -22,7 +22,7 @@ mod tests {
 
     use super::*;
 
-    const JSON_VALID: &'static str = r#"{
+    const JSON_VALID: &str = r#"{
         "level": 1
     }"#;
 
@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn codec_gzip_configuration_invalid1() {
-        const JSON_INVALID1: &'static str = r#"{
+        const JSON_INVALID1: &str = r#"{
         "level": -1
     }"#;
         assert!(serde_json::from_str::<GzipCodecConfiguration>(JSON_INVALID1).is_err());
@@ -41,7 +41,7 @@ mod tests {
 
     #[test]
     fn codec_gzip_configuration_invalid2() {
-        const JSON_INVALID2: &'static str = r#"{
+        const JSON_INVALID2: &str = r#"{
         "level": 10
     }"#;
         assert!(serde_json::from_str::<GzipCodecConfiguration>(JSON_INVALID2).is_err());
@@ -57,9 +57,7 @@ mod tests {
         let codec = GzipCodec::new_with_configuration(&configuration);
 
         let encoded = codec.encode(bytes.clone()).unwrap();
-        let decoded = codec
-            .decode(encoded.clone(), &bytes_representation)
-            .unwrap();
+        let decoded = codec.decode(encoded, &bytes_representation).unwrap();
         assert_eq!(bytes, decoded);
     }
 
@@ -72,7 +70,7 @@ mod tests {
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = GzipCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone()).unwrap();
+        let encoded = codec.encode(bytes).unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
             ByteRange::FromStart(10, Some(2)),

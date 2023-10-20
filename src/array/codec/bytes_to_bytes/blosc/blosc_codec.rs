@@ -90,7 +90,7 @@ impl BloscCodec {
             typesize: typesize.unwrap_or_default(),
         };
 
-        Ok(BloscCodec { configuration })
+        Ok(Self { configuration })
     }
 
     /// Create a new `blosc` codec from configuration.

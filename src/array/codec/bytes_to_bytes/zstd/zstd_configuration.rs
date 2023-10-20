@@ -24,8 +24,8 @@ pub struct ZstdCodecConfigurationV1 {
 impl ZstdCodecConfigurationV1 {
     /// Create a new Zstd codec configuration given a [`ZstdCompressionLevel`].
     #[must_use]
-    pub fn new(level: ZstdCompressionLevel, checksum: bool) -> ZstdCodecConfigurationV1 {
-        ZstdCodecConfigurationV1 { level, checksum }
+    pub fn new(level: ZstdCompressionLevel, checksum: bool) -> Self {
+        Self { level, checksum }
     }
 }
 
@@ -42,7 +42,7 @@ impl<'de> serde::Deserialize<'de> for ZstdCompressionLevel {
         if let Some(number) = number.as_i64() {
             if (-131_072..=22).contains(&number) {
                 #[allow(clippy::cast_possible_truncation)]
-                return Ok(ZstdCompressionLevel(number as i32));
+                return Ok(Self(number as i32));
             }
         }
         Err(serde::de::Error::custom(
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn codec_zstd_configuration_valid() {
-        const JSON_VALID: &'static str = r#"{
+        const JSON_VALID: &str = r#"{
         "level": 22,
         "checksum": false
     }"#;
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn codec_zstd_configuration_invalid1() {
-        const JSON_INVALID1: &'static str = r#"{
+        const JSON_INVALID1: &str = r#"{
         "level": 5
     }"#;
         assert!(serde_json::from_str::<ZstdCodecConfiguration>(JSON_INVALID1).is_err());
@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn codec_zstd_configuration_invalid2() {
-        const JSON_INVALID2: &'static str = r#"{
+        const JSON_INVALID2: &str = r#"{
         "level": 23,
         "checksum": true
     }"#;
