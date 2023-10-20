@@ -66,13 +66,13 @@ impl ArrayRepresentation {
 
     /// Return the data type of the array.
     #[must_use]
-    pub fn data_type(&self) -> &DataType {
+    pub const fn data_type(&self) -> &DataType {
         &self.data_type
     }
 
     /// Return the fill value of the array.
     #[must_use]
-    pub fn fill_value(&self) -> &FillValue {
+    pub const fn fill_value(&self) -> &FillValue {
         &self.fill_value
     }
 

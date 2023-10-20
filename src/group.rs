@@ -81,19 +81,19 @@ impl<TStorage: ?Sized> Group<TStorage> {
 
     /// Get path.
     #[must_use]
-    pub fn path(&self) -> &NodePath {
+    pub const fn path(&self) -> &NodePath {
         &self.path
     }
 
     /// Get attributes.
     #[must_use]
-    pub fn attributes(&self) -> &serde_json::Map<String, serde_json::Value> {
+    pub const fn attributes(&self) -> &serde_json::Map<String, serde_json::Value> {
         &self.metadata.attributes
     }
 
     /// Get additional fields.
     #[must_use]
-    pub fn additional_fields(&self) -> &AdditionalFields {
+    pub const fn additional_fields(&self) -> &AdditionalFields {
         &self.metadata.additional_fields
     }
 

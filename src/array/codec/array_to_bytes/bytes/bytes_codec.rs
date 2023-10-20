@@ -51,25 +51,25 @@ impl BytesCodec {
     ///
     /// `endian` is optional because an 8-bit type has no endianness.
     #[must_use]
-    pub fn new(endian: Option<Endianness>) -> Self {
+    pub const fn new(endian: Option<Endianness>) -> Self {
         Self { endian }
     }
 
     /// Create a new `bytes` codec for little endian data.
     #[must_use]
-    pub fn little() -> Self {
+    pub const fn little() -> Self {
         Self::new(Some(Endianness::Little))
     }
 
     /// Create a new `bytes` codec for big endian data.
     #[must_use]
-    pub fn big() -> Self {
+    pub const fn big() -> Self {
         Self::new(Some(Endianness::Big))
     }
 
     /// Create a new `bytes` codec from configuration.
     #[must_use]
-    pub fn new_with_configuration(configuration: &BytesCodecConfiguration) -> Self {
+    pub const fn new_with_configuration(configuration: &BytesCodecConfiguration) -> Self {
         let BytesCodecConfiguration::V1(configuration) = configuration;
         Self::new(configuration.endian)
     }

@@ -157,7 +157,7 @@ pub enum FillValueFloatStringNonFinite {
 impl FillValueMetadata {
     /// Convert the fill value to a bool.
     #[must_use]
-    pub fn try_as_bool(&self) -> Option<bool> {
+    pub const fn try_as_bool(&self) -> Option<bool> {
         match self {
             Self::Bool(bool) => Some(*bool),
             _ => None,

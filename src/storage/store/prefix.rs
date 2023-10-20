@@ -18,7 +18,7 @@ pub struct StorePrefixError(String);
 impl StorePrefixError {
     /// Create a new invalid store prefix.
     #[must_use]
-    pub fn new(prefix: String) -> Self {
+    pub const fn new(prefix: String) -> Self {
         Self(prefix)
     }
 }
@@ -53,7 +53,7 @@ impl StorePrefix {
 
     /// The root prefix.
     #[must_use]
-    pub fn root() -> Self {
+    pub const fn root() -> Self {
         Self(String::new())
     }
 

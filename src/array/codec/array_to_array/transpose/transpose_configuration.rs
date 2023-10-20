@@ -21,7 +21,7 @@ pub struct TransposeCodecConfigurationV1 {
 impl TransposeCodecConfigurationV1 {
     /// Create a new Transpose codec configuration given a [`TransposeOrder`].
     #[must_use]
-    pub fn new(order: TransposeOrder) -> Self {
+    pub const fn new(order: TransposeOrder) -> Self {
         Self { order }
     }
 }

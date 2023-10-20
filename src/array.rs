@@ -270,19 +270,19 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Get the node path.
     #[must_use]
-    pub fn path(&self) -> &NodePath {
+    pub const fn path(&self) -> &NodePath {
         &self.path
     }
 
     /// Get the data type.
     #[must_use]
-    pub fn data_type(&self) -> &DataType {
+    pub const fn data_type(&self) -> &DataType {
         &self.data_type
     }
 
     /// Get the fill value.
     #[must_use]
-    pub fn fill_value(&self) -> &FillValue {
+    pub const fn fill_value(&self) -> &FillValue {
         &self.fill_value
     }
 
@@ -294,49 +294,49 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Get the codecs.
     #[must_use]
-    pub fn codecs(&self) -> &CodecChain {
+    pub const fn codecs(&self) -> &CodecChain {
         &self.codecs
     }
 
     /// Get the chunk grid.
     #[must_use]
-    pub fn chunk_grid(&self) -> &ChunkGrid {
+    pub const fn chunk_grid(&self) -> &ChunkGrid {
         &self.chunk_grid
     }
 
     /// Get the chunk key encoding.
     #[must_use]
-    pub fn chunk_key_encoding(&self) -> &ChunkKeyEncoding {
+    pub const fn chunk_key_encoding(&self) -> &ChunkKeyEncoding {
         &self.chunk_key_encoding
     }
 
     /// Get the storage transformers.
     #[must_use]
-    pub fn storage_transformers(&self) -> &StorageTransformerChain {
+    pub const fn storage_transformers(&self) -> &StorageTransformerChain {
         &self.storage_transformers
     }
 
     /// Get the dimension names.
     #[must_use]
-    pub fn dimension_names(&self) -> &Option<Vec<DimensionName>> {
+    pub const fn dimension_names(&self) -> &Option<Vec<DimensionName>> {
         &self.dimension_names
     }
 
     /// Get the attributes.
     #[must_use]
-    pub fn attributes(&self) -> &serde_json::Map<String, serde_json::Value> {
+    pub const fn attributes(&self) -> &serde_json::Map<String, serde_json::Value> {
         &self.attributes
     }
 
     /// Get the additional fields.
     #[must_use]
-    pub fn additional_fields(&self) -> &AdditionalFields {
+    pub const fn additional_fields(&self) -> &AdditionalFields {
         &self.additional_fields
     }
 
     /// Returns true if codecs can use multiple threads for encoding and decoding (where supported).
     #[must_use]
-    pub fn parallel_codecs(&self) -> bool {
+    pub const fn parallel_codecs(&self) -> bool {
         self.parallel_codecs
     }
 
@@ -349,7 +349,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Returns true if chunks are encoded/decoded in parallel by the [`store_array_subset`](Self::store_array_subset), [`retrieve_array_subset`](Self::retrieve_array_subset), and their variants.
     #[must_use]
-    pub fn parallel_chunks(&self) -> bool {
+    pub const fn parallel_chunks(&self) -> bool {
         self.parallel_chunks
     }
 

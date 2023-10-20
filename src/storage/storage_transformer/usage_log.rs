@@ -102,7 +102,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
             (self.prefix_func)(),
             result
                 .as_ref()
-                .map(|v| if let Some(v) = v { v.len() } else { 0 })
+                .map(|v| v.as_ref().map_or(0, std::vec::Vec::len))
         )?;
         result
     }

@@ -119,7 +119,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         let value = self.storage.get(key);
         let bytes_read = value
             .as_ref()
-            .map_or(0, |v| if let Some(v) = v { v.len() } else { 0 });
+            .map_or(0, |v| v.as_ref().map_or(0, std::vec::Vec::len));
         self.transformer
             .bytes_read
             .fetch_add(bytes_read, Ordering::Relaxed);

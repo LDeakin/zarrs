@@ -177,17 +177,16 @@ impl Metadata {
 
     /// Returns the metadata configuration.
     #[must_use]
-    pub fn configuration(&self) -> Option<&MetadataConfiguration> {
+    pub const fn configuration(&self) -> Option<&MetadataConfiguration> {
         self.configuration.as_ref()
     }
 
     /// Returns true if the configuration is none or an empty map.
     #[must_use]
     pub fn configuration_is_none_or_empty(&self) -> bool {
-        match &self.configuration {
-            None => true,
-            Some(configuration) => configuration.is_empty(),
-        }
+        self.configuration
+            .as_ref()
+            .map_or(true, serde_json::Map::is_empty)
     }
 }
 
@@ -217,7 +216,7 @@ impl ConfigurationInvalidError {
 
     /// Return the underlying configuration metadata of the invalid configuration.
     #[must_use]
-    pub fn configuration(&self) -> Option<&MetadataConfiguration> {
+    pub const fn configuration(&self) -> Option<&MetadataConfiguration> {
         self.configuration.as_ref()
     }
 }
@@ -241,7 +240,7 @@ impl UnsupportedAdditionalFieldError {
 
     /// Return the value of the unsupported additional field.
     #[must_use]
-    pub fn value(&self) -> &serde_json::Value {
+    pub const fn value(&self) -> &serde_json::Value {
         &self.1
     }
 }
@@ -286,7 +285,7 @@ impl AdditionalFields {
 
     /// Return the underlying map.
     #[must_use]
-    pub fn as_map(&self) -> &serde_json::Map<String, serde_json::Value> {
+    pub const fn as_map(&self) -> &serde_json::Map<String, serde_json::Value> {
         &self.0
     }
 }

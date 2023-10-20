@@ -147,7 +147,7 @@ impl ArrayMetadataV3 {
 
     /// Validates that the `zarr_format` field is `3`.
     #[must_use]
-    pub fn validate_format(&self) -> bool {
+    pub const fn validate_format(&self) -> bool {
         self.zarr_format == 3
     }
 

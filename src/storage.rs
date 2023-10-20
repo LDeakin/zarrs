@@ -133,11 +133,11 @@ pub trait ReadableStorageTraits: Send + Sync {
 
             if key_range.key != *last_key_val {
                 // Found a new key, so do a batched get of the byte ranges of the last key
-                let bytes =
-                    match self.get_partial_values_key(last_key.unwrap(), &byte_ranges_key)? {
-                        Some(partial_values) => partial_values.into_iter().map(Some).collect(),
-                        None => vec![None; byte_ranges_key.len()],
-                    };
+                let bytes = (self.get_partial_values_key(last_key.unwrap(), &byte_ranges_key)?)
+                    .map_or_else(
+                        || vec![None; byte_ranges_key.len()],
+                        |partial_values| partial_values.into_iter().map(Some).collect(),
+                    );
                 out.extend(bytes);
                 last_key = Some(&key_range.key);
                 byte_ranges_key.clear();
@@ -148,10 +148,11 @@ pub trait ReadableStorageTraits: Send + Sync {
 
         if !byte_ranges_key.is_empty() {
             // Get the byte ranges of the last key
-            let bytes = match self.get_partial_values_key(last_key.unwrap(), &byte_ranges_key)? {
-                Some(partial_values) => partial_values.into_iter().map(Some).collect(),
-                None => vec![None; byte_ranges_key.len()],
-            };
+            let bytes = (self.get_partial_values_key(last_key.unwrap(), &byte_ranges_key)?)
+                .map_or_else(
+                    || vec![None; byte_ranges_key.len()],
+                    |partial_values| partial_values.into_iter().map(Some).collect(),
+                );
             out.extend(bytes);
         }
 
@@ -277,7 +278,7 @@ pub struct StoreKeyRange {
 impl StoreKeyRange {
     /// Create a new [`StoreKeyRange`].
     #[must_use]
-    pub fn new(key: StoreKey, byte_range: ByteRange) -> Self {
+    pub const fn new(key: StoreKey, byte_range: ByteRange) -> Self {
         Self { key, byte_range }
     }
 }
@@ -296,13 +297,13 @@ pub struct StoreKeyStartValue<'a> {
 
 impl StoreKeyStartValue<'_> {
     /// Create a new [`StoreKeyStartValue`].
-    pub fn new(key: StoreKey, start: ByteOffset, value: &[u8]) -> StoreKeyStartValue {
+    pub const fn new(key: StoreKey, start: ByteOffset, value: &[u8]) -> StoreKeyStartValue {
         StoreKeyStartValue { key, start, value }
     }
 
     /// Get the offset of exclusive end of the [`StoreKeyStartValue`].
     #[must_use]
-    pub fn end(&self) -> ByteOffset {
+    pub const fn end(&self) -> ByteOffset {
         self.start + self.value.len() as u64
     }
 }
@@ -318,13 +319,13 @@ pub struct StoreKeysPrefixes {
 impl StoreKeysPrefixes {
     /// Returns the keys.
     #[must_use]
-    pub fn keys(&self) -> &StoreKeys {
+    pub const fn keys(&self) -> &StoreKeys {
         &self.keys
     }
 
     /// Returns the prefixes.
     #[must_use]
-    pub fn prefixes(&self) -> &StorePrefixes {
+    pub const fn prefixes(&self) -> &StorePrefixes {
         &self.prefixes
     }
 }
@@ -635,13 +636,14 @@ pub fn node_exists_listable<TStorage: ?Sized + ListableStorageTraits>(
     path: &NodePath,
 ) -> Result<bool, StorageError> {
     let prefix: StorePrefix = path.try_into()?;
-    if let Some(parent) = prefix.parent() {
-        storage.list_dir(&parent).map(|keys_prefixes| {
-            !keys_prefixes.keys().is_empty() || !keys_prefixes.prefixes().is_empty()
-        })
-    } else {
-        Ok(false)
-    }
+    prefix.parent().map_or_else(
+        || Ok(false),
+        |parent| {
+            storage.list_dir(&parent).map(|keys_prefixes| {
+                !keys_prefixes.keys().is_empty() || !keys_prefixes.prefixes().is_empty()
+            })
+        },
+    )
 }
 
 #[cfg(test)]

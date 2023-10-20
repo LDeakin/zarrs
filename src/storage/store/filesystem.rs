@@ -107,7 +107,7 @@ impl FilesystemStore {
 
     /// Makes the store sort directories/files when walking.
     #[must_use]
-    pub fn sorted(mut self) -> Self {
+    pub const fn sorted(mut self) -> Self {
         self.sort = true;
         self
     }
@@ -126,9 +126,8 @@ impl FilesystemStore {
 
     /// Maps a filesystem [`PathBuf`] to a [`StoreKey`].
     fn fspath_to_key(&self, path: &std::path::Path) -> Result<StoreKey, StoreKeyError> {
-        let path = pathdiff::diff_paths(path, &self.base_path).ok_or(StoreKeyError::from(
-            path.to_str().unwrap_or_default().to_string(),
-        ))?;
+        let path = pathdiff::diff_paths(path, &self.base_path)
+            .ok_or_else(|| StoreKeyError::from(path.to_str().unwrap_or_default().to_string()))?;
         let path_str = path.to_string_lossy();
         StoreKey::new(&path_str)
     }
@@ -266,11 +265,7 @@ impl ReadableStorageTraits for FilesystemStore {
 
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let key_path = self.key_to_fspath(key);
-        if let Ok(metadata) = std::fs::metadata(key_path) {
-            Ok(Some(metadata.len()))
-        } else {
-            Ok(None)
-        }
+        std::fs::metadata(key_path).map_or_else(|_| Ok(None), |metadata| Ok(Some(metadata.len())))
     }
 }
 

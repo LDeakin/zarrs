@@ -41,7 +41,7 @@ impl NodeName {
 
     /// The root node.
     #[must_use]
-    pub fn root() -> Self {
+    pub const fn root() -> Self {
         Self(String::new())
     }
 

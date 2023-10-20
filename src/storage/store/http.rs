@@ -176,7 +176,7 @@ impl ReadableStorageTraits for HTTPStore {
                     .get(CONTENT_LENGTH)
                     .and_then(|header_value| header_value.to_str().ok())
                     .and_then(|header_str| u64::from_str(header_str).ok())
-                    .ok_or(StorageError::from("content length response is invalid"))?;
+                    .ok_or_else(|| StorageError::from("content length response is invalid"))?;
                 Ok(Some(length))
             }
             StatusCode::NOT_FOUND => Ok(None),

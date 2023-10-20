@@ -13,13 +13,13 @@ pub struct IndicesIterator {
 impl IndicesIterator {
     /// Create a new indices iterator.
     #[must_use]
-    pub fn new(subset: ArraySubset, next: Option<ArrayIndices>) -> Self {
+    pub const fn new(subset: ArraySubset, next: Option<ArrayIndices>) -> Self {
         Self { subset, next }
     }
 
     /// Return the array subset.
     #[must_use]
-    pub fn subset(&self) -> &ArraySubset {
+    pub const fn subset(&self) -> &ArraySubset {
         &self.subset
     }
 }
@@ -236,7 +236,7 @@ pub struct ContiguousLinearisedIndicesIterator<'a> {
 impl<'a> ContiguousLinearisedIndicesIterator<'a> {
     /// Return a new contiguous linearised indices iterator.
     #[must_use]
-    pub fn new(inner: ContiguousIndicesIterator<'a>) -> Self {
+    pub const fn new(inner: ContiguousIndicesIterator<'a>) -> Self {
         Self { inner }
     }
 }

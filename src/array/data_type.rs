@@ -84,7 +84,7 @@ pub struct IncompatibleFillValueError(String, FillValue);
 impl IncompatibleFillValueError {
     /// Create a new incompatible fill value error.
     #[must_use]
-    pub fn new(data_type_name: String, fill_value: FillValue) -> Self {
+    pub const fn new(data_type_name: String, fill_value: FillValue) -> Self {
         Self(data_type_name, fill_value)
     }
 }
@@ -123,7 +123,7 @@ dyn_clone::clone_trait_object!(DataTypeExtension);
 impl DataType {
     /// Returns the identifier.
     #[must_use]
-    pub fn identifier(&self) -> &'static str {
+    pub const fn identifier(&self) -> &'static str {
         match self {
             Self::Bool => "bool",
             Self::Int8 => "int8",
@@ -167,7 +167,7 @@ impl DataType {
 
     /// Returns the size in bytes.
     #[must_use]
-    pub fn size(&self) -> usize {
+    pub const fn size(&self) -> usize {
         match self {
             Self::Bool | Self::Int8 | Self::UInt8 => 1,
             Self::Int16 | Self::UInt16 | Self::Float16 | Self::BFloat16 => 2,

@@ -25,7 +25,7 @@ pub struct BytesCodecConfigurationV1 {
 impl BytesCodecConfigurationV1 {
     /// Create a new `bytes` codec configuration given an optional [Endianness].
     #[must_use]
-    pub fn new(endian: Option<Endianness>) -> Self {
+    pub const fn new(endian: Option<Endianness>) -> Self {
         Self { endian }
     }
 }

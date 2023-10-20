@@ -603,7 +603,7 @@ pub struct IncompatibleArrayShapeError(ArrayShape, ArraySubset);
 impl IncompatibleDimensionalityError {
     /// Create a new incompatible dimensionality error.
     #[must_use]
-    pub fn new(got: usize, expected: usize) -> Self {
+    pub const fn new(got: usize, expected: usize) -> Self {
         Self(got, expected)
     }
 }

@@ -23,7 +23,7 @@ pub struct GzipCodecConfigurationV1 {
 impl GzipCodecConfigurationV1 {
     /// Create a new `gzip` codec configuration given a [`GzipCompressionLevel`].
     #[must_use]
-    pub fn new(level: GzipCompressionLevel) -> Self {
+    pub const fn new(level: GzipCompressionLevel) -> Self {
         Self { level }
     }
 }

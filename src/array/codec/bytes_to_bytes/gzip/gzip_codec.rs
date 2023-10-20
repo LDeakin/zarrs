@@ -55,7 +55,7 @@ impl GzipCodec {
 
     /// Create a new `gzip` codec from configuration.
     #[must_use]
-    pub fn new_with_configuration(configuration: &GzipCodecConfiguration) -> Self {
+    pub const fn new_with_configuration(configuration: &GzipCodecConfiguration) -> Self {
         let GzipCodecConfiguration::V1(configuration) = configuration;
         Self {
             compression_level: configuration.level,

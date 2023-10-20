@@ -41,7 +41,7 @@ pub struct ZstdCodec {
 impl ZstdCodec {
     /// Create a new `Zstd` codec.
     #[must_use]
-    pub fn new(compression: zstd_safe::CompressionLevel, checksum: bool) -> Self {
+    pub const fn new(compression: zstd_safe::CompressionLevel, checksum: bool) -> Self {
         Self {
             compression,
             checksum,

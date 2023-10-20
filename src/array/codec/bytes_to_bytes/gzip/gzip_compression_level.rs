@@ -68,7 +68,7 @@ impl GzipCompressionLevel {
 
     /// The underlying integer compression level.
     #[must_use]
-    pub fn as_u32(&self) -> u32 {
+    pub const fn as_u32(&self) -> u32 {
         self.0
     }
 }

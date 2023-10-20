@@ -78,7 +78,7 @@ impl<TPlugin> Plugin<TPlugin> {
 
     /// Returns the identifier of the plugin.
     #[must_use]
-    pub fn identifier(&self) -> &'static str {
+    pub const fn identifier(&self) -> &'static str {
         self.identifier
     }
 }

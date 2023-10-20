@@ -12,7 +12,7 @@ pub struct StorageHandle<'a, TStorage: ?Sized>(&'a TStorage);
 
 impl<'a, TStorage: ?Sized> StorageHandle<'a, TStorage> {
     /// Create a new storage handle.
-    pub fn new(storage: &'a TStorage) -> Self {
+    pub const fn new(storage: &'a TStorage) -> Self {
         Self(storage)
     }
 }

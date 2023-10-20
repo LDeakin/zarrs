@@ -107,7 +107,7 @@ pub enum BloscCompressor {
 }
 
 impl BloscCompressor {
-    fn as_cstr(&self) -> *const u8 {
+    const fn as_cstr(&self) -> *const u8 {
         match self {
             Self::BloscLZ => BLOSC_BLOSCLZ_COMPNAME.as_ptr(),
             Self::LZ4 => BLOSC_LZ4_COMPNAME.as_ptr(),

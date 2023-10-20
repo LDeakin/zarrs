@@ -24,7 +24,7 @@ pub struct ZstdCodecConfigurationV1 {
 impl ZstdCodecConfigurationV1 {
     /// Create a new Zstd codec configuration given a [`ZstdCompressionLevel`].
     #[must_use]
-    pub fn new(level: ZstdCompressionLevel, checksum: bool) -> Self {
+    pub const fn new(level: ZstdCompressionLevel, checksum: bool) -> Self {
         Self { level, checksum }
     }
 }
@@ -54,7 +54,7 @@ impl<'de> serde::Deserialize<'de> for ZstdCompressionLevel {
 impl ZstdCompressionLevel {
     /// Create a new zstd compression level.
     #[must_use]
-    pub fn new(level: zstd_safe::CompressionLevel) -> Self {
+    pub const fn new(level: zstd_safe::CompressionLevel) -> Self {
         Self(level)
     }
 }
