@@ -296,15 +296,15 @@ impl DataType {
             }
             Self::Int64 => FillValueMetadata::Int(i64::from_ne_bytes(bytes.try_into().unwrap())),
             Self::UInt8 => {
-                FillValueMetadata::Uint(u64::from(u8::from_ne_bytes(bytes.try_into().unwrap())))
+                FillValueMetadata::UInt(u64::from(u8::from_ne_bytes(bytes.try_into().unwrap())))
             }
             Self::UInt16 => {
-                FillValueMetadata::Uint(u64::from(u16::from_ne_bytes(bytes.try_into().unwrap())))
+                FillValueMetadata::UInt(u64::from(u16::from_ne_bytes(bytes.try_into().unwrap())))
             }
             Self::UInt32 => {
-                FillValueMetadata::Uint(u64::from(u32::from_ne_bytes(bytes.try_into().unwrap())))
+                FillValueMetadata::UInt(u64::from(u32::from_ne_bytes(bytes.try_into().unwrap())))
             }
-            Self::UInt64 => FillValueMetadata::Uint(u64::from_ne_bytes(bytes.try_into().unwrap())),
+            Self::UInt64 => FillValueMetadata::UInt(u64::from_ne_bytes(bytes.try_into().unwrap())),
             Self::Float16 => {
                 let fill_value = f16::from_ne_bytes(fill_value.as_ne_bytes().try_into().unwrap());
                 FillValueMetadata::Float(float16_to_fill_value_float(fill_value))

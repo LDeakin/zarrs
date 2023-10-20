@@ -19,7 +19,7 @@ pub enum FillValueMetadata {
     /// A boolean value.
     Bool(bool),
     /// An unsigned integer.
-    Uint(u64), // FIXME: UInt for consistency?
+    UInt(u64),
     /// A signed integer.
     Int(i64),
     /// A float.
@@ -171,7 +171,7 @@ impl FillValueMetadata {
     ) -> Option<T> {
         match self {
             Self::Int(int) => T::try_from(*int).ok(),
-            Self::Uint(uint) => T::try_from(*uint).ok(),
+            Self::UInt(uint) => T::try_from(*uint).ok(),
             _ => None,
         }
     }
@@ -183,7 +183,7 @@ impl FillValueMetadata {
     ) -> Option<T> {
         match self {
             Self::Int(int) => T::try_from(*int).ok(),
-            Self::Uint(uint) => T::try_from(*uint).ok(),
+            Self::UInt(uint) => T::try_from(*uint).ok(),
             _ => None,
         }
     }
@@ -333,7 +333,7 @@ mod tests {
         let metadata: FillValueMetadata = serde_json::from_str(json).unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Uint(fill_value) => {
+            FillValueMetadata::UInt(fill_value) => {
                 assert_eq!(fill_value, 7);
             }
             _ => panic!(),
