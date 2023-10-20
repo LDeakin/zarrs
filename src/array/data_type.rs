@@ -766,7 +766,7 @@ mod tests {
                     &serde_json::from_str::<FillValueMetadata>(r#"[0, 255]"#).unwrap()
                 )
                 .unwrap()
-                .as_ne_bytes(), // FIXME: All other fill values can go straight to ne bytes, but the endianness of the bytes array is unknown. This depends on the array->bytes codec?
+                .as_ne_bytes(), // NOTE: Raw value bytes are always read as-is.
             &[0u8, 255u8]
         );
     }

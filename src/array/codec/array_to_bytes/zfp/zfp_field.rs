@@ -34,7 +34,6 @@ impl ZfpField {
     }
 
     pub fn new_2d(data: &mut [u8], zfp_type: zfp_type, nx: usize, ny: usize) -> Option<Self> {
-        // FIXME: This is a flaw with the zfp library, this should be const
         // FIXME: Validate size of data
         let pointer = data.as_ptr() as *mut std::ffi::c_void;
         let field = unsafe { zfp_field_2d(pointer, zfp_type, nx, ny) };
