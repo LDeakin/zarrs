@@ -205,7 +205,7 @@ impl ListableStorageTraits for MemoryStore {
                 let components: Vec<_> = key_strip.split('/').collect();
                 if components.len() > 1 {
                     prefixes.insert(StorePrefix::new(
-                        &(prefix.as_str().to_string() + components[0] + "/"),
+                        prefix.as_str().to_string() + components[0] + "/",
                     )?);
                 } else if let Some(parent) = key.parent() {
                     if parent.eq(prefix) {

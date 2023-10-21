@@ -71,7 +71,8 @@ impl HTTPStore {
     pub fn key_to_url(&self, key: &StoreKey) -> Result<Url, url::ParseError> {
         let mut url = self.base_url.as_str().to_string();
         if !key.as_str().is_empty() {
-            url += &("/".to_string() + key.as_str().strip_prefix('/').unwrap_or(key.as_str()));
+            url +=
+                ("/".to_string() + key.as_str().strip_prefix('/').unwrap_or(key.as_str())).as_str();
         }
         Url::parse(&url)
     }

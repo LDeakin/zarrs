@@ -129,7 +129,7 @@ impl FilesystemStore {
         let path = pathdiff::diff_paths(path, &self.base_path)
             .ok_or_else(|| StoreKeyError::from(path.to_str().unwrap_or_default().to_string()))?;
         let path_str = path.to_string_lossy();
-        StoreKey::new(&path_str)
+        StoreKey::new(path_str)
     }
 
     /// Maps a store [`StorePrefix`] to a filesystem [`PathBuf`].
@@ -364,11 +364,11 @@ impl ListableStorageTraits for FilesystemStore {
                 let path = fs_path.file_name().unwrap();
                 if fs_path.is_dir() {
                     prefixes.push(StorePrefix::new(
-                        &(prefix.as_str().to_string() + path.to_str().unwrap() + "/"),
+                        prefix.as_str().to_string() + path.to_str().unwrap() + "/",
                     )?);
                 } else {
                     keys.push(StoreKey::new(
-                        &(prefix.as_str().to_owned() + path.to_str().unwrap()),
+                        prefix.as_str().to_owned() + path.to_str().unwrap(),
                     )?);
                 }
             }

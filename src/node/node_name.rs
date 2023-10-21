@@ -21,11 +21,12 @@ impl NodeName {
     /// # Errors
     ///
     /// Returns [`NodeNameError`] if `name` is not valid according to [`NodeName::validate`()].
-    pub fn new(name: &str) -> Result<Self, NodeNameError> {
-        if Self::validate(name) {
-            Ok(Self(name.to_string()))
+    pub fn new(name: impl Into<String>) -> Result<Self, NodeNameError> {
+        let name = name.into();
+        if Self::validate(&name) {
+            Ok(Self(name))
         } else {
-            Err(NodeNameError(name.to_string()))
+            Err(NodeNameError(name))
         }
     }
 
@@ -35,8 +36,8 @@ impl NodeName {
     ///
     /// `name` is not validated, so this can result in an invalid node name.
     #[must_use]
-    pub unsafe fn new_unchecked(name: &str) -> Self {
-        Self(name.to_string())
+    pub unsafe fn new_unchecked(name: impl Into<String>) -> Self {
+        Self(name.into())
     }
 
     /// The root node.

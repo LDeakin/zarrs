@@ -32,11 +32,12 @@ impl StorePrefix {
     /// # Errors
     ///
     /// Returns [`StorePrefixError`] if `prefix` is not valid according to [`StorePrefix::validate`()].
-    pub fn new(prefix: &str) -> Result<Self, StorePrefixError> {
-        if Self::validate(prefix) {
-            Ok(Self(prefix.to_string()))
+    pub fn new(prefix: impl Into<String>) -> Result<Self, StorePrefixError> {
+        let prefix = prefix.into();
+        if Self::validate(&prefix) {
+            Ok(Self(prefix))
         } else {
-            Err(StorePrefixError(prefix.to_string()))
+            Err(StorePrefixError(prefix))
         }
     }
 
@@ -46,9 +47,10 @@ impl StorePrefix {
     ///
     /// `prefix` is not validated, so this can result in an invalid store prefix.
     #[must_use]
-    pub unsafe fn new_unchecked(prefix: &str) -> Self {
-        debug_assert!(Self::validate(prefix));
-        Self(prefix.to_string())
+    pub unsafe fn new_unchecked(prefix: impl Into<String>) -> Self {
+        let prefix = prefix.into();
+        debug_assert!(Self::validate(&prefix));
+        Self(prefix)
     }
 
     /// The root prefix.
@@ -79,7 +81,7 @@ impl StorePrefix {
             if parent.is_empty() {
                 unsafe { Self::new_unchecked("") }
             } else {
-                unsafe { Self::new_unchecked(&(parent.to_string() + "/")) }
+                unsafe { Self::new_unchecked(parent.to_string() + "/") }
             }
         })
     }
@@ -101,7 +103,7 @@ impl TryFrom<&NodePath> for StorePrefix {
         if path.eq("/") {
             Self::new("")
         } else {
-            Self::new(&(path.strip_prefix('/').unwrap_or(path).to_string() + "/"))
+            Self::new(path.strip_prefix('/').unwrap_or(path).to_string() + "/")
         }
     }
 }

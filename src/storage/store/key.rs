@@ -23,11 +23,12 @@ impl StoreKey {
     /// # Errors
     ///
     /// Returns [`StoreKeyError`] if `key` is not valid according to [`StoreKey::validate()`].
-    pub fn new(key: &str) -> Result<Self, StoreKeyError> {
-        if Self::validate(key) {
-            Ok(Self(key.to_string()))
+    pub fn new(key: impl Into<String>) -> Result<Self, StoreKeyError> {
+        let key = key.into();
+        if Self::validate(&key) {
+            Ok(Self(key))
         } else {
-            Err(StoreKeyError(key.to_string()))
+            Err(StoreKeyError(key))
         }
     }
 
@@ -37,7 +38,8 @@ impl StoreKey {
     ///
     /// `key` is not validated, so this can result in an invalid store key.
     #[must_use]
-    pub unsafe fn new_unchecked(key: String) -> Self {
+    pub unsafe fn new_unchecked(key: impl Into<String>) -> Self {
+        let key = key.into();
         debug_assert!(Self::validate(&key));
         Self(key)
     }
@@ -65,7 +67,7 @@ impl StoreKey {
     /// Convert to a [`StoreKey`].
     #[must_use]
     pub fn to_prefix(&self) -> StorePrefix {
-        StorePrefix::new(&(self.0.clone() + "/")).unwrap_or_else(|_| StorePrefix::root())
+        StorePrefix::new(self.0.clone() + "/").unwrap_or_else(|_| StorePrefix::root())
     }
 
     /// Returns the parent of this key, or [`None`] this key is the root key and it has no parent.
