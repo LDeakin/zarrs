@@ -254,7 +254,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             let mut out_array_subset = vec![0; array_subset_size];
             let out_array_subset_slice = UnsafeCellSlice::new(out_array_subset.as_mut_slice());
 
-            // Decode those chunks if required and put in chunk cache
+            // Decode those chunks if required
             unsafe { array_subset.iter_chunks_unchecked(chunk_representation.shape()) }
                 .par_bridge()
                 .map(|(chunk_indices, chunk_subset)| {

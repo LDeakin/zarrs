@@ -61,7 +61,7 @@ pub use self::{
 };
 
 use parking_lot::Mutex;
-use rayon::prelude::{ParallelBridge, ParallelIterator};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use safe_transmute::TriviallyTransmutable;
 use serde::Serialize;
 
@@ -707,9 +707,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         let mut output: Vec<u8> = vec![0; size_output];
         if self.parallel_chunks {
             let output = UnsafeCellSlice::new(output.as_mut_slice());
-            chunks
-                .iter_indices()
-                .par_bridge()
+            (0..chunks.shape().iter().product())
+                .into_par_iter()
+                .map(|chunk_index| {
+                    std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
+                        .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
+                        .collect::<Vec<_>>()
+                })
+                // chunks
+                // .iter_indices()
+                // .par_bridge()
                 .map(|chunk_indices| decode_chunk(chunk_indices, unsafe { output.get() }))
                 .collect::<Result<Vec<_>, ArrayError>>()?;
         } else {
@@ -1146,9 +1153,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
         };
 
         if self.parallel_chunks {
-            chunks
-                .iter_indices()
-                .par_bridge()
+            (0..chunks.shape().iter().product())
+                .into_par_iter()
+                .map(|chunk_index| {
+                    std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
+                        .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
+                        .collect::<Vec<_>>()
+                })
+                // chunks
+                //     .iter_indices()
+                //     .par_bridge()
                 .map(store_chunk)
                 .collect::<Result<Vec<_>, _>>()?;
         } else {
