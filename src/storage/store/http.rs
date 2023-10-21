@@ -6,7 +6,7 @@ use crate::{
     storage::{ReadableStorageTraits, StorageError, StoreKeyRange},
 };
 
-use super::{ReadableStoreExtension, StoreExtension, StoreKey};
+use super::StoreKey;
 
 use itertools::Itertools;
 use reqwest::{
@@ -22,10 +22,6 @@ pub struct HTTPStore {
     base_url: Url,
     batch_range_requests: bool,
 }
-
-impl ReadableStoreExtension for HTTPStore {}
-
-impl StoreExtension for HTTPStore {}
 
 impl From<reqwest::Error> for StorageError {
     fn from(err: reqwest::Error) -> Self {

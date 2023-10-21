@@ -8,15 +8,11 @@ use crate::{
     storage::{
         ListableStorageTraits, ReadableListableStorageTraits, ReadableStorageTraits,
         ReadableWritableStorageTraits, StorageError, StoreKeyRange, StoreKeyStartValue,
-        StoreKeysPrefixes,
+        StoreKeysPrefixes, WritableStorageTraits,
     },
 };
 
-use super::{
-    ListableStoreExtension, ReadableStoreExtension, ReadableWritableStoreExtension, StoreExtension,
-    StoreKey, StoreKeyError, StoreKeys, StorePrefix, StorePrefixes, WritableStorageTraits,
-    WritableStoreExtension,
-};
+use super::{StoreKey, StoreKeyError, StoreKeys, StorePrefix, StorePrefixes};
 
 use parking_lot::RwLock;
 use thiserror::Error;
@@ -61,16 +57,6 @@ pub struct FilesystemStore {
     readonly: bool,
     files: Mutex<HashMap<StoreKey, Arc<RwLock<()>>>>,
 }
-
-impl ReadableStoreExtension for FilesystemStore {}
-
-impl WritableStoreExtension for FilesystemStore {}
-
-impl ListableStoreExtension for FilesystemStore {}
-
-impl ReadableWritableStoreExtension for FilesystemStore {}
-
-impl StoreExtension for FilesystemStore {}
 
 impl FilesystemStore {
     /// Create a new file system store at a given `base_path`.

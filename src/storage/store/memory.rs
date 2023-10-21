@@ -18,10 +18,7 @@ use std::{
     sync::Arc,
 };
 
-use super::{
-    ReadableStoreExtension, StoreExtension, StoreKey, StoreKeys, StorePrefix,
-    WritableStoreExtension,
-};
+use super::{StoreKey, StoreKeys, StorePrefix};
 
 /// An in-memory store.
 #[derive(Debug)]
@@ -44,12 +41,6 @@ impl Default for MemoryStore {
         Self::new()
     }
 }
-
-impl StoreExtension for MemoryStore {}
-
-impl ReadableStoreExtension for MemoryStore {}
-
-impl WritableStoreExtension for MemoryStore {}
 
 impl MemoryStore {
     fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, _truncate: bool) {

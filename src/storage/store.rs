@@ -24,19 +24,17 @@ pub use http::{HTTPStore, HTTPStoreCreateError};
 
 use std::sync::Arc;
 
-use super::{ListableStorageTraits, ReadableStorageTraits, WritableStorageTraits};
-
 /// An [`Arc`] wrapped readable store.
-pub type ReadableStore = Arc<dyn ReadableStoreExtension>;
+pub type ReadableStore = Arc<dyn super::ReadableStorageTraits>;
 
 /// An [`Arc`] wrapped writable store.
-pub type WritableStore = Arc<dyn WritableStoreExtension>;
+pub type WritableStore = Arc<dyn super::WritableStorageTraits>;
 
 /// An [`Arc`] wrapped listable store.
-pub type ListableStore = Arc<dyn ListableStoreExtension>;
+pub type ListableStore = Arc<dyn super::ListableStorageTraits>;
 
 /// An [`Arc`] wrapped readable and writable store.
-pub type ReadableWritableStore = Arc<dyn ReadableWritableStoreExtension>;
+pub type ReadableWritableStore = Arc<dyn super::ReadableWritableStorageTraits>;
 
 // /// A readable store plugin.
 // pub type ReadableStorePlugin = StorePlugin<ReadableStore>;
@@ -54,23 +52,11 @@ pub type ReadableWritableStore = Arc<dyn ReadableWritableStoreExtension>;
 // pub type ReadableWritableStorePlugin = StorePlugin<ReadableWritableStore>;
 // inventory::collect!(ReadableWritableStorePlugin);
 
-/// Traits for a store extension.
-pub trait StoreExtension: Send + Sync {
-    // /// The URI scheme of the store, if it has one.
-    // fn uri_scheme(&self) -> Option<&'static str>;
-}
-
-/// A readable store extension.
-pub trait ReadableStoreExtension: StoreExtension + ReadableStorageTraits {}
-
-/// A writable store extension.
-pub trait WritableStoreExtension: StoreExtension + WritableStorageTraits {}
-
-/// A listable store extension.
-pub trait ListableStoreExtension: StoreExtension + ListableStorageTraits {}
-
-/// A readable and writable store extension.
-pub trait ReadableWritableStoreExtension: ReadableStoreExtension + WritableStoreExtension {}
+// /// Traits for a store extension.
+// pub trait StoreExtension: Send + Sync {
+//     // /// The URI scheme of the store, if it has one.
+//     // fn uri_scheme(&self) -> Option<&'static str>;
+// }
 
 // /// Get a readable store from a Uniform Resource Identifier (URI).
 // ///

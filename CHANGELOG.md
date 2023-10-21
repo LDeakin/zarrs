@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
+ - **Breaking**: Remove `StoreExtension` traits
 
 ## [0.5.1] - 2023-10-10
 
