@@ -898,11 +898,11 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             ));
         }
 
-        let fill_value = self.fill_value().as_ne_bytes();
-        let any_non_fill_value = chunk_bytes
-            .chunks_exact(fill_value.len())
-            .any(|f| f != fill_value);
-        if any_non_fill_value {
+        let all_fill_value = self.fill_value().equals_all(chunk_bytes);
+        if all_fill_value {
+            self.erase_chunk(chunk_indices)?;
+            Ok(())
+        } else {
             let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
             let storage_transformer = self
                 .storage_transformers()
@@ -923,9 +923,6 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
                 &chunk_encoded,
             )
             .map_err(ArrayError::StorageError)
-        } else {
-            self.erase_chunk(chunk_indices)?;
-            Ok(())
         }
     }
 

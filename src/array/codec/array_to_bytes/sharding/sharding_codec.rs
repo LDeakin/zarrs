@@ -127,7 +127,6 @@ impl ArrayCodecTraits for ShardingCodec {
         // Iterate over chunk indices
         let mut shard_inner_chunks = Vec::new();
         let mut encoded_shard_offset: usize = 0;
-        let fill_value_bytes = chunk_representation.fill_value().as_ne_bytes();
         for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
             ArraySubset::new_with_shape(shard_representation.shape().to_vec())
                 .iter_chunks_unchecked(&self.chunk_shape)
@@ -141,10 +140,8 @@ impl ArrayCodecTraits for ShardingCodec {
                     shard_representation.element_size(),
                 )
             };
-            if bytes
-                .chunks_exact(fill_value_bytes.len())
-                .any(|b| b != fill_value_bytes)
-            {
+            let all_fill_value = chunk_representation.fill_value().equals_all(&bytes);
+            if !all_fill_value {
                 // Encode chunk
                 let chunk_encoded = self.inner_codecs.encode(bytes, &chunk_representation)?;
 
@@ -197,7 +194,6 @@ impl ArrayCodecTraits for ShardingCodec {
                 .map_err(|e| CodecError::Other(e.to_string()))?;
 
         // Iterate over chunk indices
-        let fill_value_bytes = chunk_representation.fill_value().as_ne_bytes();
         let shard_inner_chunks = unsafe {
             ArraySubset::new_with_shape(shard_representation.shape().to_vec())
                 .iter_chunks_unchecked(&self.chunk_shape)
@@ -212,15 +208,13 @@ impl ArrayCodecTraits for ShardingCodec {
                     shard_representation.element_size(),
                 )
             };
-            if bytes
-                .chunks_exact(fill_value_bytes.len())
-                .any(|b| b != fill_value_bytes)
-            {
-                // Encode chunk
+            let all_fill_value = chunk_representation.fill_value().equals_all(&bytes);
+            if all_fill_value {
+                Ok((chunk_index, None))
+            } else {
+                // let chunk_encoded = self.inner_codecs.par_encode(bytes, &chunk_representation)?;
                 let chunk_encoded = self.inner_codecs.encode(bytes, &chunk_representation)?;
                 Ok((chunk_index, Some(chunk_encoded)))
-            } else {
-                Ok((chunk_index, None))
             }
         })
         .collect::<Result<Vec<_>, CodecError>>()?;

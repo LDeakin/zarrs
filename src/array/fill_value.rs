@@ -140,4 +140,51 @@ impl FillValue {
     pub fn as_ne_bytes(&self) -> &[u8] {
         &self.0
     }
+
+    /// Check if the bytes are equal to a sequence of the fill value.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn equals_all(&self, bytes: &[u8]) -> bool {
+        match self.0.len() {
+            1 => {
+                let fill_value = self.0[0];
+                let fill_value_128 = u128::from_ne_bytes([self.0[0]; 16]);
+                let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
+                prefix.iter().all(|&x| x == fill_value)
+                    && suffix.iter().all(|&x| x == fill_value)
+                    && aligned.iter().all(|&x| x == fill_value_128)
+            }
+            2 => {
+                let fill_value_128 = u128::from_ne_bytes(self.0[..2].repeat(8).try_into().unwrap());
+                let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
+                prefix.chunks_exact(2).all(|x| x == self.0)
+                    && suffix.chunks_exact(2).all(|x| x == self.0)
+                    && aligned.iter().all(|&x| x == fill_value_128)
+            }
+            4 => {
+                let fill_value_128 = u128::from_ne_bytes(self.0[..4].repeat(4).try_into().unwrap());
+                let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
+                prefix.chunks_exact(4).all(|x| x == self.0)
+                    && suffix.chunks_exact(4).all(|x| x == self.0)
+                    && aligned.iter().all(|&x| x == fill_value_128)
+            }
+            8 => {
+                let fill_value_128 = u128::from_ne_bytes(self.0[..8].repeat(2).try_into().unwrap());
+                let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
+                prefix.chunks_exact(8).all(|x| x == self.0)
+                    && suffix.chunks_exact(8).all(|x| x == self.0)
+                    && aligned.iter().all(|&x| x == fill_value_128)
+            }
+            16 => {
+                let fill_value_128 = u128::from_ne_bytes(self.0[..16].try_into().unwrap());
+                let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
+                prefix.chunks_exact(16).all(|x| x == self.0)
+                    && suffix.chunks_exact(16).all(|x| x == self.0)
+                    && aligned.iter().all(|&x| x == fill_value_128)
+            }
+            _ => bytes
+                .chunks_exact(bytes.len())
+                .all(|element| element == self.0),
+        }
+    }
 }

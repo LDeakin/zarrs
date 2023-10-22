@@ -71,3 +71,7 @@ harness = false
 [[bench]]
 name = "codecs"
 harness = false
+
+[[bench]]
+name = "fill_value"
+harness = false

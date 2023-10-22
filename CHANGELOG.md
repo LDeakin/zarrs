@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added default implementation for `WritableStorageTraits::set_partial_values`
     - `WritableStorageTraits` now requires `ReadableStorageTraits`
  - Added `From<&[u8]>` for `FillValue`
+ - Added `FillValue::all_equal` and fill value benchmark
+    - Implements a much faster fill value test
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
