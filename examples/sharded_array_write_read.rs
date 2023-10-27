@@ -79,18 +79,23 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         .map(|s| {
             let chunk_grid = array.chunk_grid();
             let chunk_indices = vec![s, 0];
-            let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, array.shape())?;
-            let chunk_array = ndarray::ArrayD::<u16>::from_shape_fn(
-                chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
-                |ij| {
-                    (s * chunk_shape[0] * chunk_shape[1]
-                        + ij[0] as u64 * chunk_shape[1]
-                        + ij[1] as u64) as u16
-                },
-            );
-            array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
+            if let Some(chunk_shape) = chunk_grid.chunk_shape(&chunk_indices, array.shape())? {
+                let chunk_array = ndarray::ArrayD::<u16>::from_shape_fn(
+                    chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
+                    |ij| {
+                        (s * chunk_shape[0] * chunk_shape[1]
+                            + ij[0] as u64 * chunk_shape[1]
+                            + ij[1] as u64) as u16
+                    },
+                );
+                array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
+            } else {
+                Err(zarrs::array::ArrayError::InvalidChunkGridIndicesError(
+                    chunk_indices.to_vec(),
+                ))
+            }
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
     // Read the whole array
     let subset_all = ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec())?; // the center 4x2 region

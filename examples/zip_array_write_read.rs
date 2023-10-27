@@ -43,16 +43,21 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
         .map(|i| {
             let chunk_grid: &Box<dyn ChunkGridTraits> = array.chunk_grid();
             let chunk_indices: Vec<u64> = vec![i, 0];
-            let chunk_subset: ArraySubset = chunk_grid.subset(&chunk_indices, array.shape())?;
-            array.store_chunk_elements(
-                &chunk_indices,
-                &vec![i as f32; chunk_subset.num_elements() as usize],
-            )
-            // let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
-            // let chunk_array = ndarray::ArrayD::<f32>::from_elem(chunk_shape.clone(), i as f32);
-            // array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
+            if let Some(chunk_subset) = chunk_grid.subset(&chunk_indices, array.shape())? {
+                array.store_chunk_elements(
+                    &chunk_indices,
+                    &vec![i as f32; chunk_subset.num_elements() as usize],
+                )
+                // let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
+                // let chunk_array = ndarray::ArrayD::<f32>::from_elem(chunk_shape.clone(), i as f32);
+                // array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
+            } else {
+                Err(zarrs::array::ArrayError::InvalidChunkGridIndicesError(
+                    chunk_indices.to_vec(),
+                ))
+            }
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
     println!(
         "The array metadata is:\n{}\n",

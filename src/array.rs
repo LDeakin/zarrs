@@ -66,7 +66,7 @@ use safe_transmute::TriviallyTransmutable;
 use serde::Serialize;
 
 use crate::{
-    array_subset::{validate_array_subset, ArraySubset},
+    array_subset::{validate_array_subset, ArraySubset, IncompatibleDimensionalityError},
     metadata::AdditionalFields,
     node::NodePath,
     storage::{
@@ -77,7 +77,6 @@ use crate::{
 
 use self::{
     array_errors::TransmuteError,
-    chunk_grid::InvalidChunkGridIndicesError,
     codec::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, StoragePartialDecoder,
     },
@@ -406,45 +405,77 @@ impl<TStorage: ?Sized> Array<TStorage> {
         .into()
     }
 
+    /// Return the shape of the chunk grid (i.e., the number of chunks).
+    pub fn chunk_grid_shape(&self) -> Option<Vec<u64>> {
+        unsafe { self.chunk_grid().grid_shape_unchecked(self.shape()) }
+    }
+
+    /// Return the array subset of the chunk at `chunk_indices`.
+    pub fn chunk_subset(&self, chunk_indices: &[u64]) -> Option<ArraySubset> {
+        unsafe {
+            self.chunk_grid()
+                .subset_unchecked(chunk_indices, self.shape())
+        }
+    }
+
     /// Get the chunk array representation at `chunk_index`.
     ///
     /// # Errors
     ///
-    /// Returns [`InvalidChunkGridIndicesError`] if the `chunk_indices` or `array_shape` are incompatible with the chunk grid.
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` or `array_shape` are incompatible with the chunk grid.
     pub fn chunk_array_representation(
         &self,
         chunk_indices: &[u64],
         array_shape: &[u64],
-    ) -> Result<ArrayRepresentation, InvalidChunkGridIndicesError> {
-        Ok(unsafe {
-            ArrayRepresentation::new_unchecked(
-                self.chunk_grid().chunk_shape(chunk_indices, array_shape)?,
-                self.data_type().clone(),
-                self.fill_value().clone(),
-            )
-        })
+    ) -> Result<ArrayRepresentation, ArrayError> {
+        if let Some(chunk_shape) = self.chunk_grid().chunk_shape(chunk_indices, array_shape)? {
+            Ok(unsafe {
+                ArrayRepresentation::new_unchecked(
+                    chunk_shape,
+                    self.data_type().clone(),
+                    self.fill_value().clone(),
+                )
+            })
+        } else {
+            Err(ArrayError::InvalidChunkGridIndicesError(
+                chunk_indices.to_vec(),
+            ))
+        }
     }
 
     /// Return an array subset indicating the chunks intersecting `array_subset`.
     ///
+    /// Returns [`None`] if the intersecting chunks cannot be determined.
+    ///
     /// # Errors
     ///
-    /// Returns [`ArrayError`] if the array subset is out of bounds or has an incorrect dimensionality.
+    /// Returns [`IncompatibleDimensionalityError`] if the array subset has an incorrect dimensionality.
     pub fn chunks_in_array_subset(
         &self,
         array_subset: &ArraySubset,
-    ) -> Result<ArraySubset, ArrayError> {
+    ) -> Result<Option<ArraySubset>, IncompatibleDimensionalityError> {
         // Find the chunks intersecting this array subset
-        let err = || ArrayError::InvalidArraySubset(array_subset.clone(), self.shape().to_vec());
         let chunks_start = self
             .chunk_grid()
-            .chunk_indices(array_subset.start(), self.shape())
-            .map_err(|_| err())?;
+            .chunk_indices(array_subset.start(), self.shape())?;
         let chunks_end = self
             .chunk_grid()
-            .chunk_indices(&array_subset.end_inc(), self.shape())
-            .map_err(|_| err())?;
-        Ok(unsafe { ArraySubset::new_with_start_end_inc_unchecked(chunks_start, &chunks_end) })
+            .chunk_indices(&array_subset.end_inc(), self.shape())?;
+        let chunks_end = if let Some(chunks_end) = chunks_end {
+            Some(chunks_end)
+        } else {
+            self.chunk_grid_shape()
+        };
+
+        Ok(
+            if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
+                Some(unsafe {
+                    ArraySubset::new_with_start_end_inc_unchecked(chunks_start, &chunks_end)
+                })
+            } else {
+                None
+            },
+        )
     }
 
     #[must_use]
@@ -561,7 +592,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if:
     ///  - the size of `T` does not match the data type size,
     ///  - the decoded bytes cannot be transmuted,
-    ///  - an array subsets is invalid,
+    ///  - the chunk indices are invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
     ///
@@ -580,24 +611,34 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         }
 
         let shape = self.chunk_grid().chunk_shape(chunk_indices, self.shape())?;
-        let elements = self.retrieve_chunk_elements(chunk_indices)?;
-        let length = elements.len();
-        ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(
-            |_| {
-                ArrayError::CodecError(crate::array::codec::CodecError::UnexpectedChunkDecodedSize(
-                    length * std::mem::size_of::<T>(),
-                    shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
-                ))
-            },
-        )
+        if let Some(shape) = shape {
+            let elements = self.retrieve_chunk_elements(chunk_indices)?;
+            let length = elements.len();
+            ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(
+                |_| {
+                    ArrayError::CodecError(
+                        crate::array::codec::CodecError::UnexpectedChunkDecodedSize(
+                            length * std::mem::size_of::<T>(),
+                            shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
+                        ),
+                    )
+                },
+            )
+        } else {
+            Err(ArrayError::InvalidChunkGridIndicesError(
+                chunk_indices.to_vec(),
+            ))
+        }
     }
 
     /// Read and decode the `array_subset` of array into its bytes.
     ///
+    /// Out-of-bounds elements will have the fill value.
+    ///
     /// # Errors
     ///
     /// Returns an [`ArrayError`] if:
-    ///  - an array subset is invalid or out of bounds of the array,
+    ///  - the `array_subset` dimensionality does not match the chunk grid dimensionality,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
     ///
@@ -605,7 +646,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///
     /// Panics if attempting to reference a byte beyond `usize::MAX`.
     pub fn retrieve_array_subset(&self, array_subset: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
-        if !validate_array_subset(array_subset, self.shape()) {
+        if array_subset.dimensionality() != self.chunk_grid().dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 array_subset.clone(),
                 self.shape().to_vec(),
@@ -615,8 +656,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         let element_size = self.fill_value().size() as u64;
         let decode_chunk = |chunk_indices: Vec<u64>, output: &mut [u8]| -> Result<(), ArrayError> {
             // Get the subset of the array corresponding to the chunk
-            let chunk_subset_in_array =
-                unsafe { self.chunk_grid().subset_unchecked(&chunk_indices) };
+            let chunk_subset_in_array = unsafe {
+                self.chunk_grid()
+                    .subset_unchecked(&chunk_indices, self.shape())
+            };
+            let Some(chunk_subset_in_array) = chunk_subset_in_array else {
+                return Err(ArrayError::InvalidArraySubset(
+                    array_subset.clone(),
+                    self.shape().to_vec(),
+                ));
+            };
 
             // Decode the subset of the chunk which intersects array_subset
             let array_subset_in_chunk_subset =
@@ -646,6 +695,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
 
         // Find the chunks intersecting this array subset
         let chunks = self.chunks_in_array_subset(array_subset)?;
+        let Some(chunks) = chunks else {
+            return Err(ArrayError::InvalidArraySubset(
+                array_subset.clone(),
+                self.shape().to_vec(),
+            ));
+        };
 
         // Decode chunks and copy to output
         let size_output = usize::try_from(array_subset.num_elements() * element_size).unwrap();
@@ -956,7 +1011,9 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     ///
     /// # Errors
     ///
-    /// Returns an [`ArrayError`] if a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
+    /// Returns an [`ArrayError`] if
+    ///  - the size of `T` does not match the size of the data type,
+    ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
     pub fn store_chunk_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
@@ -970,14 +1027,19 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             ));
         }
         let shape = chunk_array.shape().iter().map(|u| *u as u64).collect();
-        let chunk_shape = self.chunk_grid().chunk_shape(chunk_indices, self.shape())?;
-        if shape != chunk_shape {
-            return Err(ArrayError::UnexpectedChunkDecodedShape(shape, chunk_shape));
-        }
+        if let Some(chunk_shape) = self.chunk_grid().chunk_shape(chunk_indices, self.shape())? {
+            if shape != chunk_shape {
+                return Err(ArrayError::UnexpectedChunkDecodedShape(shape, chunk_shape));
+            }
 
-        let chunk_array = chunk_array.as_standard_layout();
-        let slice = chunk_array.as_slice().expect("it is in standard layout");
-        self.store_chunk_elements(chunk_indices, slice)
+            let chunk_array = chunk_array.as_standard_layout();
+            let slice = chunk_array.as_slice().expect("it is in standard layout");
+            self.store_chunk_elements(chunk_indices, slice)
+        } else {
+            Err(ArrayError::InvalidChunkGridIndicesError(
+                chunk_indices.to_vec(),
+            ))
+        }
     }
 
     /// Erase the chunk at `chunk_indices`.
@@ -1009,7 +1071,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     /// # Errors
     ///
     /// Returns an [`ArrayError`] if
-    ///  - `array_subset` is invalid or out of bounds of the array,
+    ///  - the dimensionality of `array_subset` does not match the chunk grid dimensionality
     ///  - the length of `subset_bytes` does not match the expected length governed by the shape of the array subset and the data type size,
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
@@ -1035,11 +1097,25 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
 
         // Find the chunks intersecting this array subset
         let chunks = self.chunks_in_array_subset(array_subset)?;
+        let Some(chunks) = chunks else {
+            return Err(ArrayError::InvalidArraySubset(
+                array_subset.clone(),
+                self.shape().to_vec(),
+            ));
+        };
 
         let element_size = self.data_type().size();
         let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
-            let chunk_subset_in_array =
-                unsafe { self.chunk_grid().subset_unchecked(&chunk_indices) };
+            let chunk_subset_in_array = unsafe {
+                self.chunk_grid()
+                    .subset_unchecked(&chunk_indices, self.shape())
+            };
+            let Some(chunk_subset_in_array) = chunk_subset_in_array else {
+                return Err(ArrayError::InvalidArraySubset(
+                    array_subset.clone(),
+                    self.shape().to_vec(),
+                ));
+            };
 
             if array_subset == &chunk_subset_in_array {
                 // A fast path if the array subset matches the chunk subset
@@ -1166,53 +1242,58 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
         chunk_subset_bytes: &[u8],
     ) -> Result<(), ArrayError> {
         // Validation
-        let chunk_shape = self.chunk_grid().chunk_shape(chunk_indices, self.shape())?;
-        if std::iter::zip(chunk_subset.end_exc(), &chunk_shape)
-            .any(|(end_exc, shape)| end_exc > *shape)
-        {
-            return Err(ArrayError::InvalidChunkSubset(
-                chunk_subset.clone(),
-                chunk_indices.to_vec(),
-                chunk_shape,
-            ));
-        }
-        let expected_length =
-            chunk_subset.shape().iter().product::<u64>() * self.data_type().size() as u64;
-        if chunk_subset_bytes.len() as u64 != expected_length {
-            return Err(ArrayError::InvalidBytesInputSize(
-                chunk_subset_bytes.len(),
-                expected_length,
-            ));
-        }
-
-        if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
-            // The subset spans the whole chunk, so store the bytes directly and skip decoding
-            self.store_chunk(chunk_indices, chunk_subset_bytes)
-        } else {
-            // Lock the chunk
-            let chunk_mutex = self.chunk_mutex(chunk_indices);
-            let _lock = chunk_mutex.lock();
-
-            // Decode the entire chunk
-            let mut chunk_bytes = self.retrieve_chunk(chunk_indices)?;
-
-            // Update the intersecting subset of the chunk
-            let element_size = self.data_type().size() as u64;
-            let mut offset = 0;
-            for (chunk_element_index, num_elements) in
-                unsafe { chunk_subset.iter_contiguous_linearised_indices_unchecked(&chunk_shape) }
+        if let Some(chunk_shape) = self.chunk_grid().chunk_shape(chunk_indices, self.shape())? {
+            if std::iter::zip(chunk_subset.end_exc(), &chunk_shape)
+                .any(|(end_exc, shape)| end_exc > *shape)
             {
-                let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
-                let length = usize::try_from(num_elements * element_size).unwrap();
-                debug_assert!(chunk_offset + length <= chunk_bytes.len());
-                debug_assert!(offset + length <= chunk_subset_bytes.len());
-                chunk_bytes[chunk_offset..chunk_offset + length]
-                    .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
-                offset += length;
+                return Err(ArrayError::InvalidChunkSubset(
+                    chunk_subset.clone(),
+                    chunk_indices.to_vec(),
+                    chunk_shape,
+                ));
+            }
+            let expected_length =
+                chunk_subset.shape().iter().product::<u64>() * self.data_type().size() as u64;
+            if chunk_subset_bytes.len() as u64 != expected_length {
+                return Err(ArrayError::InvalidBytesInputSize(
+                    chunk_subset_bytes.len(),
+                    expected_length,
+                ));
             }
 
-            // Store the updated chunk
-            self.store_chunk(chunk_indices, &chunk_bytes)
+            if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
+                // The subset spans the whole chunk, so store the bytes directly and skip decoding
+                self.store_chunk(chunk_indices, chunk_subset_bytes)
+            } else {
+                // Lock the chunk
+                let chunk_mutex = self.chunk_mutex(chunk_indices);
+                let _lock = chunk_mutex.lock();
+
+                // Decode the entire chunk
+                let mut chunk_bytes = self.retrieve_chunk(chunk_indices)?;
+
+                // Update the intersecting subset of the chunk
+                let element_size = self.data_type().size() as u64;
+                let mut offset = 0;
+                for (chunk_element_index, num_elements) in unsafe {
+                    chunk_subset.iter_contiguous_linearised_indices_unchecked(&chunk_shape)
+                } {
+                    let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
+                    let length = usize::try_from(num_elements * element_size).unwrap();
+                    debug_assert!(chunk_offset + length <= chunk_bytes.len());
+                    debug_assert!(offset + length <= chunk_subset_bytes.len());
+                    chunk_bytes[chunk_offset..chunk_offset + length]
+                        .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
+                    offset += length;
+                }
+
+                // Store the updated chunk
+                self.store_chunk(chunk_indices, &chunk_bytes)
+            }
+        } else {
+            Err(ArrayError::InvalidChunkGridIndicesError(
+                chunk_indices.to_vec(),
+            ))
         }
     }
 

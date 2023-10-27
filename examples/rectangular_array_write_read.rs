@@ -55,14 +55,19 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         .map(|i| {
             let chunk_grid = array.chunk_grid();
             let chunk_indices = vec![i, 0];
-            let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, array.shape())?;
-            let chunk_array = ndarray::ArrayD::<f32>::from_elem(
-                chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
-                i as f32,
-            );
-            array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
+            if let Some(chunk_shape) = chunk_grid.chunk_shape(&chunk_indices, array.shape())? {
+                let chunk_array = ndarray::ArrayD::<f32>::from_elem(
+                    chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
+                    i as f32,
+                );
+                array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
+            } else {
+                Err(zarrs::array::ArrayError::InvalidChunkGridIndicesError(
+                    chunk_indices.to_vec(),
+                ))
+            }
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
     println!(
         "The array metadata is:\n{}\n",

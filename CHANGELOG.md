@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `From<&[u8]>` for `FillValue`
  - Added `FillValue::all_equal` and fill value benchmark
     - Implements a much faster fill value test
+ - Added `Array::chunk_grid_shape`/`chunk_subset`
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
@@ -46,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Rename `FillValueMetadata::Uint` to `UInt` for consistency with the `DataType::UInt` variants.
  - `StorePrefix`, `StoreKey`, `NodeName` `new` methods are now `: impl Into<String>`
  - **Breaking**: `ArrayBuilder::dimension_names` now takes an `Option` input, matching the output of `Array::dimension_names`
+ - **Breaking**: `ArrayError::InvalidChunkGridIndicesError` now holds array indices directly, not a `chunk_grid::InvalidArrayIndicesError`
+ - **Breaking**: `Array::chunk_array_representation` now returns `ArrayError` instead of `InvalidChunkGridIndicesError`
+ - **Breaking**: `Array::chunks_in_array_subset` now returns `IncompatibleDimensionalityError` instead of `ArrayError`
+ 
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
@@ -59,6 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
  - **Breaking**: Remove `StoreExtension` traits
+ - **Breaking**: Remove `chunk_grid::InvalidArrayIndicesError`/`ChunkGridShapeError`
+ - **Breaking**: Remove `ArrayError::InvalidArrayIndicesError`
 
 ## [0.5.1] - 2023-10-10
 

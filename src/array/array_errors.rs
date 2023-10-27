@@ -9,7 +9,6 @@ use crate::{
 };
 
 use super::{
-    chunk_grid::{InvalidArrayIndicesError, InvalidChunkGridIndicesError},
     codec::CodecError,
     data_type::{IncompatibleFillValueErrorMetadataError, UnsupportedDataTypeError},
     ArrayIndices, ArrayShape,
@@ -74,12 +73,12 @@ pub enum ArrayError {
     /// A codec error.
     #[error(transparent)]
     CodecError(#[from] CodecError),
-    /// Invalid array indices.
-    #[error(transparent)]
-    InvalidArrayIndicesError(#[from] InvalidArrayIndicesError),
+    // /// Invalid array indices.
+    // #[error(transparent)]
+    // InvalidArrayIndicesError(#[from] InvalidArrayIndicesError),
     /// Invalid chunk grid indices.
-    #[error(transparent)]
-    InvalidChunkGridIndicesError(#[from] InvalidChunkGridIndicesError),
+    #[error("invalid chunk grid indices: {_0:?}")]
+    InvalidChunkGridIndicesError(Vec<u64>),
     /// Incompatible dimensionality.
     #[error(transparent)]
     IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
