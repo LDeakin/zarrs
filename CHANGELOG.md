@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `array_subset::iter_linearised_indices_unchecked`
  - Added parallel encoding/decoding to tests
  - Added `array_subset::ArrayStoreBytesError`, `store_bytes`, and `store_bytes_unchecked`
- - Added `parallel_chunks` option to `Array`, enabled by default. Lets `store_array_subset` and `retrieve_array_subset` (and their variants) encode/decode chunks in parallel
  - Added experimental `zfp` codec implementation behind `zfp` feature flag (disabled by default)
  - Added experimental `bitround` codec implementation behind `bitround` feature flag (disabled by default)
  - Added `ShardingCodecBuilder`
@@ -27,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `FillValue::all_equal` and fill value benchmark
     - Implements a much faster fill value test
  - Added `Array::chunk_grid_shape`/`chunk_subset`
+ - Added `par_` variants for the `store_array_subset`/`retrieve_array_subset` variants in `Array`, which can encode/decode multiple chunks in parallel
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
@@ -50,7 +50,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `ArrayError::InvalidChunkGridIndicesError` now holds array indices directly, not a `chunk_grid::InvalidArrayIndicesError`
  - **Breaking**: `Array::chunk_array_representation` now returns `ArrayError` instead of `InvalidChunkGridIndicesError`
  - **Breaking**: `Array::chunks_in_array_subset` now returns `IncompatibleDimensionalityError` instead of `ArrayError`
- 
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
