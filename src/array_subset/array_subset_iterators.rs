@@ -312,7 +312,7 @@ impl<'a> ChunksIterator<'a> {
             .map(|(e, c)| e / c)
             .collect();
         let subset_chunks =
-            unsafe { ArraySubset::new_with_start_end_inc_unchecked(chunk_start, &chunk_end_inc) };
+            unsafe { ArraySubset::new_with_start_end_inc_unchecked(chunk_start, chunk_end_inc) };
         let inner = IndicesIterator::new(subset_chunks, first_chunk);
         Self { inner, chunk_shape }
     }

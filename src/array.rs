@@ -451,7 +451,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         Ok(
             if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
                 Some(unsafe {
-                    ArraySubset::new_with_start_end_inc_unchecked(chunks_start, &chunks_end)
+                    ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
                 })
             } else {
                 None

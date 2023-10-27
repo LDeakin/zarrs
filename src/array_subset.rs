@@ -100,7 +100,7 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the size of `start` and `size` do not match.
     pub fn new_with_start_end_inc(
         start: ArrayIndices,
-        end: &[u64],
+        end: ArrayIndices,
     ) -> Result<Self, IncompatibleDimensionalityError> {
         if start.len() == end.len() {
             Ok(unsafe { Self::new_with_start_end_inc_unchecked(start, end) })
@@ -116,12 +116,12 @@ impl ArraySubset {
     /// The length of `start` and `end` must match.
     #[doc(hidden)]
     #[must_use]
-    pub unsafe fn new_with_start_end_inc_unchecked(start: ArrayIndices, end: &[u64]) -> Self {
+    pub unsafe fn new_with_start_end_inc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
         let shape = std::iter::zip(&start, end)
-            .map(|(start, end)| {
+            .map(|(&start, end)| {
                 debug_assert!(end >= start);
-                end.saturating_sub(*start) + 1
+                end.saturating_sub(start) + 1
             })
             .collect();
         Self { start, shape }
@@ -134,7 +134,7 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the size of `start` and `size` do not match.
     pub fn new_with_start_end_exc(
         start: ArrayIndices,
-        end: &[u64],
+        end: ArrayIndices,
     ) -> Result<Self, IncompatibleDimensionalityError> {
         if start.len() == end.len() {
             Ok(unsafe { Self::new_with_start_end_exc_unchecked(start, end) })
@@ -150,12 +150,12 @@ impl ArraySubset {
     /// The length of `start` and `end` must match.
     #[doc(hidden)]
     #[must_use]
-    pub unsafe fn new_with_start_end_exc_unchecked(start: ArrayIndices, end: &[u64]) -> Self {
+    pub unsafe fn new_with_start_end_exc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
         let shape = std::iter::zip(&start, end)
-            .map(|(start, end)| {
+            .map(|(&start, end)| {
                 debug_assert!(end >= start);
-                end.saturating_sub(*start)
+                end.saturating_sub(start)
             })
             .collect();
         Self { start, shape }
