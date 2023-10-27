@@ -60,7 +60,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         FillValue::from(0u16),
     )
     .array_to_bytes_codec(Box::new(sharding_codec_builder.build()))
-    .dimension_names(vec!["y".into(), "x".into()])
+    .dimension_names(Some(vec!["y".into(), "x".into()]))
     .storage_transformers(vec![])
     .build(store.clone(), array_path)?;
 

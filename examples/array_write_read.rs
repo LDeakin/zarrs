@@ -44,7 +44,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         FillValue::from(f32::NAN),
     )
     // .bytes_to_bytes_codecs(vec![]) // uncompressed
-    .dimension_names(vec!["y".into(), "x".into()])
+    .dimension_names(Some(vec!["y".into(), "x".into()]))
     .storage_transformers(vec![])
     .build(store.clone(), array_path)?;
 

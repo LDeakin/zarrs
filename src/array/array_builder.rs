@@ -42,7 +42,7 @@ use super::{
 ///     #[cfg(feature = "gzip")]
 ///     Box::new(zarrs::array::codec::GzipCodec::new(5)?),
 /// ])
-/// .dimension_names(vec!["y".into(), "x".into()])
+/// .dimension_names(Some(vec!["y".into(), "x".into()]))
 /// .build(store.clone(), "/group/array")?;
 /// array.store_metadata()?; // write metadata to the store
 ///
@@ -181,8 +181,8 @@ impl ArrayBuilder {
     /// Set the dimension names.
     ///
     /// If left unmodified, all dimension names are "unnamed".
-    pub fn dimension_names(&mut self, dimension_names: Vec<DimensionName>) -> &mut Self {
-        self.dimension_names = Some(dimension_names);
+    pub fn dimension_names(&mut self, dimension_names: Option<Vec<DimensionName>>) -> &mut Self {
+        self.dimension_names = dimension_names;
         self
     }
 
