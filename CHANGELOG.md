@@ -50,7 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `ArrayError::InvalidChunkGridIndicesError` now holds array indices directly, not a `chunk_grid::InvalidArrayIndicesError`
  - **Breaking**: `Array::chunk_array_representation` now returns `ArrayError` instead of `InvalidChunkGridIndicesError`
  - **Breaking**: `Array::chunks_in_array_subset` now returns `IncompatibleDimensionalityError` instead of `ArrayError`
- - **Breaking**: `ArraySubset::new_with_start_end_inc`/`new_with_start_end_exc` now take `end: ArrayIndices` instead of `end: &[u64]`
+ - **Breaking**: `ArraySubset::new_with_start_end_inc`/`new_with_start_end_exc` now take `end: ArrayIndices` instead of `end: &[u64]
+ - **Breaking**: Move `array_subset::validate_array_subset` to `ArraySubset::inbounds`
+ - Allow out-of-bounds `Array::store_array_subset` and `Array::retrieve_array_subset`
+    - retrieved out-of-bounds elements are populated with the fill value
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

@@ -588,6 +588,21 @@ impl ArraySubset {
         }
         unsafe { Self::new_with_start_shape_unchecked(starts, shapes) }
     }
+
+    /// Returns true if the array subset is within the bounds of `array_shape`.
+    #[must_use]
+    pub fn inbounds(&self, array_shape: &[u64]) -> bool {
+        if self.dimensionality() != array_shape.len() {
+            return false;
+        }
+
+        for (subset_start, subset_shape, shape) in izip!(self.start(), self.shape(), array_shape) {
+            if subset_start + subset_shape > *shape {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 /// An incompatible dimensionality error.
@@ -606,23 +621,6 @@ impl IncompatibleDimensionalityError {
     pub const fn new(got: usize, expected: usize) -> Self {
         Self(got, expected)
     }
-}
-
-/// Returns true if `array_subset` is within the bounds of `array_shape`.
-#[must_use]
-pub fn validate_array_subset(array_subset: &ArraySubset, array_shape: &[u64]) -> bool {
-    if array_subset.dimensionality() != array_shape.len() {
-        return false;
-    }
-
-    for (subset_start, subset_shape, shape) in
-        izip!(array_subset.start(), array_subset.shape(), array_shape)
-    {
-        if subset_start + subset_shape > *shape {
-            return false;
-        }
-    }
-    true
 }
 
 /// An invalid array subset error.

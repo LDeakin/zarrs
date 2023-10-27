@@ -66,7 +66,7 @@ use safe_transmute::TriviallyTransmutable;
 use serde::Serialize;
 
 use crate::{
-    array_subset::{validate_array_subset, ArraySubset, IncompatibleDimensionalityError},
+    array_subset::{ArraySubset, IncompatibleDimensionalityError},
     metadata::AdditionalFields,
     node::NodePath,
     storage::{
@@ -835,7 +835,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<u8>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices, self.shape())?;
-        if !validate_array_subset(chunk_subset, chunk_representation.shape()) {
+        if !chunk_subset.inbounds(chunk_representation.shape()) {
             return Err(ArrayError::InvalidArraySubset(
                 chunk_subset.clone(),
                 self.shape().to_vec(),
@@ -1092,7 +1092,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
         parallel: bool,
     ) -> Result<(), ArrayError> {
         // Validation
-        if !validate_array_subset(array_subset, self.shape()) {
+        if array_subset.dimensionality() != self.shape().len() {
             return Err(ArrayError::InvalidArraySubset(
                 array_subset.clone(),
                 self.shape().to_vec(),
