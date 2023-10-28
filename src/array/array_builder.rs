@@ -5,9 +5,7 @@ use crate::{
 };
 
 use super::{
-    chunk_key_encoding::{
-        ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator, DefaultChunkKeyEncoding,
-    },
+    chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator, DefaultChunkKeyEncoding},
     codec::{
         ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
     },
@@ -104,11 +102,8 @@ impl ArrayBuilder {
     /// Set the chunk key encoding.
     ///
     /// If left unmodified, the array will use `default` chunk key encoding with the `/` chunk key separator.
-    pub fn chunk_key_encoding(
-        &mut self,
-        chunk_key_encoding: Box<dyn ChunkKeyEncodingTraits>,
-    ) -> &mut Self {
-        self.chunk_key_encoding = chunk_key_encoding.into();
+    pub fn chunk_key_encoding(&mut self, chunk_key_encoding: ChunkKeyEncoding) -> &mut Self {
+        self.chunk_key_encoding = chunk_key_encoding;
         self
     }
 
