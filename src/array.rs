@@ -401,6 +401,12 @@ impl<TStorage: ?Sized> Array<TStorage> {
         }
     }
 
+    /// Return the array subset of the chunk at `chunk_indices` bounded by the array shape.
+    pub fn chunk_subset_bounded(&self, chunk_indices: &[u64]) -> Option<ArraySubset> {
+        self.chunk_subset(chunk_indices)
+            .map(|subset| unsafe { subset.bound_unchecked(self.shape()) })
+    }
+
     /// Get the chunk array representation at `chunk_index`.
     ///
     /// # Errors

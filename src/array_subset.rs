@@ -161,6 +161,37 @@ impl ArraySubset {
         Self { start, shape }
     }
 
+    /// Bound the array subset to the domain within `end` (exclusive).
+    ///
+    /// # Errors
+    /// Returns an error if `end` does not match the array subset dimensionality.
+    pub fn bound(&self, end: &[u64]) -> Result<ArraySubset, IncompatibleDimensionalityError> {
+        if end.len() == self.dimensionality() {
+            Ok(unsafe { self.bound_unchecked(end) })
+        } else {
+            Err(IncompatibleDimensionalityError(
+                end.len(),
+                self.dimensionality(),
+            ))
+        }
+    }
+
+    /// Bound the array subset to the domain within `end` (exclusive).
+    ///
+    /// # Safety
+    /// The length of `end` must match the array subset dimensionality.
+    #[must_use]
+    pub unsafe fn bound_unchecked(&self, end: &[u64]) -> ArraySubset {
+        debug_assert_eq!(end.len(), self.dimensionality());
+        let start = std::iter::zip(self.start(), end)
+            .map(|(&a, &b)| std::cmp::min(a, b))
+            .collect();
+        let end = std::iter::zip(self.end_exc(), end)
+            .map(|(a, &b)| std::cmp::min(a, b))
+            .collect();
+        unsafe { ArraySubset::new_with_start_end_exc_unchecked(start, end) }
+    }
+
     /// Return the start of the array subset.
     #[must_use]
     pub fn start(&self) -> &[u64] {
