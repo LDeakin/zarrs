@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `Array::chunk_grid_shape`/`chunk_subset`
  - Added `par_` variants for the `store_array_subset`/`retrieve_array_subset` variants in `Array`, which can encode/decode multiple chunks in parallel
  - Added `ArraySubset::bound` and `Array::chunk_subset_bounded`
+ - Added methods to `CodecChain` to retrieve underlying codecs
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`

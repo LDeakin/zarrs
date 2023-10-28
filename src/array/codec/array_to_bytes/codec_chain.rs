@@ -154,6 +154,25 @@ impl CodecChain {
         metadatas
     }
 
+    /// Get the array to array codecs
+    #[must_use]
+    pub fn array_to_array_codecs(&self) -> &[Box<dyn ArrayToArrayCodecTraits>] {
+        &self.array_to_array
+    }
+
+    /// Get the array to bytes codec
+    #[allow(clippy::borrowed_box)]
+    #[must_use]
+    pub fn array_to_bytes_codec(&self) -> &Box<dyn ArrayToBytesCodecTraits> {
+        &self.array_to_bytes
+    }
+
+    /// Get the bytes to bytes codecs
+    #[must_use]
+    pub fn bytes_to_bytes_codecs(&self) -> &[Box<dyn BytesToBytesCodecTraits>] {
+        &self.bytes_to_bytes
+    }
+
     fn get_array_representations(
         &self,
         decoded_representation: ArrayRepresentation,
