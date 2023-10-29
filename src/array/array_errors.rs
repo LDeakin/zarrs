@@ -10,7 +10,10 @@ use crate::{
 
 use super::{
     codec::CodecError,
-    data_type::{IncompatibleFillValueErrorMetadataError, UnsupportedDataTypeError},
+    data_type::{
+        IncompatibleFillValueError, IncompatibleFillValueErrorMetadataError,
+        UnsupportedDataTypeError,
+    },
     ArrayIndices, ArrayShape,
 };
 
@@ -34,7 +37,10 @@ pub enum ArrayCreateError {
     DataTypeCreateError(UnsupportedDataTypeError),
     /// Invalid fill value.
     #[error(transparent)]
-    InvalidFillValue(#[from] IncompatibleFillValueErrorMetadataError),
+    InvalidFillValue(#[from] IncompatibleFillValueError),
+    /// Invalid fill value metadata.
+    #[error(transparent)]
+    InvalidFillValueMetadata(#[from] IncompatibleFillValueErrorMetadataError),
     /// Error creating codecs.
     #[error(transparent)]
     CodecsCreateError(PluginCreateError),

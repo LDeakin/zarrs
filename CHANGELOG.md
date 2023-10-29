@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - retrieved out-of-bounds elements are populated with the fill value
  - Derive `Clone` for `StorageTransformerChain`
  - **Breaking**: `ArrayBuilder::storage_transformers` use `StorageTransformerChain`
+ - **Breaking**: change `ArrayError::InvalidFillValue` to `InvalidFillValueMetadata` and add a new `InvalidFillValue`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
@@ -70,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Sharding codec performance optimisations
  - `FilesystemStore::erase_prefix` now correctly removes non-empty directories
  - **Breaking**: `ArrayBuilder::storage_transformers` remove `#[must_use]`
+ - Validate data type and fill value compatibility in `ArrayBuilder`
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
