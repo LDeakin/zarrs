@@ -31,7 +31,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
         Box::new(codec::GzipCodec::new(5)?),
     ])
     .dimension_names(Some(vec!["y".into(), "x".into()]))
-    .storage_transformers(vec![])
+    // .storage_transformers(vec![].into())
     .build(storage, ARRAY_PATH)?;
 
     // Write array metadata to store

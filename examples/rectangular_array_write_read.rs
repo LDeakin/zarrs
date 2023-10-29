@@ -43,7 +43,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(codec::GzipCodec::new(5)?),
     ])
     .dimension_names(Some(vec!["y".into(), "x".into()]))
-    .storage_transformers(vec![])
+    // .storage_transformers(vec![].into())
     .build(store.clone(), array_path)?;
 
     // Write array metadata to store

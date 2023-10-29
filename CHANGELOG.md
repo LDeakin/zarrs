@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Move `array_subset::validate_array_subset` to `ArraySubset::inbounds`
  - Allow out-of-bounds `Array::store_array_subset` and `Array::retrieve_array_subset`
     - retrieved out-of-bounds elements are populated with the fill value
+ - Derive `Clone` for `StorageTransformerChain`
+ - **Breaking**: `ArrayBuilder::storage_transformers` use `StorageTransformerChain`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
@@ -65,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `ArraySubset::extract_bytes` now reserves the appropriate amount of memory
  - Sharding codec performance optimisations
  - `FilesystemStore::erase_prefix` now correctly removes non-empty directories
+ - **Breaking**: `ArrayBuilder::storage_transformers` remove `#[must_use]`
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.

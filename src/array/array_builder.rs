@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    metadata::AdditionalFields, node::NodePath, storage::storage_transformer::StorageTransformer,
-};
+use crate::{metadata::AdditionalFields, node::NodePath, storage::StorageTransformerChain};
 
 use super::{
     chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator, DefaultChunkKeyEncoding},
@@ -63,7 +61,7 @@ pub struct ArrayBuilder {
     array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
     array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
     bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
-    storage_transformers: Vec<StorageTransformer>,
+    storage_transformers: StorageTransformerChain,
     attributes: serde_json::Map<String, serde_json::Value>,
     dimension_names: Option<Vec<DimensionName>>,
     additional_fields: AdditionalFields,
@@ -92,7 +90,7 @@ impl ArrayBuilder {
             array_to_bytes_codec: Box::<BytesCodec>::default(),
             bytes_to_bytes_codecs: Vec::default(),
             attributes: serde_json::Map::default(),
-            storage_transformers: Vec::default(),
+            storage_transformers: StorageTransformerChain::default(),
             dimension_names: None,
             additional_fields: AdditionalFields::default(),
             parallel_codecs: true,
@@ -182,10 +180,9 @@ impl ArrayBuilder {
     /// Set the storage transformers.
     ///
     /// If left unmodified, there are no storage transformers.
-    #[must_use]
     pub fn storage_transformers(
         &mut self,
-        storage_transformers: Vec<StorageTransformer>,
+        storage_transformers: StorageTransformerChain,
     ) -> &mut Self {
         self.storage_transformers = storage_transformers;
         self
@@ -239,7 +236,7 @@ impl ArrayBuilder {
                 self.array_to_bytes_codec.clone(),
                 self.bytes_to_bytes_codecs.clone(),
             ),
-            storage_transformers: self.storage_transformers.clone().into(),
+            storage_transformers: self.storage_transformers.clone(),
             attributes: self.attributes.clone(),
             dimension_names: self.dimension_names.clone(),
             additional_fields: self.additional_fields.clone(),

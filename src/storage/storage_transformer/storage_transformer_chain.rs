@@ -11,7 +11,7 @@ use crate::{
 use super::{try_create_storage_transformer, StorageTransformer};
 
 /// Configuration for a storage transformer chain.
-#[derive(Debug, Default, From)]
+#[derive(Debug, Clone, Default, From)]
 pub struct StorageTransformerChain(Vec<StorageTransformer>);
 
 impl StorageTransformerChain {

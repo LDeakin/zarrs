@@ -1565,7 +1565,7 @@ mod tests {
             #[cfg(feature = "gzip")]
             Box::new(codec::GzipCodec::new(5).unwrap()),
         ])
-        .storage_transformers(vec![])
+        // .storage_transformers(vec![].into())
         .build(store, array_path)
         .unwrap();
 
