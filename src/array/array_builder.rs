@@ -53,19 +53,32 @@ use super::{
 /// ```
 #[derive(Debug)]
 pub struct ArrayBuilder {
-    shape: ArrayShape,
-    data_type: DataType,
-    chunk_grid: ChunkGrid,
-    chunk_key_encoding: ChunkKeyEncoding,
-    fill_value: FillValue,
-    array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
-    array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
-    bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
-    storage_transformers: StorageTransformerChain,
-    attributes: serde_json::Map<String, serde_json::Value>,
-    dimension_names: Option<Vec<DimensionName>>,
-    additional_fields: AdditionalFields,
-    parallel_codecs: bool,
+    /// Array shape.
+    pub shape: ArrayShape,
+    /// Data type.
+    pub data_type: DataType,
+    /// Chunk grid.
+    pub chunk_grid: ChunkGrid,
+    /// Chunk key encoding.
+    pub chunk_key_encoding: ChunkKeyEncoding,
+    /// Fill value.
+    pub fill_value: FillValue,
+    /// Array to array codecs.
+    pub array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
+    /// Array to bytes codec.
+    pub array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
+    /// Bytes to bytes codecs.
+    pub bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+    /// Storage transformer chain.
+    pub storage_transformers: StorageTransformerChain,
+    /// Atributes.
+    pub attributes: serde_json::Map<String, serde_json::Value>,
+    /// Dimension names.
+    pub dimension_names: Option<Vec<DimensionName>>,
+    /// Additional fields.
+    pub additional_fields: AdditionalFields,
+    /// Parallel codecs.
+    pub parallel_codecs: bool,
 }
 
 impl ArrayBuilder {
@@ -95,6 +108,30 @@ impl ArrayBuilder {
             additional_fields: AdditionalFields::default(),
             parallel_codecs: true,
         }
+    }
+
+    /// Set the shape.
+    pub fn shape(&mut self, shape: ArrayShape) -> &mut Self {
+        self.shape = shape;
+        self
+    }
+
+    /// Set the data type.
+    pub fn data_type(&mut self, data_type: DataType) -> &mut Self {
+        self.data_type = data_type;
+        self
+    }
+
+    /// Set the chunk grid.
+    pub fn chunk_grid(&mut self, chunk_grid: ChunkGrid) -> &mut Self {
+        self.chunk_grid = chunk_grid;
+        self
+    }
+
+    /// Set the fill value.
+    pub fn fill_value(&mut self, fill_value: FillValue) -> &mut Self {
+        self.fill_value = fill_value;
+        self
     }
 
     /// Set the chunk key encoding.

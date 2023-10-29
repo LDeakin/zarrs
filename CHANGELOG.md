@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `ArraySubset::bound` and `Array::chunk_subset_bounded`
  - Added methods to `CodecChain` to retrieve underlying codecs
  - Added `Array::builder()`
+ - Added more `ArrayBuilder` modifiers and made internals public
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
