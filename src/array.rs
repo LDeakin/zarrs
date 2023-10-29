@@ -390,23 +390,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Create an array builder matching the parameters of this array
     pub fn builder(&self) -> ArrayBuilder {
-        let mut builder = ArrayBuilder::new(
-            self.shape().to_vec(),
-            self.data_type().clone(),
-            self.chunk_grid().clone(),
-            self.fill_value().clone(),
-        );
-        builder
-            .additional_fields(self.additional_fields().clone())
-            .attributes(self.attributes().clone())
-            .chunk_key_encoding(self.chunk_key_encoding().clone())
-            .dimension_names(self.dimension_names().clone())
-            .parallel_codecs(self.parallel_codecs())
-            .array_to_array_codecs(self.codecs().array_to_array_codecs().to_vec())
-            .array_to_bytes_codec(self.codecs().array_to_bytes_codec().clone())
-            .bytes_to_bytes_codecs(self.codecs().bytes_to_bytes_codecs().to_vec())
-            .storage_transformers(self.storage_transformers().clone());
-        builder
+        ArrayBuilder::from_array(self)
     }
 
     /// Return the shape of the chunk grid (i.e., the number of chunks).

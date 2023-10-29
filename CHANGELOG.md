@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `par_` variants for the `store_array_subset`/`retrieve_array_subset` variants in `Array`, which can encode/decode multiple chunks in parallel
  - Added `ArraySubset::bound` and `Array::chunk_subset_bounded`
  - Added methods to `CodecChain` to retrieve underlying codecs
- - Added `Array::builder()`
+ - Added `Array::builder()` and `ArrayBuilder::from_array()`
  - Added more `ArrayBuilder` modifiers and made internals public
 
 ### Changed

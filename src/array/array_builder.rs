@@ -111,6 +111,27 @@ impl ArrayBuilder {
         }
     }
 
+    /// Create a new builder copying the configuration of an existing array.
+    pub fn from_array<T: ?Sized>(array: &Array<T>) -> Self {
+        let mut builder = ArrayBuilder::new(
+            array.shape().to_vec(),
+            array.data_type().clone(),
+            array.chunk_grid().clone(),
+            array.fill_value().clone(),
+        );
+        builder
+            .additional_fields(array.additional_fields().clone())
+            .attributes(array.attributes().clone())
+            .chunk_key_encoding(array.chunk_key_encoding().clone())
+            .dimension_names(array.dimension_names().clone())
+            .parallel_codecs(array.parallel_codecs())
+            .array_to_array_codecs(array.codecs().array_to_array_codecs().to_vec())
+            .array_to_bytes_codec(array.codecs().array_to_bytes_codec().clone())
+            .bytes_to_bytes_codecs(array.codecs().bytes_to_bytes_codecs().to_vec())
+            .storage_transformers(array.storage_transformers().clone());
+        builder
+    }
+
     /// Set the shape.
     pub fn shape(&mut self, shape: ArrayShape) -> &mut Self {
         self.shape = shape;
