@@ -1,3 +1,4 @@
+use derive_more::From;
 use thiserror::Error;
 
 use crate::{
@@ -42,8 +43,8 @@ pub struct TransposeCodec {
 }
 
 /// An invalid permutation order error.
-#[derive(Clone, Debug, Error)]
-#[error("permutation order {0:?} is invalid")]
+#[derive(Clone, Debug, Error, From)]
+#[error("permutation order {0:?} is invalid. It must be an array of integers specifying a permutation of 0, 1, …, n-1, where n is the number of dimensions")]
 pub struct InvalidPermutationError(Vec<usize>);
 
 impl TransposeCodec {
@@ -56,38 +57,14 @@ impl TransposeCodec {
         configuration: &TransposeCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         let TransposeCodecConfiguration::V1(configuration) = configuration;
-        Self::new_with_order(configuration.order.clone()).map_err(|e| PluginCreateError::Other {
-            error_str: e.to_string(),
-        })
+        Ok(Self::new(configuration.order.clone()))
     }
 
     /// Create a new transpose codec.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`InvalidPermutationError`] if the permutation order is invalid.
-    pub fn new_with_order(order: TransposeOrder) -> Result<Self, InvalidPermutationError> {
-        if let TransposeOrder::Permutation(permutation) = &order {
-            if !validate_permutation(permutation) {
-                return Err(InvalidPermutationError(permutation.clone()));
-            }
-        }
-        Ok(Self { order })
+    #[must_use]
+    pub const fn new(order: TransposeOrder) -> Self {
+        Self { order }
     }
-}
-
-fn validate_permutation(permutation: &[usize]) -> bool {
-    let permutation_unique = to_vec_unique(permutation);
-    !permutation.is_empty()
-        && permutation_unique.len() == permutation.len()
-        && *permutation_unique.iter().max().unwrap() == permutation.len() - 1
-}
-
-fn to_vec_unique(v: &[usize]) -> Vec<usize> {
-    let mut v = v.to_vec();
-    v.sort_unstable();
-    v.dedup();
-    v
 }
 
 impl CodecTraits for TransposeCodec {

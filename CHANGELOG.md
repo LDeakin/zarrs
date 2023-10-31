@@ -61,6 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Derive `Clone` for `StorageTransformerChain`
  - **Breaking**: `ArrayBuilder::storage_transformers` use `StorageTransformerChain`
  - **Breaking**: change `ArrayError::InvalidFillValue` to `InvalidFillValueMetadata` and add a new `InvalidFillValue`
+ - **Breaking**: The transpose codec order configuration parameter no longer supports the constants "C" or "F" and must instead always be specified as an explicit permutation [zarr-developers/zarr-specs #264](https://github.com/zarr-developers/zarr-specs/pull/264)
+   - Removes `TransposeOrderImpl`
+   - `TransposeOrder` is now validated on creation/deserialisation and `TransposeCodec::new` no longer returns a `Result`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
