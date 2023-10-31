@@ -229,16 +229,14 @@ impl ChunkGridTraits for RectangularChunkGrid {
         array_shape: &[u64],
     ) -> Option<ArrayIndices> {
         let chunk_indices = self.chunk_indices_unchecked(array_indices, array_shape);
-        if let Some(chunk_indices) = chunk_indices {
+        chunk_indices.and_then(|chunk_indices| {
             self.chunk_origin_unchecked(&chunk_indices, array_shape)
                 .map(|chunk_start| {
                     std::iter::zip(array_indices, &chunk_start)
                         .map(|(i, s)| i - s)
                         .collect()
                 })
-        } else {
-            None
-        }
+        })
     }
 
     fn array_indices_inbounds(&self, array_indices: &[u64], array_shape: &[u64]) -> bool {

@@ -245,12 +245,10 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         chunk_indices.len() == self.dimensionality()
             && array_shape.len() == self.dimensionality()
             && self.grid_shape(array_shape).is_ok_and(|chunk_grid_shape| {
-                if let Some(chunk_grid_shape) = chunk_grid_shape {
+                chunk_grid_shape.map_or(false, |chunk_grid_shape| {
                     std::iter::zip(chunk_indices, chunk_grid_shape)
                         .all(|(index, shape)| shape == 0 || *index < shape)
-                } else {
-                    false
-                }
+                })
             })
     }
 

@@ -165,7 +165,7 @@ impl ArraySubset {
     ///
     /// # Errors
     /// Returns an error if `end` does not match the array subset dimensionality.
-    pub fn bound(&self, end: &[u64]) -> Result<ArraySubset, IncompatibleDimensionalityError> {
+    pub fn bound(&self, end: &[u64]) -> Result<Self, IncompatibleDimensionalityError> {
         if end.len() == self.dimensionality() {
             Ok(unsafe { self.bound_unchecked(end) })
         } else {
@@ -181,7 +181,7 @@ impl ArraySubset {
     /// # Safety
     /// The length of `end` must match the array subset dimensionality.
     #[must_use]
-    pub unsafe fn bound_unchecked(&self, end: &[u64]) -> ArraySubset {
+    pub unsafe fn bound_unchecked(&self, end: &[u64]) -> Self {
         debug_assert_eq!(end.len(), self.dimensionality());
         let start = std::iter::zip(self.start(), end)
             .map(|(&a, &b)| std::cmp::min(a, b))
@@ -189,7 +189,7 @@ impl ArraySubset {
         let end = std::iter::zip(self.end_exc(), end)
             .map(|(a, &b)| std::cmp::min(a, b))
             .collect();
-        unsafe { ArraySubset::new_with_start_end_exc_unchecked(start, end) }
+        unsafe { Self::new_with_start_end_exc_unchecked(start, end) }
     }
 
     /// Return the start of the array subset.

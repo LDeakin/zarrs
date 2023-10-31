@@ -113,7 +113,7 @@ impl ArrayBuilder {
 
     /// Create a new builder copying the configuration of an existing array.
     pub fn from_array<T: ?Sized>(array: &Array<T>) -> Self {
-        let mut builder = ArrayBuilder::new(
+        let mut builder = Self::new(
             array.shape().to_vec(),
             array.data_type().clone(),
             array.chunk_grid().clone(),

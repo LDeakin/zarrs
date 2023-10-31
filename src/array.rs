@@ -421,19 +421,22 @@ impl<TStorage: ?Sized> Array<TStorage> {
         chunk_indices: &[u64],
         array_shape: &[u64],
     ) -> Result<ArrayRepresentation, ArrayError> {
-        if let Some(chunk_shape) = self.chunk_grid().chunk_shape(chunk_indices, array_shape)? {
-            Ok(unsafe {
-                ArrayRepresentation::new_unchecked(
-                    chunk_shape,
-                    self.data_type().clone(),
-                    self.fill_value().clone(),
-                )
-            })
-        } else {
-            Err(ArrayError::InvalidChunkGridIndicesError(
-                chunk_indices.to_vec(),
-            ))
-        }
+        (self.chunk_grid().chunk_shape(chunk_indices, array_shape)?).map_or_else(
+            || {
+                Err(ArrayError::InvalidChunkGridIndicesError(
+                    chunk_indices.to_vec(),
+                ))
+            },
+            |chunk_shape| {
+                Ok(unsafe {
+                    ArrayRepresentation::new_unchecked(
+                        chunk_shape,
+                        self.data_type().clone(),
+                        self.fill_value().clone(),
+                    )
+                })
+            },
+        )
     }
 
     /// Return an array subset indicating the chunks intersecting `array_subset`.
@@ -453,11 +456,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let chunks_end = self
             .chunk_grid()
             .chunk_indices(&array_subset.end_inc(), self.shape())?;
-        let chunks_end = if let Some(chunks_end) = chunks_end {
-            Some(chunks_end)
-        } else {
-            self.chunk_grid_shape()
-        };
+        let chunks_end = chunks_end.map_or_else(|| self.chunk_grid_shape(), Some);
 
         Ok(
             if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
