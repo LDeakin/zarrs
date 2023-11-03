@@ -398,30 +398,46 @@ impl<TStorage: ?Sized> Array<TStorage> {
         unsafe { self.chunk_grid().grid_shape_unchecked(self.shape()) }
     }
 
+    /// Return the shape of the chunk at `chunk_indices`.
+    ///
+    /// # Errors
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
+    pub fn chunk_shape(&self, chunk_indices: &[u64]) -> Result<Vec<u64>, ArrayError> {
+        self.chunk_grid()
+            .chunk_shape(chunk_indices, self.shape())
+            .map_err(|_| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?
+            .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))
+    }
+
     /// Return the array subset of the chunk at `chunk_indices`.
-    pub fn chunk_subset(&self, chunk_indices: &[u64]) -> Option<ArraySubset> {
-        unsafe {
-            self.chunk_grid()
-                .subset_unchecked(chunk_indices, self.shape())
-        }
+    ///
+    /// # Errors
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
+    pub fn chunk_subset(&self, chunk_indices: &[u64]) -> Result<ArraySubset, ArrayError> {
+        self.chunk_grid()
+            .subset(chunk_indices, self.shape())
+            .map_err(|_| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?
+            .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))
     }
 
     /// Return the array subset of the chunk at `chunk_indices` bounded by the array shape.
-    pub fn chunk_subset_bounded(&self, chunk_indices: &[u64]) -> Option<ArraySubset> {
-        self.chunk_subset(chunk_indices)
-            .map(|subset| unsafe { subset.bound_unchecked(self.shape()) })
+    ///
+    /// # Errors
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
+    pub fn chunk_subset_bounded(&self, chunk_indices: &[u64]) -> Result<ArraySubset, ArrayError> {
+        let chunk_subset = self.chunk_subset(chunk_indices)?;
+        Ok(unsafe { chunk_subset.bound_unchecked(self.shape()) })
     }
 
     /// Get the chunk array representation at `chunk_index`.
     ///
     /// # Errors
-    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` or `array_shape` are incompatible with the chunk grid.
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
     pub fn chunk_array_representation(
         &self,
         chunk_indices: &[u64],
-        array_shape: &[u64],
     ) -> Result<ArrayRepresentation, ArrayError> {
-        (self.chunk_grid().chunk_shape(chunk_indices, array_shape)?).map_or_else(
+        (self.chunk_grid().chunk_shape(chunk_indices, self.shape())?).map_or_else(
             || {
                 Err(ArrayError::InvalidChunkGridIndicesError(
                     chunk_indices.to_vec(),
@@ -519,7 +535,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             self.chunk_key_encoding(),
         )
         .map_err(ArrayError::StorageError)?;
-        let chunk_representation = self.chunk_array_representation(chunk_indices, self.shape())?;
+        let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         if let Some(chunk_encoded) = chunk_encoded {
             let chunk_decoded = if self.parallel_codecs() {
                 self.codecs()
@@ -844,7 +860,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<u8>, ArrayError> {
-        let chunk_representation = self.chunk_array_representation(chunk_indices, self.shape())?;
+        let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         if !chunk_subset.inbounds(chunk_representation.shape()) {
             return Err(ArrayError::InvalidArraySubset(
                 chunk_subset.clone(),
@@ -978,8 +994,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     ///  - an underlying store error.
     pub fn store_chunk(&self, chunk_indices: &[u64], chunk_bytes: &[u8]) -> Result<(), ArrayError> {
         // Validation
-        let chunk_array_representation =
-            self.chunk_array_representation(chunk_indices, self.shape())?;
+        let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
         if chunk_bytes.len() as u64 != chunk_array_representation.size() {
             return Err(ArrayError::InvalidBytesInputSize(
                 chunk_bytes.len(),
