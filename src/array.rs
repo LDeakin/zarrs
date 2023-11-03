@@ -632,6 +632,50 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         }
     }
 
+    fn _decode_chunk_into_array_subset(
+        &self,
+        chunk_indices: &[u64],
+        array_subset: &ArraySubset,
+        output: &mut [u8],
+    ) -> Result<(), ArrayError> {
+        // Get the subset of the array corresponding to the chunk
+        let chunk_subset_in_array = unsafe {
+            self.chunk_grid()
+                .subset_unchecked(chunk_indices, self.shape())
+        };
+        let Some(chunk_subset_in_array) = chunk_subset_in_array else {
+            return Err(ArrayError::InvalidArraySubset(
+                array_subset.clone(),
+                self.shape().to_vec(),
+            ));
+        };
+
+        // Decode the subset of the chunk which intersects array_subset
+        let array_subset_in_chunk_subset =
+            unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
+        let decoded_bytes =
+            self.retrieve_chunk_subset(chunk_indices, &array_subset_in_chunk_subset)?;
+
+        // Copy decoded bytes to the output
+        let element_size = self.data_type().size() as u64;
+        let chunk_subset_in_array_subset =
+            unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
+        let mut decoded_offset = 0;
+        for (array_subset_element_index, num_elements) in unsafe {
+            chunk_subset_in_array_subset
+                .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
+        } {
+            let output_offset = usize::try_from(array_subset_element_index * element_size).unwrap();
+            let length = usize::try_from(num_elements * element_size).unwrap();
+            debug_assert!((output_offset + length) <= output.len());
+            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
+            output[output_offset..output_offset + length]
+                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
+            decoded_offset += length;
+        }
+        Ok(())
+    }
+
     fn _retrieve_array_subset(
         &self,
         array_subset: &ArraySubset,
@@ -644,46 +688,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             ));
         }
 
-        let element_size = self.fill_value().size() as u64;
-        let decode_chunk = |chunk_indices: Vec<u64>, output: &mut [u8]| -> Result<(), ArrayError> {
-            // Get the subset of the array corresponding to the chunk
-            let chunk_subset_in_array = unsafe {
-                self.chunk_grid()
-                    .subset_unchecked(&chunk_indices, self.shape())
-            };
-            let Some(chunk_subset_in_array) = chunk_subset_in_array else {
-                return Err(ArrayError::InvalidArraySubset(
-                    array_subset.clone(),
-                    self.shape().to_vec(),
-                ));
-            };
-
-            // Decode the subset of the chunk which intersects array_subset
-            let array_subset_in_chunk_subset =
-                unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
-            let decoded_bytes =
-                self.retrieve_chunk_subset(&chunk_indices, &array_subset_in_chunk_subset)?;
-
-            // Copy decoded bytes to the output
-            let chunk_subset_in_array_subset =
-                unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
-            let mut decoded_offset = 0;
-            for (array_subset_element_index, num_elements) in unsafe {
-                chunk_subset_in_array_subset
-                    .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
-            } {
-                let output_offset =
-                    usize::try_from(array_subset_element_index * element_size).unwrap();
-                let length = usize::try_from(num_elements * element_size).unwrap();
-                debug_assert!((output_offset + length) <= output.len());
-                debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-                output[output_offset..output_offset + length]
-                    .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
-                decoded_offset += length;
-            }
-            Ok(())
-        };
-
         // Find the chunks intersecting this array subset
         let chunks = self.chunks_in_array_subset(array_subset)?;
         let Some(chunks) = chunks else {
@@ -693,30 +697,67 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             ));
         };
 
-        // Decode chunks and copy to output
-        let size_output = usize::try_from(array_subset.num_elements() * element_size).unwrap();
-        let mut output: Vec<u8> = vec![0; size_output];
-        if parallel {
-            let output = UnsafeCellSlice::new(output.as_mut_slice());
-            (0..chunks.shape().iter().product())
-                .into_par_iter()
-                .map(|chunk_index| {
-                    std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
-                        .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                        .collect::<Vec<_>>()
-                })
-                // chunks
-                // .iter_indices()
-                // .par_bridge()
-                .map(|chunk_indices| decode_chunk(chunk_indices, unsafe { output.get() }))
-                .collect::<Result<Vec<_>, ArrayError>>()?;
-        } else {
-            for chunk_indices in chunks.iter_indices() {
-                decode_chunk(chunk_indices, &mut output)?;
+        // Retrieve chunk bytes
+        let num_chunks = chunks.num_elements();
+        match num_chunks {
+            0 => Ok(vec![]),
+            1 => {
+                let chunk_indices = chunks.start();
+                let chunk_subset = self.chunk_subset(chunk_indices).unwrap();
+                if &chunk_subset == array_subset {
+                    // Single chunk fast path if the array subset domain matches the chunk domain
+                    self.retrieve_chunk(chunk_indices)
+                } else {
+                    let size_output = usize::try_from(
+                        array_subset.num_elements() * self.data_type().size() as u64,
+                    )
+                    .unwrap();
+                    let mut output: Vec<u8> = vec![0; size_output];
+                    self._decode_chunk_into_array_subset(chunk_indices, array_subset, &mut output)?;
+                    Ok(output)
+                }
+            }
+            _ => {
+                // Decode chunks and copy to output
+                let size_output =
+                    usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
+                        .unwrap();
+                let mut output: Vec<u8> = vec![0; size_output];
+                if parallel {
+                    let output = UnsafeCellSlice::new(output.as_mut_slice());
+                    (0..chunks.shape().iter().product())
+                        .into_par_iter()
+                        .map(|chunk_index| {
+                            std::iter::zip(
+                                unravel_index(chunk_index, chunks.shape()),
+                                chunks.start(),
+                            )
+                            .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
+                            .collect::<Vec<_>>()
+                        })
+                        // chunks
+                        // .iter_indices()
+                        // .par_bridge()
+                        .map(|chunk_indices| {
+                            self._decode_chunk_into_array_subset(
+                                &chunk_indices,
+                                array_subset,
+                                unsafe { output.get() },
+                            )
+                        })
+                        .collect::<Result<Vec<_>, ArrayError>>()?;
+                } else {
+                    for chunk_indices in chunks.iter_indices() {
+                        self._decode_chunk_into_array_subset(
+                            &chunk_indices,
+                            array_subset,
+                            &mut output,
+                        )?;
+                    }
+                }
+                Ok(output)
             }
         }
-
-        Ok(output)
     }
 
     /// Read and decode the `array_subset` of array into its bytes.

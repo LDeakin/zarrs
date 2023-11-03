@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added methods to `CodecChain` to retrieve underlying codecs
  - Added `Array::builder()` and `ArrayBuilder::from_array()`
  - Added more `ArrayBuilder` modifiers and made internals public
+ - Added a fast path to `Array::retrieve_array_subset` methods if the array subset matches a chunk
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
