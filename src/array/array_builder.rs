@@ -33,7 +33,7 @@ use super::{
 ///     vec![8, 8], // array shape
 ///     DataType::Float32,
 ///     vec![4, 4].into(), // regular chunk shape
-///     FillValue::from(f32::NAN),
+///     FillValue::from(zarrs::ZARR_NAN_F32),
 /// )
 /// .bytes_to_bytes_codecs(vec![
 ///     #[cfg(feature = "gzip")]

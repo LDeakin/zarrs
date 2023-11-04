@@ -9,6 +9,7 @@ use zarrs::{
     array::Array,
     array_subset::ArraySubset,
     storage::{ReadableStorageTraits, ReadableWritableStorageTraits},
+    ZARR_NAN_F32,
 };
 
 // const ARRAY_PATH: &'static str = "/array";
@@ -24,7 +25,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
         vec![8, 8], // array shape
         DataType::Float32,
         vec![4, 4].into(), // regular chunk shape
-        FillValue::from(f32::NAN),
+        FillValue::from(ZARR_NAN_F32),
     )
     .bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]

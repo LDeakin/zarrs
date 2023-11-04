@@ -1552,7 +1552,7 @@ mod tests {
     use itertools::Itertools;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-    use crate::storage::store::MemoryStore;
+    use crate::{storage::store::MemoryStore, ZARR_NAN_F32};
 
     use super::*;
 
@@ -1587,7 +1587,7 @@ mod tests {
             vec![8, 8], // array shape
             DataType::Float32,
             vec![4, 4].into(),
-            FillValue::from(f32::NAN),
+            FillValue::from(ZARR_NAN_F32),
         )
         .bytes_to_bytes_codecs(vec![
             #[cfg(feature = "gzip")]

@@ -8,6 +8,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         array_subset::ArraySubset,
         node::Node,
         storage::store,
+        ZARR_NAN_F32,
     };
 
     // Create a store
@@ -41,7 +42,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         vec![8, 8], // array shape
         DataType::Float32,
         vec![4, 4].into(), // regular chunk shape
-        FillValue::from(f32::NAN),
+        FillValue::from(ZARR_NAN_F32),
     )
     // .bytes_to_bytes_codecs(vec![]) // uncompressed
     .dimension_names(Some(vec!["y".into(), "x".into()]))

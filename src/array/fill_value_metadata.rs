@@ -12,6 +12,8 @@ use half::{bf16, f16};
 use num::traits::float::FloatCore;
 use serde::{Deserialize, Serialize};
 
+use crate::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
+
 /// Fill value metadata.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
 #[serde(untagged)]
@@ -57,7 +59,7 @@ impl FillValueFloat {
         match self {
             Self::Float(float) => T::from(*float),
             Self::HexString(hex_string) => {
-                let bytes: &[u8] = hex_string.as_bytes();
+                let bytes: &[u8] = hex_string.as_be_bytes();
                 if bytes.len() == core::mem::size_of::<T>() {
                     // NOTE: Cleaner way of doing this?
                     if core::mem::size_of::<T>() == core::mem::size_of::<f32>() {
@@ -88,9 +90,9 @@ impl FillValueFloat {
 pub struct HexString(Vec<u8>);
 
 impl HexString {
-    /// Return the hex string as a byte slice.
+    /// Return the hex string as a big endian byte slice.
     #[must_use]
-    pub fn as_bytes(&self) -> &[u8] {
+    pub fn as_be_bytes(&self) -> &[u8] {
         &self.0
     }
 }
@@ -112,7 +114,7 @@ fn bytes_to_hex_string(v: &[u8]) -> String {
     string
 }
 
-fn hex_string_to_bytes(s: &str) -> Option<Vec<u8>> {
+fn hex_string_to_be_bytes(s: &str) -> Option<Vec<u8>> {
     if s.starts_with("0x") && s.len() % 2 == 0 {
         (2..s.len())
             .step_by(2)
@@ -134,7 +136,7 @@ impl serde::Serialize for HexString {
 impl<'de> serde::Deserialize<'de> for HexString {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let s = String::deserialize(d)?;
-        Ok(Self(hex_string_to_bytes(&s).ok_or_else(|| {
+        Ok(Self(hex_string_to_be_bytes(&s).ok_or_else(|| {
             serde::de::Error::custom("not a valid hex string")
         })?))
     }
@@ -197,7 +199,7 @@ impl FillValueMetadata {
                 match float {
                     F::Float(float) => T::from(*float),
                     F::HexString(hex_string) => {
-                        let bytes = hex_string.as_bytes();
+                        let bytes = hex_string.as_be_bytes();
                         if bytes.len() == core::mem::size_of::<T>() {
                             // NOTE: Cleaner way of doing this?
                             if core::mem::size_of::<T>() == core::mem::size_of::<f32>() {
@@ -213,11 +215,19 @@ impl FillValueMetadata {
                     }
                     F::NonFinite(nonfinite) => {
                         use FillValueFloatStringNonFinite as NF;
-                        Some(match nonfinite {
-                            NF::PosInfinity => T::infinity(),
-                            NF::NegInfinity => T::neg_infinity(),
-                            NF::NaN => T::nan(),
-                        })
+                        match nonfinite {
+                            NF::PosInfinity => Some(T::infinity()),
+                            NF::NegInfinity => Some(T::neg_infinity()),
+                            NF::NaN => {
+                                if core::mem::size_of::<T>() == core::mem::size_of::<f32>() {
+                                    T::from(ZARR_NAN_F32)
+                                } else if core::mem::size_of::<T>() == core::mem::size_of::<f64>() {
+                                    T::from(ZARR_NAN_F64)
+                                } else {
+                                    None
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -249,7 +259,7 @@ impl FillValueMetadata {
                 match float {
                     F::Float(float) => Some(f16::from_f64(*float)),
                     F::HexString(hex_string) => {
-                        let bytes = hex_string.as_bytes();
+                        let bytes = hex_string.as_be_bytes();
                         bytes
                             .try_into()
                             .map_or(None, |bytes| Some(f16::from_be_bytes(bytes)))
@@ -259,7 +269,7 @@ impl FillValueMetadata {
                         Some(match nonfinite {
                             NF::PosInfinity => f16::INFINITY,
                             NF::NegInfinity => f16::NEG_INFINITY,
-                            NF::NaN => f16::NAN,
+                            NF::NaN => ZARR_NAN_F16,
                         })
                     }
                 }
@@ -277,7 +287,7 @@ impl FillValueMetadata {
                 match float {
                     F::Float(float) => Some(bf16::from_f64(*float)),
                     F::HexString(hex_string) => {
-                        let bytes = hex_string.as_bytes();
+                        let bytes = hex_string.as_be_bytes();
                         bytes
                             .try_into()
                             .map_or(None, |bytes| Some(bf16::from_be_bytes(bytes)))
@@ -287,7 +297,7 @@ impl FillValueMetadata {
                         Some(match nonfinite {
                             NF::PosInfinity => bf16::INFINITY,
                             NF::NegInfinity => bf16::NEG_INFINITY,
-                            NF::NaN => bf16::NAN,
+                            NF::NaN => ZARR_NAN_BF16,
                         })
                     }
                 }
@@ -299,6 +309,8 @@ impl FillValueMetadata {
 
 #[cfg(test)]
 mod tests {
+    use crate::array::{DataType, FillValue};
+
     use super::*;
 
     #[test]
@@ -403,6 +415,41 @@ mod tests {
             }
             _ => panic!(),
         }
+    }
+
+    #[test]
+    fn fill_value_metadata_float_nan_standard() {
+        let json = r#""0x7fc00000""#;
+        let metadata: FillValueMetadata = serde_json::from_str(json).unwrap();
+        let FillValueMetadata::Float(FillValueFloat::HexString(hex_string)) = metadata else {
+            panic!()
+        };
+        let fill_value: f32 = f32::from_be_bytes(hex_string.as_be_bytes().try_into().unwrap());
+        assert!(fill_value.is_nan());
+        let fill_value = FillValue::from(fill_value);
+        let fill_value_metadata = DataType::Float32.metadata_fill_value(&fill_value);
+        let FillValueMetadata::Float(FillValueFloat::NonFinite(fill_value)) = fill_value_metadata
+        else {
+            panic!()
+        };
+        assert_eq!(fill_value, FillValueFloatStringNonFinite::NaN);
+    }
+
+    #[test]
+    fn fill_value_metadata_float_nan_nonstandard() {
+        let json = r#""0x7fc00001""#;
+        let metadata: FillValueMetadata = serde_json::from_str(json).unwrap();
+        let FillValueMetadata::Float(FillValueFloat::HexString(hex_string)) = metadata else {
+            panic!()
+        };
+        let fill_value: f32 = f32::from_be_bytes(hex_string.as_be_bytes().try_into().unwrap());
+        assert!(fill_value.is_nan());
+        let fill_value = FillValue::from(fill_value);
+        let fill_value_metadata = DataType::Float32.metadata_fill_value(&fill_value);
+        let FillValueMetadata::Float(FillValueFloat::HexString(_hex_string)) = fill_value_metadata
+        else {
+            panic!()
+        };
     }
 
     #[test]

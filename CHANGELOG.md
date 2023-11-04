@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `Array::builder()` and `ArrayBuilder::from_array()`
  - Added more `ArrayBuilder` modifiers and made internals public
  - Added a fast path to `Array::retrieve_array_subset` methods if the array subset matches a chunk
+ - Added `ZARR_NAN_F64/F32/F16/BF16` which match the zarr nan bit representation on all implementations
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`
@@ -65,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: The transpose codec order configuration parameter no longer supports the constants "C" or "F" and must instead always be specified as an explicit permutation [zarr-developers/zarr-specs #264](https://github.com/zarr-developers/zarr-specs/pull/264)
    - Removes `TransposeOrderImpl`
    - `TransposeOrder` is now validated on creation/deserialisation and `TransposeCodec::new` no longer returns a `Result`
+ - **Breaking**: Change `HexString::as_bytes()` to `as_be_bytes()`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
@@ -76,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `FilesystemStore::erase_prefix` now correctly removes non-empty directories
  - **Breaking**: `ArrayBuilder::storage_transformers` remove `#[must_use]`
  - Validate data type and fill value compatibility in `ArrayBuilder`
+ - Handling of `"NaN"` fill values, they are now guaranteed to match the byte representation specified in the zarr v3 spec
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.

@@ -6,10 +6,12 @@ use derive_more::From;
 use half::{bf16, f16};
 use thiserror::Error;
 
-use crate::metadata::Metadata;
+use crate::{metadata::Metadata, ZARR_NAN_F32, ZARR_NAN_F64};
 
 use super::{
-    fill_value_metadata::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
+    fill_value_metadata::{
+        FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata, HexString,
+    },
     FillValue,
 };
 
@@ -309,10 +311,10 @@ impl DataType {
                 let fill_value = f16::from_ne_bytes(fill_value.as_ne_bytes().try_into().unwrap());
                 FillValueMetadata::Float(float16_to_fill_value_float(fill_value))
             }
-            Self::Float32 => FillValueMetadata::Float(float_to_fill_value(f32::from_ne_bytes(
+            Self::Float32 => FillValueMetadata::Float(float32_to_fill_value(f32::from_ne_bytes(
                 bytes.try_into().unwrap(),
             ))),
-            Self::Float64 => FillValueMetadata::Float(float_to_fill_value(f64::from_ne_bytes(
+            Self::Float64 => FillValueMetadata::Float(float64_to_fill_value(f64::from_ne_bytes(
                 bytes.try_into().unwrap(),
             ))),
             Self::BFloat16 => {
@@ -322,12 +324,12 @@ impl DataType {
             Self::Complex64 => {
                 let re = f32::from_ne_bytes(bytes[0..4].try_into().unwrap());
                 let im = f32::from_ne_bytes(bytes[4..8].try_into().unwrap());
-                FillValueMetadata::Complex(float_to_fill_value(re), float_to_fill_value(im))
+                FillValueMetadata::Complex(float32_to_fill_value(re), float32_to_fill_value(im))
             }
             Self::Complex128 => {
                 let re = f64::from_ne_bytes(bytes[0..8].try_into().unwrap());
                 let im = f64::from_ne_bytes(bytes[8..16].try_into().unwrap());
-                FillValueMetadata::Complex(float_to_fill_value(re), float_to_fill_value(im))
+                FillValueMetadata::Complex(float64_to_fill_value(re), float64_to_fill_value(im))
             }
             Self::RawBits(size) => {
                 debug_assert_eq!(fill_value.as_ne_bytes().len(), *size);
@@ -337,18 +339,31 @@ impl DataType {
     }
 }
 
-fn float_to_fill_value<F: num::Float>(f: F) -> FillValueFloat
-where
-    f64: From<F>,
-{
+fn float32_to_fill_value(f: f32) -> FillValueFloat {
     if f.is_infinite() && f.is_sign_positive() {
         FillValueFloatStringNonFinite::PosInfinity.into()
     } else if f.is_infinite() && f.is_sign_negative() {
         FillValueFloatStringNonFinite::NegInfinity.into()
-    } else if f.is_nan() {
+    } else if f.to_bits() == ZARR_NAN_F32.to_bits() {
         FillValueFloatStringNonFinite::NaN.into()
+    } else if f.is_nan() {
+        HexString::from(f.to_be_bytes().to_vec()).into()
     } else {
         f64::from(f).into()
+    }
+}
+
+fn float64_to_fill_value(f: f64) -> FillValueFloat {
+    if f.is_infinite() && f.is_sign_positive() {
+        FillValueFloatStringNonFinite::PosInfinity.into()
+    } else if f.is_infinite() && f.is_sign_negative() {
+        FillValueFloatStringNonFinite::NegInfinity.into()
+    } else if f.to_bits() == ZARR_NAN_F64.to_bits() {
+        FillValueFloatStringNonFinite::NaN.into()
+    } else if f.is_nan() {
+        HexString::from(f.to_be_bytes().to_vec()).into()
+    } else {
+        f.into()
     }
 }
 
@@ -392,6 +407,8 @@ impl core::fmt::Display for DataType {
 
 #[cfg(test)]
 mod tests {
+    use crate::{ZARR_NAN_BF16, ZARR_NAN_F32, ZARR_NAN_F64};
+
     use super::*;
 
     #[test]
@@ -496,7 +513,7 @@ mod tests {
                 )
                 .unwrap()
                 .as_ne_bytes(),
-            f32::NAN.to_ne_bytes()
+            ZARR_NAN_F32.to_ne_bytes()
         );
 
         assert_eq!(
@@ -551,11 +568,21 @@ mod tests {
         assert_eq!(
             data_type
                 .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadata>(r#""0x7FF8000000000000""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            ZARR_NAN_F64.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
                     &serde_json::from_str::<FillValueMetadata>(r#""NaN""#).unwrap()
                 )
                 .unwrap()
                 .as_ne_bytes(),
-            f64::NAN.to_ne_bytes()
+            ZARR_NAN_F64.to_ne_bytes()
         );
 
         assert_eq!(
@@ -653,11 +680,22 @@ mod tests {
         assert_eq!(
             data_type
                 .fill_value_from_metadata(
+                    // &serde_json::from_str::<FillValueMetadata>(r#""0x7E00""#).unwrap()
+                    &serde_json::from_str::<FillValueMetadata>(r#""0x7FC0""#).unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            ZARR_NAN_BF16.to_ne_bytes()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
                     &serde_json::from_str::<FillValueMetadata>(r#""NaN""#).unwrap()
                 )
                 .unwrap()
                 .as_ne_bytes(),
-            bf16::NAN.to_ne_bytes()
+            ZARR_NAN_BF16.to_ne_bytes()
         );
 
         assert_eq!(
