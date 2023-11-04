@@ -144,6 +144,27 @@ mod tests {
     ]
 }"#;
 
+    const JSON_VALID3: &str = r#"{
+    "chunk_shape": [2, 2],
+    "codecs": [
+        {
+            "name": "bytes",
+            "configuration": {
+                "endian": "little"
+            }
+        }
+    ],
+    "index_codecs": [
+        {
+            "name": "bytes",
+            "configuration": {
+                "endian": "little"
+            }
+        }
+    ],
+    "index_location": "start"
+}"#;
+
     fn codec_sharding_round_trip_impl(json: &str, chunk_shape: Vec<u64>) {
         let array_representation =
             ArrayRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(0u16)).unwrap();
@@ -185,6 +206,12 @@ mod tests {
     fn codec_sharding_round_trip2() {
         let chunk_shape = vec![2, 4, 4];
         codec_sharding_round_trip_impl(JSON_VALID2, chunk_shape);
+    }
+
+    #[test]
+    fn codec_sharding_round_trip3() {
+        let chunk_shape = vec![4, 4];
+        codec_sharding_round_trip_impl(JSON_VALID3, chunk_shape);
     }
 
     #[test]
@@ -279,6 +306,36 @@ mod tests {
             .collect();
 
         let answer: Vec<u16> = vec![16, 17, 18, 20, 21, 22];
+        assert_eq!(answer, decoded_partial_chunk);
+    }
+
+    #[test]
+    fn codec_sharding_partial_decode3() {
+        let array_representation =
+            ArrayRepresentation::new(vec![4, 4], DataType::UInt8, FillValue::from(0u8)).unwrap();
+        let elements: Vec<u8> = (0..array_representation.num_elements() as u8).collect();
+        let bytes = elements;
+
+        let codec_configuration: ShardingCodecConfiguration =
+            serde_json::from_str(JSON_VALID3).unwrap();
+        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
+
+        let encoded = codec.encode(bytes, &array_representation).unwrap();
+        let decoded_regions = [ArraySubset::new_with_start_shape(vec![1, 0], vec![2, 1]).unwrap()];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec.partial_decoder(input_handle);
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode(&array_representation, &decoded_regions)
+            .unwrap();
+
+        let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .chunks(std::mem::size_of::<u8>())
+            .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
+            .collect();
+        let answer: Vec<u8> = vec![4, 8];
         assert_eq!(answer, decoded_partial_chunk);
     }
 }

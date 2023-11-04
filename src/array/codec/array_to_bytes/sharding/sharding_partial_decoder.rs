@@ -15,7 +15,7 @@ use crate::{
 
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
-    sharding_index_decoded_representation,
+    sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
 };
 
 /// The partial decoder for the sharding codec.
@@ -25,6 +25,7 @@ pub struct ShardingPartialDecoder<'a> {
     inner_codecs: &'a CodecChain,
     index_codecs: &'a CodecChain,
     shard_index: RwLock<Option<Vec<u64>>>,
+    index_location: ShardingIndexLocation,
 }
 
 impl<'a> ShardingPartialDecoder<'a> {
@@ -34,6 +35,7 @@ impl<'a> ShardingPartialDecoder<'a> {
         chunk_shape: ArrayShape,
         inner_codecs: &'a CodecChain,
         index_codecs: &'a CodecChain,
+        index_location: ShardingIndexLocation,
     ) -> Self {
         Self {
             input_handle,
@@ -41,6 +43,7 @@ impl<'a> ShardingPartialDecoder<'a> {
             inner_codecs,
             index_codecs,
             shard_index: RwLock::new(None),
+            index_location,
         }
     }
 
@@ -71,16 +74,17 @@ impl<'a> ShardingPartialDecoder<'a> {
                 .map_err(|e| CodecError::Other(e.to_string()))?;
 
         // Decode the shard index
+        let index_byte_range = match self.index_location {
+            ShardingIndexLocation::Start => ByteRange::FromStart(0, Some(index_encoded_size)),
+            ShardingIndexLocation::End => ByteRange::FromEnd(0, Some(index_encoded_size)),
+        };
+
         let encoded_shard_index = if parallel {
-            self.input_handle.par_partial_decode(
-                &BytesRepresentation::VariableSize,
-                &[ByteRange::FromEnd(0, Some(index_encoded_size))],
-            )
+            self.input_handle
+                .par_partial_decode(&BytesRepresentation::VariableSize, &[index_byte_range])
         } else {
-            self.input_handle.partial_decode(
-                &BytesRepresentation::VariableSize,
-                &[ByteRange::FromEnd(0, Some(index_encoded_size))],
-            )
+            self.input_handle
+                .partial_decode(&BytesRepresentation::VariableSize, &[index_byte_range])
         }?
         .map(|mut v| v.remove(0));
 

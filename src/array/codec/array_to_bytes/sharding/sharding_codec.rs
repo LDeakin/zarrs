@@ -13,8 +13,8 @@ use crate::{
 
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
-    sharding_index_decoded_representation, sharding_partial_decoder, ShardingCodecConfiguration,
-    ShardingCodecConfigurationV1,
+    sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
+    sharding_partial_decoder, ShardingCodecConfiguration, ShardingCodecConfigurationV1,
 };
 
 use rayon::prelude::*;
@@ -45,16 +45,24 @@ pub struct ShardingCodec {
     inner_codecs: CodecChain,
     /// The codecs used to encode and decode the shard index.
     index_codecs: CodecChain,
+    /// Specifies whether the shard index is located at the beginning or end of the file.
+    index_location: ShardingIndexLocation,
 }
 
 impl ShardingCodec {
     /// Create a new `sharding` codec.
     #[must_use]
-    pub fn new(chunk_shape: Vec<u64>, inner_codecs: CodecChain, index_codecs: CodecChain) -> Self {
+    pub fn new(
+        chunk_shape: Vec<u64>,
+        inner_codecs: CodecChain,
+        index_codecs: CodecChain,
+        index_location: ShardingIndexLocation,
+    ) -> Self {
         Self {
             chunk_shape,
             inner_codecs,
             index_codecs,
+            index_location,
         }
     }
 
@@ -73,6 +81,7 @@ impl ShardingCodec {
             configuration.chunk_shape.clone(),
             inner_codecs,
             index_codecs,
+            configuration.index_location,
         ))
     }
 }
@@ -83,6 +92,7 @@ impl CodecTraits for ShardingCodec {
             chunk_shape: self.chunk_shape.clone(),
             codecs: self.inner_codecs.create_metadatas(),
             index_codecs: self.index_codecs.create_metadatas(),
+            index_location: self.index_location,
         };
         Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
@@ -126,7 +136,12 @@ impl ArrayCodecTraits for ShardingCodec {
 
         // Iterate over chunk indices
         let mut shard_inner_chunks = Vec::new();
-        let mut encoded_shard_offset: usize = 0;
+        let index_encoded_size =
+            compute_index_encoded_size(&self.index_codecs, &index_decoded_representation)?;
+        let mut encoded_shard_offset = match self.index_location {
+            ShardingIndexLocation::Start => index_encoded_size,
+            ShardingIndexLocation::End => 0,
+        };
         for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
             ArraySubset::new_with_shape(shard_representation.shape().to_vec())
                 .iter_chunks_unchecked(&self.chunk_shape)
@@ -146,9 +161,9 @@ impl ArrayCodecTraits for ShardingCodec {
                 let chunk_encoded = self.inner_codecs.encode(bytes, &chunk_representation)?;
 
                 // Append chunk, update array index and offset
-                shard_index[chunk_index * 2] = encoded_shard_offset.try_into().unwrap();
+                shard_index[chunk_index * 2] = encoded_shard_offset;
                 shard_index[chunk_index * 2 + 1] = chunk_encoded.len().try_into().unwrap();
-                encoded_shard_offset += chunk_encoded.len();
+                encoded_shard_offset += chunk_encoded.len() as u64;
                 shard_inner_chunks.push(chunk_encoded);
             }
         }
@@ -163,10 +178,20 @@ impl ArrayCodecTraits for ShardingCodec {
         let shard_size =
             shard_inner_chunks.iter().map(Vec::len).sum::<usize>() + encoded_array_index.len();
         let mut shard = Vec::with_capacity(shard_size);
-        for chunk in shard_inner_chunks {
-            shard.extend(chunk);
+        match self.index_location {
+            ShardingIndexLocation::Start => {
+                shard.extend(encoded_array_index);
+                for chunk in shard_inner_chunks {
+                    shard.extend(chunk);
+                }
+            }
+            ShardingIndexLocation::End => {
+                for chunk in shard_inner_chunks {
+                    shard.extend(chunk);
+                }
+                shard.extend(encoded_array_index);
+            }
         }
-        shard.extend(encoded_array_index);
         Ok(shard)
     }
 
@@ -238,13 +263,18 @@ impl ArrayCodecTraits for ShardingCodec {
 
         // Write the shard index
         let index_decoded_representation = sharding_index_decoded_representation(&chunks_per_shard);
+        let index_encoded_size =
+            compute_index_encoded_size(&self.index_codecs, &index_decoded_representation)?;
         let mut shard_index = vec![u64::MAX; index_decoded_representation.num_elements_usize()];
-        let mut offset = 0;
+        let mut encoded_shard_offset = match self.index_location {
+            ShardingIndexLocation::Start => index_encoded_size,
+            ShardingIndexLocation::End => 0,
+        };
         for (chunk_index, chunk) in &shard_inner_chunks {
             if let Some(chunk) = chunk {
-                shard_index[chunk_index * 2] = offset.try_into().unwrap();
+                shard_index[chunk_index * 2] = encoded_shard_offset;
                 shard_index[chunk_index * 2 + 1] = chunk.len().try_into().unwrap();
-                offset += chunk.len();
+                encoded_shard_offset += chunk.len() as u64;
             }
         }
 
@@ -261,13 +291,26 @@ impl ArrayCodecTraits for ShardingCodec {
             .sum::<usize>()
             + encoded_array_index.len();
         let mut shard = Vec::with_capacity(shard_size);
-        for chunk in shard_inner_chunks
-            .into_iter()
-            .filter_map(|(_, chunk)| chunk)
-        {
-            shard.extend(chunk);
+        match self.index_location {
+            ShardingIndexLocation::Start => {
+                shard.extend(encoded_array_index);
+                for chunk in shard_inner_chunks
+                    .into_iter()
+                    .filter_map(|(_, chunk)| chunk)
+                {
+                    shard.extend(chunk);
+                }
+            }
+            ShardingIndexLocation::End => {
+                for chunk in shard_inner_chunks
+                    .into_iter()
+                    .filter_map(|(_, chunk)| chunk)
+                {
+                    shard.extend(chunk);
+                }
+                shard.extend(encoded_array_index);
+            }
         }
-        shard.extend(encoded_array_index);
         Ok(shard)
     }
 
@@ -309,6 +352,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             self.chunk_shape.clone(),
             &self.inner_codecs,
             &self.index_codecs,
+            self.index_location,
         ))
     }
 
@@ -338,9 +382,17 @@ impl ShardingCodec {
                 "The encoded shard is smaller than the expected size of its index.".to_string(),
             ));
         }
-        let encoded_shard_offset =
-            usize::try_from(encoded_shard.len() as u64 - index_encoded_size).unwrap();
-        let encoded_shard_index = &encoded_shard[encoded_shard_offset..];
+
+        let encoded_shard_index = match self.index_location {
+            ShardingIndexLocation::Start => {
+                &encoded_shard[..index_encoded_size.try_into().unwrap()]
+            }
+            ShardingIndexLocation::End => {
+                let encoded_shard_offset =
+                    usize::try_from(encoded_shard.len() as u64 - index_encoded_size).unwrap();
+                &encoded_shard[encoded_shard_offset..]
+            }
+        };
 
         // Decode the shard index
         decode_shard_index(

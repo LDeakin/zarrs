@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Removes `TransposeOrderImpl`
    - `TransposeOrder` is now validated on creation/deserialisation and `TransposeCodec::new` no longer returns a `Result`
  - **Breaking**: Change `HexString::as_bytes()` to `as_be_bytes()`
+ - Support `index_location` for sharding codec
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

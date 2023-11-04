@@ -57,6 +57,22 @@ pub struct ShardingCodecConfigurationV1 {
     pub codecs: Vec<Metadata>,
     /// A list of codecs to be used for encoding and decoding the shard index.
     pub index_codecs: Vec<Metadata>,
+    /// Specifies whether the shard index is located at the beginning or end of the file.
+    #[serde(default)]
+    pub index_location: ShardingIndexLocation,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Eq, PartialEq, Debug, Display)]
+#[serde(rename_all = "lowercase")]
+pub enum ShardingIndexLocation {
+    Start,
+    End,
+}
+
+impl Default for ShardingIndexLocation {
+    fn default() -> Self {
+        Self::End
+    }
 }
 
 #[cfg(test)]
@@ -84,6 +100,8 @@ mod tests {
                 }
             ]
         }"#;
-        serde_json::from_str::<ShardingCodecConfiguration>(JSON).unwrap();
+        let config = serde_json::from_str::<ShardingCodecConfiguration>(JSON).unwrap();
+        let ShardingCodecConfiguration::V1(config) = config;
+        assert_eq!(config.index_location, ShardingIndexLocation::End);
     }
 }

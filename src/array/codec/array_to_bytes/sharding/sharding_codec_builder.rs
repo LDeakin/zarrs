@@ -4,7 +4,7 @@ use crate::array::codec::{
     self, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesToBytesCodecTraits,
 };
 
-use super::ShardingCodec;
+use super::{sharding_configuration::ShardingIndexLocation, ShardingCodec};
 
 /// A [`ShardingCodec`] builder.
 ///
@@ -20,6 +20,7 @@ pub struct ShardingCodecBuilder {
     array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
     array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
     bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+    index_location: ShardingIndexLocation,
 }
 
 impl ShardingCodecBuilder {
@@ -36,6 +37,7 @@ impl ShardingCodecBuilder {
             array_to_array_codecs: Vec::default(),
             array_to_bytes_codec: Box::<codec::BytesCodec>::default(),
             bytes_to_bytes_codecs: Vec::default(),
+            index_location: ShardingIndexLocation::default(),
         }
     }
 
@@ -94,6 +96,14 @@ impl ShardingCodecBuilder {
         self
     }
 
+    /// Set the index location.
+    ///
+    /// If left unmodified, defaults to the end of the shard.
+    pub fn index_location(&mut self, index_location: ShardingIndexLocation) -> &mut Self {
+        self.index_location = index_location;
+        self
+    }
+
     /// Build into a [`ShardingCodec`].
     #[must_use]
     pub fn build(&self) -> ShardingCodec {
@@ -107,6 +117,11 @@ impl ShardingCodecBuilder {
             self.index_array_to_bytes_codec.clone(),
             self.index_bytes_to_bytes_codecs.clone(),
         );
-        ShardingCodec::new(self.inner_chunk_shape.clone(), inner_codecs, index_codecs)
+        ShardingCodec::new(
+            self.inner_chunk_shape.clone(),
+            inner_codecs,
+            index_codecs,
+            self.index_location,
+        )
     }
 }
