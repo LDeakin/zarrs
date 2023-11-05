@@ -15,7 +15,9 @@ mod sharding_codec_builder;
 mod sharding_configuration;
 mod sharding_partial_decoder;
 
-pub use sharding_configuration::{ShardingCodecConfiguration, ShardingCodecConfigurationV1};
+pub use sharding_configuration::{
+    ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
+};
 
 pub use sharding_codec::ShardingCodec;
 pub use sharding_codec_builder::ShardingCodecBuilder;

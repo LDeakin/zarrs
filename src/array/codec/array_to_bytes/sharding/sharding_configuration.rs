@@ -62,10 +62,13 @@ pub struct ShardingCodecConfigurationV1 {
     pub index_location: ShardingIndexLocation,
 }
 
+/// The sharding index location.
 #[derive(Serialize, Deserialize, Clone, Copy, Eq, PartialEq, Debug, Display)]
 #[serde(rename_all = "lowercase")]
 pub enum ShardingIndexLocation {
+    /// The index is at the start of the shard, before the chunks.
     Start,
+    /// The index is at the end of the shard, after the chunks.
     End,
 }
 
