@@ -1,3 +1,5 @@
+use std::iter::FusedIterator;
+
 use itertools::izip;
 
 use crate::array::{ravel_indices, ArrayIndices};
@@ -6,21 +8,20 @@ use super::{ArraySubset, IncompatibleArrayShapeError, IncompatibleDimensionality
 
 /// Iterates over element indices in an array subset.
 pub struct IndicesIterator {
-    subset: ArraySubset,
-    next: Option<ArrayIndices>,
+    subset_rev: ArraySubset,
+    index: u64,
 }
 
 impl IndicesIterator {
     /// Create a new indices iterator.
     #[must_use]
-    pub const fn new(subset: ArraySubset, next: Option<ArrayIndices>) -> Self {
-        Self { subset, next }
-    }
-
-    /// Return the array subset.
-    #[must_use]
-    pub const fn subset(&self) -> &ArraySubset {
-        &self.subset
+    pub fn new(mut subset: ArraySubset) -> Self {
+        subset.start.reverse();
+        subset.shape.reverse();
+        Self {
+            subset_rev: subset,
+            index: 0,
+        }
     }
 }
 
@@ -28,41 +29,39 @@ impl Iterator for IndicesIterator {
     type Item = ArrayIndices;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let current = self.next.clone();
-        if let Some(next) = self.next.as_mut() {
-            let mut carry = true;
-            for (next, start, size) in izip!(
-                next.iter_mut().rev(),
-                self.subset.start.iter().rev(),
-                self.subset.shape.iter().rev()
-            ) {
-                if carry {
-                    *next += 1;
-                }
-                if *next == start + size {
-                    *next = *start;
-                    carry = true;
-                } else {
-                    carry = false;
-                    break;
-                }
-            }
-            if carry {
-                self.next = None;
-            }
+        let mut current = self.index;
+        // let mut indices = vec![0u64; self.subset_rev.dimensionality()];
+        let mut indices = vec![core::mem::MaybeUninit::uninit(); self.subset_rev.dimensionality()];
+        for (out, &subset_start, &subset_size) in izip!(
+            indices.iter_mut().rev(),
+            self.subset_rev.start.iter(),
+            self.subset_rev.shape.iter(),
+        ) {
+            out.write(current % subset_size + subset_start);
+            current /= subset_size;
         }
-        current
+        if current == 0 {
+            self.index += 1;
+            Some(unsafe { std::mem::transmute(indices) })
+        } else {
+            None
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let num_elements = self.subset.num_elements_usize();
+        let num_elements = self.subset_rev.num_elements_usize();
         (num_elements, Some(num_elements))
     }
 }
 
+impl ExactSizeIterator for IndicesIterator {}
+
+impl FusedIterator for IndicesIterator {}
+
 /// Iterates over linearised element indices of an array subset in an array.
 pub struct LinearisedIndicesIterator<'a> {
-    inner: IndicesIterator,
+    subset: ArraySubset,
+    index: u64,
     array_shape: &'a [u64],
 }
 
@@ -71,20 +70,21 @@ impl<'a> LinearisedIndicesIterator<'a> {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if `array_shape` does not encapsulate the array subset of `inner`.
+    /// Returns [`IncompatibleArrayShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
-        inner: IndicesIterator,
+        subset: ArraySubset,
         array_shape: &'a [u64],
     ) -> Result<Self, IncompatibleArrayShapeError> {
-        if inner.subset.dimensionality() == array_shape.len()
-            && std::iter::zip(inner.subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
+        if subset.dimensionality() == array_shape.len()
+            && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
         {
-            Ok(Self { inner, array_shape })
+            Ok(Self {
+                subset,
+                index: 0,
+                array_shape,
+            })
         } else {
-            Err(IncompatibleArrayShapeError(
-                array_shape.to_vec(),
-                inner.subset,
-            ))
+            Err(IncompatibleArrayShapeError(array_shape.to_vec(), subset))
         }
     }
 
@@ -92,14 +92,18 @@ impl<'a> LinearisedIndicesIterator<'a> {
     ///
     /// # Safety
     ///
-    /// `array_shape` must encapsulate the array subset of `inner`.
+    /// `array_shape` must encapsulate `subset`.
     #[must_use]
-    pub unsafe fn new_unchecked(inner: IndicesIterator, array_shape: &'a [u64]) -> Self {
-        debug_assert_eq!(inner.subset().dimensionality(), array_shape.len());
+    pub unsafe fn new_unchecked(subset: ArraySubset, array_shape: &'a [u64]) -> Self {
+        debug_assert_eq!(subset.dimensionality(), array_shape.len());
         debug_assert!(
-            std::iter::zip(inner.subset().end_exc(), array_shape).all(|(end, shape)| end <= *shape)
+            std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
         );
-        Self { inner, array_shape }
+        Self {
+            subset,
+            index: 0,
+            array_shape,
+        }
     }
 }
 
@@ -107,49 +111,59 @@ impl Iterator for LinearisedIndicesIterator<'_> {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let indices = self.inner.next();
-        match indices {
-            Some(indices) => Some(ravel_indices(&indices, self.array_shape)),
-            None => None,
+        let mut current = self.index;
+        let mut out = 0;
+        let mut mult = 1;
+        for (&subset_start, &subset_size, &array_size) in izip!(
+            self.subset.start.iter().rev(),
+            self.subset.shape.iter().rev(),
+            self.array_shape.iter().rev()
+        ) {
+            let index = current % subset_size + subset_start;
+            current /= subset_size;
+            out += index * mult;
+            mult *= array_size;
+        }
+        if current == 0 {
+            self.index += 1;
+            Some(out)
+        } else {
+            None
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
+        let num_elements = self.subset.num_elements_usize();
+        (num_elements, Some(num_elements))
     }
 }
+
+impl ExactSizeIterator for LinearisedIndicesIterator<'_> {}
+
+impl FusedIterator for LinearisedIndicesIterator<'_> {}
 
 /// Iterates over contiguous element indices in an array subset.
 ///
 /// The iterator item is a tuple: (indices, # contiguous elements).
-pub struct ContiguousIndicesIterator<'a> {
-    subset: &'a ArraySubset,
-    array_shape: &'a [u64],
-    next: Option<ArrayIndices>,
+pub struct ContiguousIndicesIterator {
+    inner: IndicesIterator,
+    contiguous_elements: u64,
 }
 
-impl<'a> ContiguousIndicesIterator<'a> {
+impl ContiguousIndicesIterator {
     /// Create a new contiguous indices iterator.
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if
-    ///  - `array_shape` does not encapsulate `subset`, or
-    ///  - the dimensionality of the array indices in `next` does not match the dimensionality of `subset`.
+    /// Returns [`IncompatibleArrayShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
-        subset: &'a ArraySubset,
-        array_shape: &'a [u64],
-        next: Option<ArrayIndices>,
+        subset: &ArraySubset,
+        array_shape: &[u64],
     ) -> Result<Self, IncompatibleArrayShapeError> {
         if subset.dimensionality() == array_shape.len()
             && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
-            && next.as_ref().map_or(subset.dimensionality(), Vec::len) == subset.dimensionality()
         {
-            Ok(Self {
-                subset,
-                array_shape,
-                next,
-            })
+            Ok(unsafe { Self::new_unchecked(subset, array_shape) })
         } else {
             Err(IncompatibleArrayShapeError(
                 array_shape.to_vec(),
@@ -162,82 +176,92 @@ impl<'a> ContiguousIndicesIterator<'a> {
     ///
     /// # Safety
     ///
-    /// `array_shape` must encapsulate `subset` and the dimensionality of the array indices in `next` must match the dimensionality of `subset`.
+    /// `array_shape` must encapsulate `subset`.
     #[must_use]
-    pub unsafe fn new_unchecked(
-        subset: &'a ArraySubset,
-        array_shape: &'a [u64],
-        next: Option<ArrayIndices>,
-    ) -> Self {
+    #[allow(clippy::missing_panics_doc)]
+    pub unsafe fn new_unchecked(subset: &ArraySubset, array_shape: &[u64]) -> Self {
         debug_assert_eq!(subset.dimensionality(), array_shape.len());
         debug_assert!(
             std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
         );
-        debug_assert_eq!(
-            next.as_ref().map_or(subset.dimensionality(), Vec::len),
-            subset.dimensionality()
-        );
+
+        let mut contiguous = true;
+        let mut contiguous_elements = 1;
+        let mut shape_out = vec![core::mem::MaybeUninit::uninit(); array_shape.len()];
+        for (&subset_start, &subset_size, &array_size, shape_out_i) in izip!(
+            subset.start().iter().rev(),
+            subset.shape().iter().rev(),
+            array_shape.iter().rev(),
+            shape_out.iter_mut().rev(),
+        ) {
+            if contiguous {
+                contiguous_elements *= subset_size;
+                shape_out_i.write(1);
+                contiguous = subset_start == 0 && subset_size == array_size;
+            } else {
+                shape_out_i.write(subset_size);
+            }
+        }
+        let shape_out: Vec<u64> = unsafe { core::mem::transmute(shape_out) };
+        let subset_contiguous_start =
+            ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out);
+        let inner = subset_contiguous_start.iter_indices();
         Self {
-            subset,
-            array_shape,
-            next,
+            inner,
+            contiguous_elements,
         }
     }
 }
 
-impl Iterator for ContiguousIndicesIterator<'_> {
+impl Iterator for ContiguousIndicesIterator {
     type Item = (ArrayIndices, u64);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let current: Option<ArrayIndices> = self.next.clone();
-        let mut contiguous_elements: u64 = 1;
-        let mut last_dim_span = true;
-        if let Some(next) = self.next.as_mut() {
-            let mut carry = true;
-            for (next, start, size, shape) in izip!(
-                next.iter_mut().rev(),
-                self.subset.start.iter().rev(),
-                self.subset.shape.iter().rev(),
-                self.array_shape.iter().rev(),
-            ) {
-                if carry {
-                    if last_dim_span {
-                        let contiguous_elements_dim = start + size - *next;
-                        *next += contiguous_elements_dim;
-                        contiguous_elements *= contiguous_elements_dim;
-                        last_dim_span = size == shape; // && start == 0
-                    } else {
-                        *next += 1;
-                    }
-                }
-                if *next == start + size {
-                    *next = *start;
-                    carry = true;
-                } else {
-                    carry = false;
-                    break;
-                }
-            }
-            if carry {
-                self.next = None;
-            }
-        }
-        current.map(|index| (index, contiguous_elements))
+        self.inner
+            .next()
+            .map(|indices| (indices, self.contiguous_elements))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
     }
 }
+
+impl ExactSizeIterator for ContiguousIndicesIterator {}
+
+impl FusedIterator for ContiguousIndicesIterator {}
 
 /// Iterates over contiguous linearised element indices in an array subset.
 ///
 /// The iterator item is a tuple: (linearised index, # contiguous elements).
 pub struct ContiguousLinearisedIndicesIterator<'a> {
-    inner: ContiguousIndicesIterator<'a>,
+    inner: ContiguousIndicesIterator,
+    array_shape: &'a [u64],
 }
 
 impl<'a> ContiguousLinearisedIndicesIterator<'a> {
     /// Return a new contiguous linearised indices iterator.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`IncompatibleArrayShapeError`] if `array_shape` does not encapsulate `subset`.
+    pub fn new(
+        subset: &ArraySubset,
+        array_shape: &'a [u64],
+    ) -> Result<Self, IncompatibleArrayShapeError> {
+        let inner = subset.iter_contiguous_indices(array_shape)?;
+        Ok(Self { inner, array_shape })
+    }
+
+    /// Return a new contiguous linearised indices iterator.
+    ///
+    /// # Safety
+    ///
+    /// `array_shape` must encapsulate `subset`.
     #[must_use]
-    pub const fn new(inner: ContiguousIndicesIterator<'a>) -> Self {
-        Self { inner }
+    pub unsafe fn new_unchecked(subset: &ArraySubset, array_shape: &'a [u64]) -> Self {
+        let inner = subset.iter_contiguous_indices_unchecked(array_shape);
+        Self { inner, array_shape }
     }
 }
 
@@ -247,9 +271,17 @@ impl Iterator for ContiguousLinearisedIndicesIterator<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|(indices, elements)| (ravel_indices(&indices, self.inner.array_shape), elements))
+            .map(|(indices, elements)| (ravel_indices(&indices, self.array_shape), elements))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
     }
 }
+
+impl ExactSizeIterator for ContiguousLinearisedIndicesIterator<'_> {}
+
+impl FusedIterator for ContiguousLinearisedIndicesIterator<'_> {}
 
 /// Iterates over the regular sized chunks overlapping this array subset.
 /// All chunks have the same size, and may extend over the bounds of the array subset.
@@ -265,27 +297,18 @@ impl<'a> ChunksIterator<'a> {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleDimensionalityError`] if `chunk_shape` or `first_chunk` do not match the dimensionality of `subset`.
+    /// Returns [`IncompatibleDimensionalityError`] if `chunk_shape` does not match the dimensionality of `subset`.
     pub fn new(
         subset: &ArraySubset,
         chunk_shape: &'a [u64],
-        first_chunk: Option<ArrayIndices>,
     ) -> Result<Self, IncompatibleDimensionalityError> {
-        let first_chunk_dimensionality = first_chunk
-            .as_ref()
-            .map_or(subset.dimensionality(), Vec::len);
-        if subset.dimensionality() != chunk_shape.len() {
+        if subset.dimensionality() == chunk_shape.len() {
+            Ok(unsafe { Self::new_unchecked(subset, chunk_shape) })
+        } else {
             Err(IncompatibleDimensionalityError(
                 chunk_shape.len(),
                 subset.dimensionality(),
             ))
-        } else if first_chunk_dimensionality != subset.dimensionality() {
-            Err(IncompatibleDimensionalityError(
-                first_chunk_dimensionality,
-                subset.dimensionality(),
-            ))
-        } else {
-            Ok(unsafe { Self::new_unchecked(subset, chunk_shape, first_chunk) })
         }
     }
 
@@ -293,18 +316,10 @@ impl<'a> ChunksIterator<'a> {
     ///
     /// # Safety
     ///
-    /// The dimensionality of `chunk_shape` and `first_chunk` must match the dimensionality of `subset`.
+    /// The dimensionality of `chunk_shape` must match the dimensionality of `subset`.
     #[must_use]
-    pub unsafe fn new_unchecked(
-        subset: &ArraySubset,
-        chunk_shape: &'a [u64],
-        first_chunk: Option<ArrayIndices>,
-    ) -> Self {
+    pub unsafe fn new_unchecked(subset: &ArraySubset, chunk_shape: &'a [u64]) -> Self {
         debug_assert_eq!(subset.dimensionality(), chunk_shape.len());
-        if let Some(first_chunk) = &first_chunk {
-            debug_assert_eq!(subset.dimensionality(), first_chunk.len());
-        }
-
         let chunk_start: ArrayIndices = std::iter::zip(subset.start(), chunk_shape)
             .map(|(s, c)| s / c)
             .collect();
@@ -313,7 +328,7 @@ impl<'a> ChunksIterator<'a> {
             .collect();
         let subset_chunks =
             unsafe { ArraySubset::new_with_start_end_inc_unchecked(chunk_start, chunk_end_inc) };
-        let inner = IndicesIterator::new(subset_chunks, first_chunk);
+        let inner = IndicesIterator::new(subset_chunks);
         Self { inner, chunk_shape }
     }
 }
@@ -336,6 +351,10 @@ impl Iterator for ChunksIterator<'_> {
         self.inner.size_hint()
     }
 }
+
+impl ExactSizeIterator for ChunksIterator<'_> {}
+
+impl FusedIterator for ChunksIterator<'_> {}
 
 #[cfg(test)]
 mod tests {
@@ -393,7 +412,7 @@ mod tests {
     }
 
     #[test]
-    fn array_subset_iter_continguous_linearised_indices() {
+    fn array_subset_iter_continuous_linearised_indices() {
         let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
         let mut iter = subset.iter_contiguous_linearised_indices(&[4, 4]).unwrap();
         //  0  1  2  3

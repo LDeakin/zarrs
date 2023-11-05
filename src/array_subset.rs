@@ -455,7 +455,7 @@ impl ArraySubset {
     /// Returns an iterator over the indices of elements within the subset.
     #[must_use]
     pub fn iter_indices(&self) -> IndicesIterator {
-        IndicesIterator::new(self.clone(), Some(self.start.clone()))
+        IndicesIterator::new(self.clone())
     }
 
     /// Returns an iterator over the linearised indices of elements within the subset.
@@ -467,7 +467,7 @@ impl ArraySubset {
         &self,
         array_shape: &'a [u64],
     ) -> Result<LinearisedIndicesIterator<'a>, IncompatibleArrayShapeError> {
-        LinearisedIndicesIterator::new(self.iter_indices(), array_shape)
+        LinearisedIndicesIterator::new(self.clone(), array_shape)
     }
 
     /// Returns an iterator over the indices of elements within the subset.
@@ -481,7 +481,7 @@ impl ArraySubset {
         &'a self,
         array_shape: &'a [u64],
     ) -> LinearisedIndicesIterator<'a> {
-        LinearisedIndicesIterator::new_unchecked(self.iter_indices(), array_shape)
+        LinearisedIndicesIterator::new_unchecked(self.clone(), array_shape)
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
@@ -493,7 +493,7 @@ impl ArraySubset {
         &'a self,
         array_shape: &'a [u64],
     ) -> Result<ContiguousIndicesIterator, IncompatibleArrayShapeError> {
-        ContiguousIndicesIterator::new(self, array_shape, Some(self.start.clone()))
+        ContiguousIndicesIterator::new(self, array_shape)
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
@@ -507,7 +507,7 @@ impl ArraySubset {
         &'a self,
         array_shape: &'a [u64],
     ) -> ContiguousIndicesIterator {
-        ContiguousIndicesIterator::new_unchecked(self, array_shape, Some(self.start.clone()))
+        ContiguousIndicesIterator::new_unchecked(self, array_shape)
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
@@ -519,9 +519,7 @@ impl ArraySubset {
         &'a self,
         array_shape: &'a [u64],
     ) -> Result<ContiguousLinearisedIndicesIterator, IncompatibleArrayShapeError> {
-        Ok(ContiguousLinearisedIndicesIterator::new(
-            self.iter_contiguous_indices(array_shape)?,
-        ))
+        ContiguousLinearisedIndicesIterator::new(self, array_shape)
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
@@ -535,9 +533,7 @@ impl ArraySubset {
         &'a self,
         array_shape: &'a [u64],
     ) -> ContiguousLinearisedIndicesIterator {
-        ContiguousLinearisedIndicesIterator::new(unsafe {
-            self.iter_contiguous_indices_unchecked(array_shape)
-        })
+        ContiguousLinearisedIndicesIterator::new_unchecked(self, array_shape)
     }
 
     /// Returns an iterator over chunks with shape `chunk_shape` in the array subset.
@@ -552,10 +548,7 @@ impl ArraySubset {
         &'a self,
         chunk_shape: &'a [u64],
     ) -> Result<ChunksIterator, IncompatibleDimensionalityError> {
-        let first_chunk = std::iter::zip(self.start(), chunk_shape)
-            .map(|(i, s)| i / s)
-            .collect();
-        ChunksIterator::new(self, chunk_shape, Some(first_chunk))
+        ChunksIterator::new(self, chunk_shape)
     }
 
     /// Returns an iterator over chunks with shape `chunk_shape` in the array subset.
@@ -569,10 +562,7 @@ impl ArraySubset {
     #[doc(hidden)]
     #[must_use]
     pub unsafe fn iter_chunks_unchecked<'a>(&'a self, chunk_shape: &'a [u64]) -> ChunksIterator {
-        let first_chunk = std::iter::zip(self.start(), chunk_shape)
-            .map(|(i, s)| i / s)
-            .collect();
-        ChunksIterator::new_unchecked(self, chunk_shape, Some(first_chunk))
+        ChunksIterator::new_unchecked(self, chunk_shape)
     }
 
     /// Return the subset of this array subset in `subset_other`.

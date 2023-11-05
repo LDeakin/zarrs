@@ -69,6 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Change `HexString::as_bytes()` to `as_be_bytes()`
  - Support `index_location` for sharding codec
  - Optimise `unravel_index`
+ - **Breaking**: Array subset iterator changes
+   - Simplify the implementations
+   - Remove `next` inputs
+   - Make constructors consistent, remove `inner` in constructors
+   - Add `size_hint` to all iterators, implement `ExactSizeIterator`/`FusedIterator`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
