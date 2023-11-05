@@ -1519,13 +1519,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
 #[doc(hidden)]
 #[must_use]
 pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {
-    let mut indices = Vec::with_capacity(shape.len());
-    for dim in shape.iter().rev() {
-        indices.push(index % dim);
+    let len = shape.len();
+    let mut indices = vec![core::mem::MaybeUninit::uninit(); len];
+    for (indices_i, &dim) in std::iter::zip(indices.iter_mut().rev(), shape.iter().rev()) {
+        indices_i.write(index % dim);
         index /= dim;
     }
-    indices.reverse();
-    indices
+    unsafe { core::mem::transmute(indices) }
 }
 
 /// Ravel ND indices to a linearised index.
