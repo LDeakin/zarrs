@@ -39,14 +39,14 @@ fn array_write_all_sharded(c: &mut Criterion) {
                 let sharding_codec = Box::new(ShardingCodecBuilder::new(vec![32; 3]).build());
                 let array = zarrs::array::ArrayBuilder::new(
                     vec![size; 3],
-                    zarrs::array::DataType::UInt8,
+                    zarrs::array::DataType::UInt16,
                     vec![size; 3].into(),
-                    zarrs::array::FillValue::from(0u8),
+                    zarrs::array::FillValue::from(0u16),
                 )
                 .array_to_bytes_codec(sharding_codec)
                 .build(store.into(), "/")
                 .unwrap();
-                let data = vec![1u8; num_elements.try_into().unwrap()];
+                let data = vec![1u16; num_elements.try_into().unwrap()];
                 let subset = zarrs::array_subset::ArraySubset::new_with_shape(vec![size; 3]);
                 array
                     .par_store_array_subset_elements(&subset, data)
@@ -67,13 +67,13 @@ fn array_read_all(c: &mut Criterion) {
             let store = zarrs::storage::store::MemoryStore::new();
             let array = zarrs::array::ArrayBuilder::new(
                 vec![size; 3],
-                zarrs::array::DataType::UInt8,
+                zarrs::array::DataType::UInt16,
                 vec![32; 3].into(),
-                zarrs::array::FillValue::from(0u8),
+                zarrs::array::FillValue::from(0u16),
             )
             .build(store.into(), "/")
             .unwrap();
-            let data = vec![1u8; num_elements.try_into().unwrap()];
+            let data = vec![1u16; num_elements.try_into().unwrap()];
             let subset = zarrs::array_subset::ArraySubset::new_with_shape(vec![size; 3]);
             array
                 .par_store_array_subset_elements(&subset, data)

@@ -69,6 +69,10 @@ name = "array_uncompressed"
 harness = false
 
 [[bench]]
+name = "array_blosc"
+harness = false
+
+[[bench]]
 name = "codecs"
 harness = false
 
