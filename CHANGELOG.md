@@ -74,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Remove `next` inputs
    - Make constructors consistent, remove `inner` in constructors
    - Add `size_hint` to all iterators, implement `ExactSizeIterator`/`FusedIterator`
+ - **Breaking**: Output boxed slices `Box<[..]>` from array retrieve methods instead of `Vec<..>`
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
@@ -86,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `ArrayBuilder::storage_transformers` remove `#[must_use]`
  - Validate data type and fill value compatibility in `ArrayBuilder`
  - Handling of `"NaN"` fill values, they are now guaranteed to match the byte representation specified in the zarr v3 spec
+ - Add a fast path to array retrieve methods which avoids a copy
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
