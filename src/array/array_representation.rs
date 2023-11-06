@@ -107,4 +107,12 @@ impl ArrayRepresentation {
     pub fn size(&self) -> u64 {
         self.num_elements() * self.element_size() as u64
     }
+
+    /// Return the total size in bytes as a usize.
+    ///
+    /// Equal to the product of each element of its shape and the element size.
+    #[must_use]
+    pub fn size_usize(&self) -> usize {
+        self.num_elements_usize() * self.element_size()
+    }
 }
