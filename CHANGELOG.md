@@ -89,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Validate data type and fill value compatibility in `ArrayBuilder`
  - Handling of `"NaN"` fill values, they are now guaranteed to match the byte representation specified in the zarr v3 spec
  - Add a fast path to array retrieve methods which avoids a copy
+ - Optimise sharding codec decode by removing initial population by fill value
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
