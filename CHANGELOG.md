@@ -75,7 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Remove `next` inputs
    - Make constructors consistent, remove `inner` in constructors
    - Add `size_hint` to all iterators, implement `ExactSizeIterator`/`FusedIterator`
- - **Breaking**: Output boxed slices `Box<[..]>` from array retrieve methods instead of `Vec<..>`
+ - **Major breaking**: Output boxed slices `Box<[..]>` from array retrieve methods instead of `Vec<..>`
+ - **Major breaking**: Input `Vec<..>` instead of `&[..]` to array store methods
+   - Supports some perf improvements
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

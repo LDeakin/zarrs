@@ -1101,7 +1101,11 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
-    pub fn store_chunk(&self, chunk_indices: &[u64], chunk_bytes: &[u8]) -> Result<(), ArrayError> {
+    pub fn store_chunk(
+        &self,
+        chunk_indices: &[u64],
+        chunk_bytes: Vec<u8>,
+    ) -> Result<(), ArrayError> {
         // Validation
         let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
         if chunk_bytes.len() as u64 != chunk_array_representation.size() {
@@ -1111,7 +1115,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             ));
         }
 
-        let all_fill_value = self.fill_value().equals_all(chunk_bytes);
+        let all_fill_value = self.fill_value().equals_all(&chunk_bytes);
         if all_fill_value {
             self.erase_chunk(chunk_indices)?;
             Ok(())
@@ -1122,10 +1126,10 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
                 .create_writable_transformer(storage_handle);
             let chunk_encoded: Vec<u8> = if self.parallel_codecs() {
                 self.codecs()
-                    .par_encode(chunk_bytes.to_vec(), &chunk_array_representation)
+                    .par_encode(chunk_bytes, &chunk_array_representation)
             } else {
                 self.codecs()
-                    .encode(chunk_bytes.to_vec(), &chunk_array_representation)
+                    .encode(chunk_bytes, &chunk_array_representation)
             }
             .map_err(ArrayError::CodecError)?;
             crate::storage::store_chunk(
@@ -1150,7 +1154,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     pub fn store_chunk_elements<T: TriviallyTransmutable>(
         &self,
         chunk_indices: &[u64],
-        chunk_elements: &[T],
+        chunk_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
             return Err(ArrayError::IncompatibleElementSize(
@@ -1159,7 +1163,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             ));
         }
 
-        let chunk_bytes = safe_transmute::transmute_to_bytes(chunk_elements);
+        let chunk_bytes = safe_transmute_to_bytes_vec(chunk_elements);
         self.store_chunk(chunk_indices, chunk_bytes)
     }
 
@@ -1189,8 +1193,8 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             }
 
             let chunk_array = chunk_array.as_standard_layout();
-            let slice = chunk_array.as_slice().expect("it is in standard layout");
-            self.store_chunk_elements(chunk_indices, slice)
+            let chunk_elements = chunk_array.into_owned().into_raw_vec();
+            self.store_chunk_elements(chunk_indices, chunk_elements)
         } else {
             Err(ArrayError::InvalidChunkGridIndicesError(
                 chunk_indices.to_vec(),
@@ -1222,7 +1226,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     fn _store_array_subset(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: &[u8],
+        subset_bytes: Vec<u8>,
         parallel: bool,
     ) -> Result<(), ArrayError> {
         // Validation
@@ -1248,30 +1252,52 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
                 self.shape().to_vec(),
             ));
         };
-
+        let num_chunks = chunks.num_elements_usize();
         let element_size = self.data_type().size();
-        let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
+        if num_chunks == 1 {
+            let chunk_indices = chunks.start();
             let chunk_subset_in_array = unsafe {
                 self.chunk_grid()
-                    .subset_unchecked(&chunk_indices, self.shape())
+                    .subset_unchecked(chunk_indices, self.shape())
+                    .unwrap()
             };
-            let Some(chunk_subset_in_array) = chunk_subset_in_array else {
-                return Err(ArrayError::InvalidArraySubset(
-                    array_subset.clone(),
-                    self.shape().to_vec(),
-                ));
-            };
-
             if array_subset == &chunk_subset_in_array {
                 // A fast path if the array subset matches the chunk subset
                 // This skips the internal decoding occurring in store_chunk_subset
-                self.store_chunk(&chunk_indices, subset_bytes)?;
+                self.store_chunk(chunk_indices, subset_bytes)?;
             } else {
                 let chunk_subset_in_array_subset =
                     unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
                 let chunk_subset_bytes = unsafe {
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        subset_bytes,
+                        &subset_bytes,
+                        array_subset.shape(),
+                        element_size,
+                    )
+                };
+
+                // Store the chunk subset
+                let array_subset_in_chunk_subset =
+                    unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
+
+                self.store_chunk_subset(
+                    chunk_indices,
+                    &array_subset_in_chunk_subset,
+                    chunk_subset_bytes,
+                )?;
+            }
+        } else {
+            let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
+                let chunk_subset_in_array = unsafe {
+                    self.chunk_grid()
+                        .subset_unchecked(&chunk_indices, self.shape())
+                        .unwrap()
+                };
+                let chunk_subset_in_array_subset =
+                    unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
+                let chunk_subset_bytes = unsafe {
+                    chunk_subset_in_array_subset.extract_bytes_unchecked(
+                        &subset_bytes,
                         array_subset.shape(),
                         element_size,
                     )
@@ -1284,28 +1310,28 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
                 self.store_chunk_subset(
                     &chunk_indices,
                     &array_subset_in_chunk_subset,
-                    &chunk_subset_bytes,
+                    chunk_subset_bytes,
                 )?;
-            }
-            Ok(())
-        };
 
-        if parallel {
-            (0..chunks.shape().iter().product())
-                .into_par_iter()
-                .map(|chunk_index| {
-                    std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
-                        .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                        .collect::<Vec<_>>()
-                })
-                // chunks
-                //     .iter_indices()
-                //     .par_bridge()
-                .map(store_chunk)
-                .collect::<Result<Vec<_>, _>>()?;
-        } else {
-            for chunk_indices in chunks.iter_indices() {
-                store_chunk(chunk_indices)?;
+                Ok(())
+            };
+            if parallel {
+                (0..chunks.shape().iter().product())
+                    .into_par_iter()
+                    .map(|chunk_index| {
+                        std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
+                            .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
+                            .collect::<Vec<_>>()
+                    })
+                    // chunks
+                    //     .iter_indices()
+                    //     .par_bridge()
+                    .map(store_chunk)
+                    .collect::<Result<Vec<_>, _>>()?;
+            } else {
+                for chunk_indices in chunks.iter_indices() {
+                    store_chunk(chunk_indices)?;
+                }
             }
         }
         Ok(())
@@ -1325,7 +1351,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     pub fn store_array_subset(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: &[u8],
+        subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
         self._store_array_subset(array_subset, subset_bytes, false)
     }
@@ -1335,7 +1361,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     pub fn par_store_array_subset(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: &[u8],
+        subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
         self._store_array_subset(array_subset, subset_bytes, true)
     }
@@ -1343,7 +1369,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     fn _store_array_subset_elements<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
-        subset_elements: &[T],
+        subset_elements: Vec<T>,
         parallel: bool,
     ) -> Result<(), ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
@@ -1353,7 +1379,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
             ));
         }
 
-        let subset_bytes = safe_transmute::transmute_to_bytes(subset_elements);
+        let subset_bytes = safe_transmute_to_bytes_vec(subset_elements);
         self._store_array_subset(array_subset, subset_bytes, parallel)
     }
 
@@ -1368,7 +1394,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     pub fn store_array_subset_elements<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
-        subset_elements: &[T],
+        subset_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
         self._store_array_subset_elements(array_subset, subset_elements, false)
     }
@@ -1378,7 +1404,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
     pub fn par_store_array_subset_elements<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
-        subset_elements: &[T],
+        subset_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
         self._store_array_subset_elements(array_subset, subset_elements, true)
     }
@@ -1411,7 +1437,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
             )
         };
         let array_standard = subset_array.as_standard_layout();
-        let elements = array_standard.as_slice().expect("always valid");
+        let elements = array_standard.into_owned().into_raw_vec();
         self._store_array_subset_elements(&subset, elements, parallel)
     }
 
@@ -1456,7 +1482,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_bytes: &[u8],
+        chunk_subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
         // Validation
         if let Some(chunk_shape) = self.chunk_grid().chunk_shape(chunk_indices, self.shape())? {
@@ -1505,7 +1531,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
                 }
 
                 // Store the updated chunk
-                self.store_chunk(chunk_indices, &chunk_bytes)
+                self.store_chunk(chunk_indices, chunk_bytes.into_vec())
             }
         } else {
             Err(ArrayError::InvalidChunkGridIndicesError(
@@ -1526,7 +1552,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_elements: &[T],
+        chunk_subset_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
         if self.data_type.size() != std::mem::size_of::<T>() {
             return Err(ArrayError::IncompatibleElementSize(
@@ -1535,7 +1561,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
             ));
         }
 
-        let chunk_subset_bytes = safe_transmute::transmute_to_bytes(chunk_subset_elements);
+        let chunk_subset_bytes = safe_transmute_to_bytes_vec(chunk_subset_elements);
         self.store_chunk_subset(chunk_indices, chunk_subset, chunk_subset_bytes)
     }
 
@@ -1578,8 +1604,74 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
             )
         };
         let array_standard = chunk_subset_array.as_standard_layout();
-        let elements = array_standard.as_slice().expect("always valid");
+        let elements = array_standard.to_owned().into_raw_vec();
         self.store_chunk_subset_elements(chunk_indices, &subset, elements)
+    }
+}
+
+// Safe transmute, avoiding an allocation where possible
+// https://github.com/nabijaczleweli/safe-transmute-rs/issues/16#issuecomment-471066699
+fn safe_transmute_to_bytes_vec<T: TriviallyTransmutable>(mut from: Vec<T>) -> Vec<u8> {
+    // TODO: Handle the faster case on windows without reallocation
+    #[cfg(target_family = "windows")]
+    {
+        // https://github.com/rust-lang/rust/blob/master/library/std/src/sys/common/alloc.rs
+        #[cfg(any(
+            target_arch = "x86",
+            target_arch = "arm",
+            target_arch = "m68k",
+            target_arch = "csky",
+            target_arch = "mips",
+            target_arch = "mips32r6",
+            target_arch = "powerpc",
+            target_arch = "powerpc64",
+            target_arch = "sparc",
+            target_arch = "asmjs",
+            target_arch = "wasm32",
+            target_arch = "hexagon",
+            all(target_arch = "riscv32", not(target_os = "espidf")),
+            all(target_arch = "xtensa", not(target_os = "espidf")),
+        ))]
+        pub const MIN_ALIGN: usize = 8;
+        #[cfg(any(
+            target_arch = "x86_64",
+            target_arch = "aarch64",
+            target_arch = "loongarch64",
+            target_arch = "mips64",
+            target_arch = "mips64r6",
+            target_arch = "s390x",
+            target_arch = "sparc64",
+            target_arch = "riscv64",
+            target_arch = "wasm64",
+        ))]
+        pub const MIN_ALIGN: usize = 16;
+        // The allocator on the esp-idf platform guarantees 4 byte alignment.
+        #[cfg(any(
+            all(target_arch = "riscv32", target_os = "espidf"),
+            all(target_arch = "xtensa", target_os = "espidf"),
+        ))]
+        pub const MIN_ALIGN: usize = 4;
+        // https://github.com/rust-lang/rust/blob/93b6d9e086c6910118a57e4332c9448ab550931f/src/libstd/sys/windows/alloc.rs#L46-L57
+        if core::mem::align_of::<T>() <= MIN_ALIGN {
+            unsafe {
+                let capacity = from.capacity() * core::mem::size_of::<T>();
+                let len = from.len() * core::mem::size_of::<T>();
+                let ptr = from.as_mut_ptr();
+                core::mem::forget(from);
+                Vec::from_raw_parts(ptr.cast::<u8>(), len, capacity)
+            }
+        } else {
+            safe_transmute::transmute_to_bytes(&from).to_vec()
+        }
+    }
+
+    #[cfg(not(target_family = "windows"))]
+    unsafe {
+        let capacity = from.capacity() * core::mem::size_of::<T>();
+        let len = from.len() * core::mem::size_of::<T>();
+        let ptr = from.as_mut_ptr();
+        core::mem::forget(from);
+        Vec::from_raw_parts(ptr.cast::<u8>(), len, capacity)
     }
 }
 
@@ -1700,7 +1792,7 @@ mod tests {
         array
             .store_array_subset_elements::<f32>(
                 &ArraySubset::new_with_start_shape(vec![3, 3], vec![3, 3]).unwrap(),
-                &[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+                vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
             )
             .unwrap();
 
@@ -1744,7 +1836,7 @@ mod tests {
         for j in 1..10 {
             (0..100).into_par_iter().for_each(|i| {
                 let subset = ArraySubset::new_with_start_shape(vec![i, 0], vec![1, 4]).unwrap();
-                array.store_array_subset(&subset, &[j; 4]).unwrap();
+                array.store_array_subset(&subset, vec![j; 4]).unwrap();
             });
             let subset_all =
                 ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec()).unwrap();

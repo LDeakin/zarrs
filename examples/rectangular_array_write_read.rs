@@ -88,7 +88,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Store elements directly, in this case set the 7th column to 123.0
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_start_shape(vec![0, 6], vec![8, 1])?,
-        &[123.0; 8],
+        vec![123.0; 8],
     )?;
 
     // Store elements directly in a chunk, in this case set the last row of the bottom right chunk
@@ -97,7 +97,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         &[3, 1],
         // subset within chunk
         &ArraySubset::new_with_start_shape(vec![1, 0], vec![1, 4])?,
-        &[-4.0; 4],
+        vec![-4.0; 4],
     )?;
 
     // Read the whole array

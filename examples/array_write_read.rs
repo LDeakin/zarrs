@@ -61,7 +61,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(chunk_subset) = chunk_grid.subset(&chunk_indices, array.shape())? {
                 array.store_chunk_elements(
                     &chunk_indices,
-                    &vec![i as f32; chunk_subset.num_elements() as usize],
+                    vec![i as f32; chunk_subset.num_elements() as usize],
                 )
                 // let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
                 // let chunk_array = ndarray::ArrayD::<f32>::from_elem(chunk_shape.clone(), i as f32);
@@ -82,13 +82,13 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Write a subset spanning multiple chunks, including updating chunks already written
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_start_shape(vec![3, 3], vec![3, 3]).unwrap(),
-        &[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     )?;
 
     // Store elements directly, in this case set the 7th column to 123.0
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_start_shape(vec![0, 6], vec![8, 1])?,
-        &[123.0; 8],
+        vec![123.0; 8],
     )?;
 
     // Store elements directly in a chunk, in this case set the last row of the bottom right chunk
@@ -97,7 +97,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         &[1, 1],
         // subset within chunk
         &ArraySubset::new_with_start_shape(vec![3, 0], vec![1, 4])?,
-        &[-4.0; 4],
+        vec![-4.0; 4],
     )?;
 
     // Erase a chunk
