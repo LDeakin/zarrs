@@ -4,11 +4,10 @@ use crate::{
     array::MaybeBytes,
     metadata::Metadata,
     storage::{
-        ListableStorage, ListableStorageTraits, ReadableListableStorage,
-        ReadableListableStorageTraits, ReadableStorage, ReadableStorageTraits,
-        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
-        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        WritableStorage, WritableStorageTraits,
+        ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
+        ReadableStorageTraits, ReadableWritableStorage, StorageError, StoreKey, StoreKeyRange,
+        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage,
+        WritableStorageTraits,
     },
 };
 use std::sync::{
@@ -227,14 +226,4 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         self.storage.erase_prefix(prefix)
     }
-}
-
-impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> ReadableWritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
-{
-}
-
-impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> ReadableListableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
-{
 }

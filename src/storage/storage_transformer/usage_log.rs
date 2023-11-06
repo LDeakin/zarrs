@@ -11,9 +11,8 @@ use crate::{
     metadata::Metadata,
     storage::{
         store::{StoreKey, StoreKeys, StorePrefix},
-        ListableStorage, ListableStorageTraits, ReadableListableStorage,
-        ReadableListableStorageTraits, ReadableStorage, ReadableStorageTraits,
-        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKeyRange,
+        ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
+        ReadableStorageTraits, ReadableWritableStorage, StorageError, StoreKeyRange,
         StoreKeyStartValue, StoreKeysPrefixes, WritableStorage, WritableStorageTraits,
     },
 };
@@ -235,14 +234,4 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         )?;
         self.storage.erase_prefix(prefix)
     }
-}
-
-impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> ReadableWritableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
-{
-}
-
-impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> ReadableListableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
-{
 }

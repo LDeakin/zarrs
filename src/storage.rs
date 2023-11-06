@@ -263,8 +263,12 @@ pub trait WritableStorageTraits: Send + Sync + ReadableStorageTraits {
 /// A supertrait of [`ReadableStorageTraits`] and [`WritableStorageTraits`].
 pub trait ReadableWritableStorageTraits: ReadableStorageTraits + WritableStorageTraits {}
 
+impl<T> ReadableWritableStorageTraits for T where T: ReadableStorageTraits + WritableStorageTraits {}
+
 /// A supertrait of [`ReadableStorageTraits`] and [`ListableStorageTraits`].
 pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorageTraits {}
+
+impl<T> ReadableListableStorageTraits for T where T: ReadableStorageTraits + ListableStorageTraits {}
 
 /// A [`StoreKey`] and [`ByteRange`].
 #[derive(Debug)]
