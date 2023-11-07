@@ -80,11 +80,15 @@ impl<'a> ShardingPartialDecoder<'a> {
         };
 
         let encoded_shard_index = if parallel {
-            self.input_handle
-                .par_partial_decode(&BytesRepresentation::VariableSize, &[index_byte_range])
+            self.input_handle.par_partial_decode(
+                &BytesRepresentation::FixedSize(index_encoded_size),
+                &[index_byte_range],
+            )
         } else {
-            self.input_handle
-                .partial_decode(&BytesRepresentation::VariableSize, &[index_byte_range])
+            self.input_handle.partial_decode(
+                &BytesRepresentation::FixedSize(index_encoded_size),
+                &[index_byte_range],
+            )
         }?
         .map(|mut v| v.remove(0));
 

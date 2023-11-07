@@ -150,7 +150,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         &self,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
-        Ok(BytesRepresentation::KnownSize(
+        Ok(BytesRepresentation::FixedSize(
             decoded_representation.num_elements() * decoded_representation.element_size() as u64,
         ))
     }

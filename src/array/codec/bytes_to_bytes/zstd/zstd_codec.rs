@@ -35,7 +35,7 @@ fn create_codec_zstd(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
 #[derive(Clone, Debug)]
 pub struct ZstdCodec {
     compression: zstd_safe::CompressionLevel,
-    checksum: bool,
+    checksum: bool, // FIXME: Not using checksum
 }
 
 impl ZstdCodec {
@@ -99,8 +99,20 @@ impl BytesToBytesCodecTraits for ZstdCodec {
 
     fn compute_encoded_size(
         &self,
-        _decoded_representation: &BytesRepresentation,
+        decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
-        BytesRepresentation::VariableSize
+        match decoded_representation.size() {
+            Some(size) => {
+                // https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md
+                // TODO: Validate the window/block relationship
+                const HEADER_TRAILER_OVERHEAD: u64 = 4 + 14 + 4;
+                const MIN_WINDOW_SIZE: u64 = 1000; // 1KB
+                const BLOCK_OVERHEAD: u64 = 3;
+                let blocks_overhead =
+                    BLOCK_OVERHEAD * ((size + MIN_WINDOW_SIZE - 1) / MIN_WINDOW_SIZE);
+                BytesRepresentation::BoundedSize(size + HEADER_TRAILER_OVERHEAD + blocks_overhead)
+            }
+            None => BytesRepresentation::UnboundedSize,
+        }
     }
 }

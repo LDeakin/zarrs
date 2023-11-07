@@ -110,10 +110,13 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
         match decoded_representation {
-            BytesRepresentation::KnownSize(size) => {
-                BytesRepresentation::KnownSize(size + core::mem::size_of::<u32>() as u64)
+            BytesRepresentation::FixedSize(size) => {
+                BytesRepresentation::FixedSize(size + core::mem::size_of::<u32>() as u64)
             }
-            BytesRepresentation::VariableSize => BytesRepresentation::VariableSize,
+            BytesRepresentation::BoundedSize(size) => {
+                BytesRepresentation::BoundedSize(size + core::mem::size_of::<u32>() as u64)
+            }
+            BytesRepresentation::UnboundedSize => BytesRepresentation::UnboundedSize,
         }
     }
 }

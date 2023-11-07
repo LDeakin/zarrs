@@ -43,7 +43,7 @@ impl<'a> BytesPartialDecoder<'a> {
 
             // Decode
             let decoded = self.input_handle.partial_decode(
-                &BytesRepresentation::KnownSize(
+                &BytesRepresentation::FixedSize(
                     decoded_representation.num_elements()
                         * decoded_representation.element_size() as u64,
                 ),

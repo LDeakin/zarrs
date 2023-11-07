@@ -28,7 +28,7 @@ mod tests {
     fn codec_crc32c() {
         let elements: Vec<u8> = (0..6).collect();
         let bytes = elements;
-        let bytes_representation = BytesRepresentation::KnownSize(bytes.len() as u64);
+        let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
@@ -53,7 +53,7 @@ mod tests {
     fn codec_crc32c_partial_decode() {
         let elements: Vec<u8> = (0..32).collect();
         let bytes = elements;
-        let bytes_representation = BytesRepresentation::KnownSize(bytes.len() as u64);
+        let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);

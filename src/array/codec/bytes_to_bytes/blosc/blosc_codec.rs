@@ -1,6 +1,6 @@
 use std::ffi::c_char;
 
-use blosc_sys::blosc_get_complib_info;
+use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
 
 use crate::{
     array::{
@@ -189,8 +189,11 @@ impl BytesToBytesCodecTraits for BloscCodec {
 
     fn compute_encoded_size(
         &self,
-        _bytes_representation: &BytesRepresentation,
+        decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
-        BytesRepresentation::VariableSize
+        match decoded_representation.size() {
+            Some(size) => BytesRepresentation::BoundedSize(size + u64::from(BLOSC_MAX_OVERHEAD)),
+            None => BytesRepresentation::UnboundedSize,
+        }
     }
 }

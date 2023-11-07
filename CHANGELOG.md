@@ -79,6 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Major breaking**: Output boxed slices `Box<[..]>` from array retrieve methods instead of `Vec<..>`
  - **Major breaking**: Input `Vec<..>` instead of `&[..]` to array store methods
    - Supports some perf improvements
+ - **Breaking**: Change `BytesRepresentation` enum from `KnownSize(u64)`/`VariableSize` to `FixedSize(u64)`/`BoundedSize(u64)`/`UnboundedSize`
+ - IN PROGRESS: Preallocate sharding codec encoded output when the encoded representation has a fixed or bounded size
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

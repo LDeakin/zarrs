@@ -53,7 +53,7 @@ fn codec_blosc(c: &mut Criterion) {
 
     for size in [32, 64, 128, 256, 512].iter() {
         let size3 = size * size * size;
-        let rep = BytesRepresentation::KnownSize(size3);
+        let rep = BytesRepresentation::FixedSize(size3);
 
         let data_decoded: Vec<u8> = (0..size3).map(|i| i as u8).collect();
         let data_encoded = codec.encode(data_decoded.clone()).unwrap();

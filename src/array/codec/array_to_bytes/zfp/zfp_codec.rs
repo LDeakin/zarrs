@@ -214,7 +214,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
             | DataType::Int64
             | DataType::UInt64
             | DataType::Float32
-            | DataType::Float64 => Ok(BytesRepresentation::VariableSize),
+            | DataType::Float64 => Ok(BytesRepresentation::UnboundedSize), // FIXME: Fixed/bounded?
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 IDENTIFIER.to_string(),
