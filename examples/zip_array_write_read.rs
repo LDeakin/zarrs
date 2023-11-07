@@ -41,7 +41,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
     // Write some chunks (in parallel)
     let _ = (0..2)
         // .into_par_iter()
-        .map(|i| {
+        .try_for_each(|i| {
             let chunk_grid: &Box<dyn ChunkGridTraits> = array.chunk_grid();
             let chunk_indices: Vec<u64> = vec![i, 0];
             if let Some(chunk_subset) = chunk_grid.subset(&chunk_indices, array.shape())? {
@@ -57,8 +57,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
                     chunk_indices.to_vec(),
                 ))
             }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+        })?;
 
     println!(
         "The array metadata is:\n{}\n",

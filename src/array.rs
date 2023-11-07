@@ -771,14 +771,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                         // chunks
                         // .iter_indices()
                         // .par_bridge()
-                        .map(|chunk_indices| {
+                        .try_for_each(|chunk_indices| {
                             self._decode_chunk_into_array_subset(
                                 &chunk_indices,
                                 array_subset,
                                 unsafe { output.get() },
                             )
-                        })
-                        .collect::<Result<Vec<_>, ArrayError>>()?;
+                        })?;
                 } else {
                     for chunk_indices in chunks.iter_indices() {
                         self._decode_chunk_into_array_subset(
@@ -1326,8 +1325,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
                     // chunks
                     //     .iter_indices()
                     //     .par_bridge()
-                    .map(store_chunk)
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .try_for_each(store_chunk)?;
             } else {
                 for chunk_indices in chunks.iter_indices() {
                     store_chunk(chunk_indices)?;

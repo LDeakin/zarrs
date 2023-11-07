@@ -261,7 +261,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             // Decode those chunks if required
             unsafe { array_subset.iter_chunks_unchecked(chunk_representation.shape()) }
                 .par_bridge()
-                .map(|(chunk_indices, chunk_subset)| {
+                .try_for_each(|(chunk_indices, chunk_subset)| {
                     let out_array_subset_slice = unsafe { out_array_subset_slice.get() };
 
                     let shard_index_idx: usize =
@@ -306,8 +306,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         decoded_offset += length;
                     }
                     Ok::<_, CodecError>(())
-                })
-                .collect::<Result<Vec<_>, CodecError>>()?;
+                })?;
             out.push(out_array_subset);
         }
         Ok(out)
