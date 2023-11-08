@@ -382,29 +382,11 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             .inner_codecs
             .compute_encoded_size(&chunk_representation)?;
 
-        match chunk_bytes_representation.size() {
-            Some(chunk_encoded_size) => {
-                // Get the chunks per shard
-                let chunks_per_shard =
-                    calculate_chunks_per_shard(decoded_representation.shape(), &self.chunk_shape)
-                        .map_err(|e| CodecError::Other(e.to_string()))?;
-                let num_chunks = chunks_per_shard.iter().product::<u64>();
+        let chunks_per_shard =
+            calculate_chunks_per_shard(decoded_representation.shape(), &self.chunk_shape)
+                .map_err(|e| CodecError::Other(e.to_string()))?;
 
-                // Get the index size
-                let index_decoded_representation =
-                    sharding_index_decoded_representation(&chunks_per_shard);
-                let index_encoded_size = usize::try_from(compute_index_encoded_size(
-                    &self.index_codecs,
-                    &index_decoded_representation,
-                )?)
-                .unwrap();
-
-                Ok(BytesRepresentation::BoundedSize(
-                    num_chunks * chunk_encoded_size + index_encoded_size as u64,
-                ))
-            }
-            None => Ok(BytesRepresentation::UnboundedSize),
-        }
+        self.encoded_shard_bounded_size(&chunk_bytes_representation, &chunks_per_shard)
     }
 }
 
@@ -422,6 +404,34 @@ impl ShardingCodec {
         let chunk_subset =
             unsafe { ArraySubset::new_with_start_shape_unchecked(chunk_start, shape) };
         (chunk_index, chunk_subset)
+    }
+
+    /// Computed the bounded size of an encoded shard from
+    ///  - the chunk bytes representation, and
+    ///  - the number of chunks per shard.
+    /// Equal to the num chunks * max chunk size + index size
+    fn encoded_shard_bounded_size(
+        &self,
+        chunk_bytes_representation: &BytesRepresentation,
+        chunks_per_shard: &[u64],
+    ) -> Result<BytesRepresentation, CodecError> {
+        match chunk_bytes_representation.size() {
+            Some(chunk_encoded_size) => {
+                let num_chunks = chunks_per_shard.iter().product::<u64>();
+                let index_decoded_representation =
+                    sharding_index_decoded_representation(chunks_per_shard);
+                let index_encoded_size = usize::try_from(compute_index_encoded_size(
+                    &self.index_codecs,
+                    &index_decoded_representation,
+                )?)
+                .unwrap();
+
+                Ok(BytesRepresentation::BoundedSize(
+                    num_chunks * chunk_encoded_size + index_encoded_size as u64,
+                ))
+            }
+            None => Ok(BytesRepresentation::UnboundedSize),
+        }
     }
 
     fn decode_index(
