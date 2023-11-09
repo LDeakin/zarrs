@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `array_subset::ArrayStoreBytesError`, `store_bytes`, and `store_bytes_unchecked`
  - Added experimental `zfp` codec implementation behind `zfp` feature flag (disabled by default)
  - Added experimental `bitround` codec implementation behind `bitround` feature flag (disabled by default)
+   - This is similar to [numcodecs BitRound](https://numcodecs.readthedocs.io/en/stable/bitround.html#numcodecs.bitround.BitRound), but it supports rounding integers from the most significant set bit
  - Added `ShardingCodecBuilder`
  - Added `ReadableListableStorage`, `ReadableListableStorageTraits`, `StorageTransformerExtension::create_readable_listable_transformer`
  - Added `ByteRange::to_range()` and `to_range_usize()`
