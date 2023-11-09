@@ -17,7 +17,7 @@ pub enum BytesRepresentation {
 impl BytesRepresentation {
     /// Return the fixed or bounded size of the bytes representations, or [`None`] if the size is unbounded.
     #[must_use]
-    pub fn size(&self) -> Option<u64> {
+    pub const fn size(&self) -> Option<u64> {
         match self {
             Self::FixedSize(size) | Self::BoundedSize(size) => Some(*size),
             Self::UnboundedSize => None,

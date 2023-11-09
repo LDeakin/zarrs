@@ -740,6 +740,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                         array_subset,
                         output_slice,
                     )?;
+                    #[allow(clippy::transmute_undefined_repr)]
                     let output: Vec<u8> = unsafe { core::mem::transmute(output) };
                     Ok(output.into_boxed_slice())
                 }
@@ -787,6 +788,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
                         )?;
                     }
                 }
+                #[allow(clippy::transmute_undefined_repr)]
                 let output: Vec<u8> = unsafe { core::mem::transmute(output) };
                 Ok(output.into_boxed_slice())
             }
@@ -1683,7 +1685,10 @@ pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {
         indices_i.write(index % dim);
         index /= dim;
     }
-    unsafe { core::mem::transmute(indices) }
+    #[allow(clippy::transmute_undefined_repr)]
+    unsafe {
+        core::mem::transmute(indices)
+    }
 }
 
 /// Ravel ND indices to a linearised index.

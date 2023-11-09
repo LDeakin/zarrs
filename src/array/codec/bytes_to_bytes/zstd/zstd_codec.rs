@@ -101,8 +101,9 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
-        match decoded_representation.size() {
-            Some(size) => {
+        decoded_representation
+            .size()
+            .map_or(BytesRepresentation::UnboundedSize, |size| {
                 // https://github.com/facebook/zstd/blob/dev/doc/zstd_compression_format.md
                 // TODO: Validate the window/block relationship
                 const HEADER_TRAILER_OVERHEAD: u64 = 4 + 14 + 4;
@@ -111,8 +112,6 @@ impl BytesToBytesCodecTraits for ZstdCodec {
                 let blocks_overhead =
                     BLOCK_OVERHEAD * ((size + MIN_WINDOW_SIZE - 1) / MIN_WINDOW_SIZE);
                 BytesRepresentation::BoundedSize(size + HEADER_TRAILER_OVERHEAD + blocks_overhead)
-            }
-            None => BytesRepresentation::UnboundedSize,
-        }
+            })
     }
 }

@@ -191,9 +191,10 @@ impl BytesToBytesCodecTraits for BloscCodec {
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
-        match decoded_representation.size() {
-            Some(size) => BytesRepresentation::BoundedSize(size + u64::from(BLOSC_MAX_OVERHEAD)),
-            None => BytesRepresentation::UnboundedSize,
-        }
+        decoded_representation
+            .size()
+            .map_or(BytesRepresentation::UnboundedSize, |size| {
+                BytesRepresentation::BoundedSize(size + u64::from(BLOSC_MAX_OVERHEAD))
+            })
     }
 }

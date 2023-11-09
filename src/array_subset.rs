@@ -363,7 +363,10 @@ impl ArraySubset {
                 .copy_from_slice(&bytes[byte_offset..byte_offset + byte_length]);
             subset_offset += byte_length;
         }
-        unsafe { core::mem::transmute(bytes_subset) }
+        #[allow(clippy::transmute_undefined_repr)]
+        unsafe {
+            core::mem::transmute(bytes_subset)
+        }
     }
 
     /// Store `bytes_subset` corresponding to the bytes of an array (`array_bytes`) with shape `array_shape` and `element_size`.

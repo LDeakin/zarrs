@@ -113,16 +113,15 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
-        match decoded_representation.size() {
-            Some(size) => {
+        decoded_representation
+            .size()
+            .map_or(BytesRepresentation::UnboundedSize, |size| {
                 // https://www.gnu.org/software/gzip/manual/gzip.pdf
                 const HEADER_TRAILER_OVERHEAD: u64 = 10 + 8; // TODO: validate that extra headers are not populated
                 const BLOCK_SIZE: u64 = 32768;
                 const BLOCK_OVERHEAD: u64 = 5;
                 let blocks_overhead = BLOCK_OVERHEAD * ((size + BLOCK_SIZE - 1) / BLOCK_SIZE);
                 BytesRepresentation::BoundedSize(size + HEADER_TRAILER_OVERHEAD + blocks_overhead)
-            }
-            None => BytesRepresentation::UnboundedSize,
-        }
+            })
     }
 }

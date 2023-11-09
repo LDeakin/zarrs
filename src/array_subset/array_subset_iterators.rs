@@ -42,6 +42,7 @@ impl Iterator for IndicesIterator {
         }
         if current == 0 {
             self.index += 1;
+            #[allow(clippy::transmute_undefined_repr)]
             Some(unsafe { std::mem::transmute(indices) })
         } else {
             None
@@ -202,6 +203,7 @@ impl ContiguousIndicesIterator {
                 shape_out_i.write(subset_size);
             }
         }
+        #[allow(clippy::transmute_undefined_repr)]
         let shape_out: Vec<u64> = unsafe { core::mem::transmute(shape_out) };
         let subset_contiguous_start =
             ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out);

@@ -721,6 +721,7 @@ impl ShardingCodec {
             }
         }
 
+        #[allow(clippy::transmute_undefined_repr)]
         let shard = unsafe { core::mem::transmute(shard) };
         Ok(shard)
     }
@@ -791,6 +792,7 @@ impl ShardingCodec {
                 Ok::<_, CodecError>(())
             })?;
 
+        #[allow(clippy::transmute_undefined_repr)]
         let shard = unsafe { core::mem::transmute(shard) };
         Ok(shard)
     }
