@@ -65,6 +65,10 @@ criterion = "0.5.1"
 tempfile = "3"
 
 [[bench]]
+name = "array_subset"
+harness = false
+
+[[bench]]
 name = "array_uncompressed"
 harness = false
 
