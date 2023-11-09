@@ -30,7 +30,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let encoded_value = self
             .input_handle
-            .decode(&BytesRepresentation::UnboundedSize)?; // FIXME: Fixed/bounded?
+            .decode(&BytesRepresentation::UnboundedSize)?; // FIXME: BoundedSize
         let mut out = Vec::with_capacity(decoded_regions.len());
         match encoded_value {
             Some(encoded_value) => {

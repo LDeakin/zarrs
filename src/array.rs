@@ -1612,7 +1612,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TSt
 // Safe transmute, avoiding an allocation where possible
 // https://github.com/nabijaczleweli/safe-transmute-rs/issues/16#issuecomment-471066699
 fn safe_transmute_to_bytes_vec<T: TriviallyTransmutable>(mut from: Vec<T>) -> Vec<u8> {
-    // TODO: Handle the faster case on windows without reallocation
     #[cfg(target_family = "windows")]
     {
         // https://github.com/rust-lang/rust/blob/master/library/std/src/sys/common/alloc.rs
