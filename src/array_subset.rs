@@ -348,17 +348,27 @@ impl ArraySubset {
             bytes.len() as u64,
             array_shape.iter().product::<u64>() * element_size
         );
-        let mut bytes_subset: Vec<u8> =
-            Vec::with_capacity(usize::try_from(self.num_elements() * element_size).unwrap());
+        let num_bytes = usize::try_from(self.num_elements() * element_size).unwrap();
+        let mut bytes_subset = vec![core::mem::MaybeUninit::<u8>::uninit(); num_bytes];
+        let bytes_subset_slice = unsafe {
+            std::slice::from_raw_parts_mut(
+                bytes_subset.as_mut_ptr().cast::<u8>(),
+                bytes_subset.len(),
+            )
+        };
+        let mut subset_offset = 0;
         for (array_index, contiguous_elements) in
             self.iter_contiguous_linearised_indices_unchecked(array_shape)
         {
-            let byte_index = usize::try_from(array_index * element_size).unwrap();
+            let byte_offset = usize::try_from(array_index * element_size).unwrap();
             let byte_length = usize::try_from(contiguous_elements * element_size).unwrap();
-            debug_assert!(byte_index + byte_length <= bytes.len());
-            bytes_subset.extend(&bytes[byte_index..byte_index + byte_length]);
+            debug_assert!(byte_offset + byte_length <= bytes.len());
+            debug_assert!(subset_offset + byte_length <= num_bytes);
+            bytes_subset_slice[subset_offset..subset_offset + byte_length]
+                .copy_from_slice(&bytes[byte_offset..byte_offset + byte_length]);
+            subset_offset += byte_length;
         }
-        bytes_subset
+        unsafe { core::mem::transmute(bytes_subset) }
     }
 
     /// Store `bytes_subset` corresponding to the bytes of an array (`array_bytes`) with shape `array_shape` and `element_size`.
