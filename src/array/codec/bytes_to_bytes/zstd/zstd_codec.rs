@@ -79,7 +79,23 @@ impl CodecTraits for ZstdCodec {
 
 impl BytesToBytesCodecTraits for ZstdCodec {
     fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        zstd::encode_all(decoded_value.as_slice(), self.compression).map_err(CodecError::IOError)
+        let mut result = Vec::<u8>::new();
+        let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
+        encoder.include_checksum(self.checksum)?;
+        std::io::copy(&mut decoded_value.as_slice(), &mut encoder)?;
+        encoder.finish()?;
+        Ok(result)
+    }
+
+    fn par_encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+        let mut result = Vec::<u8>::new();
+        let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
+        encoder.include_checksum(self.checksum)?;
+        let n_threads = std::thread::available_parallelism().unwrap().get();
+        encoder.multithread(u32::try_from(n_threads).unwrap())?; // FIXME: Check overhead of zstd par_encode
+        std::io::copy(&mut decoded_value.as_slice(), &mut encoder)?;
+        encoder.finish()?;
+        Ok(result)
     }
 
     fn decode(

@@ -57,7 +57,7 @@ url = { version = "2", optional = true }
 walkdir = "2.3.2"
 zfp-sys = {version = "0.1.4", features = ["static"], optional = true }
 zip = { version = "0.6", optional = true }
-zstd = { version = "0.12", optional = true }
+zstd = { version = "0.12", features = ["zstdmt"], optional = true }
 
 [dev-dependencies]
 chrono = "0.4"

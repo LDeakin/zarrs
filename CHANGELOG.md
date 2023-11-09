@@ -81,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Supports some perf improvements
  - **Breaking**: Change `BytesRepresentation` enum from `KnownSize(u64)`/`VariableSize` to `FixedSize(u64)`/`BoundedSize(u64)`/`UnboundedSize`
  - IN PROGRESS: Preallocate sharding codec encoded output when the encoded representation has a fixed or bounded size
+ - Add `par_encode` for `zstd` codec
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types
@@ -95,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Handling of `"NaN"` fill values, they are now guaranteed to match the byte representation specified in the zarr v3 spec
  - Add a fast path to array retrieve methods which avoids a copy
  - Optimise sharding codec decode by removing initial population by fill value
+ - Include checksum with `zstd` codec if enabled, previously this did nothing
 
 ### Removed
  - **Breaking**: Disabled data type extensions `array::data_type::DataType::Extension`.
