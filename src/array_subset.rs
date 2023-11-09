@@ -303,20 +303,15 @@ impl ArraySubset {
         element_size: usize,
     ) -> Result<Vec<u8>, ArrayExtractBytesError> {
         let element_size_u64 = element_size as u64;
-        if bytes.len() as u64 == array_shape.iter().product::<u64>() * element_size_u64 {
-            let mut bytes_subset: Vec<u8> = Vec::with_capacity(
-                usize::try_from(self.num_elements() * element_size_u64).unwrap(),
-            );
-            for (array_index, contiguous_elements) in self
-                .iter_contiguous_linearised_indices(array_shape)
-                .map_err(|err| ArrayExtractBytesError(err.1, err.0, element_size))?
-            {
-                let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
-                let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
-                debug_assert!(byte_index + byte_length <= bytes.len());
-                bytes_subset.extend(&bytes[byte_index..byte_index + byte_length]);
-            }
-            Ok(bytes_subset)
+        if bytes.len() as u64 == array_shape.iter().product::<u64>() * element_size_u64
+            && array_shape.len() == self.dimensionality()
+            && self
+                .end_exc()
+                .iter()
+                .zip(array_shape)
+                .all(|(end, shape)| end <= shape)
+        {
+            Ok(unsafe { self.extract_bytes_unchecked(bytes, array_shape, element_size) })
         } else {
             Err(ArrayExtractBytesError(
                 self.clone(),
