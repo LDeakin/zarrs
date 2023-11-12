@@ -1,9 +1,9 @@
 //! A cache for partial decoders.
 
-use parking_lot::RwLock;
+use std::marker::PhantomData;
 
 use crate::{
-    array::{ArrayRepresentation, BytesRepresentation, MaybeBytes},
+    array::{ArrayRepresentation, MaybeBytes},
     array_subset::InvalidArraySubsetError,
     byte_range::{extract_byte_ranges, ByteRange},
 };
@@ -12,39 +12,36 @@ use super::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, C
 
 /// A bytes partial decoder cache.
 pub struct BytesPartialDecoderCache<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    cache: RwLock<Option<MaybeBytes>>,
+    cache: MaybeBytes,
+    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> BytesPartialDecoderCache<'a> {
     /// Create a new partial decoder cache.
-    #[must_use]
-    pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
-        Self {
-            input_handle,
-            cache: RwLock::new(None),
-        }
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if caching fails.
+    pub fn new(
+        input_handle: &dyn BytesPartialDecoderTraits,
+        parallel: bool,
+    ) -> Result<Self, CodecError> {
+        let cache = input_handle
+            .partial_decode_opt(&[ByteRange::FromStart(0, None)], parallel)?
+            .map(|mut bytes| bytes.remove(0));
+        Ok(Self {
+            cache,
+            phantom: PhantomData,
+        })
     }
 }
 
 impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        _parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let mut read_cache = self.cache.read();
-        if read_cache.is_none() {
-            drop(read_cache);
-            let mut write_cache = self.cache.write();
-            if write_cache.is_none() {
-                *write_cache = Some(self.input_handle.decode(decoded_representation)?);
-            }
-            drop(write_cache);
-            read_cache = self.cache.read();
-        }
-        let bytes = read_cache.as_ref().unwrap();
-        Ok(match bytes {
+        Ok(match &self.cache {
             Some(bytes) => Some(
                 extract_byte_ranges(bytes, decoded_regions)
                     .map_err(CodecError::InvalidByteRangeError)?,
@@ -56,46 +53,50 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
 
 /// An array partial decoder cache.
 pub struct ArrayPartialDecoderCache<'a> {
-    input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-    cache: RwLock<Option<Vec<u8>>>,
+    decoded_representation: ArrayRepresentation,
+    cache: Vec<u8>,
+    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> ArrayPartialDecoderCache<'a> {
     /// Create a new partial decoder cache.
-    #[must_use]
-    pub fn new(input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>) -> Self {
-        Self {
-            input_handle,
-            cache: RwLock::new(None),
-        }
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
+    pub fn new(
+        input_handle: &dyn ArrayPartialDecoderTraits,
+        decoded_representation: ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Self, CodecError> {
+        let cache = input_handle
+            .partial_decode_opt(
+                &[ArraySubset::new_with_shape(
+                    decoded_representation.shape().to_vec(),
+                )],
+                parallel,
+            )?
+            .remove(0);
+        Ok(Self {
+            decoded_representation,
+            cache,
+            phantom: PhantomData,
+        })
     }
 }
 
-impl ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'_> {
-    fn partial_decode(
+impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &ArrayRepresentation,
         decoded_regions: &[ArraySubset],
+        _parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let mut read_cache = self.cache.read();
-        if read_cache.is_none() {
-            drop(read_cache);
-            let mut write_cache = self.cache.write();
-            if write_cache.is_none() {
-                *write_cache = Some(self.input_handle.decode(decoded_representation)?);
-            }
-            drop(write_cache);
-            read_cache = self.cache.read();
-        }
-        let cache = read_cache.as_ref().unwrap();
-
         let mut out: Vec<Vec<u8>> = Vec::with_capacity(decoded_regions.len());
-        let array_shape = decoded_representation.shape();
-        let element_size = decoded_representation.element_size();
+        let array_shape = self.decoded_representation.shape();
+        let element_size = self.decoded_representation.element_size();
         for array_subset in decoded_regions {
             out.push(
                 array_subset
-                    .extract_bytes(cache, array_shape, element_size)
+                    .extract_bytes(&self.cache, array_shape, element_size)
                     .map_err(|_| InvalidArraySubsetError)?,
             );
         }

@@ -152,39 +152,38 @@ impl CodecTraits for BloscCodec {
 }
 
 impl BytesToBytesCodecTraits for BloscCodec {
-    fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        self.do_encode(&decoded_value, 1)
+    fn encode_opt(&self, decoded_value: Vec<u8>, parallel: bool) -> Result<Vec<u8>, CodecError> {
+        if parallel {
+            let n_threads = std::thread::available_parallelism().unwrap().get();
+            self.do_encode(&decoded_value, n_threads)
+        } else {
+            self.do_encode(&decoded_value, 1)
+        }
     }
 
-    fn par_encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        let n_threads = std::thread::available_parallelism().unwrap().get();
-        self.do_encode(&decoded_value, n_threads)
-    }
-
-    fn decode(
+    fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
+        parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
-        Self::do_decode(&encoded_value, 1)
+        if parallel {
+            let n_threads = std::thread::available_parallelism().unwrap().get();
+            Self::do_decode(&encoded_value, n_threads)
+        } else {
+            Self::do_decode(&encoded_value, 1)
+        }
     }
 
-    fn par_decode(
-        &self,
-        encoded_value: Vec<u8>,
-        _decoded_representation: &BytesRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        let n_threads = std::thread::available_parallelism().unwrap().get();
-        Self::do_decode(&encoded_value, n_threads)
-    }
-
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn BytesPartialDecoderTraits + 'a> {
-        Box::new(blosc_partial_decoder::BloscPartialDecoder::new(
+        _decoded_representation: &BytesRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(blosc_partial_decoder::BloscPartialDecoder::new(
             input_handle,
-        ))
+        )))
     }
 
     fn compute_encoded_size(

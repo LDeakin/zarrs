@@ -7,6 +7,7 @@ use crate::array::{
 /// The partial decoder for the Transpose codec.
 pub struct TransposePartialDecoder<'a> {
     input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+    decoded_representation: ArrayRepresentation,
     order: TransposeOrder,
 }
 
@@ -14,20 +15,22 @@ impl<'a> TransposePartialDecoder<'a> {
     /// Create a new partial decoder for the Transpose codec.
     pub fn new(
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+        decoded_representation: ArrayRepresentation,
         order: TransposeOrder,
     ) -> Self {
         Self {
             input_handle,
+            decoded_representation,
             order,
         }
     }
 }
 
 impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &ArrayRepresentation,
         decoded_regions: &[ArraySubset],
+        parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         // Get transposed array subsets
         let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
@@ -40,22 +43,22 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
         }
         let mut encoded_value = self
             .input_handle
-            .partial_decode(decoded_representation, &decoded_regions_transposed)?;
+            .partial_decode_opt(&decoded_regions_transposed, parallel)?;
 
         // Reverse the transpose on each subset
         let order_decode =
-            calculate_order_decode(&self.order, decoded_representation.shape().len());
+            calculate_order_decode(&self.order, self.decoded_representation.shape().len());
         for (subset, bytes) in std::iter::zip(decoded_regions, &mut encoded_value) {
             transpose_array(
                 &order_decode,
                 subset.shape(),
-                decoded_representation.element_size(),
+                self.decoded_representation.element_size(),
                 bytes.as_mut_slice(),
             )
             .map_err(|_| {
                 CodecError::UnexpectedChunkDecodedSize(
                     bytes.len(),
-                    subset.num_elements() * decoded_representation.element_size() as u64,
+                    subset.num_elements() * self.decoded_representation.element_size() as u64,
                 )
             })?;
         }

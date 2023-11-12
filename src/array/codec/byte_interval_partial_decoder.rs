@@ -1,7 +1,4 @@
-use crate::{
-    array::{BytesRepresentation, MaybeBytes},
-    byte_range::{ByteLength, ByteOffset, ByteRange},
-};
+use crate::byte_range::{ByteLength, ByteOffset, ByteRange};
 
 use super::{BytesPartialDecoderTraits, CodecError};
 
@@ -30,10 +27,10 @@ impl<'a> ByteIntervalPartialDecoder<'a> {
 }
 
 impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &BytesRepresentation,
         byte_ranges: &[ByteRange],
+        parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let byte_ranges: Vec<ByteRange> = byte_ranges
             .iter()
@@ -53,16 +50,6 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
                 ),
             })
             .collect();
-        self.inner
-            .partial_decode(decoded_representation, &byte_ranges)
-    }
-
-    fn decode(
-        &self,
-        decoded_representation: &BytesRepresentation,
-    ) -> Result<MaybeBytes, CodecError> {
-        Ok(self
-            .partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
-            .map(|mut v| v.remove(0)))
+        self.inner.partial_decode_opt(&byte_ranges, parallel)
     }
 }

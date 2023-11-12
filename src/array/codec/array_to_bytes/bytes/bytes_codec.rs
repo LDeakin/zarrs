@@ -118,32 +118,37 @@ impl CodecTraits for BytesCodec {
 }
 
 impl ArrayCodecTraits for BytesCodec {
-    fn encode(
+    fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(decoded_value, decoded_representation)
     }
 
-    fn decode(
+    fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(encoded_value, decoded_representation)
     }
 }
 
 impl ArrayToBytesCodecTraits for BytesCodec {
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
-        Box::new(bytes_partial_decoder::BytesPartialDecoder::new(
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(bytes_partial_decoder::BytesPartialDecoder::new(
             input_handle,
+            decoded_representation.clone(),
             self.endian,
-        ))
+        )))
     }
 
     fn compute_encoded_size(

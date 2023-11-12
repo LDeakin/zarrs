@@ -81,7 +81,7 @@ impl CodecTraits for GzipCodec {
 }
 
 impl BytesToBytesCodecTraits for GzipCodec {
-    fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+    fn encode_opt(&self, decoded_value: Vec<u8>, _parallel: bool) -> Result<Vec<u8>, CodecError> {
         let mut encoder = GzEncoder::new(
             Cursor::new(decoded_value),
             flate2::Compression::new(self.compression_level.as_u32()),
@@ -91,10 +91,11 @@ impl BytesToBytesCodecTraits for GzipCodec {
         Ok(out)
     }
 
-    fn decode(
+    fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let mut decoder = GzDecoder::new(Cursor::new(encoded_value));
         let mut out: Vec<u8> = Vec::new();
@@ -102,11 +103,13 @@ impl BytesToBytesCodecTraits for GzipCodec {
         Ok(out)
     }
 
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn BytesPartialDecoderTraits + 'a> {
-        Box::new(gzip_partial_decoder::GzipPartialDecoder::new(r))
+        _decoded_representation: &BytesRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(gzip_partial_decoder::GzipPartialDecoder::new(r)))
     }
 
     fn compute_encoded_size(

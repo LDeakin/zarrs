@@ -201,13 +201,125 @@ impl CodecChain {
         }
         Ok(bytes_representations)
     }
+}
 
-    fn do_encode(
+impl CodecTraits for CodecChain {
+    fn create_metadata(&self) -> Option<Metadata> {
+        // A codec chain cannot does not have standard metadata.
+        // However, usage of the codec chain is explicit in [Array] and it will call create_configurations()
+        // from CodecChain::create_metadatas().
+        None
+    }
+
+    fn partial_decoder_should_cache_input(&self) -> bool {
+        false
+    }
+
+    fn partial_decoder_decodes_all(&self) -> bool {
+        false
+    }
+}
+
+impl ArrayToBytesCodecTraits for CodecChain {
+    fn partial_decoder_opt<'a>(
+        &'a self,
+        mut input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        let mut codec_index = 0;
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            if Some(codec_index) == self.cache_index {
+                input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, parallel)?);
+            }
+            codec_index += 1;
+            input_handle =
+                codec.partial_decoder_opt(input_handle, bytes_representation, parallel)?;
+        }
+
+        if Some(codec_index) == self.cache_index {
+            input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, parallel)?);
+        };
+
+        let mut input_handle = {
+            let array_representation = array_representations.last().unwrap();
+            let codec = &self.array_to_bytes;
+            codec_index += 1;
+            codec.partial_decoder_opt(input_handle, array_representation, parallel)?
+        };
+
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            if Some(codec_index) == self.cache_index {
+                input_handle = Box::new(ArrayPartialDecoderCache::new(
+                    &*input_handle,
+                    array_representation.clone(),
+                    parallel,
+                )?);
+            }
+            codec_index += 1;
+            input_handle =
+                codec.partial_decoder_opt(input_handle, array_representation, parallel)?;
+        }
+
+        if Some(codec_index) == self.cache_index {
+            input_handle = Box::new(ArrayPartialDecoderCache::new(
+                &*input_handle,
+                array_representations.first().unwrap().clone(),
+                parallel,
+            )?);
+        }
+
+        Ok(input_handle)
+    }
+
+    fn compute_encoded_size(
+        &self,
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<BytesRepresentation, CodecError> {
+        let mut decoded_representation = decoded_representation.clone();
+        for codec in &self.array_to_array {
+            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
+        }
+
+        let mut bytes_representation = self
+            .array_to_bytes
+            .compute_encoded_size(&decoded_representation)?;
+
+        for codec in &self.bytes_to_bytes {
+            bytes_representation = codec.compute_encoded_size(&bytes_representation);
+        }
+
+        Ok(bytes_representation)
+    }
+}
+
+impl ArrayCodecTraits for CodecChain {
+    fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        mut decoded_representation: ArrayRepresentation,
+        decoded_representation: &ArrayRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
+        if decoded_value.len() as u64 != decoded_representation.size() {
+            return Err(CodecError::UnexpectedChunkDecodedSize(
+                decoded_value.len(),
+                decoded_representation.size(),
+            ));
+        }
+
+        let mut decoded_representation = decoded_representation.clone();
+
         let mut value = decoded_value;
         // array->array
         for codec in &self.array_to_array {
@@ -243,13 +355,14 @@ impl CodecChain {
         Ok(value)
     }
 
-    fn do_decode(
+    fn decode_opt(
         &self,
         mut encoded_value: Vec<u8>,
-        decoded_representation: ArrayRepresentation,
+        decoded_representation: &ArrayRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
-        let array_representations = self.get_array_representations(decoded_representation)?;
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
         let bytes_representations =
             self.get_bytes_representations(array_representations.last().unwrap())?;
 
@@ -286,134 +399,14 @@ impl CodecChain {
             }?;
         }
 
+        if encoded_value.len() as u64 != decoded_representation.size() {
+            return Err(CodecError::UnexpectedChunkDecodedSize(
+                encoded_value.len(),
+                decoded_representation.size(),
+            ));
+        }
+
         Ok(encoded_value)
-    }
-}
-
-impl CodecTraits for CodecChain {
-    fn create_metadata(&self) -> Option<Metadata> {
-        // A codec chain cannot does not have standard metadata.
-        // However, usage of the codec chain is explicit in [Array] and it will call create_configurations()
-        // from CodecChain::create_metadatas().
-        None
-    }
-
-    fn partial_decoder_should_cache_input(&self) -> bool {
-        false
-    }
-
-    fn partial_decoder_decodes_all(&self) -> bool {
-        false
-    }
-}
-
-impl ArrayToBytesCodecTraits for CodecChain {
-    fn partial_decoder<'a>(
-        &'a self,
-        mut input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
-        let mut codec_index = 0;
-        for codec in self.bytes_to_bytes.iter().rev() {
-            if Some(codec_index) == self.cache_index {
-                input_handle = Box::new(BytesPartialDecoderCache::new(input_handle));
-            }
-            codec_index += 1;
-            input_handle = codec.partial_decoder(input_handle);
-        }
-
-        let mut input_handle = {
-            let codec = &self.array_to_bytes;
-            if Some(codec_index) == self.cache_index {
-                input_handle = Box::new(BytesPartialDecoderCache::new(input_handle));
-            }
-            codec_index += 1;
-            codec.partial_decoder(input_handle)
-        };
-
-        for codec in self.array_to_array.iter().rev() {
-            if Some(codec_index) == self.cache_index {
-                input_handle = Box::new(ArrayPartialDecoderCache::new(input_handle));
-            }
-            codec_index += 1;
-            input_handle = codec.partial_decoder(input_handle);
-        }
-
-        if Some(codec_index) == self.cache_index {
-            input_handle = Box::new(ArrayPartialDecoderCache::new(input_handle));
-        }
-
-        input_handle
-    }
-
-    fn compute_encoded_size(
-        &self,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<BytesRepresentation, CodecError> {
-        let mut decoded_representation = decoded_representation.clone();
-        for codec in &self.array_to_array {
-            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
-        }
-
-        let mut bytes_representation = self
-            .array_to_bytes
-            .compute_encoded_size(&decoded_representation)?;
-
-        for codec in &self.bytes_to_bytes {
-            bytes_representation = codec.compute_encoded_size(&bytes_representation);
-        }
-
-        Ok(bytes_representation)
-    }
-}
-
-impl ArrayCodecTraits for CodecChain {
-    /// Encode a chunk (array) with a sequence of codecs.
-    ///
-    /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#encoding-procedure>.
-    fn encode(
-        &self,
-        decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-
-        self.do_encode(decoded_value, decoded_representation.clone(), false)
-    }
-
-    fn par_encode(
-        &self,
-        decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-
-        self.do_encode(decoded_value, decoded_representation.clone(), true)
-    }
-
-    fn decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.do_decode(encoded_value, decoded_representation.clone(), false)
-    }
-
-    fn par_decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.do_decode(encoded_value, decoded_representation.clone(), true)
     }
 }
 
@@ -563,10 +556,10 @@ mod tests {
         let decoded_regions =
             [ArraySubset::new_with_start_shape(vec![0, 1, 0], vec![2, 1, 1]).unwrap()];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
-        let partial_decoder = codec.partial_decoder(input_handle);
-        let decoded_partial_chunk = partial_decoder
-            .partial_decode(&array_representation, &decoded_regions)
+        let partial_decoder = codec
+            .partial_decoder(input_handle, &array_representation)
             .unwrap();
+        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
 
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .into_iter()

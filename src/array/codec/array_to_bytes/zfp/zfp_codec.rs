@@ -1,5 +1,6 @@
 use zfp_sys::{
-    zfp_compress, zfp_stream_maximum_size, zfp_stream_rewind, zfp_stream_set_bit_stream,
+    zfp_compress, zfp_exec_policy_zfp_exec_omp, zfp_stream_maximum_size, zfp_stream_rewind,
+    zfp_stream_set_bit_stream, zfp_stream_set_execution,
 };
 
 use crate::{
@@ -136,10 +137,11 @@ impl CodecTraits for ZfpCodec {
 }
 
 impl ArrayCodecTraits for ZfpCodec {
-    fn encode(
+    fn encode_opt(
         &self,
         mut decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
+        parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
         else {
@@ -173,6 +175,13 @@ impl ArrayCodecTraits for ZfpCodec {
             zfp_stream_rewind(zfp.as_zfp_stream()); // needed?
         }
 
+        if parallel {
+            // Number of threads is set automatically
+            unsafe {
+                zfp_stream_set_execution(zfp.as_zfp_stream(), zfp_exec_policy_zfp_exec_omp);
+            }
+        }
+
         // Compress array
         let size = unsafe { zfp_compress(zfp.as_zfp_stream(), field.as_zfp_field()) };
 
@@ -183,24 +192,40 @@ impl ArrayCodecTraits for ZfpCodec {
         }
     }
 
-    fn decode(
+    fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
+        parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
-        zfp_decode(&self.mode, encoded_value, decoded_representation)
+        let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
+        else {
+            return Err(CodecError::from(
+                "data type {} is unsupported for zfp codec",
+            ));
+        };
+        zfp_decode(
+            &self.mode,
+            zfp_type,
+            encoded_value,
+            decoded_representation,
+            parallel,
+        )
     }
 }
 
 impl ArrayToBytesCodecTraits for ZfpCodec {
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
-        Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
             input_handle,
-            &self.mode,
-        ))
+            decoded_representation,
+            self.mode.clone(),
+        )?))
     }
 
     fn compute_encoded_size(

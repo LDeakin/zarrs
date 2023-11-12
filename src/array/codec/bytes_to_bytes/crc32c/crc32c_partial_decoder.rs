@@ -1,8 +1,5 @@
 use crate::{
-    array::{
-        codec::{BytesPartialDecoderTraits, CodecError},
-        BytesRepresentation,
-    },
+    array::codec::{BytesPartialDecoderTraits, CodecError},
     byte_range::ByteRange,
 };
 
@@ -21,14 +18,14 @@ impl<'a> Crc32cPartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let bytes = self
             .input_handle
-            .partial_decode(decoded_representation, decoded_regions)?;
+            .partial_decode_opt(decoded_regions, parallel)?;
         let Some(mut bytes) = bytes else {
             return Ok(None);
         };

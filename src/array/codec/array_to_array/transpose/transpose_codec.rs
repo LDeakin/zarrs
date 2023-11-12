@@ -85,16 +85,19 @@ impl CodecTraits for TransposeCodec {
 }
 
 impl ArrayToArrayCodecTraits for TransposeCodec {
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
-        Box::new(
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(
             super::transpose_partial_decoder::TransposePartialDecoder::new(
                 input_handle,
+                decoded_representation.clone(),
                 self.order.clone(),
             ),
-        )
+        ))
     }
 
     fn compute_encoded_size(
@@ -113,10 +116,11 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
 }
 
 impl ArrayCodecTraits for TransposeCodec {
-    fn encode(
+    fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -141,10 +145,11 @@ impl ArrayCodecTraits for TransposeCodec {
         })
     }
 
-    fn decode(
+    fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let order_decode =
             calculate_order_decode(&self.order, decoded_representation.shape().len());

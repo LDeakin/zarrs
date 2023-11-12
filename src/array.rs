@@ -537,13 +537,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         .map_err(ArrayError::StorageError)?;
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         if let Some(chunk_encoded) = chunk_encoded {
-            let chunk_decoded = if self.parallel_codecs() {
-                self.codecs()
-                    .par_decode(chunk_encoded, &chunk_representation)
-            } else {
-                self.codecs().decode(chunk_encoded, &chunk_representation)
-            }
-            .map_err(ArrayError::CodecError)?;
+            let chunk_decoded = self
+                .codecs()
+                .decode_opt(chunk_encoded, &chunk_representation, self.parallel_codecs())
+                .map_err(ArrayError::CodecError)?;
             let chunk_decoded_size =
                 chunk_representation.num_elements_usize() * chunk_representation.data_type().size();
             if chunk_decoded.len() == chunk_decoded_size {
@@ -970,12 +967,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
         ));
 
-        let partial_decoder = self.codecs().partial_decoder(input_handle);
-        let decoded_bytes = if self.parallel_codecs() {
-            partial_decoder.par_partial_decode(&chunk_representation, &[chunk_subset.clone()])
-        } else {
-            partial_decoder.partial_decode(&chunk_representation, &[chunk_subset.clone()])
-        }?;
+        let decoded_bytes = self
+            .codecs()
+            .partial_decoder_opt(input_handle, &chunk_representation, self.parallel_codecs())?
+            .partial_decode_opt(&[chunk_subset.clone()], self.parallel_codecs())?;
 
         let total_size = decoded_bytes.iter().map(Vec::len).sum::<usize>();
         let expected_size = chunk_subset.num_elements_usize() * self.data_type().size();
@@ -1061,12 +1056,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         })
     }
 
-    /// Returns an array partial decoder for the chunk at `chunk_indices`.
-    #[must_use]
-    pub fn partial_decoder<'a>(
+    /// Initialises a partial decoder for the chunk at `chunk_indices` with optional parallelism.
+    #[doc(hidden)]
+    pub fn partial_decoder_opt<'a>(
         &'a self,
         chunk_indices: &[u64],
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
+        parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
         let storage_transformer = self
             .storage_transformers()
@@ -1075,7 +1071,32 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             storage_transformer,
             data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
         ));
-        self.codecs().partial_decoder(input_handle)
+        let chunk_representation = self.chunk_array_representation(chunk_indices)?;
+        Ok(self
+            .codecs()
+            .partial_decoder_opt(input_handle, &chunk_representation, parallel)?)
+    }
+
+    /// Initialises a partial decoder for the chunk at `chunk_indices`.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
+    pub fn partial_decoder<'a>(
+        &'a self,
+        chunk_indices: &[u64],
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
+        self.partial_decoder_opt(chunk_indices, false)
+    }
+
+    /// Initialises a partial decoder for the chunk at `chunk_indices` using multithreading if applicable.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
+    pub fn par_partial_decoder<'a>(
+        &'a self,
+        chunk_indices: &[u64],
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
+        self.partial_decoder_opt(chunk_indices, true)
     }
 }
 

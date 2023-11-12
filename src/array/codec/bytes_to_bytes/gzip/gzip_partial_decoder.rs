@@ -3,10 +3,7 @@ use std::io::{Cursor, Read};
 use flate2::bufread::GzDecoder;
 
 use crate::{
-    array::{
-        codec::{BytesPartialDecoderTraits, CodecError},
-        BytesRepresentation,
-    },
+    array::codec::{BytesPartialDecoderTraits, CodecError},
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
@@ -23,17 +20,24 @@ impl<'a> GzipPartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let compressed = self.input_handle.decode(decoded_representation)?;
-        let Some(compressed) = compressed else {
+        let encoded_value = if parallel {
+            self.input_handle
+                .par_partial_decode(&[ByteRange::FromStart(0, None)])?
+        } else {
+            self.input_handle
+                .partial_decode(&[ByteRange::FromStart(0, None)])?
+        }
+        .map(|mut bytes| bytes.remove(0));
+        let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
 
-        let mut decoder = GzDecoder::new(Cursor::new(&compressed));
+        let mut decoder = GzDecoder::new(Cursor::new(&encoded_value));
         let mut decompressed = Vec::new();
         decoder.read_to_end(&mut decompressed)?;
 

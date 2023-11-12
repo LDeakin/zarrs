@@ -61,9 +61,11 @@ mod tests {
         ];
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
-        let partial_decoder = codec.partial_decoder(input_handle);
+        let partial_decoder = codec
+            .partial_decoder(input_handle, &bytes_representation)
+            .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&bytes_representation, &decoded_regions)
+            .partial_decode(&decoded_regions)
             .unwrap()
             .unwrap();
 

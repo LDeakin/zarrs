@@ -69,16 +69,22 @@ impl CodecTraits for Crc32cCodec {
 }
 
 impl BytesToBytesCodecTraits for Crc32cCodec {
-    fn encode(&self, mut decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+    fn encode_opt(
+        &self,
+        mut decoded_value: Vec<u8>,
+        _parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
         let checksum = crc32fast::hash(&decoded_value).to_le_bytes();
+        decoded_value.reserve_exact(decoded_value.len() + checksum.len());
         decoded_value.extend(&checksum);
         Ok(decoded_value)
     }
 
-    fn decode(
+    fn decode_opt(
         &self,
         mut encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if encoded_value.len() >= CHECKSUM_SIZE {
             let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
@@ -96,13 +102,15 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         }
     }
 
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn BytesPartialDecoderTraits + 'a> {
-        Box::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
+        _decoded_representation: &BytesRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
             input_handle,
-        ))
+        )))
     }
 
     fn compute_encoded_size(

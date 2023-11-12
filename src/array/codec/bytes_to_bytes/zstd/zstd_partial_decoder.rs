@@ -1,8 +1,5 @@
 use crate::{
-    array::{
-        codec::{BytesPartialDecoderTraits, CodecError},
-        BytesRepresentation,
-    },
+    array::codec::{BytesPartialDecoderTraits, CodecError},
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
@@ -19,17 +16,25 @@ impl<'a> ZstdPartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for ZstdPartialDecoder<'_> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let compressed = self.input_handle.decode(decoded_representation)?;
-        let Some(compressed) = compressed else {
+        let encoded_value = if parallel {
+            self.input_handle
+                .par_partial_decode(&[ByteRange::FromStart(0, None)])?
+        } else {
+            self.input_handle
+                .partial_decode(&[ByteRange::FromStart(0, None)])?
+        }
+        .map(|mut bytes| bytes.remove(0));
+        let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
 
-        let decompressed = zstd::decode_all(compressed.as_slice()).map_err(CodecError::IOError)?;
+        let decompressed =
+            zstd::decode_all(encoded_value.as_slice()).map_err(CodecError::IOError)?;
 
         Ok(Some(
             extract_byte_ranges(&decompressed, decoded_regions)

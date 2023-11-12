@@ -23,9 +23,9 @@ pub use zfp_configuration::{
 };
 
 use zfp_sys::{
-    zfp_decompress, zfp_stream_rewind, zfp_stream_set_bit_stream, zfp_type,
-    zfp_type_zfp_type_double, zfp_type_zfp_type_float, zfp_type_zfp_type_int32,
-    zfp_type_zfp_type_int64,
+    zfp_decompress, zfp_exec_policy_zfp_exec_omp, zfp_stream_rewind, zfp_stream_set_bit_stream,
+    zfp_stream_set_execution, zfp_type, zfp_type_zfp_type_double, zfp_type_zfp_type_float,
+    zfp_type_zfp_type_int32, zfp_type_zfp_type_int64,
 };
 
 use crate::array::{codec::CodecError, ArrayRepresentation, DataType};
@@ -85,15 +85,11 @@ fn zarr_data_type_to_zfp_data_type(data_type: &DataType) -> Option<zfp_type> {
 
 fn zfp_decode(
     zfp_mode: &ZfpMode,
+    zfp_type: zfp_type,
     mut encoded_value: Vec<u8>,
     decoded_representation: &ArrayRepresentation,
+    parallel: bool,
 ) -> Result<Vec<u8>, CodecError> {
-    let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type()) else {
-        return Err(CodecError::from(
-            "data type {} is unsupported for zfp codec",
-        ));
-    };
-
     let mut decoded_value = vec![0u8; usize::try_from(decoded_representation.size()).unwrap()];
     let Some(field) = ZfpField::new(
         &mut decoded_value,
@@ -116,6 +112,13 @@ fn zfp_decode(
     unsafe {
         zfp_stream_set_bit_stream(zfp.as_zfp_stream(), stream.as_bitstream());
         zfp_stream_rewind(zfp.as_zfp_stream());
+    }
+
+    if parallel {
+        // Number of threads is set automatically
+        unsafe {
+            zfp_stream_set_execution(zfp.as_zfp_stream(), zfp_exec_policy_zfp_exec_omp);
+        }
     }
 
     let ret = unsafe { zfp_decompress(zfp.as_zfp_stream(), field.as_zfp_field()) };
@@ -183,10 +186,10 @@ mod tests {
         ];
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
-        let partial_decoder = codec.partial_decoder(input_handle);
-        let decoded_partial_chunk = partial_decoder
-            .partial_decode(&array_representation, &decoded_regions)
+        let partial_decoder = codec
+            .partial_decoder(input_handle, &array_representation)
             .unwrap();
+        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()

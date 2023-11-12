@@ -259,11 +259,13 @@ mod tests {
         ];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
-        let input_handle = bytes_codec.partial_decoder(input_handle);
-        let partial_decoder = codec.partial_decoder(input_handle);
-        let decoded_partial_chunk = partial_decoder
-            .partial_decode(&array_representation, &decoded_regions)
+        let input_handle = bytes_codec
+            .partial_decoder(input_handle, &array_representation)
             .unwrap();
+        let partial_decoder = codec
+            .partial_decoder(input_handle, &array_representation)
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .iter()
             .map(|bytes| {

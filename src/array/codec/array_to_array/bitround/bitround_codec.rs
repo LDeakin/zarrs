@@ -56,10 +56,11 @@ impl CodecTraits for BitroundCodec {
 }
 
 impl ArrayCodecTraits for BitroundCodec {
-    fn encode(
+    fn encode_opt(
         &self,
         mut decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         round_bytes(
             &mut decoded_value,
@@ -69,23 +70,29 @@ impl ArrayCodecTraits for BitroundCodec {
         Ok(decoded_value)
     }
 
-    fn decode(
+    fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         Ok(encoded_value)
     }
 }
 
 impl ArrayToArrayCodecTraits for BitroundCodec {
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
-        Box::new(bitround_partial_decoder::BitroundPartialDecoder::new(
-            input_handle,
-            self.keepbits,
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(
+            bitround_partial_decoder::BitroundPartialDecoder::new(
+                input_handle,
+                decoded_representation.data_type(),
+                self.keepbits,
+            )?,
         ))
     }
 

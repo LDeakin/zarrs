@@ -117,14 +117,12 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Decode inner chunks
     // In some cases, it might be preferable to decode inner chunks in a shard directly.
     // If using the partial decoder, then the shard index will only be read once from the store.
-    let partial_decoder = array.partial_decoder(&[0, 0]);
-    let chunk_representation = array.chunk_array_representation(&[0, 0])?;
+    let partial_decoder = array.partial_decoder(&[0, 0])?;
     let inner_chunks_to_decode = vec![
         ArraySubset::new_with_start_shape(vec![0, 0], inner_chunk_shape.clone())?,
         ArraySubset::new_with_start_shape(vec![0, 4], inner_chunk_shape.clone())?,
     ];
-    let decoded_inner_chunks =
-        partial_decoder.par_partial_decode(&chunk_representation, &inner_chunks_to_decode)?;
+    let decoded_inner_chunks = partial_decoder.par_partial_decode(&inner_chunks_to_decode)?;
     let decoded_inner_chunks = decoded_inner_chunks
         .into_iter()
         .map(|bytes| {

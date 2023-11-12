@@ -110,10 +110,11 @@ impl CodecTraits for ShardingCodec {
 }
 
 impl ArrayCodecTraits for ShardingCodec {
-    fn encode(
+    fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
         shard_rep: &ArrayRepresentation,
+        parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != shard_rep.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -133,84 +134,58 @@ impl ArrayCodecTraits for ShardingCodec {
         let chunk_bytes_representation = self.inner_codecs.compute_encoded_size(&chunk_rep)?;
         match chunk_bytes_representation {
             BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {
-                self.encode_bounded(&decoded_value, shard_rep, &chunk_rep, size)
+                if parallel {
+                    self.par_encode_bounded(&decoded_value, shard_rep, &chunk_rep, size)
+                } else {
+                    self.encode_bounded(&decoded_value, shard_rep, &chunk_rep, size)
+                }
             }
             BytesRepresentation::UnboundedSize => {
-                self.encode_unbounded(&decoded_value, shard_rep, &chunk_rep)
+                if parallel {
+                    self.par_encode_unbounded(&decoded_value, shard_rep, &chunk_rep)
+                } else {
+                    self.encode_unbounded(&decoded_value, shard_rep, &chunk_rep)
+                }
             }
         }
     }
 
-    fn par_encode(
+    fn decode_opt(
         &self,
-        decoded_value: Vec<u8>,
-        shard_rep: &ArrayRepresentation,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() as u64 != shard_rep.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                shard_rep.size(),
-            ));
-        }
-
-        // Get chunk bytes representation, and choose implementation based on whether the size is unbounded or not
-        let chunk_rep = unsafe {
-            ArrayRepresentation::new_unchecked(
-                self.chunk_shape.clone(),
-                shard_rep.data_type().clone(),
-                shard_rep.fill_value().clone(),
-            )
+        let chunks_per_shard =
+            calculate_chunks_per_shard(decoded_representation.shape(), &self.chunk_shape)
+                .map_err(|e| CodecError::Other(e.to_string()))?;
+        let shard_index = self.decode_index(&encoded_value, &chunks_per_shard, false)?; // FIXME: par decode index?
+        let chunks = if parallel {
+            self.par_decode_chunks(&encoded_value, &shard_index, decoded_representation)?
+        } else {
+            self.decode_chunks(&encoded_value, &shard_index, decoded_representation)?
         };
-        let chunk_bytes_representation = self.inner_codecs.compute_encoded_size(&chunk_rep)?;
-        match chunk_bytes_representation {
-            BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {
-                self.par_encode_bounded(&decoded_value, shard_rep, &chunk_rep, size)
-            }
-            BytesRepresentation::UnboundedSize => {
-                self.par_encode_unbounded(&decoded_value, shard_rep, &chunk_rep)
-            }
-        }
-    }
-
-    fn decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        let chunks_per_shard =
-            calculate_chunks_per_shard(decoded_representation.shape(), &self.chunk_shape)
-                .map_err(|e| CodecError::Other(e.to_string()))?;
-        let shard_index = self.decode_index(&encoded_value, &chunks_per_shard, false)?;
-        let chunks = self.decode_chunks(&encoded_value, &shard_index, decoded_representation)?;
-        Ok(chunks)
-    }
-
-    fn par_decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        let chunks_per_shard =
-            calculate_chunks_per_shard(decoded_representation.shape(), &self.chunk_shape)
-                .map_err(|e| CodecError::Other(e.to_string()))?;
-        let shard_index = self.decode_index(&encoded_value, &chunks_per_shard, true)?;
-        let chunks =
-            self.par_decode_chunks(&encoded_value, &shard_index, decoded_representation)?;
         Ok(chunks)
     }
 }
 
 impl ArrayToBytesCodecTraits for ShardingCodec {
-    fn partial_decoder<'a>(
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a> {
-        Box::new(sharding_partial_decoder::ShardingPartialDecoder::new(
-            input_handle,
-            self.chunk_shape.clone(),
-            &self.inner_codecs,
-            &self.index_codecs,
-            self.index_location,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(
+            sharding_partial_decoder::ShardingPartialDecoder::new(
+                input_handle,
+                decoded_representation.clone(),
+                self.chunk_shape.clone(),
+                &self.inner_codecs,
+                &self.index_codecs,
+                self.index_location,
+                parallel,
+            )?,
         ))
     }
 

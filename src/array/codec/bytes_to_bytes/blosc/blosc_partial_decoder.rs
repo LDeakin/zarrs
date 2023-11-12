@@ -1,8 +1,5 @@
 use crate::{
-    array::{
-        codec::{bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError},
-        BytesRepresentation,
-    },
+    array::codec::{bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError},
     byte_range::ByteRange,
 };
 
@@ -19,12 +16,19 @@ impl<'a> BloscPartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode(decoded_representation)?;
+        let encoded_value = if parallel {
+            self.input_handle
+                .par_partial_decode(&[ByteRange::FromStart(0, None)])?
+        } else {
+            self.input_handle
+                .partial_decode(&[ByteRange::FromStart(0, None)])?
+        }
+        .map(|mut bytes| bytes.remove(0));
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
@@ -51,11 +55,5 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
             }
         }
         Err(CodecError::from("blosc encoded value is invalid"))
-
-        // let decoded_value =
-        //     decompress_bytes(&encoded_value).map_err(|e| CodecError::Other(e.to_string()))?;
-
-        // extract_byte_ranges(&decoded_value, decoded_regions)
-        //     .map_err(CodecError::InvalidByteRangeError)
     }
 }

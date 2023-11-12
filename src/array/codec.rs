@@ -122,83 +122,127 @@ pub trait CodecTraits: Send + Sync {
 
 /// Traits for both `array->array` and `array->bytes` codecs.
 pub trait ArrayCodecTraits: CodecTraits {
+    /// Encode array with optional parallelism.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
+    fn encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError>;
+
+    /// Decode array with optional parallelism.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
+    fn decode_opt(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError>;
+
     /// Encode array.
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
     fn encode(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError>;
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, decoded_representation, false)
+    }
 
     /// Encode array using multithreading (if supported).
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
     fn par_encode(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        self.encode(decoded_value, decoded_representation)
+        self.encode_opt(decoded_value, decoded_representation, true)
     }
 
     /// Decode array.
     ///
     /// # Errors
-    ///
-    /// Returns [`CodecError`] if a codec fails.
+    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
     fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError>;
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, false)
+    }
 
     /// Decode array using multithreading (if supported).
     ///
     /// # Errors
-    ///
-    /// Returns [`CodecError`] if a codec fails.
+    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
     fn par_decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        self.decode(encoded_value, decoded_representation)
+        self.decode_opt(encoded_value, decoded_representation, true)
     }
 }
 
 /// Partial bytes decoder traits.
 pub trait BytesPartialDecoderTraits: Send + Sync {
+    /// Partially decode bytes with optional parallelism.
+    ///
+    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
+    fn partial_decode_opt(
+        &self,
+        decoded_regions: &[ByteRange],
+        parallel: bool,
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError>;
+
+    /// Decode all bytes with optional parallelism.
+    ///
+    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails.
+    fn decode_opt(&self, parallel: bool) -> Result<MaybeBytes, CodecError> {
+        Ok(self
+            .partial_decode_opt(&[ByteRange::FromStart(0, None)], parallel)?
+            .map(|mut v| v.remove(0)))
+    }
+
     /// Partially decode bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
     fn partial_decode(
         &self,
-        decoded_representation: &BytesRepresentation,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError>;
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        self.partial_decode_opt(byte_ranges, false)
+    }
 
-    /// Partially decode bytes using multithreading (if supported).
+    /// Partially decode bytes using multithreading if applicable.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
     fn par_partial_decode(
         &self,
-        decoded_representation: &BytesRepresentation,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        self.partial_decode(decoded_representation, byte_ranges)
+        self.partial_decode_opt(byte_ranges, true)
     }
 
     /// Decode all bytes.
@@ -206,15 +250,9 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     /// Returns [`None`] if decoding of the input handle returns [`None`].
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails.
-    fn decode(
-        &self,
-        decoded_representation: &BytesRepresentation,
-    ) -> Result<MaybeBytes, CodecError> {
-        Ok(self
-            .partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
-            .map(|mut v| v.remove(0)))
+    fn decode(&self) -> Result<MaybeBytes, CodecError> {
+        self.decode_opt(false)
     }
 
     /// Decode all bytes using multithreading (if supported).
@@ -222,15 +260,9 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     /// Returns [`None`] if decoding of the input handle returns [`None`].
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails.
-    fn par_decode(
-        &self,
-        decoded_representation: &BytesRepresentation,
-    ) -> Result<MaybeBytes, CodecError> {
-        Ok(self
-            .par_partial_decode(decoded_representation, &[ByteRange::FromStart(0, None)])?
-            .map(|mut v| v.remove(0)))
+    fn par_decode(&self) -> Result<MaybeBytes, CodecError> {
+        self.decode_opt(true)
     }
 }
 
@@ -241,64 +273,35 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        decoded_representation: &ArrayRepresentation,
         array_subsets: &[ArraySubset],
+        parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError>;
 
-    /// Partially decode an array using multithreading (if supported).
+    /// Partially decode an array.
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///
     /// # Errors
     ///
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    fn partial_decode(&self, array_subsets: &[ArraySubset]) -> Result<Vec<Vec<u8>>, CodecError> {
+        self.partial_decode_opt(array_subsets, false)
+    }
+
+    /// Partially decode an array using multithreading (if supported).
+    ///
+    /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
     fn par_partial_decode(
         &self,
-        decoded_representation: &ArrayRepresentation,
         array_subsets: &[ArraySubset],
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        self.partial_decode(decoded_representation, array_subsets)
-    }
-
-    /// Decode the entire array.
-    ///
-    /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array has the fill value.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CodecError`] if a codec fails.
-    fn decode(&self, decoded_representation: &ArrayRepresentation) -> Result<Vec<u8>, CodecError> {
-        Ok(self
-            .partial_decode(
-                decoded_representation,
-                &[ArraySubset::new_with_shape(
-                    decoded_representation.shape().to_vec(),
-                )],
-            )?
-            .remove(0))
-    }
-
-    /// Decode the entire array using multithreading (if supported).
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CodecError`] if a codec fails.
-    fn par_decode(
-        &self,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        Ok(self
-            .par_partial_decode(
-                decoded_representation,
-                &[ArraySubset::new_with_shape(
-                    decoded_representation.shape().to_vec(),
-                )],
-            )?
-            .remove(0))
+        self.partial_decode_opt(array_subsets, true)
     }
 }
 
@@ -316,10 +319,10 @@ impl<'a> StoragePartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for StoragePartialDecoder<'_> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        _parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         Ok(self
             .storage
@@ -331,11 +334,19 @@ impl BytesPartialDecoderTraits for StoragePartialDecoder<'_> {
 pub trait ArrayToArrayCodecTraits:
     ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
 {
-    /// Returns a partial decoder.
-    fn partial_decoder<'a>(
+    /// Initialise a partial decoder with optional parallelism.
+    ///
+    /// `parallel` only affects paralellism on initialisation, which is irrelevant for most codecs.
+    /// Parallel partial decoding support is independent of how the partial decoder is initialised.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a>;
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
@@ -346,6 +357,30 @@ pub trait ArrayToArrayCodecTraits:
         &self,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<ArrayRepresentation, CodecError>;
+
+    /// Initialise a partial decoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_decoder<'a>(
+        &'a self,
+        input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        self.partial_decoder_opt(input_handle, decoded_representation, false)
+    }
+
+    /// Initialise a partial decoder with multithreading (where supported).
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn par_partial_decoder<'a>(
+        &'a self,
+        input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        self.partial_decoder_opt(input_handle, decoded_representation, true)
+    }
 }
 
 dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
@@ -354,11 +389,16 @@ dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
 pub trait ArrayToBytesCodecTraits:
     ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
 {
-    /// Returns a partial decoder.
-    fn partial_decoder<'a>(
+    /// Initialise a partial decoder with optional parallelism.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn ArrayPartialDecoderTraits + 'a>;
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
@@ -369,72 +409,142 @@ pub trait ArrayToBytesCodecTraits:
         &self,
         decoded_representation: &ArrayRepresentation,
     ) -> Result<BytesRepresentation, CodecError>;
+
+    /// Initialise a partial decoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_decoder<'a>(
+        &'a self,
+        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        self.partial_decoder_opt(input_handle, decoded_representation, false)
+    }
+
+    /// Initialise a partial decoder with multithreading (where supported).
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn par_partial_decoder<'a>(
+        &'a self,
+        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        self.partial_decoder_opt(input_handle, decoded_representation, true)
+    }
 }
 
 dyn_clone::clone_trait_object!(ArrayToBytesCodecTraits);
 
 /// Traits for `bytes->bytes` codecs.
 pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt::Debug {
-    /// Encode bytes.
+    /// Encode bytes with optional parallelism.
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails.
-    fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError>;
+    fn encode_opt(&self, decoded_value: Vec<u8>, parallel: bool) -> Result<Vec<u8>, CodecError>;
 
-    /// Encode bytes using using multithreading (if supported).
+    /// Decode bytes with optional parallelism.
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails.
-    fn par_encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        self.encode(decoded_value)
-    }
-
-    /// Decode bytes.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CodecError`] if a codec fails.
-    fn decode(
+    fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &BytesRepresentation,
+        parallel: bool,
     ) -> Result<Vec<u8>, CodecError>;
 
-    /// Decode bytes using using multithreading (if supported).
+    /// Initialises a partial decoder with optional parallelism.
     ///
     /// # Errors
-    ///
-    /// Returns [`CodecError`] if a codec fails.
-    fn par_decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &BytesRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode(encoded_value, decoded_representation)
-    }
-
-    /// Returns a partial decoder.
-    fn partial_decoder<'a>(
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    ) -> Box<dyn BytesPartialDecoderTraits + 'a>;
+        decoded_representation: &BytesRepresentation,
+        parallel: bool,
+    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
 
     /// Returns the size of the encoded representation given a size of the decoded representation.
     fn compute_encoded_size(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation;
+
+    /// Encode bytes.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails.
+    fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, false)
+    }
+
+    /// Encode bytes using using multithreading (if supported).
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails.
+    fn par_encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, true)
+    }
+
+    /// Decode bytes.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails.
+    fn decode(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &BytesRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, false)
+    }
+
+    /// Decode bytes using using multithreading (if supported).
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails.
+    fn par_decode(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &BytesRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, true)
+    }
+
+    /// Initialises a partial decoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_decoder<'a>(
+        &'a self,
+        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        decoded_representation: &BytesRepresentation,
+    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        self.partial_decoder_opt(input_handle, decoded_representation, false)
+    }
+
+    /// Initialise a partial decoder with multithreading (where supported).
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn par_partial_decoder<'a>(
+        &'a self,
+        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        decoded_representation: &BytesRepresentation,
+    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        self.partial_decoder_opt(input_handle, decoded_representation, true)
+    }
 }
 
 dyn_clone::clone_trait_object!(BytesToBytesCodecTraits);
 
 impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        _parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         Ok(Some(extract_byte_ranges_read_seek(
             &mut self.clone(),
@@ -444,10 +554,10 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
 }
 
 impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
-    fn partial_decode(
+    fn partial_decode_opt(
         &self,
-        _decoded_representation: &BytesRepresentation,
         decoded_regions: &[ByteRange],
+        _parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         Ok(Some(extract_byte_ranges_read_seek(
             &mut self.clone(),
