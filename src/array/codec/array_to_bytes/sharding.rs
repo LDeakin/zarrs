@@ -76,17 +76,14 @@ fn compute_index_encoded_size(
 }
 
 fn decode_shard_index(
-    encoded_shard_index: &[u8],
+    encoded_shard_index: Vec<u8>,
     index_array_representation: &ArrayRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
     parallel: bool,
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
-    let decoded_shard_index = if parallel {
-        index_codecs.par_decode(encoded_shard_index.to_vec(), index_array_representation)
-    } else {
-        index_codecs.decode(encoded_shard_index.to_vec(), index_array_representation)
-    }?;
+    let decoded_shard_index =
+        index_codecs.decode_opt(encoded_shard_index, index_array_representation, parallel)?;
     Ok(decoded_shard_index
         .chunks_exact(core::mem::size_of::<u64>())
         .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))

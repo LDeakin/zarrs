@@ -95,7 +95,7 @@ impl<'a> ShardingPartialDecoder<'a> {
 
         Ok(match encoded_shard_index {
             Some(encoded_shard_index) => Some(decode_shard_index(
-                &encoded_shard_index,
+                encoded_shard_index,
                 &index_array_representation,
                 index_codecs,
                 parallel,

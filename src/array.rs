@@ -1057,7 +1057,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     }
 
     /// Initialises a partial decoder for the chunk at `chunk_indices` with optional parallelism.
-    #[doc(hidden)]
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
     pub fn partial_decoder_opt<'a>(
         &'a self,
         chunk_indices: &[u64],
@@ -1146,14 +1148,14 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             let storage_transformer = self
                 .storage_transformers()
                 .create_writable_transformer(storage_handle);
-            let chunk_encoded: Vec<u8> = if self.parallel_codecs() {
-                self.codecs()
-                    .par_encode(chunk_bytes, &chunk_array_representation)
-            } else {
-                self.codecs()
-                    .encode(chunk_bytes, &chunk_array_representation)
-            }
-            .map_err(ArrayError::CodecError)?;
+            let chunk_encoded: Vec<u8> = self
+                .codecs()
+                .encode_opt(
+                    chunk_bytes,
+                    &chunk_array_representation,
+                    self.parallel_codecs(),
+                )
+                .map_err(ArrayError::CodecError)?;
             crate::storage::store_chunk(
                 &*storage_transformer,
                 self.path(),

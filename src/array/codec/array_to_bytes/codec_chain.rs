@@ -323,32 +323,21 @@ impl ArrayCodecTraits for CodecChain {
         let mut value = decoded_value;
         // array->array
         for codec in &self.array_to_array {
-            value = if parallel {
-                codec.par_encode(value, &decoded_representation)
-            } else {
-                codec.encode(value, &decoded_representation)
-            }?;
+            value = codec.encode_opt(value, &decoded_representation, parallel)?;
             decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
         }
 
         // array->bytes
-        value = if parallel {
-            self.array_to_bytes
-                .par_encode(value, &decoded_representation)
-        } else {
-            self.array_to_bytes.encode(value, &decoded_representation)
-        }?;
+        value = self
+            .array_to_bytes
+            .encode_opt(value, &decoded_representation, parallel)?;
         let mut decoded_representation = self
             .array_to_bytes
             .compute_encoded_size(&decoded_representation)?;
 
         // bytes->bytes
         for codec in &self.bytes_to_bytes {
-            value = if parallel {
-                codec.par_encode(value)
-            } else {
-                codec.encode(value)
-            }?;
+            value = codec.encode_opt(value, parallel)?;
             decoded_representation = codec.compute_encoded_size(&decoded_representation);
         }
 
@@ -371,32 +360,22 @@ impl ArrayCodecTraits for CodecChain {
             self.bytes_to_bytes.iter().rev(),
             bytes_representations.iter().rev().skip(1),
         ) {
-            encoded_value = if parallel {
-                codec.par_decode(encoded_value, bytes_representation)
-            } else {
-                codec.decode(encoded_value, bytes_representation)
-            }?;
+            encoded_value = codec.decode_opt(encoded_value, bytes_representation, parallel)?;
         }
 
         // bytes->array
-        encoded_value = if parallel {
-            self.array_to_bytes
-                .par_decode(encoded_value, array_representations.last().unwrap())
-        } else {
-            self.array_to_bytes
-                .decode(encoded_value, array_representations.last().unwrap())
-        }?;
+        encoded_value = self.array_to_bytes.decode_opt(
+            encoded_value,
+            array_representations.last().unwrap(),
+            parallel,
+        )?;
 
         // array->array
         for (codec, array_representation) in std::iter::zip(
             self.array_to_array.iter().rev(),
             array_representations.iter().rev().skip(1),
         ) {
-            encoded_value = if parallel {
-                codec.par_decode(encoded_value, array_representation)
-            } else {
-                codec.decode(encoded_value, array_representation)
-            }?;
+            encoded_value = codec.decode_opt(encoded_value, array_representation, parallel)?;
         }
 
         if encoded_value.len() as u64 != decoded_representation.size() {
