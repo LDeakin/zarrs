@@ -25,14 +25,10 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
         decoded_regions: &[ByteRange],
         parallel: bool,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = if parallel {
-            self.input_handle
-                .par_partial_decode(&[ByteRange::FromStart(0, None)])?
-        } else {
-            self.input_handle
-                .partial_decode(&[ByteRange::FromStart(0, None)])?
-        }
-        .map(|mut bytes| bytes.remove(0));
+        let encoded_value = self
+            .input_handle
+            .partial_decode_opt(&[ByteRange::FromStart(0, None)], parallel)?
+            .map(|mut bytes| bytes.remove(0));
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
