@@ -85,6 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `par_encode` for `zstd` codec
  - **Breaking**: Codecs now must implement `encode_opt`, `decode_opt`, and `partial_decoder_opt`
  - **Breaking**: Partial decoders now must implement `partial_decode_opt` and the `decoded_representation` is now supplied on creation, rather than when calling `partial_decode`/`partial_decode_par`/`partial_decode_opt`
+ - Sharding partial decoder now decodes inner chunks in full rather than partially decoding them, this is must faster with some codecs (e.g. blosc)
+    - In future, this will probably configurable
 
 ### Fixed
  - Bytes codec handling of complex and raw bits data types

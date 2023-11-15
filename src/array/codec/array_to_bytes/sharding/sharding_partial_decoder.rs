@@ -145,13 +145,14 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
 
-        let element_size = self.decoded_representation.element_size() as u64;
+        let element_size = self.decoded_representation.element_size();
+        let element_size_u64 = element_size as u64;
         let fill_value = chunk_representation.fill_value().as_ne_bytes();
 
         let mut out = Vec::with_capacity(array_subsets.len());
         for array_subset in array_subsets {
             let array_subset_size =
-                usize::try_from(array_subset.num_elements() * element_size).unwrap();
+                usize::try_from(array_subset.num_elements() * element_size_u64).unwrap();
             let mut out_array_subset = vec![0; array_subset_size];
 
             // Decode those chunks if required and put in chunk cache
@@ -178,9 +179,20 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                     )?;
                     let array_subset_in_chunk_subset =
                         unsafe { array_subset.in_subset_unchecked(&chunk_subset) };
-                    partial_decoder
-                        .partial_decode(&[array_subset_in_chunk_subset.clone()])?
-                        .remove(0)
+
+                    // Partial decoding is actually really slow with the blosc codec! Assume sharded chunks are small, and just decode the whole thing and extract bytes
+                    // TODO: Make this behaviour optional?
+                    // partial_decoder
+                    //     .partial_decode(&[array_subset_in_chunk_subset.clone()])?
+                    //     .remove(0)
+                    let decoded_chunk = partial_decoder
+                        .partial_decode(&[ArraySubset::new_with_shape(
+                            chunk_subset.shape().to_vec(),
+                        )])?
+                        .remove(0);
+                    array_subset_in_chunk_subset
+                        .extract_bytes(&decoded_chunk, chunk_subset.shape(), element_size)
+                        .unwrap()
                 };
 
                 // Copy decoded bytes to the output
@@ -192,8 +204,8 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
                 } {
                     let output_offset =
-                        usize::try_from(array_subset_element_index * element_size).unwrap();
-                    let length = usize::try_from(num_elements * element_size).unwrap();
+                        usize::try_from(array_subset_element_index * element_size_u64).unwrap();
+                    let length = usize::try_from(num_elements * element_size_u64).unwrap();
                     out_array_subset[output_offset..output_offset + length]
                         .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
                     decoded_offset += length;
