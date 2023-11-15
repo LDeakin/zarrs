@@ -57,6 +57,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![deny(clippy::missing_panics_doc)]
+#![cfg_attr(nightly, feature(doc_auto_cfg))]
 
 use std::mem::transmute;
 

@@ -83,3 +83,6 @@ harness = false
 [[bench]]
 name = "fill_value"
 harness = false
+
+[build-dependencies]
+rustversion = "1.0.14"
