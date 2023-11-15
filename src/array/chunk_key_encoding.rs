@@ -11,7 +11,7 @@ pub use v2::{V2ChunkKeyEncoding, V2ChunkKeyEncodingConfiguration};
 use crate::{
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
-    storage::store::StoreKey,
+    storage::StoreKey,
 };
 
 use derive_more::{Deref, Display, From};

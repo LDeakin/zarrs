@@ -10,10 +10,10 @@ use crate::{
     byte_range::ByteRange,
     metadata::Metadata,
     storage::{
-        store::{StoreKey, StoreKeys, StorePrefix},
         ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, ReadableWritableStorage, StorageError, StoreKeyRange,
-        StoreKeyStartValue, StoreKeysPrefixes, WritableStorage, WritableStorageTraits,
+        ReadableStorageTraits, ReadableWritableStorage, StorageError, StoreKey, StoreKeyRange,
+        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage,
+        WritableStorageTraits,
     },
 };
 

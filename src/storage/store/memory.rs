@@ -7,8 +7,8 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
-        ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKeyRange,
-        StoreKeyStartValue, StoreKeysPrefixes, WritableStorageTraits,
+        ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange,
+        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
     },
 };
 
@@ -16,8 +16,6 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
-
-use super::{StoreKey, StoreKeys, StorePrefix};
 
 /// An in-memory store.
 #[derive(Debug)]

@@ -5,15 +5,11 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id21>
 
 mod filesystem;
-mod key;
 mod memory;
-mod prefix;
 // mod store_plugin;
 
 pub use filesystem::{FilesystemStore, FilesystemStoreCreateError};
-pub use key::{StoreKey, StoreKeyError, StoreKeys};
 pub use memory::MemoryStore;
-pub use prefix::{StorePrefix, StorePrefixError, StorePrefixes};
 
 #[cfg(feature = "http")]
 mod http;

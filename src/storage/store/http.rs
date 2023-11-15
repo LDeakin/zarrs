@@ -3,10 +3,8 @@
 use crate::{
     array::MaybeBytes,
     byte_range::ByteRange,
-    storage::{ReadableStorageTraits, StorageError, StoreKeyRange},
+    storage::{ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange},
 };
-
-use super::StoreKey;
 
 use itertools::Itertools;
 use reqwest::{

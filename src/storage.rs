@@ -16,6 +16,8 @@ mod storage_handle;
 pub mod storage_transformer;
 mod storage_value_io;
 pub mod store;
+mod store_key;
+mod store_prefix;
 
 use std::{path::PathBuf, sync::Arc};
 
@@ -29,9 +31,8 @@ use crate::{
     node::{Node, NodeMetadata, NodeNameError, NodePath, NodePathError},
 };
 
-pub use self::store::{
-    StoreKey, StoreKeyError, StoreKeys, StorePrefix, StorePrefixError, StorePrefixes,
-};
+pub use store_key::{StoreKey, StoreKeyError, StoreKeys};
+pub use store_prefix::{StorePrefix, StorePrefixError, StorePrefixes};
 
 pub use self::storage_transformer::StorageTransformerChain;
 

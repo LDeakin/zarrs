@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     array::chunk_key_encoding::ChunkKeyEncodingPlugin, metadata::Metadata,
-    plugin::PluginCreateError, storage::store::StoreKey,
+    plugin::PluginCreateError, storage::StoreKey,
 };
 
 use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator};

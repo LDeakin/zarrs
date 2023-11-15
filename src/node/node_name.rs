@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::storage::store::StorePrefix;
+use crate::storage::StorePrefix;
 
 /// A Zarr hierarchy node name.
 ///

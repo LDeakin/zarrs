@@ -7,7 +7,7 @@ use crate::{
     array::chunk_key_encoding::{ChunkKeyEncodingPlugin, ChunkKeySeparator},
     metadata::Metadata,
     plugin::PluginCreateError,
-    storage::store::StoreKey,
+    storage::StoreKey,
 };
 
 use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits};
