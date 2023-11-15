@@ -118,6 +118,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         Ok(self.size)
     }
 
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let mut size = 0;
+        for key in self.list_prefix(prefix)? {
+            if let Some(size_key) = self.size_key(&key)? {
+                size += size_key;
+            }
+        }
+        Ok(size)
+    }
+
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let mut zip_archive = self.zip_archive.lock();
         let file = zip_archive.by_name(key.as_str());

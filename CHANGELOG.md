@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `ZARR_NAN_F64/F32/F16/BF16` which match the zarr nan bit representation on all implementations
  - Added `size_usize()` to `ArrayRepresentation`
  - Add generic implementations of storage supertraits (`ReadableWritableStorageTraits` and `ReadableListableStorageTraits`)
+ - Add `size_prefix()` to stores
 
 ### Changed
  - **Breaking**: `array::data_type::DataType` is now marked `#[non_exhaustive]`

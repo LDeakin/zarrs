@@ -141,6 +141,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         size
     }
 
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let size: Result<u64, StorageError> = self.storage.size_prefix(prefix);
+        let _ = writeln!(
+            self.handle.lock().unwrap(),
+            "{}size_prefix({prefix}) -> {size:?}",
+            (self.prefix_func)()
+        );
+        size
+    }
+
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let size = self.storage.size_key(key);
         let _ = writeln!(

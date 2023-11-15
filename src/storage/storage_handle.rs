@@ -1,7 +1,8 @@
 use crate::{array::MaybeBytes, byte_range::ByteRange};
 
 use super::{
-    ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, WritableStorageTraits,
+    ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StorePrefix,
+    WritableStorageTraits,
 };
 
 /// A storage handle.
@@ -41,6 +42,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
 
     fn size(&self) -> Result<u64, super::StorageError> {
         self.0.size()
+    }
+
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        self.0.size_prefix(prefix)
     }
 
     fn size_key(&self, key: &super::StoreKey) -> Result<Option<u64>, super::StorageError> {

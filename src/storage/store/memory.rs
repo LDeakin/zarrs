@@ -109,13 +109,14 @@ impl ReadableStorageTraits for MemoryStore {
         self.get_partial_values_batched_by_key(key_ranges)
     }
 
-    fn size(&self) -> Result<u64, StorageError> {
-        let mut out: u64 = 0;
-        let data_map = self.data_map.lock().unwrap();
-        for values in data_map.values() {
-            out += values.read().len() as u64;
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let mut size = 0;
+        for key in self.list_prefix(prefix)? {
+            if let Some(size_key) = self.size_key(&key)? {
+                size += size_key;
+            }
         }
-        Ok(out)
+        Ok(size)
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {

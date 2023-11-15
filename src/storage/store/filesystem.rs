@@ -247,6 +247,16 @@ impl ReadableStorageTraits for FilesystemStore {
             .sum())
     }
 
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let mut size = 0;
+        for key in self.list_prefix(prefix)? {
+            if let Some(size_key) = self.size_key(&key)? {
+                size += size_key;
+            }
+        }
+        Ok(size)
+    }
+
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let key_path = self.key_to_fspath(key);
         std::fs::metadata(key_path).map_or_else(|_| Ok(None), |metadata| Ok(Some(metadata.len())))

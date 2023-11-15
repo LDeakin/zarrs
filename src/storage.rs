@@ -96,12 +96,12 @@ pub trait ReadableStorageTraits: Send + Sync {
         key_ranges: &[StoreKeyRange],
     ) -> Result<Vec<MaybeBytes>, StorageError>;
 
-    /// Return the size in bytes of the readable storage.
+    /// Return the size in bytes of all keys under `prefix`.
     ///
     /// # Errors
     ///
     /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
-    fn size(&self) -> Result<u64, StorageError>;
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError>;
 
     /// Return the size in bytes of the value at `key`.
     ///
@@ -111,6 +111,15 @@ pub trait ReadableStorageTraits: Send + Sync {
     ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError>;
+
+    /// Return the total size in bytes of the storage.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
+    fn size(&self) -> Result<u64, StorageError> {
+        self.size_prefix(&StorePrefix::root())
+    }
 
     /// A utility method with the same input and output as [`get_partial_values`](ReadableStorageTraits::get_partial_values) that internally calls [`get_partial_values_key`](ReadableStorageTraits::get_partial_values_key) with byte ranges grouped by key.
     ///
