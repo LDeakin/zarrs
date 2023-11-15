@@ -2,17 +2,14 @@
 //!
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
-//! **zarrs and zarrs-ffi is experimental and in limited production use. Use at your own risk!**
+//! **zarrs is experimental and in limited production use. Use at your own risk!**
+//!
+//! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //!
 //! A subset of zarrs is exposed as a C API in the [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi) crate.
 //!
 //! ## Stability
-//! Zarrs is unstable and will remain unstable in the near future.
-//!  - The API surface for typical use (e.g. array reading and writing) *should* remain quite stable.
-//!  - Breaking changes are more likely to impact custom codecs, stores, storage transformers, etc.
-//!  - Zarr V3 has been approved but still has some pending revisions.
-//!
-//! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
+//! Zarrs is unstable and will remain unstable in the near future as the API is refined and the Zarr V3 specification is finalised.
 //!
 //! ## Implementation Status
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/draft/ZEP0001.html)
