@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2023-11-16
+
+### Highlights
+ - Revisions for recent updates to the Zarr V3 specification (e.g. sharding `index_location` and removal of `"order": "C"/"F"` from transpose codec)
+ - API changes to improve usability
+ - Performance improvements and a few bug fixes
+ - Experimental `zfp` and `bitround` codecs
+
 ### Added
  - **Breaking**: Added `UnsupportedDataTypeError`
  - **Breaking**: Added `CodecError::UnsupportedDataType`
@@ -82,7 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Major breaking**: Input `Vec<..>` instead of `&[..]` to array store methods
    - Supports some perf improvements
  - **Breaking**: Change `BytesRepresentation` enum from `KnownSize(u64)`/`VariableSize` to `FixedSize(u64)`/`BoundedSize(u64)`/`UnboundedSize`
- - IN PROGRESS: Preallocate sharding codec encoded output when the encoded representation has a fixed or bounded size
+ - Preallocate sharding codec encoded output when the encoded representation has a fixed or bounded size
  - Add `par_encode` for `zstd` codec
  - **Breaking**: Codecs now must implement `encode_opt`, `decode_opt`, and `partial_decoder_opt`
  - **Breaking**: Partial decoders now must implement `partial_decode_opt` and the `decoded_representation` is now supplied on creation, rather than when calling `partial_decode`/`partial_decode_par`/`partial_decode_opt`
@@ -254,7 +262,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.5.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.6.0
 [0.5.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.5.0
 [0.4.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.2
