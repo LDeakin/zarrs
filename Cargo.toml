@@ -1,12 +1,13 @@
 [package]
 name = "zarrs"
-description = "A library for the Zarr V3 storage format for multidimensional arrays and metadata"
 version = "0.6.1"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.70"
-license = "MIT OR Apache-2.0"
+description = "A library for the Zarr V3 storage format for multidimensional arrays and metadata"
+documentation = "https://docs.rs/zarrs"
 repository = "https://github.com/LDeakin/zarrs"
+license = "MIT OR Apache-2.0"
 keywords = ["zarr"]
 categories = ["encoding"]
 exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.sh", "TODO.md"]
