@@ -72,7 +72,7 @@ pub struct ArrayBuilder {
     pub bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
     /// Storage transformer chain.
     pub storage_transformers: StorageTransformerChain,
-    /// Atributes.
+    /// Attributes.
     pub attributes: serde_json::Map<String, serde_json::Value>,
     /// Dimension names.
     pub dimension_names: Option<Vec<DimensionName>>,

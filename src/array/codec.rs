@@ -336,7 +336,7 @@ pub trait ArrayToArrayCodecTraits:
 {
     /// Initialise a partial decoder with optional parallelism.
     ///
-    /// `parallel` only affects paralellism on initialisation, which is irrelevant for most codecs.
+    /// `parallel` only affects parallelism on initialisation, which is irrelevant for most codecs.
     /// Parallel partial decoding support is independent of how the partial decoder is initialised.
     ///
     /// # Errors
