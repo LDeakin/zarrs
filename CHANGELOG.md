@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `Array::builder()` and `ArrayBuilder::from_array()`
  - Added more `ArrayBuilder` modifiers and made internals public
  - Added a fast path to `Array::retrieve_array_subset` methods if the array subset matches a chunk
- - Added `ZARR_NAN_F64/F32/F16/BF16` which match the zarr nan bit representation on all implementations
+ - Added `array::{ZARR_NAN_F64,ZARR_NAN_F32,ZARR_NAN_F16,ZARR_NAN_BF16}` which match the zarr nan bit representation on all implementations
  - Added `size_usize()` to `ArrayRepresentation`
  - Add generic implementations of storage supertraits (`ReadableWritableStorageTraits` and `ReadableListableStorageTraits`)
  - Add `size_prefix()` to stores

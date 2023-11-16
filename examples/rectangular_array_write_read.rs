@@ -2,11 +2,14 @@
 fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
     use zarrs::array::ChunkGrid;
-    use zarrs::ZARR_NAN_F32;
-    use zarrs::{array::DataType, array_subset::ArraySubset, storage::store};
     use zarrs::{
         array::{chunk_grid::RectangularChunkGrid, codec, FillValue},
         node::Node,
+    };
+    use zarrs::{
+        array::{DataType, ZARR_NAN_F32},
+        array_subset::ArraySubset,
+        storage::store,
     };
 
     // Create a store

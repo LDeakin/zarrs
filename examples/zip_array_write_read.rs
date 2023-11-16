@@ -6,10 +6,9 @@ use std::{
 };
 
 use zarrs::{
-    array::Array,
+    array::{Array, ZARR_NAN_F32},
     array_subset::ArraySubset,
     storage::{ReadableStorageTraits, ReadableWritableStorageTraits},
-    ZARR_NAN_F32,
 };
 
 // const ARRAY_PATH: &'static str = "/array";

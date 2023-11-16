@@ -3,12 +3,10 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
     use std::sync::Arc;
     use zarrs::{
-        array::FillValue,
-        array::{chunk_grid::ChunkGridTraits, DataType},
+        array::{chunk_grid::ChunkGridTraits, DataType, FillValue, ZARR_NAN_F32},
         array_subset::ArraySubset,
         node::Node,
         storage::store,
-        ZARR_NAN_F32,
     };
 
     // Create a store

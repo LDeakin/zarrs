@@ -6,7 +6,10 @@ use derive_more::From;
 use half::{bf16, f16};
 use thiserror::Error;
 
-use crate::{metadata::Metadata, ZARR_NAN_F32, ZARR_NAN_F64};
+use crate::{
+    array::{ZARR_NAN_F32, ZARR_NAN_F64},
+    metadata::Metadata,
+};
 
 use super::{
     fill_value_metadata::{
@@ -407,7 +410,7 @@ impl core::fmt::Display for DataType {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ZARR_NAN_BF16, ZARR_NAN_F32, ZARR_NAN_F64};
+    use crate::array::{ZARR_NAN_BF16, ZARR_NAN_F32, ZARR_NAN_F64};
 
     use super::*;
 

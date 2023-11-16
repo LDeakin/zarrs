@@ -41,6 +41,7 @@ pub mod data_type;
 mod dimension_name;
 mod fill_value;
 mod fill_value_metadata;
+mod nan_representations;
 mod unsafe_cell_slice;
 
 use std::{collections::HashMap, sync::Arc};
@@ -58,6 +59,7 @@ pub use self::{
     dimension_name::DimensionName,
     fill_value::FillValue,
     fill_value_metadata::FillValueMetadata,
+    nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
 };
 
 use parking_lot::Mutex;
@@ -1739,7 +1741,7 @@ mod tests {
     use itertools::Itertools;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-    use crate::{storage::store::MemoryStore, ZARR_NAN_F32};
+    use crate::storage::store::MemoryStore;
 
     use super::*;
 

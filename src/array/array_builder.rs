@@ -27,13 +27,13 @@ use super::{
 /// ```rust
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use std::sync::Arc;
-/// use zarrs::array::{ArrayBuilder, DataType, FillValue};
+/// use zarrs::array::{ArrayBuilder, DataType, FillValue, ZARR_NAN_F32};
 /// # let store = Arc::new(zarrs::storage::store::MemoryStore::default());
 /// let mut array = ArrayBuilder::new(
 ///     vec![8, 8], // array shape
 ///     DataType::Float32,
 ///     vec![4, 4].into(), // regular chunk shape
-///     FillValue::from(zarrs::ZARR_NAN_F32),
+///     FillValue::from(ZARR_NAN_F32),
 /// )
 /// .bytes_to_bytes_codecs(vec![
 ///     #[cfg(feature = "gzip")]
