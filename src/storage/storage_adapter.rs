@@ -5,4 +5,4 @@
 #[cfg(feature = "zip")]
 mod zip;
 #[cfg(feature = "zip")]
-pub use zip::{ZipStorageAdapter, ZipStorageAdapterCreateError};
+pub use self::zip::{ZipStorageAdapter, ZipStorageAdapterCreateError};
