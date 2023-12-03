@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `storage_async` module with asynchronous storage traits: `Async{Readable,Writable,Listable,ReadableListable}StorageTraits`
   - Implemented for `StorageHandle`
  - Add async filesystem/http/memory stores in `storage::store::async` module and a wrapper for any store provided by the [`object_store`](https://docs.rs/object_store/latest/object_store/) crate
+ - Add async support to zarr `Group`
 
 ### Changed
  - Bump itertools to `0.12` and zstd to `0.13`

@@ -31,7 +31,8 @@ use crate::{
     metadata::{AdditionalFields, UnsupportedAdditionalFieldError},
     node::{NodePath, NodePathError},
     storage::{
-        meta_key, ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits,
+        meta_key, AsyncReadableStorageTraits, AsyncWritableStorageTraits, ReadableStorageTraits,
+        StorageError, StorageHandle, WritableStorageTraits,
     },
 };
 
@@ -132,6 +133,22 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     }
 }
 
+impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
+    /// Create a group in `storage` at `path`. The metadata is read from the store.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    pub async fn async_new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
+        let node_path = path.try_into()?;
+        let metadata: GroupMetadata = match storage.get(&meta_key(&node_path)).await? {
+            Some(metadata) => serde_json::from_slice(&metadata)?,
+            None => GroupMetadataV3::default().into(),
+        };
+        Self::new_with_metadata(storage, path, metadata)
+    }
+}
+
 /// A group creation error.
 #[derive(Debug, Error)]
 pub enum GroupCreateError {
@@ -187,9 +204,21 @@ impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
     }
 }
 
+impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
+    /// Store metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StorageError`] if there is an underlying store error.
+    pub async fn async_store_metadata(&self) -> Result<(), StorageError> {
+        let storage_handle = StorageHandle::new(&*self.storage);
+        crate::storage::async_create_group(&storage_handle, self.path(), &self.metadata()).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::storage::store::MemoryStore;
+    use crate::storage::store::{AsyncMemoryStore, MemoryStore};
 
     use super::*;
 
@@ -275,6 +304,21 @@ mod tests {
             .unwrap();
         group.store_metadata().unwrap();
         let metadata = Group::new(store, group_path).unwrap().metadata();
+        assert_eq!(metadata, group.metadata());
+    }
+
+    #[tokio::test]
+    async fn group_metadata_write_read_async() {
+        let store = std::sync::Arc::new(AsyncMemoryStore::new());
+        let group_path = "/group";
+        let group = GroupBuilder::new()
+            .build(store.clone(), group_path)
+            .unwrap();
+        group.async_store_metadata().await.unwrap();
+        let metadata = Group::async_new(store, group_path)
+            .await
+            .unwrap()
+            .metadata();
         assert_eq!(metadata, group.metadata());
     }
 }

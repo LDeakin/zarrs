@@ -270,6 +270,21 @@ pub fn create_group(
     Ok(())
 }
 
+/// Asynchronously create a group.
+///
+/// # Errors
+///
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_create_group(
+    storage: &dyn AsyncWritableStorageTraits,
+    path: &NodePath,
+    group: &GroupMetadata,
+) -> Result<(), StorageError> {
+    let json = serde_json::to_vec_pretty(group)?;
+    storage.set(&meta_key(path), &json).await?;
+    Ok(())
+}
+
 /// Create an array.
 ///
 /// # Errors
