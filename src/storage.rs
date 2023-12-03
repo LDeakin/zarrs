@@ -12,6 +12,7 @@
 //! This module defines abstract store interfaces, includes various store and storage transformers, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
 
 pub mod storage_adapter;
+mod storage_async;
 mod storage_handle;
 mod storage_sync;
 pub mod storage_transformer;
@@ -34,6 +35,10 @@ use crate::{
 pub use store_key::{StoreKey, StoreKeyError, StoreKeys};
 pub use store_prefix::{StorePrefix, StorePrefixError, StorePrefixes};
 
+pub use self::storage_async::{
+    AsyncListableStorageTraits, AsyncReadableListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncWritableStorageTraits,
+};
 pub use self::storage_sync::{
     ListableStorageTraits, ReadableListableStorageTraits, ReadableStorageTraits,
     WritableStorageTraits,

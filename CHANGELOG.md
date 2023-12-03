@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `storage_async` module with asynchronous storage traits: `Async{Readable,Writable,Listable,ReadableListable}StorageTraits`
 ### Changed
  - Bump itertools to `0.12` and zstd to `0.13`
  - Set minimum supported rust version (MSRV) to `1.70` (1 June, 2023)
