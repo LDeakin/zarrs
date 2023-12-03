@@ -49,9 +49,6 @@ pub type WritableStorage<'a> = Arc<dyn WritableStorageTraits + 'a>;
 /// [`Arc`] wrapped listable storage.
 pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
 
-/// [`Arc`] wrapped readable and writable storage.
-pub type ReadableWritableStorage<'a> = Arc<dyn ReadableWritableStorageTraits + 'a>;
-
 /// [`Arc`] wrapped readable and listable storage.
 pub type ReadableListableStorage<'a> = Arc<dyn ReadableListableStorageTraits + 'a>;
 
@@ -269,11 +266,6 @@ pub trait WritableStorageTraits: Send + Sync + ReadableStorageTraits {
     /// Returns a [`StorageError`] is the prefix is not in the store, or the erase otherwise fails.
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError>;
 }
-
-/// A supertrait of [`ReadableStorageTraits`] and [`WritableStorageTraits`].
-pub trait ReadableWritableStorageTraits: ReadableStorageTraits + WritableStorageTraits {}
-
-impl<T> ReadableWritableStorageTraits for T where T: ReadableStorageTraits + WritableStorageTraits {}
 
 /// A supertrait of [`ReadableStorageTraits`] and [`ListableStorageTraits`].
 pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorageTraits {}
@@ -688,8 +680,7 @@ mod tests {
             // storage_transformer_usage_log.clone(),
             storage_transformer_performance_metrics.clone(),
         ]);
-        let transformer =
-            storage_transformer_chain.create_readable_writable_transformer(store.clone());
+        let transformer = storage_transformer_chain.create_writable_transformer(store.clone());
         let transformer_listable = storage_transformer_chain.create_listable_transformer(store);
 
         (0..10).into_par_iter().for_each(|_| {

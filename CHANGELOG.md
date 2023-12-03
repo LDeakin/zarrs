@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Set minimum supported rust version (MSRV) to `1.70` (1 June, 2023)
    - Required by `half` since `2.3.1` (26 June, 2023) 
  - Make `StoreKeyRange` and `StoreKeyStartValue` clonable
+ - **Breaking**: Remove `ReadableWritableStorageTraits`, `ReadableWritableStorage`, `ReadableWritableStore`, and `StorageTransformerExtension::create_readable_writable_transformer`
+   - These were redundant because `WritableStorageTraits` requires `ReadableStorageTraits` since `6e69a4d`
 
 ## [0.6.0] - 2023-11-16
 

@@ -17,10 +17,7 @@ use crate::{
     plugin::{Plugin, PluginCreateError},
 };
 
-use super::{
-    ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableStorage,
-    WritableStorage,
-};
+use super::{ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage};
 
 /// An [`Arc`] wrapped storage transformer.
 pub type StorageTransformer = Arc<dyn StorageTransformerExtension>;
@@ -69,12 +66,6 @@ pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
         &'a self,
         storage: ListableStorage<'a>,
     ) -> ListableStorage<'a>;
-
-    /// Create a readable and writable transformer.
-    fn create_readable_writable_transformer<'a>(
-        &'a self,
-        storage: ReadableWritableStorage<'a>,
-    ) -> ReadableWritableStorage<'a>;
 
     /// Create a readable and listable transformer.
     fn create_readable_listable_transformer<'a>(

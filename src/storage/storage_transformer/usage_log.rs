@@ -11,9 +11,8 @@ use crate::{
     metadata::Metadata,
     storage::{
         ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, ReadableWritableStorage, StorageError, StoreKey, StoreKeyRange,
-        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage,
-        WritableStorageTraits,
+        ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
+        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
     },
 };
 
@@ -66,13 +65,6 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
     }
 
     fn create_listable_transformer<'a>(&self, storage: ListableStorage<'a>) -> ListableStorage<'a> {
-        self.create_transformer(storage)
-    }
-
-    fn create_readable_writable_transformer<'a>(
-        &self,
-        storage: ReadableWritableStorage<'a>,
-    ) -> ReadableWritableStorage<'a> {
         self.create_transformer(storage)
     }
 

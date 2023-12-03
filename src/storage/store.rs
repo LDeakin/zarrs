@@ -29,9 +29,6 @@ pub type WritableStore = Arc<dyn super::WritableStorageTraits>;
 /// An [`Arc`] wrapped listable store.
 pub type ListableStore = Arc<dyn super::ListableStorageTraits>;
 
-/// An [`Arc`] wrapped readable and writable store.
-pub type ReadableWritableStore = Arc<dyn super::ReadableWritableStorageTraits>;
-
 // /// A readable store plugin.
 // pub type ReadableStorePlugin = StorePlugin<ReadableStore>;
 // inventory::collect!(ReadableStorePlugin);

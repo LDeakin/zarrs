@@ -5,7 +5,7 @@ use derive_more::From;
 use crate::{
     metadata::Metadata,
     plugin::PluginCreateError,
-    storage::{ListableStorage, ReadableStorage, ReadableWritableStorage, WritableStorage},
+    storage::{ListableStorage, ReadableStorage, WritableStorage},
 };
 
 use super::{try_create_storage_transformer, StorageTransformer};
@@ -75,17 +75,6 @@ impl StorageTransformerChain {
     ) -> ListableStorage<'a> {
         for transformer in &self.0 {
             storage = transformer.create_listable_transformer(storage);
-        }
-        storage
-    }
-
-    /// Create a readable and writable storage transformer.
-    pub fn create_readable_writable_transformer<'a>(
-        &'a self,
-        mut storage: ReadableWritableStorage<'a>,
-    ) -> ReadableWritableStorage<'a> {
-        for transformer in &self.0 {
-            storage = transformer.create_readable_writable_transformer(storage);
         }
         storage
     }
