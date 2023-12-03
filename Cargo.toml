@@ -39,6 +39,7 @@ bench = false
 [dependencies]
 async-trait = "0.1.74"
 blosc-sys = { version = "0.3.0", package = "blosc-src", features = ["lz4", "zlib", "zstd"], optional = true }
+bytes = "1.5.0"
 crc32fast = { version = "1.3", optional = true }
 derive_more = "0.99"
 dyn-clone = "1"
@@ -49,6 +50,7 @@ inventory = "0.3"
 itertools = "0.12"
 ndarray = { version = "0.15", optional = true }
 num = { version = "0.4" }
+object_store = { version = "0.8.0", features = ["http"] }
 parking_lot = "0.12"
 pathdiff = "0.2"
 rayon = "1.6"
@@ -67,6 +69,7 @@ zstd = { version = "0.13", features = ["zstdmt"], optional = true }
 chrono = "0.4"
 criterion = "0.5.1"
 tempfile = "3"
+tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
 
 [[bench]]
 name = "array_subset"
