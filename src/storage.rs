@@ -281,7 +281,7 @@ pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorage
 impl<T> ReadableListableStorageTraits for T where T: ReadableStorageTraits + ListableStorageTraits {}
 
 /// A [`StoreKey`] and [`ByteRange`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StoreKeyRange {
     /// The key for the range.
     key: StoreKey,
@@ -298,7 +298,7 @@ impl StoreKeyRange {
 }
 
 /// A [`StoreKey`], [`ByteOffset`], and value (bytes).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[must_use]
 pub struct StoreKeyStartValue<'a> {
     /// The key.

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump itertools to `0.12` and zstd to `0.13`
  - Set minimum supported rust version (MSRV) to `1.70` (1 June, 2023)
    - Required by `half` since `2.3.1` (26 June, 2023) 
+ - Make `StoreKeyRange` and `StoreKeyStartValue` clonable
 
 ## [0.6.0] - 2023-11-16
 
