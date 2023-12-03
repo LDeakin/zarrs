@@ -1,6 +1,9 @@
+use async_trait::async_trait;
+
 use crate::{array::MaybeBytes, byte_range::ByteRange};
 
 use super::{
+    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
     ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StorePrefix,
     WritableStorageTraits,
 };
@@ -99,5 +102,92 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 
     fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<bool, super::StorageError> {
         self.0.erase_prefix(prefix)
+    }
+}
+
+#[async_trait]
+impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
+    for StorageHandle<'_, TStorage>
+{
+    async fn get(&self, key: &super::StoreKey) -> Result<MaybeBytes, super::StorageError> {
+        self.0.get(key).await
+    }
+
+    async fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        self.0.get_partial_values_key(key, byte_ranges).await
+    }
+
+    async fn get_partial_values(
+        &self,
+        key_ranges: &[super::StoreKeyRange],
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        self.0.get_partial_values(key_ranges).await
+    }
+
+    async fn size_prefix(&self, prefix: &super::StorePrefix) -> Result<u64, super::StorageError> {
+        self.0.size_prefix(prefix).await
+    }
+
+    async fn size_key(&self, key: &super::StoreKey) -> Result<Option<u64>, super::StorageError> {
+        self.0.size_key(key).await
+    }
+
+    async fn size(&self) -> Result<u64, super::StorageError> {
+        self.0.size().await
+    }
+}
+
+#[async_trait]
+impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
+    for StorageHandle<'_, TStorage>
+{
+    async fn list(&self) -> Result<super::StoreKeys, super::StorageError> {
+        self.0.list().await
+    }
+
+    async fn list_prefix(
+        &self,
+        prefix: &super::StorePrefix,
+    ) -> Result<super::StoreKeys, super::StorageError> {
+        self.0.list_prefix(prefix).await
+    }
+
+    async fn list_dir(
+        &self,
+        prefix: &super::StorePrefix,
+    ) -> Result<super::StoreKeysPrefixes, super::StorageError> {
+        self.0.list_dir(prefix).await
+    }
+}
+
+#[async_trait]
+impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
+    for StorageHandle<'_, TStorage>
+{
+    async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+        self.0.set(key, value).await
+    }
+
+    async fn set_partial_values(
+        &self,
+        key_start_values: &[super::StoreKeyStartValue],
+    ) -> Result<(), super::StorageError> {
+        self.0.set_partial_values(key_start_values).await
+    }
+
+    async fn erase(&self, key: &super::StoreKey) -> Result<bool, super::StorageError> {
+        self.0.erase(key).await
+    }
+
+    async fn erase_values(&self, keys: &[super::StoreKey]) -> Result<bool, super::StorageError> {
+        self.0.erase_values(keys).await
+    }
+
+    async fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<bool, super::StorageError> {
+        self.0.erase_prefix(prefix).await
     }
 }
