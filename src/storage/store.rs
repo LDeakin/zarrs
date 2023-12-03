@@ -4,17 +4,14 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id21>
 
-mod filesystem;
-mod memory;
+mod sync;
 // mod store_plugin;
 
-pub use filesystem::{FilesystemStore, FilesystemStoreCreateError};
-pub use memory::MemoryStore;
+pub use sync::filesystem_store::{FilesystemStore, FilesystemStoreCreateError};
+pub use sync::memory_store::MemoryStore;
 
 #[cfg(feature = "http")]
-mod http;
-#[cfg(feature = "http")]
-pub use http::{HTTPStore, HTTPStoreCreateError};
+pub use sync::http_store::{HTTPStore, HTTPStoreCreateError};
 
 // pub use store_plugin::{StorePlugin, StorePluginCreateError}; // Currently disabled.
 
