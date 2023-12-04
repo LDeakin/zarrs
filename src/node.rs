@@ -19,7 +19,8 @@ use crate::{
     array::ArrayMetadata,
     group::GroupMetadataV3,
     storage::{
-        get_child_nodes, meta_key, ListableStorageTraits, ReadableStorageTraits, StorageError,
+        async_get_child_nodes, get_child_nodes, meta_key, AsyncListableStorageTraits,
+        AsyncReadableStorageTraits, ListableStorageTraits, ReadableStorageTraits, StorageError,
     },
 };
 
@@ -82,6 +83,36 @@ impl Node {
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),
             NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
+        };
+        let node = Self {
+            path,
+            metadata,
+            children,
+        };
+        Ok(node)
+    }
+
+    /// Asynchronously create a new node at `path` and read metadata and children from `storage`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
+    pub async fn async_new_with_store<
+        TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+    >(
+        storage: &TStorage,
+        path: &str,
+    ) -> Result<Self, NodeCreateError> {
+        let path: NodePath = path.try_into()?;
+        let metadata = storage.get(&meta_key(&path)).await?;
+        let metadata: NodeMetadata = match metadata {
+            Some(metadata) => serde_json::from_slice(metadata.as_slice())
+                .map_err(|e| NodeCreateError::Metadata(e.to_string()))?,
+            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
+        };
+        let children = match metadata {
+            NodeMetadata::Array(_) => Vec::default(),
+            NodeMetadata::Group(_) => async_get_child_nodes(storage, &path).await?,
         };
         let node = Self {
             path,

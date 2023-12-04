@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add async support to zarr `Group` and `Array`
  - Add `Async{Readable,Writable,Listable,ReadableListable}Storage`
  - Add `StorageTransformerExtension::create_async_{readable,writable,listable,readable_listable}_transformer`
+ - Add `Node::async_new_with_store` and implement `storage::async_get_child_nodes`
 
 ### Changed
  - Bump itertools to `0.12` and zstd to `0.13`

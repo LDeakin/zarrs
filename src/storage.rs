@@ -23,6 +23,7 @@ mod store_prefix;
 
 use std::{path::PathBuf, sync::Arc};
 
+use async_recursion::async_recursion;
 use thiserror::Error;
 
 use crate::{
@@ -235,6 +236,38 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
         let children = match child_metadata {
             NodeMetadata::Array(_) => Vec::default(),
             NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
+        };
+        nodes.push(Node::new(path, child_metadata, children));
+    }
+    Ok(nodes)
+}
+
+/// Asynchronously get the child nodes.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+#[async_recursion]
+pub async fn async_get_child_nodes<
+    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<Vec<Node>, StorageError> {
+    let prefixes = async_discover_children(storage, path).await?;
+    let mut nodes: Vec<Node> = Vec::new();
+    // FIXME: Asynchronously get metadata of all prefixes
+    for prefix in &prefixes {
+        let child_metadata = match storage.get(&meta_key(&prefix.try_into()?)).await? {
+            Some(child_metadata) => {
+                let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())?;
+                metadata
+            }
+            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
+        };
+        let path: NodePath = prefix.try_into()?;
+        let children = match child_metadata {
+            NodeMetadata::Array(_) => Vec::default(),
+            NodeMetadata::Group(_) => async_get_child_nodes(storage, &path).await?,
         };
         nodes.push(Node::new(path, child_metadata, children));
     }
