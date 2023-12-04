@@ -1,12 +1,13 @@
+use async_recursion::async_recursion;
 use async_trait::async_trait;
 use futures::{stream::FuturesUnordered, StreamExt};
 use itertools::Itertools;
 
-use crate::{array::MaybeBytes, byte_range::ByteRange};
+use crate::{array::{MaybeBytes, ArrayMetadata, ChunkKeyEncoding}, byte_range::ByteRange, node::{NodePath, Node, NodeMetadata}, group::{GroupMetadataV3, GroupMetadata}};
 
 use super::{
     StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-    StorePrefix,
+    StorePrefix, meta_key, data_key, StorePrefixes,
 };
 
 /// Async readable storage traits.
@@ -256,4 +257,225 @@ pub trait AsyncReadableListableStorageTraits:
 impl<T> AsyncReadableListableStorageTraits for T where
     T: AsyncReadableStorageTraits + AsyncListableStorageTraits
 {
+}
+
+/// Asynchronously get the child nodes.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+#[async_recursion]
+pub async fn async_get_child_nodes<
+    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<Vec<Node>, StorageError> {
+    let prefixes = async_discover_children(storage, path).await?;
+    let mut nodes: Vec<Node> = Vec::new();
+    // FIXME: Asynchronously get metadata of all prefixes
+    for prefix in &prefixes {
+        let child_metadata = match storage.get(&meta_key(&prefix.try_into()?)).await? {
+            Some(child_metadata) => {
+                let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())?;
+                metadata
+            }
+            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
+        };
+        let path: NodePath = prefix.try_into()?;
+        let children = match child_metadata {
+            NodeMetadata::Array(_) => Vec::default(),
+            NodeMetadata::Group(_) => async_get_child_nodes(storage, &path).await?,
+        };
+        nodes.push(Node::new(path, child_metadata, children));
+    }
+    Ok(nodes)
+}
+
+/// Asynchronously create a group.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_create_group(
+    storage: &dyn AsyncWritableStorageTraits,
+    path: &NodePath,
+    group: &GroupMetadata,
+) -> Result<(), StorageError> {
+    let json = serde_json::to_vec_pretty(group)?;
+    storage.set(&meta_key(path), &json).await?;
+    Ok(())
+}
+
+/// Asynchronously create an array.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_create_array(
+    storage: &dyn AsyncWritableStorageTraits,
+    path: &NodePath,
+    array: &ArrayMetadata,
+) -> Result<(), StorageError> {
+    let json = serde_json::to_vec_pretty(array)?;
+    storage.set(&meta_key(path), &json).await?;
+    Ok(())
+}
+
+/// Asynchronously store a chunk.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_store_chunk(
+    storage: &dyn AsyncWritableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+    chunk_serialised: &[u8],
+) -> Result<(), StorageError> {
+    storage
+        .set(
+            &data_key(array_path, chunk_grid_indices, chunk_key_encoding),
+            chunk_serialised,
+        )
+        .await?;
+    Ok(())
+}
+
+/// Asynchronously retrieve a chunk.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_retrieve_chunk(
+    storage: &dyn AsyncReadableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+) -> Result<MaybeBytes, StorageError> {
+    storage
+        .get(&data_key(
+            array_path,
+            chunk_grid_indices,
+            chunk_key_encoding,
+        ))
+        .await
+}
+
+/// Asynchronously erase a chunk.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_erase_chunk(
+    storage: &dyn AsyncWritableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+) -> Result<bool, StorageError> {
+    storage
+        .erase(&data_key(
+            array_path,
+            chunk_grid_indices,
+            chunk_key_encoding,
+        ))
+        .await
+}
+
+/// Asynchronously retrieve byte ranges from a chunk.
+///
+/// Returns [`None`] where keys are not found.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_retrieve_partial_values(
+    storage: &dyn AsyncReadableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+    bytes_ranges: &[ByteRange],
+) -> Result<Vec<MaybeBytes>, StorageError> {
+    let key = data_key(array_path, chunk_grid_indices, chunk_key_encoding);
+    let key_ranges: Vec<StoreKeyRange> = bytes_ranges
+        .iter()
+        .map(|byte_range| StoreKeyRange::new(key.clone(), *byte_range))
+        .collect();
+    storage.get_partial_values(&key_ranges).await
+}
+
+/// Asynchronously discover the children of a node.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_discover_children<
+    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<StorePrefixes, StorageError> {
+    let prefix: StorePrefix = path.try_into()?;
+    let children: Result<Vec<_>, _> = storage
+        .list_dir(&prefix)
+        .await?
+        .prefixes()
+        .iter()
+        .filter(|v| !v.as_str().starts_with("__"))
+        .map(|v| StorePrefix::new(v.as_str()))
+        .collect();
+    Ok(children?)
+}
+
+/// Asynchronously discover all nodes.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+///
+pub async fn async_discover_nodes(
+    storage: &dyn AsyncListableStorageTraits,
+) -> Result<StoreKeys, StorageError> {
+    storage.list_prefix(&"/".try_into()?).await
+}
+
+/// Asynchronously erase a node (group or array) and all of its children.
+///
+/// Returns true if the node existed and was removed.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_erase_node(
+    storage: &dyn AsyncWritableStorageTraits,
+    path: &NodePath,
+) -> Result<bool, StorageError> {
+    let prefix = path.try_into()?;
+    storage.erase_prefix(&prefix).await
+}
+
+/// Asynchronously check if a node exists.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_node_exists<
+    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<bool, StorageError> {
+    Ok(storage
+        .get(&meta_key(path))
+        .await
+        .map_or(storage.list_dir(&path.try_into()?).await.is_ok(), |_| true))
+}
+
+/// Asynchronously check if a node exists.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_node_exists_listable<TStorage: ?Sized + AsyncListableStorageTraits>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<bool, StorageError> {
+    let prefix: StorePrefix = path.try_into()?;
+    let parent = prefix.parent();
+    if let Some(parent) = parent {
+        storage.list_dir(&parent).await.map(|keys_prefixes| {
+            !keys_prefixes.keys().is_empty() || !keys_prefixes.prefixes().is_empty()
+        })
+    } else {
+        Ok(false)
+    }
 }

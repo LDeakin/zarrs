@@ -1,10 +1,10 @@
 use itertools::Itertools;
 
-use crate::{array::MaybeBytes, byte_range::ByteRange};
+use crate::{array::{MaybeBytes, ArrayMetadata, ChunkKeyEncoding}, byte_range::ByteRange, node::{NodePath, Node, NodeMetadata}, group::{GroupMetadataV3, GroupMetadata}};
 
 use super::{
     StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-    StorePrefix,
+    StorePrefix, meta_key, data_key, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -231,3 +231,211 @@ impl<T> ReadableWritableStorageTraits for T where T: ReadableStorageTraits + Wri
 pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorageTraits {}
 
 impl<T> ReadableListableStorageTraits for T where T: ReadableStorageTraits + ListableStorageTraits {}
+
+/// Get the child nodes.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<Vec<Node>, StorageError> {
+    let prefixes = discover_children(storage, path)?;
+    let mut nodes: Vec<Node> = Vec::new();
+    for prefix in &prefixes {
+        let child_metadata = match storage.get(&meta_key(&prefix.try_into()?))? {
+            Some(child_metadata) => {
+                let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())?;
+                metadata
+            }
+            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
+        };
+        let path: NodePath = prefix.try_into()?;
+        let children = match child_metadata {
+            NodeMetadata::Array(_) => Vec::default(),
+            NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
+        };
+        nodes.push(Node::new(path, child_metadata, children));
+    }
+    Ok(nodes)
+}
+
+
+/// Create a group.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn create_group(
+    storage: &dyn WritableStorageTraits,
+    path: &NodePath,
+    group: &GroupMetadata,
+) -> Result<(), StorageError> {
+    let json = serde_json::to_vec_pretty(group)?;
+    storage.set(&meta_key(path), &json)?;
+    Ok(())
+}
+
+/// Create an array.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn create_array(
+    storage: &dyn WritableStorageTraits,
+    path: &NodePath,
+    array: &ArrayMetadata,
+) -> Result<(), StorageError> {
+    let json = serde_json::to_vec_pretty(array)?;
+    storage.set(&meta_key(path), &json)?;
+    Ok(())
+}
+
+/// Store a chunk.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn store_chunk(
+    storage: &dyn WritableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+    chunk_serialised: &[u8],
+) -> Result<(), StorageError> {
+    storage.set(
+        &data_key(array_path, chunk_grid_indices, chunk_key_encoding),
+        chunk_serialised,
+    )?;
+    Ok(())
+}
+
+/// Retrieve a chunk.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn retrieve_chunk(
+    storage: &dyn ReadableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+) -> Result<MaybeBytes, StorageError> {
+    storage.get(&data_key(
+        array_path,
+        chunk_grid_indices,
+        chunk_key_encoding,
+    ))
+}
+
+
+/// Erase a chunk.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn erase_chunk(
+    storage: &dyn WritableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+) -> Result<bool, StorageError> {
+    storage.erase(&data_key(
+        array_path,
+        chunk_grid_indices,
+        chunk_key_encoding,
+    ))
+}
+
+
+/// Retrieve byte ranges from a chunk.
+///
+/// Returns [`None`] where keys are not found.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn retrieve_partial_values(
+    storage: &dyn ReadableStorageTraits,
+    array_path: &NodePath,
+    chunk_grid_indices: &[u64],
+    chunk_key_encoding: &ChunkKeyEncoding,
+    bytes_ranges: &[ByteRange],
+) -> Result<Vec<MaybeBytes>, StorageError> {
+    let key = data_key(array_path, chunk_grid_indices, chunk_key_encoding);
+    let key_ranges: Vec<StoreKeyRange> = bytes_ranges
+        .iter()
+        .map(|byte_range| StoreKeyRange::new(key.clone(), *byte_range))
+        .collect();
+    storage.get_partial_values(&key_ranges)
+}
+
+
+/// Discover the children of a node.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn discover_children<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<StorePrefixes, StorageError> {
+    let prefix: StorePrefix = path.try_into()?;
+    let children: Result<Vec<_>, _> = storage
+        .list_dir(&prefix)?
+        .prefixes()
+        .iter()
+        .filter(|v| !v.as_str().starts_with("__"))
+        .map(|v| StorePrefix::new(v.as_str()))
+        .collect();
+    Ok(children?)
+}
+
+
+/// Discover all nodes.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+///
+pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, StorageError> {
+    storage.list_prefix(&"/".try_into()?)
+}
+
+/// Erase a node (group or array) and all of its children.
+///
+/// Returns true if the node existed and was removed.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn erase_node(
+    storage: &dyn WritableStorageTraits,
+    path: &NodePath,
+) -> Result<bool, StorageError> {
+    let prefix = path.try_into()?;
+    storage.erase_prefix(&prefix)
+}
+
+/// Check if a node exists.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn node_exists<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<bool, StorageError> {
+    Ok(storage
+        .get(&meta_key(path))
+        .map_or(storage.list_dir(&path.try_into()?).is_ok(), |_| true))
+}
+
+/// Check if a node exists.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn node_exists_listable<TStorage: ?Sized + ListableStorageTraits>(
+    storage: &TStorage,
+    path: &NodePath,
+) -> Result<bool, StorageError> {
+    let prefix: StorePrefix = path.try_into()?;
+    prefix.parent().map_or_else(
+        || Ok(false),
+        |parent| {
+            storage.list_dir(&parent).map(|keys_prefixes| {
+                !keys_prefixes.keys().is_empty() || !keys_prefixes.prefixes().is_empty()
+            })
+        },
+    )
+}
