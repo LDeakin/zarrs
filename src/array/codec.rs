@@ -36,7 +36,6 @@ pub use array_to_bytes::{
     codec_chain::CodecChain,
 };
 
-use async_trait::async_trait;
 // Bytes to bytes
 #[cfg(feature = "blosc")]
 pub use bytes_to_bytes::blosc::{BloscCodec, BloscCodecConfiguration, BloscCodecConfigurationV1};
@@ -56,17 +55,22 @@ mod partial_decoder_cache;
 pub use partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache};
 
 mod byte_interval_partial_decoder;
-pub use byte_interval_partial_decoder::{
-    AsyncByteIntervalPartialDecoder, ByteIntervalPartialDecoder,
-};
+pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
+
+#[cfg(feature = "async")]
+pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 
 use crate::{
     array_subset::{ArraySubset, InvalidArraySubsetError},
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
-    storage::{AsyncReadableStorage, ReadableStorage, StorageError, StoreKey},
+    storage::{ReadableStorage, StorageError, StoreKey},
 };
+
+#[cfg(feature = "async")]
+use crate::storage::AsyncReadableStorage;
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Read, Seek, SeekFrom},
@@ -124,7 +128,7 @@ pub trait CodecTraits: Send + Sync {
 }
 
 /// Traits for both `array->array` and `array->bytes` codecs.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayCodecTraits: CodecTraits {
     /// Encode array with optional parallelism.
     ///
@@ -137,6 +141,7 @@ pub trait ArrayCodecTraits: CodecTraits {
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError>;
 
+    #[cfg(feature = "async")]
     /// Asynchronously encode array with optional parallelism.
     ///
     /// # Errors
@@ -159,6 +164,7 @@ pub trait ArrayCodecTraits: CodecTraits {
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError>;
 
+    #[cfg(feature = "async")]
     /// Asynchronously decode array with optional parallelism.
     ///
     /// # Errors
@@ -292,8 +298,9 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial bytes decoder traits.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
     /// Partially decode bytes with optional parallelism.
     ///
@@ -406,8 +413,9 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial array decoder traits.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     /// Partially decode an array.
     ///
@@ -474,12 +482,14 @@ impl BytesPartialDecoderTraits for StoragePartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// A [`ReadableStorage`] partial decoder.
 pub struct AsyncStoragePartialDecoder<'a> {
     storage: AsyncReadableStorage<'a>,
     key: StoreKey,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncStoragePartialDecoder<'a> {
     /// Create a new storage partial decoder.
     pub fn new(storage: AsyncReadableStorage<'a>, key: StoreKey) -> Self {
@@ -487,7 +497,8 @@ impl<'a> AsyncStoragePartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
@@ -502,7 +513,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder<'_> {
 }
 
 /// Traits for `array->array` codecs.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToArrayCodecTraits:
     ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
 {
@@ -520,6 +531,7 @@ pub trait ArrayToArrayCodecTraits:
         parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
+    #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder with optional parallelism.
     ///
     /// `parallel` only affects parallelism on initialisation, which is irrelevant for most codecs.
@@ -568,6 +580,7 @@ pub trait ArrayToArrayCodecTraits:
         self.partial_decoder_opt(input_handle, decoded_representation, true)
     }
 
+    #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
     ///
     /// # Errors
@@ -581,6 +594,7 @@ pub trait ArrayToArrayCodecTraits:
             .await
     }
 
+    #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder with multithreading (where supported).
     ///
     /// # Errors
@@ -598,7 +612,7 @@ pub trait ArrayToArrayCodecTraits:
 dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
 
 /// Traits for `array->bytes` codecs.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToBytesCodecTraits:
     ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
 {
@@ -613,6 +627,7 @@ pub trait ArrayToBytesCodecTraits:
         parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
+    #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder with optional parallelism.
     ///
     /// # Errors
@@ -658,6 +673,7 @@ pub trait ArrayToBytesCodecTraits:
         self.partial_decoder_opt(input_handle, decoded_representation, true)
     }
 
+    #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
     ///
     /// # Errors
@@ -671,6 +687,7 @@ pub trait ArrayToBytesCodecTraits:
             .await
     }
 
+    #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder with multithreading (where supported).
     ///
     /// # Errors
@@ -688,7 +705,7 @@ pub trait ArrayToBytesCodecTraits:
 dyn_clone::clone_trait_object!(ArrayToBytesCodecTraits);
 
 /// Traits for `bytes->bytes` codecs.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt::Debug {
     /// Encode bytes with optional parallelism.
     ///
@@ -696,6 +713,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     /// Returns [`CodecError`] if a codec fails.
     fn encode_opt(&self, decoded_value: Vec<u8>, parallel: bool) -> Result<Vec<u8>, CodecError>;
 
+    #[cfg(feature = "async")]
     /// Asynchronously encode bytes with optional parallelism.
     ///
     /// # Errors
@@ -717,6 +735,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError>;
 
+    #[cfg(feature = "async")]
     /// Asynchronously decode bytes with optional parallelism.
     ///
     /// # Errors
@@ -739,6 +758,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
         parallel: bool,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
 
+    #[cfg(feature = "async")]
     /// Initialises an asynchronous partial decoder with optional parallelism.
     ///
     /// # Errors
@@ -820,6 +840,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
         self.partial_decoder_opt(input_handle, decoded_representation, true)
     }
 
+    #[cfg(feature = "async")]
     /// Initialises an asynchronous partial decoder.
     ///
     /// # Errors
@@ -833,6 +854,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
             .await
     }
 
+    #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder with multithreading (where supported).
     ///
     /// # Errors

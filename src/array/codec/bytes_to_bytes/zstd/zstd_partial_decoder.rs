@@ -1,9 +1,10 @@
-use async_trait::async_trait;
-
 use crate::{
-    array::codec::{AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError},
+    array::codec::{BytesPartialDecoderTraits, CodecError},
     byte_range::{extract_byte_ranges, ByteRange},
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the Zstd codec.
 pub struct ZstdPartialDecoder<'a> {
@@ -38,11 +39,13 @@ impl BytesPartialDecoderTraits for ZstdPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the Zstd codec.
 pub struct AsyncZstdPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncZstdPartialDecoder<'a> {
     /// Create a new partial decoder for the Zstd codec.
     pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
@@ -50,7 +53,8 @@ impl<'a> AsyncZstdPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncZstdPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

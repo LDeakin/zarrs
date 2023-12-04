@@ -1,16 +1,17 @@
-use async_trait::async_trait;
-
 use crate::{
     array::{
         codec::{
-            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits,
-            Codec, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
+            CodecTraits,
         },
         BytesRepresentation,
     },
     metadata::{ConfigurationInvalidError, Metadata},
     plugin::PluginCreateError,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     crc32c_configuration::Crc32cCodecConfigurationV1, crc32c_partial_decoder,
@@ -70,7 +71,7 @@ impl CodecTraits for Crc32cCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Crc32cCodec {
     fn encode_opt(
         &self,
@@ -105,6 +106,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         }
     }
 
+    #[cfg(feature = "async")]
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
@@ -113,6 +115,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         self.encode_opt(decoded_value, parallel)
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
@@ -134,6 +137,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         )))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,

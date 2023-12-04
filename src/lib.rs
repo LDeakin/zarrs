@@ -35,6 +35,7 @@
 //!
 //! The following features are disabled by default:
 //!  - Codecs:  `bitround`, `zfp`
+//!  - `async` (experimental): enable asynchronous stores and associated storage, array, and group methods.
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`

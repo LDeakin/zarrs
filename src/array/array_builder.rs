@@ -308,6 +308,7 @@ impl ArrayBuilder {
             additional_fields: self.additional_fields.clone(),
             parallel_codecs: self.parallel_codecs,
             chunk_locks: parking_lot::Mutex::default(),
+            #[cfg(feature = "async")]
             async_chunk_locks: async_lock::Mutex::default(),
             include_zarrs_metadata: true,
         })

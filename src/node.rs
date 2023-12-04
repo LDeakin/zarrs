@@ -19,9 +19,13 @@ use crate::{
     array::ArrayMetadata,
     group::GroupMetadataV3,
     storage::{
-        async_get_child_nodes, get_child_nodes, meta_key, AsyncListableStorageTraits,
-        AsyncReadableStorageTraits, ListableStorageTraits, ReadableStorageTraits, StorageError,
+        get_child_nodes, meta_key, ListableStorageTraits, ReadableStorageTraits, StorageError,
     },
+};
+
+#[cfg(feature = "async")]
+use crate::storage::{
+    async_get_child_nodes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
 };
 
 /// A Zarr hierarchy node.
@@ -92,6 +96,7 @@ impl Node {
         Ok(node)
     }
 
+    #[cfg(feature = "async")]
     /// Asynchronously create a new node at `path` and read metadata and children from `storage`.
     ///
     /// # Errors

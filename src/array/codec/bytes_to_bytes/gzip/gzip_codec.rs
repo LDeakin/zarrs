@@ -1,19 +1,21 @@
 use std::io::{Cursor, Read};
 
-use async_trait::async_trait;
 use flate2::bufread::{GzDecoder, GzEncoder};
 
 use crate::{
     array::{
         codec::{
-            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits,
-            Codec, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
+            CodecTraits,
         },
         BytesRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     gzip_compression_level::GzipCompressionLevelError,
@@ -81,7 +83,7 @@ impl CodecTraits for GzipCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for GzipCodec {
     fn encode_opt(&self, decoded_value: Vec<u8>, _parallel: bool) -> Result<Vec<u8>, CodecError> {
         let mut encoder = GzEncoder::new(
@@ -105,6 +107,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         Ok(out)
     }
 
+    #[cfg(feature = "async")]
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
@@ -113,6 +116,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         self.encode_opt(decoded_value, parallel)
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
@@ -132,6 +136,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         Ok(Box::new(gzip_partial_decoder::GzipPartialDecoder::new(r)))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,

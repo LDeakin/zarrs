@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use zfp_sys::{
     zfp_compress, zfp_exec_policy_zfp_exec_omp, zfp_stream_maximum_size, zfp_stream_rewind,
     zfp_stream_set_bit_stream, zfp_stream_set_execution,
@@ -138,7 +137,7 @@ impl CodecTraits for ZfpCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for ZfpCodec {
     fn encode_opt(
         &self,
@@ -235,7 +234,7 @@ impl ArrayCodecTraits for ZfpCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for ZfpCodec {
     fn partial_decoder_opt<'a>(
         &'a self,

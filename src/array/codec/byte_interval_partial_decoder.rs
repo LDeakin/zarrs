@@ -1,8 +1,9 @@
-use async_trait::async_trait;
-
 use crate::byte_range::{ByteLength, ByteOffset, ByteRange};
 
-use super::{AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError};
+use super::{BytesPartialDecoderTraits, CodecError};
+
+#[cfg(feature = "async")]
+use super::AsyncBytesPartialDecoderTraits;
 
 /// A byte interval partial decoder.
 ///
@@ -56,7 +57,8 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
     }
 }
 
-/// A byte interval partial decoder.
+#[cfg(feature = "async")]
+/// An asynchronous byte interval partial decoder.
 ///
 /// Modifies byte range requests to a specific byte interval in an inner bytes partial decoder.
 pub struct AsyncByteIntervalPartialDecoder<'a> {
@@ -65,6 +67,7 @@ pub struct AsyncByteIntervalPartialDecoder<'a> {
     byte_length: ByteLength,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncByteIntervalPartialDecoder<'a> {
     /// Create a new byte interval partial decoder.
     pub fn new(
@@ -80,7 +83,8 @@ impl<'a> AsyncByteIntervalPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> {
     async fn partial_decode_opt(
         &self,

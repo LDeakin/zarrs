@@ -2,18 +2,16 @@
 
 use std::marker::PhantomData;
 
-use async_trait::async_trait;
-
 use crate::{
     array::{ArrayRepresentation, MaybeBytes},
     array_subset::InvalidArraySubsetError,
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
-use super::{
-    ArrayPartialDecoderTraits, ArraySubset, AsyncArrayPartialDecoderTraits,
-    AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError,
-};
+use super::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError};
+
+#[cfg(feature = "async")]
+use super::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// A bytes partial decoder cache.
 pub struct BytesPartialDecoderCache<'a> {
@@ -39,7 +37,8 @@ impl<'a> BytesPartialDecoderCache<'a> {
         })
     }
 
-    /// Create a new partial decoder cache.
+    #[cfg(feature = "async")]
+    /// Create a new asynchronous partial decoder cache.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if caching fails.
@@ -74,7 +73,8 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
     async fn partial_decode_opt(
         &self,
@@ -117,7 +117,8 @@ impl<'a> ArrayPartialDecoderCache<'a> {
         })
     }
 
-    /// Create a new partial decoder cache.
+    #[cfg(feature = "async")]
+    /// Create a new asynchronous partial decoder cache.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
@@ -163,7 +164,8 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
     async fn partial_decode_opt(
         &self,

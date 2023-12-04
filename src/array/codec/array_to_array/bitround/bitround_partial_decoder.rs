@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::{
     array::{
         codec::{ArrayPartialDecoderTraits, AsyncArrayPartialDecoderTraits, CodecError},
@@ -106,7 +104,7 @@ impl<'a> AsyncBitroundPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

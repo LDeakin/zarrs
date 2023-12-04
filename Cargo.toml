@@ -26,8 +26,9 @@ zstd = ["dep:zstd"]
 # Stores
 http = ["dep:reqwest", "dep:url"]
 zip = ["dep:zip"]
-# Utilities
+# Misc
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
+async = ["dep:async-trait", "dep:async-recursion", "dep:async-lock", "dep:futures"] # Adds async stores and methods to array/group
 
 [package.metadata.docs.rs]
 all-features = true
@@ -37,16 +38,16 @@ crate-type = ["lib"]
 bench = false
 
 [dependencies]
-async-lock = "3.2.0"
-async-recursion = "1.0.5"
-async-trait = "0.1.74"
+async-lock = { version = "3.2.0", optional = true }
+async-recursion = { version = "1.0.5", optional = true }
+async-trait = { version = "0.1.74", optional = true }
 blosc-sys = { version = "0.3.0", package = "blosc-src", features = ["lz4", "zlib", "zstd"], optional = true }
 bytes = "1.5.0"
 crc32fast = { version = "1.3", optional = true }
 derive_more = "0.99"
 dyn-clone = "1"
 flate2 = { version = "1", optional = true }
-futures = "0.3.29"
+futures = { version = "0.3.29", optional = true }
 half = "2"
 inventory = "0.3"
 itertools = "0.12"

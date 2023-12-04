@@ -1,16 +1,9 @@
-use std::{
-    mem::MaybeUninit,
-    sync::{
-        atomic::{AtomicU64, AtomicUsize},
-        Arc,
-    },
-};
+use std::{mem::MaybeUninit, sync::atomic::AtomicUsize};
 
 use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits,
             BytesPartialDecoderTraits, Codec, CodecChain, CodecError, CodecPlugin, CodecTraits,
         },
         safe_transmute_to_bytes_vec, unravel_index,
@@ -22,14 +15,18 @@ use crate::{
     plugin::PluginCreateError,
 };
 
+#[cfg(feature = "async")]
+use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
+
 use super::{
-    async_decode_shard_index, calculate_chunks_per_shard, compute_index_encoded_size,
-    decode_shard_index, sharding_configuration::ShardingIndexLocation,
-    sharding_index_decoded_representation, sharding_partial_decoder, ShardingCodecConfiguration,
-    ShardingCodecConfigurationV1,
+    calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
+    sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
+    sharding_partial_decoder, ShardingCodecConfiguration, ShardingCodecConfigurationV1,
 };
 
-use async_trait::async_trait;
+#[cfg(feature = "async")]
+use super::async_decode_shard_index;
+
 use rayon::prelude::*;
 
 const IDENTIFIER: &str = "sharding_indexed";
@@ -119,7 +116,7 @@ impl CodecTraits for ShardingCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for ShardingCodec {
     fn encode_opt(
         &self,
@@ -180,6 +177,7 @@ impl ArrayCodecTraits for ShardingCodec {
         Ok(chunks)
     }
 
+    #[cfg(feature = "async")]
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
@@ -224,6 +222,7 @@ impl ArrayCodecTraits for ShardingCodec {
         }
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
@@ -248,7 +247,7 @@ impl ArrayCodecTraits for ShardingCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for ShardingCodec {
     fn partial_decoder_opt<'a>(
         &'a self,
@@ -269,6 +268,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         ))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
@@ -741,6 +741,7 @@ impl ShardingCodec {
         Ok(shard)
     }
 
+    #[cfg(feature = "async")]
     /// Encode inner chunks, then allocate shard, then write to shard
     async fn async_encode_unbounded(
         &self,
@@ -821,6 +822,7 @@ impl ShardingCodec {
         Ok(shard)
     }
 
+    #[cfg(feature = "async")]
     /// Preallocate shard, encode and write chunks, then truncate shard
     async fn async_encode_bounded(
         &self,
@@ -930,6 +932,7 @@ impl ShardingCodec {
         Ok(shard)
     }
 
+    #[cfg(feature = "async")]
     /// Preallocate shard, encode and write chunks (in parallel), then truncate shard
     #[allow(clippy::too_many_lines)]
     async fn async_par_encode_bounded(
@@ -962,10 +965,11 @@ impl ShardingCodec {
 
         // Allocate the decoded shard index
         let mut shard_index = vec![u64::MAX; index_decoded_representation.num_elements_usize()];
-        let encoded_shard_offset: Arc<AtomicU64> = Arc::new(match self.index_location {
-            ShardingIndexLocation::Start => index_encoded_size.into(),
-            ShardingIndexLocation::End => 0.into(),
-        });
+        let encoded_shard_offset =
+            std::sync::Arc::<std::sync::atomic::AtomicU64>::new(match self.index_location {
+                ShardingIndexLocation::Start => index_encoded_size.into(),
+                ShardingIndexLocation::End => 0.into(),
+            });
 
         // Encode the shards and update the shard index
         {
@@ -1068,6 +1072,7 @@ impl ShardingCodec {
         Ok(shard)
     }
 
+    #[cfg(feature = "async")]
     /// Preallocate shard, encode and write chunks (in parallel), then truncate shard
     #[allow(clippy::too_many_lines)]
     async fn async_par_encode_unbounded(
@@ -1234,6 +1239,7 @@ impl ShardingCodec {
         )
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_index(
         &self,
         encoded_shard: &[u8],
@@ -1387,6 +1393,7 @@ impl ShardingCodec {
         Ok(shard)
     }
 
+    #[cfg(feature = "async")]
     #[allow(clippy::too_many_lines)]
     async fn async_decode_chunks(
         &self,

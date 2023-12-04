@@ -1,12 +1,10 @@
-use async_trait::async_trait;
-
 use crate::{
-    array::codec::{
-        bytes_to_bytes::blosc::blosc_nbytes, AsyncBytesPartialDecoderTraits,
-        BytesPartialDecoderTraits, CodecError,
-    },
+    array::codec::{bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError},
     byte_range::ByteRange,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{blosc_decompress_bytes_partial, blosc_typesize, blosc_validate};
 
@@ -57,18 +55,21 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the blosc codec.
 pub struct AsyncBloscPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncBloscPartialDecoder<'a> {
     pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncBloscPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

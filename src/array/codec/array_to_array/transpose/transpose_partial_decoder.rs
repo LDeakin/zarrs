@@ -1,10 +1,11 @@
-use async_trait::async_trait;
-
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
-    codec::{ArrayPartialDecoderTraits, ArraySubset, AsyncArrayPartialDecoderTraits, CodecError},
+    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError},
     ArrayRepresentation,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 /// Partial decoder for the Transpose codec.
 pub struct TransposePartialDecoder<'a> {
@@ -68,6 +69,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the Transpose codec.
 pub struct AsyncTransposePartialDecoder<'a> {
     input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
@@ -75,6 +77,7 @@ pub struct AsyncTransposePartialDecoder<'a> {
     order: TransposeOrder,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncTransposePartialDecoder<'a> {
     /// Create a new partial decoder for the Transpose codec.
     pub fn new(
@@ -90,7 +93,8 @@ impl<'a> AsyncTransposePartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

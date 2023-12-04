@@ -1,17 +1,22 @@
 use async_recursion::async_recursion;
-use async_trait::async_trait;
+
 use futures::{stream::FuturesUnordered, StreamExt};
 use itertools::Itertools;
 
-use crate::{array::{MaybeBytes, ArrayMetadata, ChunkKeyEncoding}, byte_range::ByteRange, node::{NodePath, Node, NodeMetadata}, group::{GroupMetadataV3, GroupMetadata}};
+use crate::{
+    array::{ArrayMetadata, ChunkKeyEncoding, MaybeBytes},
+    byte_range::ByteRange,
+    group::{GroupMetadata, GroupMetadataV3},
+    node::{Node, NodeMetadata, NodePath},
+};
 
 use super::{
-    StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-    StorePrefix, meta_key, data_key, StorePrefixes,
+    data_key, meta_key, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
+    StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Async readable storage traits.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait AsyncReadableStorageTraits: Send + Sync {
     /// Retrieve the value (bytes) associated with a given [`StoreKey`].
     ///
@@ -129,7 +134,7 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
 }
 
 /// Async listable storage traits.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait AsyncListableStorageTraits: Send + Sync {
     /// Retrieve all [`StoreKeys`] in the store.
     ///
@@ -155,7 +160,7 @@ pub trait AsyncListableStorageTraits: Send + Sync {
 }
 
 /// Async writable storage traits.
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait AsyncWritableStorageTraits: Send + Sync + AsyncReadableStorageTraits {
     /// Store bytes at a [`StoreKey`].
     ///

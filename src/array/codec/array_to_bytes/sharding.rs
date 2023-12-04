@@ -90,6 +90,7 @@ fn decode_shard_index(
         .collect())
 }
 
+#[cfg(feature = "async")]
 async fn async_decode_shard_index(
     encoded_shard_index: Vec<u8>,
     index_array_representation: &ArrayRepresentation,

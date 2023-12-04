@@ -1,9 +1,10 @@
-use async_trait::async_trait;
-
 use crate::{
-    array::codec::{AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError},
+    array::codec::{BytesPartialDecoderTraits, CodecError},
     byte_range::ByteRange,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::CHECKSUM_SIZE;
 
@@ -52,11 +53,13 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the Crc32c codec.
 pub struct AsyncCrc32cPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncCrc32cPartialDecoder<'a> {
     /// Create a new partial decoder for the Crc32c codec.
     pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
@@ -64,7 +67,8 @@ impl<'a> AsyncCrc32cPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

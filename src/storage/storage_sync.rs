@@ -1,10 +1,15 @@
 use itertools::Itertools;
 
-use crate::{array::{MaybeBytes, ArrayMetadata, ChunkKeyEncoding}, byte_range::ByteRange, node::{NodePath, Node, NodeMetadata}, group::{GroupMetadataV3, GroupMetadata}};
+use crate::{
+    array::{ArrayMetadata, ChunkKeyEncoding, MaybeBytes},
+    byte_range::ByteRange,
+    group::{GroupMetadata, GroupMetadataV3},
+    node::{Node, NodeMetadata, NodePath},
+};
 
 use super::{
-    StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-    StorePrefix, meta_key, data_key, StorePrefixes,
+    data_key, meta_key, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
+    StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -260,7 +265,6 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
     Ok(nodes)
 }
 
-
 /// Create a group.
 ///
 /// # Errors
@@ -324,7 +328,6 @@ pub fn retrieve_chunk(
     ))
 }
 
-
 /// Erase a chunk.
 ///
 /// # Errors
@@ -341,7 +344,6 @@ pub fn erase_chunk(
         chunk_key_encoding,
     ))
 }
-
 
 /// Retrieve byte ranges from a chunk.
 ///
@@ -364,7 +366,6 @@ pub fn retrieve_partial_values(
     storage.get_partial_values(&key_ranges)
 }
 
-
 /// Discover the children of a node.
 ///
 /// # Errors
@@ -383,7 +384,6 @@ pub fn discover_children<TStorage: ?Sized + ReadableStorageTraits + ListableStor
         .collect();
     Ok(children?)
 }
-
 
 /// Discover all nodes.
 ///

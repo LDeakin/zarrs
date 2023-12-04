@@ -12,7 +12,6 @@
 //! This module defines abstract store interfaces, includes various store and storage transformers, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
 
 pub mod storage_adapter;
-mod storage_async;
 mod storage_handle;
 mod storage_sync;
 pub mod storage_transformer;
@@ -21,12 +20,15 @@ pub mod store;
 mod store_key;
 mod store_prefix;
 
+#[cfg(feature = "async")]
+mod storage_async;
+
 use std::{path::PathBuf, sync::Arc};
 
 use thiserror::Error;
 
 use crate::{
-    array::{ChunkKeyEncoding, MaybeBytes},
+    array::ChunkKeyEncoding,
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     node::{NodeNameError, NodePath, NodePathError},
 };
@@ -34,6 +36,7 @@ use crate::{
 pub use store_key::{StoreKey, StoreKeyError, StoreKeys};
 pub use store_prefix::{StorePrefix, StorePrefixError, StorePrefixes};
 
+#[cfg(feature = "async")]
 pub use self::storage_async::{
     async_create_array, async_create_group, async_discover_children, async_discover_nodes,
     async_erase_chunk, async_erase_node, async_get_child_nodes, async_node_exists,
@@ -41,6 +44,7 @@ pub use self::storage_async::{
     async_store_chunk, AsyncListableStorageTraits, AsyncReadableListableStorageTraits,
     AsyncReadableStorageTraits, AsyncWritableStorageTraits,
 };
+
 pub use self::storage_sync::{
     create_array, create_group, discover_children, discover_nodes, erase_chunk, erase_node,
     get_child_nodes, node_exists, node_exists_listable, retrieve_chunk, retrieve_partial_values,
@@ -65,15 +69,19 @@ pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
 /// [`Arc`] wrapped readable and listable storage.
 pub type ReadableListableStorage<'a> = Arc<dyn ReadableListableStorageTraits + 'a>;
 
+#[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchgronous readable storage.
 pub type AsyncReadableStorage<'a> = Arc<dyn AsyncReadableStorageTraits + 'a>;
 
+#[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchgronous writable storage.
 pub type AsyncWritableStorage<'a> = Arc<dyn AsyncWritableStorageTraits + 'a>;
 
+#[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchgronous listable storage.
 pub type AsyncListableStorage<'a> = Arc<dyn AsyncListableStorageTraits + 'a>;
 
+#[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchgronous readable and listable storage.
 pub type AsyncReadableListableStorage<'a> = Arc<dyn AsyncReadableListableStorageTraits + 'a>;
 

@@ -1,12 +1,9 @@
 // Note: No validation that this codec is created *without* a specified endianness for multi-byte data types.
 
-use async_trait::async_trait;
-
 use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits,
             BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
         ArrayRepresentation, BytesRepresentation,
@@ -14,6 +11,9 @@ use crate::{
     metadata::Metadata,
     plugin::PluginCreateError,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{
     bytes_configuration::BytesCodecConfigurationV1, bytes_partial_decoder, reverse_endianness,
@@ -120,7 +120,7 @@ impl CodecTraits for BytesCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for BytesCodec {
     fn encode_opt(
         &self,
@@ -140,6 +140,7 @@ impl ArrayCodecTraits for BytesCodec {
         self.do_encode_or_decode(encoded_value, decoded_representation)
     }
 
+    #[cfg(feature = "async")]
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
@@ -149,6 +150,7 @@ impl ArrayCodecTraits for BytesCodec {
         self.encode_opt(decoded_value, decoded_representation, parallel)
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
@@ -159,7 +161,7 @@ impl ArrayCodecTraits for BytesCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for BytesCodec {
     fn partial_decoder_opt<'a>(
         &self,
@@ -174,6 +176,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         )))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,

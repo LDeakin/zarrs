@@ -17,9 +17,11 @@ use crate::{
     plugin::{Plugin, PluginCreateError},
 };
 
+use super::{ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage};
+
+#[cfg(feature = "async")]
 use super::{
     AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage, AsyncWritableStorage,
-    ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage,
 };
 
 /// An [`Arc`] wrapped storage transformer.
@@ -76,24 +78,28 @@ pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
         storage: ReadableListableStorage<'a>,
     ) -> ReadableListableStorage<'a>;
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous readable transformer.
     fn create_async_readable_transformer<'a>(
         &'a self,
         storage: AsyncReadableStorage<'a>,
     ) -> AsyncReadableStorage<'a>;
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous writable transformer.
     fn create_async_writable_transformer<'a>(
         &'a self,
         storage: AsyncWritableStorage<'a>,
     ) -> AsyncWritableStorage<'a>;
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous listable transformer.
     fn create_async_listable_transformer<'a>(
         &'a self,
         storage: AsyncListableStorage<'a>,
     ) -> AsyncListableStorage<'a>;
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous readable and listable transformer.
     fn create_async_readable_listable_transformer<'a>(
         &'a self,

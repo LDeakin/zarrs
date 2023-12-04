@@ -1,15 +1,10 @@
-use std::mem::MaybeUninit;
-
-use async_trait::async_trait;
 use rayon::prelude::*;
 
 use crate::{
     array::{
         chunk_grid::RegularChunkGrid,
         codec::{
-            byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder,
             ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
-            AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits,
             ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
         },
         ravel_indices,
@@ -19,11 +14,19 @@ use crate::{
     byte_range::ByteRange,
 };
 
-use super::{
-    async_decode_shard_index, calculate_chunks_per_shard, compute_index_encoded_size,
-    decode_shard_index, sharding_configuration::ShardingIndexLocation,
-    sharding_index_decoded_representation,
+#[cfg(feature = "async")]
+use crate::array::codec::{
+    byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder, AsyncArrayPartialDecoderTraits,
+    AsyncBytesPartialDecoderTraits,
 };
+
+use super::{
+    calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
+    sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
+};
+
+#[cfg(feature = "async")]
+use super::async_decode_shard_index;
 
 /// Partial decoder for the sharding codec.
 pub struct ShardingPartialDecoder<'a> {
@@ -324,6 +327,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the sharding codec.
 pub struct AsyncShardingPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
@@ -333,6 +337,7 @@ pub struct AsyncShardingPartialDecoder<'a> {
     shard_index: Option<Vec<u64>>,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncShardingPartialDecoder<'a> {
     /// Create a new partial decoder for the sharding codec.
     pub async fn new(
@@ -417,7 +422,8 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
@@ -551,8 +557,10 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         let mut out = Vec::with_capacity(array_subsets.len());
         for array_subset in array_subsets {
             // shard (subset)
-            let mut shard =
-                vec![MaybeUninit::<u8>::uninit(); array_subset.num_elements_usize() * element_size];
+            let mut shard = vec![
+                std::mem::MaybeUninit::<u8>::uninit();
+                array_subset.num_elements_usize() * element_size
+            ];
             let shard_slice = unsafe {
                 std::slice::from_raw_parts_mut(shard.as_mut_ptr().cast::<u8>(), shard.len())
             };

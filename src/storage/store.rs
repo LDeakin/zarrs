@@ -4,16 +4,21 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id21>
 
+#[cfg(feature = "async")]
 mod r#async;
+
 mod sync;
 // mod store_plugin;
 
+#[cfg(feature = "async")]
 pub use r#async::filesystem_store::AsyncFilesystemStore;
+#[cfg(feature = "async")]
 pub use r#async::memory_store::AsyncMemoryStore;
+
 pub use sync::filesystem_store::{FilesystemStore, FilesystemStoreCreateError};
 pub use sync::memory_store::MemoryStore;
 
-#[cfg(feature = "http")]
+#[cfg(all(feature = "async", feature = "http"))]
 pub use r#async::http_store::AsyncHTTPStore;
 #[cfg(feature = "http")]
 pub use sync::http_store::{HTTPStore, HTTPStoreCreateError};

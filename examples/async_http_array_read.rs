@@ -1,4 +1,4 @@
-#[cfg(feature = "ndarray")]
+#[cfg(all(feature = "ndarray", feature = "async"))]
 async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
     use zarrs::{
@@ -58,9 +58,9 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(not(feature = "ndarray"))]
+#[cfg(any(not(feature = "ndarray"), not(feature = "async")))]
 async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the async_http_array_read example requires the ndarray feature")
+    panic!("the async_http_array_read example requires the ndarray and async features")
 }
 
 #[tokio::main]

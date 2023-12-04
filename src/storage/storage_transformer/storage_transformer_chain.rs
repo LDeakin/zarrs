@@ -5,11 +5,12 @@ use derive_more::From;
 use crate::{
     metadata::Metadata,
     plugin::PluginCreateError,
-    storage::{
-        AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage,
-        AsyncWritableStorage, ListableStorage, ReadableListableStorage, ReadableStorage,
-        WritableStorage,
-    },
+    storage::{ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage},
+};
+
+#[cfg(feature = "async")]
+use crate::storage::{
+    AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage, AsyncWritableStorage,
 };
 
 use super::{try_create_storage_transformer, StorageTransformer};
@@ -94,6 +95,7 @@ impl StorageTransformerChain {
         storage
     }
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous readable storage transformer.
     pub fn create_async_readable_transformer<'a>(
         &'a self,
@@ -105,6 +107,7 @@ impl StorageTransformerChain {
         storage
     }
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous writable storage transformer.
     pub fn create_async_writable_transformer<'a>(
         &'a self,
@@ -116,6 +119,7 @@ impl StorageTransformerChain {
         storage
     }
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous listable storage transformer.
     pub fn create_async_listable_transformer<'a>(
         &'a self,
@@ -127,6 +131,7 @@ impl StorageTransformerChain {
         storage
     }
 
+    #[cfg(feature = "async")]
     /// Create an asynchronous readable listable storage transformer.
     pub fn create_async_readable_listable_transformer<'a>(
         &'a self,

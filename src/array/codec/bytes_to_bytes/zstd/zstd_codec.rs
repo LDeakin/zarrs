@@ -1,17 +1,19 @@
-use async_trait::async_trait;
 use zstd::zstd_safe;
 
 use crate::{
     array::{
         codec::{
-            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits,
-            Codec, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
+            CodecTraits,
         },
         BytesRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{zstd_partial_decoder, ZstdCodecConfiguration, ZstdCodecConfigurationV1};
 
@@ -78,7 +80,7 @@ impl CodecTraits for ZstdCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for ZstdCodec {
     fn encode_opt(&self, decoded_value: Vec<u8>, parallel: bool) -> Result<Vec<u8>, CodecError> {
         let mut result = Vec::<u8>::new();
@@ -102,6 +104,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         zstd::decode_all(encoded_value.as_slice()).map_err(CodecError::IOError)
     }
 
+    #[cfg(feature = "async")]
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
@@ -110,6 +113,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         self.encode_opt(decoded_value, parallel)
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
@@ -129,6 +133,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         Ok(Box::new(zstd_partial_decoder::ZstdPartialDecoder::new(r)))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,

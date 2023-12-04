@@ -1,15 +1,13 @@
-use async_trait::async_trait;
-
 use crate::{
     array::{
-        codec::{
-            ArrayPartialDecoderTraits, ArraySubset, AsyncArrayPartialDecoderTraits,
-            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError,
-        },
+        codec::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError},
         ArrayRepresentation,
     },
     array_subset::InvalidArraySubsetError,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{reverse_endianness, Endianness};
 
@@ -83,6 +81,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
 pub struct AsyncBytesPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
@@ -90,6 +89,7 @@ pub struct AsyncBytesPartialDecoder<'a> {
     endian: Option<Endianness>,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncBytesPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
@@ -105,7 +105,8 @@ impl<'a> AsyncBytesPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

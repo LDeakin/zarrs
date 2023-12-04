@@ -1,12 +1,12 @@
-use async_trait::async_trait;
-
 use crate::{array::MaybeBytes, byte_range::ByteRange};
 
 use super::{
-    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
     ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StorePrefix,
     WritableStorageTraits,
 };
+
+#[cfg(feature = "async")]
+use super::{AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits};
 
 /// A storage handle.
 ///
@@ -105,7 +105,8 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     for StorageHandle<'_, TStorage>
 {
@@ -141,7 +142,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
     for StorageHandle<'_, TStorage>
 {
@@ -164,7 +166,8 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for StorageHandle<'_, TStorage>
 {

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use futures::{StreamExt, TryStreamExt};
 use object_store::{path::Path, ObjectStore};
 
@@ -36,7 +35,7 @@ fn handle_result<T>(result: Result<T, object_store::Error>) -> Result<Option<T>,
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<T: ObjectStore> AsyncReadableStorageTraits for T {
     async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let get = handle_result(ObjectStore::get(self, &key_to_path(key)).await)?;
@@ -108,7 +107,7 @@ impl<T: ObjectStore> AsyncReadableStorageTraits for T {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<T: ObjectStore> AsyncWritableStorageTraits for T {
     async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
         // FIXME: Can this copy be avoided?
@@ -133,7 +132,7 @@ impl<T: ObjectStore> AsyncWritableStorageTraits for T {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<T: ObjectStore> AsyncListableStorageTraits for T {
     async fn list(&self) -> Result<StoreKeys, StorageError> {
         let mut list = ObjectStore::list(self, None)
@@ -198,12 +197,12 @@ impl<T: ObjectStore> AsyncListableStorageTraits for T {
 #[macro_export]
 macro_rules! object_store_impl {
     ($store:ty, $var:ident) => {
-        #[async_trait::async_trait]
+        #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl $crate::storage::AsyncReadableStorageTraits for $store {
             async fn get(
                 &self,
                 key: &$crate::storage::StoreKey,
-            ) -> Result<$crate::storage::MaybeBytes, StorageError> {
+            ) -> Result<$crate::array::MaybeBytes, StorageError> {
                 $crate::storage::AsyncReadableStorageTraits::get(&self.$var, key).await
             }
 
@@ -223,7 +222,7 @@ macro_rules! object_store_impl {
             async fn get_partial_values(
                 &self,
                 key_ranges: &[$crate::storage::StoreKeyRange],
-            ) -> Result<Vec<$crate::storage::MaybeBytes>, StorageError> {
+            ) -> Result<Vec<$crate::array::MaybeBytes>, StorageError> {
                 $crate::storage::AsyncReadableStorageTraits::get_partial_values(
                     &self.object_store,
                     key_ranges,
@@ -250,7 +249,7 @@ macro_rules! object_store_impl {
             }
         }
 
-        #[async_trait::async_trait]
+        #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl $crate::storage::AsyncWritableStorageTraits for $store {
             async fn set(
                 &self,
@@ -283,7 +282,7 @@ macro_rules! object_store_impl {
             }
         }
 
-        #[async_trait::async_trait]
+        #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl $crate::storage::AsyncListableStorageTraits for $store {
             async fn list(&self) -> Result<$crate::storage::StoreKeys, StorageError> {
                 $crate::storage::AsyncListableStorageTraits::list(&self.$var).await

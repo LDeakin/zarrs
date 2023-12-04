@@ -1,12 +1,14 @@
 use std::io::{Cursor, Read};
 
-use async_trait::async_trait;
 use flate2::bufread::GzDecoder;
 
 use crate::{
-    array::codec::{AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError},
+    array::codec::{BytesPartialDecoderTraits, CodecError},
     byte_range::{extract_byte_ranges, ByteRange},
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the gzip codec.
 pub struct GzipPartialDecoder<'a> {
@@ -42,11 +44,13 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the gzip codec.
 pub struct AsyncGzipPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncGzipPartialDecoder<'a> {
     /// Create a new partial decoder for the gzip codec.
     pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
@@ -54,7 +58,8 @@ impl<'a> AsyncGzipPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncGzipPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

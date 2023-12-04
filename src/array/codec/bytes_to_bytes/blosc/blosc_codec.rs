@@ -1,19 +1,21 @@
 use std::ffi::c_char;
 
-use async_trait::async_trait;
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
 
 use crate::{
     array::{
         codec::{
-            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits,
-            Codec, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
+            CodecTraits,
         },
         BytesRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     blosc_compress_bytes, blosc_decompress_bytes, blosc_partial_decoder, blosc_validate,
@@ -152,7 +154,7 @@ impl CodecTraits for BloscCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for BloscCodec {
     fn encode_opt(&self, decoded_value: Vec<u8>, parallel: bool) -> Result<Vec<u8>, CodecError> {
         if parallel {
@@ -177,6 +179,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         }
     }
 
+    #[cfg(feature = "async")]
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
@@ -185,6 +188,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         self.encode_opt(decoded_value, parallel)
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
@@ -206,6 +210,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         )))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,

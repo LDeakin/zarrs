@@ -31,10 +31,12 @@ use crate::{
     metadata::{AdditionalFields, UnsupportedAdditionalFieldError},
     node::{NodePath, NodePathError},
     storage::{
-        meta_key, AsyncReadableStorageTraits, AsyncWritableStorageTraits, ReadableStorageTraits,
-        StorageError, StorageHandle, WritableStorageTraits,
+        meta_key, ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits,
     },
 };
+
+#[cfg(feature = "async")]
+use crate::storage::{AsyncReadableStorageTraits, AsyncWritableStorageTraits};
 
 pub use self::{
     group_builder::GroupBuilder,
@@ -133,6 +135,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     }
 }
 
+#[cfg(feature = "async")]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
     /// Create a group in `storage` at `path`. The metadata is read from the store.
     ///
@@ -204,6 +207,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
     }
 }
 
+#[cfg(feature = "async")]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
     /// Store metadata.
     ///

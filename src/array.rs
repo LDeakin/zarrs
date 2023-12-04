@@ -29,6 +29,7 @@
 //! By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata.
 //! This functionality can be disabled with [`set_include_zarrs_metadata(false)`](Array::set_include_zarrs_metadata).
 
+#[cfg(feature = "async")]
 mod array_async;
 mod array_builder;
 mod array_errors;
@@ -165,6 +166,7 @@ pub struct Array<TStorage: ?Sized> {
     parallel_codecs: bool,
     /// Chunk locks.
     chunk_locks: parking_lot::Mutex<HashMap<Vec<u64>, Arc<parking_lot::Mutex<()>>>>,
+    #[cfg(feature = "async")]
     /// Asynchronous chunk locks.
     async_chunk_locks: async_lock::Mutex<HashMap<Vec<u64>, Arc<async_lock::Mutex<()>>>>,
     /// Zarrs metadata.
@@ -241,6 +243,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             dimension_names: metadata.dimension_names,
             parallel_codecs: true,
             chunk_locks: parking_lot::Mutex::default(),
+            #[cfg(feature = "async")]
             async_chunk_locks: async_lock::Mutex::default(),
             include_zarrs_metadata: true,
         })
@@ -491,6 +494,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         chunk_mutex
     }
 
+    #[cfg(feature = "async")]
     #[must_use]
     async fn async_chunk_mutex(&self, chunk_indices: &[u64]) -> Arc<async_lock::Mutex<()>> {
         let mut chunk_locks = self.async_chunk_locks.lock().await;

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use zfp_sys::zfp_type;
 
 use crate::{
@@ -116,7 +115,7 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

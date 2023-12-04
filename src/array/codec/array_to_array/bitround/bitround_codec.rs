@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::{
     array::{
         codec::{
@@ -57,7 +55,7 @@ impl CodecTraits for BitroundCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for BitroundCodec {
     fn encode_opt(
         &self,
@@ -101,7 +99,7 @@ impl ArrayCodecTraits for BitroundCodec {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for BitroundCodec {
     fn partial_decoder_opt<'a>(
         &'a self,

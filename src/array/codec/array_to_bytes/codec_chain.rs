@@ -1,21 +1,21 @@
 //! An `array->bytes` codec formed by joining an `array->array` sequence, `array->bytes`, and `bytes->bytes` sequence of codecs.
 
-use async_trait::async_trait;
-
 use crate::{
     array::{
         codec::{
             partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache},
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
-            ArrayToBytesCodecTraits, AsyncArrayPartialDecoderTraits,
-            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits,
-            Codec, CodecError, CodecTraits,
+            ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
+            CodecError, CodecTraits,
         },
         ArrayRepresentation, BytesRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// A codec chain is a sequence of `array->array`, a `bytes->bytes`, and a sequence of `array->bytes` codecs.
 ///
@@ -223,7 +223,7 @@ impl CodecTraits for CodecChain {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for CodecChain {
     fn partial_decoder_opt<'a>(
         &'a self,
@@ -287,6 +287,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         Ok(input_handle)
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
@@ -382,7 +383,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
     }
 }
 
-#[async_trait]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for CodecChain {
     fn encode_opt(
         &self,
@@ -467,6 +468,7 @@ impl ArrayCodecTraits for CodecChain {
         Ok(encoded_value)
     }
 
+    #[cfg(feature = "async")]
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
@@ -509,6 +511,7 @@ impl ArrayCodecTraits for CodecChain {
         Ok(value)
     }
 
+    #[cfg(feature = "async")]
     async fn async_decode_opt(
         &self,
         mut encoded_value: Vec<u8>,
