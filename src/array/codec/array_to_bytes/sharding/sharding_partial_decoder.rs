@@ -7,7 +7,9 @@ use crate::{
             ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
             ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
         },
-        ravel_indices, ArrayRepresentation, ArrayShape, UnsafeCellSlice,
+        ravel_indices,
+        unsafe_cell_slice::UnsafeCellSlice,
+        ArrayRepresentation, ArrayShape,
     },
     byte_range::ByteRange,
 };
