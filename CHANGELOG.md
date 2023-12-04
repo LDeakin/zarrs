@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `Node::async_new_with_store` and implement `storage::async_get_child_nodes`
  - Add `async_array_write_read` and `async_http_array_read` examples
  - Add experimental `async` feature (disabled by default)
+ - Add experimental async `Amazon S3`, `Google Cloud`, `Microsoft Azure` stores (untested)
 
 ### Changed
  - Bump itertools to `0.12` and zstd to `0.13`

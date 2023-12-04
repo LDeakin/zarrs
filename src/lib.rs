@@ -17,7 +17,7 @@
 //! - [x] [ZEP0003 - Variable chunking](https://zarr.dev/zeps/draft/ZEP0003.html) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Stores
 //!   - Sync: [`filesystem`](crate::storage::store::FilesystemStore), [`memory`](crate::storage::store::MemoryStore), [`http`](crate::storage::store::HTTPStore), [`zip`](crate::storage::storage_adapter::ZipStorageAdapter)
-//!   - Async: [`filesystem`](crate::storage::store::AsyncFilesystemStore), [`memory`](crate::storage::store::AsyncMemoryStore), [`http`](crate::storage::store::AsyncHTTPStore)
+//!   - Async: [`filesystem`](crate::storage::store::AsyncFilesystemStore), [`memory`](crate::storage::store::AsyncMemoryStore), [HTTP](crate::storage::store::AsyncHTTPStore), [Google Cloud Storage](crate::storage::store::AsyncGoogleCloudStore), [Amazon s3](crate::storage::store::AsyncAmazonS3Store), [Microsoft Azure Storage](crate::storage::store::AsyncMicrosoftAzureStore)
 //! - [x] Data types: [core data types](crate::array::data_type::DataType), [`raw bits`](crate::array::data_type::DataType::RawBits), [`float16`](crate::array::data_type::DataType::Float16), [`bfloat16`](crate::array::data_type::DataType::BFloat16) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130)
 //! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid), [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
@@ -35,6 +35,7 @@
 //!
 //! The following features are disabled by default:
 //!  - Codecs:  `bitround`, `zfp`
+//!  - Stores: `s3` (Amazon S3) `gcp` (Google Cloud), `azure` (Microsoft Azure)
 //!  - `async` (experimental): enable asynchronous stores and associated storage, array, and group methods.
 //!
 //! ## Examples

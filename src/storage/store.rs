@@ -23,6 +23,15 @@ pub use r#async::http_store::AsyncHTTPStore;
 #[cfg(feature = "http")]
 pub use sync::http_store::{HTTPStore, HTTPStoreCreateError};
 
+#[cfg(all(feature = "async", feature = "s3"))]
+pub use r#async::amazon_s3_store::AsyncAmazonS3Store;
+
+#[cfg(all(feature = "async", feature = "gcp"))]
+pub use r#async::google_cloud_store::AsyncGoogleCloudStore;
+
+#[cfg(all(feature = "async", feature = "azure"))]
+pub use r#async::microsoft_azure_store::AsyncMicrosoftAzureStore;
+
 // pub use store_plugin::{StorePlugin, StorePluginCreateError}; // Currently disabled.
 
 use std::sync::Arc;
