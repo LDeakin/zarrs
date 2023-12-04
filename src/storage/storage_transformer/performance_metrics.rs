@@ -1,12 +1,17 @@
 //! A storage transformer which records performance metrics.
 
+use async_trait::async_trait;
+
 use crate::{
     array::MaybeBytes,
     metadata::Metadata,
     storage::{
-        ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
+        AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
+        AsyncReadableStorage, AsyncReadableStorageTraits, AsyncWritableStorage,
+        AsyncWritableStorageTraits, ListableStorage, ListableStorageTraits,
+        ReadableListableStorage, ReadableStorage, ReadableStorageTraits, StorageError, StoreKey,
+        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        WritableStorage, WritableStorageTraits,
     },
 };
 use std::sync::{
@@ -93,6 +98,38 @@ impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
         &'a self,
         storage: ReadableListableStorage<'a>,
     ) -> ReadableListableStorage<'a> {
+        self.create_transformer(storage)
+    }
+
+    /// Create an asynchronous readable transformer.
+    fn create_async_readable_transformer<'a>(
+        &'a self,
+        storage: AsyncReadableStorage<'a>,
+    ) -> AsyncReadableStorage<'a> {
+        self.create_transformer(storage)
+    }
+
+    /// Create an asynchronous writable transformer.
+    fn create_async_writable_transformer<'a>(
+        &'a self,
+        storage: AsyncWritableStorage<'a>,
+    ) -> AsyncWritableStorage<'a> {
+        self.create_transformer(storage)
+    }
+
+    /// Create an asynchronous listable transformer.
+    fn create_async_listable_transformer<'a>(
+        &'a self,
+        storage: AsyncListableStorage<'a>,
+    ) -> AsyncListableStorage<'a> {
+        self.create_transformer(storage)
+    }
+
+    /// Create an asynchronous readable and listable transformer.
+    fn create_async_readable_listable_transformer<'a>(
+        &'a self,
+        storage: AsyncReadableListableStorage<'a>,
+    ) -> AsyncReadableListableStorage<'a> {
         self.create_transformer(storage)
     }
 }
@@ -221,5 +258,132 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         self.storage.erase_prefix(prefix)
+    }
+}
+
+#[async_trait]
+impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
+    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+{
+    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+        let value = self.storage.get(key).await;
+        let bytes_read = value
+            .as_ref()
+            .map_or(0, |v| v.as_ref().map_or(0, std::vec::Vec::len));
+        self.transformer
+            .bytes_read
+            .fetch_add(bytes_read, Ordering::Relaxed);
+        self.transformer.reads.fetch_add(1, Ordering::Relaxed);
+        value
+    }
+
+    async fn get_partial_values_key(
+        &self,
+        key: &StoreKey,
+        byte_ranges: &[crate::byte_range::ByteRange],
+    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+        let values = self
+            .storage
+            .get_partial_values_key(key, byte_ranges)
+            .await?;
+        if let Some(values) = &values {
+            let bytes_read = values.iter().map(Vec::len).sum();
+            self.transformer
+                .bytes_read
+                .fetch_add(bytes_read, Ordering::Relaxed);
+            self.transformer
+                .reads
+                .fetch_add(byte_ranges.len(), Ordering::Relaxed);
+        }
+        Ok(values)
+    }
+
+    async fn get_partial_values(
+        &self,
+        key_ranges: &[StoreKeyRange],
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        let values = self.storage.get_partial_values(key_ranges).await?;
+        let bytes_read = values
+            .iter()
+            .map(|value| value.as_ref().map_or(0, Vec::len))
+            .sum::<usize>();
+        self.transformer
+            .bytes_read
+            .fetch_add(bytes_read, Ordering::Relaxed);
+        self.transformer
+            .reads
+            .fetch_add(key_ranges.len(), Ordering::Relaxed);
+        Ok(values)
+    }
+
+    async fn size(&self) -> Result<u64, StorageError> {
+        self.storage.size().await
+    }
+
+    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        self.storage.size_prefix(prefix).await
+    }
+
+    async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
+        self.storage.size_key(key).await
+    }
+}
+
+#[async_trait]
+impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
+    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+{
+    async fn list(&self) -> Result<StoreKeys, StorageError> {
+        self.storage.list().await
+    }
+
+    async fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
+        self.storage.list_prefix(prefix).await
+    }
+
+    async fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
+        self.storage.list_dir(prefix).await
+    }
+}
+
+#[async_trait]
+impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
+    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+{
+    async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+        self.transformer
+            .bytes_written
+            .fetch_add(value.len(), Ordering::Relaxed);
+        self.transformer.writes.fetch_add(1, Ordering::Relaxed);
+        self.storage.set(key, value).await
+    }
+
+    async fn set_partial_values(
+        &self,
+        key_start_values: &[StoreKeyStartValue],
+    ) -> Result<(), StorageError> {
+        let bytes_written = key_start_values
+            .iter()
+            .map(|ksv| ksv.value.len())
+            .sum::<usize>();
+        self.transformer
+            .bytes_written
+            .fetch_add(bytes_written, Ordering::Relaxed);
+        self.transformer
+            .writes
+            .fetch_add(key_start_values.len(), Ordering::Relaxed);
+        self.storage.set_partial_values(key_start_values).await
+    }
+
+    async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
+        self.storage.erase(key).await
+    }
+
+    async fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
+        self.storage.erase_values(keys).await
+    }
+
+    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
+        self.storage.erase_prefix(prefix).await
     }
 }

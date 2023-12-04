@@ -17,7 +17,10 @@ use crate::{
     plugin::{Plugin, PluginCreateError},
 };
 
-use super::{ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage};
+use super::{
+    AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage, AsyncWritableStorage,
+    ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage,
+};
 
 /// An [`Arc`] wrapped storage transformer.
 pub type StorageTransformer = Arc<dyn StorageTransformerExtension>;
@@ -72,4 +75,28 @@ pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
         &'a self,
         storage: ReadableListableStorage<'a>,
     ) -> ReadableListableStorage<'a>;
+
+    /// Create an asynchronous readable transformer.
+    fn create_async_readable_transformer<'a>(
+        &'a self,
+        storage: AsyncReadableStorage<'a>,
+    ) -> AsyncReadableStorage<'a>;
+
+    /// Create an asynchronous writable transformer.
+    fn create_async_writable_transformer<'a>(
+        &'a self,
+        storage: AsyncWritableStorage<'a>,
+    ) -> AsyncWritableStorage<'a>;
+
+    /// Create an asynchronous listable transformer.
+    fn create_async_listable_transformer<'a>(
+        &'a self,
+        storage: AsyncListableStorage<'a>,
+    ) -> AsyncListableStorage<'a>;
+
+    /// Create an asynchronous readable and listable transformer.
+    fn create_async_readable_listable_transformer<'a>(
+        &'a self,
+        storage: AsyncReadableListableStorage<'a>,
+    ) -> AsyncReadableListableStorage<'a>;
 }

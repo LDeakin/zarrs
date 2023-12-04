@@ -5,7 +5,11 @@ use derive_more::From;
 use crate::{
     metadata::Metadata,
     plugin::PluginCreateError,
-    storage::{ListableStorage, ReadableStorage, WritableStorage},
+    storage::{
+        AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage,
+        AsyncWritableStorage, ListableStorage, ReadableListableStorage, ReadableStorage,
+        WritableStorage,
+    },
 };
 
 use super::{try_create_storage_transformer, StorageTransformer};
@@ -75,6 +79,61 @@ impl StorageTransformerChain {
     ) -> ListableStorage<'a> {
         for transformer in &self.0 {
             storage = transformer.create_listable_transformer(storage);
+        }
+        storage
+    }
+
+    /// Create a listable storage transformer.
+    pub fn create_readable_listable_transformer<'a>(
+        &'a self,
+        mut storage: ReadableListableStorage<'a>,
+    ) -> ReadableListableStorage<'a> {
+        for transformer in &self.0 {
+            storage = transformer.create_readable_listable_transformer(storage);
+        }
+        storage
+    }
+
+    /// Create an asynchronous readable storage transformer.
+    pub fn create_async_readable_transformer<'a>(
+        &'a self,
+        mut storage: AsyncReadableStorage<'a>,
+    ) -> AsyncReadableStorage<'a> {
+        for transformer in &self.0 {
+            storage = transformer.create_async_readable_transformer(storage);
+        }
+        storage
+    }
+
+    /// Create an asynchronous writable storage transformer.
+    pub fn create_async_writable_transformer<'a>(
+        &'a self,
+        mut storage: AsyncWritableStorage<'a>,
+    ) -> AsyncWritableStorage<'a> {
+        for transformer in &self.0 {
+            storage = transformer.create_async_writable_transformer(storage);
+        }
+        storage
+    }
+
+    /// Create an asynchronous listable storage transformer.
+    pub fn create_async_listable_transformer<'a>(
+        &'a self,
+        mut storage: AsyncListableStorage<'a>,
+    ) -> AsyncListableStorage<'a> {
+        for transformer in &self.0 {
+            storage = transformer.create_async_listable_transformer(storage);
+        }
+        storage
+    }
+
+    /// Create an asynchronous readable listable storage transformer.
+    pub fn create_async_readable_listable_transformer<'a>(
+        &'a self,
+        mut storage: AsyncReadableListableStorage<'a>,
+    ) -> AsyncReadableListableStorage<'a> {
+        for transformer in &self.0 {
+            storage = transformer.create_async_readable_listable_transformer(storage);
         }
         storage
     }
