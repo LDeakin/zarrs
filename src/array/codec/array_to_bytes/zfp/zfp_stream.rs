@@ -8,7 +8,7 @@ use zfp_sys::{
 
 use super::ZfpMode;
 
-/// A zfp stream.
+/// A `zfp` stream.
 pub struct ZfpStream(NonNull<zfp_stream>);
 
 impl Drop for ZfpStream {

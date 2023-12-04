@@ -8,7 +8,7 @@ use crate::{
 
 use super::{round_bytes, IDENTIFIER};
 
-/// Partial decoder for the Bitround codec.
+/// Partial decoder for the `bitround` codec.
 pub struct BitroundPartialDecoder<'a> {
     input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
     data_type: DataType,
@@ -16,7 +16,7 @@ pub struct BitroundPartialDecoder<'a> {
 }
 
 impl<'a> BitroundPartialDecoder<'a> {
-    /// Create a new partial decoder for the Bitround codec.
+    /// Create a new partial decoder for the `bitround` codec.
     pub fn new(
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
         data_type: &DataType,
@@ -65,7 +65,7 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
     }
 }
 
-/// Asynchronous partial decoder for the Bitround codec.
+/// Asynchronous partial decoder for the `bitround` codec.
 pub struct AsyncBitroundPartialDecoder<'a> {
     input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
     data_type: DataType,
@@ -73,7 +73,7 @@ pub struct AsyncBitroundPartialDecoder<'a> {
 }
 
 impl<'a> AsyncBitroundPartialDecoder<'a> {
-    /// Create a new partial decoder for the Bitround codec.
+    /// Create a new partial decoder for the `bitround` codec.
     pub fn new(
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
         data_type: &DataType,

@@ -112,7 +112,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// Array elements can alternatively be written using the `store_array_subset`/`store_chunk_subset` methods, although this is less efficient.
 /// Provided that the array subsets are non-overlapping, all elements are guaranteed to hold the values written.
 /// If any array subsets overlap (which ideally should be avoided!), the value of an element in the overlap region depends on whichever operation wrote to its associated chunk last.
-/// Consider the case of parallel writing of the following subsets to a 1x6 array and a 1x3 chunk size (**do not do this, it is just an example**):
+/// Consider the case of parallel writing of the following subsets to a `1x6` array and a `1x3` chunk size (**do not do this, it is just an example**):
 /// ```text
 ///    |subset0| < stores element values of 0
 /// [ A B C | D E F ] < fill value of 9

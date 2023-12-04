@@ -8,7 +8,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{blosc_decompress_bytes_partial, blosc_typesize, blosc_validate};
 
-/// Partial decoder for the blosc codec.
+/// Partial decoder for the `blosc` codec.
 pub struct BloscPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
 }
@@ -56,7 +56,7 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
 }
 
 #[cfg(feature = "async")]
-/// Asynchronous partial decoder for the blosc codec.
+/// Asynchronous partial decoder for the `blosc` codec.
 pub struct AsyncBloscPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }

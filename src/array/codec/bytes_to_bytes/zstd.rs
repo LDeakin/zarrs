@@ -1,6 +1,6 @@
-//! The zstd `bytes->bytes` codec.
+//! The `zstd` bytes to bytes codec.
 //!
-//! Applies zstd compression.
+//! Applies [Zstd](https://tools.ietf.org/html/rfc8878) compression.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/zstd/v1.0.html>.
 

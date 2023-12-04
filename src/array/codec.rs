@@ -4,8 +4,8 @@
 //! A codec can map array to an array, an array to bytes, or bytes to bytes.
 //! A codec may support partial decoding to extract a byte range or array subset without needing to decode the entire input.
 //!
-//! A [`CodecChain`] represents a codec sequence consisting of any number of `array->array` and `bytes->bytes` codecs, and one `array->bytes` codec.
-//! A codec chain is itself an `array->bytes` codec.
+//! A [`CodecChain`] represents a codec sequence consisting of any number of array to array and bytes to bytes codecs, and one array to bytes codec.
+//! A codec chain is itself an array to bytes codec.
 //! A [`ArrayPartialDecoderCache`] or [`BytesPartialDecoderCache`] may be inserted into a codec chain to optimise partial decoding where appropriate.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id18>.
@@ -82,14 +82,14 @@ use super::{ArrayRepresentation, BytesRepresentation, DataType, MaybeBytes};
 pub type CodecPlugin = Plugin<Codec>;
 inventory::collect!(CodecPlugin);
 
-/// A generic `array->array`, `array->bytes`, or `bytes->bytes` codec.
+/// A generic array to array, array to bytes, or bytes to bytes codec.
 #[derive(Debug)]
 pub enum Codec {
-    /// An `array->array` codec.
+    /// An array to array codec.
     ArrayToArray(Box<dyn ArrayToArrayCodecTraits>),
-    /// An `array->bytes` codec.
+    /// An array to bytes codec.
     ArrayToBytes(Box<dyn ArrayToBytesCodecTraits>),
-    /// A `bytes->bytes` codec.
+    /// A bytes to bytes codec.
     BytesToBytes(Box<dyn BytesToBytesCodecTraits>),
 }
 
@@ -127,7 +127,7 @@ pub trait CodecTraits: Send + Sync {
     fn partial_decoder_decodes_all(&self) -> bool;
 }
 
-/// Traits for both `array->array` and `array->bytes` codecs.
+/// Traits for both array to array and array to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayCodecTraits: CodecTraits {
     /// Encode array with optional parallelism.
@@ -520,7 +520,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder<'_> {
     }
 }
 
-/// Traits for `array->array` codecs.
+/// Traits for array to array codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToArrayCodecTraits:
     ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
@@ -619,7 +619,7 @@ pub trait ArrayToArrayCodecTraits:
 
 dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
 
-/// Traits for `array->bytes` codecs.
+/// Traits for array to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToBytesCodecTraits:
     ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
@@ -712,7 +712,7 @@ pub trait ArrayToBytesCodecTraits:
 
 dyn_clone::clone_trait_object!(ArrayToBytesCodecTraits);
 
-/// Traits for `bytes->bytes` codecs.
+/// Traits for bytes to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt::Debug {
     /// Encode bytes with optional parallelism.
@@ -954,7 +954,7 @@ impl From<String> for CodecError {
     }
 }
 
-/// Extract byte ranges from bytes implementing [`Read`] + [`Seek`].
+/// Extract byte ranges from bytes implementing [`Read`] and [`Seek`].
 ///
 /// # Errors
 ///

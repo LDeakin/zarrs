@@ -10,13 +10,13 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
-/// Partial decoder for the gzip codec.
+/// Partial decoder for the `gzip` codec.
 pub struct GzipPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> GzipPartialDecoder<'a> {
-    /// Create a new partial decoder for the gzip codec.
+    /// Create a new partial decoder for the `gzip` codec.
     pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
@@ -45,14 +45,14 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
 }
 
 #[cfg(feature = "async")]
-/// Asynchronous partial decoder for the gzip codec.
+/// Asynchronous partial decoder for the `gzip` codec.
 pub struct AsyncGzipPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
 #[cfg(feature = "async")]
 impl<'a> AsyncGzipPartialDecoder<'a> {
-    /// Create a new partial decoder for the gzip codec.
+    /// Create a new partial decoder for the `gzip` codec.
     pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }

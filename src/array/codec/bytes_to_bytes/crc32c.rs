@@ -1,4 +1,4 @@
-//! The CRC32C checksum `bytes->bytes` codec.
+//! The `CRC32C checksum` bytes to bytes codec.
 //!
 //! Appends a CRC32C checksum of the input bytestream.
 //!

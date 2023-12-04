@@ -16,7 +16,7 @@ use thiserror::Error;
 
 /// Metadata with a name and optional configuration.
 ///
-/// Can be deserialized from a JSON string or name/configuration map.
+/// Can be deserialised from a JSON string or name/configuration map.
 /// For example:
 /// ```json
 /// "bytes"

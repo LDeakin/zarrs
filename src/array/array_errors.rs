@@ -62,7 +62,7 @@ pub enum ArrayCreateError {
     /// Storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
-    /// An error deserializing the metadata.
+    /// An error deserialising the metadata.
     #[error(transparent)]
     MetadataDeserializationError(#[from] serde_json::Error),
     /// Missing metadata.
@@ -114,14 +114,14 @@ pub enum ArrayError {
 /// A non typed version of [`safe_transmute::Error`].
 #[derive(Debug, Error)]
 pub enum TransmuteError {
-    /// The data does not respect the target type’s boundaries.
+    /// The data does not respect the boundaries of the target type.
     #[error(transparent)]
     Guard(safe_transmute::GuardError),
     /// The given data slice is not properly aligned for the target type.
     #[error("the given data slice is not properly aligned for the target type")]
     Unaligned,
-    /// The data vector’s element type does not have the same size and minimum alignment as the target type.
-    #[error("the data vector’s element type does not have the same size and minimum alignment as the target type")]
+    /// The element type of the data vector does not have the same size and minimum alignment as the target type.
+    #[error("The element type of the data vector does not have the same size and minimum alignment as the target type")]
     IncompatibleVecTarget,
     /// The data contains an invalid value for the target type.
     #[error("invalid value")]

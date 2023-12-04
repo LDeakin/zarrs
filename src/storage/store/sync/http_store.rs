@@ -189,8 +189,8 @@ pub enum HTTPStoreCreateError {
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    /// The url is not valid.
-    #[error("base url {0} is not valid")]
+    /// The URL is not valid.
+    #[error("base URL {0} is not valid")]
     InvalidBaseURL(String),
 }
 

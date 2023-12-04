@@ -108,7 +108,7 @@ impl ArrayRepresentation {
         self.num_elements() * self.element_size() as u64
     }
 
-    /// Return the total size in bytes as a usize.
+    /// Return the total size in bytes as a [`usize`].
     ///
     /// Equal to the product of each element of its shape and the element size.
     #[must_use]

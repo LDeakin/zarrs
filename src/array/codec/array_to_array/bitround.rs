@@ -1,4 +1,4 @@
-//! The bitround array to array codec.
+//! The `bitround` array to array codec.
 //!
 //! Rounds the mantissa of floating point data types to the specified number of bits.
 //! Rounds integers to the specified number of bits from the most significant set bit.
@@ -6,7 +6,7 @@
 //! This codec requires the `bitround` feature, which is disabled by default.
 //!
 //! The current implementation does not write its metadata to the array metadata, so the array can be imported by tools which do not presently support this codec.
-//! This functionality will be changed when the bitround codec is in the zarr specification and supported by multiple implementations.
+//! This functionality will be changed when the `bitround` codec is in the zarr specification and supported by multiple implementations.
 //!
 //! See [`BitroundCodecConfigurationV1`] for example `JSON` metadata.
 //!

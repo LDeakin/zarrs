@@ -1,4 +1,4 @@
-//! The sharding `array->bytes` codec.
+//! The `sharding` array to bytes codec.
 //!
 //! Sharding logically splits chunks (shards) into sub-chunks (inner chunks) that can be individually compressed and accessed.
 //! This allows to colocate multiple chunks within one storage object, bundling them in shards.

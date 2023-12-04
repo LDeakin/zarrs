@@ -46,7 +46,7 @@ fn create_codec_sharding(metadata: &Metadata) -> Result<Codec, PluginCreateError
     Ok(Codec::ArrayToBytes(Box::new(codec)))
 }
 
-/// A Sharding codec implementation.
+/// A `sharding` codec implementation.
 #[derive(Clone, Debug)]
 pub struct ShardingCodec {
     /// An array of integers specifying the shape of the inner chunks in a shard along each dimension of the outer array.
@@ -336,7 +336,7 @@ impl ShardingCodec {
     /// Computed the bounded size of an encoded shard from
     ///  - the chunk bytes representation, and
     ///  - the number of chunks per shard.
-    /// Equal to the num chunks * max chunk size + index size
+    /// Equal to `num chunks * max chunk size + index size`
     fn encoded_shard_bounded_size(
         index_encoded_size: u64,
         chunk_encoded_size: u64,

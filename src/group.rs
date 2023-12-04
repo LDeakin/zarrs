@@ -170,7 +170,7 @@ pub enum GroupCreateError {
     /// Storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
-    /// An error deserializing the metadata.
+    /// An error deserialising the metadata.
     #[error(transparent)]
     MetadataDeserializationError(#[from] serde_json::Error),
     /// An error parsing the metadata.

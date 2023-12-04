@@ -132,7 +132,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an ndarray.
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`].
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if:
@@ -516,7 +516,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the `array_subset` of array into an ndarray.
+    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`].
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if:
@@ -643,7 +643,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an ndarray.
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an [`ndarray::ArrayD`].
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if:

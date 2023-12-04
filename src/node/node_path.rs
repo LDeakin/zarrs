@@ -49,10 +49,10 @@ impl NodePath {
     }
 
     /// Validates a path according to the following rules from the specification:
-    /// - A path always starts with /, and
-    /// - a non-root path cannot end with /, because node names must be non-empty and cannot contain /.
+    /// - A path always starts with `/`, and
+    /// - a non-root path cannot end with `/`, because node names must be non-empty and cannot contain `/`.
     ///
-    /// Additionally, it checks that there are no empty nodes (i.e. a // substring).
+    /// Additionally, it checks that there are no empty nodes (i.e. a `//` substring).
     #[must_use]
     pub fn validate(path: &str) -> bool {
         path.eq("/") || (path.starts_with('/') && !path.ends_with('/') && !path.contains("//"))

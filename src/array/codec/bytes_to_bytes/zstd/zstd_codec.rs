@@ -34,7 +34,7 @@ fn create_codec_zstd(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
     Ok(Codec::BytesToBytes(codec))
 }
 
-/// A Zstd codec implementation.
+/// A `zstd` codec implementation.
 #[derive(Clone, Debug)]
 pub struct ZstdCodec {
     compression: zstd_safe::CompressionLevel,

@@ -2,7 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use zstd::zstd_safe;
 
-/// A wrapper to handle various versions of Zstd codec configuration parameters.
+/// A wrapper to handle various versions of `zstd` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum ZstdCodecConfiguration {
@@ -10,7 +10,7 @@ pub enum ZstdCodecConfiguration {
     V1(ZstdCodecConfigurationV1),
 }
 
-/// Configuration parameters for the Zstd codec (version 1.0).
+/// Configuration parameters for the `zstd` codec (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
@@ -22,14 +22,14 @@ pub struct ZstdCodecConfigurationV1 {
 }
 
 impl ZstdCodecConfigurationV1 {
-    /// Create a new Zstd codec configuration given a [`ZstdCompressionLevel`].
+    /// Create a new `zstd` codec configuration given a [`ZstdCompressionLevel`].
     #[must_use]
     pub const fn new(level: ZstdCompressionLevel, checksum: bool) -> Self {
         Self { level, checksum }
     }
 }
 
-/// A Zstd compression level. An integer from -131072 to 22 which controls the speed and level of compression (has no impact on decoding).
+/// A `Zstd` compression level. An integer from -131072 to 22 which controls the speed and level of compression (has no impact on decoding).
 ///
 /// A value of 0 indicates to use the default compression level.
 /// Otherwise, a higher level is expected to achieve a higher compression ratio at the cost of lower speed.
@@ -52,7 +52,7 @@ impl<'de> serde::Deserialize<'de> for ZstdCompressionLevel {
 }
 
 impl ZstdCompressionLevel {
-    /// Create a new zstd compression level.
+    /// Create a new `Zstd` compression level.
     #[must_use]
     pub const fn new(level: zstd_safe::CompressionLevel) -> Self {
         Self(level)

@@ -46,7 +46,7 @@ fn create_codec_zfp(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
     Ok(Codec::ArrayToBytes(codec))
 }
 
-/// A Zfp codec implementation.
+/// A `zfp` codec implementation.
 #[derive(Clone, Copy, Debug)]
 pub struct ZfpCodec {
     mode: ZfpMode,

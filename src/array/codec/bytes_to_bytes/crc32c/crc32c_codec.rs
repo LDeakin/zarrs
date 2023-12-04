@@ -43,13 +43,13 @@ fn create_codec_crc32c(metadata: &Metadata) -> Result<Codec, PluginCreateError> 
 pub struct Crc32cCodec;
 
 impl Crc32cCodec {
-    /// Create a new crc32c checksum codec.
+    /// Create a new `CRC32C checksum` codec.
     #[must_use]
     pub const fn new() -> Self {
         Self {}
     }
 
-    /// Create a new crc32c checksum codec.
+    /// Create a new `CRC32C checksum` codec.
     #[must_use]
     pub const fn new_with_configuration(_configuration: &Crc32cCodecConfiguration) -> Self {
         Self {}

@@ -18,7 +18,7 @@ pub struct BitroundCodec {
 }
 
 impl BitroundCodec {
-    /// Create a new bitround codec.
+    /// Create a new `bitround` codec.
     ///
     /// `keepbits` is the number of bits to round to in the floating point mantissa.
     #[must_use]
@@ -26,7 +26,7 @@ impl BitroundCodec {
         Self { keepbits }
     }
 
-    /// Create a new bitround codec from a configuration.
+    /// Create a new `bitround` codec from a configuration.
     #[must_use]
     pub fn new_with_configuration(configuration: &BitroundCodecConfiguration) -> Self {
         let BitroundCodecConfiguration::V1(configuration) = configuration;

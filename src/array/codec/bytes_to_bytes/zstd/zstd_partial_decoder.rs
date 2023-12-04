@@ -6,13 +6,13 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
-/// Partial decoder for the Zstd codec.
+/// Partial decoder for the `zstd` codec.
 pub struct ZstdPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> ZstdPartialDecoder<'a> {
-    /// Create a new partial decoder for the Zstd codec.
+    /// Create a new partial decoder for the `zstd` codec.
     pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
@@ -40,14 +40,14 @@ impl BytesPartialDecoderTraits for ZstdPartialDecoder<'_> {
 }
 
 #[cfg(feature = "async")]
-/// Asynchronous partial decoder for the Zstd codec.
+/// Asynchronous partial decoder for the `zstd` codec.
 pub struct AsyncZstdPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
 #[cfg(feature = "async")]
 impl<'a> AsyncZstdPartialDecoder<'a> {
-    /// Create a new partial decoder for the Zstd codec.
+    /// Create a new partial decoder for the `zstd` codec.
     pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }

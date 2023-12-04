@@ -1,4 +1,4 @@
-//! The blosc `bytes->bytes` codec.
+//! The `blosc` bytes to bytes codec.
 //!
 //! It uses the [blosc](https://www.blosc.org/) container format.
 //!
@@ -73,7 +73,7 @@ impl<'de> serde::Deserialize<'de> for BloscCompressionLevel {
     }
 }
 
-/// The blosc shuffle mode.
+/// The `blosc` shuffle mode.
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 #[repr(u32)]
@@ -86,7 +86,7 @@ pub enum BloscShuffleMode {
     BitShuffle = BLOSC_BITSHUFFLE,
 }
 
-/// The blosc compressor.
+/// The `blosc` compressor.
 ///
 /// See <https://www.blosc.org/pages/>.
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq)]
@@ -191,7 +191,7 @@ fn blosc_typesize(src: &[u8]) -> Option<usize> {
     (typesize != 0 && flags != 0).then_some(typesize)
 }
 
-/// Returns the length of the uncompress bytes of a blosc buffer.
+/// Returns the length of the uncompress bytes of a `blosc` buffer.
 ///
 /// # Safety
 ///

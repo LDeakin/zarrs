@@ -14,7 +14,7 @@ use crate::{
 
 use super::{zarr_data_type_to_zfp_data_type, zfp_decode, ZfpMode};
 
-/// Partial decoder for the Zfp codec.
+/// Partial decoder for the `zfp` codec.
 pub struct ZfpPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ArrayRepresentation,
@@ -23,7 +23,7 @@ pub struct ZfpPartialDecoder<'a> {
 }
 
 impl<'a> ZfpPartialDecoder<'a> {
-    /// Create a new partial decoder for the Zfp codec.
+    /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ArrayRepresentation,
@@ -86,7 +86,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
     }
 }
 
-/// Asynchronous partial decoder for the Zfp codec.
+/// Asynchronous partial decoder for the `zfp` codec.
 pub struct AsyncZfpPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ArrayRepresentation,
@@ -95,7 +95,7 @@ pub struct AsyncZfpPartialDecoder<'a> {
 }
 
 impl<'a> AsyncZfpPartialDecoder<'a> {
-    /// Create a new partial decoder for the Zfp codec.
+    /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ArrayRepresentation,

@@ -1,4 +1,4 @@
-//! The transpose `array->array` codec.
+//! The transpose array to array codec.
 //!
 //! Permutes the dimensions of arrays.
 //!

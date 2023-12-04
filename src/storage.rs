@@ -70,19 +70,19 @@ pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
 pub type ReadableListableStorage<'a> = Arc<dyn ReadableListableStorageTraits + 'a>;
 
 #[cfg(feature = "async")]
-/// [`Arc`] wrapped asynchgronous readable storage.
+/// [`Arc`] wrapped asynchronous readable storage.
 pub type AsyncReadableStorage<'a> = Arc<dyn AsyncReadableStorageTraits + 'a>;
 
 #[cfg(feature = "async")]
-/// [`Arc`] wrapped asynchgronous writable storage.
+/// [`Arc`] wrapped asynchronous writable storage.
 pub type AsyncWritableStorage<'a> = Arc<dyn AsyncWritableStorageTraits + 'a>;
 
 #[cfg(feature = "async")]
-/// [`Arc`] wrapped asynchgronous listable storage.
+/// [`Arc`] wrapped asynchronous listable storage.
 pub type AsyncListableStorage<'a> = Arc<dyn AsyncListableStorageTraits + 'a>;
 
 #[cfg(feature = "async")]
-/// [`Arc`] wrapped asynchgronous readable and listable storage.
+/// [`Arc`] wrapped asynchronous readable and listable storage.
 pub type AsyncReadableListableStorage<'a> = Arc<dyn AsyncReadableListableStorageTraits + 'a>;
 
 /// A [`StoreKey`] and [`ByteRange`].
@@ -158,7 +158,7 @@ pub enum StorageError {
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    /// An error serializing or deserializing JSON.
+    /// An error serialising or deserialising JSON.
     #[error(transparent)]
     InvalidJSON(#[from] serde_json::Error),
     /// An invalid store prefix.

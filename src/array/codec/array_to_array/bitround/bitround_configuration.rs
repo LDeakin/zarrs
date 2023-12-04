@@ -9,7 +9,7 @@ pub enum BitroundCodecConfiguration {
     V1(BitroundCodecConfigurationV1),
 }
 
-/// Bitround codec configuration parameters (version 1.0).
+/// `bitround` codec configuration parameters (version 1.0).
 ///
 /// ### Example: Keep 10 bits of the mantissa
 /// ```rust

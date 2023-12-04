@@ -1,6 +1,6 @@
 use derive_more::Display;
 
-/// A compression level. Used by the gzip codec.
+/// A compression level. Used by the `gzip` codec.
 ///
 /// An integer from 0 to 9 which controls the speed and level of compression.
 /// A level of 1 is the fastest compression method and produces the least compressions, while 9 is slowest and produces the most compression.

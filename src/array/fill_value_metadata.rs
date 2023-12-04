@@ -2,7 +2,7 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#fill-value>.
 //!
-//! Fill values metadata is serialized/deserialized into [`FillValueMetadata`].
+//! Fill values metadata is serialised/deserialised into [`FillValueMetadata`].
 //!
 //! The interpretation of fill values is data type dependent, so this is handled in [`DataTypeExtension::fill_value_from_metadata`](crate::array::data_type::DataTypeExtension::fill_value_from_metadata).
 //! Fill value metadata is created with [`DataTypeExtension::metadata_fill_value`](crate::array::data_type::DataTypeExtension::metadata_fill_value).
@@ -157,7 +157,7 @@ pub enum FillValueFloatStringNonFinite {
 }
 
 impl FillValueMetadata {
-    /// Convert the fill value to a bool.
+    /// Convert the fill value to a [`bool`].
     #[must_use]
     pub const fn try_as_bool(&self) -> Option<bool> {
         match self {
@@ -166,7 +166,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to an int.
+    /// Convert the fill value to an signed integer.
     #[must_use]
     pub fn try_as_int<T: std::convert::TryFrom<i64> + std::convert::TryFrom<u64>>(
         &self,
@@ -178,7 +178,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to a uint.
+    /// Convert the fill value to an unsigned integer.
     #[must_use]
     pub fn try_as_uint<T: std::convert::TryFrom<i64> + std::convert::TryFrom<u64>>(
         &self,
@@ -250,7 +250,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to a float16.
+    /// Convert the fill value to a [`f16`].
     #[must_use]
     pub fn try_as_float16(&self) -> Option<f16> {
         match self {
@@ -278,7 +278,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to a float16.
+    /// Convert the fill value to a [`bf16`].
     #[must_use]
     pub fn try_as_bfloat16(&self) -> Option<bf16> {
         match self {

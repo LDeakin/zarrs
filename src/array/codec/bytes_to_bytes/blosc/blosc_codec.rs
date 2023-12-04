@@ -56,7 +56,7 @@ impl BloscCodec {
     ///
     /// Returns [`PluginCreateError`] if
     ///  - the compressor is not supported, or
-    ///  - the typesize has not been specified and shuffling is enabled.
+    ///  - `typesize` is [`None`] and shuffling is enabled.
     pub fn new(
         cname: BloscCompressor,
         clevel: BloscCompressionLevel,

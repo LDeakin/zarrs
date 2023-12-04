@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ZfpExpertParams;
 
-/// A wrapper to handle various versions of Zfp codec configuration parameters.
+/// A wrapper to handle various versions of `zfp` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
 #[serde(untagged)]
 pub enum ZfpCodecConfiguration {
@@ -11,7 +11,7 @@ pub enum ZfpCodecConfiguration {
     V1(ZfpCodecConfigurationV1),
 }
 
-/// Configuration parameters for the Zfp codec (version 1.0).
+/// Configuration parameters for the `zfp` codec (version 1.0).
 ///
 /// Further information on the meaning of these parameters can be found in the [zfp documentation](https://zfp.readthedocs.io/en/latest/).
 ///
@@ -88,28 +88,28 @@ pub enum ZfpCodecConfigurationV1 {
     Reversible,
 }
 
-/// The zfp configuration for expert mode.
+/// The `zfp` configuration for expert mode.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display)]
 pub struct ZfpExpertConfiguration {
     /// The rate is the number of compressed bits per value.
     pub rate: f64,
 }
 
-/// The zfp configuration for fixed rate mode.
+/// The `zfp` configuration for fixed rate mode.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display)]
 pub struct ZfpFixedRateConfiguration {
     /// The rate is the number of compressed bits per value.
     pub rate: f64,
 }
 
-/// The zfp configuration for fixed precision mode.
+/// The `zfp` configuration for fixed precision mode.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display)]
 pub struct ZfpFixedPrecisionConfiguration {
     /// The precision specifies how many uncompressed bits per value to store, and indirectly governs the relative error.
     pub precision: u32,
 }
 
-/// The zfp configuration for fixed accuracy mode.
+/// The `zfp` configuration for fixed accuracy mode.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display)]
 pub struct ZfpFixedAccuracyConfiguration {
     /// The tolerance ensures that values in the decompressed array differ from the input array by no more than this tolerance.

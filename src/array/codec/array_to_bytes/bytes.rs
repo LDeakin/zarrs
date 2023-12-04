@@ -1,4 +1,4 @@
-//! The bytes `array->bytes` codec.
+//! The `bytes` array to bytes codec.
 //!
 //! Encodes arrays of fixed-size numeric data types as little endian or big endian in lexicographical order.
 //!

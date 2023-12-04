@@ -5,7 +5,7 @@ use zfp_sys::{
     zfp_type_zfp_type_int64,
 };
 
-/// A zfp field.
+/// A `zfp` field.
 #[derive(Debug)]
 pub struct ZfpField(NonNull<zfp_field>);
 

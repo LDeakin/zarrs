@@ -6,10 +6,10 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 
 **zarrs is experimental and in limited production use. Use at your own risk!**
 
-- [API documentation](https://docs.rs/zarrs/latest/zarrs/)
-- [Changelog](./CHANGELOG.md)
-- [Examples](./examples)
-- [Build instructions (BUILD.md)](./BUILD.md)
+- [API documentation (`docs.rs`)](https://docs.rs/zarrs/latest/zarrs/)
+- [Changelog (`CHANGELOG.md`)](./CHANGELOG.md)
+- [Examples (`./examples`)](./examples)
+- [Build instructions (`BUILD.md`)](./BUILD.md)
 
 A subset of zarrs is exposed as a C API by [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi). This is a work in progress.
 

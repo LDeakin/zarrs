@@ -1,4 +1,4 @@
-//! An `array->bytes` codec formed by joining an `array->array` sequence, `array->bytes`, and `bytes->bytes` sequence of codecs.
+//! An array to bytes codec formed by joining an array to array sequence, array to bytes, and bytes to bytes sequence of codecs.
 
 use crate::{
     array::{
@@ -17,10 +17,10 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-/// A codec chain is a sequence of `array->array`, a `bytes->bytes`, and a sequence of `array->bytes` codecs.
+/// A codec chain is a sequence of array to array, a bytes to bytes, and a sequence of array to bytes codecs.
 ///
 /// A codec chain partial decoder may insert a cache: [`ArrayPartialDecoderCache`] or [`BytesPartialDecoderCache`].
-/// For example, the output of the blosc/gzip codecs should be cached since they read and decode an entire chunk.
+/// For example, the output of the `blosc`/`gzip` codecs should be cached since they read and decode an entire chunk.
 /// If decoding (i.e. going backwards through a codec chain), then a cache may be inserted
 ///    - following the last codec with [`partial_decoder_decodes_all`](crate::array::codec::CodecTraits::partial_decoder_decodes_all) true, or
 ///    - preceding the first codec with [`partial_decoder_should_cache_input`](crate::array::codec::CodecTraits::partial_decoder_should_cache_input), whichever is further.

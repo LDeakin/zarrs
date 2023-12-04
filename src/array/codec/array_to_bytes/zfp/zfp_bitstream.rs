@@ -2,7 +2,7 @@ use std::ptr::NonNull;
 
 use zfp_sys::{bitstream, stream_close, stream_open};
 
-/// A zfp bitstream.
+/// A `zfp` bitstream.
 pub struct ZfpBitstream(NonNull<bitstream>);
 
 impl Drop for ZfpBitstream {

@@ -24,7 +24,7 @@ pub fn version_patch() -> u32 {
     patch
 }
 
-/// A [u32] representation of the version.
+/// A [`u32`] representation of the version.
 ///
 /// Encoded as
 /// ```rust

@@ -1,6 +1,6 @@
-//! The gzip `bytes->bytes` codec.
+//! The `gzip` bytes to bytes codec.
 //!
-//! Applies gzip compression.
+//! Applies [gzip](https://datatracker.ietf.org/doc/html/rfc1952) compression.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/v1.0.html>.
 

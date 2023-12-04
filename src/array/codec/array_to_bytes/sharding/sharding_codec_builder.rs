@@ -11,7 +11,7 @@ use super::{sharding_configuration::ShardingIndexLocation, ShardingCodec};
 /// By default, both the inner chunks and the index are encoded with the `bytes` codec with native endian encoding.
 /// The index is additionally encoded with the `crc32c checksum` codec (if supported).
 ///
-/// Use the methods in the sharding codec builder to change the configuration away from these defaults, and then build the sharding codec with [`build`](ShardingCodecBuilder::build).
+/// Use the methods in the `sharding` codec builder to change the configuration away from these defaults, and then build the `sharding` codec with [`build`](ShardingCodecBuilder::build).
 #[derive(Debug)]
 pub struct ShardingCodecBuilder {
     inner_chunk_shape: Vec<u64>,
@@ -24,7 +24,7 @@ pub struct ShardingCodecBuilder {
 }
 
 impl ShardingCodecBuilder {
-    /// Create a new sharding codec builder.
+    /// Create a new `sharding` codec builder.
     #[must_use]
     pub fn new(inner_chunk_shape: Vec<u64>) -> Self {
         Self {
