@@ -14,24 +14,21 @@ exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.
 
 [features]
 default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "http", "zip", "ndarray"]
-# Codecs
-bitround = []
-blosc = ["dep:blosc-sys"]
-crc32c = ["dep:crc32fast"]
-gzip = ["dep:flate2"]
-sharding = []
-transpose = ["dep:ndarray"]
-zfp = ["dep:zfp-sys"]
-zstd = ["dep:zstd"]
-# Stores
-http = ["dep:reqwest", "dep:url", "object_store/http"]
-s3 = ["async", "object_store/aws"]
-gcp = ["async", "object_store/gcp"]
-azure = ["async", "object_store/azure"]
-zip = ["dep:zip"]
-# Misc
+bitround = [] # Enable the experimental bitround codec
+blosc = ["dep:blosc-sys"] # Enable the blosc codec
+crc32c = ["dep:crc32fast"] # Enable the crc32c checksum codec
+gzip = ["dep:flate2"] # Enable the gzip codec
+sharding = [] # Enable the sharding codec
+transpose = ["dep:ndarray"] # Enable the transpose codec
+zfp = ["dep:zfp-sys"] # Enable the experimental zfp codec
+zstd = ["dep:zstd"] # Enable the zstd codec
+http = ["dep:reqwest", "dep:url", "object_store/http"] # Enable the HTTP store (including the async store if `async` is enabled)
+s3 = ["async", "object_store/aws"] # Enable the Amazon S3 store
+gcp = ["async", "object_store/gcp"] # Enable the Google Cloud Storage store
+azure = ["async", "object_store/azure"]  # Enable the Microsoft Azure Blob Storage store
+zip = ["dep:zip"] # Enable the zip storage adapter
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
-async = ["dep:object_store", "dep:async-trait", "dep:async-recursion", "dep:async-lock", "dep:futures"] # Adds async stores and methods to array/group
+async = ["dep:object_store", "dep:async-trait", "dep:async-recursion", "dep:async-lock", "dep:futures"] # Enable experimental async API (async stores and array/group operations)
 
 [package.metadata.docs.rs]
 all-features = true
