@@ -15,7 +15,9 @@
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/draft/ZEP0001.html)
 //! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/draft/ZEP0002.html) ([under review](https://github.com/zarr-developers/zarr-specs/issues/254))
 //! - [x] [ZEP0003 - Variable chunking](https://zarr.dev/zeps/draft/ZEP0003.html) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
-//! - [x] Stores: [`filesystem`](crate::storage::store::FilesystemStore), [`memory`](crate::storage::store::MemoryStore), [`http`](crate::storage::store::HTTPStore), [`zip`](crate::storage::storage_adapter::ZipStorageAdapter)
+//! - [x] Stores
+//!   - Sync: [`filesystem`](crate::storage::store::FilesystemStore), [`memory`](crate::storage::store::MemoryStore), [`http`](crate::storage::store::HTTPStore), [`zip`](crate::storage::storage_adapter::ZipStorageAdapter)
+//!   - Async: [`filesystem`](crate::storage::store::AsyncFilesystemStore), [`memory`](crate::storage::store::AsyncMemoryStore), [`http`](crate::storage::store::AsyncHTTPStore)
 //! - [x] Data types: [core data types](crate::array::data_type::DataType), [`raw bits`](crate::array::data_type::DataType::RawBits), [`float16`](crate::array::data_type::DataType::Float16), [`bfloat16`](crate::array::data_type::DataType::BFloat16) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130)
 //! - [x] Chunk grids: [`regular`](crate::array::chunk_grid::RegularChunkGrid), [`rectangular`](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52))
 //! - [x] Chunk key encoding: [`default`](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [`v2`](crate::array::chunk_key_encoding::V2ChunkKeyEncoding)
@@ -25,8 +27,8 @@
 //!   - bytes->bytes: [`blosc`](crate::array::codec::bytes_to_bytes::blosc), [`gzip`](crate::array::codec::bytes_to_bytes::gzip), [`zstd`](crate::array::codec::bytes_to_bytes::zstd) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [`crc32c checksum`](crate::array::codec::bytes_to_bytes::crc32c)
 //! - [x] Storage transformers: [`usage_log`](crate::storage::storage_transformer::UsageLogStorageTransformer), [`performance_metrics`](crate::storage::storage_transformer::PerformanceMetricsStorageTransformer)
 //!
-//! ## Features
-//! The following features are enabled by default:
+//! ## Crate Features
+//! The following crate features are enabled by default:
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!  - Stores: `http`, `zip`.
 //!  - `ndarray`: adds [`ndarray`] utility functions to [`Array`](crate::array::Array).
@@ -37,11 +39,16 @@
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`
 //!
+//! ### Sync API
 //! - [`array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs): create an array, write its metadata, write chunks in parallel, delete a chunk, read the whole array, read a chunk, and partially read a subset.
 //! - [`sharded_array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs): write and read a sharded array.
 //! - [`rectangular_array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/rectangular_array_write_read.rs): write and read an array with a rectangular chunk grid.
 //! - [`zip_array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs): write an array to a filesystem, zip it, then read it from the zipped file.
 //! - [`http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/http_array_read.rs): read an array over HTTP.
+//!
+//! ### Async API
+//! - [`async_array_read_write`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs).
+//! - [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/http_array_read.rs).
 //!
 //! ## Licence
 //! zarrs is licensed under either of

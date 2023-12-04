@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `Async{Readable,Writable,Listable,ReadableListable}Storage`
  - Add `StorageTransformerExtension::create_async_{readable,writable,listable,readable_listable}_transformer`
  - Add `Node::async_new_with_store` and implement `storage::async_get_child_nodes`
+ - Add `async_array_write_read` and `async_http_array_read` examples
 
 ### Changed
  - Bump itertools to `0.12` and zstd to `0.13`
