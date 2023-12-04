@@ -5,32 +5,32 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id21>
 
 #[cfg(feature = "async")]
-mod r#async;
+mod store_async;
 
-mod sync;
+mod store_sync;
 // mod store_plugin;
 
 #[cfg(feature = "async")]
-pub use r#async::filesystem_store::AsyncFilesystemStore;
+pub use store_async::filesystem_store::AsyncFilesystemStore;
 #[cfg(feature = "async")]
-pub use r#async::memory_store::AsyncMemoryStore;
+pub use store_async::memory_store::AsyncMemoryStore;
 
-pub use sync::filesystem_store::{FilesystemStore, FilesystemStoreCreateError};
-pub use sync::memory_store::MemoryStore;
+pub use store_sync::filesystem_store::{FilesystemStore, FilesystemStoreCreateError};
+pub use store_sync::memory_store::MemoryStore;
 
 #[cfg(all(feature = "async", feature = "http"))]
-pub use r#async::http_store::AsyncHTTPStore;
+pub use store_async::http_store::AsyncHTTPStore;
 #[cfg(feature = "http")]
-pub use sync::http_store::{HTTPStore, HTTPStoreCreateError};
+pub use store_sync::http_store::{HTTPStore, HTTPStoreCreateError};
 
 #[cfg(all(feature = "async", feature = "s3"))]
-pub use r#async::amazon_s3_store::AsyncAmazonS3Store;
+pub use store_async::amazon_s3_store::AsyncAmazonS3Store;
 
 #[cfg(all(feature = "async", feature = "gcp"))]
-pub use r#async::google_cloud_store::AsyncGoogleCloudStore;
+pub use store_async::google_cloud_store::AsyncGoogleCloudStore;
 
 #[cfg(all(feature = "async", feature = "azure"))]
-pub use r#async::microsoft_azure_store::AsyncMicrosoftAzureStore;
+pub use store_async::microsoft_azure_store::AsyncMicrosoftAzureStore;
 
 // pub use store_plugin::{StorePlugin, StorePluginCreateError}; // Currently disabled.
 
