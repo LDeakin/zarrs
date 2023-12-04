@@ -188,24 +188,4 @@ impl ArrayCodecTraits for TransposeCodec {
             )
         })
     }
-
-    #[cfg(feature = "async")]
-    async fn async_encode_opt(
-        &self,
-        decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-        parallel: bool,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.encode_opt(decoded_value, decoded_representation, parallel)
-    }
-
-    #[cfg(feature = "async")]
-    async fn async_decode_opt(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
-        parallel: bool,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode_opt(encoded_value, decoded_representation, parallel)
-    }
 }

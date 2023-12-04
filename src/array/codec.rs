@@ -144,14 +144,18 @@ pub trait ArrayCodecTraits: CodecTraits {
     #[cfg(feature = "async")]
     /// Asynchronously encode array with optional parallelism.
     ///
+    /// The default implementation calls [`encode_opt`](ArrayCodecTraits::encode_opt) with parallelism disabled.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
-        parallel: bool,
-    ) -> Result<Vec<u8>, CodecError>;
+        _parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, decoded_representation, false)
+    }
 
     /// Decode array with optional parallelism.
     ///
@@ -167,14 +171,18 @@ pub trait ArrayCodecTraits: CodecTraits {
     #[cfg(feature = "async")]
     /// Asynchronously decode array with optional parallelism.
     ///
+    /// The default implementation calls [`decode_opt`](ArrayCodecTraits::decode_opt) with parallelism disabled.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ArrayRepresentation,
-        parallel: bool,
-    ) -> Result<Vec<u8>, CodecError>;
+        _parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, false)
+    }
 
     /// Encode array.
     ///
@@ -716,16 +724,20 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     #[cfg(feature = "async")]
     /// Asynchronously encode bytes with optional parallelism.
     ///
+    /// The default implementation calls [`encode_opt`](BytesToBytesCodecTraits::encode_opt) with parallelism disabled.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        parallel: bool,
-    ) -> Result<Vec<u8>, CodecError>;
+        _parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, false)
+    }
 
     /// Decode bytes with optional parallelism.
-    ///
+    //
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
     fn decode_opt(
@@ -738,14 +750,18 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     #[cfg(feature = "async")]
     /// Asynchronously decode bytes with optional parallelism.
     ///
+    /// The default implementation calls [`decode_opt`](BytesToBytesCodecTraits::decode_opt) with parallelism disabled.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &BytesRepresentation,
-        parallel: bool,
-    ) -> Result<Vec<u8>, CodecError>;
+        _parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, false)
+    }
 
     /// Initialises a partial decoder with optional parallelism.
     ///
