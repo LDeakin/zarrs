@@ -31,7 +31,7 @@ azure = ["object_store/azure"]
 zip = ["dep:zip"]
 # Misc
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
-async = ["dep:async-trait", "dep:async-recursion", "dep:async-lock", "dep:futures"] # Adds async stores and methods to array/group
+async = ["dep:object_store", "dep:async-trait", "dep:async-recursion", "dep:async-lock", "dep:futures"] # Adds async stores and methods to array/group
 
 [package.metadata.docs.rs]
 all-features = true
