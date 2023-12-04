@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use zfp_sys::{
     zfp_compress, zfp_exec_policy_zfp_exec_omp, zfp_stream_maximum_size, zfp_stream_rewind,
     zfp_stream_set_bit_stream, zfp_stream_set_execution,
@@ -7,6 +8,7 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+            AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits,
             BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
         ArrayRepresentation, BytesRepresentation, DataType,
@@ -136,6 +138,7 @@ impl CodecTraits for ZfpCodec {
     }
 }
 
+#[async_trait]
 impl ArrayCodecTraits for ZfpCodec {
     fn encode_opt(
         &self,
@@ -212,8 +215,27 @@ impl ArrayCodecTraits for ZfpCodec {
             parallel,
         )
     }
+
+    async fn async_encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, decoded_representation, parallel)
+    }
+
+    async fn async_decode_opt(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, parallel)
+    }
 }
 
+#[async_trait]
 impl ArrayToBytesCodecTraits for ZfpCodec {
     fn partial_decoder_opt<'a>(
         &'a self,
@@ -222,6 +244,19 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         _parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
+            input_handle,
+            decoded_representation,
+            self.mode.clone(),
+        )?))
+    }
+
+    async fn async_partial_decoder_opt<'a>(
+        &'a self,
+        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
             input_handle,
             decoded_representation,
             self.mode.clone(),

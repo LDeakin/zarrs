@@ -29,6 +29,7 @@
 //! By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata.
 //! This functionality can be disabled with [`set_include_zarrs_metadata(false)`](Array::set_include_zarrs_metadata).
 
+mod array_async;
 mod array_builder;
 mod array_errors;
 mod array_metadata;
@@ -63,7 +64,6 @@ pub use self::{
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
 };
 
-use parking_lot::Mutex;
 use safe_transmute::TriviallyTransmutable;
 use serde::Serialize;
 
@@ -164,7 +164,9 @@ pub struct Array<TStorage: ?Sized> {
     /// If true, codecs run with multithreading (where supported)
     parallel_codecs: bool,
     /// Chunk locks.
-    chunk_locks: Mutex<HashMap<Vec<u64>, Arc<Mutex<()>>>>,
+    chunk_locks: parking_lot::Mutex<HashMap<Vec<u64>, Arc<parking_lot::Mutex<()>>>>,
+    /// Asynchronous chunk locks.
+    async_chunk_locks: async_lock::Mutex<HashMap<Vec<u64>, Arc<async_lock::Mutex<()>>>>,
     /// Zarrs metadata.
     include_zarrs_metadata: bool,
 }
@@ -238,7 +240,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
             storage_transformers,
             dimension_names: metadata.dimension_names,
             parallel_codecs: true,
-            chunk_locks: Mutex::default(),
+            chunk_locks: parking_lot::Mutex::default(),
+            async_chunk_locks: async_lock::Mutex::default(),
             include_zarrs_metadata: true,
         })
     }
@@ -477,12 +480,24 @@ impl<TStorage: ?Sized> Array<TStorage> {
     }
 
     #[must_use]
-    fn chunk_mutex(&self, chunk_indices: &[u64]) -> Arc<Mutex<()>> {
+    fn chunk_mutex(&self, chunk_indices: &[u64]) -> Arc<parking_lot::Mutex<()>> {
         let mut chunk_locks = self.chunk_locks.lock();
         // TODO: Cleanup old locks
         let chunk_mutex = chunk_locks
             .entry(chunk_indices.to_vec())
-            .or_insert_with(|| Arc::new(Mutex::new(())))
+            .or_insert_with(|| Arc::new(parking_lot::Mutex::new(())))
+            .clone();
+        drop(chunk_locks);
+        chunk_mutex
+    }
+
+    #[must_use]
+    async fn async_chunk_mutex(&self, chunk_indices: &[u64]) -> Arc<async_lock::Mutex<()>> {
+        let mut chunk_locks = self.async_chunk_locks.lock().await;
+        // TODO: Cleanup old locks
+        let chunk_mutex = chunk_locks
+            .entry(chunk_indices.to_vec())
+            .or_insert_with(|| Arc::new(async_lock::Mutex::new(())))
             .clone();
         drop(chunk_locks);
         chunk_mutex

@@ -1,9 +1,12 @@
 // Note: No validation that this codec is created *without* a specified endianness for multi-byte data types.
 
+use async_trait::async_trait;
+
 use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+            AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits,
             BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
         ArrayRepresentation, BytesRepresentation,
@@ -117,6 +120,7 @@ impl CodecTraits for BytesCodec {
     }
 }
 
+#[async_trait]
 impl ArrayCodecTraits for BytesCodec {
     fn encode_opt(
         &self,
@@ -135,8 +139,27 @@ impl ArrayCodecTraits for BytesCodec {
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(encoded_value, decoded_representation)
     }
+
+    async fn async_encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, decoded_representation, parallel)
+    }
+
+    async fn async_decode_opt(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, parallel)
+    }
 }
 
+#[async_trait]
 impl ArrayToBytesCodecTraits for BytesCodec {
     fn partial_decoder_opt<'a>(
         &self,
@@ -149,6 +172,21 @@ impl ArrayToBytesCodecTraits for BytesCodec {
             decoded_representation.clone(),
             self.endian,
         )))
+    }
+
+    async fn async_partial_decoder_opt<'a>(
+        &'a self,
+        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(
+            bytes_partial_decoder::AsyncBytesPartialDecoder::new(
+                input_handle,
+                decoded_representation.clone(),
+                self.endian,
+            ),
+        ))
     }
 
     fn compute_encoded_size(

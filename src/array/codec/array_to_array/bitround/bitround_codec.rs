@@ -1,8 +1,10 @@
+use async_trait::async_trait;
+
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, CodecError,
-            CodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
+            AsyncArrayPartialDecoderTraits, CodecError, CodecTraits,
         },
         ArrayRepresentation, DataType,
     },
@@ -55,6 +57,7 @@ impl CodecTraits for BitroundCodec {
     }
 }
 
+#[async_trait]
 impl ArrayCodecTraits for BitroundCodec {
     fn encode_opt(
         &self,
@@ -78,8 +81,27 @@ impl ArrayCodecTraits for BitroundCodec {
     ) -> Result<Vec<u8>, CodecError> {
         Ok(encoded_value)
     }
+
+    async fn async_encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, decoded_representation, parallel)
+    }
+
+    async fn async_decode_opt(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, parallel)
+    }
 }
 
+#[async_trait]
 impl ArrayToArrayCodecTraits for BitroundCodec {
     fn partial_decoder_opt<'a>(
         &'a self,
@@ -89,6 +111,21 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             bitround_partial_decoder::BitroundPartialDecoder::new(
+                input_handle,
+                decoded_representation.data_type(),
+                self.keepbits,
+            )?,
+        ))
+    }
+
+    async fn async_partial_decoder_opt<'a>(
+        &'a self,
+        input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(
+            bitround_partial_decoder::AsyncBitroundPartialDecoder::new(
                 input_handle,
                 decoded_representation.data_type(),
                 self.keepbits,

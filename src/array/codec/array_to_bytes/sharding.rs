@@ -90,6 +90,22 @@ fn decode_shard_index(
         .collect())
 }
 
+async fn async_decode_shard_index(
+    encoded_shard_index: Vec<u8>,
+    index_array_representation: &ArrayRepresentation,
+    index_codecs: &dyn ArrayToBytesCodecTraits,
+    parallel: bool,
+) -> Result<Vec<u64>, CodecError> {
+    // Decode the shard index
+    let decoded_shard_index = index_codecs
+        .async_decode_opt(encoded_shard_index, index_array_representation, parallel)
+        .await?;
+    Ok(decoded_shard_index
+        .chunks_exact(core::mem::size_of::<u64>())
+        .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{array::codec::ArrayCodecTraits, array_subset::ArraySubset};

@@ -2,13 +2,18 @@
 
 use std::marker::PhantomData;
 
+use async_trait::async_trait;
+
 use crate::{
     array::{ArrayRepresentation, MaybeBytes},
     array_subset::InvalidArraySubsetError,
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
-use super::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError};
+use super::{
+    ArrayPartialDecoderTraits, ArraySubset, AsyncArrayPartialDecoderTraits,
+    AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError,
+};
 
 /// A bytes partial decoder cache.
 pub struct BytesPartialDecoderCache<'a> {
@@ -33,6 +38,24 @@ impl<'a> BytesPartialDecoderCache<'a> {
             phantom: PhantomData,
         })
     }
+
+    /// Create a new partial decoder cache.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if caching fails.
+    pub async fn async_new(
+        input_handle: &dyn AsyncBytesPartialDecoderTraits,
+        parallel: bool,
+    ) -> Result<Self, CodecError> {
+        let cache = input_handle
+            .partial_decode_opt(&[ByteRange::FromStart(0, None)], parallel)
+            .await?
+            .map(|mut bytes| bytes.remove(0));
+        Ok(Self {
+            cache,
+            phantom: PhantomData,
+        })
+    }
 }
 
 impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
@@ -48,6 +71,17 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
             ),
             None => None,
         })
+    }
+}
+
+#[async_trait]
+impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
+    async fn partial_decode_opt(
+        &self,
+        decoded_regions: &[ByteRange],
+        parallel: bool,
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        BytesPartialDecoderTraits::partial_decode_opt(self, decoded_regions, parallel)
     }
 }
 
@@ -82,6 +116,31 @@ impl<'a> ArrayPartialDecoderCache<'a> {
             phantom: PhantomData,
         })
     }
+
+    /// Create a new partial decoder cache.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
+    pub async fn async_new(
+        input_handle: &dyn AsyncArrayPartialDecoderTraits,
+        decoded_representation: ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Self, CodecError> {
+        let cache = input_handle
+            .partial_decode_opt(
+                &[ArraySubset::new_with_shape(
+                    decoded_representation.shape().to_vec(),
+                )],
+                parallel,
+            )
+            .await?
+            .remove(0);
+        Ok(Self {
+            decoded_representation,
+            cache,
+            phantom: PhantomData,
+        })
+    }
 }
 
 impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
@@ -101,5 +160,16 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
             );
         }
         Ok(out)
+    }
+}
+
+#[async_trait]
+impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+    async fn partial_decode_opt(
+        &self,
+        decoded_regions: &[ArraySubset],
+        parallel: bool,
+    ) -> Result<Vec<Vec<u8>>, CodecError> {
+        ArrayPartialDecoderTraits::partial_decode_opt(self, decoded_regions, parallel)
     }
 }

@@ -1,6 +1,8 @@
+use async_trait::async_trait;
+
 use crate::{
     array::{
-        codec::{ArrayPartialDecoderTraits, CodecError},
+        codec::{ArrayPartialDecoderTraits, AsyncArrayPartialDecoderTraits, CodecError},
         DataType,
     },
     array_subset::ArraySubset,
@@ -8,7 +10,7 @@ use crate::{
 
 use super::{round_bytes, IDENTIFIER};
 
-/// The partial decoder for the Bitround codec.
+/// Partial decoder for the Bitround codec.
 pub struct BitroundPartialDecoder<'a> {
     input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
     data_type: DataType,
@@ -56,6 +58,65 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
         let mut bytes = self
             .input_handle
             .partial_decode_opt(array_subsets, parallel)?;
+
+        for bytes in &mut bytes {
+            round_bytes(bytes, &self.data_type, self.keepbits)?;
+        }
+
+        Ok(bytes)
+    }
+}
+
+/// Asynchronous partial decoder for the Bitround codec.
+pub struct AsyncBitroundPartialDecoder<'a> {
+    input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+    data_type: DataType,
+    keepbits: u32,
+}
+
+impl<'a> AsyncBitroundPartialDecoder<'a> {
+    /// Create a new partial decoder for the Bitround codec.
+    pub fn new(
+        input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        data_type: &DataType,
+        keepbits: u32,
+    ) -> Result<Self, CodecError> {
+        match data_type {
+            DataType::Float16
+            | DataType::BFloat16
+            | DataType::UInt16
+            | DataType::Int16
+            | DataType::Float32
+            | DataType::Complex64
+            | DataType::UInt32
+            | DataType::Int32
+            | DataType::Float64
+            | DataType::Complex128
+            | DataType::UInt64
+            | DataType::Int64 => Ok(Self {
+                input_handle,
+                data_type: data_type.clone(),
+                keepbits,
+            }),
+            _ => Err(CodecError::UnsupportedDataType(
+                data_type.clone(),
+                IDENTIFIER.to_string(),
+            )),
+        }
+    }
+}
+
+#[async_trait]
+impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
+    async fn partial_decode_opt(
+        &self,
+        array_subsets: &[ArraySubset],
+        parallel: bool,
+    ) -> Result<Vec<Vec<u8>>, CodecError> {
+        let mut bytes = self
+            .input_handle
+            .partial_decode_opt(array_subsets, parallel)
+            .await?;
 
         for bytes in &mut bytes {
             round_bytes(bytes, &self.data_type, self.keepbits)?;

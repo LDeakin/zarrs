@@ -1,8 +1,10 @@
+use async_trait::async_trait;
+
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
-            CodecTraits,
+            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits,
+            Codec, CodecError, CodecPlugin, CodecTraits,
         },
         BytesRepresentation,
     },
@@ -68,6 +70,7 @@ impl CodecTraits for Crc32cCodec {
     }
 }
 
+#[async_trait]
 impl BytesToBytesCodecTraits for Crc32cCodec {
     fn encode_opt(
         &self,
@@ -102,6 +105,24 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         }
     }
 
+    async fn async_encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, parallel)
+    }
+
+    async fn async_decode_opt(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &BytesRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        // FIXME: Remove
+        self.decode_opt(encoded_value, decoded_representation, parallel)
+    }
+
     fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
@@ -111,6 +132,17 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         Ok(Box::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
             input_handle,
         )))
+    }
+
+    async fn async_partial_decoder_opt<'a>(
+        &'a self,
+        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        _decoded_representation: &BytesRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(
+            crc32c_partial_decoder::AsyncCrc32cPartialDecoder::new(input_handle),
+        ))
     }
 
     fn compute_encoded_size(

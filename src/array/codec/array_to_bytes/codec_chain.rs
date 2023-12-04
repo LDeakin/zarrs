@@ -1,12 +1,15 @@
 //! An `array->bytes` codec formed by joining an `array->array` sequence, `array->bytes`, and `bytes->bytes` sequence of codecs.
 
+use async_trait::async_trait;
+
 use crate::{
     array::{
         codec::{
             partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache},
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
-            ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
-            CodecError, CodecTraits,
+            ArrayToBytesCodecTraits, AsyncArrayPartialDecoderTraits,
+            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits,
+            Codec, CodecError, CodecTraits,
         },
         ArrayRepresentation, BytesRepresentation,
     },
@@ -220,6 +223,7 @@ impl CodecTraits for CodecChain {
     }
 }
 
+#[async_trait]
 impl ArrayToBytesCodecTraits for CodecChain {
     fn partial_decoder_opt<'a>(
         &'a self,
@@ -283,6 +287,80 @@ impl ArrayToBytesCodecTraits for CodecChain {
         Ok(input_handle)
     }
 
+    async fn async_partial_decoder_opt<'a>(
+        &'a self,
+        mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        let mut codec_index = 0;
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            if Some(codec_index) == self.cache_index {
+                input_handle =
+                    Box::new(BytesPartialDecoderCache::async_new(&*input_handle, parallel).await?);
+            }
+            codec_index += 1;
+            input_handle = codec
+                .async_partial_decoder_opt(input_handle, bytes_representation, parallel)
+                .await?;
+        }
+
+        if Some(codec_index) == self.cache_index {
+            input_handle =
+                Box::new(BytesPartialDecoderCache::async_new(&*input_handle, parallel).await?);
+        };
+
+        let mut input_handle = {
+            let array_representation = array_representations.last().unwrap();
+            let codec = &self.array_to_bytes;
+            codec_index += 1;
+            codec
+                .async_partial_decoder_opt(input_handle, array_representation, parallel)
+                .await?
+        };
+
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            if Some(codec_index) == self.cache_index {
+                input_handle = Box::new(
+                    ArrayPartialDecoderCache::async_new(
+                        &*input_handle,
+                        array_representation.clone(),
+                        parallel,
+                    )
+                    .await?,
+                );
+            }
+            codec_index += 1;
+            input_handle = codec
+                .async_partial_decoder_opt(input_handle, array_representation, parallel)
+                .await?;
+        }
+
+        if Some(codec_index) == self.cache_index {
+            input_handle = Box::new(
+                ArrayPartialDecoderCache::async_new(
+                    &*input_handle,
+                    array_representations.first().unwrap().clone(),
+                    parallel,
+                )
+                .await?,
+            );
+        }
+
+        Ok(input_handle)
+    }
+
     fn compute_encoded_size(
         &self,
         decoded_representation: &ArrayRepresentation,
@@ -304,6 +382,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
     }
 }
 
+#[async_trait]
 impl ArrayCodecTraits for CodecChain {
     fn encode_opt(
         &self,
@@ -376,6 +455,99 @@ impl ArrayCodecTraits for CodecChain {
             array_representations.iter().rev().skip(1),
         ) {
             encoded_value = codec.decode_opt(encoded_value, array_representation, parallel)?;
+        }
+
+        if encoded_value.len() as u64 != decoded_representation.size() {
+            return Err(CodecError::UnexpectedChunkDecodedSize(
+                encoded_value.len(),
+                decoded_representation.size(),
+            ));
+        }
+
+        Ok(encoded_value)
+    }
+
+    async fn async_encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        if decoded_value.len() as u64 != decoded_representation.size() {
+            return Err(CodecError::UnexpectedChunkDecodedSize(
+                decoded_value.len(),
+                decoded_representation.size(),
+            ));
+        }
+
+        let mut decoded_representation = decoded_representation.clone();
+
+        let mut value = decoded_value;
+        // array->array
+        for codec in &self.array_to_array {
+            value = codec
+                .async_encode_opt(value, &decoded_representation, parallel)
+                .await?;
+            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
+        }
+
+        // array->bytes
+        value = self
+            .array_to_bytes
+            .async_encode_opt(value, &decoded_representation, parallel)
+            .await?;
+        let mut decoded_representation = self
+            .array_to_bytes
+            .compute_encoded_size(&decoded_representation)?;
+
+        // bytes->bytes
+        for codec in &self.bytes_to_bytes {
+            value = codec.async_encode_opt(value, parallel).await?;
+            decoded_representation = codec.compute_encoded_size(&decoded_representation);
+        }
+
+        Ok(value)
+    }
+
+    async fn async_decode_opt(
+        &self,
+        mut encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        // bytes->bytes
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            encoded_value = codec
+                .async_decode_opt(encoded_value, bytes_representation, parallel)
+                .await?;
+        }
+
+        // bytes->array
+        encoded_value = self
+            .array_to_bytes
+            .async_decode_opt(
+                encoded_value,
+                array_representations.last().unwrap(),
+                parallel,
+            )
+            .await?;
+
+        // array->array
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            encoded_value = codec
+                .async_decode_opt(encoded_value, array_representation, parallel)
+                .await?;
         }
 
         if encoded_value.len() as u64 != decoded_representation.size() {

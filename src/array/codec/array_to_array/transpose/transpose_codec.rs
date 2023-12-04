@@ -1,11 +1,12 @@
+use async_trait::async_trait;
 use derive_more::From;
 use thiserror::Error;
 
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, Codec,
-            CodecError, CodecPlugin, CodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
+            AsyncArrayPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
         ArrayRepresentation,
     },
@@ -84,6 +85,7 @@ impl CodecTraits for TransposeCodec {
     }
 }
 
+#[async_trait]
 impl ArrayToArrayCodecTraits for TransposeCodec {
     fn partial_decoder_opt<'a>(
         &'a self,
@@ -93,6 +95,21 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             super::transpose_partial_decoder::TransposePartialDecoder::new(
+                input_handle,
+                decoded_representation.clone(),
+                self.order.clone(),
+            ),
+        ))
+    }
+
+    async fn async_partial_decoder_opt<'a>(
+        &'a self,
+        input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        decoded_representation: &ArrayRepresentation,
+        _parallel: bool,
+    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Box::new(
+            super::transpose_partial_decoder::AsyncTransposePartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
                 self.order.clone(),
@@ -115,6 +132,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     }
 }
 
+#[async_trait]
 impl ArrayCodecTraits for TransposeCodec {
     fn encode_opt(
         &self,
@@ -166,5 +184,23 @@ impl ArrayCodecTraits for TransposeCodec {
                 decoded_representation.size(),
             )
         })
+    }
+
+    async fn async_encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(decoded_value, decoded_representation, parallel)
+    }
+
+    async fn async_decode_opt(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ArrayRepresentation,
+        parallel: bool,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(encoded_value, decoded_representation, parallel)
     }
 }
