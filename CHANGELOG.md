@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2023-12-05
+
+### Highlights
+ - Experimental `async` feature: Support async stores and array/group operations
+   - See `async_array_write_read` and `async_http_array_read` examples 
+ - Experimental `s3`/`gcp`/`azure` features for experimental async Amazon S3/Google Cloud Storage/Microsoft Azure Blob Storage stores
+
 ### Added
  - Add `storage_async` module with asynchronous storage traits: `Async{Readable,Writable,Listable,ReadableListable}StorageTraits`
   - Implemented for `StorageHandle`
@@ -286,7 +293,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.7.0
 [0.6.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.6.0
 [0.5.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.5.0
