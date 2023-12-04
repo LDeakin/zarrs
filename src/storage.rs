@@ -61,6 +61,18 @@ pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
 /// [`Arc`] wrapped readable and listable storage.
 pub type ReadableListableStorage<'a> = Arc<dyn ReadableListableStorageTraits + 'a>;
 
+/// [`Arc`] wrapped asynchgronous readable storage.
+pub type AsyncReadableStorage<'a> = Arc<dyn AsyncReadableStorageTraits + 'a>;
+
+/// [`Arc`] wrapped asynchgronous writable storage.
+pub type AsyncWritableStorage<'a> = Arc<dyn AsyncWritableStorageTraits + 'a>;
+
+/// [`Arc`] wrapped asynchgronous listable storage.
+pub type AsyncListableStorage<'a> = Arc<dyn AsyncListableStorageTraits + 'a>;
+
+/// [`Arc`] wrapped asynchgronous readable and listable storage.
+pub type AsyncReadableListableStorage<'a> = Arc<dyn AsyncReadableListableStorageTraits + 'a>;
+
 /// A [`StoreKey`] and [`ByteRange`].
 #[derive(Debug, Clone)]
 pub struct StoreKeyRange {
