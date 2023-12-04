@@ -1,4 +1,3 @@
-#[cfg(feature = "ndarray")]
 fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
     use zarrs::{
@@ -50,11 +49,6 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("The middle 4x2 subset is:\n{:?}\n", data_4x2);
 
     Ok(())
-}
-
-#[cfg(not(feature = "ndarray"))]
-fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the http_array_read example requires the ndarray feature")
 }
 
 fn main() {

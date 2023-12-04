@@ -139,7 +139,6 @@ fn zip_dir(
     Result::Ok(())
 }
 
-#[cfg(feature = "ndarray")]
 fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use walkdir::WalkDir;
     use zarrs::{
@@ -177,11 +176,6 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("The zarr hierarchy tree is:\n{}", tree);
 
     Ok(())
-}
-
-#[cfg(not(feature = "ndarray"))]
-fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the array_write_read example requires the ndarray feature")
 }
 
 fn main() {

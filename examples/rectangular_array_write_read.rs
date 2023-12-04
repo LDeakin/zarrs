@@ -1,4 +1,3 @@
-#[cfg(feature = "ndarray")]
 fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
     use zarrs::array::ChunkGrid;
@@ -121,11 +120,6 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("The zarr hierarchy tree is:\n{}", tree);
 
     Ok(())
-}
-
-#[cfg(not(feature = "ndarray"))]
-fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the rectangular_array_write_read example requires the ndarray feature")
 }
 
 fn main() {

@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Move sync stores to `storage::store::sync`
  - Move sync storage traits to `storage_sync.rs`
  - Move array sync storage trait impls into `array_sync.rs`
+ - Use `required-features` for examples
 
 ## [0.6.0] - 2023-11-16
 

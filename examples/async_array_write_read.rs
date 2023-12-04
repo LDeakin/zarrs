@@ -1,4 +1,3 @@
-#[cfg(feature = "ndarray")]
 async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use futures::{stream::FuturesUnordered, StreamExt};
     use std::sync::Arc;
@@ -138,11 +137,6 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("The zarr hierarchy tree is:\n{}", tree);
 
     Ok(())
-}
-
-#[cfg(not(feature = "ndarray"))]
-async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the async_array_write_read example requires the ndarray feature")
 }
 
 #[tokio::main]

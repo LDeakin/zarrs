@@ -1,4 +1,3 @@
-#[cfg(all(feature = "ndarray", feature = "sharding"))]
 fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use zarrs::{
         array::{
@@ -152,11 +151,6 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("The zarr hierarchy tree is:\n{}", tree);
 
     Ok(())
-}
-
-#[cfg(any(not(feature = "ndarray"), not(feature = "sharding")))]
-fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the sharded_array_write_read example requires the ndarray and sharding feature")
 }
 
 fn main() {

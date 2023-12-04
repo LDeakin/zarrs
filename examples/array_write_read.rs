@@ -1,4 +1,3 @@
-#[cfg(feature = "ndarray")]
 fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
     use std::sync::Arc;
@@ -119,11 +118,6 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("The zarr hierarchy tree is:\n{}", tree);
 
     Ok(())
-}
-
-#[cfg(not(feature = "ndarray"))]
-fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    panic!("the array_write_read example requires the ndarray feature")
 }
 
 fn main() {
