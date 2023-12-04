@@ -25,9 +25,9 @@ zfp = ["dep:zfp-sys"]
 zstd = ["dep:zstd"]
 # Stores
 http = ["dep:reqwest", "dep:url", "object_store/http"]
-s3 = ["object_store/aws"]
-gcp = ["object_store/gcp"]
-azure = ["object_store/azure"]
+s3 = ["async", "object_store/aws"]
+gcp = ["async", "object_store/gcp"]
+azure = ["async", "object_store/azure"]
 zip = ["dep:zip"]
 # Misc
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
