@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+ - Fix use of `impl_trait_projections` in `{Array/Bytes}PartialDecoderCache`, which was only stabilised in Rust 1.74
+
 ## [0.7.0] - 2023-12-05
 
 ### Highlights

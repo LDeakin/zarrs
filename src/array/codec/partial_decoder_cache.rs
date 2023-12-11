@@ -45,7 +45,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
     pub async fn async_new(
         input_handle: &dyn AsyncBytesPartialDecoderTraits,
         parallel: bool,
-    ) -> Result<Self, CodecError> {
+    ) -> Result<BytesPartialDecoderCache<'a>, CodecError> {
         let cache = input_handle
             .partial_decode_opt(&[ByteRange::FromStart(0, None)], parallel)
             .await?
@@ -126,7 +126,7 @@ impl<'a> ArrayPartialDecoderCache<'a> {
         input_handle: &dyn AsyncArrayPartialDecoderTraits,
         decoded_representation: ArrayRepresentation,
         parallel: bool,
-    ) -> Result<Self, CodecError> {
+    ) -> Result<ArrayPartialDecoderCache<'a>, CodecError> {
         let cache = input_handle
             .partial_decode_opt(
                 &[ArraySubset::new_with_shape(
