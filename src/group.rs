@@ -222,7 +222,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::store::{AsyncMemoryStore, MemoryStore};
+    use crate::storage::store::MemoryStore;
 
     use super::*;
 
@@ -311,9 +311,10 @@ mod tests {
         assert_eq!(metadata, group.metadata());
     }
 
+    #[cfg(feature = "async")]
     #[tokio::test]
     async fn group_metadata_write_read_async() {
-        let store = std::sync::Arc::new(AsyncMemoryStore::new());
+        let store = std::sync::Arc::new(crate::storage::store::AsyncMemoryStore::new());
         let group_path = "/group";
         let group = GroupBuilder::new()
             .build(store.clone(), group_path)

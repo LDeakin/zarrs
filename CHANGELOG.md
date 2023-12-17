@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+ - Fix `cargo test` with `async` crate feature disabled
+
 ## [0.7.1] - 2023-12-11
 
 ### Fixed
