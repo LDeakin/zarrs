@@ -175,6 +175,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                 let offset = shard_index[shard_index_index];
                 let size = shard_index[shard_index_index + 1];
 
+                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
                 let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
                     // The chunk is just the fill value
                     fill_value.repeat(chunk_subset.num_elements_usize())
@@ -189,7 +190,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         &chunk_representation,
                     )?;
                     let array_subset_in_chunk_subset =
-                        unsafe { array_subset.in_subset_unchecked(&chunk_subset) };
+                        unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
 
                     // Partial decoding is actually really slow with the blosc codec! Assume sharded chunks are small, and just decode the whole thing and extract bytes
                     // TODO: Make this behaviour optional?
@@ -208,7 +209,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
 
                 // Copy decoded bytes to the output
                 let chunk_subset_in_array_subset =
-                    unsafe { chunk_subset.in_subset_unchecked(array_subset) };
+                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                 let mut decoded_offset = 0;
                 for (array_subset_element_index, num_elements) in unsafe {
                     chunk_subset_in_array_subset
@@ -280,8 +281,9 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                     let size = shard_index[shard_index_idx + 1];
 
                     // Get the subset of bytes from the chunk which intersect the array
+                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
                     let array_subset_in_chunk_subset =
-                        unsafe { array_subset.in_subset_unchecked(&chunk_subset) };
+                        unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
 
                     let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
                         // The chunk is just the fill value
@@ -304,7 +306,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
 
                     // Copy decoded bytes to the output
                     let chunk_subset_in_array_subset =
-                        unsafe { chunk_subset.in_subset_unchecked(array_subset) };
+                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                     let mut decoded_offset = 0;
                     for (array_subset_element_index, num_elements) in unsafe {
                         chunk_subset_in_array_subset
@@ -485,6 +487,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                 let offset = shard_index[shard_index_index];
                 let size = shard_index[shard_index_index + 1];
 
+                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
                 let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
                     // The chunk is just the fill value
                     fill_value.repeat(chunk_subset.num_elements_usize())
@@ -502,7 +505,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                         )
                         .await?;
                     let array_subset_in_chunk_subset =
-                        unsafe { array_subset.in_subset_unchecked(&chunk_subset) };
+                        unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
                     partial_decoder
                         .partial_decode(&[array_subset_in_chunk_subset.clone()])
                         .await?
@@ -511,7 +514,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
                 // Copy decoded bytes to the output
                 let chunk_subset_in_array_subset =
-                    unsafe { chunk_subset.in_subset_unchecked(array_subset) };
+                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                 let mut decoded_offset = 0;
                 for (array_subset_element_index, num_elements) in unsafe {
                     chunk_subset_in_array_subset
@@ -614,8 +617,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                                 &chunk_representation,
                             )
                             .await?;
+                        let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
                         let array_subset_in_chunk_subset =
-                            unsafe { array_subset.in_subset_unchecked(chunk_subset) };
+                            unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
                         // Partial decoding is actually really slow with the blosc codec! Assume sharded chunks are small, and just decode the whole thing and extract bytes
                         // TODO: Investigate further
                         // let decoded_chunk = partial_decoder
@@ -632,7 +636,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                             .extract_bytes(&decoded_chunk, chunk_subset.shape(), element_size)
                             .unwrap();
                         let chunk_subset_in_array_subset =
-                            unsafe { chunk_subset.in_subset_unchecked(array_subset) };
+                            unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                         Ok::<_, CodecError>((chunk_subset_in_array_subset, decoded_chunk))
                     }),
             )
@@ -678,8 +682,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
                 // Write filled chunks
                 filled_chunks.par_iter().for_each(|chunk_subset| {
+                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
                     let chunk_subset_in_array_subset =
-                        unsafe { chunk_subset.in_subset_unchecked(array_subset) };
+                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                     let mut data_idx = 0;
                     let element_size = self.decoded_representation.element_size() as u64;
                     let shard_slice = unsafe { shard_slice.get() };

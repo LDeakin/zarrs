@@ -421,7 +421,7 @@ impl ArraySubset {
         array_shape: &[u64],
     ) -> Vec<T> {
         debug_assert_eq!(elements.len() as u64, array_shape.iter().product::<u64>());
-        let num_elements = self.num_elements() as usize;
+        let num_elements = usize::try_from(self.num_elements()).unwrap();
         let mut bytes_subset = vec![core::mem::MaybeUninit::<T>::uninit(); num_elements];
         let bytes_subset_slice = unsafe {
             std::slice::from_raw_parts_mut(
@@ -651,6 +651,10 @@ impl ArraySubset {
         ChunksIterator::new_unchecked(self, chunk_shape)
     }
 
+    #[deprecated(
+        since = "0.7.2",
+        note = "please use `overlap` and `relative_to` instead"
+    )]
     /// Return the subset of this array subset in `subset_other`.
     /// The start of the returned array subset is from the start of this array subset.
     ///
@@ -659,6 +663,7 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
     pub fn in_subset(&self, subset_other: &Self) -> Result<Self, IncompatibleDimensionalityError> {
         if subset_other.dimensionality() == self.dimensionality() {
+            #[allow(deprecated)]
             Ok(unsafe { self.in_subset_unchecked(subset_other) })
         } else {
             Err(IncompatibleDimensionalityError::new(
@@ -668,6 +673,10 @@ impl ArraySubset {
         }
     }
 
+    #[deprecated(
+        since = "0.7.2",
+        note = "please use `overlap` and `relative_to` instead"
+    )]
     /// Return the subset of this array subset in `subset_other`.
     /// The start of the returned array subset is from the start of this array subset.
     ///
@@ -694,6 +703,82 @@ impl ArraySubset {
             shapes.push(output_size);
         }
         unsafe { Self::new_with_start_shape_unchecked(starts, shapes) }
+    }
+
+    /// Return the overlapping subset between this array subset and `subset_other`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`IncompatibleDimensionalityError`] if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
+    pub fn overlap(&self, subset_other: &Self) -> Result<Self, IncompatibleDimensionalityError> {
+        if subset_other.dimensionality() == self.dimensionality() {
+            Ok(unsafe { self.overlap_unchecked(subset_other) })
+        } else {
+            Err(IncompatibleDimensionalityError::new(
+                subset_other.dimensionality(),
+                self.dimensionality(),
+            ))
+        }
+    }
+
+    /// Return the overlapping subset between this array subset and `subset_other`.
+    ///
+    /// # Safety
+    ///
+    /// Panics if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
+    #[doc(hidden)]
+    #[must_use]
+    pub unsafe fn overlap_unchecked(&self, subset_other: &Self) -> Self {
+        debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
+        let mut starts = Vec::with_capacity(self.start.len());
+        let mut shapes = Vec::with_capacity(self.start.len());
+        for (start, size, other_start, other_size) in izip!(
+            &self.start,
+            &self.shape,
+            subset_other.start(),
+            subset_other.shape(),
+        ) {
+            let overlap_start = *std::cmp::max(start, other_start);
+            let overlap_end = std::cmp::min(start + size, other_start + other_size);
+            let overlap_size = overlap_end - overlap_start;
+            starts.push(overlap_start);
+            shapes.push(overlap_size);
+        }
+        unsafe { Self::new_with_start_shape_unchecked(starts, shapes) }
+    }
+
+    /// Return the subset relative to `start`.
+    ///
+    /// Creates an array subset starting at [`ArraySubset::start()`] - `start`.
+    ///
+    /// # Errors
+    /// Returns [`IncompatibleDimensionalityError`] if the length of `start` does not match the dimensionality of this array subset.
+    pub fn relative_to(&self, start: &[u64]) -> Result<Self, IncompatibleDimensionalityError> {
+        if start.len() == self.dimensionality() {
+            Ok(unsafe { self.relative_to_unchecked(start) })
+        } else {
+            Err(IncompatibleDimensionalityError::new(
+                start.len(),
+                self.dimensionality(),
+            ))
+        }
+    }
+
+    /// Return the subset relative to `start`.
+    ///
+    /// Creates an array subset starting at [`ArraySubset::start()`] - `start`.
+    ///
+    /// # Safety
+    /// Panics if the length of `start` does not match the dimensionality of this array subset.
+    #[must_use]
+    pub unsafe fn relative_to_unchecked(&self, start: &[u64]) -> Self {
+        debug_assert_eq!(start.len(), self.dimensionality());
+        Self {
+            start: std::iter::zip(self.start(), start)
+                .map(|(a, b)| a - b)
+                .collect::<Vec<_>>(),
+            shape: self.shape().to_vec(),
+        }
     }
 
     /// Returns true if the array subset is within the bounds of `array_shape`.

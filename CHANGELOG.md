@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - `ArraySubset::{extract_elements/extract_elements_unchecked}` and `ArrayExtractElementsError`
 
+### Changed
+ - Add `ArraySubset::{overlap,overlap_unchecked}` and `ArraySubset::{relative_to,relative_to_unchecked}`
+   - These replace `ArraySubset::{in_subset,in_subset_unchecked}`, which are now deprecated
+
 ### Fixed
  - Fix `cargo test` with `async` crate feature disabled
 

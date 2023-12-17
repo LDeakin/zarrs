@@ -197,8 +197,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         };
 
         // Decode the subset of the chunk which intersects array_subset
+        let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
         let array_subset_in_chunk_subset =
-            unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
+            unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
         let decoded_bytes = self
             .async_retrieve_chunk_subset(chunk_indices, &array_subset_in_chunk_subset)
             .await?;
@@ -206,7 +207,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         // Copy decoded bytes to the output
         let element_size = self.data_type().size() as u64;
         let chunk_subset_in_array_subset =
-            unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
+            unsafe { overlap.relative_to_unchecked(array_subset.start()) };
         let mut decoded_offset = 0;
         for (array_subset_element_index, num_elements) in unsafe {
             chunk_subset_in_array_subset
@@ -309,8 +310,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
                                 };
 
                                 // Decode the subset of the chunk which intersects array_subset
+                                let overlap = unsafe {
+                                    array_subset.overlap_unchecked(&chunk_subset_in_array)
+                                };
                                 let array_subset_in_chunk_subset = unsafe {
-                                    array_subset.in_subset_unchecked(&chunk_subset_in_array)
+                                    overlap.relative_to_unchecked(chunk_subset_in_array.start())
                                 };
 
                                 let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
@@ -342,9 +346,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
 
                                 // Copy decoded bytes to the output
                                 let element_size = self.data_type().size() as u64;
-                                let chunk_subset_in_array_subset = unsafe {
-                                    chunk_subset_in_array.in_subset_unchecked(array_subset)
-                                };
+                                let chunk_subset_in_array_subset =
+                                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                                 let mut decoded_offset = 0;
                                 for (array_subset_element_index, num_elements) in unsafe {
                                     chunk_subset_in_array_subset
@@ -918,8 +921,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
                 // This skips the internal decoding occurring in store_chunk_subset
                 self.async_store_chunk(chunk_indices, subset_bytes).await?;
             } else {
+                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                 let chunk_subset_in_array_subset =
-                    unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
+                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                 let chunk_subset_bytes = unsafe {
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
                         &subset_bytes,
@@ -930,8 +934,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
 
                 // Store the chunk subset
                 let array_subset_in_chunk_subset =
-                    unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
-
+                    unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
                 self.async_store_chunk_subset(
                     chunk_indices,
                     &array_subset_in_chunk_subset,
@@ -948,10 +951,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
                             .subset_unchecked(&chunk_indices, self.shape())
                             .unwrap()
                     };
+                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                     let chunk_subset_in_array_subset =
-                        unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
+                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                     let array_subset_in_chunk_subset =
-                        unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
+                        unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
                     (
                         chunk_indices,
                         chunk_subset_in_array_subset,
@@ -992,8 +996,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
                         .subset_unchecked(&chunk_indices, self.shape())
                         .unwrap()
                 };
+                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                 let chunk_subset_in_array_subset =
-                    unsafe { chunk_subset_in_array.in_subset_unchecked(array_subset) };
+                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                 let chunk_subset_bytes = unsafe {
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
                         &subset_bytes,
@@ -1002,7 +1007,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
                     )
                 };
                 let array_subset_in_chunk_subset =
-                    unsafe { array_subset.in_subset_unchecked(&chunk_subset_in_array) };
+                    unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
                 self.async_store_chunk_subset(
                     &chunk_indices,
                     &array_subset_in_chunk_subset,
