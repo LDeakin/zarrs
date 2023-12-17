@@ -29,14 +29,13 @@
 //!
 //! ## Crate Features
 //! The following crate features are enabled by default:
-//!  - `ndarray`: adds [`ndarray`] utility functions to [`Array`](crate::array::Array).
+//!  - `ndarray`: [`ndarray`] utility functions for [`Array`](crate::array::Array).
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
-//!  - Stores: `http`, `zip`.
 //!
 //! The following features are disabled by default:
-//!  - `async` (experimental): enable asynchronous stores and associated storage, array, and group methods.
-//!  - Codecs:  `bitround`, `zfp`.
-//!  - Stores: `s3` (Amazon S3) `gcp` (Google Cloud), `azure` (Microsoft Azure).
+//!  - `async`: asynchronous stores and associated storage, array, and group methods.
+//!  - Codecs: `bitround`, `zfp`.
+//!  - Stores: `http`, `zip`, `s3` (Amazon S3) `gcp` (Google Cloud), `azure` (Microsoft Azure).
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`.
