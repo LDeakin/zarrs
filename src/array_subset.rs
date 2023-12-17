@@ -38,6 +38,11 @@ pub struct ArraySubset {
 #[error("array subset {_0} is incompatible with array of shape {_1:?} and element size {_2}")]
 pub struct ArrayExtractBytesError(ArraySubset, ArrayShape, usize);
 
+/// An array extract elements error.
+#[derive(Debug, Error)]
+#[error("array subset {_0} is incompatible with array of shape {_1:?}")]
+pub struct ArrayExtractElementsError(ArraySubset, ArrayShape);
+
 /// An array extract bytes error.
 #[derive(Debug, Error)]
 pub enum ArrayStoreBytesError {
@@ -362,6 +367,79 @@ impl ArraySubset {
             bytes_subset_slice[subset_offset..subset_offset + byte_length]
                 .copy_from_slice(&bytes[byte_offset..byte_offset + byte_length]);
             subset_offset += byte_length;
+        }
+        #[allow(clippy::transmute_undefined_repr)]
+        unsafe {
+            core::mem::transmute(bytes_subset)
+        }
+    }
+
+    /// Return the elements in this array subset from an array with shape `array_shape`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ArrayExtractBytesError`] if the length of `array_shape` does not match the array subset dimensionality or the array subset is outside of the bounds of `array_shape`.
+    ///
+    /// # Panics
+    /// Panics if attempting to access a byte index beyond [`usize::MAX`].
+    pub fn extract_elements<T: std::marker::Copy>(
+        &self,
+        elements: &[T],
+        array_shape: &[u64],
+    ) -> Result<Vec<T>, ArrayExtractElementsError> {
+        if elements.len() as u64 == array_shape.iter().product::<u64>()
+            && array_shape.len() == self.dimensionality()
+            && self
+                .end_exc()
+                .iter()
+                .zip(array_shape)
+                .all(|(end, shape)| end <= shape)
+        {
+            Ok(unsafe { self.extract_elements_unchecked(elements, array_shape) })
+        } else {
+            Err(ArrayExtractElementsError(
+                self.clone(),
+                array_shape.to_vec(),
+            ))
+        }
+    }
+
+    /// Return the elements in this array subset from an array with shape `array_shape`.
+    ///
+    /// # Safety
+    ///
+    /// The length of `array_shape` must match the array subset dimensionality and the array subset must be within the bounds of `array_shape`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if attempting to reference a byte beyond `usize::MAX`.
+    #[doc(hidden)]
+    #[must_use]
+    pub unsafe fn extract_elements_unchecked<T: std::marker::Copy>(
+        &self,
+        elements: &[T],
+        array_shape: &[u64],
+    ) -> Vec<T> {
+        debug_assert_eq!(elements.len() as u64, array_shape.iter().product::<u64>());
+        let num_elements = self.num_elements() as usize;
+        let mut bytes_subset = vec![core::mem::MaybeUninit::<T>::uninit(); num_elements];
+        let bytes_subset_slice = unsafe {
+            std::slice::from_raw_parts_mut(
+                bytes_subset.as_mut_ptr().cast::<T>(),
+                bytes_subset.len(),
+            )
+        };
+        let mut subset_offset = 0;
+        for (array_index, contiguous_elements) in
+            self.iter_contiguous_linearised_indices_unchecked(array_shape)
+        {
+            let element_offset = usize::try_from(array_index).unwrap();
+            let element_length = usize::try_from(contiguous_elements).unwrap();
+            debug_assert!(element_offset + element_length <= elements.len());
+            debug_assert!(subset_offset + element_length <= num_elements);
+            bytes_subset_slice[subset_offset..subset_offset + element_length]
+                .copy_from_slice(&elements[element_offset..element_offset + element_length]);
+            subset_offset += element_length;
         }
         #[allow(clippy::transmute_undefined_repr)]
         unsafe {

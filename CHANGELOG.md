@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - `ArraySubset::{extract_elements/extract_elements_unchecked}` and `ArrayExtractElementsError`
+
 ### Fixed
  - Fix `cargo test` with `async` crate feature disabled
 
