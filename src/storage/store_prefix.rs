@@ -1,4 +1,4 @@
-use derive_more::Display;
+use derive_more::{Display, From};
 use std::path::Path;
 use thiserror::Error;
 
@@ -11,12 +11,13 @@ use crate::node::NodePath;
 pub struct StorePrefix(String);
 
 /// An invalid store prefix.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, From)]
 #[error("invalid store prefix {0}")]
 pub struct StorePrefixError(String);
 
 impl StorePrefixError {
-    /// Create a new invalid store prefix.
+    #[deprecated(since = "0.7.3", note = "please use the From::<String> method instead")]
+    /// Create a new invalid store prefix error.
     #[must_use]
     pub const fn new(prefix: String) -> Self {
         Self(prefix)
@@ -30,7 +31,6 @@ impl StorePrefix {
     /// Create a new Zarr Prefix from `prefix`.
     ///
     /// # Errors
-    ///
     /// Returns [`StorePrefixError`] if `prefix` is not valid according to [`StorePrefix::validate`()].
     pub fn new(prefix: impl Into<String>) -> Result<Self, StorePrefixError> {
         let prefix = prefix.into();
@@ -44,7 +44,6 @@ impl StorePrefix {
     /// Create a new Zarr Prefix from `prefix`.
     ///
     /// # Safety
-    ///
     /// `prefix` is not validated, so this can result in an invalid store prefix.
     #[must_use]
     pub unsafe fn new_unchecked(prefix: impl Into<String>) -> Self {
@@ -105,5 +104,23 @@ impl TryFrom<&NodePath> for StorePrefix {
         } else {
             Self::new(path.strip_prefix('/').unwrap_or(path).to_string() + "/")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid() {
+        assert!(StorePrefix::new("").is_ok());
+        assert!(StorePrefix::new("a/").is_ok());
+        assert!(StorePrefix::new("a/b/").is_ok());
+    }
+
+    #[test]
+    fn invalid() {
+        assert!(StorePrefix::new("a").is_err());
+        assert!(StorePrefix::new("a/b").is_err());
     }
 }

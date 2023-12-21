@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Add `ArraySubset::{overlap,overlap_unchecked}` and `ArraySubset::{relative_to,relative_to_unchecked}`
    - These replace `ArraySubset::{in_subset,in_subset_unchecked}`, which are now deprecated
+ - Add `From<String>` for `StorePrefixError` and deprecate `StorePrefixError::new`
 
 ### Fixed
  - Fix `cargo test` with `async` crate feature disabled
