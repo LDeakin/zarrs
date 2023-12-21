@@ -48,6 +48,15 @@ impl ChunkKeyEncoding {
     }
 }
 
+impl<T> From<T> for ChunkKeyEncoding
+where
+    T: ChunkKeyEncodingTraits + 'static,
+{
+    fn from(chunk_key_encoding: T) -> Self {
+        ChunkKeyEncoding::new(chunk_key_encoding)
+    }
+}
+
 /// Chunk key encoding traits.
 pub trait ChunkKeyEncodingTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync {
     /// Create the metadata of this chunk key encoding.
