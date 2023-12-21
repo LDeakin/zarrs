@@ -29,10 +29,20 @@ cargo bench -- --save-baseline baseline
 cargo bench -- --baseline baseline
 ```
 
-## Coverage report
+## Coverage report (using [cargo-llvm-cov](https://crates.io/crates/cargo-llvm-cov))
+
+Install `cargo-llvm-cov`
 ```bash
-# on ubuntu..
-# apt install llvm-14 jq
-# cargo install rustfilt
-./coverage.sh
+cargo +stable install cargo-llvm-cov --locked
+```
+
+Generate a HTML report
+```bash
+cargo +nightly llvm-cov --doctests --html
+open target/llvm-cov/html/index.html
+```
+
+Generate a coverage file for [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) in VSCode
+```bash
+cargo +nightly llvm-cov --doctests --lcov --output-path lcov.info
 ```

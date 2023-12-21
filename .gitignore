@@ -18,3 +18,7 @@ Cargo.lock
 
 # Misc config files
 .config
+
+# Profiling files
+*.profraw
+lcov.info
