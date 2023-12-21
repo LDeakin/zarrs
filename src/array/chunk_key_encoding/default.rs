@@ -99,13 +99,63 @@ impl ChunkKeyEncodingTraits for DefaultChunkKeyEncoding {
     }
 
     fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey {
-        let key = "c".to_string()
-            + &self.separator.to_string()
-            + &chunk_grid_indices
-                .iter()
-                .map(std::string::ToString::to_string)
-                .collect::<Vec<String>>()
-                .join(&self.separator.to_string());
+        let mut key = "c".to_string();
+        if !chunk_grid_indices.is_empty() {
+            key = key
+                + &self.separator.to_string()
+                + &chunk_grid_indices
+                    .iter()
+                    .map(std::string::ToString::to_string)
+                    .collect::<Vec<String>>()
+                    .join(&self.separator.to_string());
+        }
         unsafe { StoreKey::new_unchecked(key) }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{node::NodePath, storage::data_key};
+
+    use super::*;
+
+    #[test]
+    fn slash_nd() {
+        let key = data_key(
+            &NodePath::root(),
+            &[1, 23, 45],
+            &DefaultChunkKeyEncoding::new_slash().into(),
+        );
+        assert_eq!(key, StoreKey::new("c/1/23/45").unwrap());
+    }
+
+    #[test]
+    fn dot_nd() {
+        let key = data_key(
+            &NodePath::root(),
+            &[1, 23, 45],
+            &DefaultChunkKeyEncoding::new_dot().into(),
+        );
+        assert_eq!(key, StoreKey::new("c.1.23.45").unwrap());
+    }
+
+    #[test]
+    fn slash_scalar() {
+        let key = data_key(
+            &NodePath::root(),
+            &[],
+            &DefaultChunkKeyEncoding::new_slash().into(),
+        );
+        assert_eq!(key, StoreKey::new("c").unwrap());
+    }
+
+    #[test]
+    fn dot_scalar() {
+        let key = data_key(
+            &NodePath::root(),
+            &[],
+            &DefaultChunkKeyEncoding::new_dot().into(),
+        );
+        assert_eq!(key, StoreKey::new("c").unwrap());
     }
 }

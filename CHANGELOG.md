@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - Add `From<ChunkKeyEncodingTraits>` for `ChunkKeyEncoding`
+ - Add chunk key encoding tests
+
+### Fixed
+ - Fixed chunk key encoding for 0 dimensional arrays with `default` and `v2` encoding
 
 ## [0.7.2] - 2023-12-17
 
