@@ -221,6 +221,32 @@ mod tests {
         assert_eq!(store.get(&key)?.unwrap(), &[0, 1, 2]);
         store.set_partial_values(&[StoreKeyStartValue::new(key.clone(), 1, &[3, 4])])?;
         assert_eq!(store.get(&key)?.unwrap(), &[0, 3, 4]);
+
+        assert_eq!(
+            store
+                .get_partial_values_key(&key, &[ByteRange::FromStart(1, None)])?
+                .unwrap()
+                .first()
+                .unwrap(),
+            &[3, 4]
+        );
+
+        assert!(store
+            .get_partial_values_key(&"a/b/c".try_into()?, &[ByteRange::FromStart(1, None)])?
+            .is_none());
+
+        assert_eq!(
+            store
+                .get_partial_values(&[StoreKeyRange::new(
+                    key.clone(),
+                    ByteRange::FromStart(1, None)
+                )])?
+                .first()
+                .unwrap()
+                .as_ref()
+                .unwrap(),
+            &[3, 4]
+        );
         Ok(())
     }
 
@@ -228,8 +254,8 @@ mod tests {
     fn memory_list() -> Result<(), Box<dyn Error>> {
         let store = MemoryStore::new();
 
-        store.set(&"a/b".try_into()?, &[])?;
-        store.set(&"a/c".try_into()?, &[])?;
+        store.set(&"a/b".try_into()?, &[0])?;
+        store.set(&"a/c".try_into()?, &[0, 0])?;
         store.set(&"a/d/e".try_into()?, &[])?;
         store.set(&"a/d/f".try_into()?, &[])?;
         store.erase(&"a/d/e".try_into()?)?;
@@ -249,6 +275,12 @@ mod tests {
             store.list_prefix(&"".try_into()?)?,
             &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
         );
+
+        assert_eq!(store.list_prefix(&"b/".try_into()?)?, &[]);
+
+        assert_eq!(store.size()?, 3);
+        assert_eq!(store.size_prefix(&"a/".try_into().unwrap())?, 3);
+        assert_eq!(store.size_key(&"a/b".try_into().unwrap())?, Some(1));
         Ok(())
     }
 
@@ -262,6 +294,9 @@ mod tests {
         store.set(&"a/f/h".try_into()?, &[])?;
         store.set(&"b/c/d".try_into()?, &[])?;
 
+        let list_dir = store.list_dir(&StorePrefix::root())?;
+        assert_eq!(list_dir.prefixes(), &["a/".try_into()?, "b/".try_into()?,]);
+
         let list_dir = store.list_dir(&"a/".try_into()?)?;
 
         assert_eq!(list_dir.keys(), &["a/b".try_into()?, "a/c".try_into()?,]);
@@ -269,6 +304,11 @@ mod tests {
             list_dir.prefixes(),
             &["a/d/".try_into()?, "a/f/".try_into()?,]
         );
+
+        store.erase_prefix(&"b/".try_into()?)?;
+        let list_dir = store.list_dir(&StorePrefix::root())?;
+        assert_eq!(list_dir.prefixes(), &["a/".try_into()?,]);
+
         Ok(())
     }
 }

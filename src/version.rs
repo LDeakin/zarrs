@@ -40,6 +40,7 @@ pub fn version_patch() -> u32 {
 /// # use zarrs::version::version_minor;
 /// # use zarrs::version::version_patch;
 /// # let version = (version_major() << 22) | (version_minor() << 12) | version_patch();
+/// # assert!(version == zarrs::version::version());
 /// let version_major = (version as u32 >> 22) & 0x7F;
 /// # assert!(version_major == zarrs::version::version_major());
 /// let version_minor = (version as u32 >> 12) & 0x3FF;
