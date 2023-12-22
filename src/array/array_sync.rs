@@ -7,8 +7,8 @@ use crate::{
     array_subset::ArraySubset,
     node::NodePath,
     storage::{
-        data_key, meta_key, ReadableStorageTraits, StorageError, StorageHandle,
-        WritableStorageTraits,
+        data_key, meta_key, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
+        StorageHandle, WritableStorageTraits,
     },
 };
 
@@ -777,7 +777,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     }
 }
 
-impl<TStorage: ?Sized + ReadableStorageTraits + WritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     fn _store_array_subset(
         &self,
         array_subset: &ArraySubset,

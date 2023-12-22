@@ -8,13 +8,13 @@ use std::{
 use zarrs::{
     array::{Array, ZARR_NAN_F32},
     array_subset::ArraySubset,
-    storage::{ReadableStorageTraits, WritableStorageTraits},
+    storage::{ReadableStorageTraits, ReadableWritableStorageTraits},
 };
 
 // const ARRAY_PATH: &'static str = "/array";
 const ARRAY_PATH: &str = "/";
 
-fn write_array_to_storage<TStorage: WritableStorageTraits>(
+fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
     storage: Arc<TStorage>,
 ) -> Result<Array<TStorage>, Box<dyn std::error::Error>> {
     use zarrs::array::{chunk_grid::ChunkGridTraits, codec, DataType, FillValue};

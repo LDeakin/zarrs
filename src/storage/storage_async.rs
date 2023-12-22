@@ -159,71 +159,82 @@ pub trait AsyncListableStorageTraits: Send + Sync {
     async fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError>;
 }
 
+/// Set partial values for an asynchronous store.
+///
+/// # Errors
+/// Returns a [`StorageError`] if an underlying store operation fails.
+///
+/// # Panics
+/// Panics if a key ends beyond `usize::MAX`.
+pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTraits>(
+    store: &T,
+    key_start_values: &[StoreKeyStartValue<'_>],
+) -> Result<(), StorageError> {
+    // Group by key
+    let group_by_key = key_start_values
+        .iter()
+        .group_by(|key_start_value| &key_start_value.key)
+        .into_iter()
+        .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
+        .collect::<Vec<_>>();
+
+    // Read keys
+    let mut futures = group_by_key
+        .into_iter()
+        .map(|(key, group)| async move {
+            // TODO: Lock
+
+            // Read the store key
+            let mut bytes = store.get(&key.clone()).await?.unwrap_or_else(Vec::default);
+
+            // Expand the store key if needed
+            let end_max =
+                usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
+            if bytes.len() < end_max {
+                bytes.resize_with(end_max, Default::default);
+            }
+
+            // Update the store key
+            for key_start_value in group {
+                let start: usize = key_start_value.start.try_into().unwrap();
+                let end: usize = key_start_value.end().try_into().unwrap();
+                bytes[start..end].copy_from_slice(key_start_value.value);
+            }
+
+            // Write the store key
+            store.set(&key, &bytes).await
+        })
+        .collect::<FuturesUnordered<_>>();
+    while let Some(item) = futures.next().await {
+        item?;
+    }
+
+    Ok(())
+}
+
 /// Async writable storage traits.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
-pub trait AsyncWritableStorageTraits: Send + Sync + AsyncReadableStorageTraits {
+pub trait AsyncWritableStorageTraits: Send + Sync {
     /// Store bytes at a [`StoreKey`].
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] on failure to store.
     async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError>;
 
     /// Store bytes according to a list of [`StoreKeyStartValue`].
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] on failure to store.
     async fn set_partial_values(
         &self,
         key_start_values: &[StoreKeyStartValue],
-    ) -> Result<(), StorageError> {
-        // Group by key
-        let group_by_key = key_start_values
-            .iter()
-            .group_by(|key_start_value| &key_start_value.key)
-            .into_iter()
-            .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
-            .collect::<Vec<_>>();
-
-        // Read keys
-        let mut futures = group_by_key
-            .into_iter()
-            .map(|(key, group)| async move {
-                let mut bytes = self.get(&key.clone()).await?.unwrap_or_else(Vec::default);
-                let end_max =
-                    usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap())
-                        .unwrap();
-
-                // Expand the store key if needed
-                if bytes.len() < end_max {
-                    bytes.resize_with(end_max, Default::default);
-                }
-
-                // Update the store key
-                for key_start_value in group {
-                    let start: usize = key_start_value.start.try_into().unwrap();
-                    let end: usize = key_start_value.end().try_into().unwrap();
-                    bytes[start..end].copy_from_slice(key_start_value.value);
-                }
-
-                // Write the store key
-                self.set(&key, &bytes).await
-            })
-            .collect::<FuturesUnordered<_>>();
-        while let Some(item) = futures.next().await {
-            item?;
-        }
-
-        Ok(())
-    }
+    ) -> Result<(), StorageError>;
 
     /// Erase a [`StoreKey`].
     ///
     /// Returns true if the key exists and was erased, or false if the key does not exist.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError>;
 
@@ -232,7 +243,6 @@ pub trait AsyncWritableStorageTraits: Send + Sync + AsyncReadableStorageTraits {
     /// Returns true if all keys existed and were erased, or false if any key does not exist.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     async fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
         let futures_erase = keys.iter().map(|key| self.erase(key));
@@ -251,6 +261,13 @@ pub trait AsyncWritableStorageTraits: Send + Sync + AsyncReadableStorageTraits {
     /// # Errors
     /// Returns a [`StorageError`] is the prefix is not in the store, or the erase otherwise fails.
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError>;
+}
+
+/// A supertrait of [`AsyncReadableStorageTraits`] and [`AsyncWritableStorageTraits`].
+#[cfg_attr(feature = "async", async_trait::async_trait)]
+pub trait AsyncReadableWritableStorageTraits:
+    AsyncReadableStorageTraits + AsyncWritableStorageTraits
+{
 }
 
 /// A supertrait of [`AsyncReadableStorageTraits`] and [`AsyncListableStorageTraits`].

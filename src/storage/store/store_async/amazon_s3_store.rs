@@ -1,6 +1,6 @@
 //! Amazon S3 stores.
 
-use crate::{object_store_impl, storage::StorageError};
+use crate::object_store_impl;
 
 /// An Amazon S3 store.
 #[derive(Debug)]

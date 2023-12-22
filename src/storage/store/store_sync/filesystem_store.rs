@@ -6,9 +6,10 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
-        ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StoreKeyError,
-        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        StorePrefixes, WritableStorageTraits,
+        store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
+        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyError, StoreKeyRange,
+        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
+        WritableStorageTraits,
     },
 };
 
@@ -280,16 +281,7 @@ impl WritableStorageTraits for FilesystemStore {
             return Err(StorageError::ReadOnly);
         }
 
-        for key_start_value in key_start_values {
-            Self::set_impl(
-                self,
-                &key_start_value.key,
-                key_start_value.value,
-                Some(key_start_value.start),
-                false,
-            )?;
-        }
-        Ok(())
+        store_set_partial_values(self, key_start_values)
     }
 
     fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
@@ -323,6 +315,8 @@ impl WritableStorageTraits for FilesystemStore {
         }
     }
 }
+
+impl ReadableWritableStorageTraits for FilesystemStore {}
 
 impl ListableStorageTraits for FilesystemStore {
     fn list(&self) -> Result<StoreKeys, StorageError> {

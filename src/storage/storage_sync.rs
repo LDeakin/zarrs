@@ -152,8 +152,54 @@ pub trait ListableStorageTraits: Send + Sync {
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError>;
 }
 
+/// Set partial values for a store.
+///
+/// # Errors
+/// Returns a [`StorageError`] if an underlying store operation fails.
+///
+/// # Panics
+/// Panics if a key ends beyond `usize::MAX`.
+pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
+    store: &T,
+    key_start_values: &[StoreKeyStartValue],
+) -> Result<(), StorageError> {
+    // Group by key
+    let group_by_key = key_start_values
+        .iter()
+        .group_by(|key_start_value| &key_start_value.key)
+        .into_iter()
+        .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
+        .collect::<Vec<_>>();
+
+    // Group by store key
+    group_by_key.into_iter().try_for_each(|(key, group)| {
+        // TODO: Lock
+
+        // Read the store key
+        let mut bytes = store.get(&key)?.unwrap_or_default();
+
+        // Expand the store key if needed
+        let end_max =
+            usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
+        if bytes.len() < end_max {
+            bytes.resize_with(end_max, Default::default);
+        }
+
+        // Update the store key
+        for key_start_value in group {
+            let start: usize = key_start_value.start.try_into().unwrap();
+            let end: usize = key_start_value.end().try_into().unwrap();
+            bytes[start..end].copy_from_slice(key_start_value.value);
+        }
+
+        // Write the store key
+        store.set(&key, &bytes)
+    })?;
+    Ok(())
+}
+
 /// Writable storage traits.
-pub trait WritableStorageTraits: Send + Sync + ReadableStorageTraits {
+pub trait WritableStorageTraits: Send + Sync {
     /// Store bytes at a [`StoreKey`].
     ///
     /// # Errors
@@ -169,30 +215,7 @@ pub trait WritableStorageTraits: Send + Sync + ReadableStorageTraits {
     fn set_partial_values(
         &self,
         key_start_values: &[StoreKeyStartValue],
-    ) -> Result<(), StorageError> {
-        // Group by store key
-        for (key, group) in &key_start_values
-            .iter()
-            .group_by(|key_start_value| &key_start_value.key)
-        {
-            // Read the store key
-            let mut bytes = self.get(key)?.unwrap_or_default();
-
-            // Update the store key
-            for key_start_value in group {
-                let start: usize = key_start_value.start.try_into().unwrap();
-                let end: usize = key_start_value.end().try_into().unwrap();
-                if bytes.len() < end {
-                    bytes.resize(end, 0);
-                }
-                bytes[start..end].copy_from_slice(key_start_value.value);
-            }
-
-            // Write the store key
-            self.set(key, &bytes)?;
-        }
-        Ok(())
-    }
+    ) -> Result<(), StorageError>;
 
     /// Erase a [`StoreKey`].
     ///
@@ -229,8 +252,6 @@ pub trait WritableStorageTraits: Send + Sync + ReadableStorageTraits {
 
 /// A supertrait of [`ReadableStorageTraits`] and [`WritableStorageTraits`].
 pub trait ReadableWritableStorageTraits: ReadableStorageTraits + WritableStorageTraits {}
-
-impl<T> ReadableWritableStorageTraits for T where T: ReadableStorageTraits + WritableStorageTraits {}
 
 /// A supertrait of [`ReadableStorageTraits`] and [`ListableStorageTraits`].
 pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorageTraits {}

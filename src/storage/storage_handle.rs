@@ -1,12 +1,15 @@
 use crate::{array::MaybeBytes, byte_range::ByteRange};
 
 use super::{
-    ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StorePrefix,
-    WritableStorageTraits,
+    ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
+    StoreKey, StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
-use super::{AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits};
+use super::{
+    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
+    AsyncWritableStorageTraits,
+};
 
 /// A storage handle.
 ///
@@ -105,6 +108,11 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     }
 }
 
+impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
+    for StorageHandle<'_, TStorage>
+{
+}
+
 #[cfg(feature = "async")]
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
@@ -193,4 +201,11 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     async fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<bool, super::StorageError> {
         self.0.erase_prefix(prefix).await
     }
+}
+
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
+impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
+    for StorageHandle<'_, TStorage>
+{
 }

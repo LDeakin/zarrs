@@ -1,6 +1,6 @@
 //! Google Cloud stores.
 
-use crate::{object_store_impl, storage::StorageError};
+use crate::object_store_impl;
 
 /// A Google Cloud Storage store.
 #[derive(Debug)]

@@ -5,16 +5,17 @@ use crate::{
     metadata::Metadata,
     storage::{
         ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
+        ReadableStorageTraits, ReadableWritableStorage, ReadableWritableStorageTraits,
+        StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+        StorePrefix, WritableStorage, WritableStorageTraits,
     },
 };
 
 #[cfg(feature = "async")]
 use crate::storage::{
     AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
-    AsyncReadableStorage, AsyncReadableStorageTraits, AsyncWritableStorage,
-    AsyncWritableStorageTraits,
+    AsyncReadableStorage, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
+    AsyncWritableStorage, AsyncWritableStorageTraits,
 };
 
 use std::sync::{
@@ -87,6 +88,13 @@ impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
         &'a self,
         storage: WritableStorage<'a>,
     ) -> WritableStorage<'a> {
+        self.create_transformer(storage)
+    }
+
+    fn create_readable_writable_transformer<'a>(
+        &'a self,
+        storage: ReadableWritableStorage<'a>,
+    ) -> ReadableWritableStorage<'a> {
         self.create_transformer(storage)
     }
 
@@ -268,6 +276,11 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     }
 }
 
+impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
+    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+{
+}
+
 #[cfg(feature = "async")]
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
@@ -396,4 +409,11 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         self.storage.erase_prefix(prefix).await
     }
+}
+
+#[cfg(feature = "async")]
+#[cfg_attr(feature = "async", async_trait::async_trait)]
+impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
+    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+{
 }

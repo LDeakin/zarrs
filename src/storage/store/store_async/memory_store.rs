@@ -1,6 +1,6 @@
 //! An in-memory store.
 
-use crate::{object_store_impl, storage::StorageError};
+use crate::object_store_impl;
 
 /// An in-memory store.
 #[derive(Debug)]

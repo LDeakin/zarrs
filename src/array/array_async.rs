@@ -7,8 +7,8 @@ use crate::{
     array_subset::ArraySubset,
     node::NodePath,
     storage::{
-        data_key, meta_key, AsyncReadableStorageTraits, AsyncWritableStorageTraits, StorageError,
-        StorageHandle,
+        data_key, meta_key, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
+        AsyncWritableStorageTraits, StorageError, StorageHandle,
     },
 };
 
@@ -886,7 +886,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     }
 }
 
-impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
     #[allow(clippy::too_many_lines)]
     async fn _async_store_array_subset(
         &self,

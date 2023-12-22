@@ -17,7 +17,10 @@ use crate::{
     plugin::{Plugin, PluginCreateError},
 };
 
-use super::{ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage};
+use super::{
+    ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableStorage,
+    WritableStorage,
+};
 
 #[cfg(feature = "async")]
 use super::{
@@ -65,6 +68,12 @@ pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
         &'a self,
         storage: WritableStorage<'a>,
     ) -> WritableStorage<'a>;
+
+    /// Create a readable and writable transformer.
+    fn create_readable_writable_transformer<'a>(
+        &'a self,
+        storage: ReadableWritableStorage<'a>,
+    ) -> ReadableWritableStorage<'a>;
 
     /// Create a listable transformer.
     fn create_listable_transformer<'a>(

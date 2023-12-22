@@ -1,6 +1,6 @@
 //! Azure blob storage stores.
 
-use crate::{object_store_impl, storage::StorageError};
+use crate::object_store_impl;
 
 /// A Microsoft Azure store.
 #[derive(Debug)]

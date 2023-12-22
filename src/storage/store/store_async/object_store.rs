@@ -6,7 +6,8 @@ use crate::{
     byte_range::ByteRange,
     storage::{
         AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
-        StorageError, StoreKey, StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+        StorePrefix,
     },
 };
 
@@ -116,6 +117,14 @@ impl<T: ObjectStore> AsyncWritableStorageTraits for T {
         Ok(())
     }
 
+    async fn set_partial_values(
+        &self,
+        _key_start_values: &[StoreKeyStartValue],
+    ) -> Result<(), StorageError> {
+        // This is implemented in the parent
+        unreachable!()
+    }
+
     async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
         Ok(handle_result(ObjectStore::delete(self, &key_to_path(key)).await)?.is_some())
     }
@@ -196,23 +205,23 @@ impl<T: ObjectStore> AsyncListableStorageTraits for T {
 /// Implement the storage traits for an object store
 #[macro_export]
 macro_rules! object_store_impl {
-    ($store:ty, $var:ident) => {
+    ($store:ty, $object_store:ident) => {
         #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl $crate::storage::AsyncReadableStorageTraits for $store {
             async fn get(
                 &self,
                 key: &$crate::storage::StoreKey,
-            ) -> Result<$crate::array::MaybeBytes, StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::get(&self.$var, key).await
+            ) -> Result<$crate::array::MaybeBytes, $crate::storage::StorageError> {
+                $crate::storage::AsyncReadableStorageTraits::get(&self.$object_store, key).await
             }
 
             async fn get_partial_values_key(
                 &self,
                 key: &$crate::storage::StoreKey,
                 byte_ranges: &[$crate::storage::ByteRange],
-            ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+            ) -> Result<Option<Vec<Vec<u8>>>, $crate::storage::StorageError> {
                 $crate::storage::AsyncReadableStorageTraits::get_partial_values_key(
-                    &self.$var,
+                    &self.$object_store,
                     key,
                     byte_ranges,
                 )
@@ -222,7 +231,7 @@ macro_rules! object_store_impl {
             async fn get_partial_values(
                 &self,
                 key_ranges: &[$crate::storage::StoreKeyRange],
-            ) -> Result<Vec<$crate::array::MaybeBytes>, StorageError> {
+            ) -> Result<Vec<$crate::array::MaybeBytes>, $crate::storage::StorageError> {
                 $crate::storage::AsyncReadableStorageTraits::get_partial_values(
                     &self.object_store,
                     key_ranges,
@@ -233,19 +242,24 @@ macro_rules! object_store_impl {
             async fn size_prefix(
                 &self,
                 prefix: &$crate::storage::StorePrefix,
-            ) -> Result<u64, StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::size_prefix(&self.$var, prefix).await
+            ) -> Result<u64, $crate::storage::StorageError> {
+                $crate::storage::AsyncReadableStorageTraits::size_prefix(
+                    &self.$object_store,
+                    prefix,
+                )
+                .await
             }
 
             async fn size_key(
                 &self,
                 key: &$crate::storage::StoreKey,
-            ) -> Result<Option<u64>, StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::size_key(&self.$var, key).await
+            ) -> Result<Option<u64>, $crate::storage::StorageError> {
+                $crate::storage::AsyncReadableStorageTraits::size_key(&self.$object_store, key)
+                    .await
             }
 
-            async fn size(&self) -> Result<u64, StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::size(&self.$var).await
+            async fn size(&self) -> Result<u64, $crate::storage::StorageError> {
+                $crate::storage::AsyncReadableStorageTraits::size(&self.$object_store).await
             }
         }
 
@@ -255,51 +269,65 @@ macro_rules! object_store_impl {
                 &self,
                 key: &$crate::storage::StoreKey,
                 value: &[u8],
-            ) -> Result<(), StorageError> {
-                $crate::storage::AsyncWritableStorageTraits::set(&self.$var, key, value).await
+            ) -> Result<(), $crate::storage::StorageError> {
+                $crate::storage::AsyncWritableStorageTraits::set(&self.$object_store, key, value)
+                    .await
             }
 
             async fn set_partial_values(
                 &self,
                 key_start_values: &[$crate::storage::StoreKeyStartValue],
-            ) -> Result<(), StorageError> {
-                $crate::storage::AsyncWritableStorageTraits::set_partial_values(
-                    &self.$var,
-                    key_start_values,
-                )
-                .await
+            ) -> Result<(), $crate::storage::StorageError> {
+                $crate::storage::async_store_set_partial_values(self, key_start_values).await
             }
 
-            async fn erase(&self, key: &$crate::storage::StoreKey) -> Result<bool, StorageError> {
-                $crate::storage::AsyncWritableStorageTraits::erase(&self.$var, key).await
+            async fn erase(
+                &self,
+                key: &$crate::storage::StoreKey,
+            ) -> Result<bool, $crate::storage::StorageError> {
+                $crate::storage::AsyncWritableStorageTraits::erase(&self.$object_store, key).await
             }
 
             async fn erase_prefix(
                 &self,
                 prefix: &$crate::storage::StorePrefix,
-            ) -> Result<bool, StorageError> {
-                $crate::storage::AsyncWritableStorageTraits::erase_prefix(&self.$var, prefix).await
+            ) -> Result<bool, $crate::storage::StorageError> {
+                $crate::storage::AsyncWritableStorageTraits::erase_prefix(
+                    &self.$object_store,
+                    prefix,
+                )
+                .await
             }
         }
 
         #[cfg_attr(feature = "async", async_trait::async_trait)]
+        impl $crate::storage::AsyncReadableWritableStorageTraits for $store {}
+
+        #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl $crate::storage::AsyncListableStorageTraits for $store {
-            async fn list(&self) -> Result<$crate::storage::StoreKeys, StorageError> {
-                $crate::storage::AsyncListableStorageTraits::list(&self.$var).await
+            async fn list(
+                &self,
+            ) -> Result<$crate::storage::StoreKeys, $crate::storage::StorageError> {
+                $crate::storage::AsyncListableStorageTraits::list(&self.$object_store).await
             }
 
             async fn list_prefix(
                 &self,
                 prefix: &$crate::storage::StorePrefix,
-            ) -> Result<$crate::storage::StoreKeys, StorageError> {
-                $crate::storage::AsyncListableStorageTraits::list_prefix(&self.$var, prefix).await
+            ) -> Result<$crate::storage::StoreKeys, $crate::storage::StorageError> {
+                $crate::storage::AsyncListableStorageTraits::list_prefix(
+                    &self.$object_store,
+                    prefix,
+                )
+                .await
             }
 
             async fn list_dir(
                 &self,
                 prefix: &$crate::storage::StorePrefix,
-            ) -> Result<$crate::storage::StoreKeysPrefixes, StorageError> {
-                $crate::storage::AsyncListableStorageTraits::list_dir(&self.$var, prefix).await
+            ) -> Result<$crate::storage::StoreKeysPrefixes, $crate::storage::StorageError> {
+                $crate::storage::AsyncListableStorageTraits::list_dir(&self.$object_store, prefix)
+                    .await
             }
         }
     };

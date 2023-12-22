@@ -41,15 +41,16 @@ pub use self::storage_async::{
     async_create_array, async_create_group, async_discover_children, async_discover_nodes,
     async_erase_chunk, async_erase_node, async_get_child_nodes, async_node_exists,
     async_node_exists_listable, async_retrieve_chunk, async_retrieve_partial_values,
-    async_store_chunk, AsyncListableStorageTraits, AsyncReadableListableStorageTraits,
-    AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    async_store_chunk, async_store_set_partial_values, AsyncListableStorageTraits,
+    AsyncReadableListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits,
 };
 
 pub use self::storage_sync::{
     create_array, create_group, discover_children, discover_nodes, erase_chunk, erase_node,
     get_child_nodes, node_exists, node_exists_listable, retrieve_chunk, retrieve_partial_values,
-    store_chunk, ListableStorageTraits, ReadableListableStorageTraits, ReadableStorageTraits,
-    WritableStorageTraits,
+    store_chunk, store_set_partial_values, ListableStorageTraits, ReadableListableStorageTraits,
+    ReadableStorageTraits, ReadableWritableStorageTraits, WritableStorageTraits,
 };
 pub use self::storage_transformer::StorageTransformerChain;
 
@@ -62,6 +63,9 @@ pub type ReadableStorage<'a> = Arc<dyn ReadableStorageTraits + 'a>;
 
 /// [`Arc`] wrapped writable storage.
 pub type WritableStorage<'a> = Arc<dyn WritableStorageTraits + 'a>;
+
+/// [`Arc`] wrapped readable and writable storage.
+pub type ReadableWritableStorage<'a> = Arc<dyn ReadableWritableStorageTraits + 'a>;
 
 /// [`Arc`] wrapped listable storage.
 pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
@@ -277,7 +281,8 @@ mod tests {
             // storage_transformer_usage_log.clone(),
             storage_transformer_performance_metrics.clone(),
         ]);
-        let transformer = storage_transformer_chain.create_writable_transformer(store.clone());
+        let transformer =
+            storage_transformer_chain.create_readable_writable_transformer(store.clone());
         let transformer_listable = storage_transformer_chain.create_listable_transformer(store);
 
         (0..10).into_par_iter().for_each(|_| {

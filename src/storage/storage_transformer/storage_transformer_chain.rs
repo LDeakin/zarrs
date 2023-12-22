@@ -5,7 +5,10 @@ use derive_more::From;
 use crate::{
     metadata::Metadata,
     plugin::PluginCreateError,
-    storage::{ListableStorage, ReadableListableStorage, ReadableStorage, WritableStorage},
+    storage::{
+        ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableStorage,
+        WritableStorage,
+    },
 };
 
 #[cfg(feature = "async")]
@@ -73,6 +76,17 @@ impl StorageTransformerChain {
         storage
     }
 
+    /// Create a readable and writable storage transformer.
+    pub fn create_readable_writable_transformer<'a>(
+        &'a self,
+        mut storage: ReadableWritableStorage<'a>,
+    ) -> ReadableWritableStorage<'a> {
+        for transformer in &self.0 {
+            storage = transformer.create_readable_writable_transformer(storage);
+        }
+        storage
+    }
+
     /// Create a listable storage transformer.
     pub fn create_listable_transformer<'a>(
         &'a self,
@@ -84,7 +98,7 @@ impl StorageTransformerChain {
         storage
     }
 
-    /// Create a listable storage transformer.
+    /// Create a readable and listable storage transformer.
     pub fn create_readable_listable_transformer<'a>(
         &'a self,
         mut storage: ReadableListableStorage<'a>,
