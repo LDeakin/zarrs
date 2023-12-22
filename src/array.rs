@@ -386,11 +386,13 @@ impl<TStorage: ?Sized> Array<TStorage> {
     }
 
     /// Create an array builder matching the parameters of this array
+    #[must_use]
     pub fn builder(&self) -> ArrayBuilder {
         ArrayBuilder::from_array(self)
     }
 
     /// Return the shape of the chunk grid (i.e., the number of chunks).
+    #[must_use]
     pub fn chunk_grid_shape(&self) -> Option<Vec<u64>> {
         unsafe { self.chunk_grid().grid_shape_unchecked(self.shape()) }
     }

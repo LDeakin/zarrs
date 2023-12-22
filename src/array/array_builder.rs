@@ -112,6 +112,7 @@ impl ArrayBuilder {
     }
 
     /// Create a new builder copying the configuration of an existing array.
+    #[must_use]
     pub fn from_array<T: ?Sized>(array: &Array<T>) -> Self {
         let mut builder = Self::new(
             array.shape().to_vec(),
@@ -307,9 +308,6 @@ impl ArrayBuilder {
             dimension_names: self.dimension_names.clone(),
             additional_fields: self.additional_fields.clone(),
             parallel_codecs: self.parallel_codecs,
-            chunk_locks: parking_lot::Mutex::default(),
-            #[cfg(feature = "async")]
-            async_chunk_locks: async_lock::Mutex::default(),
             include_zarrs_metadata: true,
         })
     }
