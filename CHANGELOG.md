@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Added `ReadableWritableStorage` 
+ - Added `ReadableWritableStorage` and `ReadableWritableStore` and async variants
  - Added `{async_}store_set_partial_values`
  - **Breaking** Added `create_readable_writable_transformer` to `StorageTransformerExtension` trait
 

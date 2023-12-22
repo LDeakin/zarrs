@@ -42,6 +42,9 @@ pub type ReadableStore = Arc<dyn super::ReadableStorageTraits>;
 /// An [`Arc`] wrapped writable store.
 pub type WritableStore = Arc<dyn super::WritableStorageTraits>;
 
+/// An [`Arc`] wrapped readable and writable store.
+pub type ReadableWritableStore = Arc<dyn super::ReadableWritableStorageTraits>;
+
 /// An [`Arc`] wrapped listable store.
 pub type ListableStore = Arc<dyn super::ListableStorageTraits>;
 
