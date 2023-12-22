@@ -4,18 +4,18 @@ use crate::{
     array::MaybeBytes,
     metadata::Metadata,
     storage::{
-        ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, ReadableWritableStorage, ReadableWritableStorageTraits,
-        StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-        StorePrefix, WritableStorage, WritableStorageTraits,
+        store_lock::StoreKeyMutex, ListableStorage, ListableStorageTraits, ReadableListableStorage,
+        ReadableStorage, ReadableStorageTraits, ReadableWritableStorage,
+        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
+        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
     },
 };
 
 #[cfg(feature = "async")]
 use crate::storage::{
-    AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
-    AsyncReadableStorage, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
-    AsyncWritableStorage, AsyncWritableStorageTraits,
+    store_lock::AsyncStoreKeyMutex, AsyncListableStorage, AsyncListableStorageTraits,
+    AsyncReadableListableStorage, AsyncReadableStorage, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorage, AsyncWritableStorageTraits,
 };
 
 use std::sync::{
@@ -32,6 +32,7 @@ pub struct PerformanceMetricsStorageTransformer {
     bytes_written: AtomicUsize,
     reads: AtomicUsize,
     writes: AtomicUsize,
+    locks: AtomicUsize,
 }
 
 impl PerformanceMetricsStorageTransformer {
@@ -59,6 +60,11 @@ impl PerformanceMetricsStorageTransformer {
     /// Returns the number of write requests.
     pub fn writes(&self) -> usize {
         self.writes.load(Ordering::Relaxed)
+    }
+
+    /// Returns the number of lock requests.
+    pub fn locks(&self) -> usize {
+        self.locks.load(Ordering::Relaxed)
     }
 
     fn create_transformer<TStorage: ?Sized>(
@@ -279,6 +285,10 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
+    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
+        self.transformer.locks.fetch_add(1, Ordering::Relaxed);
+        self.storage.mutex(key)
+    }
 }
 
 #[cfg(feature = "async")]
@@ -416,4 +426,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
+    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
+        self.transformer.locks.fetch_add(1, Ordering::Relaxed);
+        self.storage.mutex(key).await
+    }
 }

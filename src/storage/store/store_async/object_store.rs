@@ -205,7 +205,7 @@ impl<T: ObjectStore> AsyncListableStorageTraits for T {
 /// Implement the storage traits for an object store
 #[macro_export]
 macro_rules! object_store_impl {
-    ($store:ty, $object_store:ident) => {
+    ($store:ty, $object_store:ident, $locks:ident) => {
         #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl $crate::storage::AsyncReadableStorageTraits for $store {
             async fn get(
@@ -301,7 +301,18 @@ macro_rules! object_store_impl {
         }
 
         #[cfg_attr(feature = "async", async_trait::async_trait)]
-        impl $crate::storage::AsyncReadableWritableStorageTraits for $store {}
+        impl $crate::storage::AsyncReadableWritableStorageTraits for $store {
+            async fn mutex(
+                &self,
+                key: &$crate::storage::StoreKey,
+            ) -> Result<
+                $crate::storage::store_lock::AsyncStoreKeyMutex,
+                $crate::storage::StorageError,
+            > {
+                let mutex = self.$locks.mutex(key).await;
+                Ok(mutex)
+            }
+        }
 
         #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl $crate::storage::AsyncListableStorageTraits for $store {

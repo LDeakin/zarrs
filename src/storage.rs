@@ -18,6 +18,7 @@ pub mod storage_transformer;
 mod storage_value_io;
 pub mod store;
 mod store_key;
+pub mod store_lock;
 mod store_prefix;
 
 #[cfg(feature = "async")]

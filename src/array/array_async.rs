@@ -1216,8 +1216,9 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
                     .await
             } else {
                 // Lock the chunk
-                let chunk_mutex = self.async_chunk_mutex(chunk_indices).await;
-                let _lock = chunk_mutex.lock();
+                let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
+                let mutex = self.storage.mutex(&key).await?;
+                let _lock = mutex.lock();
 
                 // Decode the entire chunk
                 let mut chunk_bytes = self.async_retrieve_chunk(chunk_indices).await?;

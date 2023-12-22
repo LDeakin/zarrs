@@ -47,7 +47,7 @@ mod fill_value_metadata;
 mod nan_representations;
 mod unsafe_cell_slice;
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 pub use self::{
     array_builder::ArrayBuilder,
@@ -164,11 +164,6 @@ pub struct Array<TStorage: ?Sized> {
     additional_fields: AdditionalFields,
     /// If true, codecs run with multithreading (where supported)
     parallel_codecs: bool,
-    /// Chunk locks.
-    chunk_locks: parking_lot::Mutex<HashMap<Vec<u64>, Arc<parking_lot::Mutex<()>>>>,
-    #[cfg(feature = "async")]
-    /// Asynchronous chunk locks.
-    async_chunk_locks: async_lock::Mutex<HashMap<Vec<u64>, Arc<async_lock::Mutex<()>>>>,
     /// Zarrs metadata.
     include_zarrs_metadata: bool,
 }
@@ -242,9 +237,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
             storage_transformers,
             dimension_names: metadata.dimension_names,
             parallel_codecs: true,
-            chunk_locks: parking_lot::Mutex::default(),
-            #[cfg(feature = "async")]
-            async_chunk_locks: async_lock::Mutex::default(),
             include_zarrs_metadata: true,
         })
     }
@@ -483,31 +475,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
             },
         )
     }
-
-    #[must_use]
-    fn chunk_mutex(&self, chunk_indices: &[u64]) -> Arc<parking_lot::Mutex<()>> {
-        let mut chunk_locks = self.chunk_locks.lock();
-        // TODO: Cleanup old locks
-        let chunk_mutex = chunk_locks
-            .entry(chunk_indices.to_vec())
-            .or_insert_with(|| Arc::new(parking_lot::Mutex::new(())))
-            .clone();
-        drop(chunk_locks);
-        chunk_mutex
-    }
-
-    #[cfg(feature = "async")]
-    #[must_use]
-    async fn async_chunk_mutex(&self, chunk_indices: &[u64]) -> Arc<async_lock::Mutex<()>> {
-        let mut chunk_locks = self.async_chunk_locks.lock().await;
-        // TODO: Cleanup old locks
-        let chunk_mutex = chunk_locks
-            .entry(chunk_indices.to_vec())
-            .or_insert_with(|| Arc::new(async_lock::Mutex::new(())))
-            .clone();
-        drop(chunk_locks);
-        chunk_mutex
-    }
 }
 
 // Safe transmute, avoiding an allocation where possible
@@ -617,7 +584,10 @@ mod tests {
     use itertools::Itertools;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-    use crate::storage::store::MemoryStore;
+    use crate::storage::{
+        store::MemoryStore,
+        store_lock::{DefaultStoreLocks, StoreLocks},
+    };
 
     use super::*;
 
@@ -724,9 +694,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn array_subset_locking() {
-        let store = Arc::new(MemoryStore::new());
+    fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {
+        let store = Arc::new(MemoryStore::new_with_locks(locks));
 
         let array_path = "/array";
         let array = ArrayBuilder::new(
@@ -738,6 +707,7 @@ mod tests {
         .build(store, array_path)
         .unwrap();
 
+        let mut any_not_equal = false;
         for j in 1..10 {
             (0..100).into_par_iter().for_each(|i| {
                 let subset = ArraySubset::new_with_start_shape(vec![i, 0], vec![1, 4]).unwrap();
@@ -746,7 +716,29 @@ mod tests {
             let subset_all =
                 ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec()).unwrap();
             let data_all = array.retrieve_array_subset(&subset_all).unwrap();
-            assert_eq!(data_all.iter().all_equal_value(), Ok(&j));
+            let all_equal = data_all.iter().all_equal_value() == Ok(&j);
+            if expect_equal {
+                assert!(all_equal);
+            } else {
+                any_not_equal |= !all_equal;
+            }
+        }
+        if !expect_equal {
+            assert!(any_not_equal);
         }
     }
+
+    #[test]
+    fn array_subset_locking_default() {
+        array_subset_locking(Arc::new(DefaultStoreLocks::default()), true);
+    }
+
+    // // Due to the nature of this test, it can fail sometimes. It was used for development but is now disabled.
+    // #[test]
+    // fn array_subset_locking_disabled() {
+    //     array_subset_locking(
+    //         Arc::new(crate::storage::store_lock::DisabledStoreLocks::default()),
+    //         false,
+    //     );
+    // }
 }

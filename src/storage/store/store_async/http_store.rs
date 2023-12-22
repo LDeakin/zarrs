@@ -1,6 +1,14 @@
 //! A HTTP store.
 
-use crate::{object_store_impl, storage::StorageError};
+use std::sync::Arc;
+
+use crate::{
+    object_store_impl,
+    storage::{
+        store_lock::{AsyncDefaultStoreLocks, AsyncStoreLocks},
+        StorageError,
+    },
+};
 
 use object_store::http::{HttpBuilder, HttpStore};
 
@@ -8,6 +16,7 @@ use object_store::http::{HttpBuilder, HttpStore};
 #[derive(Debug)]
 pub struct AsyncHTTPStore {
     object_store: HttpStore,
+    locks: AsyncStoreLocks,
 }
 
 impl AsyncHTTPStore {
@@ -17,12 +26,27 @@ impl AsyncHTTPStore {
     ///
     /// Returns a [`StorageError`] if `base_url` is not valid.
     pub fn new(base_url: &str) -> Result<Self, StorageError> {
+        Self::new_with_locks(base_url, Arc::new(AsyncDefaultStoreLocks::default()))
+    }
+
+    /// Create a new HTTP store at a given `base_url` with non-default store locks.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`StorageError`] if `base_url` is not valid.
+    pub fn new_with_locks(
+        base_url: &str,
+        store_locks: AsyncStoreLocks,
+    ) -> Result<Self, StorageError> {
         let object_store = HttpBuilder::new().with_url(base_url).build()?;
-        Ok(Self { object_store })
+        Ok(Self {
+            object_store,
+            locks: store_locks,
+        })
     }
 }
 
-object_store_impl!(AsyncHTTPStore, object_store);
+object_store_impl!(AsyncHTTPStore, object_store, locks);
 
 #[cfg(test)]
 mod tests {

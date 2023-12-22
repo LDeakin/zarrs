@@ -8,8 +8,8 @@ use crate::{
 };
 
 use super::{
-    data_key, meta_key, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
-    StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    data_key, meta_key, store_lock::StoreKeyMutex, StorageError, StoreKey, StoreKeyRange,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -173,7 +173,9 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
 
     // Group by store key
     group_by_key.into_iter().try_for_each(|(key, group)| {
-        // TODO: Lock
+        // Lock the store key
+        let mutex = store.mutex(&key)?;
+        let _lock = mutex.lock();
 
         // Read the store key
         let mut bytes = store.get(&key)?.unwrap_or_default();
@@ -251,7 +253,13 @@ pub trait WritableStorageTraits: Send + Sync {
 }
 
 /// A supertrait of [`ReadableStorageTraits`] and [`WritableStorageTraits`].
-pub trait ReadableWritableStorageTraits: ReadableStorageTraits + WritableStorageTraits {}
+pub trait ReadableWritableStorageTraits: ReadableStorageTraits + WritableStorageTraits {
+    /// Returns the mutex for the store value at `key`.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if the mutex cannot be retrieved.
+    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError>;
+}
 
 /// A supertrait of [`ReadableStorageTraits`] and [`ListableStorageTraits`].
 pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorageTraits {}

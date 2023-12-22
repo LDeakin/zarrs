@@ -1,14 +1,14 @@
 use crate::{array::MaybeBytes, byte_range::ByteRange};
 
 use super::{
-    ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
-    StoreKey, StorePrefix, WritableStorageTraits,
+    store_lock::StoreKeyMutex, ListableStorageTraits, ReadableStorageTraits,
+    ReadableWritableStorageTraits, StorageError, StoreKey, StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
 use super::{
-    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
-    AsyncWritableStorageTraits,
+    store_lock::AsyncStoreKeyMutex, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits,
 };
 
 /// A storage handle.
@@ -111,6 +111,9 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
     for StorageHandle<'_, TStorage>
 {
+    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
+        self.0.mutex(key)
+    }
 }
 
 #[cfg(feature = "async")]
@@ -208,4 +211,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
     for StorageHandle<'_, TStorage>
 {
+    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
+        self.0.mutex(key).await
+    }
 }

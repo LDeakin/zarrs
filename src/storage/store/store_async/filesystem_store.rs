@@ -2,9 +2,15 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
 
-use crate::{object_store_impl, storage::StorageError};
+use crate::{
+    object_store_impl,
+    storage::{
+        store_lock::{AsyncDefaultStoreLocks, AsyncStoreLocks},
+        StorageError,
+    },
+};
 
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 // // Register the store.
 // inventory::submit! {
@@ -33,6 +39,7 @@ use std::path::Path;
 #[derive(Debug)]
 pub struct AsyncFilesystemStore {
     object_store: object_store::local::LocalFileSystem,
+    locks: AsyncStoreLocks,
     // sort: bool,
 }
 
@@ -44,6 +51,19 @@ impl AsyncFilesystemStore {
     ///   - is not valid, or
     ///   - it points to an existing file rather than a directory.
     pub fn new<P: AsRef<Path>>(base_path: P) -> Result<Self, StorageError> {
+        Self::new_with_locks(base_path, Arc::new(AsyncDefaultStoreLocks::default()))
+    }
+
+    /// Create a new file system store at a given `base_path` with non-default store locks.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if `base_directory`:
+    ///   - is not valid, or
+    ///   - it points to an existing file rather than a directory.
+    pub fn new_with_locks<P: AsRef<Path>>(
+        base_path: P,
+        store_locks: AsyncStoreLocks,
+    ) -> Result<Self, StorageError> {
         let base_path = base_path.as_ref().to_path_buf();
         if base_path.to_str().is_none() {
             return Err(StorageError::from(format!(
@@ -57,11 +77,14 @@ impl AsyncFilesystemStore {
         };
 
         let object_store = object_store::local::LocalFileSystem::new_with_prefix(base_path)?;
-        Ok(Self { object_store })
+        Ok(Self {
+            object_store,
+            locks: store_locks,
+        })
     }
 }
 
-object_store_impl!(AsyncFilesystemStore, object_store);
+object_store_impl!(AsyncFilesystemStore, object_store, locks);
 
 #[cfg(test)]
 mod tests {

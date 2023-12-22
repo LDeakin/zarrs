@@ -10,18 +10,18 @@ use crate::{
     byte_range::ByteRange,
     metadata::Metadata,
     storage::{
-        ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, ReadableWritableStorage, ReadableWritableStorageTraits,
-        StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-        StorePrefix, WritableStorage, WritableStorageTraits,
+        store_lock::StoreKeyMutex, ListableStorage, ListableStorageTraits, ReadableListableStorage,
+        ReadableStorage, ReadableStorageTraits, ReadableWritableStorage,
+        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
+        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
     },
 };
 
 #[cfg(feature = "async")]
 use crate::storage::{
-    AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
-    AsyncReadableStorage, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
-    AsyncWritableStorage, AsyncWritableStorageTraits,
+    store_lock::AsyncStoreKeyMutex, AsyncListableStorage, AsyncListableStorageTraits,
+    AsyncReadableListableStorage, AsyncReadableStorage, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorage, AsyncWritableStorageTraits,
 };
 
 use super::StorageTransformerExtension;
@@ -292,6 +292,14 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
+    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}mutex({key:?}",
+            (self.prefix_func)()
+        )?;
+        self.storage.mutex(key)
+    }
 }
 
 #[cfg(feature = "async")]
@@ -461,4 +469,12 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
+    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}mutex({key:?}",
+            (self.prefix_func)()
+        )?;
+        self.storage.mutex(key).await
+    }
 }

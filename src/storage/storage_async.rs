@@ -11,8 +11,8 @@ use crate::{
 };
 
 use super::{
-    data_key, meta_key, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
-    StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    data_key, meta_key, store_lock::AsyncStoreKeyMutex, StorageError, StoreKey, StoreKeyRange,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Async readable storage traits.
@@ -182,7 +182,9 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
     let mut futures = group_by_key
         .into_iter()
         .map(|(key, group)| async move {
-            // TODO: Lock
+            // Lock the store key
+            let mutex = store.mutex(&key).await?;
+            let _lock = mutex.lock().await;
 
             // Read the store key
             let mut bytes = store.get(&key.clone()).await?.unwrap_or_else(Vec::default);
@@ -268,6 +270,11 @@ pub trait AsyncWritableStorageTraits: Send + Sync {
 pub trait AsyncReadableWritableStorageTraits:
     AsyncReadableStorageTraits + AsyncWritableStorageTraits
 {
+    /// Returns the mutex for the store value at `key`.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if the mutex cannot be retrieved.
+    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError>;
 }
 
 /// A supertrait of [`AsyncReadableStorageTraits`] and [`AsyncListableStorageTraits`].

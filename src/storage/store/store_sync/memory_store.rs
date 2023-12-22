@@ -7,6 +7,7 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
+        store_lock::{DefaultStoreLocks, StoreKeyMutex, StoreLocks},
         store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
         ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
         StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
@@ -22,16 +23,7 @@ use std::{
 #[derive(Debug)]
 pub struct MemoryStore {
     data_map: Mutex<BTreeMap<StoreKey, Arc<RwLock<Vec<u8>>>>>,
-}
-
-impl MemoryStore {
-    /// Create a new memory store at a given `base_directory`.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            data_map: Mutex::default(),
-        }
-    }
+    locks: StoreLocks,
 }
 
 impl Default for MemoryStore {
@@ -41,6 +33,21 @@ impl Default for MemoryStore {
 }
 
 impl MemoryStore {
+    /// Create a new memory store at a given `base_directory`.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::new_with_locks(Arc::new(DefaultStoreLocks::default()))
+    }
+
+    /// Create a new memory store at a given `base_directory` with a non-default store lock.
+    #[must_use]
+    pub fn new_with_locks(store_locks: StoreLocks) -> Self {
+        Self {
+            data_map: Mutex::default(),
+            locks: store_locks,
+        }
+    }
+
     fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, _truncate: bool) {
         let mut data_map = self.data_map.lock().unwrap();
         let data = data_map
@@ -160,7 +167,11 @@ impl WritableStorageTraits for MemoryStore {
     }
 }
 
-impl ReadableWritableStorageTraits for MemoryStore {}
+impl ReadableWritableStorageTraits for MemoryStore {
+    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
+        Ok(self.locks.mutex(key))
+    }
+}
 
 impl ListableStorageTraits for MemoryStore {
     fn list(&self) -> Result<StoreKeys, StorageError> {

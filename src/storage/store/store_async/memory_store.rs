@@ -1,19 +1,32 @@
 //! An in-memory store.
 
-use crate::object_store_impl;
+use std::sync::Arc;
+
+use crate::{
+    object_store_impl,
+    storage::store_lock::{AsyncDefaultStoreLocks, AsyncStoreLocks},
+};
 
 /// An in-memory store.
 #[derive(Debug)]
 pub struct AsyncMemoryStore {
     object_store: object_store::memory::InMemory,
+    locks: AsyncStoreLocks,
 }
 
 impl AsyncMemoryStore {
     /// Create a new memory store at a given `base_directory`.
     #[must_use]
     pub fn new() -> Self {
+        Self::new_with_locks(Arc::new(AsyncDefaultStoreLocks::default()))
+    }
+
+    /// Create a new memory store at a given `base_directory`.
+    #[must_use]
+    pub fn new_with_locks(store_locks: AsyncStoreLocks) -> Self {
         Self {
             object_store: object_store::memory::InMemory::new(),
+            locks: store_locks,
         }
     }
 }
@@ -24,7 +37,7 @@ impl Default for AsyncMemoryStore {
     }
 }
 
-object_store_impl!(AsyncMemoryStore, object_store);
+object_store_impl!(AsyncMemoryStore, object_store, locks);
 
 #[cfg(test)]
 mod tests {

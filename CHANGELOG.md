@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `ReadableWritableStorage` and `ReadableWritableStore` and async variants
  - Added `{async_}store_set_partial_values`
  - **Breaking** Added `create_readable_writable_transformer` to `StorageTransformerExtension` trait
+ - Added `storage::store_lock` module
+   - Adds generic `StoreLocks`, `StoreKeyMutex`, and `StoreKeyMutexGuard` with associated traits and async variants
+   - Includes `DefaultStoreLocks` and `DisabledStoreLocks` implementations
+ - Readable and writable stores include a `new_with_locks` method to choose the store lock implementation
 
 ### Changed
  - **Breaking**  `ReadableStorageTraits` is no longer a supertrait of `WritableStorageTraits`
@@ -19,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Use new `{async_}store_set_partial_values` utility functions instead
  - Add `#[must_use]` to `Array::builder`, `Array::chunk_grid_shape`, and `ArrayBuilder::from_array`
  - **Breaking** Remove `http` and `zip` from default features
+ - Locking functionality for arrays is moved into stores
 
 ## [0.7.3] - 2023-12-22
 

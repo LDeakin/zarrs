@@ -1065,8 +1065,9 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
                 self.store_chunk(chunk_indices, chunk_subset_bytes)
             } else {
                 // Lock the chunk
-                let chunk_mutex = self.chunk_mutex(chunk_indices);
-                let _lock = chunk_mutex.lock();
+                let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
+                let mutex = self.storage.mutex(&key)?;
+                let _lock = mutex.lock();
 
                 // Decode the entire chunk
                 let mut chunk_bytes = self.retrieve_chunk(chunk_indices)?;
