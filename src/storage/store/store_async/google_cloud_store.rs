@@ -10,6 +10,7 @@ pub struct AsyncGoogleCloudStore {
 
 impl AsyncGoogleCloudStore {
     /// Create a new amazon S3 store.
+    #[must_use]
     pub fn new(object_store: object_store::gcp::GoogleCloudStorage) -> Self {
         Self { object_store }
     }

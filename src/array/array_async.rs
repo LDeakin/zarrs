@@ -99,7 +99,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///  - `chunk_indices` are invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
-    pub async fn async_retrieve_chunk_elements<T: TriviallyTransmutable>(
+    pub async fn async_retrieve_chunk_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         chunk_indices: &[u64],
     ) -> Result<Box<[T]>, ArrayError> {
@@ -144,7 +144,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if a chunk dimension is larger than `usize::MAX`.
-    pub async fn async_retrieve_chunk_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    pub async fn async_retrieve_chunk_ndarray<
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         chunk_indices: &[u64],
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -425,7 +427,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         self._async_retrieve_array_subset(array_subset, true).await
     }
 
-    async fn _async_retrieve_array_subset_elements<T: TriviallyTransmutable>(
+    async fn _async_retrieve_array_subset_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
         parallel: bool,
@@ -469,7 +471,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///  - an array subset is invalid or out of bounds of the array,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
-    pub async fn async_retrieve_array_subset_elements<T: TriviallyTransmutable>(
+    pub async fn async_retrieve_array_subset_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Box<[T]>, ArrayError> {
@@ -479,7 +481,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
 
     /// Parallel version of [`Array::retrieve_array_subset_elements`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_par_retrieve_array_subset_elements<T: TriviallyTransmutable>(
+    pub async fn async_par_retrieve_array_subset_elements<
+        T: TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Box<[T]>, ArrayError> {
@@ -488,7 +492,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    async fn _async_retrieve_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    async fn _async_retrieve_array_subset_ndarray<
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         array_subset: &ArraySubset,
         parallel: bool,
@@ -529,7 +535,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
-    pub async fn async_retrieve_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    pub async fn async_retrieve_array_subset_ndarray<
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -541,7 +549,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     /// Parallel version of [`Array::retrieve_array_subset_ndarray`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_par_retrieve_array_subset_ndarray<
-        T: safe_transmute::TriviallyTransmutable,
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
     >(
         &self,
         array_subset: &ArraySubset,
@@ -610,7 +618,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///  - the chunk subset is invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
-    pub async fn async_retrieve_chunk_subset_elements<T: TriviallyTransmutable>(
+    pub async fn async_retrieve_chunk_subset_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
@@ -657,7 +665,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
-    pub async fn async_retrieve_chunk_subset_ndarray<T: TriviallyTransmutable>(
+    pub async fn async_retrieve_chunk_subset_ndarray<T: TriviallyTransmutable + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
@@ -803,7 +811,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
-    pub async fn async_store_chunk_elements<T: TriviallyTransmutable>(
+    pub async fn async_store_chunk_elements<T: TriviallyTransmutable + Send>(
         &self,
         chunk_indices: &[u64],
         chunk_elements: Vec<T>,
@@ -827,7 +835,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     ///  - the size of `T` does not match the size of the data type,
     ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_chunk_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    pub async fn async_store_chunk_ndarray<
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         chunk_indices: &[u64],
         chunk_array: &ndarray::ArrayViewD<'_, T>,
@@ -1050,7 +1060,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
             .await
     }
 
-    async fn _async_store_array_subset_elements<T: TriviallyTransmutable>(
+    async fn _async_store_array_subset_elements<T: TriviallyTransmutable + Send>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -1076,7 +1086,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
     /// Returns an [`ArrayError`] if
     ///  - the size of `T` does not match the data type size, or
     ///  - a [`store_array_subset`](Array::store_array_subset) error condition is met.
-    pub async fn async_store_array_subset_elements<T: TriviallyTransmutable>(
+    pub async fn async_store_array_subset_elements<T: TriviallyTransmutable + Send>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -1087,7 +1097,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
 
     /// Parallel version of [`Array::store_array_subset_elements`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_par_store_array_subset_elements<T: TriviallyTransmutable>(
+    pub async fn async_par_store_array_subset_elements<T: TriviallyTransmutable + Send>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -1097,7 +1107,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
     }
 
     #[cfg(feature = "ndarray")]
-    async fn _async_store_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    async fn _async_store_array_subset_ndarray<
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<'_, T>,
@@ -1135,7 +1147,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    pub async fn async_store_array_subset_ndarray<
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<'_, T>,
@@ -1147,7 +1161,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
     #[cfg(feature = "ndarray")]
     /// Parallel version of [`Array::store_array_subset_ndarray`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_par_store_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    pub async fn async_par_store_array_subset_ndarray<
+        T: safe_transmute::TriviallyTransmutable + Send + Sync,
+    >(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<'_, T>,
@@ -1240,7 +1256,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk_subset`](Array::store_chunk_subset) error condition is met.
-    pub async fn async_store_chunk_subset_elements<T: TriviallyTransmutable>(
+    pub async fn async_store_chunk_subset_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
@@ -1266,7 +1282,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncWritableStorageTraits>
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_chunk_subset_elements`](Array::store_chunk_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_chunk_subset_ndarray<T: TriviallyTransmutable>(
+    pub async fn async_store_chunk_subset_ndarray<T: TriviallyTransmutable + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],

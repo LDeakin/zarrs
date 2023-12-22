@@ -10,6 +10,7 @@ pub struct AsyncMicrosoftAzureStore {
 
 impl AsyncMicrosoftAzureStore {
     /// Create a new amazon S3 store.
+    #[must_use]
     pub fn new(object_store: object_store::azure::MicrosoftAzure) -> Self {
         Self { object_store }
     }

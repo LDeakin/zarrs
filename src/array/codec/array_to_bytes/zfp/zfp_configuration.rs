@@ -103,7 +103,7 @@ pub struct ZfpFixedRateConfiguration {
 }
 
 /// The `zfp` configuration for fixed precision mode.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Display)]
 pub struct ZfpFixedPrecisionConfiguration {
     /// The precision specifies how many uncompressed bits per value to store, and indirectly governs the relative error.
     pub precision: u32,

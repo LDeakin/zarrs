@@ -617,7 +617,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                                 &chunk_representation,
                             )
                             .await?;
-                        let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
+                        let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
                         let array_subset_in_chunk_subset =
                             unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
                         // Partial decoding is actually really slow with the blosc codec! Assume sharded chunks are small, and just decode the whole thing and extract bytes
@@ -682,7 +682,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
                 // Write filled chunks
                 filled_chunks.par_iter().for_each(|chunk_subset| {
-                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
+                    let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
                     let chunk_subset_in_array_subset =
                         unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                     let mut data_idx = 0;

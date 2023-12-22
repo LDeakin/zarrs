@@ -18,7 +18,7 @@ impl Drop for ZfpField {
 }
 
 #[allow(non_upper_case_globals)]
-fn zfp_type_to_size(zfp_type_: zfp_type) -> Option<usize> {
+const fn zfp_type_to_size(zfp_type_: zfp_type) -> Option<usize> {
     match zfp_type_ {
         zfp_type_zfp_type_int32 | zfp_type_zfp_type_float => Some(4),
         zfp_type_zfp_type_int64 | zfp_type_zfp_type_double => Some(8),
@@ -29,10 +29,10 @@ fn zfp_type_to_size(zfp_type_: zfp_type) -> Option<usize> {
 impl ZfpField {
     pub fn new(data: &mut [u8], zfp_type_: zfp_type, shape: &[usize]) -> Option<Self> {
         match shape.len() {
-            1 => ZfpField::new_1d(data, zfp_type_, shape[0]),
-            2 => ZfpField::new_2d(data, zfp_type_, shape[1], shape[0]),
-            3 => ZfpField::new_3d(data, zfp_type_, shape[2], shape[1], shape[0]),
-            4 => ZfpField::new_4d(data, zfp_type_, shape[3], shape[2], shape[1], shape[0]),
+            1 => Self::new_1d(data, zfp_type_, shape[0]),
+            2 => Self::new_2d(data, zfp_type_, shape[1], shape[0]),
+            3 => Self::new_3d(data, zfp_type_, shape[2], shape[1], shape[0]),
+            4 => Self::new_4d(data, zfp_type_, shape[3], shape[2], shape[1], shape[0]),
             _ => None,
         }
     }
@@ -102,7 +102,7 @@ impl ZfpField {
         NonNull::new(field).map(Self)
     }
 
-    pub fn as_zfp_field(&self) -> *mut zfp_field {
+    pub const fn as_zfp_field(&self) -> *mut zfp_field {
         self.0.as_ptr()
     }
 }

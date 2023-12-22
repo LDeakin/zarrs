@@ -29,17 +29,21 @@ impl<'a> ZfpPartialDecoder<'a> {
         decoded_representation: &ArrayRepresentation,
         mode: ZfpMode,
     ) -> Result<Self, CodecError> {
-        match zarr_data_type_to_zfp_data_type(decoded_representation.data_type()) {
-            Some(zfp_type) => Ok(Self {
-                input_handle,
-                decoded_representation: decoded_representation.clone(),
-                mode,
-                zfp_type,
-            }),
-            None => Err(CodecError::from(
-                "data type {} is unsupported for zfp codec",
-            )),
-        }
+        zarr_data_type_to_zfp_data_type(decoded_representation.data_type()).map_or_else(
+            || {
+                Err(CodecError::from(
+                    "data type {} is unsupported for zfp codec",
+                ))
+            },
+            |zfp_type| {
+                Ok(Self {
+                    input_handle,
+                    decoded_representation: decoded_representation.clone(),
+                    mode,
+                    zfp_type,
+                })
+            },
+        )
     }
 }
 
@@ -101,17 +105,21 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
         decoded_representation: &ArrayRepresentation,
         mode: ZfpMode,
     ) -> Result<Self, CodecError> {
-        match zarr_data_type_to_zfp_data_type(decoded_representation.data_type()) {
-            Some(zfp_type) => Ok(Self {
-                input_handle,
-                decoded_representation: decoded_representation.clone(),
-                mode,
-                zfp_type,
-            }),
-            None => Err(CodecError::from(
-                "data type {} is unsupported for zfp codec",
-            )),
-        }
+        zarr_data_type_to_zfp_data_type(decoded_representation.data_type()).map_or_else(
+            || {
+                Err(CodecError::from(
+                    "data type {} is unsupported for zfp codec",
+                ))
+            },
+            |zfp_type| {
+                Ok(Self {
+                    input_handle,
+                    decoded_representation: decoded_representation.clone(),
+                    mode,
+                    zfp_type,
+                })
+            },
+        )
     }
 }
 

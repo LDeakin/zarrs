@@ -73,7 +73,7 @@ pub struct ZfpExpertParams {
     pub minexp: i32,
 }
 
-fn zarr_data_type_to_zfp_data_type(data_type: &DataType) -> Option<zfp_type> {
+const fn zarr_data_type_to_zfp_data_type(data_type: &DataType) -> Option<zfp_type> {
     match data_type {
         DataType::Int32 | DataType::UInt32 => Some(zfp_type_zfp_type_int32),
         DataType::Int64 | DataType::UInt64 => Some(zfp_type_zfp_type_int64),

@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Revise code coverage section in `BUILD.md` to use `cargo-llvm-cov`
  - Increased code coverage in some modules
+ - Add `--all-features` to clippy usage in `BUILD.md` and `ci.yml`
+ - Fixed various clippy warnings
 
 ### Fixed
  - Fixed chunk key encoding for 0 dimensional arrays with `default` and `v2` encoding

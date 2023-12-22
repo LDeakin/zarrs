@@ -20,7 +20,7 @@ impl ZfpBitstream {
         NonNull::new(stream).map(Self)
     }
 
-    pub fn as_bitstream(&self) -> *mut bitstream {
+    pub const fn as_bitstream(&self) -> *mut bitstream {
         self.0.as_ptr()
     }
 }

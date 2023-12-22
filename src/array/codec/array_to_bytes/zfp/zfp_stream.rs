@@ -54,7 +54,7 @@ impl ZfpStream {
         NonNull::new(zfp).map(Self)
     }
 
-    pub fn as_zfp_stream(&self) -> *mut zfp_stream {
+    pub const fn as_zfp_stream(&self) -> *mut zfp_stream {
         self.0.as_ptr()
     }
 }

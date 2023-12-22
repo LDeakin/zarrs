@@ -22,13 +22,13 @@ impl BitroundCodec {
     ///
     /// `keepbits` is the number of bits to round to in the floating point mantissa.
     #[must_use]
-    pub fn new(keepbits: u32) -> Self {
+    pub const fn new(keepbits: u32) -> Self {
         Self { keepbits }
     }
 
     /// Create a new `bitround` codec from a configuration.
     #[must_use]
-    pub fn new_with_configuration(configuration: &BitroundCodecConfiguration) -> Self {
+    pub const fn new_with_configuration(configuration: &BitroundCodecConfiguration) -> Self {
         let BitroundCodecConfiguration::V1(configuration) = configuration;
         Self {
             keepbits: configuration.keepbits,

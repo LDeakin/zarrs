@@ -23,4 +23,4 @@ jobs:
       - run: cargo check # default features
       - run: cargo check --no-default-features
       - run: cargo fmt --all -- --check
-      - run: cargo clippy -- -D warnings
+      - run: cargo clippy --all-features -- -D warnings

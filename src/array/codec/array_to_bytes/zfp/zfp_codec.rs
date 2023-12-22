@@ -55,7 +55,7 @@ pub struct ZfpCodec {
 impl ZfpCodec {
     /// Create a new `Zfp` codec in expert mode.
     #[must_use]
-    pub fn new_expert(expert_params: ZfpExpertParams) -> Self {
+    pub const fn new_expert(expert_params: ZfpExpertParams) -> Self {
         Self {
             mode: ZfpMode::Expert(expert_params),
         }
@@ -63,7 +63,7 @@ impl ZfpCodec {
 
     /// Create a new `Zfp` codec in fixed rate mode.
     #[must_use]
-    pub fn new_fixed_rate(rate: f64) -> Self {
+    pub const fn new_fixed_rate(rate: f64) -> Self {
         Self {
             mode: ZfpMode::FixedRate(rate),
         }
@@ -71,7 +71,7 @@ impl ZfpCodec {
 
     /// Create a new `Zfp` codec in fixed precision mode.
     #[must_use]
-    pub fn new_fixed_precision(precision: u32) -> Self {
+    pub const fn new_fixed_precision(precision: u32) -> Self {
         Self {
             mode: ZfpMode::FixedPrecision(precision),
         }
@@ -79,7 +79,7 @@ impl ZfpCodec {
 
     /// Create a new `Zfp` codec in fixed accuracy mode.
     #[must_use]
-    pub fn new_fixed_accuracy(tolerance: f64) -> Self {
+    pub const fn new_fixed_accuracy(tolerance: f64) -> Self {
         Self {
             mode: ZfpMode::FixedAccuracy(tolerance),
         }
@@ -87,7 +87,7 @@ impl ZfpCodec {
 
     /// Create a new `Zfp` codec in reversible mode.
     #[must_use]
-    pub fn new_reversible() -> Self {
+    pub const fn new_reversible() -> Self {
         Self {
             mode: ZfpMode::Reversible,
         }
@@ -95,7 +95,7 @@ impl ZfpCodec {
 
     /// Create a new `Zfp` codec from configuration.
     #[must_use]
-    pub fn new_with_configuration(configuration: &ZfpCodecConfiguration) -> Self {
+    pub const fn new_with_configuration(configuration: &ZfpCodecConfiguration) -> Self {
         type V1 = ZfpCodecConfigurationV1;
         let ZfpCodecConfiguration::V1(configuration) = configuration;
         match configuration {
@@ -227,7 +227,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
             input_handle,
             decoded_representation,
-            self.mode.clone(),
+            self.mode,
         )?))
     }
 
@@ -240,7 +240,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         Ok(Box::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
             input_handle,
             decoded_representation,
-            self.mode.clone(),
+            self.mode,
         )?))
     }
 

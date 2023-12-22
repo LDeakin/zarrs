@@ -10,6 +10,7 @@ pub struct AsyncAmazonS3Store {
 
 impl AsyncAmazonS3Store {
     /// Create a new amazon S3 store.
+    #[must_use]
     pub fn new(object_store: object_store::aws::AmazonS3) -> Self {
         Self { object_store }
     }

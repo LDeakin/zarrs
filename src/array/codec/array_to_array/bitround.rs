@@ -44,46 +44,40 @@ fn create_codec_bitround(metadata: &Metadata) -> Result<Codec, PluginCreateError
     Ok(Codec::ArrayToArray(codec))
 }
 
-fn round_bits16(mut input: u16, keepbits: u32, maxbits: u32) -> u16 {
-    if keepbits >= maxbits {
-        input
-    } else {
+const fn round_bits16(mut input: u16, keepbits: u32, maxbits: u32) -> u16 {
+    if keepbits < maxbits {
         let maskbits = maxbits - keepbits;
         let all_set = u16::MAX;
         let mask = (all_set >> maskbits) << maskbits;
         let half_quantum1 = (1 << (maskbits - 1)) - 1;
         input += ((input >> maskbits) & 1) + half_quantum1;
         input &= mask;
-        input
     }
+    input
 }
 
-fn round_bits32(mut input: u32, keepbits: u32, maxbits: u32) -> u32 {
-    if keepbits >= maxbits {
-        input
-    } else {
+const fn round_bits32(mut input: u32, keepbits: u32, maxbits: u32) -> u32 {
+    if keepbits < maxbits {
         let maskbits = maxbits - keepbits;
         let all_set = u32::MAX;
         let mask = (all_set >> maskbits) << maskbits;
         let half_quantum1 = (1 << (maskbits - 1)) - 1;
         input += ((input >> maskbits) & 1) + half_quantum1;
         input &= mask;
-        input
     }
+    input
 }
 
-fn round_bits64(mut input: u64, keepbits: u32, maxbits: u32) -> u64 {
-    if keepbits >= maxbits {
-        input
-    } else {
+const fn round_bits64(mut input: u64, keepbits: u32, maxbits: u32) -> u64 {
+    if keepbits < maxbits {
         let maskbits = maxbits - keepbits;
         let all_set = u64::MAX;
         let mask = (all_set >> maskbits) << maskbits;
         let half_quantum1 = (1 << (maskbits - 1)) - 1;
         input += ((input >> maskbits) & 1) + half_quantum1;
         input &= mask;
-        input
     }
+    input
 }
 
 fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<(), CodecError> {

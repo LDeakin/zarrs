@@ -53,7 +53,7 @@ where
     T: ChunkKeyEncodingTraits + 'static,
 {
     fn from(chunk_key_encoding: T) -> Self {
-        ChunkKeyEncoding::new(chunk_key_encoding)
+        Self::new(chunk_key_encoding)
     }
 }
 
