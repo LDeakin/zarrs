@@ -1091,7 +1091,7 @@ mod tests {
     #[test]
     fn test_array_subset_iterator1() {
         let array_shape = vec![2, 2];
-        let array_subset = ArraySubset::new_with_start_shape(vec![0, 0], vec![2, 1]).unwrap();
+        let array_subset = ArraySubset::new_with_shape(vec![2, 1]);
         let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
 
         assert_eq!(iter.next().unwrap(), (vec![0, 0], 1));
@@ -1102,7 +1102,7 @@ mod tests {
     #[test]
     fn test_array_subset_iterator2() {
         let array_shape = vec![2, 2];
-        let array_subset = ArraySubset::new_with_start_shape(vec![1, 0], vec![1, 2]).unwrap();
+        let array_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
         let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
 
         assert_eq!(iter.next().unwrap(), (vec![1, 0], 2));
@@ -1112,7 +1112,7 @@ mod tests {
     #[test]
     fn test_array_subset_iterator3() {
         let array_shape = vec![2, 2];
-        let array_subset = ArraySubset::new_with_start_shape(vec![0, 0], vec![2, 2]).unwrap();
+        let array_subset = ArraySubset::new_with_shape(vec![2, 2]);
         let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
 
         assert_eq!(iter.next().unwrap(), (vec![0, 0], 4));
@@ -1122,8 +1122,7 @@ mod tests {
     #[test]
     fn test_array_subset_iterator4() {
         let array_shape = vec![2, 2, 2, 3];
-        let array_subset =
-            ArraySubset::new_with_start_shape(vec![0, 0, 0, 0], vec![2, 1, 2, 3]).unwrap();
+        let array_subset = ArraySubset::new_with_shape(vec![2, 1, 2, 3]);
         let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
 
         assert_eq!(iter.next().unwrap(), (vec![0, 0, 0, 0], 6));
@@ -1134,7 +1133,7 @@ mod tests {
     #[test]
     fn test_array_subset_iterator5() {
         let array_shape = vec![2, 2, 3];
-        let array_subset = ArraySubset::new_with_start_shape(vec![0, 0, 1], vec![2, 2, 2]).unwrap();
+        let array_subset = ArraySubset::new_with_ranges(&[0..2, 0..2, 1..3]);
         let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
 
         assert_eq!(iter.next().unwrap(), (vec![0, 0, 1], 2));

@@ -364,7 +364,7 @@ mod tests {
 
     #[test]
     fn array_subset_iter_indices() {
-        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
         let mut iter = subset.iter_indices();
         assert_eq!(iter.next(), Some(vec![1, 1]));
         assert_eq!(iter.next(), Some(vec![1, 2]));
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn array_subset_iter_linearised_indices() {
-        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
         let mut iter = subset.iter_linearised_indices(&[4, 4]).unwrap();
         //  0  1  2  3
         //  4  5  6  7
@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn array_subset_iter_contiguous_indices1() {
-        let subset = ArraySubset::new_with_start_shape(vec![0, 0], vec![2, 2]).unwrap();
+        let subset = ArraySubset::new_with_shape(vec![2, 2]);
         let mut iter = subset.iter_contiguous_indices(&[2, 2]).unwrap();
         assert_eq!(iter.next(), Some((vec![0, 0], 4)));
         assert_eq!(iter.next(), None);
@@ -398,7 +398,7 @@ mod tests {
 
     #[test]
     fn array_subset_iter_contiguous_indices2() {
-        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
         let mut iter = subset.iter_contiguous_indices(&[4, 4]).unwrap();
         assert_eq!(iter.next(), Some((vec![1, 1], 2)));
         assert_eq!(iter.next(), Some((vec![2, 1], 2)));
@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn array_subset_iter_contiguous_indices3() {
-        let subset = ArraySubset::new_with_start_shape(vec![1, 0, 0, 0], vec![2, 1, 2, 2]).unwrap();
+        let subset = ArraySubset::new_with_ranges(&[1..3, 0..1, 0..2, 0..2]);
         let mut iter = subset.iter_contiguous_indices(&[3, 1, 2, 2]).unwrap();
         assert_eq!(iter.next(), Some((vec![1, 0, 0, 0], 8)));
         assert_eq!(iter.next(), None);
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn array_subset_iter_continuous_linearised_indices() {
-        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![2, 2]).unwrap();
+        let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
         let mut iter = subset.iter_contiguous_linearised_indices(&[4, 4]).unwrap();
         //  0  1  2  3
         //  4  5  6  7
@@ -429,29 +429,29 @@ mod tests {
     #[test]
     #[rustfmt::skip]
     fn array_subset_iter_chunks1() {
-        let subset = ArraySubset::new_with_start_shape(vec![1, 1], vec![4, 4]).unwrap();
+        let subset = ArraySubset::new_with_ranges(&[1..5, 1..5]);
         let mut iter = subset.iter_chunks(&[2, 2]).unwrap();
-        assert_eq!(iter.next(), Some((vec![0, 0], ArraySubset::new_with_start_shape(vec![0, 0], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![0, 1], ArraySubset::new_with_start_shape(vec![0, 2], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![0, 2], ArraySubset::new_with_start_shape(vec![0, 4], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_start_shape(vec![2, 0], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_start_shape(vec![2, 2], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![1, 2], ArraySubset::new_with_start_shape(vec![2, 4], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_start_shape(vec![4, 0], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_start_shape(vec![4, 2], vec![2, 2]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![2, 2], ArraySubset::new_with_start_shape(vec![4, 4], vec![2, 2]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![0, 0], ArraySubset::new_with_ranges(&[0..2, 0..2]))));
+        assert_eq!(iter.next(), Some((vec![0, 1], ArraySubset::new_with_ranges(&[0..2, 2..4]))));
+        assert_eq!(iter.next(), Some((vec![0, 2], ArraySubset::new_with_ranges(&[0..2, 4..6]))));
+        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..2]))));
+        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 2..4]))));
+        assert_eq!(iter.next(), Some((vec![1, 2], ArraySubset::new_with_ranges(&[2..4, 4..6]))));
+        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..2]))));
+        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 2..4]))));
+        assert_eq!(iter.next(), Some((vec![2, 2], ArraySubset::new_with_ranges(&[4..6, 4..6]))));
         assert_eq!(iter.next(), None);
     }
 
     #[test]
     #[rustfmt::skip]
     fn array_subset_iter_chunks2() {
-        let subset = ArraySubset::new_with_start_shape(vec![2, 2], vec![3, 4]).unwrap();
+        let subset = ArraySubset::new_with_ranges(&[2..5, 2..6]);
         let mut iter = subset.iter_chunks(&[2, 3]).unwrap();
-        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_start_shape(vec![2, 0], vec![2, 3]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_start_shape(vec![2, 3], vec![2, 3]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_start_shape(vec![4, 0], vec![2, 3]).unwrap())));
-        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_start_shape(vec![4, 3], vec![2, 3]).unwrap())));
+        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..3]))));
+        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 3..6]))));
+        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..3]))));
+        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 3..6]))));
         assert_eq!(iter.next(), None);
     }
 }

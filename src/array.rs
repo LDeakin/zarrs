@@ -706,13 +706,12 @@ mod tests {
 
         array
             .store_array_subset_elements::<f32>(
-                &ArraySubset::new_with_start_shape(vec![3, 3], vec![3, 3]).unwrap(),
+                &ArraySubset::new_with_ranges(&[3..6, 3..6]),
                 vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
             )
             .unwrap();
 
-        let subset_all =
-            ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec()).unwrap();
+        let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
         let data_all = array
             .retrieve_array_subset_elements::<f32>(&subset_all)
             .unwrap();
@@ -750,11 +749,10 @@ mod tests {
         let mut any_not_equal = false;
         for j in 1..10 {
             (0..100).into_par_iter().for_each(|i| {
-                let subset = ArraySubset::new_with_start_shape(vec![i, 0], vec![1, 4]).unwrap();
+                let subset = ArraySubset::new_with_ranges(&[i..i + 1, 0..4]);
                 array.store_array_subset(&subset, vec![j; 4]).unwrap();
             });
-            let subset_all =
-                ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec()).unwrap();
+            let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
             let data_all = array.retrieve_array_subset(&subset_all).unwrap();
             let all_equal = data_all.iter().all_equal_value() == Ok(&j);
             if expect_equal {

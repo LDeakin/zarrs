@@ -94,7 +94,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     // Read the whole array
-    let subset_all = ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec())?; // the center 4x2 region
+    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec()); // the center 4x2 region
     let data_all = array.retrieve_array_subset_ndarray::<u16>(&subset_all)?;
     println!("The whole array is:\n{:?}\n", data_all);
 
@@ -104,12 +104,12 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("Shard [1,0] is:\n{data_shard:?}\n");
 
     // Read an inner chunk from the store
-    let subset_chunk_1_0 = ArraySubset::new_with_start_shape(vec![4, 0], vec![4, 4])?;
+    let subset_chunk_1_0 = ArraySubset::new_with_ranges(&[4..8, 0..4]);
     let data_chunk = array.retrieve_array_subset_ndarray::<u16>(&subset_chunk_1_0)?;
     println!("Chunk [1,0] is:\n{data_chunk:?}\n");
 
     // Read the central 4x2 subset of the array
-    let subset_4x2 = ArraySubset::new_with_start_shape(vec![2, 3], vec![4, 2])?; // the center 4x2 region
+    let subset_4x2 = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
     let data_4x2 = array.retrieve_array_subset_ndarray::<u16>(&subset_4x2)?;
     println!("The middle 4x2 subset is:\n{:?}\n", data_4x2);
 

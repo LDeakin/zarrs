@@ -105,8 +105,7 @@ mod tests {
         assert_eq!(array.data_type(), &DataType::Float32);
 
         // Read the central 4x2 subset of the array
-        let subset_4x2 =
-            crate::array_subset::ArraySubset::new_with_start_shape(vec![2, 3], vec![4, 2]).unwrap(); // the center 4x2 region
+        let subset_4x2 = crate::array_subset::ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
         let data_4x2 = array
             .async_retrieve_array_subset_elements::<f32>(&subset_4x2)
             .await
@@ -139,8 +138,7 @@ mod tests {
         assert_eq!(array.data_type(), &DataType::UInt16);
 
         // Read the central 4x2 subset of the array
-        let subset_4x2 =
-            crate::array_subset::ArraySubset::new_with_start_shape(vec![2, 3], vec![4, 2]).unwrap(); // the center 4x2 region
+        let subset_4x2 = crate::array_subset::ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
         let data_4x2 = array
             .async_retrieve_array_subset_elements::<u16>(&subset_4x2)
             .await

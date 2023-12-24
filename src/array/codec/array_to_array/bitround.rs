@@ -248,8 +248,8 @@ mod tests {
 
         let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
         let decoded_regions = [
-            ArraySubset::new_with_start_shape(vec![3], vec![2]).unwrap(),
-            ArraySubset::new_with_start_shape(vec![17], vec![4]).unwrap(),
+            ArraySubset::new_with_ranges(&[3..5]),
+            ArraySubset::new_with_ranges(&[17..21]),
         ];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();

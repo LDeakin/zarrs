@@ -9,6 +9,8 @@
 
 mod array_subset_iterators;
 
+use std::ops::Range;
+
 pub use array_subset_iterators::{
     ChunksIterator, ContiguousIndicesIterator, ContiguousLinearisedIndicesIterator,
     IndicesIterator, LinearisedIndicesIterator,
@@ -58,6 +60,14 @@ pub enum ArrayStoreBytesError {
 }
 
 impl ArraySubset {
+    /// Create a new array subset from a `ranges`.
+    #[must_use]
+    pub fn new_with_ranges(ranges: &[Range<u64>]) -> Self {
+        let start = ranges.iter().map(|range| range.start).collect();
+        let shape = ranges.iter().map(|range| range.end - range.start).collect();
+        Self { start, shape }
+    }
+
     /// Create a new array subset with `size` starting at the origin.
     #[must_use]
     pub fn new_with_shape(shape: ArrayShape) -> Self {
@@ -687,8 +697,7 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn in_subset_unchecked(&self, subset_other: &Self) -> Self {
         debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
-        let mut starts = Vec::with_capacity(self.start.len());
-        let mut shapes = Vec::with_capacity(self.start.len());
+        let mut ranges = Vec::with_capacity(self.dimensionality());
         for (start, size, other_start, other_size) in izip!(
             &self.start,
             &self.shape,
@@ -698,11 +707,9 @@ impl ArraySubset {
             let output_start = start.saturating_sub(*other_start);
             let output_end =
                 std::cmp::min((start + size).saturating_sub(*other_start), *other_size);
-            let output_size = output_end - output_start;
-            starts.push(output_start);
-            shapes.push(output_size);
+            ranges.push(output_start..output_end);
         }
-        unsafe { Self::new_with_start_shape_unchecked(starts, shapes) }
+        Self::new_with_ranges(&ranges)
     }
 
     /// Return the overlapping subset between this array subset and `subset_other`.
@@ -730,8 +737,7 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn overlap_unchecked(&self, subset_other: &Self) -> Self {
         debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
-        let mut starts = Vec::with_capacity(self.start.len());
-        let mut shapes = Vec::with_capacity(self.start.len());
+        let mut ranges = Vec::with_capacity(self.dimensionality());
         for (start, size, other_start, other_size) in izip!(
             &self.start,
             &self.shape,
@@ -740,11 +746,9 @@ impl ArraySubset {
         ) {
             let overlap_start = *std::cmp::max(start, other_start);
             let overlap_end = std::cmp::min(start + size, other_start + other_size);
-            let overlap_size = overlap_end - overlap_start;
-            starts.push(overlap_start);
-            shapes.push(overlap_size);
+            ranges.push(overlap_start..overlap_end);
         }
-        unsafe { Self::new_with_start_shape_unchecked(starts, shapes) }
+        Self::new_with_ranges(&ranges)
     }
 
     /// Return the subset relative to `start`.

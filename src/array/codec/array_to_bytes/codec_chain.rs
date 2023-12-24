@@ -707,8 +707,7 @@ mod tests {
         let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
 
         let encoded = codec.encode(bytes, &array_representation).unwrap();
-        let decoded_regions =
-            [ArraySubset::new_with_start_shape(vec![0, 1, 0], vec![2, 1, 1]).unwrap()];
+        let decoded_regions = [ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(input_handle, &array_representation)

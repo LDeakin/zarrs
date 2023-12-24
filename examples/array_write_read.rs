@@ -75,13 +75,13 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     // Write a subset spanning multiple chunks, including updating chunks already written
     array.store_array_subset_elements::<f32>(
-        &ArraySubset::new_with_start_shape(vec![3, 3], vec![3, 3]).unwrap(),
+        &ArraySubset::new_with_ranges(&[3..6, 3..6]),
         vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     )?;
 
     // Store elements directly, in this case set the 7th column to 123.0
     array.store_array_subset_elements::<f32>(
-        &ArraySubset::new_with_start_shape(vec![0, 6], vec![8, 1])?,
+        &ArraySubset::new_with_ranges(&[0..8, 6..7]),
         vec![123.0; 8],
     )?;
 
@@ -90,7 +90,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         // chunk indices
         &[1, 1],
         // subset within chunk
-        &ArraySubset::new_with_start_shape(vec![3, 0], vec![1, 4])?,
+        &ArraySubset::new_with_ranges(&[3..4, 0..4]),
         vec![-4.0; 4],
     )?;
 
@@ -98,7 +98,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     array.erase_chunk(&[0, 1])?;
 
     // Read the whole array
-    let subset_all = ArraySubset::new_with_start_shape(vec![0, 0], array.shape().to_vec())?;
+    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
     println!("The whole array is:\n{:?}\n", data_all);
 
@@ -108,7 +108,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("Chunk [1,0] is:\n{data_chunk:?}\n");
 
     // Read the central 4x2 subset of the array
-    let subset_4x2 = ArraySubset::new_with_start_shape(vec![2, 3], vec![4, 2])?; // the center 4x2 region
+    let subset_4x2 = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
     let data_4x2 = array.retrieve_array_subset_ndarray::<f32>(&subset_4x2)?;
     println!("The middle 4x2 subset is:\n{:?}\n", data_4x2);
 

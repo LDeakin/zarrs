@@ -351,14 +351,12 @@ mod tests {
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec.encode(bytes).unwrap();
-        let decoded_regions: Vec<ByteRange> =
-            ArraySubset::new_with_start_shape(vec![0, 1, 0], vec![2, 1, 1])
-                .unwrap()
-                .byte_ranges(
-                    array_representation.shape(),
-                    array_representation.element_size(),
-                )
-                .unwrap();
+        let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
+            .byte_ranges(
+                array_representation.shape(),
+                array_representation.element_size(),
+            )
+            .unwrap();
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(input_handle, &bytes_representation)

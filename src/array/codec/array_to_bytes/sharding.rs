@@ -270,7 +270,7 @@ mod tests {
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec.encode(bytes, &array_representation).unwrap();
-        let decoded_regions = [ArraySubset::new_with_start_shape(vec![1, 0], vec![2, 1]).unwrap()];
+        let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(input_handle, &array_representation)
@@ -305,8 +305,7 @@ mod tests {
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec.encode(bytes, &array_representation).unwrap();
-        let decoded_regions =
-            [ArraySubset::new_with_start_shape(vec![1, 0, 0], vec![1, 2, 3]).unwrap()];
+        let decoded_regions = [ArraySubset::new_with_ranges(&[1..2, 0..2, 0..3])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(input_handle, &array_representation)
@@ -337,7 +336,7 @@ mod tests {
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec.encode(bytes, &array_representation).unwrap();
-        let decoded_regions = [ArraySubset::new_with_start_shape(vec![1, 0], vec![2, 1]).unwrap()];
+        let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(input_handle, &array_representation)
