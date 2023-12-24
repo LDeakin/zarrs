@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `#[must_use]` to `Array::builder`, `Array::chunk_grid_shape`, and `ArrayBuilder::from_array`
  - **Breaking** Remove `http` and `zip` from default features
  - Locking functionality for arrays is moved into stores
+ - Improved `Array` documentation
 
 ## [0.7.3] - 2023-12-22
 

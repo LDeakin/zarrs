@@ -3,31 +3,8 @@
 //! An array is a node in a Zarr hierarchy used to hold multidimensional array data and associated metadata.
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array>.
 //!
-//! Use [`ArrayBuilder`] to setup a new array, or use [`Array::new`] to read and/or write an existing array.
-//!
-//! An array is defined by the following parameters (which are encoded in its JSON metadata):
-//!  - **shape**: defines the length of the array dimensions,
-//!  - **data type**: defines the numerical representation array elements,
-//!  - **chunk grid**: defines how the array is subdivided into chunks,
-//!  - **chunk key encoding**: defines how chunk grid cell coordinates are mapped to keys in a store,
-//!  - **fill value**: an element value to use for uninitialised portions of the array.
-//!  - **codecs**: used to encode and decode chunks,
-//!
-//! and optional parameters:
-//!  - **attributes**: user-defined attributes,
-//!  - **storage transformers**: used to intercept and alter the storage keys and bytes of an array before they reach the underlying physical storage, and
-//!  - **dimension names**: defines the names of the array dimensions.
-//!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata> for more information on array metadata.
-//!
-//! The operations available for an array depend on the traits implemented by its backing [storage](crate::storage) (a store or storage transformer).
-//! For example,
-//!  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits) storage can read array data and metadata.
-//!  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits) storage can write array data and metadata, and
-//!  - both traits are needed to update chunk subsets, such as with [`Array::store_array_subset`].
-//!
-//! By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata.
-//! This functionality can be disabled with [`set_include_zarrs_metadata(false)`](Array::set_include_zarrs_metadata).
+//! Use [`ArrayBuilder`] to setup a new array, or use [`Array::new`] for an existing array.
+//! The documentation for [`Array`] details how to interact with arrays.
 
 #[cfg(feature = "async")]
 mod array_async;
@@ -92,26 +69,68 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata>.
 ///
+/// ### Metadata
+///
+/// An array is defined by the following parameters (which are encoded in its JSON metadata):
+///  - **shape**: defines the length of the array dimensions,
+///  - **data type**: defines the numerical representation array elements,
+///  - **chunk grid**: defines how the array is subdivided into chunks,
+///  - **chunk key encoding**: defines how chunk grid cell coordinates are mapped to keys in a store,
+///  - **fill value**: an element value to use for uninitialised portions of the array.
+///  - **codecs**: used to encode and decode chunks,
+///
+/// and optional parameters:
+///  - **attributes**: user-defined attributes,
+///  - **storage transformers**: used to intercept and alter the storage keys and bytes of an array before they reach the underlying physical storage, and
+///  - **dimension names**: defines the names of the array dimensions.
+///
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata> for more information on array metadata.
+///
+/// ### Initilisation
+///
+/// A *new* array can be initialised with an [`ArrayBuilder`] or [`Array::new_with_metadata`].
+///
+/// An *existing* array can be initialised with [`Array::new`], its metadata is read from the store.
+///
 /// The `shape` and `attributes` of an array are mutable and can be updated after construction.
-/// Array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata), which can be done before or after chunks are written.
+/// However, array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata) if an array is newly created or its metadata has been mutated.
 ///
-/// # Concurrency
+/// ### Methods
 ///
-/// ### A Single Array Instance (Internal Synchronisation)
-/// Arrays support parallel reading and writing, with the level of concurrency dependent on the underlying store.
-/// A store must guarantee the following for operations which retrieve or store data from a chunk (or any store value):
-///  - a store *may* support multiple concurrent readers of a chunk, and
-///  - a store *must* permit only one writer of a chunk at any one time (with no concurrent readers).
+/// #### Sync API
+/// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage). In summary:
+///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
+///    - [`retrieve_chunk`](Array::retrieve_chunk)
+///    - [`retrieve_chunk_subset`](Array::retrieve_chunk_subset)
+///    - [`retrieve_array_subset`](Array::retrieve_array_subset) / [`par_retrieve_array_subset`](Array::par_retrieve_array_subset)
+///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): write array data and metadata
+///    - [`store_chunk`](Array::store_chunk)
+///    - [`erase_chunk`](Array::erase_chunk)
+///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): perform operations requiring both reading and writing
+///    - [`store_chunk_subset`](Array::store_chunk_subset)
+///    - [`store_array_subset`](Array::store_array_subset) / [`par_store_array_subset`](Array::par_store_array_subset)
 ///
-/// A chunk is locked for writing within the [`Array::store_chunk_subset`] function (which may be called from any of the `store_array_subset` and `store_chunk_subset` variants).
-/// This is necessary because this function may internally decode a chunk and later update it. The chunk must not be updated by another thread until this operation has completed.
+/// These `retrieve` and `store` methods have multiple variants:
+///   - The above variants store or retrieve data represented as bytes.
+///   - Variants with an `_elements` suffix can read and write array elements with a known type.
+///   - With the `ndarray` feature, method variants with an `_ndarray` suffix can be used to store or retrieve [`ndarray::Array`]s.
 ///
-/// For optimum write performance, an array should be written chunk-by-chunk.
+/// #### Async API
+/// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
+///
+/// ### Parallel Writing
+///
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
 ///
-/// Array elements can alternatively be written using the `store_array_subset`/`store_chunk_subset` methods, although this is less efficient.
-/// Provided that the array subsets are non-overlapping, all elements are guaranteed to hold the values written.
-/// If any array subsets overlap (which ideally should be avoided!), the value of an element in the overlap region depends on whichever operation wrote to its associated chunk last.
+/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
+/// Chunks are locked through this process (with [`StoreKeyMutex`](crate::storage::store_lock::StoreKeyMutex)es) otherwise element updates occuring in other threads could be lost.
+/// Chunk locking is not implemented for [`WritableStorageTraits`](crate::storage::WritableStorageTraits) methods, so it is recommended not to intermix these with [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) methods during parallel write operations.
+///
+/// #### Default Store Locking ([`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks))
+///
+/// By default, stores use [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks) internally, but this can be changed with a `new_with_locks` store constructor if implemented.
+///
+/// With [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks), if data is written in overlapping array subsets with the [`store_chunk_subset`](Array::store_chunk_subset) or [`store_array_subset`](Array::store_array_subset) methods, the value of an element in overlapping regions depends on whichever operation wrote to its associated chunk last.
 /// Consider the case of parallel writing of the following subsets to a `1x6` array and a `1x3` chunk size (**do not do this, it is just an example**):
 /// ```text
 ///    |subset0| < stores element values of 0
@@ -127,15 +146,36 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///       2
 /// ```
 ///
-/// ### Multiple Array Instances (External Synchronisation)
-/// The internal synchronisation guarantees provided by an [`Array`] and its underlying store are not applicable if there are multiple array instances referencing the same data.
-/// An [`Array`] should only be created once and shared between multiple threads where possible.
+/// Multiple [`Array`]s can safely point to the same array, provided that they use the same store and [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks).
 ///
-/// This is not applicable if an array is being written from multiple independent **processes** (e.g. a distributed program on a cluster).
-/// For example, without *internal synchronisation* it is possible that elements `B` and `E`  in the above example could end up with the fill value, despite them explicitly being set to `0` and `1` respectively.
+/// #### Disabled Store Locking ([`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks))
 ///
-/// A distributed program with multiple [`Array`] instances should do chunk-by-chunk writing.
-/// If a chunk needs to be updated, then external synchronisation is necessary to ensure that only one process updates it at any one time.
+/// A store with [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) can be used to eliminate locking overhead with the [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods.
+/// However, written data may be lost if a chunk is written by more than one thread.
+/// Thus, it is recommended to only use [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) if each chunk is exclusively written by a single thread during a parallel operation.
+///
+/// #### Distributed Processes
+///
+/// The synchronisation guarantees provided by an [`Array`] and its underlying store are not applicable in a distributed context (e.g. a distributed program on a cluster).
+/// In such cases, the recommendations outlined in [Disabled Store Locking](#disabled-store-locking-disabledstorelocks) should be followed to ensure written data is not lost.
+///
+/// ### Best Practices
+///
+/// #### Writing
+///
+/// For optimum write performance, an array should be written chunk-by-chunk (which can be done in parallel).
+/// Methods such as [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) may decode chunks and incur locking overhead, so they are less preferred.
+///
+/// #### Reading
+///
+/// It is fastest to load arrays chunk-by-chunk (which can be done in parallel).
+/// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may partially decode chunks.
+/// This can be useful in many cases (e.g. decoding an inner chunk in a chunk encoded with the [`ShardingCodec`](crate::array::codec::ShardingCodec)).
+/// However, it can be quite inefficient with some codecs/stores.
+///
+/// ### `zarrs` Metadata
+/// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata.
+/// This can be disabled with [`set_include_zarrs_metadata(false)`](Array::set_include_zarrs_metadata).
 #[derive(Debug)]
 pub struct Array<TStorage: ?Sized> {
     /// The storage (including storage transformers).

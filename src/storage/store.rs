@@ -1,4 +1,4 @@
-//! Zarr stores. Includes [filesystem](FilesystemStore) and [memory](MemoryStore) implementations.
+//! Zarr stores.
 //!
 //! All stores must be Send and Sync with internally managed synchronisation.
 //!

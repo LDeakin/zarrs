@@ -1,4 +1,4 @@
-//! Utilities to support metadata with a name and optional configuration.
+//! Zarr metadata utilities.
 //!
 //! The [`Metadata`] structure represents most fields in array metadata (see [`ArrayMetadata`](crate::array::ArrayMetadata)), which is structured as JSON with a name and optional configuration, or just a string representing the name.
 //! It provides convenience functions for converting metadata to and from a configuration specific to each:
