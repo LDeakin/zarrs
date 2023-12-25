@@ -14,7 +14,11 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store
-    let store = Arc::new(store::AsyncHTTPStore::new(HTTP_URL)?);
+    let store = Arc::new(store::AsyncObjectStore::new(
+        object_store::http::HttpBuilder::new()
+            .with_url(HTTP_URL)
+            .build()?,
+    ));
     let log_writer = Arc::new(std::sync::Mutex::new(
         // std::io::BufWriter::new(
         std::io::stdout(),

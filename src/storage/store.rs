@@ -10,27 +10,14 @@ mod store_async;
 mod store_sync;
 // mod store_plugin;
 
-#[cfg(feature = "async")]
-pub use store_async::filesystem_store::AsyncFilesystemStore;
-#[cfg(feature = "async")]
-pub use store_async::memory_store::AsyncMemoryStore;
-
 pub use store_sync::filesystem_store::{FilesystemStore, FilesystemStoreCreateError};
 pub use store_sync::memory_store::MemoryStore;
 
-#[cfg(all(feature = "async", feature = "http"))]
-pub use store_async::http_store::AsyncHTTPStore;
 #[cfg(feature = "http")]
 pub use store_sync::http_store::{HTTPStore, HTTPStoreCreateError};
 
-#[cfg(all(feature = "async", feature = "s3"))]
-pub use store_async::amazon_s3_store::AsyncAmazonS3Store;
-
-#[cfg(all(feature = "async", feature = "gcp"))]
-pub use store_async::google_cloud_store::AsyncGoogleCloudStore;
-
-#[cfg(all(feature = "async", feature = "azure"))]
-pub use store_async::microsoft_azure_store::AsyncMicrosoftAzureStore;
+#[cfg(all(feature = "async", feature = "object_store"))]
+pub use store_async::object_store::AsyncObjectStore;
 
 // pub use store_plugin::{StorePlugin, StorePluginCreateError}; // Currently disabled.
 

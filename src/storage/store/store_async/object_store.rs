@@ -1,13 +1,16 @@
+use std::sync::Arc;
+
 use futures::{StreamExt, TryStreamExt};
-use object_store::{path::Path, ObjectStore};
+use object_store::path::Path;
 
 use crate::{
     array::MaybeBytes,
     byte_range::ByteRange,
     storage::{
-        AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
-        StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-        StorePrefix,
+        store_lock::{AsyncDefaultStoreLocks, AsyncStoreKeyMutex, AsyncStoreLocks},
+        AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
+        AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
+        StoreKeys, StoreKeysPrefixes, StorePrefix,
     },
 };
 
@@ -36,10 +39,33 @@ fn handle_result<T>(result: Result<T, object_store::Error>) -> Result<Option<T>,
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
-impl<T: ObjectStore> AsyncReadableStorageTraits for T {
+/// An asynchronous store backed by an [`object_store::ObjectStore`].
+pub struct AsyncObjectStore<T: object_store::ObjectStore> {
+    object_store: T,
+    locks: AsyncStoreLocks,
+}
+
+impl<T: object_store::ObjectStore> AsyncObjectStore<T> {
+    /// Create a new [`AsyncObjectStore`].
+    #[must_use]
+    pub fn new(object_store: T) -> Self {
+        Self::new_with_locks(object_store, Arc::new(AsyncDefaultStoreLocks::default()))
+    }
+
+    /// Create a new [`AsyncObjectStore`] with non-default store locks.
+    #[must_use]
+    pub fn new_with_locks(object_store: T, store_locks: AsyncStoreLocks) -> Self {
+        Self {
+            object_store,
+            locks: store_locks,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectStore<T> {
     async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        let get = handle_result(ObjectStore::get(self, &key_to_path(key)).await)?;
+        let get = handle_result(self.object_store.get(&key_to_path(key)).await)?;
         if let Some(get) = get {
             let bytes = get.bytes().await?;
             Ok(Some(bytes.to_vec()))
@@ -60,7 +86,10 @@ impl<T: ObjectStore> AsyncReadableStorageTraits for T {
             .iter()
             .map(|byte_range| byte_range.to_range_usize(size))
             .collect::<Vec<_>>();
-        let get_ranges = self.get_ranges(&key_to_path(key), &ranges).await;
+        let get_ranges = self
+            .object_store
+            .get_ranges(&key_to_path(key), &ranges)
+            .await;
         match get_ranges {
             Ok(get_ranges) => Ok(Some(
                 get_ranges.iter().map(|bytes| bytes.to_vec()).collect(),
@@ -84,7 +113,7 @@ impl<T: ObjectStore> AsyncReadableStorageTraits for T {
 
     async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
         let prefix: object_store::path::Path = prefix.as_str().into();
-        let mut locations = ObjectStore::list(self, Some(&prefix));
+        let mut locations = self.object_store.list(Some(&prefix));
         let mut size = 0;
         while let Some(item) = locations.next().await {
             let meta = item?;
@@ -94,11 +123,14 @@ impl<T: ObjectStore> AsyncReadableStorageTraits for T {
     }
 
     async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
-        Ok(handle_result(self.head(&key_to_path(key)).await)?.map(|meta| meta.size as u64))
+        Ok(
+            handle_result(self.object_store.head(&key_to_path(key)).await)?
+                .map(|meta| meta.size as u64),
+        )
     }
 
     async fn size(&self) -> Result<u64, StorageError> {
-        let mut locations = ObjectStore::list(self, None);
+        let mut locations = self.object_store.list(None);
         let mut size = 0;
         while let Some(item) = locations.next().await {
             let meta = item?;
@@ -108,12 +140,12 @@ impl<T: ObjectStore> AsyncReadableStorageTraits for T {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
-impl<T: ObjectStore> AsyncWritableStorageTraits for T {
+#[async_trait::async_trait]
+impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectStore<T> {
     async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
         // FIXME: Can this copy be avoided?
         let bytes = bytes::Bytes::copy_from_slice(value);
-        ObjectStore::put(self, &key_to_path(key), bytes).await?;
+        self.object_store.put(&key_to_path(key), bytes).await?;
         Ok(())
     }
 
@@ -126,25 +158,37 @@ impl<T: ObjectStore> AsyncWritableStorageTraits for T {
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
-        Ok(handle_result(ObjectStore::delete(self, &key_to_path(key)).await)?.is_some())
+        Ok(handle_result(self.object_store.delete(&key_to_path(key)).await)?.is_some())
     }
 
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
         let prefix: object_store::path::Path = prefix.as_str().into();
-        let locations = ObjectStore::list(self, Some(&prefix))
+        let locations = self
+            .object_store
+            .list(Some(&prefix))
             .map_ok(|m| m.location)
             .boxed();
-        ObjectStore::delete_stream(self, locations)
+        self.object_store
+            .delete_stream(locations)
             .try_collect::<Vec<Path>>()
             .await?;
         Ok(true)
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
-impl<T: ObjectStore> AsyncListableStorageTraits for T {
+#[async_trait::async_trait]
+impl<T: object_store::ObjectStore> AsyncReadableWritableStorageTraits for AsyncObjectStore<T> {
+    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
+        Ok(self.locks.mutex(key).await)
+    }
+}
+
+#[async_trait::async_trait]
+impl<T: object_store::ObjectStore> AsyncListableStorageTraits for AsyncObjectStore<T> {
     async fn list(&self) -> Result<StoreKeys, StorageError> {
-        let mut list = ObjectStore::list(self, None)
+        let mut list = self
+            .object_store
+            .list(None)
             .collect::<Vec<_>>()
             .await
             .into_iter()
@@ -162,7 +206,9 @@ impl<T: ObjectStore> AsyncListableStorageTraits for T {
     async fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
         // TODO: Check if this is outputting everything under prefix, or just one level under
         let path: object_store::path::Path = prefix.as_str().into();
-        let mut list = ObjectStore::list(self, Some(&path))
+        let mut list = self
+            .object_store
+            .list(Some(&path))
             .collect::<Vec<_>>()
             .await
             .into_iter()
@@ -179,7 +225,7 @@ impl<T: ObjectStore> AsyncListableStorageTraits for T {
 
     async fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
         let path: object_store::path::Path = prefix.as_str().into();
-        let list_result = ObjectStore::list_with_delimiter(self, Some(&path)).await?;
+        let list_result = self.object_store.list_with_delimiter(Some(&path)).await?;
         let mut prefixes = list_result
             .common_prefixes
             .iter()
@@ -200,146 +246,4 @@ impl<T: ObjectStore> AsyncListableStorageTraits for T {
         prefixes.sort();
         Ok(StoreKeysPrefixes { keys, prefixes })
     }
-}
-
-/// Implement the storage traits for an object store
-#[macro_export]
-macro_rules! object_store_impl {
-    ($store:ty, $object_store:ident, $locks:ident) => {
-        #[cfg_attr(feature = "async", async_trait::async_trait)]
-        impl $crate::storage::AsyncReadableStorageTraits for $store {
-            async fn get(
-                &self,
-                key: &$crate::storage::StoreKey,
-            ) -> Result<$crate::array::MaybeBytes, $crate::storage::StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::get(&self.$object_store, key).await
-            }
-
-            async fn get_partial_values_key(
-                &self,
-                key: &$crate::storage::StoreKey,
-                byte_ranges: &[$crate::storage::ByteRange],
-            ) -> Result<Option<Vec<Vec<u8>>>, $crate::storage::StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::get_partial_values_key(
-                    &self.$object_store,
-                    key,
-                    byte_ranges,
-                )
-                .await
-            }
-
-            async fn get_partial_values(
-                &self,
-                key_ranges: &[$crate::storage::StoreKeyRange],
-            ) -> Result<Vec<$crate::array::MaybeBytes>, $crate::storage::StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::get_partial_values(
-                    &self.object_store,
-                    key_ranges,
-                )
-                .await
-            }
-
-            async fn size_prefix(
-                &self,
-                prefix: &$crate::storage::StorePrefix,
-            ) -> Result<u64, $crate::storage::StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::size_prefix(
-                    &self.$object_store,
-                    prefix,
-                )
-                .await
-            }
-
-            async fn size_key(
-                &self,
-                key: &$crate::storage::StoreKey,
-            ) -> Result<Option<u64>, $crate::storage::StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::size_key(&self.$object_store, key)
-                    .await
-            }
-
-            async fn size(&self) -> Result<u64, $crate::storage::StorageError> {
-                $crate::storage::AsyncReadableStorageTraits::size(&self.$object_store).await
-            }
-        }
-
-        #[cfg_attr(feature = "async", async_trait::async_trait)]
-        impl $crate::storage::AsyncWritableStorageTraits for $store {
-            async fn set(
-                &self,
-                key: &$crate::storage::StoreKey,
-                value: &[u8],
-            ) -> Result<(), $crate::storage::StorageError> {
-                $crate::storage::AsyncWritableStorageTraits::set(&self.$object_store, key, value)
-                    .await
-            }
-
-            async fn set_partial_values(
-                &self,
-                key_start_values: &[$crate::storage::StoreKeyStartValue],
-            ) -> Result<(), $crate::storage::StorageError> {
-                $crate::storage::async_store_set_partial_values(self, key_start_values).await
-            }
-
-            async fn erase(
-                &self,
-                key: &$crate::storage::StoreKey,
-            ) -> Result<bool, $crate::storage::StorageError> {
-                $crate::storage::AsyncWritableStorageTraits::erase(&self.$object_store, key).await
-            }
-
-            async fn erase_prefix(
-                &self,
-                prefix: &$crate::storage::StorePrefix,
-            ) -> Result<bool, $crate::storage::StorageError> {
-                $crate::storage::AsyncWritableStorageTraits::erase_prefix(
-                    &self.$object_store,
-                    prefix,
-                )
-                .await
-            }
-        }
-
-        #[cfg_attr(feature = "async", async_trait::async_trait)]
-        impl $crate::storage::AsyncReadableWritableStorageTraits for $store {
-            async fn mutex(
-                &self,
-                key: &$crate::storage::StoreKey,
-            ) -> Result<
-                $crate::storage::store_lock::AsyncStoreKeyMutex,
-                $crate::storage::StorageError,
-            > {
-                let mutex = self.$locks.mutex(key).await;
-                Ok(mutex)
-            }
-        }
-
-        #[cfg_attr(feature = "async", async_trait::async_trait)]
-        impl $crate::storage::AsyncListableStorageTraits for $store {
-            async fn list(
-                &self,
-            ) -> Result<$crate::storage::StoreKeys, $crate::storage::StorageError> {
-                $crate::storage::AsyncListableStorageTraits::list(&self.$object_store).await
-            }
-
-            async fn list_prefix(
-                &self,
-                prefix: &$crate::storage::StorePrefix,
-            ) -> Result<$crate::storage::StoreKeys, $crate::storage::StorageError> {
-                $crate::storage::AsyncListableStorageTraits::list_prefix(
-                    &self.$object_store,
-                    prefix,
-                )
-                .await
-            }
-
-            async fn list_dir(
-                &self,
-                prefix: &$crate::storage::StorePrefix,
-            ) -> Result<$crate::storage::StoreKeysPrefixes, $crate::storage::StorageError> {
-                $crate::storage::AsyncListableStorageTraits::list_dir(&self.$object_store, prefix)
-                    .await
-            }
-        }
-    };
 }

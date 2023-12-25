@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking** Remove `http` and `zip` from default features
  - Locking functionality for arrays is moved into stores
  - Improved `Array` documentation
+ - Add `object_store` feature and revise `object_store` support
+   - Add an `ObjectStore` store, which wraps any `object_store`-based store implementing `object_store::ObjectStore`.
+   - **Breaking** Removes the explicit `object_store`-based stores (e.g. `AsyncAmazonS3Store`, `AsyncHTTPStore`)
+   - **Breaking** Removes the `object_store_impl` macro
+   - **Breaking** Removes the `s3`, `gcp`, and `azure` crate features
 
 ## [0.7.3] - 2023-12-22
 

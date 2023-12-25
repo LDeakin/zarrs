@@ -14,7 +14,9 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // let store = Arc::new(store::AsyncFilesystemStore::new(
     //     "tests/data/array_write_read.zarr",
     // )?);
-    let store = Arc::new(store::AsyncMemoryStore::default());
+    let store = Arc::new(store::AsyncObjectStore::new(
+        object_store::memory::InMemory::new(),
+    ));
 
     // Create a group and write metadata to filesystem
     let group_path = "/group";

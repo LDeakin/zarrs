@@ -22,13 +22,11 @@ sharding = [] # Enable the sharding codec
 transpose = ["dep:ndarray"] # Enable the transpose codec
 zfp = ["dep:zfp-sys"] # Enable the experimental zfp codec
 zstd = ["dep:zstd"] # Enable the zstd codec
-http = ["dep:reqwest", "dep:url", "object_store/http"] # Enable the HTTP store (including the async variant if `async` is enabled)
-s3 = ["async", "dep:object_store", "object_store/aws"] # Enable the Amazon S3 store
-gcp = ["async", "dep:object_store", "object_store/gcp"] # Enable the Google Cloud Storage store
-azure = ["async", "dep:object_store", "object_store/azure"]  # Enable the Microsoft Azure Blob Storage store
+http = ["dep:reqwest", "dep:url"] # Enable the sync HTTP store
 zip = ["dep:zip"] # Enable the zip storage adapter
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
-async = ["dep:object_store", "dep:async-trait", "dep:async-recursion", "dep:async-lock", "dep:futures"] # Enable experimental async API (async stores and array/group operations)
+async = ["dep:async-trait", "dep:async-recursion", "dep:async-lock", "dep:futures"] # Enable experimental async API
+object_store = ["dep:object_store"] # Enable object_store asynchronous stores support
 
 [package.metadata.docs.rs]
 all-features = true
@@ -80,11 +78,11 @@ required-features = ["ndarray"]
 
 [[example]]
 name = "async_array_write_read"
-required-features = ["ndarray", "async"]
+required-features = ["ndarray", "async", "object_store"]
 
 [[example]]
 name = "async_http_array_read"
-required-features = ["ndarray", "async", "http"]
+required-features = ["ndarray", "async", "object_store/http"]
 
 [[example]]
 name = "http_array_read"
