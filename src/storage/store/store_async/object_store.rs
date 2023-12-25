@@ -249,148 +249,27 @@ impl<T: object_store::ObjectStore> AsyncListableStorageTraits for AsyncObjectSto
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::{
-        AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
-        StoreKeyStartValue, StorePrefix,
-    };
-
     use super::*;
     use std::error::Error;
 
     #[tokio::test]
-    async fn memory_set() -> Result<(), Box<dyn Error>> {
+    async fn memory() -> Result<(), Box<dyn Error>> {
         let store = AsyncObjectStore::new(object_store::memory::InMemory::new());
-        let key = "a/b".try_into()?;
-        store.set(&key, &[0, 1, 2]).await?;
-        assert_eq!(store.get(&key).await?.unwrap(), &[0, 1, 2]);
-        store
-            .set_partial_values(&[StoreKeyStartValue::new(key.clone(), 1, &[3, 4])])
-            .await?;
-        assert_eq!(store.get(&key).await?.unwrap(), &[0, 3, 4]);
+        super::super::test_util::store_write(&store).await?;
+        super::super::test_util::store_read(&store).await?;
+        super::super::test_util::store_list(&store).await?;
         Ok(())
     }
 
     #[tokio::test]
-    async fn memory_list() -> Result<(), Box<dyn Error>> {
-        let store = AsyncObjectStore::new(object_store::memory::InMemory::new());
-
-        store.set(&"a/b".try_into()?, &[]).await?;
-        store.set(&"a/c".try_into()?, &[]).await?;
-        store.set(&"a/d/e".try_into()?, &[]).await?;
-        store.set(&"a/d/f".try_into()?, &[]).await?;
-        store.erase(&"a/d/e".try_into()?).await?;
-        assert_eq!(
-            store.list().await?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"a/".try_into()?).await?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"a/d/".try_into()?).await?,
-            &["a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"".try_into()?).await?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn memory_list_dir() -> Result<(), Box<dyn Error>> {
-        let store = AsyncObjectStore::new(object_store::memory::InMemory::new());
-        store.set(&"a/b".try_into()?, &[]).await?;
-        store.set(&"a/c".try_into()?, &[]).await?;
-        store.set(&"a/d/e".try_into()?, &[]).await?;
-        store.set(&"a/f/g".try_into()?, &[]).await?;
-        store.set(&"a/f/h".try_into()?, &[]).await?;
-        store.set(&"b/c/d".try_into()?, &[]).await?;
-
-        let list_dir = store.list_dir(&"a/".try_into()?).await?;
-
-        assert_eq!(list_dir.keys(), &["a/b".try_into()?, "a/c".try_into()?,]);
-        assert_eq!(
-            list_dir.prefixes(),
-            &["a/d/".try_into()?, "a/f/".try_into()?,]
-        );
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn filesystem_set() -> Result<(), Box<dyn Error>> {
+    async fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let store = AsyncObjectStore::new(object_store::local::LocalFileSystem::new_with_prefix(
             path.path(),
         )?);
-
-        let key = "a/b".try_into()?;
-        store.set(&key, &[0, 1, 2]).await?;
-        assert_eq!(store.get(&key).await?.unwrap(), &[0, 1, 2]);
-        store
-            .set_partial_values(&[StoreKeyStartValue::new(key.clone(), 1, &[3, 4])])
-            .await?;
-        assert_eq!(store.get(&key).await?.unwrap(), &[0, 3, 4]);
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn filesystem_list() -> Result<(), Box<dyn Error>> {
-        let path = tempfile::TempDir::new()?;
-        let store = AsyncObjectStore::new(object_store::local::LocalFileSystem::new_with_prefix(
-            path.path(),
-        )?);
-
-        store.set(&"a/b".try_into()?, &[]).await?;
-        store.set(&"a/c".try_into()?, &[]).await?;
-        store.set(&"a/d/e".try_into()?, &[]).await?;
-        store.set(&"a/d/f".try_into()?, &[]).await?;
-        store.erase(&"a/d/e".try_into()?).await?;
-        assert_eq!(
-            store.list().await?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"a/".try_into()?).await?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"a/d/".try_into()?).await?,
-            &["a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"".try_into()?).await?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-
-        // assert!(crate::storage::node_exists(&store, &"/a/b".try_into()?).await?);
-        // assert!(crate::storage::node_exists_listable(&store, &"/a/b".try_into()?).await?);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn filesystem_list_dir() -> Result<(), Box<dyn Error>> {
-        let path = tempfile::TempDir::new()?;
-        let store = AsyncObjectStore::new(object_store::local::LocalFileSystem::new_with_prefix(
-            path.path(),
-        )?);
-
-        store.set(&"a/b".try_into()?, &[]).await?;
-        store.set(&"a/c".try_into()?, &[]).await?;
-        store.set(&"a/d/e".try_into()?, &[]).await?;
-        store.set(&"a/f/g".try_into()?, &[]).await?;
-        store.set(&"a/f/h".try_into()?, &[]).await?;
-        store.set(&"b/c/d".try_into()?, &[]).await?;
-
-        let list_dir = store.list_dir(&StorePrefix::new("a/")?).await?;
-
-        assert_eq!(list_dir.keys(), &["a/b".try_into()?, "a/c".try_into()?,]);
-        assert_eq!(
-            list_dir.prefixes(),
-            &["a/d/".try_into()?, "a/f/".try_into()?,]
-        );
+        super::super::test_util::store_write(&store).await?;
+        super::super::test_util::store_read(&store).await?;
+        super::super::test_util::store_list(&store).await?;
         Ok(())
     }
 }

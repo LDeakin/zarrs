@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking** Removes the explicit `object_store`-based stores (e.g. `AsyncAmazonS3Store`, `AsyncHTTPStore`)
    - **Breaking** Removes the `object_store_impl` macro
    - **Breaking** Removes the `s3`, `gcp`, and `azure` crate features
+ - Add store testing utility functions for unified store testing
+
+### Fixed
+ - Fixed `MemoryStore::get_partial_values_key` if given an invalid byte range, now returns `InvalidByteRangeError` instead of panicking
 
 ## [0.7.3] - 2023-12-22
 

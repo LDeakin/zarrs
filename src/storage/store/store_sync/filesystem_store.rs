@@ -406,71 +406,12 @@ mod tests {
     use std::error::Error;
 
     #[test]
-    fn filesystem_set() -> Result<(), Box<dyn Error>> {
-        let path = tempfile::TempDir::new()?;
-        let store = FilesystemStore::new(path.path())?;
-        let key = "a/b".try_into()?;
-        store.set(&key, &[0, 1, 2])?;
-        assert_eq!(store.get(&key)?.unwrap(), &[0, 1, 2]);
-        store.set_partial_values(&[StoreKeyStartValue::new(key.clone(), 1, &[3, 4])])?;
-        assert_eq!(store.get(&key)?.unwrap(), &[0, 3, 4]);
-        Ok(())
-    }
-
-    #[test]
-    fn filesystem_list() -> Result<(), Box<dyn Error>> {
-        let path = tempfile::TempDir::new()?;
-        let store = FilesystemStore::new(path.path())?;
-
-        store.set(&"a/b".try_into()?, &[])?;
-        store.set(&"a/c".try_into()?, &[])?;
-        store.set(&"a/d/e".try_into()?, &[])?;
-        store.set(&"a/d/f".try_into()?, &[])?;
-        store.erase(&"a/d/e".try_into()?)?;
-        assert_eq!(
-            store.list()?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"a/".try_into()?)?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"a/d/".try_into()?)?,
-            &["a/d/f".try_into()?]
-        );
-        assert_eq!(
-            store.list_prefix(&"".try_into()?)?,
-            &["a/b".try_into()?, "a/c".try_into()?, "a/d/f".try_into()?]
-        );
-
-        assert!(crate::storage::node_exists(&store, &"/a/b".try_into()?)?);
-        assert!(crate::storage::node_exists_listable(
-            &store,
-            &"/a/b".try_into()?
-        )?);
-
-        Ok(())
-    }
-
-    #[test]
-    fn filesystem_list_dir() -> Result<(), Box<dyn Error>> {
+    fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?.sorted();
-        store.set(&"a/b".try_into()?, &[])?;
-        store.set(&"a/c".try_into()?, &[])?;
-        store.set(&"a/d/e".try_into()?, &[])?;
-        store.set(&"a/f/g".try_into()?, &[])?;
-        store.set(&"a/f/h".try_into()?, &[])?;
-        store.set(&"b/c/d".try_into()?, &[])?;
-
-        let list_dir = store.list_dir(&StorePrefix::new("a/")?)?;
-
-        assert_eq!(list_dir.keys(), &["a/b".try_into()?, "a/c".try_into()?,]);
-        assert_eq!(
-            list_dir.prefixes(),
-            &["a/d/".try_into()?, "a/f/".try_into()?,]
-        );
+        super::super::test_util::store_write(&store)?;
+        super::super::test_util::store_read(&store)?;
+        super::super::test_util::store_list(&store)?;
         Ok(())
     }
 }
