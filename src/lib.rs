@@ -15,9 +15,16 @@
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/draft/ZEP0001.html).
 //! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/draft/ZEP0002.html) ([under review](https://github.com/zarr-developers/zarr-specs/issues/254)).
 //! - [x] [ZEP0003 - Variable chunking](https://zarr.dev/zeps/draft/ZEP0003.html) ([draft](https://github.com/orgs/zarr-developers/discussions/52)).
-//! - [x] Stores:
-//!   - Sync: [filesystem](crate::storage::store::FilesystemStore), [in memory](crate::storage::store::MemoryStore), [HTTP](crate::storage::store::HTTPStore), [ZIP](crate::storage::storage_adapter::ZipStorageAdapter).
-//!   - Async: [`AsyncObjectStore`](crate::storage::store::AsyncObjectStore) (supports all [`object_store::ObjectStore`] stores, e.g. in-memory, HTTP, Google Cloud Storage, Amazon S3, Microsoft Azure Storage, etc.).
+//! - [x] Stores and storage adapters:
+//!   - Sync:
+//!     - [`FilesystemStore`](crate::storage::store::FilesystemStore).
+//!     - [`MemoryStore`](crate::storage::store::MemoryStore).
+//!     - [`HTTPStore`](crate::storage::store::HTTPStore).
+//!     - [`ZipStorageAdapter`](crate::storage::storage_adapter::ZipStorageAdapter).
+//!     - [`OpendalStore`](crate::storage::store::OpendalStore) (supports all [`opendal` services](https://docs.rs/opendal/latest/opendal/services/index.html)).
+//!   - Async:
+//!     - [`AsyncObjectStore`](crate::storage::store::AsyncObjectStore) (supports all [`object_store` stores](https://docs.rs/object_store/latest/object_store/index.html#modules)).
+//!     - [`AsyncOpendalStore`](crate::storage::store::AsyncOpendalStore) (supports all [`opendal` services](https://docs.rs/opendal/latest/opendal/services/index.html)).
 //! - [x] Data types: [core data types](crate::array::data_type::DataType), [raw bits](crate::array::data_type::DataType::RawBits), [float16](crate::array::data_type::DataType::Float16), [bfloat16](crate::array::data_type::DataType::BFloat16) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130).
 //! - [x] Chunk grids: [regular](crate::array::chunk_grid::RegularChunkGrid), [rectangular](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52)).
 //! - [x] Chunk key encoding: [default](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [v2](crate::array::chunk_key_encoding::V2ChunkKeyEncoding).
@@ -33,9 +40,10 @@
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!
 //! The following features are disabled by default:
-//!  - `async`: asynchronous stores and associated storage, array, and group methods.
 //!  - Codecs: `bitround`, `zfp`.
-//!  - Stores: `http`, `zip`, `s3` (Amazon S3) `gcp` (Google Cloud), `azure` (Microsoft Azure).
+//!  - `async`: asynchronous API for stores, arrays, and groups.
+//!  - `object_store`: support for [`object_store`] stores.
+//!  - `opendal`: support for [`opendal`] stores.
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example EXAMPLE_NAME`.

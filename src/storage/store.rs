@@ -1,7 +1,5 @@
 //! Zarr stores.
 //!
-//! All stores must be Send and Sync with internally managed synchronisation.
-//!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id21>
 
 #[cfg(feature = "async")]
@@ -16,8 +14,13 @@ pub use store_sync::memory_store::MemoryStore;
 #[cfg(feature = "http")]
 pub use store_sync::http_store::{HTTPStore, HTTPStoreCreateError};
 
-#[cfg(all(feature = "async", feature = "object_store"))]
+#[cfg(feature = "object_store")]
 pub use store_async::object_store::AsyncObjectStore;
+
+#[cfg(feature = "opendal")]
+pub use store_async::opendal::AsyncOpendalStore;
+#[cfg(feature = "opendal")]
+pub use store_sync::opendal::OpendalStore;
 
 // pub use store_plugin::{StorePlugin, StorePluginCreateError}; // Currently disabled.
 

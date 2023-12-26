@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Readable and writable stores include a `new_with_locks` method to choose the store lock implementation
  - Added `ArraySubset::new_with_ranges`
  - Added `ByteRange::offset`
+ - Added `object_store` feature with `AsyncObjectStore` store (wraps `object_store::ObjectStore`)
+   - **Breaking** Removes the explicit `object_store`-based stores (e.g. `AsyncAmazonS3Store`, `AsyncHTTPStore`)
+   - **Breaking** Removes the `object_store_impl` macro
+   - **Breaking** Removes the `s3`, `gcp`, and `azure` crate features
+ - Added `opendal` feature
+   - `OpendalStore` store (wraps `opendal::BlockingOperator`)
+   - `AsyncOpendalStore` store (wraps `opendal::Operator`)
 
 ### Changed
  - **Breaking**  `ReadableStorageTraits` is no longer a supertrait of `WritableStorageTraits`
@@ -27,11 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking** Remove `http` and `zip` from default features
  - Locking functionality for arrays is moved into stores
  - Improved `Array` documentation
- - Add `object_store` feature and revise `object_store` support
-   - Add an `ObjectStore` store, which wraps any `object_store`-based store implementing `object_store::ObjectStore`.
-   - **Breaking** Removes the explicit `object_store`-based stores (e.g. `AsyncAmazonS3Store`, `AsyncHTTPStore`)
-   - **Breaking** Removes the `object_store_impl` macro
-   - **Breaking** Removes the `s3`, `gcp`, and `azure` crate features
  - Add store testing utility functions for unified store testing
 
 ### Fixed

@@ -204,6 +204,13 @@ impl From<String> for StorageError {
     }
 }
 
+#[cfg(feature = "opendal")]
+impl From<opendal::Error> for StorageError {
+    fn from(err: opendal::Error) -> Self {
+        Self::Other(err.to_string())
+    }
+}
+
 /// Return the metadata key given a node path.
 #[must_use]
 pub fn meta_key(path: &NodePath) -> StoreKey {

@@ -4,6 +4,9 @@ pub mod memory_store;
 #[cfg(feature = "http")]
 pub mod http_store;
 
+#[cfg(feature = "opendal")]
+pub mod opendal;
+
 #[cfg(test)]
 mod test_util {
     use std::error::Error;
