@@ -56,6 +56,13 @@ impl ByteRange {
         }
     }
 
+    /// Return the internal offset of the byte range (which can be at its start or end).
+    #[must_use]
+    pub fn offset(&self) -> u64 {
+        let (Self::FromStart(offset, _) | Self::FromEnd(offset, _)) = self;
+        *offset
+    }
+
     /// Return the length of a byte range. `size` is the size of the entire bytes.
     #[must_use]
     pub fn length(&self, size: u64) -> u64 {

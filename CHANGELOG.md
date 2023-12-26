@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Includes `DefaultStoreLocks` and `DisabledStoreLocks` implementations
  - Readable and writable stores include a `new_with_locks` method to choose the store lock implementation
  - Added `ArraySubset::new_with_ranges`
+ - Added `ByteRange::offset`
 
 ### Changed
  - **Breaking**  `ReadableStorageTraits` is no longer a supertrait of `WritableStorageTraits`
