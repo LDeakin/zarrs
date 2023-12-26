@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add store testing utility functions for unified store testing
  - Make various `Array` methods with `parallel` parameter `pub`
  - Remove `#[doc(hidden)]` from various functions which are `unsafe` and primarily intended for internal use
+ - **Breaking** Bump minimum supported rust version (MSRV) to `1.71` (13 July, 2023)
 
 ### Fixed
  - Fixed `MemoryStore::get_partial_values_key` if given an invalid byte range, now returns `InvalidByteRangeError` instead of panicking
