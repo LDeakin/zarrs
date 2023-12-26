@@ -41,9 +41,7 @@ impl ArrayRepresentation {
     /// Create a new [`ArrayRepresentation`].
     ///
     /// # Safety
-    ///
     /// `data_type` and `fill_value` must be compatible.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn new_unchecked(
         array_shape: ArrayShape,

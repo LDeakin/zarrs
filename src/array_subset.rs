@@ -99,9 +99,7 @@ impl ArraySubset {
     /// Create a new array subset.
     ///
     /// # Safety
-    ///
     /// The length of `start` and `size` must match.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn new_with_start_shape_unchecked(start: ArrayIndices, shape: ArrayShape) -> Self {
         debug_assert_eq!(start.len(), shape.len());
@@ -127,9 +125,7 @@ impl ArraySubset {
     /// Create a new array subset from a start and end (inclusive).
     ///
     /// # Safety
-    ///
     /// The length of `start` and `end` must match.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn new_with_start_end_inc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
@@ -161,9 +157,7 @@ impl ArraySubset {
     /// Create a new array subset from a start and end (exclusive).
     ///
     /// # Safety
-    ///
     /// The length of `start` and `end` must match.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn new_with_start_end_exc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
@@ -282,9 +276,7 @@ impl ArraySubset {
     /// Return the byte ranges of an array subset in an array with `array_shape` and `element_size`.
     ///
     /// # Safety
-    ///
     /// The length of `array_shape` must match the dimensionality of `array_subset`.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn byte_ranges_unchecked(
         &self,
@@ -339,13 +331,10 @@ impl ArraySubset {
     /// Return the bytes in this array subset from an array with shape `array_shape` and `element_size`.
     ///
     /// # Safety
-    ///
     /// The length of `array_shape` must match the array subset dimensionality and the array subset must be within the bounds of `array_shape`.
     ///
     /// # Panics
-    ///
     /// Panics if attempting to reference a byte beyond `usize::MAX`.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn extract_bytes_unchecked(
         &self,
@@ -417,13 +406,10 @@ impl ArraySubset {
     /// Return the elements in this array subset from an array with shape `array_shape`.
     ///
     /// # Safety
-    ///
     /// The length of `array_shape` must match the array subset dimensionality and the array subset must be within the bounds of `array_shape`.
     ///
     /// # Panics
-    ///
     /// Panics if attempting to reference a byte beyond `usize::MAX`.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn extract_elements_unchecked<T: std::marker::Copy>(
         &self,
@@ -569,9 +555,7 @@ impl ArraySubset {
     /// Returns an iterator over the indices of elements within the subset.
     ///
     /// # Safety
-    ///
     /// `array_shape` must match the dimensionality and encapsulate this array subset.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn iter_linearised_indices_unchecked<'a>(
         &'a self,
@@ -595,9 +579,7 @@ impl ArraySubset {
     /// Returns an iterator over the indices of contiguous elements within the subset.
     ///
     /// # Safety
-    ///
     /// The length of `array_shape` must match the array subset dimensionality.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn iter_contiguous_indices_unchecked<'a>(
         &'a self,
@@ -621,9 +603,7 @@ impl ArraySubset {
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
     ///
     /// # Safety
-    ///
     /// The length of `array_shape` must match the array subset dimensionality.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn iter_contiguous_linearised_indices_unchecked<'a>(
         &'a self,
@@ -653,9 +633,7 @@ impl ArraySubset {
     /// Thus, the subsets of the chunks may extend out over the subset.
     ///
     /// # Safety
-    ///
     /// The length of `chunk_shape` must match the array subset dimensionality.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn iter_chunks_unchecked<'a>(&'a self, chunk_shape: &'a [u64]) -> ChunksIterator {
         ChunksIterator::new_unchecked(self, chunk_shape)
@@ -691,9 +669,7 @@ impl ArraySubset {
     /// The start of the returned array subset is from the start of this array subset.
     ///
     /// # Safety
-    ///
     /// Panics if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn in_subset_unchecked(&self, subset_other: &Self) -> Self {
         debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
@@ -731,9 +707,7 @@ impl ArraySubset {
     /// Return the overlapping subset between this array subset and `subset_other`.
     ///
     /// # Safety
-    ///
     /// Panics if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
-    #[doc(hidden)]
     #[must_use]
     pub unsafe fn overlap_unchecked(&self, subset_other: &Self) -> Self {
         debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());

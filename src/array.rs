@@ -518,7 +518,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
 }
 
 // Safe transmute, avoiding an allocation where possible
-// https://github.com/nabijaczleweli/safe-transmute-rs/issues/16#issuecomment-471066699
+//
+// A relevant discussion about this can be found here: https://github.com/nabijaczleweli/safe-transmute-rs/issues/16#issuecomment-471066699
 #[doc(hidden)]
 #[must_use]
 pub fn safe_transmute_to_bytes_vec<T: TriviallyTransmutable>(mut from: Vec<T>) -> Vec<u8> {
@@ -585,7 +586,6 @@ pub fn safe_transmute_to_bytes_vec<T: TriviallyTransmutable>(mut from: Vec<T>) -
 }
 
 /// Unravel a linearised index to ND indices.
-#[doc(hidden)]
 #[must_use]
 pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {
     let len = shape.len();
@@ -601,7 +601,6 @@ pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {
 }
 
 /// Ravel ND indices to a linearised index.
-#[doc(hidden)]
 #[must_use]
 pub fn ravel_indices(indices: &[u64], shape: &[u64]) -> u64 {
     let mut index: u64 = 0;

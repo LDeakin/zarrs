@@ -111,7 +111,6 @@ fn validate_byte_ranges(byte_ranges: &[ByteRange], bytes_len: u64) -> bool {
 /// Extract byte ranges from bytes.
 ///
 /// # Errors
-///
 /// Returns [`InvalidByteRangeError`] if any bytes are requested beyond the end of `bytes`.
 pub fn extract_byte_ranges(
     bytes: &[u8],
@@ -126,10 +125,10 @@ pub fn extract_byte_ranges(
 /// Extract byte ranges from bytes.
 ///
 /// # Safety
-///
 /// All byte ranges in `byte_ranges` must specify a range within `bytes`.
 ///
-#[doc(hidden)]
+/// # Panics
+/// Panics if attempting to reference a byte beyond `usize::MAX`.
 #[must_use]
 pub unsafe fn extract_byte_ranges_unchecked(
     bytes: &[u8],

@@ -252,11 +252,9 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
             })
     }
 
-    #[doc(hidden)]
     /// See [`ChunkGridTraits::grid_shape`].
     ///
     /// # Safety
-    ///
     /// The length of `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn grid_shape_unchecked(&self, array_shape: &[u64]) -> Option<ArrayShape>;
 
@@ -270,11 +268,9 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         array_shape: &[u64],
     ) -> Option<ArrayIndices>;
 
-    #[doc(hidden)]
     /// See [`ChunkGridTraits::chunk_shape`].
     ///
     /// # Safety
-    ///
     /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
     unsafe fn chunk_shape_unchecked(
         &self,
@@ -282,7 +278,6 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         array_shape: &[u64],
     ) -> Option<ArrayShape>;
 
-    #[doc(hidden)]
     /// See [`ChunkGridTraits::chunk_indices`].
     ///
     /// # Safety
@@ -293,7 +288,6 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         array_shape: &[u64],
     ) -> Option<ArrayIndices>;
 
-    #[doc(hidden)]
     /// See [`ChunkGridTraits::chunk_element_indices`].
     ///
     /// # Safety
@@ -304,7 +298,6 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         array_shape: &[u64],
     ) -> Option<ArrayIndices>;
 
-    #[doc(hidden)]
     /// See [`ChunkGridTraits::subset`].
     ///
     /// # Safety
