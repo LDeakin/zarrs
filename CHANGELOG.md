@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2023-12-26
+
+### Highlights
+ - Feature changes:
+   - Added: `object_store` and `opendal` with generalised support for stores from these crates
+   - Removed: `s3`, `gcp`, and `azure` (use `object_store` or `opendal` instead)
+   - Changed: `http` and `zip` are no longer default features
+ - `ReadableStorageTraits` is no longer a supertrait of `WritableStorageTraits`
+ - Moved chunk locking from `Array` into stores
+ - Improved documentation and code coverage
+
 ### Added
  - Added `ReadableWritableStorage` and `ReadableWritableStore` and async variants
  - Added `{async_}store_set_partial_values`
@@ -361,7 +372,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.7.3...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.8.0
 [0.7.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.7.3
 [0.7.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.7.2
 [0.7.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.7.1
