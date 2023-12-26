@@ -10,6 +10,7 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 - [Changelog (`CHANGELOG.md`)](./CHANGELOG.md)
 - [Examples (`./examples`)](./examples)
 - [Build instructions (`BUILD.md`)](./BUILD.md)
+- [zarrs_tools (`docs.rs`)](https://docs.rs/zarrs_tools/latest/zarrs_tools/): Various tools for creating and manipulating Zarr v3 data with the zarrs rust crate
 
 A subset of zarrs is exposed as a C API by [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi). This is a work in progress.
 
