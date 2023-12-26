@@ -216,7 +216,20 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         Ok(())
     }
 
-    fn _retrieve_array_subset(
+    /// Read and decode the `array_subset` of array into its bytes.
+    ///
+    /// Out-of-bounds elements will have the fill value.
+    /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the `array_subset` dimensionality does not match the chunk grid dimensionality,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Panics if attempting to reference a byte beyond `usize::MAX`.
+    pub fn retrieve_array_subset_opt(
         &self,
         array_subset: &ArraySubset,
         parallel: bool,
@@ -319,36 +332,34 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         }
     }
 
-    /// Read and decode the `array_subset` of array into its bytes.
-    ///
-    /// Out-of-bounds elements will have the fill value.
-    /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the `array_subset` dimensionality does not match the chunk grid dimensionality,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Panics if attempting to reference a byte beyond `usize::MAX`.
+    /// Serial version of [`Array::retrieve_array_subset_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn retrieve_array_subset(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Box<[u8]>, ArrayError> {
-        self._retrieve_array_subset(array_subset, false)
+        self.retrieve_array_subset_opt(array_subset, false)
     }
 
-    /// Parallel version of [`Array::retrieve_array_subset`].
+    /// Parallel version of [`Array::retrieve_array_subset_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn par_retrieve_array_subset(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Box<[u8]>, ArrayError> {
-        self._retrieve_array_subset(array_subset, true)
+        self.retrieve_array_subset_opt(array_subset, true)
     }
 
-    fn _retrieve_array_subset_elements<T: TriviallyTransmutable>(
+    /// Read and decode the `array_subset` of array into a vector of its elements.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the size of `T` does not match the data type size,
+    ///  - the decoded bytes cannot be transmuted,
+    ///  - an array subset is invalid or out of bounds of the array,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    pub fn retrieve_array_subset_elements_opt<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
         parallel: bool,
@@ -360,7 +371,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             ));
         }
 
-        let bytes = self._retrieve_array_subset(array_subset, parallel)?;
+        let bytes = self.retrieve_array_subset_opt(array_subset, parallel)?;
         if safe_transmute::align::check_alignment::<_, T>(&bytes).is_ok() {
             // no-copy path
             let mut bytes = core::mem::ManuallyDrop::new(bytes);
@@ -381,33 +392,36 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         }
     }
 
-    /// Read and decode the `array_subset` of array into a vector of its elements.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the size of `T` does not match the data type size,
-    ///  - the decoded bytes cannot be transmuted,
-    ///  - an array subset is invalid or out of bounds of the array,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
+    /// Serial version of [`Array::retrieve_array_subset_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn retrieve_array_subset_elements<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Box<[T]>, ArrayError> {
-        self._retrieve_array_subset_elements(array_subset, false)
+        self.retrieve_array_subset_elements_opt(array_subset, false)
     }
 
-    /// Parallel version of [`Array::retrieve_array_subset_elements`].
+    /// Parallel version of [`Array::retrieve_array_subset_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn par_retrieve_array_subset_elements<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Box<[T]>, ArrayError> {
-        self._retrieve_array_subset_elements(array_subset, true)
+        self.retrieve_array_subset_elements_opt(array_subset, true)
     }
 
     #[cfg(feature = "ndarray")]
-    fn _retrieve_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`].
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - an array subset is invalid or out of bounds of the array,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
+    pub fn retrieve_array_subset_ndarray_opt<T: safe_transmute::TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
         parallel: bool,
@@ -421,7 +435,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
             ));
         }
 
-        let elements = self._retrieve_array_subset_elements(array_subset, parallel)?;
+        let elements = self.retrieve_array_subset_elements_opt(array_subset, parallel)?;
         let length = elements.len();
         ndarray::ArrayD::<T>::from_shape_vec(
             iter_u64_to_usize(array_subset.shape().iter()),
@@ -436,21 +450,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`].
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - an array subset is invalid or out of bounds of the array,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
+    /// Serial version of [`Array::retrieve_array_subset_ndarray`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn retrieve_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self._retrieve_array_subset_ndarray(array_subset, false)
+        self.retrieve_array_subset_ndarray_opt(array_subset, false)
     }
 
     #[cfg(feature = "ndarray")]
@@ -460,7 +466,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         &self,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self._retrieve_array_subset_ndarray(array_subset, true)
+        self.retrieve_array_subset_ndarray_opt(array_subset, true)
     }
 
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes.
@@ -778,7 +784,19 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
 }
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
-    fn _store_array_subset(
+    /// Encode `subset_bytes` and store in `array_subset`.
+    ///
+    /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
+    /// Prefer to use [`store_chunk`](Array<WritableStorageTraits>::store_chunk) since this will decode and encode each chunk intersecting `array_subset`.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the dimensionality of `array_subset` does not match the chunk grid dimensionality
+    ///  - the length of `subset_bytes` does not match the expected length governed by the shape of the array subset and the data type size,
+    ///  - there is a codec encoding error, or
+    ///  - an underlying store error.
+    #[allow(clippy::missing_panics_doc)]
+    pub fn store_array_subset_opt(
         &self,
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
@@ -893,36 +911,35 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
         Ok(())
     }
 
-    /// Encode `subset_bytes` and store in `array_subset`.
-    ///
-    /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
-    /// Prefer to use [`store_chunk`](Array<WritableStorageTraits>::store_chunk) since this will decode and encode each chunk intersecting `array_subset`.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the dimensionality of `array_subset` does not match the chunk grid dimensionality
-    ///  - the length of `subset_bytes` does not match the expected length governed by the shape of the array subset and the data type size,
-    ///  - there is a codec encoding error, or
-    ///  - an underlying store error.
+    /// Serial version of [`Array::store_array_subset_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_array_subset(
         &self,
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self._store_array_subset(array_subset, subset_bytes, false)
+        self.store_array_subset_opt(array_subset, subset_bytes, false)
     }
 
-    /// Parallel version of [`Array::store_array_subset`].
+    /// Parallel version of [`Array::store_array_subset_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn par_store_array_subset(
         &self,
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self._store_array_subset(array_subset, subset_bytes, true)
+        self.store_array_subset_opt(array_subset, subset_bytes, true)
     }
 
-    fn _store_array_subset_elements<T: TriviallyTransmutable>(
+    /// Encode `subset_elements` and store in `array_subset`.
+    ///
+    /// Prefer to use [`store_chunk`](Array<WritableStorageTraits>::store_chunk) since this will decode and encode each chunk intersecting `array_subset`.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the size of `T` does not match the data type size, or
+    ///  - a [`store_array_subset`](Array::store_array_subset) error condition is met.
+    pub fn store_array_subset_elements_opt<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -936,37 +953,36 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
         }
 
         let subset_bytes = safe_transmute_to_bytes_vec(subset_elements);
-        self._store_array_subset(array_subset, subset_bytes, parallel)
+        self.store_array_subset_opt(array_subset, subset_bytes, parallel)
     }
 
-    /// Encode `subset_elements` and store in `array_subset`.
-    ///
-    /// Prefer to use [`store_chunk`](Array<WritableStorageTraits>::store_chunk) since this will decode and encode each chunk intersecting `array_subset`.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the size of `T` does not match the data type size, or
-    ///  - a [`store_array_subset`](Array::store_array_subset) error condition is met.
+    /// Serial version of [`Array::store_array_subset_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_array_subset_elements<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        self._store_array_subset_elements(array_subset, subset_elements, false)
+        self.store_array_subset_elements_opt(array_subset, subset_elements, false)
     }
 
-    /// Parallel version of [`Array::store_array_subset_elements`].
+    /// Parallel version of [`Array::store_array_subset_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn par_store_array_subset_elements<T: TriviallyTransmutable>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        self._store_array_subset_elements(array_subset, subset_elements, true)
+        self.store_array_subset_elements_opt(array_subset, subset_elements, true)
     }
 
     #[cfg(feature = "ndarray")]
-    fn _store_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
+    /// Encode `subset_array` and store in the array subset starting at `subset_start`.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
+    #[allow(clippy::missing_panics_doc)]
+    pub fn store_array_subset_ndarray_opt<T: safe_transmute::TriviallyTransmutable>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
@@ -994,32 +1010,29 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
         };
         let array_standard = subset_array.as_standard_layout();
         let elements = array_standard.into_owned().into_raw_vec();
-        self._store_array_subset_elements(&subset, elements, parallel)
+        self.store_array_subset_elements_opt(&subset, elements, parallel)
     }
 
     #[cfg(feature = "ndarray")]
-    /// Encode `subset_array` and store in the array subset starting at `subset_start`.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
-    #[allow(clippy::missing_panics_doc)]
+    /// Serial version of [`Array::store_array_subset_ndarray_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
-        self._store_array_subset_ndarray(subset_start, subset_array, false)
+        self.store_array_subset_ndarray_opt(subset_start, subset_array, false)
     }
 
     #[cfg(feature = "ndarray")]
-    /// Parallel version of [`Array::store_array_subset_ndarray`].
+    /// Parallel version of [`Array::store_array_subset_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn par_store_array_subset_ndarray<T: safe_transmute::TriviallyTransmutable>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
-        self._store_array_subset_ndarray(subset_start, subset_array, true)
+        self.store_array_subset_ndarray_opt(subset_start, subset_array, true)
     }
 
     /// Encode `chunk_subset_bytes` and store in `chunk_subset` of the chunk at `chunk_indices`.

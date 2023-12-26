@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Locking functionality for arrays is moved into stores
  - Improved `Array` documentation
  - Add store testing utility functions for unified store testing
+ - Make various `Array` methods with `parallel` parameter `pub`
 
 ### Fixed
  - Fixed `MemoryStore::get_partial_values_key` if given an invalid byte range, now returns `InvalidByteRangeError` instead of panicking
