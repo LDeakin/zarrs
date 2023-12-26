@@ -10,17 +10,43 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  build:
+    strategy:
+      matrix:
+        toolchain: ["stable", "1.70", "beta", "nightly"]
+        features: ["--features \"\"", "--all-features", "--no-default-features"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt update && sudo apt install -y cmake clang-15
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build ${{ matrix.features }}
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt update && sudo apt install -y cmake clang-15
       - uses: dtolnay/rust-toolchain@stable
-      - run: rustup component add rustfmt clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --all-features
       - run: cargo test --all-features
-      - run: cargo check # default features
-      - run: cargo check --no-default-features
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt update && sudo apt install -y cmake clang-15
+      - uses: dtolnay/rust-toolchain@stable
+      - run: rustup component add rustfmt
+      - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt update && sudo apt install -y cmake clang-15
+      - uses: dtolnay/rust-toolchain@stable
+      - run: rustup component add clippy
+      - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-features -- -D warnings
