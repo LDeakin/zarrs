@@ -1,8 +1,9 @@
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
 fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
     use std::sync::Arc;
     use zarrs::{
-        array::{chunk_grid::ChunkGridTraits, DataType, FillValue, ZARR_NAN_F32},
+        array::{DataType, FillValue, ZARR_NAN_F32},
         array_subset::ArraySubset,
         node::Node,
         storage::store,
@@ -49,73 +50,95 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Write array metadata to store
     array.store_metadata()?;
 
-    // Write some chunks (in parallel)
-    (0..2).into_par_iter().try_for_each(|i| {
-        let chunk_grid: &Box<dyn ChunkGridTraits> = array.chunk_grid();
-        let chunk_indices: Vec<u64> = vec![i, 0];
-        if let Some(chunk_subset) = chunk_grid.subset(&chunk_indices, array.shape())? {
-            array.store_chunk_elements(
-                &chunk_indices,
-                vec![i as f32; chunk_subset.num_elements() as usize],
-            )
-            // let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
-            // let chunk_array = ndarray::ArrayD::<f32>::from_elem(chunk_shape.clone(), i as f32);
-            // array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
-        } else {
-            Err(zarrs::array::ArrayError::InvalidChunkGridIndicesError(
-                chunk_indices.to_vec(),
-            ))
-        }
-    })?;
-
     println!(
         "The array metadata is:\n{}\n",
         serde_json::to_string_pretty(&array.metadata()).unwrap()
     );
 
+    // Write some chunks
+    (0..2).into_par_iter().try_for_each(|i| {
+        let chunk_indices: Vec<u64> = vec![0, i];
+        let chunk_subset = array
+            .chunk_grid()
+            .subset(&chunk_indices, array.shape())?
+            .ok_or_else(|| {
+                zarrs::array::ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec())
+            })?;
+        array.store_chunk_elements(
+            &chunk_indices,
+            vec![i as f32 * 0.1; chunk_subset.num_elements() as usize],
+        )
+    })?;
+
+    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+    let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
+    println!("store_chunk [0, 0] and [0, 1]:\n{data_all:+4.1}\n");
+
+    // Store multiple chunks
+    array.store_chunks_elements_opt::<f32>(
+        &ArraySubset::new_with_ranges(&[1..2, 0..2]),
+        vec![
+            //
+            1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1,
+            //
+            1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1,
+        ],
+        true,
+    )?;
+    let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
+    println!("store_chunks [1..2, 0..2]:\n{data_all:+4.1}\n");
+
     // Write a subset spanning multiple chunks, including updating chunks already written
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_ranges(&[3..6, 3..6]),
-        vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        vec![-3.3, -3.4, -3.5, -4.3, -4.4, -4.5, -5.3, -5.4, -5.5],
     )?;
+    let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
+    println!("store_array_subset [3..6, 3..6]:\n{data_all:+4.1}\n");
 
-    // Store elements directly, in this case set the 7th column to 123.0
+    // Store array subset
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_ranges(&[0..8, 6..7]),
-        vec![123.0; 8],
+        vec![-0.6, -1.6, -2.6, -3.6, -4.6, -5.6, -6.6, -7.6],
     )?;
+    let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
+    println!("store_array_subset [0..8, 6..7]:\n{data_all:+4.1}\n");
 
-    // Store elements directly in a chunk, in this case set the last row of the bottom right chunk
+    // Store chunk subset
     array.store_chunk_subset_elements::<f32>(
         // chunk indices
         &[1, 1],
         // subset within chunk
         &ArraySubset::new_with_ranges(&[3..4, 0..4]),
-        vec![-4.0; 4],
+        vec![-7.4, -7.5, -7.6, -7.7],
     )?;
+    let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
+    println!("store_chunk_subset [3..4, 0..4] of chunk [1, 1]:\n{data_all:+4.1}\n");
 
     // Erase a chunk
-    array.erase_chunk(&[0, 1])?;
-
-    // Read the whole array
-    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+    array.erase_chunk(&[0, 0])?;
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
-    println!("The whole array is:\n{:?}\n", data_all);
+    println!("erase_chunk [0, 0]:\n{data_all:+4.1}\n");
 
-    // Read a chunk back from the store
-    let chunk_indices = vec![1, 0];
+    // Read a chunk
+    let chunk_indices = vec![0, 1];
     let data_chunk = array.retrieve_chunk_ndarray::<f32>(&chunk_indices)?;
-    println!("Chunk [1,0] is:\n{data_chunk:?}\n");
+    println!("retrieve_chunk [0, 1]:\n{data_chunk:+4.1}\n");
 
-    // Read the central 4x2 subset of the array
-    let subset_4x2 = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
-    let data_4x2 = array.retrieve_array_subset_ndarray::<f32>(&subset_4x2)?;
-    println!("The middle 4x2 subset is:\n{:?}\n", data_4x2);
+    // Read chunks
+    let chunks = ArraySubset::new_with_ranges(&[0..2, 1..2]);
+    let data_chunks = array.retrieve_chunks_ndarray::<f32>(&chunks)?;
+    println!("retrieve_chunks [0..2, 1..2]:\n{data_chunks:+4.1}\n");
+
+    // Retrieve an array subset
+    let subset = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
+    let data_subset = array.retrieve_array_subset_ndarray::<f32>(&subset)?;
+    println!("retrieve_array_subset [2..6, 3..5]:\n{data_subset:+4.1}\n");
 
     // Show the hierarchy
     let node = Node::new_with_store(&*store, "/").unwrap();
     let tree = node.hierarchy_tree();
-    println!("The zarr hierarchy tree is:\n{}", tree);
+    println!("hierarchy_tree:\n{}", tree);
 
     Ok(())
 }

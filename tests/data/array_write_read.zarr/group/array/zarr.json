@@ -30,6 +30,13 @@
       }
     }
   ],
+  "attributes": {
+    "_zarrs": {
+      "description": "This array was created with zarrs",
+      "repository": "https://github.com/LDeakin/zarrs",
+      "version": "0.8.1"
+    }
+  },
   "dimension_names": [
     "y",
     "x"

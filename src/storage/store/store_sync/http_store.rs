@@ -252,15 +252,14 @@ mod tests {
         let data_4x2 = array
             .retrieve_array_subset_elements::<f32>(&subset_4x2)
             .unwrap();
-        // assert_eq!(data_4x2, &[0.0, f32::NAN, 0.1, f32::NAN, 0.4, 0.5, 0.7, 0.8]);
-        assert_eq!(data_4x2[0], 0.0);
-        assert!(data_4x2[1].is_nan());
-        assert_eq!(data_4x2[2], 0.1);
-        assert!(data_4x2[3].is_nan());
-        assert_eq!(data_4x2[4], 0.4);
-        assert_eq!(data_4x2[5], 0.5);
-        assert_eq!(data_4x2[6], 0.7);
-        assert_eq!(data_4x2[7], 0.8);
+        assert!(data_4x2[0].is_nan());
+        assert_eq!(data_4x2[1], 0.1);
+        assert!(data_4x2[2].is_nan());
+        assert_eq!(data_4x2[3], -3.4);
+        assert_eq!(data_4x2[4], -4.3);
+        assert_eq!(data_4x2[5], -4.4);
+        assert_eq!(data_4x2[6], -5.3);
+        assert_eq!(data_4x2[7], -5.4);
 
         // let data = array.retrieve_array_subset_ndarray::<f32>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
         // println!("{data:?}");

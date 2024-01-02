@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Use macros to reduce common code patterns in `Array`
  - Separate `Array` methods into separate files for each storage trait
  - **Breaking**: Remove `_opt` and `par_` variants of `async_retrieve_array_subset` and `async_store_array_subset` (including `_elements` and `_ndarray` variants)
+ - Revise `array_write_read` and `async_array_write_read` examples
 
 ## [0.8.0] - 2023-12-26
 
