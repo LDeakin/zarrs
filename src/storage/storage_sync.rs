@@ -57,7 +57,7 @@ pub trait ReadableStorageTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
+    /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
     fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError>;
 
     /// Return the size in bytes of the value at `key`.
@@ -73,7 +73,7 @@ pub trait ReadableStorageTraits: Send + Sync {
     ///
     /// # Errors
     ///
-    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
+    /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
     fn size(&self) -> Result<u64, StorageError> {
         self.size_prefix(&StorePrefix::root())
     }

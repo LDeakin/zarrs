@@ -51,7 +51,6 @@ impl GzipCompressionLevel {
     /// Create a new compression level.
     ///
     /// # Errors
-    ///
     /// Errors if `compression_level` is not between 0-9.
     pub fn new<N: num::Unsigned + std::cmp::PartialOrd<u32>>(
         compression_level: N,
@@ -60,7 +59,7 @@ impl GzipCompressionLevel {
         u32: From<N>,
     {
         if compression_level < 10 {
-            Ok(Self(u32::try_from(compression_level).unwrap_or_default()))
+            Ok(Self(u32::from(compression_level)))
         } else {
             Err(compression_level)
         }

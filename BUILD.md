@@ -10,14 +10,14 @@ cargo build --all-features && \
 cargo test --all-features && \
 cargo +nightly doc --all-features && \
 cargo fmt --all -- --check && \
-cargo clippy --all-features -- -D warnings && \
+cargo +nightly clippy --all-features -- -D warnings && \
 cargo check && \
 cargo check --no-default-features
 ```
 
 ```bash
 # Additional checks
-cargo clippy --all-features -- -D warnings -W clippy::nursery -A clippy::significant_drop_tightening -A clippy::significant_drop_in_scrutinee
+cargo +nightly clippy --all-features -- -D warnings -W clippy::nursery -A clippy::significant_drop_tightening -A clippy::significant_drop_in_scrutinee
 # cargo clippy --all-features -- -D warnings -W clippy::unwrap_used -W clippy::expect_used
 ```
 
