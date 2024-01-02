@@ -6,13 +6,10 @@
 //! Use [`ArrayBuilder`] to setup a new array, or use [`Array::new`] for an existing array.
 //! The documentation for [`Array`] details how to interact with arrays.
 
-#[cfg(feature = "async")]
-mod array_async;
 mod array_builder;
 mod array_errors;
 mod array_metadata;
 mod array_representation;
-mod array_sync;
 mod bytes_representation;
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
@@ -42,7 +39,8 @@ pub use self::{
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
 };
 
-use safe_transmute::TriviallyTransmutable;
+/// Re-export of [`safe_transmute::TriviallyTransmutable`].
+pub use safe_transmute::TriviallyTransmutable;
 use serde::Serialize;
 
 use crate::{
@@ -100,20 +98,26 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// #### Sync API
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage). In summary:
 ///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
+///    - [`new`](Array::new)
 ///    - [`retrieve_chunk`](Array::retrieve_chunk)
+///    - [`retrieve_chunks`](Array::retrieve_chunks)
 ///    - [`retrieve_chunk_subset`](Array::retrieve_chunk_subset)
-///    - [`retrieve_array_subset`](Array::retrieve_array_subset) / [`par_retrieve_array_subset`](Array::par_retrieve_array_subset)
+///    - [`retrieve_array_subset`](Array::retrieve_array_subset)
 ///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): write array data and metadata
+///    - [`store_metadata`](Array::store_metadata)
 ///    - [`store_chunk`](Array::store_chunk)
+///    - [`store_chunks`](Array::store_chunks)
 ///    - [`erase_chunk`](Array::erase_chunk)
+///    - [`erase_chunks`](Array::erase_chunks)
 ///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): perform operations requiring both reading and writing
 ///    - [`store_chunk_subset`](Array::store_chunk_subset)
-///    - [`store_array_subset`](Array::store_array_subset) / [`par_store_array_subset`](Array::par_store_array_subset)
+///    - [`store_array_subset`](Array::store_array_subset)
 ///
-/// These `retrieve` and `store` methods have multiple variants:
-///   - The above variants store or retrieve data represented as bytes.
-///   - Variants with an `_elements` suffix can read and write array elements with a known type.
-///   - With the `ndarray` feature, method variants with an `_ndarray` suffix can be used to store or retrieve [`ndarray::Array`]s.
+/// Most `retrieve` and `store` methods have multiple variants:
+///   - Standard variants store or retrieve data represented as bytes.
+///   - `_elements` suffix variants can store or retrieve chunks with a known type.
+///   - `_ndarray` suffix variants can store or retrieve [`ndarray::Array`]s (requires `ndarray` feature).
+///   - Some variants support internal parallelisation, they have `par_` prefix and `_opt` suffix variants.
 ///
 /// #### Async API
 /// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
@@ -417,7 +421,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         .into()
     }
 
-    /// Create an array builder matching the parameters of this array
+    /// Create an array builder matching the parameters of this array.
     #[must_use]
     pub fn builder(&self) -> ArrayBuilder {
         ArrayBuilder::from_array(self)
@@ -458,6 +462,28 @@ impl<TStorage: ?Sized> Array<TStorage> {
     pub fn chunk_subset_bounded(&self, chunk_indices: &[u64]) -> Result<ArraySubset, ArrayError> {
         let chunk_subset = self.chunk_subset(chunk_indices)?;
         Ok(unsafe { chunk_subset.bound_unchecked(self.shape()) })
+    }
+
+    /// Return the array subset of `chunks`.
+    ///
+    /// # Errors
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if a chunk in `chunks` is incompatible with the chunk grid.
+    #[allow(clippy::similar_names)]
+    pub fn chunks_subset(&self, chunks: &ArraySubset) -> Result<ArraySubset, ArrayError> {
+        let chunk0 = self.chunk_subset(chunks.start())?;
+        let chunk1 = self.chunk_subset(&chunks.end_inc())?;
+        let start = chunk0.start();
+        let end = chunk1.end_exc();
+        Ok(unsafe { ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end) })
+    }
+
+    /// Return the array subset of `chunks` bounded by the array shape.
+    ///
+    /// # Errors
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
+    pub fn chunks_subset_bounded(&self, chunks: &ArraySubset) -> Result<ArraySubset, ArrayError> {
+        let chunks_subset = self.chunks_subset(chunks)?;
+        Ok(unsafe { chunks_subset.bound_unchecked(self.shape()) })
     }
 
     /// Get the chunk array representation at `chunk_index`.
@@ -516,6 +542,81 @@ impl<TStorage: ?Sized> Array<TStorage> {
         )
     }
 }
+
+macro_rules! array_store_elements {
+    ( $self:expr, $elements:ident, $func:ident($($arg:tt)*) ) => {
+        if $self.data_type.size() != std::mem::size_of::<T>() {
+            Err(ArrayError::IncompatibleElementSize(
+                $self.data_type.size(),
+                std::mem::size_of::<T>(),
+            ))
+        } else {
+            let $elements = safe_transmute_to_bytes_vec($elements);
+            $self.$func($($arg)*)
+        }
+    };
+}
+
+#[cfg(feature = "ndarray")]
+macro_rules! array_store_ndarray {
+    ( $self:expr, $array:ident, $func:ident($($arg:tt)*) ) => {
+        if $self.data_type.size() != std::mem::size_of::<T>() {
+            Err(ArrayError::IncompatibleElementSize(
+                $self.data_type.size(),
+                std::mem::size_of::<T>(),
+            ))
+        } else {
+            let $array = $array.as_standard_layout().into_owned().into_raw_vec();
+            $self.$func($($arg)*)
+        }
+    };
+}
+
+#[cfg(feature = "async")]
+macro_rules! array_async_store_elements {
+    ( $self:expr, $elements:ident, $func:ident($($arg:tt)*) ) => {
+        if $self.data_type.size() != std::mem::size_of::<T>() {
+            Err(ArrayError::IncompatibleElementSize(
+                $self.data_type.size(),
+                std::mem::size_of::<T>(),
+            ))
+        } else {
+            let $elements = safe_transmute_to_bytes_vec($elements);
+            $self.$func($($arg)*).await
+        }
+    };
+}
+
+#[cfg(feature = "async")]
+#[cfg(feature = "ndarray")]
+macro_rules! array_async_store_ndarray {
+    ( $self:expr, $array:ident, $func:ident($($arg:tt)*) ) => {
+        if $self.data_type.size() != std::mem::size_of::<T>() {
+            Err(ArrayError::IncompatibleElementSize(
+                $self.data_type.size(),
+                std::mem::size_of::<T>(),
+            ))
+        } else {
+            let $array = $array.as_standard_layout().into_owned().into_raw_vec();
+            $self.$func($($arg)*).await
+        }
+    };
+}
+
+mod array_sync_readable;
+
+mod array_sync_writable;
+
+mod array_sync_readable_writable;
+
+#[cfg(feature = "async")]
+mod array_async_readable;
+
+#[cfg(feature = "async")]
+mod array_async_writable;
+
+#[cfg(feature = "async")]
+mod array_async_readable_writable;
 
 // Safe transmute, avoiding an allocation where possible
 //
@@ -623,9 +724,12 @@ mod tests {
     use itertools::Itertools;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-    use crate::storage::{
-        store::MemoryStore,
-        store_lock::{DefaultStoreLocks, StoreLocks},
+    use crate::{
+        array_subset::ArraySubset,
+        storage::{
+            store::MemoryStore,
+            store_lock::{DefaultStoreLocks, StoreLocks},
+        },
     };
 
     use super::*;
