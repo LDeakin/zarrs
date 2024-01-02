@@ -261,7 +261,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.storage.set_partial_values(key_start_values)
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
+    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase({key:?}",
@@ -270,7 +270,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.storage.erase(key)
     }
 
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
+    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_values({keys:?}",
@@ -279,7 +279,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.storage.erase_values(keys)
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_prefix({prefix:?}",
@@ -436,7 +436,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         self.storage.set_partial_values(key_start_values).await
     }
 
-    async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
+    async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase({key:?}",
@@ -445,7 +445,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         self.storage.erase(key).await
     }
 
-    async fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
+    async fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_values({keys:?}",
@@ -454,7 +454,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         self.storage.erase_values(keys).await
     }
 
-    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
+    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}erase_prefix({prefix:?}",

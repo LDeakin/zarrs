@@ -95,15 +95,15 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         self.0.set_partial_values(key_start_values)
     }
 
-    fn erase(&self, key: &super::StoreKey) -> Result<bool, super::StorageError> {
+    fn erase(&self, key: &super::StoreKey) -> Result<(), super::StorageError> {
         self.0.erase(key)
     }
 
-    fn erase_values(&self, keys: &[super::StoreKey]) -> Result<bool, super::StorageError> {
+    fn erase_values(&self, keys: &[super::StoreKey]) -> Result<(), super::StorageError> {
         self.0.erase_values(keys)
     }
 
-    fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<bool, super::StorageError> {
+    fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<(), super::StorageError> {
         self.0.erase_prefix(prefix)
     }
 }
@@ -193,15 +193,15 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         self.0.set_partial_values(key_start_values).await
     }
 
-    async fn erase(&self, key: &super::StoreKey) -> Result<bool, super::StorageError> {
+    async fn erase(&self, key: &super::StoreKey) -> Result<(), super::StorageError> {
         self.0.erase(key).await
     }
 
-    async fn erase_values(&self, keys: &[super::StoreKey]) -> Result<bool, super::StorageError> {
+    async fn erase_values(&self, keys: &[super::StoreKey]) -> Result<(), super::StorageError> {
         self.0.erase_values(keys).await
     }
 
-    async fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<bool, super::StorageError> {
+    async fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<(), super::StorageError> {
         self.0.erase_prefix(prefix).await
     }
 }

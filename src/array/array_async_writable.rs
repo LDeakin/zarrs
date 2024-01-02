@@ -231,11 +231,11 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
 
     /// Erase the chunk at `chunk_indices`.
     ///
-    /// Returns true if the chunk was erased, or false if it did not exist.
+    /// Succeeds if the key does not exist.
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
-    pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<bool, StorageError> {
+    pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
         let storage_transformer = self
             .storage_transformers()

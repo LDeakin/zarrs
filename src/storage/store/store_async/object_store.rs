@@ -156,11 +156,12 @@ impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectSto
         crate::storage::async_store_set_partial_values(self, key_start_values).await
     }
 
-    async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
-        Ok(handle_result(self.object_store.delete(&key_to_path(key)).await)?.is_some())
+    async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
+        handle_result(self.object_store.delete(&key_to_path(key)).await)?;
+        Ok(())
     }
 
-    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
+    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         let prefix: object_store::path::Path = prefix.as_str().into();
         let locations = self
             .object_store
@@ -171,7 +172,7 @@ impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectSto
             .delete_stream(locations)
             .try_collect::<Vec<Path>>()
             .await?;
-        Ok(true)
+        Ok(())
     }
 }
 

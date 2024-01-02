@@ -226,7 +226,7 @@ pub trait WritableStorageTraits: Send + Sync {
     /// # Errors
     ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
-    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError>;
+    fn erase(&self, key: &StoreKey) -> Result<(), StorageError>;
 
     /// Erase a list of [`StoreKey`].
     ///
@@ -235,12 +235,9 @@ pub trait WritableStorageTraits: Send + Sync {
     /// # Errors
     ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
-    fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
-        let mut all_deleted = true;
-        for key in keys {
-            all_deleted = all_deleted && self.erase(key)?;
-        }
-        Ok(all_deleted)
+    fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
+        keys.iter().try_for_each(|key| self.erase(key))?;
+        Ok(())
     }
 
     /// Erase all [`StoreKey`] under [`StorePrefix`].
@@ -249,7 +246,7 @@ pub trait WritableStorageTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns a [`StorageError`] is the prefix is not in the store, or the erase otherwise fails.
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError>;
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError>;
 }
 
 /// A supertrait of [`ReadableStorageTraits`] and [`WritableStorageTraits`].
@@ -359,6 +356,8 @@ pub fn retrieve_chunk(
 
 /// Erase a chunk.
 ///
+/// Succeeds if the chunk does not exist.
+///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn erase_chunk(
@@ -366,7 +365,7 @@ pub fn erase_chunk(
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<bool, StorageError> {
+) -> Result<(), StorageError> {
     storage.erase(&data_key(
         array_path,
         chunk_grid_indices,
@@ -425,14 +424,14 @@ pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, 
 
 /// Erase a node (group or array) and all of its children.
 ///
-/// Returns true if the node existed and was removed.
+/// Succeeds if the node does not exist.
 ///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn erase_node(
     storage: &dyn WritableStorageTraits,
     path: &NodePath,
-) -> Result<bool, StorageError> {
+) -> Result<(), StorageError> {
     let prefix = path.try_into()?;
     storage.erase_prefix(&prefix)
 }

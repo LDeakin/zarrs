@@ -234,35 +234,30 @@ pub trait AsyncWritableStorageTraits: Send + Sync {
 
     /// Erase a [`StoreKey`].
     ///
-    /// Returns true if the key exists and was erased, or false if the key does not exist.
+    /// Succeeds if the key does not exist.
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying storage error.
-    async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError>;
+    async fn erase(&self, key: &StoreKey) -> Result<(), StorageError>;
 
     /// Erase a list of [`StoreKey`].
     ///
-    /// Returns true if all keys existed and were erased, or false if any key does not exist.
-    ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying storage error.
-    async fn erase_values(&self, keys: &[StoreKey]) -> Result<bool, StorageError> {
+    async fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
         let futures_erase = keys.iter().map(|key| self.erase(key));
-        let result = futures::future::join_all(futures_erase)
+        futures::future::join_all(futures_erase)
             .await
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
-        let all_deleted = result.iter().all(|b| *b);
-        Ok(all_deleted)
+        Ok(())
     }
 
     /// Erase all [`StoreKey`] under [`StorePrefix`].
     ///
-    /// Returns true if the prefix and all its children were removed.
-    ///
     /// # Errors
-    /// Returns a [`StorageError`] is the prefix is not in the store, or the erase otherwise fails.
-    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError>;
+    /// Returns a [`StorageError`] if there is an underlying storage error.
+    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError>;
 }
 
 /// A supertrait of [`AsyncReadableStorageTraits`] and [`AsyncWritableStorageTraits`].
@@ -396,7 +391,7 @@ pub async fn async_erase_chunk(
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<bool, StorageError> {
+) -> Result<(), StorageError> {
     storage
         .erase(&data_key(
             array_path,
@@ -469,7 +464,7 @@ pub async fn async_discover_nodes(
 pub async fn async_erase_node(
     storage: &dyn AsyncWritableStorageTraits,
     path: &NodePath,
-) -> Result<bool, StorageError> {
+) -> Result<(), StorageError> {
     let prefix = path.try_into()?;
     storage.erase_prefix(&prefix).await
 }

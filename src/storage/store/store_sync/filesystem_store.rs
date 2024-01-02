@@ -299,7 +299,7 @@ impl WritableStorageTraits for FilesystemStore {
         store_set_partial_values(self, key_start_values)
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
+    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);
         }
@@ -308,10 +308,18 @@ impl WritableStorageTraits for FilesystemStore {
         let _lock = file.write();
 
         let key_path = self.key_to_fspath(key);
-        Ok(std::fs::remove_file(key_path).is_ok())
+        let result = std::fs::remove_file(key_path);
+        if let Err(err) = result {
+            match err.kind() {
+                std::io::ErrorKind::NotFound => Ok(()),
+                _ => Err(err.into()),
+            }
+        } else {
+            Ok(())
+        }
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);
         }
@@ -322,11 +330,11 @@ impl WritableStorageTraits for FilesystemStore {
         let result = std::fs::remove_dir_all(prefix_path);
         if let Err(err) = result {
             match err.kind() {
-                std::io::ErrorKind::NotFound => Ok(false),
+                std::io::ErrorKind::NotFound => Ok(()),
                 _ => Err(err.into()),
             }
         } else {
-            Ok(true)
+            Ok(())
         }
     }
 }

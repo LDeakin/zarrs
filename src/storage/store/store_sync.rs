@@ -45,6 +45,7 @@ mod test_util {
 
         store.set(&"erase".try_into()?, &[])?;
         store.erase(&"erase".try_into()?)?;
+        store.erase(&"erase".try_into()?)?; // succeeds
 
         store.set(&"erase_values_0".try_into()?, &[])?;
         store.set(&"erase_values_1".try_into()?, &[])?;

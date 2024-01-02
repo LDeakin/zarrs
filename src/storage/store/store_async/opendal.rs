@@ -152,16 +152,14 @@ impl AsyncWritableStorageTraits for AsyncOpendalStore {
         crate::storage::async_store_set_partial_values(self, key_start_values).await
     }
 
-    async fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
-        // FIXME: Make erase return ()?
+    async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
         self.operator.remove(vec![key.to_string()]).await?;
-        Ok(true)
+        Ok(())
     }
 
-    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
-        // FIXME: Make erase_prefix return ()?
+    async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         self.operator.remove_all(prefix.as_str()).await?;
-        Ok(true)
+        Ok(())
     }
 }
 

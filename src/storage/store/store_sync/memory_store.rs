@@ -151,22 +151,21 @@ impl WritableStorageTraits for MemoryStore {
         store_set_partial_values(self, key_start_values)
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
+    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
         let mut data_map = self.data_map.lock().unwrap();
-        Ok(data_map.remove(key).is_some())
+        data_map.remove(key);
+        Ok(())
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         let mut data_map = self.data_map.lock().unwrap();
         let keys: Vec<StoreKey> = data_map.keys().cloned().collect();
-        let mut any_deletions = false;
         for key in keys {
             if key.has_prefix(prefix) {
                 data_map.remove(&key);
-                any_deletions = true;
             }
         }
-        Ok(any_deletions)
+        Ok(())
     }
 }
 

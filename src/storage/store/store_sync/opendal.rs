@@ -156,16 +156,14 @@ impl WritableStorageTraits for OpendalStore {
         crate::storage::store_set_partial_values(self, key_start_values)
     }
 
-    fn erase(&self, key: &StoreKey) -> Result<bool, StorageError> {
-        // FIXME: Make erase return ()?
+    fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
         self.operator.remove(vec![key.to_string()])?;
-        Ok(true)
+        Ok(())
     }
 
-    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<bool, StorageError> {
-        // FIXME: Make erase_prefix return ()?
+    fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         self.operator.remove_all(prefix.as_str())?;
-        Ok(true)
+        Ok(())
     }
 }
 
