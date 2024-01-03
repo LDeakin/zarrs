@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2024-01-03
+
+### Highlights
+ - New `Array` methods to store/retrieve/erase multiple chunks
+ - Many `Array` internal revisions and removal of some unnecessary methods
+
 ### Added
  - Reexport `safe_transmute::TriviallyTransmutable` as `array::TriviallyTransmutable`
  - Add `Array::chunks_subset{_bounded}`
@@ -384,7 +390,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.8.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.9.0
 [0.8.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.8.0
 [0.7.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.7.3
 [0.7.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.7.2
