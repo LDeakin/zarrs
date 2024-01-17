@@ -92,7 +92,19 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
             .await;
         match get_ranges {
             Ok(get_ranges) => Ok(Some(
-                get_ranges.iter().map(|bytes| bytes.to_vec()).collect(),
+                std::iter::zip(ranges, get_ranges)
+                    .map(|(range, bytes)| {
+                        if range.len() == bytes.len() {
+                            Ok(bytes.to_vec())
+                        } else {
+                            Err(StorageError::Other(format!(
+                                "Unexpected length of bytes returned, expected {}, got {}",
+                                range.len(),
+                                bytes.len()
+                            )))
+                        }
+                    })
+                    .collect::<Result<_, StorageError>>()?,
             )),
             Err(err) => {
                 if matches!(err, object_store::Error::NotFound { .. }) {
