@@ -13,6 +13,7 @@ use super::{
 
 /// Default store mutex guard.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct AsyncDefaultStoreMutexGuard<'a>(MutexGuard<'a, ()>);
 
 impl AsyncStoreKeyMutexGuardTraits for AsyncDefaultStoreMutexGuard<'_> {}

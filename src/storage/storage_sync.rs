@@ -164,39 +164,36 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
     key_start_values: &[StoreKeyStartValue],
 ) -> Result<(), StorageError> {
     // Group by key
-    let group_by_key = key_start_values
+    key_start_values
         .iter()
         .group_by(|key_start_value| &key_start_value.key)
         .into_iter()
         .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
-        .collect::<Vec<_>>();
+        .try_for_each(|(key, group)| {
+            // Lock the store key
+            let mutex = store.mutex(&key)?;
+            let _lock = mutex.lock();
 
-    // Group by store key
-    group_by_key.into_iter().try_for_each(|(key, group)| {
-        // Lock the store key
-        let mutex = store.mutex(&key)?;
-        let _lock = mutex.lock();
+            // Read the store key
+            let mut bytes = store.get(&key)?.unwrap_or_default();
 
-        // Read the store key
-        let mut bytes = store.get(&key)?.unwrap_or_default();
+            // Expand the store key if needed
+            let end_max =
+                usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
+            if bytes.len() < end_max {
+                bytes.resize_with(end_max, Default::default);
+            }
 
-        // Expand the store key if needed
-        let end_max =
-            usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
-        if bytes.len() < end_max {
-            bytes.resize_with(end_max, Default::default);
-        }
+            // Update the store key
+            for key_start_value in group {
+                let start: usize = key_start_value.start.try_into().unwrap();
+                let end: usize = key_start_value.end().try_into().unwrap();
+                bytes[start..end].copy_from_slice(key_start_value.value);
+            }
 
-        // Update the store key
-        for key_start_value in group {
-            let start: usize = key_start_value.start.try_into().unwrap();
-            let end: usize = key_start_value.end().try_into().unwrap();
-            bytes[start..end].copy_from_slice(key_start_value.value);
-        }
-
-        // Write the store key
-        store.set(&key, &bytes)
-    })?;
+            // Write the store key
+            store.set(&key, &bytes)
+        })?;
     Ok(())
 }
 

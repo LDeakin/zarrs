@@ -13,6 +13,7 @@ use super::{
 
 /// Default store mutex guard.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct DefaultStoreMutexGuard<'a>(MutexGuard<'a, ()>);
 
 impl StoreKeyMutexGuardTraits for DefaultStoreMutexGuard<'_> {}

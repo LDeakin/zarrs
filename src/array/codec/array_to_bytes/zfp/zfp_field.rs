@@ -45,7 +45,7 @@ impl ZfpField {
         } else {
             return None;
         }
-        let pointer = data.as_ptr() as *mut std::ffi::c_void;
+        let pointer = data.as_mut_ptr().cast::<std::ffi::c_void>();
         let field = unsafe { zfp_field_1d(pointer, zfp_type_, nx) };
         NonNull::new(field).map(Self)
     }
@@ -58,7 +58,7 @@ impl ZfpField {
         } else {
             return None;
         }
-        let pointer = data.as_ptr() as *mut std::ffi::c_void;
+        let pointer = data.as_mut_ptr().cast::<std::ffi::c_void>();
         let field = unsafe { zfp_field_2d(pointer, zfp_type_, nx, ny) };
         NonNull::new(field).map(Self)
     }
@@ -77,7 +77,7 @@ impl ZfpField {
         } else {
             return None;
         }
-        let pointer = data.as_ptr() as *mut std::ffi::c_void;
+        let pointer = data.as_mut_ptr().cast::<std::ffi::c_void>();
         let field = unsafe { zfp_field_3d(pointer, zfp_type_, nx, ny, nz) };
         NonNull::new(field).map(Self)
     }
@@ -97,7 +97,7 @@ impl ZfpField {
         } else {
             return None;
         }
-        let pointer = data.as_ptr() as *mut std::ffi::c_void;
+        let pointer = data.as_mut_ptr().cast::<std::ffi::c_void>();
         let field = unsafe { zfp_field_4d(pointer, zfp_type_, nx, ny, nz, nw) };
         NonNull::new(field).map(Self)
     }
