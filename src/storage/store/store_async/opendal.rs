@@ -139,10 +139,8 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
 
 #[async_trait::async_trait]
 impl AsyncWritableStorageTraits for AsyncOpendalStore {
-    async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        // FIXME: Can this copy be avoided?
-        let bytes = bytes::Bytes::copy_from_slice(value);
-        Ok(self.operator.write(key.as_str(), bytes).await?)
+    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
+        Ok(self.operator.write(key.as_str(), value).await?)
     }
 
     async fn set_partial_values(

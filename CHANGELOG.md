@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Bump `opendal` to 0.44
+ - **Breaking** `async_store_chunk` and `AsyncWritableStorageTraits::set` now take `bytes::Bytes`
+   - `bytes::Bytes` are used by both supported async stores (`object_store` and `opendal`), and this avoids a copy
 
 ## [0.9.0] - 2024-01-03
 

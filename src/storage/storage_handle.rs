@@ -182,7 +182,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for StorageHandle<'_, TStorage>
 {
-    async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
         self.0.set(key, value).await
     }
 

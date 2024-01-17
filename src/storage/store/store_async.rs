@@ -33,29 +33,37 @@ mod test_util {
     ) -> Result<(), Box<dyn Error>> {
         store.erase_prefix(&StorePrefix::root()).await?;
 
-        store.set(&"a/b".try_into()?, &[0, 0, 0]).await?;
+        store.set(&"a/b".try_into()?, vec![0, 0, 0].into()).await?;
         store
             .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 1, &[1, 2])])
             .await?;
 
-        store.set(&"a/c".try_into()?, &[0]).await?;
-        store.set(&"a/d/e".try_into()?, &[]).await?;
-        store.set(&"a/f/g".try_into()?, &[]).await?;
-        store.set(&"a/f/h".try_into()?, &[]).await?;
-        store.set(&"i/j/k".try_into()?, &[0, 1]).await?;
+        store.set(&"a/c".try_into()?, vec![0].into()).await?;
+        store.set(&"a/d/e".try_into()?, vec![].into()).await?;
+        store.set(&"a/f/g".try_into()?, vec![].into()).await?;
+        store.set(&"a/f/h".try_into()?, vec![].into()).await?;
+        store.set(&"i/j/k".try_into()?, vec![0, 1].into()).await?;
 
-        store.set(&"erase".try_into()?, &[]).await?;
+        store.set(&"erase".try_into()?, vec![].into()).await?;
         store.erase(&"erase".try_into()?).await?;
         store.erase(&"erase".try_into()?).await?; // succeeds
 
-        store.set(&"erase_values_0".try_into()?, &[]).await?;
-        store.set(&"erase_values_1".try_into()?, &[]).await?;
+        store
+            .set(&"erase_values_0".try_into()?, vec![].into())
+            .await?;
+        store
+            .set(&"erase_values_1".try_into()?, vec![].into())
+            .await?;
         store
             .erase_values(&["erase_values_0".try_into()?, "erase_values_1".try_into()?])
             .await?;
 
-        store.set(&"erase_prefix/0".try_into()?, &[]).await?;
-        store.set(&"erase_prefix/1".try_into()?, &[]).await?;
+        store
+            .set(&"erase_prefix/0".try_into()?, vec![].into())
+            .await?;
+        store
+            .set(&"erase_prefix/1".try_into()?, vec![].into())
+            .await?;
         store.erase_prefix(&"erase_prefix/".try_into()?).await?;
 
         Ok(())

@@ -142,10 +142,8 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
 
 #[async_trait::async_trait]
 impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectStore<T> {
-    async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        // FIXME: Can this copy be avoided?
-        let bytes = bytes::Bytes::copy_from_slice(value);
-        self.object_store.put(&key_to_path(key), bytes).await?;
+    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
+        self.object_store.put(&key_to_path(key), value).await?;
         Ok(())
     }
 

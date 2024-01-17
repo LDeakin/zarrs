@@ -72,7 +72,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
                 self.path(),
                 chunk_indices,
                 self.chunk_key_encoding(),
-                &chunk_encoded,
+                chunk_encoded.into(),
             )
             .await
             .map_err(ArrayError::StorageError)

@@ -383,7 +383,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
 {
-    async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
         self.transformer
             .bytes_written
             .fetch_add(value.len(), Ordering::Relaxed);

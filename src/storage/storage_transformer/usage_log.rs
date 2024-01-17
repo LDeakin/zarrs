@@ -414,7 +414,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
-    async fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
         writeln!(
             self.handle.lock().unwrap(),
             "{}set({key:?}, len={})",
