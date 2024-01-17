@@ -12,8 +12,8 @@
 //! Zarrs will remain unstable as the API is refined and the Zarr V3 specification is finalised.
 //!
 //! ## Implementation Status
-//! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/draft/ZEP0001.html).
-//! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/draft/ZEP0002.html) ([under review](https://github.com/zarr-developers/zarr-specs/issues/254)).
+//! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/accepted/ZEP0001.html).
+//! - [x] [ZEP0002 - Sharding codec](https://zarr.dev/zeps/accepted/ZEP0002.html).
 //! - [x] [ZEP0003 - Variable chunking](https://zarr.dev/zeps/draft/ZEP0003.html) ([draft](https://github.com/orgs/zarr-developers/discussions/52)).
 //! - [x] Stores and storage adapters:
 //!   - Sync:
