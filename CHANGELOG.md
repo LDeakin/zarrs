@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2024-01-17
+
 ### Changed
  - Bump `opendal` to 0.44
  - Bump `object_store` to 0.9
@@ -399,7 +401,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.9.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.10.0
 [0.9.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.9.0
 [0.8.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.8.0
 [0.7.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.7.3
