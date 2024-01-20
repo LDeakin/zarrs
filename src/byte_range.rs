@@ -144,3 +144,30 @@ pub unsafe fn extract_byte_ranges_unchecked(
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn byte_ranges() {
+        let byte_range = ByteRange::FromStart(1, None);
+        assert_eq!(byte_range.to_range(10), 1..10);
+        assert_eq!(byte_range.length(10), 9);
+        assert_eq!(byte_range.offset(), 1);
+
+        let byte_range = ByteRange::FromStart(1, Some(5));
+        assert_eq!(byte_range.to_range(10), 1..6);
+        assert_eq!(byte_range.to_range_usize(10), 1..6);
+        assert_eq!(byte_range.length(10), 5);
+
+        assert!(validate_byte_ranges(&[ByteRange::FromStart(1, Some(5))], 6));
+        assert!(!validate_byte_ranges(
+            &[ByteRange::FromStart(1, Some(5))],
+            2
+        ));
+
+        assert!(extract_byte_ranges(&[1, 2, 3], &[ByteRange::FromStart(1, Some(2))]).is_ok());
+        assert!(extract_byte_ranges(&[1, 2, 3], &[ByteRange::FromStart(1, Some(4))]).is_err())
+    }
+}
