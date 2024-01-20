@@ -312,7 +312,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
             }
 
             // Store the updated chunk
-            self.store_chunk(chunk_indices, chunk_bytes.into_vec())
+            self.store_chunk(chunk_indices, chunk_bytes)
         }
     }
 

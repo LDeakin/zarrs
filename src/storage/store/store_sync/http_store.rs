@@ -281,7 +281,7 @@ mod tests {
         let data_4x2 = array
             .retrieve_array_subset_elements::<u16>(&subset_4x2)
             .unwrap();
-        assert_eq!(data_4x2, [19, 20, 27, 28, 35, 36, 43, 44].into());
+        assert_eq!(data_4x2, [19, 20, 27, 28, 35, 36, 43, 44]);
 
         // let data = array.retrieve_array_subset_ndarray::<u16>(&ArraySubset::new_with_shape(array.shape().to_vec())).unwrap();
         // println!("{data:?}");

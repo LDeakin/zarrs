@@ -39,13 +39,11 @@ macro_rules! array_async_retrieve_elements {
                         bytes.len() / core::mem::size_of::<T>(),
                         bytes.len(),
                     )
-                }
-                .into_boxed_slice())
+                })
             } else {
                 let elements = safe_transmute::transmute_many_permissive::<T>(&bytes)
                     .map_err(TransmuteError::from)?
-                    .to_vec()
-                    .into_boxed_slice();
+                    .to_vec();
                 Ok(elements)
             }
         }
@@ -66,7 +64,7 @@ macro_rules! array_async_retrieve_ndarray {
             let length = elements.len();
             ndarray::ArrayD::<T>::from_shape_vec(
                 super::iter_u64_to_usize($shape.iter()),
-                elements.into_vec(),
+                elements,
             )
             .map_err(|_| {
                 ArrayError::CodecError(crate::array::codec::CodecError::UnexpectedChunkDecodedSize(
@@ -104,10 +102,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
-    pub async fn async_retrieve_chunk(
-        &self,
-        chunk_indices: &[u64],
-    ) -> Result<Box<[u8]>, ArrayError> {
+    pub async fn async_retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
         let storage_transformer = self
             .storage_transformers()
@@ -130,7 +125,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
             let chunk_decoded_size =
                 chunk_representation.num_elements_usize() * chunk_representation.data_type().size();
             if chunk_decoded.len() == chunk_decoded_size {
-                Ok(chunk_decoded.into_boxed_slice())
+                Ok(chunk_decoded)
             } else {
                 Err(ArrayError::UnexpectedChunkDecodedSize(
                     chunk_decoded.len(),
@@ -139,9 +134,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
             }
         } else {
             let fill_value = chunk_representation.fill_value().as_ne_bytes();
-            Ok(fill_value
-                .repeat(chunk_representation.num_elements_usize())
-                .into_boxed_slice())
+            Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
         }
     }
 
@@ -157,7 +150,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     pub async fn async_retrieve_chunk_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         chunk_indices: &[u64],
-    ) -> Result<Box<[T]>, ArrayError> {
+    ) -> Result<Vec<T>, ArrayError> {
         array_async_retrieve_elements!(self, async_retrieve_chunk(chunk_indices))
     }
 
@@ -195,10 +188,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
-    pub async fn async_retrieve_chunks(
-        &self,
-        chunks: &ArraySubset,
-    ) -> Result<Box<[u8]>, ArrayError> {
+    pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
         if chunks.dimensionality() != self.chunk_grid().dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 chunks.clone(),
@@ -211,7 +201,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         // Retrieve chunk bytes
         let num_chunks = chunks.num_elements();
         match num_chunks {
-            0 => Ok(vec![].into_boxed_slice()),
+            0 => Ok(vec![]),
             1 => {
                 let chunk_indices = chunks.start();
                 self.async_retrieve_chunk(chunk_indices).await
@@ -242,7 +232,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
                 }
                 #[allow(clippy::transmute_undefined_repr)]
                 let output: Vec<u8> = unsafe { core::mem::transmute(output) };
-                Ok(output.into_boxed_slice())
+                Ok(output)
             }
         }
     }
@@ -254,7 +244,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     pub async fn async_retrieve_chunks_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         chunks: &ArraySubset,
-    ) -> Result<Box<[T]>, ArrayError> {
+    ) -> Result<Vec<T>, ArrayError> {
         array_async_retrieve_elements!(self, async_retrieve_chunks(chunks))
     }
 
@@ -337,7 +327,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     pub async fn async_retrieve_array_subset(
         &self,
         array_subset: &ArraySubset,
-    ) -> Result<Box<[u8]>, ArrayError> {
+    ) -> Result<Vec<u8>, ArrayError> {
         if array_subset.dimensionality() != self.chunk_grid().dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 array_subset.clone(),
@@ -357,7 +347,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         // Retrieve chunk bytes
         let num_chunks = chunks.num_elements();
         match num_chunks {
-            0 => Ok(vec![].into_boxed_slice()),
+            0 => Ok(vec![]),
             1 => {
                 let chunk_indices = chunks.start();
                 let chunk_subset = self.chunk_subset(chunk_indices).unwrap();
@@ -384,7 +374,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
                     .await?;
                     #[allow(clippy::transmute_undefined_repr)]
                     let output: Vec<u8> = unsafe { core::mem::transmute(output) };
-                    Ok(output.into_boxed_slice())
+                    Ok(output)
                 }
             }
             _ => {
@@ -481,7 +471,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
                 }
                 #[allow(clippy::transmute_undefined_repr)]
                 let output: Vec<u8> = unsafe { core::mem::transmute(output) };
-                Ok(output.into_boxed_slice())
+                Ok(output)
             }
         }
     }
@@ -498,7 +488,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     pub async fn async_retrieve_array_subset_elements<T: TriviallyTransmutable + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
-    ) -> Result<Box<[T]>, ArrayError> {
+    ) -> Result<Vec<T>, ArrayError> {
         array_async_retrieve_elements!(self, async_retrieve_array_subset(array_subset))
     }
 
@@ -539,7 +529,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-    ) -> Result<Box<[u8]>, ArrayError> {
+    ) -> Result<Vec<u8>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         if !chunk_subset.inbounds(chunk_representation.shape()) {
             return Err(ArrayError::InvalidArraySubset(
@@ -567,7 +557,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         let total_size = decoded_bytes.iter().map(Vec::len).sum::<usize>();
         let expected_size = chunk_subset.num_elements_usize() * self.data_type().size();
         if total_size == chunk_subset.num_elements_usize() * self.data_type().size() {
-            Ok(decoded_bytes.concat().into_boxed_slice())
+            Ok(decoded_bytes.concat())
         } else {
             Err(ArrayError::UnexpectedChunkDecodedSize(
                 total_size,
@@ -588,7 +578,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-    ) -> Result<Box<[T]>, ArrayError> {
+    ) -> Result<Vec<T>, ArrayError> {
         array_async_retrieve_elements!(
             self,
             async_retrieve_chunk_subset(chunk_indices, chunk_subset)

@@ -244,8 +244,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
                 }
 
                 // Store the updated chunk
-                self.async_store_chunk(chunk_indices, chunk_bytes.into_vec())
-                    .await
+                self.async_store_chunk(chunk_indices, chunk_bytes).await
             }
         } else {
             Err(ArrayError::InvalidChunkGridIndicesError(
