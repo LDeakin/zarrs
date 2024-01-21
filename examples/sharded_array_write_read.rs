@@ -146,7 +146,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Show the hierarchy
-    let node = Node::new_with_store(&*store_readable_listable, "/").unwrap();
+    let node = Node::new(&*store_readable_listable, "/").unwrap();
     let tree = node.hierarchy_tree();
     println!("The zarr hierarchy tree is:\n{}", tree);
 

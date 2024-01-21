@@ -171,7 +171,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("async_retrieve_array_subset [2..6, 3..5]:\n{data_subset:+4.1}\n");
 
     // Show the hierarchy
-    let node = Node::async_new_with_store(&*store, "/").await.unwrap();
+    let node = Node::async_new(&*store, "/").await.unwrap();
     let tree = node.hierarchy_tree();
     println!("hierarchy_tree:\n{}", tree);
 

@@ -58,22 +58,12 @@ pub enum NodeCreateError {
 }
 
 impl Node {
-    /// Create a new node at `path` with `metadata` and `children`.
-    #[must_use]
-    pub fn new(path: NodePath, metadata: NodeMetadata, children: Vec<Self>) -> Self {
-        Self {
-            path,
-            metadata,
-            children,
-        }
-    }
-
     /// Create a new node at `path` and read metadata and children from `storage`.
     ///
     /// # Errors
     ///
     /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub fn new_with_store<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+    pub fn new<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
         storage: &TStorage,
         path: &str,
     ) -> Result<Self, NodeCreateError> {
@@ -102,7 +92,7 @@ impl Node {
     /// # Errors
     ///
     /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub async fn async_new_with_store<
+    pub async fn async_new<
         TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
     >(
         storage: &TStorage,
@@ -125,6 +115,16 @@ impl Node {
             children,
         };
         Ok(node)
+    }
+
+    /// Create a new node at `path` with `metadata` and `children`.
+    #[must_use]
+    pub fn new_with_metadata(path: NodePath, metadata: NodeMetadata, children: Vec<Self>) -> Self {
+        Self {
+            path,
+            metadata,
+            children,
+        }
     }
 
     /// Indicates if a node is the root.
@@ -187,6 +187,8 @@ impl Node {
 
 #[cfg(test)]
 mod tests {
+    use crate::{group::GroupMetadata, storage::store::MemoryStore};
+
     use super::*;
 
     #[test]
@@ -258,5 +260,26 @@ mod tests {
         }
     }"#;
         serde_json::from_str::<NodeMetadata>(JSON_GROUP).unwrap();
+    }
+
+    #[test]
+    fn node_default() {
+        let store = std::sync::Arc::new(MemoryStore::new());
+        let node_path = "/node";
+        let node = Node::new(&*store, node_path).unwrap();
+        assert_eq!(
+            node.metadata,
+            NodeMetadata::Group(GroupMetadata::V3(GroupMetadataV3::default()))
+        );
+    }
+
+    #[test]
+    fn node_root() {
+        let node = Node::new_with_metadata(
+            NodePath::root(),
+            NodeMetadata::Group(GroupMetadata::V3(GroupMetadataV3::default())),
+            vec![],
+        );
+        assert!(node.is_root());
     }
 }

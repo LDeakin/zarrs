@@ -177,7 +177,7 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     read_array_from_store(array)?;
 
     // Show the hierarchy
-    let node = Node::new_with_store(&*store, "/").unwrap();
+    let node = Node::new(&*store, "/").unwrap();
     let tree = node.hierarchy_tree();
     println!("The zarr hierarchy tree is:\n{}", tree);
 

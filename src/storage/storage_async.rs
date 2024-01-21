@@ -311,7 +311,7 @@ pub async fn async_get_child_nodes<
             NodeMetadata::Array(_) => Vec::default(),
             NodeMetadata::Group(_) => async_get_child_nodes(storage, &path).await?,
         };
-        nodes.push(Node::new(path, child_metadata, children));
+        nodes.push(Node::new_with_metadata(path, child_metadata, children));
     }
     Ok(nodes)
 }

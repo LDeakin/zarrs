@@ -283,7 +283,7 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
             NodeMetadata::Array(_) => Vec::default(),
             NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
         };
-        nodes.push(Node::new(path, child_metadata, children));
+        nodes.push(Node::new_with_metadata(path, child_metadata, children));
     }
     Ok(nodes)
 }

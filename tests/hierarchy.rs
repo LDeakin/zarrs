@@ -5,7 +5,7 @@ fn hierarchy_tree() {
     let store = FilesystemStore::new("./tests/data/hierarchy.zarr")
         .unwrap()
         .sorted();
-    let node = Node::new_with_store(&store, "/").unwrap();
+    let node = Node::new(&store, "/").unwrap();
     let tree = node.hierarchy_tree();
     println!("{:?}", tree);
     assert_eq!(
