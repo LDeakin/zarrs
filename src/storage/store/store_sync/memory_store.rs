@@ -203,7 +203,8 @@ impl ListableStorageTraits for MemoryStore {
                     prefixes.insert(StorePrefix::new(
                         prefix.as_str().to_string() + components[0] + "/",
                     )?);
-                } else if let Some(parent) = key.parent() {
+                } else {
+                    let parent = key.parent();
                     if parent.eq(prefix) {
                         keys.push(key.clone());
                     }

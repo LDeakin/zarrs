@@ -11,11 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `ByteRange` tests
  - `BytesRepresentation` tests
  - `StorePrefix` parent test
+ - `StoreKey` tests
 
 ### Changed
  - **Breaking**: `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
    - This avoids potential internal reallocations
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`
+ - **Breaking**: `StoreKey::parent` now returns `StorePrefix` instead of `Option<StorePrefix>`
+ - **Breaking**: `ZipStorageAdapter::{new,new_with_path}` now take a `StoreKey`
+
+### Fixed
+ - Disallow an empty string for a `StoreKey`
 
 ## [0.10.0] - 2024-01-17
 

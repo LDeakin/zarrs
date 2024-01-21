@@ -30,8 +30,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     /// # Errors
     ///
     /// Returns a [`ZipStorageAdapterCreateError`] if the root path of the store is not a valid zip file.
-    pub fn new(storage: Arc<TStorage>) -> Result<Self, ZipStorageAdapterCreateError> {
-        Self::new_with_path(storage, "")
+    pub fn new(
+        storage: Arc<TStorage>,
+        key: StoreKey,
+    ) -> Result<Self, ZipStorageAdapterCreateError> {
+        Self::new_with_path(storage, key, "")
     }
 
     /// Create a new zip storage adapter to `path` within the zip file.
@@ -41,16 +44,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
     /// Returns a [`ZipStorageAdapterCreateError`] if the root path of the store is not a valid zip file.
     pub fn new_with_path<T: Into<PathBuf>>(
         storage: Arc<TStorage>,
+        key: StoreKey,
         path: T,
     ) -> Result<Self, ZipStorageAdapterCreateError> {
         let zip_path = path.into();
-        let root_key = unsafe { StoreKey::new_unchecked(String::new()) };
         let size = storage
-            .size_key(&root_key)?
+            .size_key(&key)?
             .ok_or::<ZipStorageAdapterCreateError>(
-                StorageError::UnknownKeySize(root_key.clone()).into(),
+                StorageError::UnknownKeySize(key.clone()).into(),
             )?;
-        let storage_io = StorageValueIO::new(storage, root_key, size);
+        let storage_io = StorageValueIO::new(storage, key, size);
         let zip_archive = Mutex::new(ZipArchive::new(storage_io)?);
         Ok(Self {
             size,
@@ -201,10 +204,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
                         }
                     }
                 } else if let Ok(store_key) = StoreKey::try_from(name) {
-                    if let Some(parent) = store_key.parent() {
-                        if &parent == prefix {
-                            keys.push(store_key);
-                        }
+                    let parent = store_key.parent();
+                    if &parent == prefix {
+                        keys.push(store_key);
                     }
                 }
             }
@@ -305,13 +307,12 @@ mod tests {
     fn zip_root() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let mut path = path.path().to_path_buf();
+        let store = FilesystemStore::new(path.clone())?;
+
         path.push("test.zip");
-        zip_write(&path).unwrap();
+        zip_write(&path)?;
 
-        println!("{path:?}");
-
-        let store = FilesystemStore::new(path)?;
-        let store = ZipStorageAdapter::new(store.into())?;
+        let store = ZipStorageAdapter::new(store.into(), StoreKey::new("test.zip")?)?;
 
         assert_eq!(
             store.list()?,
@@ -375,13 +376,12 @@ mod tests {
     fn zip_path() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let mut path = path.path().to_path_buf();
+        let store = FilesystemStore::new(path.clone())?;
         path.push("test.zip");
-        zip_write(&path).unwrap();
+        zip_write(&path)?;
 
-        println!("{path:?}");
-
-        let store = FilesystemStore::new(path)?;
-        let store = ZipStorageAdapter::new_with_path(store.into(), "a/")?;
+        let store =
+            ZipStorageAdapter::new_with_path(store.into(), StoreKey::new("test.zip")?, "a/")?;
 
         assert_eq!(
             store.list()?,

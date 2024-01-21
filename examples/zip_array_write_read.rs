@@ -8,7 +8,7 @@ use std::{
 use zarrs::{
     array::{Array, ZARR_NAN_F32},
     array_subset::ArraySubset,
-    storage::{ReadableStorageTraits, ReadableWritableStorageTraits},
+    storage::{ReadableStorageTraits, ReadableWritableStorageTraits, StoreKey},
 };
 
 // const ARRAY_PATH: &'static str = "/array";
@@ -151,7 +151,7 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let mut zarr_dir = path.path().to_path_buf();
     zarr_dir.push("hierarchy.zarr");
     let store = Arc::new(store::FilesystemStore::new(&zarr_dir)?);
-    write_array_to_storage(store)?;
+    write_array_to_storage(store.clone())?;
 
     // Write the store to zip
     let mut path_zip = path.path().to_path_buf();
@@ -163,10 +163,16 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         file,
         zip::CompressionMethod::Stored,
     )?;
-    println!("Created zip {path_zip:?}\n");
+    println!("Created zip {path_zip:?} containing {:?}\n", zarr_dir);
 
-    let store = Arc::new(store::FilesystemStore::new(&path_zip)?);
-    let store = Arc::new(ZipStorageAdapter::new(store)?);
+    let zip_key = StoreKey::new("zarr_array.zip")?;
+    println!(
+        "Create a ZipStorageAdapter for store at {:?} with {:?}",
+        path.path(),
+        zip_key
+    );
+    let store = Arc::new(store::FilesystemStore::new(&path.path())?);
+    let store = Arc::new(ZipStorageAdapter::new(store, zip_key)?);
     let array = Array::new(store.clone(), ARRAY_PATH)?;
     read_array_from_store(array)?;
 
@@ -180,6 +186,6 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
 fn main() {
     if let Err(err) = zip_array_write_read() {
-        println!("{}", err);
+        println!("{:?}", err);
     }
 }
