@@ -35,6 +35,12 @@ impl GroupBuilder {
     }
 
     /// Set the additional fields.
+    ///
+    /// Set additional fields not defined in the Zarr specification.
+    /// Use this cautiously. In general, store user defined attributes using [`GroupBuilder::attributes`].
+    ///
+    /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
+    /// zarrs will error when opening an array with additional fields without this annotation.
     pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         let GroupMetadata::V3(metadata) = &mut self.metadata;
         metadata.additional_fields = additional_fields;
@@ -70,12 +76,19 @@ mod tests {
         builder.attributes(attributes.clone());
 
         let mut additional_fields = serde_json::Map::new();
-        additional_fields.insert("key".to_string(), "value".into());
+        let mut additional_field = serde_json::Map::new();
+        additional_field.insert("must_understand".to_string(), false.into());
+        additional_fields.insert("key".to_string(), additional_field.into());
         let additional_fields: AdditionalFields = additional_fields.into();
         builder.additional_fields(additional_fields.clone());
 
         let storage = Arc::new(MemoryStore::new());
         println!("{:?}", builder.build(storage.clone(), "/"));
-        let _group = builder.build(storage, "/");
+        let mut group = builder.build(storage, "/").unwrap();
+
+        assert_eq!(group.attributes(), &attributes);
+        assert_eq!(group.additional_fields(), &additional_fields);
+        assert_eq!(group.attributes_mut(), &attributes);
+        assert_eq!(group.additional_fields_mut(), &additional_fields);
     }
 }

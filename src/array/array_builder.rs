@@ -224,6 +224,9 @@ impl ArrayBuilder {
     ///
     /// Set additional fields not defined in the Zarr specification.
     /// Use this cautiously. In general, store user defined attributes using [`ArrayBuilder::attributes`].
+    ///
+    /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
+    /// zarrs will error when opening an array with additional fields without this annotation.
     pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         self.additional_fields = additional_fields;
         self
@@ -290,6 +293,8 @@ impl ArrayBuilder {
             .into());
         }
 
+        self.additional_fields.validate()?;
+
         Ok(Array {
             storage,
             path,
@@ -345,7 +350,9 @@ mod tests {
         builder.attributes(attributes.clone());
 
         let mut additional_fields = serde_json::Map::new();
-        additional_fields.insert("key".to_string(), "value".into());
+        let mut additional_field = serde_json::Map::new();
+        additional_field.insert("must_understand".to_string(), false.into());
+        additional_fields.insert("key".to_string(), additional_field.into());
         let additional_fields: AdditionalFields = additional_fields.into();
         builder.additional_fields(additional_fields.clone());
 
