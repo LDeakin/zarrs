@@ -6,10 +6,7 @@
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //!
-//! The recommended places to start in the docs are the [`crate::array`] and [`crate::storage`] modules and their submodules.
-//!
-//! ## Stability
-//! Zarrs will remain unstable as the API is refined and the Zarr V3 specification is finalised.
+//! The most relevant docs to started with are [`array::Array`] and [`storage::store`].
 //!
 //! ## Implementation Status
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/accepted/ZEP0001.html).
@@ -21,10 +18,10 @@
 //!     - [`MemoryStore`](crate::storage::store::MemoryStore).
 //!     - [`HTTPStore`](crate::storage::store::HTTPStore).
 //!     - [`ZipStorageAdapter`](crate::storage::storage_adapter::ZipStorageAdapter).
-//!     - [`OpendalStore`](crate::storage::store::OpendalStore) (supports all [`opendal` services](https://docs.rs/opendal/latest/opendal/services/index.html)).
+//!     - [`OpendalStore`](crate::storage::store::OpendalStore) (supports all [`opendal` services](https://docs.rs/opendal/latest/opendal/services/index.html) as [`opendal::BlockingOperator`]).
 //!   - Async:
 //!     - [`AsyncObjectStore`](crate::storage::store::AsyncObjectStore) (supports all [`object_store` stores](https://docs.rs/object_store/latest/object_store/index.html#modules)).
-//!     - [`AsyncOpendalStore`](crate::storage::store::AsyncOpendalStore) (supports all [`opendal` services](https://docs.rs/opendal/latest/opendal/services/index.html)).
+//!     - [`AsyncOpendalStore`](crate::storage::store::AsyncOpendalStore) (supports all [`opendal` services](https://docs.rs/opendal/latest/opendal/services/index.html) as [`opendal::Operator`]).
 //! - [x] Data types: [core data types](crate::array::data_type::DataType), [raw bits](crate::array::data_type::DataType::RawBits), [float16](crate::array::data_type::DataType::Float16), [bfloat16](crate::array::data_type::DataType::BFloat16) [(spec issue)](https://github.com/zarr-developers/zarr-specs/issues/130).
 //! - [x] Chunk grids: [regular](crate::array::chunk_grid::RegularChunkGrid), [rectangular](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52)).
 //! - [x] Chunk key encoding: [default](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [v2](crate::array::chunk_key_encoding::V2ChunkKeyEncoding).
@@ -37,27 +34,36 @@
 //! ## Crate Features
 //! The following crate features are enabled by default:
 //!  - `ndarray`: [`ndarray`] utility functions for [`Array`](crate::array::Array).
-//!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
+//!  - Codecs
+//!    - `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!
 //! The following features are disabled by default:
-//!  - Codecs: `bitround`, `zfp`.
-//!  - `async`: asynchronous API for stores, arrays, and groups.
-//!  - `object_store`: support for [`object_store`] stores.
-//!  - `opendal`: support for [`opendal`] stores.
+//!  - `async`: an experimental asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [Group](group::Group).
+//!    - currently, this API is not as performant as the synchronous API
+//!  - Codecs
+//!    - `bitround`, `zfp`.
+//!  - Stores
+//!    - `object_store`: support for [`object_store`] stores.
+//!    - `opendal`: support for [`opendal`] stores.
 //!
 //! ## Examples
-//! Examples can be run with `cargo run --example EXAMPLE_NAME`.
+//! Examples can be run with `cargo run --example <EXAMPLE_NAME>`.
+//! Some examples require non-default features, which can be enabled with `--features <FEATURES>`.
 //!
 //! #### Sync API
-//! - [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs): create an array, write its metadata, write chunks in parallel, delete a chunk, read the whole array, read a chunk, and partially read a subset.
-//! - [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs): write and read a sharded array.
-//! - [`rectangular_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/rectangular_array_write_read.rs): write and read an array with a rectangular chunk grid.
-//! - [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs): write an array to a filesystem, zip it, then read it from the zipped file.
-//! - [`http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/http_array_read.rs): read an array over HTTP.
+//! [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs),
+//! [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs),
+//! [`rectangular_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/rectangular_array_write_read.rs),
+//! [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs),
+//! [`http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/http_array_read.rs).
 //!
 //! #### Async API
-//! - [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs).
-//! - [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read.rs).
+//! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs),
+//! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read.rs).
+//!
+//! ## Zarrs Ecosystem
+//! - [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi): A subset of zarrs exposed as a C API.
+//! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data.
 //!
 //! ## Licence
 //! zarrs is licensed under either of
