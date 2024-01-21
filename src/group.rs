@@ -266,6 +266,15 @@ mod tests {
     }
 }"#;
 
+    const JSON_INVALID_TYPE: &str = r#"{
+    "zarr_format": 3,
+    "node_type": "array",
+    "attributes": {
+        "spam": "ham",
+        "eggs": 42
+    }
+}"#;
+
     #[test]
     fn group_metadata1() {
         let group_metadata: GroupMetadata = serde_json::from_str(JSON_VALID1).unwrap();
@@ -283,6 +292,15 @@ mod tests {
     #[test]
     fn group_metadata_invalid_format() {
         let group_metadata: GroupMetadata = serde_json::from_str(JSON_INVALID_FORMAT).unwrap();
+        print!("{group_metadata:?}");
+        let store = MemoryStore::default();
+        let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
+        assert!(group_metadata.is_err());
+    }
+
+    #[test]
+    fn group_metadata_invalid_type() {
+        let group_metadata: GroupMetadata = serde_json::from_str(JSON_INVALID_TYPE).unwrap();
         print!("{group_metadata:?}");
         let store = MemoryStore::default();
         let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
@@ -327,5 +345,14 @@ mod tests {
             .unwrap()
             .metadata();
         assert_eq!(metadata, group.metadata());
+    }
+
+    #[test]
+    fn group_default() {
+        let store = std::sync::Arc::new(MemoryStore::new());
+        let group_path = "/group";
+        let group = Group::new(store, group_path).unwrap();
+        assert_eq!(group.attributes(), &serde_json::Map::default());
+        assert_eq!(group.additional_fields(), &AdditionalFields::default());
     }
 }
