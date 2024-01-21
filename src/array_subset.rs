@@ -639,55 +639,6 @@ impl ArraySubset {
         ChunksIterator::new_unchecked(self, chunk_shape)
     }
 
-    #[deprecated(
-        since = "0.7.2",
-        note = "please use `overlap` and `relative_to` instead"
-    )]
-    /// Return the subset of this array subset in `subset_other`.
-    /// The start of the returned array subset is from the start of this array subset.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`IncompatibleDimensionalityError`] if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
-    pub fn in_subset(&self, subset_other: &Self) -> Result<Self, IncompatibleDimensionalityError> {
-        if subset_other.dimensionality() == self.dimensionality() {
-            #[allow(deprecated)]
-            Ok(unsafe { self.in_subset_unchecked(subset_other) })
-        } else {
-            Err(IncompatibleDimensionalityError::new(
-                subset_other.dimensionality(),
-                self.dimensionality(),
-            ))
-        }
-    }
-
-    #[deprecated(
-        since = "0.7.2",
-        note = "please use `overlap` and `relative_to` instead"
-    )]
-    /// Return the subset of this array subset in `subset_other`.
-    /// The start of the returned array subset is from the start of this array subset.
-    ///
-    /// # Safety
-    /// Panics if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
-    #[must_use]
-    pub unsafe fn in_subset_unchecked(&self, subset_other: &Self) -> Self {
-        debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
-        let mut ranges = Vec::with_capacity(self.dimensionality());
-        for (start, size, other_start, other_size) in izip!(
-            &self.start,
-            &self.shape,
-            subset_other.start(),
-            subset_other.shape(),
-        ) {
-            let output_start = start.saturating_sub(*other_start);
-            let output_end =
-                std::cmp::min((start + size).saturating_sub(*other_start), *other_size);
-            ranges.push(output_start..output_end);
-        }
-        Self::new_with_ranges(&ranges)
-    }
-
     /// Return the overlapping subset between this array subset and `subset_other`.
     ///
     /// # Errors
