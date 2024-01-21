@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`
+ - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`, `GroupBuilder`
  - `array_subset::IncompatibleStartEndIndicesError`
 
 ### Changed
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `ZipStorageAdapter::{new,new_with_path}` now take a `StoreKey`
  - **Breaking**: `ArraySubset::new_with_start_end_{inc,exc}` now return `IncompatibleStartEndIndicesError` instead of `IncompatibleDimensionalityError`
    - It is now an error if any element of `end` is less than `start`
+ - Remove `#[must_use]` from `GroupBuilder::{attributes,additional_fields}`
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`

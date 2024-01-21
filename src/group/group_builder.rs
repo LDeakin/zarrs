@@ -25,7 +25,6 @@ impl GroupBuilder {
     }
 
     /// Set the attributes.
-    #[must_use]
     pub fn attributes(
         &mut self,
         attributes: serde_json::Map<String, serde_json::Value>,
@@ -36,7 +35,6 @@ impl GroupBuilder {
     }
 
     /// Set the additional fields.
-    #[must_use]
     pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         let GroupMetadata::V3(metadata) = &mut self.metadata;
         metadata.additional_fields = additional_fields;
@@ -54,5 +52,30 @@ impl GroupBuilder {
         path: &str,
     ) -> Result<Group<TStorage>, GroupCreateError> {
         Group::new_with_metadata(storage, path, self.metadata.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::storage::store::MemoryStore;
+
+    use super::*;
+
+    #[test]
+    fn group_builder() {
+        let mut builder = GroupBuilder::default();
+
+        let mut attributes = serde_json::Map::new();
+        attributes.insert("key".to_string(), "value".into());
+        builder.attributes(attributes.clone());
+
+        let mut additional_fields = serde_json::Map::new();
+        additional_fields.insert("key".to_string(), "value".into());
+        let additional_fields: AdditionalFields = additional_fields.into();
+        builder.additional_fields(additional_fields.clone());
+
+        let storage = Arc::new(MemoryStore::new());
+        println!("{:?}", builder.build(storage.clone(), "/"));
+        let _group = builder.build(storage, "/");
     }
 }
