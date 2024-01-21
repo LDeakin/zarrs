@@ -109,16 +109,16 @@ impl ArraySubset {
     /// Create a new array subset from a start and end (inclusive).
     ///
     /// # Errors
-    ///
-    /// Returns [`IncompatibleDimensionalityError`] if the size of `start` and `size` do not match.
+    /// Returns [`IncompatibleStartEndIndicesError`] if `start` and `end` are incompatible, such as if any element of `end` is less than `start` or they differ in length.
     pub fn new_with_start_end_inc(
         start: ArrayIndices,
         end: ArrayIndices,
-    ) -> Result<Self, IncompatibleDimensionalityError> {
-        if start.len() == end.len() {
-            Ok(unsafe { Self::new_with_start_end_inc_unchecked(start, end) })
+    ) -> Result<Self, IncompatibleStartEndIndicesError> {
+        if start.len() != end.len() || std::iter::zip(&start, &end).any(|(start, end)| end < start)
+        {
+            Err(IncompatibleStartEndIndicesError::from((start, end)))
         } else {
-            Err(IncompatibleDimensionalityError::new(start.len(), end.len()))
+            Ok(unsafe { Self::new_with_start_end_inc_unchecked(start, end) })
         }
     }
 
@@ -141,16 +141,16 @@ impl ArraySubset {
     /// Create a new array subset from a start and end (exclusive).
     ///
     /// # Errors
-    ///
-    /// Returns [`IncompatibleDimensionalityError`] if the size of `start` and `size` do not match.
+    /// Returns [`IncompatibleStartEndIndicesError`] if `start` and `end` are incompatible, such as if any element of `end` is less than `start` or they differ in length.
     pub fn new_with_start_end_exc(
         start: ArrayIndices,
         end: ArrayIndices,
-    ) -> Result<Self, IncompatibleDimensionalityError> {
-        if start.len() == end.len() {
-            Ok(unsafe { Self::new_with_start_end_exc_unchecked(start, end) })
+    ) -> Result<Self, IncompatibleStartEndIndicesError> {
+        if start.len() != end.len() || std::iter::zip(&start, &end).any(|(start, end)| end < start)
+        {
+            Err(IncompatibleStartEndIndicesError::from((start, end)))
         } else {
-            Err(IncompatibleDimensionalityError::new(start.len(), end.len()))
+            Ok(unsafe { Self::new_with_start_end_exc_unchecked(start, end) })
         }
     }
 
@@ -731,11 +731,6 @@ impl ArraySubset {
 #[error("incompatible dimensionality {0}, expected {1}")]
 pub struct IncompatibleDimensionalityError(usize, usize);
 
-/// An incompatible array shape error.
-#[derive(Clone, Debug, Error, From)]
-#[error("incompatible array shape {0:?} with array subset {1}")]
-pub struct IncompatibleArrayShapeError(ArrayShape, ArraySubset);
-
 impl IncompatibleDimensionalityError {
     /// Create a new incompatible dimensionality error.
     #[must_use]
@@ -744,7 +739,141 @@ impl IncompatibleDimensionalityError {
     }
 }
 
+/// An incompatible array shape error.
+#[derive(Clone, Debug, Error, From)]
+#[error("incompatible array shape {0:?} with array subset {1}")]
+pub struct IncompatibleArrayShapeError(ArrayShape, ArraySubset);
+
 /// An invalid array subset error.
 #[derive(Copy, Clone, Debug, Error)]
 #[error("invalid array subset")]
 pub struct InvalidArraySubsetError;
+
+/// An incompatible start/end indices error.
+#[derive(Clone, Debug, Error, From)]
+#[error("incompatible start {0:?} with end {1:?}")]
+pub struct IncompatibleStartEndIndicesError(ArrayIndices, ArrayIndices);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn array_subset() {
+        assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10, 10]).is_ok());
+        assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10]).is_err());
+        assert!(ArraySubset::new_with_start_end_inc(vec![0, 0], vec![10, 10]).is_ok());
+        assert!(ArraySubset::new_with_start_end_inc(vec![0, 0], vec![10]).is_err());
+        assert!(ArraySubset::new_with_start_end_inc(vec![5, 5], vec![0, 0]).is_err());
+        assert!(ArraySubset::new_with_start_end_exc(vec![0, 0], vec![10, 10]).is_ok());
+        assert!(ArraySubset::new_with_start_end_exc(vec![0, 0], vec![10]).is_err());
+        assert!(ArraySubset::new_with_start_end_exc(vec![5, 5], vec![0, 0]).is_err());
+        let array_subset = ArraySubset::new_with_start_shape(vec![0, 0], vec![10, 10])
+            .unwrap()
+            .bound(&[5, 5])
+            .unwrap();
+        assert_eq!(array_subset.shape(), &[5, 5]);
+        assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10, 10])
+            .unwrap()
+            .bound(&[5, 5, 5])
+            .is_err());
+
+        let array_subset0 = ArraySubset::new_with_ranges(&[1..5, 2..6]);
+        let array_subset1 = ArraySubset::new_with_ranges(&[3..6, 4..7]);
+        assert_eq!(
+            array_subset0.overlap(&array_subset1).unwrap(),
+            ArraySubset::new_with_ranges(&[3..5, 4..6])
+        );
+        assert_eq!(
+            array_subset0.relative_to(&[1, 1]).unwrap(),
+            ArraySubset::new_with_ranges(&[0..4, 1..5])
+        );
+        assert!(array_subset0.relative_to(&[1, 1, 1]).is_err());
+        assert!(array_subset0.inbounds(&[10, 10]));
+        assert!(!array_subset0.inbounds(&[2, 2]));
+        assert!(!array_subset0.inbounds(&[10, 10, 10]));
+
+        let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);
+        assert!(array_subset0.overlap(&array_subset2).is_err());
+        assert_eq!(
+            unsafe { array_subset2.iter_linearised_indices_unchecked(&[6, 7, 1]) }.next(),
+            Some(4 * 1 + 3 * 7 * 1)
+        )
+    }
+
+    #[test]
+    fn array_subset_bytes() {
+        let array_subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
+        let mut bytes_array = vec![0; 4 * 4];
+        array_subset
+            .store_bytes(&[1, 2, 3, 4], &mut bytes_array, &[4, 4], 1)
+            .unwrap();
+
+        assert!(array_subset
+            .store_bytes(&[1, 2, 3], &mut bytes_array, &[4, 4], 1)
+            .is_err());
+
+        assert!(array_subset
+            .store_bytes(&[1, 2, 3, 4], &mut bytes_array, &[2, 2], 1)
+            .is_err());
+
+        assert_eq!(
+            bytes_array,
+            vec![0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 0]
+        );
+        unsafe { array_subset.store_bytes_unchecked(&[5, 6, 7, 8], &mut bytes_array, &[4, 4], 1) };
+        assert_eq!(
+            bytes_array,
+            vec![0, 0, 0, 0, 0, 5, 6, 0, 0, 7, 8, 0, 0, 0, 0, 0]
+        );
+
+        assert!(array_subset.byte_ranges(&[1, 1], 1).is_err());
+
+        assert_eq!(
+            array_subset.byte_ranges(&[4, 4], 1).unwrap(),
+            vec![
+                ByteRange::FromStart(5, Some(2)),
+                ByteRange::FromStart(9, Some(2))
+            ]
+        );
+
+        assert_eq!(
+            unsafe { array_subset.byte_ranges_unchecked(&[4, 4], 1) },
+            vec![
+                ByteRange::FromStart(5, Some(2)),
+                ByteRange::FromStart(9, Some(2))
+            ]
+        );
+
+        assert!(array_subset
+            .extract_bytes(&bytes_array, &[1, 1], 1)
+            .is_err());
+
+        assert_eq!(
+            array_subset
+                .extract_bytes(&bytes_array, &[4, 4], 1)
+                .unwrap(),
+            vec![5, 6, 7, 8]
+        );
+
+        assert_eq!(
+            unsafe { array_subset.extract_bytes_unchecked(&bytes_array, &[4, 4], 1) },
+            vec![5, 6, 7, 8]
+        );
+
+        assert!(array_subset
+            .extract_elements(&bytes_array, &[1, 1])
+            .is_err());
+
+        assert_eq!(
+            array_subset
+                .extract_elements(&bytes_array, &[4, 4])
+                .unwrap(),
+            vec![5, 6, 7, 8]
+        );
+        assert_eq!(
+            unsafe { array_subset.extract_elements_unchecked(&bytes_array, &[4, 4]) },
+            vec![5, 6, 7, 8]
+        );
+    }
+}

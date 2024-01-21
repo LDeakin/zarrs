@@ -8,13 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`
+ - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`
+ - `array_subset::IncompatibleStartEndIndicesError`
 
 ### Changed
  - **Breaking**: `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
    - This avoids potential internal reallocations
  - **Breaking**: `StoreKey::parent` now returns `StorePrefix` instead of `Option<StorePrefix>`
  - **Breaking**: `ZipStorageAdapter::{new,new_with_path}` now take a `StoreKey`
+ - **Breaking**: `ArraySubset::new_with_start_end_{inc,exc}` now return `IncompatibleStartEndIndicesError` instead of `IncompatibleDimensionalityError`
+   - It is now an error if any element of `end` is less than `start`
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`
