@@ -15,15 +15,6 @@ pub struct StorePrefix(String);
 #[error("invalid store prefix {0}")]
 pub struct StorePrefixError(String);
 
-impl StorePrefixError {
-    #[deprecated(since = "0.7.3", note = "please use the From::<String> method instead")]
-    /// Create a new invalid store prefix error.
-    #[must_use]
-    pub const fn new(prefix: String) -> Self {
-        Self(prefix)
-    }
-}
-
 /// A list of [`StorePrefix`].
 pub type StorePrefixes = Vec<StorePrefix>;
 
