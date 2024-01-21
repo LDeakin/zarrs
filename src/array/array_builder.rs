@@ -312,3 +312,101 @@ impl ArrayBuilder {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        array::{chunk_grid::RegularChunkGrid, chunk_key_encoding::V2ChunkKeyEncoding},
+        storage::{storage_transformer::UsageLogStorageTransformer, store::MemoryStore},
+    };
+
+    use super::*;
+
+    #[test]
+    fn array_builder() {
+        let mut builder = ArrayBuilder::new(
+            vec![8, 8],
+            DataType::Int8,
+            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])),
+            FillValue::from(0i8),
+        );
+
+        // Coverage
+        builder.shape(vec![8, 8]);
+        builder.data_type(DataType::Int8);
+        builder.chunk_grid(ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])));
+        builder.fill_value(FillValue::from(0i8));
+
+        builder.dimension_names(Some(vec!["y".into(), "x".into()]));
+        builder.parallel_codecs(true);
+
+        let mut attributes = serde_json::Map::new();
+        attributes.insert("key".to_string(), "value".into());
+        builder.attributes(attributes.clone());
+
+        let mut additional_fields = serde_json::Map::new();
+        additional_fields.insert("key".to_string(), "value".into());
+        let additional_fields: AdditionalFields = additional_fields.into();
+        builder.additional_fields(additional_fields.clone());
+
+        builder.chunk_key_encoding(V2ChunkKeyEncoding::new_dot().into());
+        builder.chunk_key_encoding_default_separator(ChunkKeySeparator::Dot); // overrides previous
+        let log_writer = Arc::new(std::sync::Mutex::new(std::io::stdout()));
+        let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+            chrono::Utc::now().format("[%T%.3f] ").to_string()
+        }));
+
+        builder.storage_transformers(StorageTransformerChain::new(vec![usage_log]));
+
+        let storage = Arc::new(MemoryStore::new());
+        println!("{:?}", builder.build(storage.clone(), "/"));
+        let array = builder.build(storage, "/").unwrap();
+        assert_eq!(array.shape(), &[8, 8]);
+        assert_eq!(array.data_type(), &DataType::Int8);
+        assert_eq!(array.chunk_grid_shape(), Some(vec![4, 4]));
+        assert_eq!(array.fill_value(), &FillValue::from(0i8));
+        assert_eq!(array.dimension_names(), &Some(vec!["y".into(), "x".into()]));
+        assert!(array.parallel_codecs());
+        assert_eq!(array.attributes(), &attributes);
+        assert_eq!(array.additional_fields(), &additional_fields);
+
+        let builder2 = array.builder();
+        assert_eq!(builder.shape, builder2.shape);
+        assert_eq!(builder.data_type, builder2.data_type);
+        assert_eq!(builder.fill_value, builder2.fill_value);
+        assert_eq!(builder.attributes, builder2.attributes);
+        assert_eq!(builder.dimension_names, builder2.dimension_names);
+        assert_eq!(builder.additional_fields, builder2.additional_fields);
+        assert_eq!(builder.parallel_codecs, builder2.parallel_codecs);
+    }
+
+    #[test]
+    fn array_builder_invalid() {
+        let storage = Arc::new(MemoryStore::new());
+        // Invalid chunk shape
+        let builder = ArrayBuilder::new(
+            vec![8, 8],
+            DataType::Int8,
+            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2, 2])),
+            FillValue::from(0i8),
+        );
+        assert!(builder.build(storage.clone(), "/").is_err());
+        // Invalid fill value
+        let builder = ArrayBuilder::new(
+            vec![8, 8],
+            DataType::Int8,
+            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])),
+            FillValue::from(0i16),
+        );
+        assert!(builder.build(storage.clone(), "/").is_err());
+        // Invalid dimension names
+        let mut builder = ArrayBuilder::new(
+            vec![8, 8],
+            DataType::Int8,
+            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])),
+            FillValue::from(0i8),
+        );
+        builder.dimension_names(Some(vec!["z".into(), "y".into(), "x".into()]));
+        assert!(builder.build(storage.clone(), "/").is_err());
+    }
+}

@@ -8,10 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - `ByteRange` tests
- - `BytesRepresentation` tests
- - `StorePrefix` parent test
- - `StoreKey` tests
+ - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`
 
 ### Changed
  - **Breaking**: `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
