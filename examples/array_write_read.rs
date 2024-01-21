@@ -145,6 +145,6 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
 fn main() {
     if let Err(err) = array_write_read() {
-        println!("{}", err);
+        println!("{:?}", err);
     }
 }

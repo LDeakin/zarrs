@@ -64,6 +64,6 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::main]
 async fn main() {
     if let Err(err) = http_array_read().await {
-        println!("{}", err);
+        println!("{:?}", err);
     }
 }

@@ -181,6 +181,6 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::main]
 async fn main() {
     if let Err(err) = async_array_write_read().await {
-        println!("{}", err);
+        println!("{:?}", err);
     }
 }

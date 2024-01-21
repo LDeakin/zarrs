@@ -155,6 +155,6 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
 fn main() {
     if let Err(err) = sharded_array_write_read() {
-        println!("{}", err);
+        println!("{:?}", err);
     }
 }

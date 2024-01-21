@@ -53,6 +53,6 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
 
 fn main() {
     if let Err(err) = http_array_read() {
-        println!("{}", err);
+        println!("{:?}", err);
     }
 }
