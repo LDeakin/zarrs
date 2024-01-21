@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`, `GroupBuilder`, `Group`, `NodeName`, `NodePath`, `Node`, `AdditionalFields`, `Metadata`
+ - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`, `GroupBuilder`, `Group`, `NodeName`, `NodePath`, `Node`, `AdditionalFields`, `Metadata`, `FillValue`
  - `array_subset::IncompatibleStartEndIndicesError`
 
 ### Changed
@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
  - Disallow an empty string for a `StoreKey`
  - `ArrayBuilder` now validates additional fields
+ - `FillValue::equals_all` incorrect behaviour with a `FillValue` with size not equal to 1, 2, 4, 8, or 16 bytes.
 
 ## [0.10.0] - 2024-01-17
 

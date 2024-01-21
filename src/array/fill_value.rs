@@ -183,8 +183,86 @@ impl FillValue {
                     && aligned.iter().all(|x| x == &fill_value_128)
             }
             _ => bytes
-                .chunks_exact(bytes.len())
+                .chunks_exact(self.0.len())
                 .all(|element| element == self.0),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::array::safe_transmute_to_bytes_vec;
+
+    use super::*;
+
+    #[test]
+    fn fill_value() {
+        assert_eq!(
+            FillValue::from([0u8, 1u8, 2u8].as_slice()).as_ne_bytes(),
+            &[0u8, 1u8, 2u8]
+        );
+        assert_eq!(
+            FillValue::from(vec![0u8, 1u8, 2u8]).as_ne_bytes(),
+            &[0u8, 1u8, 2u8]
+        );
+        assert_eq!(FillValue::from(false).as_ne_bytes(), &[0u8]);
+        assert_eq!(FillValue::from(true).as_ne_bytes(), &[1u8]);
+        assert_eq!(FillValue::from(1u8).as_ne_bytes(), 1u8.to_ne_bytes());
+        assert_eq!(FillValue::from(1u16).as_ne_bytes(), 1u16.to_ne_bytes());
+        assert_eq!(FillValue::from(1u32).as_ne_bytes(), 1u32.to_ne_bytes());
+        assert_eq!(FillValue::from(1u64).as_ne_bytes(), 1u64.to_ne_bytes());
+        assert_eq!(FillValue::from(1i8).as_ne_bytes(), 1i8.to_ne_bytes());
+        assert_eq!(FillValue::from(1i16).as_ne_bytes(), 1i16.to_ne_bytes());
+        assert_eq!(FillValue::from(1i32).as_ne_bytes(), 1i32.to_ne_bytes());
+        assert_eq!(FillValue::from(1i64).as_ne_bytes(), 1i64.to_ne_bytes());
+        assert_eq!(
+            FillValue::from(half::f16::from_f32_const(1.0)).as_ne_bytes(),
+            half::f16::from_f32_const(1.0).to_ne_bytes()
+        );
+        assert_eq!(
+            FillValue::from(half::bf16::from_f32_const(1.0)).as_ne_bytes(),
+            half::bf16::from_f32_const(1.0).to_ne_bytes()
+        );
+        assert_eq!(
+            FillValue::from(1.0_f32).as_ne_bytes(),
+            1.0_f32.to_ne_bytes()
+        );
+        assert_eq!(
+            FillValue::from(1.0_f64).as_ne_bytes(),
+            1.0_f64.to_ne_bytes()
+        );
+        assert_eq!(
+            FillValue::from(num::complex::Complex32::new(1.0, 2.0)).as_ne_bytes(),
+            [1.0_f32.to_ne_bytes(), 2.0_f32.to_ne_bytes()].concat()
+        );
+        assert_eq!(
+            FillValue::from(num::complex::Complex64::new(1.0, 2.0)).as_ne_bytes(),
+            [1.0_f64.to_ne_bytes(), 2.0_f64.to_ne_bytes()].concat()
+        );
+    }
+
+    #[test]
+    fn fill_value_equals() {
+        assert!(FillValue::from(1u64).equals_all(&safe_transmute_to_bytes_vec(vec![1u64; 5])));
+        assert!(!FillValue::from(1u64).equals_all(&safe_transmute_to_bytes_vec(vec![0u64; 5])));
+        assert!(
+            FillValue::from(num::complex::Complex32::new(1.0, 2.0)).equals_all(
+                &safe_transmute_to_bytes_vec(
+                    FillValue::from(num::complex::Complex32::new(1.0, 2.0))
+                        .as_ne_bytes()
+                        .repeat(5)
+                )
+            )
+        );
+        assert!(
+            FillValue::from(num::complex::Complex64::new(1.0, 2.0)).equals_all(
+                &safe_transmute_to_bytes_vec(
+                    FillValue::from(num::complex::Complex64::new(1.0, 2.0))
+                        .as_ne_bytes()
+                        .repeat(5)
+                )
+            )
+        );
+        assert!(FillValue::from(vec![1u8; 32]).equals_all(&vec![1u8; 32 * 5]));
     }
 }
