@@ -126,9 +126,7 @@ impl Metadata {
     /// Convert a serializable configuration to [`Metadata`].
     ///
     /// # Errors
-    ///
     /// Returns [`serde_json::Error`] if `configuration` cannot be converted to [`Metadata`].
-    // NOTE: Configuration must be a struct and serializable into map. Can this be a compile time check?
     pub fn new_with_serializable_configuration<TConfiguration: serde::Serialize>(
         name: &str,
         configuration: &TConfiguration,
@@ -136,7 +134,7 @@ impl Metadata {
         let configuration = serde_json::to_value(configuration)?;
         let serde_json::Value::Object(configuration) = configuration else {
             return Err(serde::ser::Error::custom(
-                "this should not happen, indicates the configuration is not a JSON struct",
+                "the configuration cannot be serialized to a JSON struct",
             ));
         };
         Ok(Self::new_with_configuration(name, configuration))
@@ -145,8 +143,7 @@ impl Metadata {
     /// Try and convert [`Metadata`] to a serializable configuration.
     ///
     /// # Errors
-    ///
-    /// Returns a [`ConfigurationInvalidError`] if the metadata is cannot be converted.
+    /// Returns a [`ConfigurationInvalidError`] if the metadata cannot be converted.
     pub fn to_configuration<TConfiguration: DeserializeOwned>(
         &self,
     ) -> Result<TConfiguration, ConfigurationInvalidError> {
@@ -231,20 +228,23 @@ pub type MetadataConfiguration = serde_json::Map<String, serde_json::Value>;
 ///
 /// An unsupported field in array or group metadata is an unrecognised field without `"must_understand": false`.
 #[derive(Debug, Error)]
-#[error("unsupported additional field {0} with value {1}")]
-pub struct UnsupportedAdditionalFieldError(String, serde_json::Value);
+#[error("unsupported additional field {name} with value {value}")]
+pub struct UnsupportedAdditionalFieldError {
+    name: String,
+    value: serde_json::Value,
+}
 
 impl UnsupportedAdditionalFieldError {
     /// Return the name of the unsupported additional field.
     #[must_use]
     pub fn name(&self) -> &str {
-        &self.0
+        &self.name
     }
 
     /// Return the value of the unsupported additional field.
     #[must_use]
     pub const fn value(&self) -> &serde_json::Value {
-        &self.1
+        &self.value
     }
 }
 
@@ -256,7 +256,6 @@ impl AdditionalFields {
     /// Checks if additional fields are valid.
     ///
     /// # Errors
-    ///
     /// Returns an [`UnsupportedAdditionalFieldError`] if an unsupported additional field is identified.
     pub fn validate(&self) -> Result<(), UnsupportedAdditionalFieldError> {
         fn is_unknown_field_allowed(field: &serde_json::Value) -> bool {
@@ -275,10 +274,10 @@ impl AdditionalFields {
 
         for (key, value) in &self.0 {
             if !is_unknown_field_allowed(value) {
-                return Err(UnsupportedAdditionalFieldError(
-                    key.to_string(),
-                    value.clone(),
-                ));
+                return Err(UnsupportedAdditionalFieldError {
+                    name: key.to_string(),
+                    value: value.clone(),
+                });
             }
         }
         Ok(())
@@ -288,5 +287,78 @@ impl AdditionalFields {
     #[must_use]
     pub const fn as_map(&self) -> &serde_json::Map<String, serde_json::Value> {
         &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn metadata() {
+        assert!(Metadata::try_from(r#""bytes""#).is_ok());
+        assert!(Metadata::try_from(r#"{ "name": "bytes" }"#).is_ok());
+        assert!(Metadata::try_from(
+            r#"{ "name": "bytes", "configuration": { "endian": "little" } }"#
+        )
+        .is_ok());
+        assert!(
+            Metadata::try_from(r#"{ "name": "bytes", "invalid": { "endian": "little" } }"#)
+                .is_err()
+        );
+        let metadata =
+            Metadata::try_from(r#"{ "name": "bytes", "configuration": { "endian": "little" } }"#)
+                .unwrap();
+        let mut configuration = serde_json::Map::new();
+        configuration.insert("endian".to_string(), "little".into());
+        assert_eq!(metadata.configuration(), Some(&configuration));
+    }
+
+    #[test]
+    fn additional_fields_valid() {
+        let mut additional_fields_map = serde_json::Map::new();
+        let mut additional_field = serde_json::Map::new();
+        additional_field.insert("must_understand".to_string(), false.into());
+        additional_fields_map.insert("key".to_string(), additional_field.into());
+        let additional_fields: AdditionalFields = additional_fields_map.clone().into();
+        assert!(additional_fields.validate().is_ok());
+        assert_eq!(additional_fields.as_map(), &additional_fields_map);
+    }
+
+    #[test]
+    fn additional_fields_invalid1() {
+        let mut additional_fields = serde_json::Map::new();
+        let mut additional_field = serde_json::Map::new();
+        additional_field.insert("must_understand".to_string(), true.into());
+        additional_fields.insert("key".to_string(), additional_field.clone().into());
+        let additional_fields: AdditionalFields = additional_fields.into();
+        let validate = additional_fields.validate();
+        assert!(validate.is_err());
+        match validate {
+            Ok(()) => {}
+            Err(err) => {
+                assert_eq!(err.name(), "key");
+                assert_eq!(err.value(), &serde_json::Value::Object(additional_field));
+            }
+        }
+    }
+
+    #[test]
+    fn additional_fields_invalid2() {
+        let mut additional_fields = serde_json::Map::new();
+        let additional_field = serde_json::Map::new();
+        additional_fields.insert("key".to_string(), additional_field.into());
+        let additional_fields: AdditionalFields = additional_fields.into();
+        assert!(additional_fields.validate().is_err());
+    }
+
+    #[test]
+    fn additional_fields_invalid3() {
+        let mut additional_fields = serde_json::Map::new();
+        let mut additional_field = serde_json::Map::new();
+        additional_field.insert("must_understand".to_string(), 0.into());
+        additional_fields.insert("key".to_string(), additional_field.into());
+        let additional_fields: AdditionalFields = additional_fields.into();
+        assert!(additional_fields.validate().is_err());
     }
 }
