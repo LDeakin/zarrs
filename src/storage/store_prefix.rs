@@ -107,11 +107,22 @@ mod tests {
         assert!(StorePrefix::new("").is_ok());
         assert!(StorePrefix::new("a/").is_ok());
         assert!(StorePrefix::new("a/b/").is_ok());
+        assert!(StorePrefix::try_from("a/").is_ok());
     }
 
     #[test]
     fn invalid() {
         assert!(StorePrefix::new("a").is_err());
         assert!(StorePrefix::new("a/b").is_err());
+    }
+
+    #[test]
+    fn parent() {
+        let store_prefix = StorePrefix::new("a/b/").unwrap();
+        assert_eq!(store_prefix.parent(), Some(StorePrefix::new("a/").unwrap()));
+        let store_prefix = StorePrefix::new("a/").unwrap();
+        assert_eq!(store_prefix.parent(), Some(StorePrefix::new("").unwrap()));
+        let store_prefix = StorePrefix::new("").unwrap();
+        assert_eq!(store_prefix.parent(), None);
     }
 }
