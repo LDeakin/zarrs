@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-use crate::storage::StorePrefix;
-
 /// A Zarr hierarchy node name.
 ///
 /// See
@@ -53,7 +51,8 @@ impl NodeName {
     }
 
     /// Validates a node name according to the following rules from the specification:
-    /// - The root node does not have a name and is the empty string "". Otherwise,
+    /// - The root node does not have a name and is the empty string "".
+    /// Otherwise,
     /// - must not be the empty string (""),
     /// - must not include the character "/",
     /// - must not be a string composed only of period characters, e.g. "." or "..", and
@@ -73,16 +72,18 @@ impl NodeName {
     }
 }
 
-impl From<&StorePrefix> for NodeName {
-    fn from(prefix: &StorePrefix) -> Self {
-        let name = prefix
-            .as_str()
-            .strip_suffix('/')
-            .expect("a store prefix must end with /")
-            .split('/')
-            .last()
-            .expect("an empty string to split returns a single \"\" element")
-            .to_string();
-        Self(name)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn node_name() {
+        assert_eq!(NodeName::root(), NodeName::new("").unwrap());
+        assert!(NodeName::new("").unwrap().is_root());
+        assert!(NodeName::new("a").is_ok());
+        assert!(NodeName::new("a/b").is_err());
+        assert!(NodeName::new("__").is_err());
+        assert!(NodeName::new(".").is_err());
+        assert!(NodeName::new("..").is_err());
     }
 }

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`, `GroupBuilder`
+ - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`, `GroupBuilder`, `Group`, `NodeName`
  - `array_subset::IncompatibleStartEndIndicesError`
 
 ### Changed
@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`
  - **Breaking**: Remove `ArraySubset::{in_subset,in_subset_unchecked}`, deprecated since `v0.7.2`
+ - **Breaking**: Remove `impl From<&StorePrefix> for NodeName`, unused and not useful
 
 ### Fixed
  - Disallow an empty string for a `StoreKey`
