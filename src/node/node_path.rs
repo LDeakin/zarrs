@@ -75,3 +75,19 @@ impl TryFrom<&StorePrefix> for NodePath {
         Self::new(&path)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::*;
+
+    #[test]
+    fn node_path() {
+        assert!(NodePath::new("/").is_ok());
+        assert!(NodePath::new("/a/b").is_ok());
+        assert!(NodePath::new("/a/b/").is_err());
+        assert!(NodePath::new("/a//b").is_err());
+        assert_eq!(NodePath::new("/a/b").unwrap().as_path(), Path::new("/a/b/"));
+    }
+}
