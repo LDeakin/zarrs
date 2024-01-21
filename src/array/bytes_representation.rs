@@ -24,3 +24,23 @@ impl BytesRepresentation {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bytes_representation() {
+        let bytes_representation_fixed = BytesRepresentation::FixedSize(10);
+        assert_eq!(bytes_representation_fixed.size(), Some(10));
+        assert_eq!(
+            bytes_representation_fixed,
+            bytes_representation_fixed.clone()
+        );
+        let bytes_representation_bounded = BytesRepresentation::BoundedSize(10);
+        assert_eq!(bytes_representation_bounded.size(), Some(10));
+        assert_ne!(bytes_representation_fixed, bytes_representation_bounded);
+        let bytes_representation_unbounded = BytesRepresentation::UnboundedSize;
+        assert_eq!(bytes_representation_unbounded.size(), None);
+    }
+}
