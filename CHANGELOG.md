@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - It is now an error if any element of `end` is less than `start`
  - Remove `#[must_use]` from `GroupBuilder::{attributes,additional_fields}`
  - **Breaking**: Rename `Node::new_with_store` to `Node::new`, and `Node::new` to `Node::new_with_metadata` for consistency with `Array`/`Group`
+ - Use `serde_json` `float_roundtrip` feature
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`

@@ -60,7 +60,7 @@ rayon = "1.6"
 reqwest = { version = "0.11", features = ["blocking"], optional = true }
 safe-transmute = "0.11"
 serde = { version = "1.0.100", features = ["derive"] }
-serde_json = { version = "1.0.71", features = ["preserve_order"] }
+serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
 thiserror = "1.0.7"
 url = { version = "2", optional = true }
 walkdir = "2.3.2"
