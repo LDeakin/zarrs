@@ -54,7 +54,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
                 StorageError::UnknownKeySize(key.clone()).into(),
             )?;
         let storage_io = StorageValueIO::new(storage, key, size);
-        let zip_archive = Mutex::new(ZipArchive::new(storage_io)?);
+        let zip_archive = Mutex::new(
+            ZipArchive::new(storage_io)
+                .map_err(|err| ZipStorageAdapterCreateError::ZipError(err.to_string()))?,
+        );
         Ok(Self {
             size,
             zip_archive,
@@ -228,8 +231,8 @@ pub enum ZipStorageAdapterCreateError {
     #[error("{0} is an existing directory, not a zip file")]
     ExistingDir(PathBuf),
     /// A zip error.
-    #[error(transparent)]
-    ZipError(#[from] ZipError),
+    #[error("{0}")]
+    ZipError(String),
     /// A storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
