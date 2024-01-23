@@ -89,6 +89,24 @@ impl ByteRange {
     }
 }
 
+impl std::fmt::Display for ByteRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Self::FromStart(offset, length) => write!(
+                f,
+                "{offset}..{}",
+                length.map_or(String::new(), |length| (offset + length).to_string())
+            ),
+            Self::FromEnd(offset, length) => write!(
+                f,
+                "{}..-{offset}",
+                length.map_or("-".to_string(), |length| "-".to_string()
+                    + &(offset + length).to_string())
+            ),
+        }
+    }
+}
+
 /// An invalid byte range error.
 #[derive(Copy, Clone, Debug, Error)]
 #[error("invalid byte range")]
