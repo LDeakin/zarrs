@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `bytemuck` is publicly exported at the crate root
    - Array methods now have `<T: bytemuck::Pod + ..>` instead of `<T: safe_transmute::TriviallyTransmutable + ..>`
  - **Breaking**: Rename `array::safe_transmute_to_bytes_vec` to `array::transmute_to_bytes_vec`
+ - **Breaking**: Make `zfp` a private dependency by changing `Zfp{Bitstream,Field,Stream}` from `pub` to `pub(super)`
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`

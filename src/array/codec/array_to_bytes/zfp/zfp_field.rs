@@ -7,7 +7,7 @@ use zfp_sys::{
 
 /// A `zfp` field.
 #[derive(Debug)]
-pub struct ZfpField(NonNull<zfp_field>);
+pub(super) struct ZfpField(NonNull<zfp_field>);
 
 impl Drop for ZfpField {
     fn drop(&mut self) {
