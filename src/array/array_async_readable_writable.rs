@@ -1,4 +1,3 @@
-use super::TriviallyTransmutable;
 use futures::{stream::FuturesUnordered, StreamExt};
 
 use crate::{
@@ -6,7 +5,7 @@ use crate::{
     storage::{data_key, AsyncReadableWritableStorageTraits},
 };
 
-use super::{safe_transmute_to_bytes_vec, Array, ArrayError};
+use super::{Array, ArrayError};
 
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
@@ -143,7 +142,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of `T` does not match the data type size, or
     ///  - a [`store_array_subset`](Array::store_array_subset) error condition is met.
-    pub async fn async_store_array_subset_elements<T: TriviallyTransmutable + Send>(
+    pub async fn async_store_array_subset_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -161,7 +160,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_array_subset_ndarray<T: TriviallyTransmutable + Send + Sync>(
+    pub async fn async_store_array_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<'_, T>,
@@ -261,7 +260,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk_subset`](Array::store_chunk_subset) error condition is met.
-    pub async fn async_store_chunk_subset_elements<T: TriviallyTransmutable + Send + Sync>(
+    pub async fn async_store_chunk_subset_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
@@ -282,7 +281,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_chunk_subset_elements`](Array::store_chunk_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_chunk_subset_ndarray<T: TriviallyTransmutable + Send + Sync>(
+    pub async fn async_store_chunk_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],

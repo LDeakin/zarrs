@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn codec_zstd_round_trip1() {
         let elements: Vec<u16> = (0..32).collect();
-        let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: ZstdCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn codec_zstd_partial_decode() {
         let elements: Vec<u16> = (0..8).collect();
-        let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: ZstdCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();

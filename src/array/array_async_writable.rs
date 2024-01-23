@@ -2,14 +2,12 @@ use std::sync::Arc;
 
 use futures::{stream::FuturesUnordered, StreamExt};
 
-use super::TriviallyTransmutable;
-
 use crate::{
     array_subset::ArraySubset,
     storage::{AsyncWritableStorageTraits, StorageError, StorageHandle},
 };
 
-use super::{codec::ArrayCodecTraits, safe_transmute_to_bytes_vec, Array, ArrayError};
+use super::{codec::ArrayCodecTraits, Array, ArrayError};
 
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     /// Store metadata.
@@ -87,7 +85,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
-    pub async fn async_store_chunk_elements<T: TriviallyTransmutable + Send>(
+    pub async fn async_store_chunk_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_elements: Vec<T>,
@@ -107,7 +105,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     ///  - the size of `T` does not match the size of the data type,
     ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_chunk_ndarray<T: TriviallyTransmutable + Send + Sync>(
+    pub async fn async_store_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_array: &ndarray::ArrayViewD<'_, T>,
@@ -200,7 +198,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     ///
     /// # Errors
     /// In addition to [`Array::async_store_chunks`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
-    pub async fn async_store_chunks_elements<T: TriviallyTransmutable + Send + Sync>(
+    pub async fn async_store_chunks_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
@@ -217,7 +215,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     ///
     /// # Errors
     /// In addition to [`Array::async_store_chunks`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
-    pub async fn async_store_chunks_ndarray<T: TriviallyTransmutable + Send + Sync>(
+    pub async fn async_store_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,

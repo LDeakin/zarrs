@@ -39,8 +39,6 @@ pub use self::{
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
 };
 
-/// Re-export of [`safe_transmute::TriviallyTransmutable`].
-pub use safe_transmute::TriviallyTransmutable;
 use serde::Serialize;
 
 use crate::{
@@ -551,7 +549,7 @@ macro_rules! array_store_elements {
                 std::mem::size_of::<T>(),
             ))
         } else {
-            let $elements = safe_transmute_to_bytes_vec($elements);
+            let $elements = crate::array::transmute_to_bytes_vec($elements);
             $self.$func($($arg)*)
         }
     };
@@ -581,7 +579,7 @@ macro_rules! array_async_store_elements {
                 std::mem::size_of::<T>(),
             ))
         } else {
-            let $elements = safe_transmute_to_bytes_vec($elements);
+            let $elements = crate::array::transmute_to_bytes_vec($elements);
             $self.$func($($arg)*).await
         }
     };
@@ -618,72 +616,18 @@ mod array_async_writable;
 #[cfg(feature = "async")]
 mod array_async_readable_writable;
 
-// Safe transmute, avoiding an allocation where possible
-//
-// A relevant discussion about this can be found here: https://github.com/nabijaczleweli/safe-transmute-rs/issues/16#issuecomment-471066699
-#[doc(hidden)]
+/// Transmute from `Vec<u8>` to `Vec<T>`.
 #[must_use]
-pub fn safe_transmute_to_bytes_vec<T: TriviallyTransmutable>(mut from: Vec<T>) -> Vec<u8> {
-    #[cfg(target_family = "windows")]
-    {
-        // https://github.com/rust-lang/rust/blob/master/library/std/src/sys/common/alloc.rs
-        #[cfg(any(
-            target_arch = "x86",
-            target_arch = "arm",
-            target_arch = "m68k",
-            target_arch = "csky",
-            target_arch = "mips",
-            target_arch = "mips32r6",
-            target_arch = "powerpc",
-            target_arch = "powerpc64",
-            target_arch = "sparc",
-            target_arch = "asmjs",
-            target_arch = "wasm32",
-            target_arch = "hexagon",
-            all(target_arch = "riscv32", not(target_os = "espidf")),
-            all(target_arch = "xtensa", not(target_os = "espidf")),
-        ))]
-        pub const MIN_ALIGN: usize = 8;
-        #[cfg(any(
-            target_arch = "x86_64",
-            target_arch = "aarch64",
-            target_arch = "loongarch64",
-            target_arch = "mips64",
-            target_arch = "mips64r6",
-            target_arch = "s390x",
-            target_arch = "sparc64",
-            target_arch = "riscv64",
-            target_arch = "wasm64",
-        ))]
-        pub const MIN_ALIGN: usize = 16;
-        // The allocator on the esp-idf platform guarantees 4 byte alignment.
-        #[cfg(any(
-            all(target_arch = "riscv32", target_os = "espidf"),
-            all(target_arch = "xtensa", target_os = "espidf"),
-        ))]
-        pub const MIN_ALIGN: usize = 4;
-        // https://github.com/rust-lang/rust/blob/93b6d9e086c6910118a57e4332c9448ab550931f/src/libstd/sys/windows/alloc.rs#L46-L57
-        if core::mem::align_of::<T>() <= MIN_ALIGN {
-            unsafe {
-                let capacity = from.capacity() * core::mem::size_of::<T>();
-                let len = from.len() * core::mem::size_of::<T>();
-                let ptr = from.as_mut_ptr();
-                core::mem::forget(from);
-                Vec::from_raw_parts(ptr.cast::<u8>(), len, capacity)
-            }
-        } else {
-            safe_transmute::transmute_to_bytes(&from).to_vec()
-        }
-    }
+pub fn transmute_from_bytes_vec<T: bytemuck::Pod>(from: Vec<u8>) -> Vec<T> {
+    bytemuck::allocation::try_cast_vec(from)
+        .unwrap_or_else(|(_err, from)| bytemuck::allocation::pod_collect_to_vec(&from))
+}
 
-    #[cfg(not(target_family = "windows"))]
-    unsafe {
-        let capacity = from.capacity() * core::mem::size_of::<T>();
-        let len = from.len() * core::mem::size_of::<T>();
-        let ptr = from.as_mut_ptr();
-        core::mem::forget(from);
-        Vec::from_raw_parts(ptr.cast::<u8>(), len, capacity)
-    }
+/// Transmute from `Vec<T>` to `Vec<u8>`.
+#[must_use]
+pub fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
+    bytemuck::allocation::try_cast_vec(from)
+        .unwrap_or_else(|(_err, from)| bytemuck::allocation::pod_collect_to_vec(&from))
 }
 
 /// Unravel a linearised index to ND indices.

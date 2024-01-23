@@ -151,7 +151,7 @@ mod tests {
         let array_representation =
             ArrayRepresentation::new(vec![3, 3, 3], DataType::Float32, 0.0f32.into()).unwrap();
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
-        let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
+        let bytes = crate::array::transmute_to_bytes_vec(elements.clone());
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
@@ -161,9 +161,7 @@ mod tests {
             .decode(encoded.clone(), &array_representation)
             .unwrap();
 
-        let decoded_elements = safe_transmute::transmute_many_permissive::<f32>(&decoded)
-            .unwrap()
-            .to_vec();
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded);
         assert_eq!(elements, decoded_elements);
     }
 
@@ -172,7 +170,7 @@ mod tests {
         let array_representation =
             ArrayRepresentation::new(vec![3, 3, 3], DataType::Float32, 0.0f32.into()).unwrap();
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
-        let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);

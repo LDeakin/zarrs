@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use super::TriviallyTransmutable;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -8,9 +7,7 @@ use crate::{
     storage::{StorageError, StorageHandle, WritableStorageTraits},
 };
 
-use super::{
-    codec::ArrayCodecTraits, safe_transmute_to_bytes_vec, unravel_index, Array, ArrayError,
-};
+use super::{codec::ArrayCodecTraits, unravel_index, Array, ArrayError};
 
 impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     /// Store metadata.
@@ -85,7 +82,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
-    pub fn store_chunk_elements<T: TriviallyTransmutable>(
+    pub fn store_chunk_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_elements: Vec<T>,
@@ -105,7 +102,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     ///  - the size of `T` does not match the size of the data type,
     ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub fn store_chunk_ndarray<T: TriviallyTransmutable>(
+    pub fn store_chunk_ndarray<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_array: &ndarray::ArrayViewD<T>,
@@ -222,7 +219,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     ///
     /// # Errors
     /// In addition to [`Array::store_chunks_opt`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
-    pub fn store_chunks_elements_opt<T: TriviallyTransmutable>(
+    pub fn store_chunks_elements_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
@@ -237,7 +234,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
 
     /// Serial version of [`Array::store_chunks_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn store_chunks_elements<T: TriviallyTransmutable>(
+    pub fn store_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
@@ -251,7 +248,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
 
     /// Parallel version of [`Array::store_chunks_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_chunks_elements<T: TriviallyTransmutable>(
+    pub fn par_store_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
@@ -268,7 +265,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     ///
     /// # Errors
     /// In addition to [`Array::store_chunks_opt`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
-    pub fn store_chunks_ndarray_opt<T: TriviallyTransmutable>(
+    pub fn store_chunks_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,
@@ -284,7 +281,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Serial version of [`Array::store_chunks_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn store_chunks_ndarray<T: TriviallyTransmutable>(
+    pub fn store_chunks_ndarray<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,
@@ -299,7 +296,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Parallel version of [`Array::store_chunks_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_chunks_ndarray<T: TriviallyTransmutable>(
+    pub fn par_store_chunks_ndarray<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,

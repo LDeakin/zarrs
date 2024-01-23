@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use super::TriviallyTransmutable;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -10,7 +9,6 @@ use crate::{
 };
 
 use super::{
-    array_errors::TransmuteError,
     codec::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, StoragePartialDecoder,
     },
@@ -28,22 +26,8 @@ macro_rules! array_retrieve_elements {
             ))
         } else {
             let bytes = $self.$func($($arg)*)?;
-            if safe_transmute::align::check_alignment::<_, T>(&bytes).is_ok() {
-                // no-copy path
-                let mut bytes = core::mem::ManuallyDrop::new(bytes);
-                Ok(unsafe {
-                    Vec::from_raw_parts(
-                        bytes.as_mut_ptr().cast::<T>(),
-                        bytes.len() / core::mem::size_of::<T>(),
-                        bytes.len(),
-                    )
-                })
-            } else {
-                let elements = safe_transmute::transmute_many_permissive::<T>(&bytes)
-                    .map_err(TransmuteError::from)?
-                    .to_vec();
-                Ok(elements)
-            }
+            let elements = crate::array::transmute_from_bytes_vec::<T>(bytes);
+            Ok(elements)
         }
     };
 }
@@ -141,7 +125,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///  - `chunk_indices` are invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
-    pub fn retrieve_chunk_elements<T: TriviallyTransmutable>(
+    pub fn retrieve_chunk_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
     ) -> Result<Vec<T>, ArrayError> {
@@ -161,7 +145,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if a chunk dimension is larger than `usize::MAX`.
-    pub fn retrieve_chunk_ndarray<T: TriviallyTransmutable>(
+    pub fn retrieve_chunk_ndarray<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -273,7 +257,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Panics if the number of array elements in the chunks exceeds `usize::MAX`.
-    pub fn retrieve_chunks_elements_opt<T: TriviallyTransmutable>(
+    pub fn retrieve_chunks_elements_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         parallel: bool,
@@ -283,7 +267,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
 
     /// Serial version of [`Array::retrieve_chunks_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn retrieve_chunks_elements<T: TriviallyTransmutable>(
+    pub fn retrieve_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
@@ -292,7 +276,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
 
     /// Parallel version of [`Array::retrieve_chunks_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_retrieve_chunks_elements<T: TriviallyTransmutable>(
+    pub fn par_retrieve_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
@@ -307,7 +291,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Panics if the number of array elements in the chunks exceeds `usize::MAX`.
-    pub fn retrieve_chunks_ndarray_opt<T: TriviallyTransmutable>(
+    pub fn retrieve_chunks_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         parallel: bool,
@@ -323,7 +307,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Serial version of [`Array::retrieve_chunks_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn retrieve_chunks_ndarray<T: TriviallyTransmutable>(
+    pub fn retrieve_chunks_ndarray<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -333,7 +317,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Parallel version of [`Array::retrieve_chunks_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_retrieve_chunks_ndarray<T: TriviallyTransmutable>(
+    pub fn par_retrieve_chunks_ndarray<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -525,7 +509,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///  - an array subset is invalid or out of bounds of the array,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
-    pub fn retrieve_array_subset_elements_opt<T: TriviallyTransmutable>(
+    pub fn retrieve_array_subset_elements_opt<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
         parallel: bool,
@@ -535,7 +519,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
 
     /// Serial version of [`Array::retrieve_array_subset_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn retrieve_array_subset_elements<T: TriviallyTransmutable>(
+    pub fn retrieve_array_subset_elements<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
@@ -544,7 +528,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
 
     /// Parallel version of [`Array::retrieve_array_subset_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_retrieve_array_subset_elements<T: TriviallyTransmutable>(
+    pub fn par_retrieve_array_subset_elements<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
@@ -562,7 +546,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
-    pub fn retrieve_array_subset_ndarray_opt<T: TriviallyTransmutable>(
+    pub fn retrieve_array_subset_ndarray_opt<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
         parallel: bool,
@@ -577,7 +561,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Serial version of [`Array::retrieve_array_subset_ndarray`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn retrieve_array_subset_ndarray<T: TriviallyTransmutable>(
+    pub fn retrieve_array_subset_ndarray<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -587,7 +571,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Parallel version of [`Array::retrieve_array_subset_ndarray`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_retrieve_array_subset_ndarray<T: TriviallyTransmutable>(
+    pub fn par_retrieve_array_subset_ndarray<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -652,7 +636,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///  - the chunk subset is invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
-    pub fn retrieve_chunk_subset_elements<T: TriviallyTransmutable>(
+    pub fn retrieve_chunk_subset_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
@@ -672,7 +656,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
-    pub fn retrieve_chunk_subset_ndarray<T: TriviallyTransmutable>(
+    pub fn retrieve_chunk_subset_ndarray<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,

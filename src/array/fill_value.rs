@@ -191,7 +191,7 @@ impl FillValue {
 
 #[cfg(test)]
 mod tests {
-    use crate::array::safe_transmute_to_bytes_vec;
+    use crate::array::transmute_to_bytes_vec;
 
     use super::*;
 
@@ -243,11 +243,11 @@ mod tests {
 
     #[test]
     fn fill_value_equals() {
-        assert!(FillValue::from(1u64).equals_all(&safe_transmute_to_bytes_vec(vec![1u64; 5])));
-        assert!(!FillValue::from(1u64).equals_all(&safe_transmute_to_bytes_vec(vec![0u64; 5])));
+        assert!(FillValue::from(1u64).equals_all(&transmute_to_bytes_vec(vec![1u64; 5])));
+        assert!(!FillValue::from(1u64).equals_all(&transmute_to_bytes_vec(vec![0u64; 5])));
         assert!(
             FillValue::from(num::complex::Complex32::new(1.0, 2.0)).equals_all(
-                &safe_transmute_to_bytes_vec(
+                &transmute_to_bytes_vec(
                     FillValue::from(num::complex::Complex32::new(1.0, 2.0))
                         .as_ne_bytes()
                         .repeat(5)
@@ -256,7 +256,7 @@ mod tests {
         );
         assert!(
             FillValue::from(num::complex::Complex64::new(1.0, 2.0)).equals_all(
-                &safe_transmute_to_bytes_vec(
+                &transmute_to_bytes_vec(
                     FillValue::from(num::complex::Complex64::new(1.0, 2.0))
                         .as_ne_bytes()
                         .repeat(5)

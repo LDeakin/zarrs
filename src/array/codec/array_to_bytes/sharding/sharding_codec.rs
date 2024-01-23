@@ -6,7 +6,7 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderTraits, Codec, CodecChain, CodecError, CodecPlugin, CodecTraits,
         },
-        safe_transmute_to_bytes_vec, unravel_index,
+        transmute_to_bytes_vec, unravel_index,
         unsafe_cell_slice::UnsafeCellSlice,
         ArrayRepresentation, BytesRepresentation,
     },
@@ -422,7 +422,7 @@ impl ShardingCodec {
 
         // Encode array index
         let encoded_array_index = self.index_codecs.encode(
-            safe_transmute_to_bytes_vec(shard_index),
+            transmute_to_bytes_vec(shard_index),
             &index_decoded_representation,
         )?;
 
@@ -494,7 +494,7 @@ impl ShardingCodec {
 
         // Encode array index
         let encoded_array_index = self.index_codecs.encode(
-            safe_transmute_to_bytes_vec(shard_index),
+            transmute_to_bytes_vec(shard_index),
             &index_decoded_representation,
         )?;
 
@@ -613,7 +613,7 @@ impl ShardingCodec {
 
         // Encode and write array index
         let encoded_array_index = self.index_codecs.par_encode(
-            safe_transmute_to_bytes_vec(shard_index),
+            transmute_to_bytes_vec(shard_index),
             &index_decoded_representation,
         )?;
         {
@@ -719,7 +719,7 @@ impl ShardingCodec {
 
         // Write shard index
         let encoded_array_index = self.index_codecs.par_encode(
-            safe_transmute_to_bytes_vec(shard_index),
+            transmute_to_bytes_vec(shard_index),
             &index_decoded_representation,
         )?;
         {
@@ -795,7 +795,7 @@ impl ShardingCodec {
         let encoded_array_index = self
             .index_codecs
             .async_encode_opt(
-                safe_transmute_to_bytes_vec(shard_index),
+                transmute_to_bytes_vec(shard_index),
                 &index_decoded_representation,
                 false,
             )
@@ -906,7 +906,7 @@ impl ShardingCodec {
         let encoded_array_index = self
             .index_codecs
             .async_encode_opt(
-                safe_transmute_to_bytes_vec(shard_index),
+                transmute_to_bytes_vec(shard_index),
                 &index_decoded_representation,
                 false,
             )
@@ -1047,7 +1047,7 @@ impl ShardingCodec {
         let encoded_array_index = self
             .index_codecs
             .async_encode_opt(
-                safe_transmute_to_bytes_vec(shard_index),
+                transmute_to_bytes_vec(shard_index),
                 &index_decoded_representation,
                 true,
             )
@@ -1177,7 +1177,7 @@ impl ShardingCodec {
         let encoded_array_index = self
             .index_codecs
             .async_encode_opt(
-                safe_transmute_to_bytes_vec(shard_index),
+                transmute_to_bytes_vec(shard_index),
                 &index_decoded_representation,
                 true,
             )

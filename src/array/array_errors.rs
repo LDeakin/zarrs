@@ -106,35 +106,4 @@ pub enum ArrayError {
     /// Incompatible element size.
     #[error("got element size {_0}, expected {_1}")]
     IncompatibleElementSize(usize, usize),
-    /// Transmute error.
-    #[error(transparent)]
-    TransmuteError(#[from] TransmuteError),
-}
-
-/// A non typed version of [`safe_transmute::Error`].
-#[derive(Debug, Error)]
-pub enum TransmuteError {
-    /// The data does not respect the boundaries of the target type.
-    #[error(transparent)]
-    Guard(safe_transmute::GuardError),
-    /// The given data slice is not properly aligned for the target type.
-    #[error("the given data slice is not properly aligned for the target type")]
-    Unaligned,
-    /// The element type of the data vector does not have the same size and minimum alignment as the target type.
-    #[error("The element type of the data vector does not have the same size and minimum alignment as the target type")]
-    IncompatibleVecTarget,
-    /// The data contains an invalid value for the target type.
-    #[error("invalid value")]
-    InvalidValue,
-}
-
-impl<'a, S, T> From<safe_transmute::Error<'a, S, T>> for TransmuteError {
-    fn from(error: safe_transmute::Error<'a, S, T>) -> Self {
-        match error {
-            safe_transmute::Error::Guard(guard) => Self::Guard(guard),
-            safe_transmute::Error::Unaligned(_) => Self::Unaligned,
-            safe_transmute::Error::IncompatibleVecTarget(_) => Self::IncompatibleVecTarget,
-            safe_transmute::Error::InvalidValue => Self::InvalidValue,
-        }
-    }
 }

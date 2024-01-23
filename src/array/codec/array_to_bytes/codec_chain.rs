@@ -636,7 +636,7 @@ mod tests {
             ArrayRepresentation::new(vec![2, 3, 4], DataType::UInt16, FillValue::from(0u16))
                 .unwrap();
         let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
-        let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configurations: Vec<Metadata> = vec![
             #[cfg(feature = "transpose")]
@@ -686,7 +686,7 @@ mod tests {
             ArrayRepresentation::new(vec![2, 2, 2], DataType::UInt16, FillValue::from(0u16))
                 .unwrap();
         let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
-        let bytes = safe_transmute::transmute_to_bytes(&elements).to_vec();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configurations: Vec<Metadata> = vec![
             #[cfg(feature = "transpose")]

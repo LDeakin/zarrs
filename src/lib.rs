@@ -90,3 +90,6 @@ pub mod node;
 pub mod plugin;
 pub mod storage;
 pub mod version;
+
+/// Re-export [`bytemuck`].
+pub use bytemuck;

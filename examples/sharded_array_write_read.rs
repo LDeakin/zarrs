@@ -125,9 +125,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let decoded_inner_chunks = decoded_inner_chunks
         .into_iter()
         .map(|bytes| {
-            let elements = safe_transmute::transmute_many_permissive::<u16>(&bytes)
-                .unwrap()
-                .to_vec();
+            let elements = zarrs::array::transmute_from_bytes_vec(bytes);
             ndarray::ArrayD::<u16>::from_shape_vec(
                 inner_chunk_shape
                     .iter()

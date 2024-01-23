@@ -1,4 +1,3 @@
-use super::TriviallyTransmutable;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -6,7 +5,7 @@ use crate::{
     storage::{data_key, ReadableWritableStorageTraits},
 };
 
-use super::{safe_transmute_to_bytes_vec, unravel_index, Array, ArrayError};
+use super::{unravel_index, Array, ArrayError};
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
@@ -164,7 +163,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of `T` does not match the data type size, or
     ///  - a [`store_array_subset`](Array::store_array_subset) error condition is met.
-    pub fn store_array_subset_elements_opt<T: TriviallyTransmutable>(
+    pub fn store_array_subset_elements_opt<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -179,7 +178,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
 
     /// Serial version of [`Array::store_array_subset_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn store_array_subset_elements<T: TriviallyTransmutable>(
+    pub fn store_array_subset_elements<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -189,7 +188,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
 
     /// Parallel version of [`Array::store_array_subset_elements_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_array_subset_elements<T: TriviallyTransmutable>(
+    pub fn par_store_array_subset_elements<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
@@ -203,7 +202,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub fn store_array_subset_ndarray_opt<T: TriviallyTransmutable>(
+    pub fn store_array_subset_ndarray_opt<T: bytemuck::Pod>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
@@ -223,7 +222,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Serial version of [`Array::store_array_subset_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn store_array_subset_ndarray<T: TriviallyTransmutable>(
+    pub fn store_array_subset_ndarray<T: bytemuck::Pod>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
@@ -234,7 +233,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Parallel version of [`Array::store_array_subset_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_array_subset_ndarray<T: TriviallyTransmutable>(
+    pub fn par_store_array_subset_ndarray<T: bytemuck::Pod>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
@@ -324,7 +323,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk_subset`](Array::store_chunk_subset) error condition is met.
-    pub fn store_chunk_subset_elements<T: TriviallyTransmutable>(
+    pub fn store_chunk_subset_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
@@ -345,7 +344,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_chunk_subset_elements`](Array::store_chunk_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub fn store_chunk_subset_ndarray<T: TriviallyTransmutable>(
+    pub fn store_chunk_subset_ndarray<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
