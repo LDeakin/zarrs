@@ -107,6 +107,12 @@ impl StoreKeyRange {
     }
 }
 
+impl std::fmt::Display for StoreKeyRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}:{}", self.key, self.byte_range)
+    }
+}
+
 /// A [`StoreKey`], [`ByteOffset`], and value (bytes).
 #[derive(Debug, Clone)]
 #[must_use]
