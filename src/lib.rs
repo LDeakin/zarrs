@@ -93,3 +93,27 @@ pub mod version;
 
 /// Re-export [`bytemuck`].
 pub use bytemuck;
+
+/// Re-export [`bytes`].
+pub use bytes;
+
+/// Re-export [`dyn_clone`].
+pub use dyn_clone;
+
+/// Re-export [`half`].
+pub use half;
+
+/// Re-export [`serde_json`].
+pub use serde_json;
+
+#[cfg(feature = "ndarray")]
+/// Re-export [`ndarray`].
+pub use ndarray;
+
+#[cfg(feature = "object_store")]
+/// Re-export [`object_store`].
+pub use object_store;
+
+#[cfg(feature = "opendal")]
+/// Re-export [`opendal`].
+pub use opendal;

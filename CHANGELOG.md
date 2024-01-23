@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`, `GroupBuilder`, `Group`, `NodeName`, `NodePath`, `Node`, `AdditionalFields`, `Metadata`, `FillValue`
  - `array_subset::IncompatibleStartEndIndicesError`
  - Add `array::transmute_from_bytes_vec`
+ - Re-export public dependencies at the crate root: `bytes`, `bytemuck`, `dyn_clone`, `serde_json`, `ndarray`, `object_store`, and `opendal`
 
 ### Changed
  - **Breaking**: `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
@@ -23,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Rename `Node::new_with_store` to `Node::new`, and `Node::new` to `Node::new_with_metadata` for consistency with `Array`/`Group`
  - Use `serde_json` `float_roundtrip` feature
  - **Breaking**: Use `bytemuck` instead of `safe_transmute`
-   - `bytemuck` is publicly exported at the crate root
    - Array methods now have `<T: bytemuck::Pod + ..>` instead of `<T: safe_transmute::TriviallyTransmutable + ..>`
  - **Breaking**: Rename `array::safe_transmute_to_bytes_vec` to `array::transmute_to_bytes_vec`
  - **Breaking**: Make `zfp` a private dependency by changing `Zfp{Bitstream,Field,Stream}` from `pub` to `pub(super)`
