@@ -6,7 +6,7 @@
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //!
-//! The most relevant docs to started with are [`array::Array`] and [`storage::store`].
+//! The best docs to start with are [`array::Array`] and [`storage::store`].
 //!
 //! ## Implementation Status
 //! - [x] [ZEP0001 - Zarr specification version 3](https://zarr.dev/zeps/accepted/ZEP0001.html).
