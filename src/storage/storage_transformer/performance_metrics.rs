@@ -25,7 +25,10 @@ use std::sync::{
 
 use super::StorageTransformerExtension;
 
-/// The performance metrics storage transformer.
+/// The performance metrics storage transformer. Accumulates metrics, such as bytes read and written.
+///
+/// This storage transformer is for internal use and will not to be included in `storage_transformers` array metadata.
+/// It is intended to aid in testing by allowing the application to validate that metrics (e.g., bytes read/written, total read/write operations, lock requests) match expected values for specific operations.
 #[derive(Debug, Default)]
 pub struct PerformanceMetricsStorageTransformer {
     bytes_read: AtomicUsize,
@@ -79,6 +82,7 @@ impl PerformanceMetricsStorageTransformer {
 }
 
 impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
+    /// Returns [`None`], since this storage transformer is not intended to be included in array `storage_transformers` metadata.
     fn create_metadata(&self) -> Option<Metadata> {
         None
     }
