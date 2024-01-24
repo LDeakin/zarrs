@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use zarrs::{
         array::{
@@ -147,6 +149,15 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let node = Node::new(&*store_readable_listable, "/").unwrap();
     let tree = node.hierarchy_tree();
     println!("The zarr hierarchy tree is:\n{}", tree);
+
+    println!(
+        "The keys in the store are:\n[{}]",
+        store_readable_listable
+            .list()
+            .unwrap_or_default()
+            .iter()
+            .format(", ")
+    );
 
     Ok(())
 }
