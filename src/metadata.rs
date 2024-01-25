@@ -157,8 +157,9 @@ impl Metadata {
                 ))
             },
             |configuration| {
-                serde_json::from_value(serde_json::to_value(configuration).unwrap_or_default())
-                    .map_or_else(
+                let value = serde_json::to_value(configuration);
+                match value {
+                    Ok(value) => serde_json::from_value(value).map_or_else(
                         |_| {
                             Err(ConfigurationInvalidError::new(
                                 &self.name,
@@ -166,7 +167,12 @@ impl Metadata {
                             ))
                         },
                         |configuration| Ok(configuration),
-                    )
+                    ),
+                    Err(_) => Err(ConfigurationInvalidError::new(
+                        &self.name,
+                        self.configuration.clone(),
+                    )),
+                }
             },
         )
     }

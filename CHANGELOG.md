@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `FillValue::equals_all` incorrect behaviour with a `FillValue` with size not equal to 1, 2, 4, 8, or 16 bytes.
  - Fix `NodePath` display output
  - Fix handling of non-standard `NaN` values for `f16` and `bf16`
+ - Fix potential missed error in `Metadata::to_configuration`
 
 ## [0.10.0] - 2024-01-17
 
