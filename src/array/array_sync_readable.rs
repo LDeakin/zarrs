@@ -5,7 +5,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use crate::{
     array_subset::ArraySubset,
     node::NodePath,
-    storage::{data_key, meta_key, ReadableStorageTraits, StorageHandle},
+    storage::{data_key, meta_key, ReadableStorageTraits, StorageError, StorageHandle},
 };
 
 use super::{
@@ -64,11 +64,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
     /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
+        let key = meta_key(&node_path);
         let metadata: ArrayMetadata = serde_json::from_slice(
             &storage
-                .get(&meta_key(&node_path))?
+                .get(&key)?
                 .ok_or(ArrayCreateError::MissingMetadata)?,
-        )?;
+        )
+        .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
         Self::new_with_metadata(storage, path, metadata)
     }
 

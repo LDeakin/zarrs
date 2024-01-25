@@ -62,9 +62,6 @@ pub enum ArrayCreateError {
     /// Storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
-    /// An error deserialising the metadata.
-    #[error(transparent)]
-    MetadataDeserializationError(#[from] serde_json::Error),
     /// Missing metadata.
     #[error("array metadata is missing")]
     MissingMetadata,

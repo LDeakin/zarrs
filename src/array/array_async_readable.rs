@@ -67,12 +67,14 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
     /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
     pub async fn async_new(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
+        let key = meta_key(&node_path);
         let metadata: ArrayMetadata = serde_json::from_slice(
             &storage
-                .get(&meta_key(&node_path))
+                .get(&key)
                 .await?
                 .ok_or(ArrayCreateError::MissingMetadata)?,
-        )?;
+        )
+        .map_err(|err| crate::storage::StorageError::InvalidMetadata(key, err.to_string()))?;
         Self::new_with_metadata(storage, path, metadata)
     }
 

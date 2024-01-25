@@ -46,7 +46,7 @@ pub use self::{
 /// A group.
 #[derive(Clone, Debug, Display)]
 #[display(
-    fmt = "path {path} metadata {}",
+    fmt = "group at {path} with metadata {}",
     "serde_json::to_string(metadata).unwrap_or_default()"
 )]
 pub struct Group<TStorage: ?Sized> {
@@ -127,8 +127,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
         let node_path = path.try_into()?;
-        let metadata: GroupMetadata = match storage.get(&meta_key(&node_path))? {
-            Some(metadata) => serde_json::from_slice(&metadata)?,
+        let key = meta_key(&node_path);
+        let metadata: GroupMetadata = match storage.get(&key)? {
+            Some(metadata) => serde_json::from_slice(&metadata)
+                .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?,
             None => GroupMetadataV3::default().into(),
         };
         Self::new_with_metadata(storage, path, metadata)
@@ -144,8 +146,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
     pub async fn async_new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
         let node_path = path.try_into()?;
-        let metadata: GroupMetadata = match storage.get(&meta_key(&node_path)).await? {
-            Some(metadata) => serde_json::from_slice(&metadata)?,
+        let key = meta_key(&node_path);
+        let metadata: GroupMetadata = match storage.get(&key).await? {
+            Some(metadata) => serde_json::from_slice(&metadata)
+                .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?,
             None => GroupMetadataV3::default().into(),
         };
         Self::new_with_metadata(storage, path, metadata)
@@ -170,12 +174,6 @@ pub enum GroupCreateError {
     /// Storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
-    /// An error deserialising the metadata.
-    #[error(transparent)]
-    MetadataDeserializationError(#[from] serde_json::Error),
-    /// An error parsing the metadata.
-    #[error("{0}")]
-    Metadata(String),
 }
 
 fn validate_group_metadata(metadata: &GroupMetadataV3) -> Result<(), GroupCreateError> {
@@ -222,53 +220,13 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::store::MemoryStore;
+    use crate::storage::{store::MemoryStore, StoreKey};
 
     use super::*;
 
     const JSON_VALID1: &str = r#"{
     "zarr_format": 3,
     "node_type": "group",
-    "attributes": {
-        "spam": "ham",
-        "eggs": 42
-    }
-}"#;
-
-    const JSON_VALID2: &str = r#"{
-    "zarr_format": 3,
-    "node_type": "group",
-    "attributes": {
-        "spam": "ham",
-        "eggs": 42
-    },
-    "unknown": {
-        "must_understand": false
-    }
-}"#;
-
-    const JSON_INVALID_ADDITIONAL_FIELD: &str = r#"{
-    "zarr_format": 3,
-    "node_type": "group",
-    "attributes": {
-      "spam": "ham",
-      "eggs": 42
-    },
-    "unknown": "fail"
-}"#;
-
-    const JSON_INVALID_FORMAT: &str = r#"{
-    "zarr_format": 2,
-    "node_type": "group",
-    "attributes": {
-        "spam": "ham",
-        "eggs": 42
-    }
-}"#;
-
-    const JSON_INVALID_TYPE: &str = r#"{
-    "zarr_format": 3,
-    "node_type": "array",
     "attributes": {
         "spam": "ham",
         "eggs": 42
@@ -284,37 +242,89 @@ mod tests {
 
     #[test]
     fn group_metadata2() {
-        let group_metadata: GroupMetadata = serde_json::from_str(JSON_VALID2).unwrap();
+        let group_metadata: GroupMetadata = serde_json::from_str(
+            r#"{
+            "zarr_format": 3,
+            "node_type": "group",
+            "attributes": {
+                "spam": "ham",
+                "eggs": 42
+            },
+            "unknown": {
+                "must_understand": false
+            }
+        }"#,
+        )
+        .unwrap();
         let store = MemoryStore::default();
         Group::new_with_metadata(store.into(), "/", group_metadata).unwrap();
     }
 
     #[test]
     fn group_metadata_invalid_format() {
-        let group_metadata: GroupMetadata = serde_json::from_str(JSON_INVALID_FORMAT).unwrap();
+        let group_metadata: GroupMetadata = serde_json::from_str(
+            r#"{
+            "zarr_format": 2,
+            "node_type": "group",
+            "attributes": {
+                "spam": "ham",
+                "eggs": 42
+            }
+        }"#,
+        )
+        .unwrap();
         print!("{group_metadata:?}");
         let store = MemoryStore::default();
         let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
-        assert!(group_metadata.is_err());
+        assert_eq!(
+            group_metadata.unwrap_err().to_string(),
+            "invalid zarr format 2, expected 3"
+        );
     }
 
     #[test]
     fn group_metadata_invalid_type() {
-        let group_metadata: GroupMetadata = serde_json::from_str(JSON_INVALID_TYPE).unwrap();
+        let group_metadata: GroupMetadata = serde_json::from_str(
+            r#"{
+            "zarr_format": 3,
+            "node_type": "array",
+            "attributes": {
+                "spam": "ham",
+                "eggs": 42
+            }
+        }"#,
+        )
+        .unwrap();
         print!("{group_metadata:?}");
         let store = MemoryStore::default();
         let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
-        assert!(group_metadata.is_err());
+        assert_eq!(
+            group_metadata.unwrap_err().to_string(),
+            "invalid zarr format array, expected group"
+        );
     }
 
     #[test]
     fn group_metadata_invalid_additional_field() {
-        let group_metadata: GroupMetadata =
-            serde_json::from_str(JSON_INVALID_ADDITIONAL_FIELD).unwrap();
+        let group_metadata: GroupMetadata = serde_json::from_str(
+            r#"{
+                "zarr_format": 3,
+                "node_type": "group",
+                "attributes": {
+                  "spam": "ham",
+                  "eggs": 42
+                },
+                "unknown": "fail"
+            }"#,
+        )
+        .unwrap();
         print!("{group_metadata:?}");
         let store = MemoryStore::default();
         let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
-        assert!(group_metadata.is_err());
+        assert_eq!(
+            group_metadata.unwrap_err().to_string(),
+            r#"unsupported additional field unknown with value "fail""#
+        );
     }
 
     #[test]
@@ -327,6 +337,47 @@ mod tests {
         group.store_metadata().unwrap();
         let metadata = Group::new(store, group_path).unwrap().metadata();
         assert_eq!(metadata, group.metadata());
+        assert_eq!(
+            group.metadata().to_string(),
+            r#"{"node_type":"group","zarr_format":3}"#
+        );
+        assert_eq!(
+            group.to_string(),
+            r#"group at /group with metadata {"node_type":"group","zarr_format":3}"#
+        );
+    }
+
+    #[test]
+    fn group_metadata_invalid_path() {
+        let group_metadata: GroupMetadata = serde_json::from_str(JSON_VALID1).unwrap();
+        let store = MemoryStore::default();
+        assert_eq!(
+            Group::new_with_metadata(store.into(), "abc", group_metadata)
+                .unwrap_err()
+                .to_string(),
+            "invalid node path abc"
+        );
+    }
+
+    #[test]
+    fn group_invalid_path() {
+        let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
+        assert_eq!(
+            Group::new(store, "abc").unwrap_err().to_string(),
+            "invalid node path abc"
+        );
+    }
+
+    #[test]
+    fn group_invalid_metadata() {
+        let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
+        store
+            .set(&StoreKey::new("zarr.json").unwrap(), &[0])
+            .unwrap();
+        assert_eq!(
+            Group::new(store, "/").unwrap_err().to_string(),
+            "error parsing metadata for zarr.json: expected value at line 1 column 1"
+        );
     }
 
     #[cfg(feature = "async")]
