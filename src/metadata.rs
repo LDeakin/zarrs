@@ -90,7 +90,9 @@ impl<'de> serde::Deserialize<'de> for Metadata {
             NameConfiguration(MetadataNameConfiguration),
         }
 
-        let metadata = MetadataIntermediate::deserialize(d)?;
+        let metadata = MetadataIntermediate::deserialize(d).map_err(|_| {
+            serde::de::Error::custom(r#"Expected metadata "<name>" or {"name":"<name>"} or {"name":"<name>","configuration":{}}"#)
+        })?;
         match metadata {
             MetadataIntermediate::Name(name) => Ok(Self {
                 name,
@@ -296,15 +298,31 @@ mod tests {
 
     #[test]
     fn metadata() {
-        assert!(Metadata::try_from(r#""bytes""#).is_ok());
+        let metadata = Metadata::try_from(r#""bytes""#);
+        assert!(metadata.is_ok());
+        assert_eq!(metadata.unwrap().to_string(), r#"bytes"#);
         assert!(Metadata::try_from(r#"{ "name": "bytes" }"#).is_ok());
-        assert!(Metadata::try_from(
-            r#"{ "name": "bytes", "configuration": { "endian": "little" } }"#
-        )
-        .is_ok());
-        assert!(
+        let metadata =
+            Metadata::try_from(r#"{ "name": "bytes", "configuration": { "endian": "little" } }"#);
+        assert!(metadata.is_ok());
+        let metadata = metadata.unwrap();
+        assert_eq!(
+            metadata.to_string(),
+            r#"bytes {"endian": String("little")}"#
+        );
+        assert_eq!(metadata.name(), "bytes");
+        assert!(metadata.configuration().is_some());
+        let configuration = metadata.configuration().unwrap();
+        assert!(configuration.contains_key("endian"));
+        assert_eq!(
+            configuration.get("endian").unwrap().as_str().unwrap(),
+            "little"
+        );
+        assert_eq!(
             Metadata::try_from(r#"{ "name": "bytes", "invalid": { "endian": "little" } }"#)
-                .is_err()
+                .unwrap_err()
+                .to_string(),
+            r#"Expected metadata "<name>" or {"name":"<name>"} or {"name":"<name>","configuration":{}}"#
         );
         let metadata =
             Metadata::try_from(r#"{ "name": "bytes", "configuration": { "endian": "little" } }"#)
@@ -334,13 +352,9 @@ mod tests {
         let additional_fields: AdditionalFields = additional_fields.into();
         let validate = additional_fields.validate();
         assert!(validate.is_err());
-        match validate {
-            Ok(()) => {}
-            Err(err) => {
-                assert_eq!(err.name(), "key");
-                assert_eq!(err.value(), &serde_json::Value::Object(additional_field));
-            }
-        }
+        let err = validate.unwrap_err();
+        assert_eq!(err.name(), "key");
+        assert_eq!(err.value(), &serde_json::Value::Object(additional_field));
     }
 
     #[test]
