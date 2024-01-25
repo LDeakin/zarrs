@@ -7,7 +7,7 @@ use thiserror::Error;
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#path>
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display)]
-#[display(fmt = "{_0:?}")]
+#[display(fmt = "{}", "_0.to_string_lossy()")]
 pub struct NodePath(PathBuf);
 
 /// An invalid node path.
@@ -86,7 +86,12 @@ mod tests {
     fn node_path() {
         assert!(NodePath::new("/").is_ok());
         assert!(NodePath::new("/a/b").is_ok());
+        assert_eq!(NodePath::new("/a/b").unwrap().to_string(), "/a/b");
         assert!(NodePath::new("/a/b/").is_err());
+        assert_eq!(
+            NodePath::new("/a/b/").unwrap_err().to_string(),
+            "invalid node path /a/b/"
+        );
         assert!(NodePath::new("/a//b").is_err());
         assert_eq!(NodePath::new("/a/b").unwrap().as_path(), Path::new("/a/b/"));
     }
