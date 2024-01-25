@@ -94,14 +94,23 @@ impl std::fmt::Display for ByteRange {
         match self {
             Self::FromStart(offset, length) => write!(
                 f,
-                "{offset}..{}",
+                "{}..{}",
+                if offset == &0 {
+                    String::new()
+                } else {
+                    offset.to_string()
+                },
                 length.map_or(String::new(), |length| (offset + length).to_string())
             ),
             Self::FromEnd(offset, length) => write!(
                 f,
-                "{}..-{offset}",
-                length.map_or("-".to_string(), |length| "-".to_string()
-                    + &(offset + length).to_string())
+                "{}..{}",
+                length.map_or(String::new(), |length| format!("-{}", offset + length)),
+                if offset == &0 {
+                    String::new()
+                } else {
+                    format!("-{offset}")
+                }
             ),
         }
     }
@@ -109,10 +118,21 @@ impl std::fmt::Display for ByteRange {
 
 /// An invalid byte range error.
 #[derive(Copy, Clone, Debug, Error)]
-#[error("invalid byte range")]
-pub struct InvalidByteRangeError;
+#[error("invalid byte range {0} for bytes of length {1}")]
+pub struct InvalidByteRangeError(ByteRange, u64);
 
-fn validate_byte_ranges(byte_ranges: &[ByteRange], bytes_len: u64) -> bool {
+impl InvalidByteRangeError {
+    /// Create a new [`InvalidByteRangeError`].
+    #[must_use]
+    pub fn new(byte_range: ByteRange, bytes_len: u64) -> Self {
+        Self(byte_range, bytes_len)
+    }
+}
+
+fn validate_byte_ranges(
+    byte_ranges: &[ByteRange],
+    bytes_len: u64,
+) -> Result<(), InvalidByteRangeError> {
     for byte_range in byte_ranges {
         let valid = match byte_range {
             ByteRange::FromStart(offset, length) | ByteRange::FromEnd(offset, length) => {
@@ -120,10 +140,10 @@ fn validate_byte_ranges(byte_ranges: &[ByteRange], bytes_len: u64) -> bool {
             }
         };
         if !valid {
-            return false;
+            return Err(InvalidByteRangeError(*byte_range, bytes_len));
         }
     }
-    true
+    Ok(())
 }
 
 /// Extract byte ranges from bytes.
@@ -134,9 +154,7 @@ pub fn extract_byte_ranges(
     bytes: &[u8],
     byte_ranges: &[ByteRange],
 ) -> Result<Vec<Vec<u8>>, InvalidByteRangeError> {
-    if !validate_byte_ranges(byte_ranges, bytes.len() as u64) {
-        return Err(InvalidByteRangeError);
-    }
+    validate_byte_ranges(byte_ranges, bytes.len() as u64)?;
     Ok(unsafe { extract_byte_ranges_unchecked(bytes, byte_ranges) })
 }
 
@@ -174,18 +192,38 @@ mod tests {
         assert_eq!(byte_range.length(10), 9);
         assert_eq!(byte_range.offset(), 1);
 
+        let byte_range = ByteRange::FromEnd(1, None);
+        assert_eq!(byte_range.to_range(10), 0..9);
+        assert_eq!(byte_range.length(10), 9);
+        assert_eq!(byte_range.offset(), 1);
+
         let byte_range = ByteRange::FromStart(1, Some(5));
         assert_eq!(byte_range.to_range(10), 1..6);
         assert_eq!(byte_range.to_range_usize(10), 1..6);
         assert_eq!(byte_range.length(10), 5);
 
-        assert!(validate_byte_ranges(&[ByteRange::FromStart(1, Some(5))], 6));
-        assert!(!validate_byte_ranges(
-            &[ByteRange::FromStart(1, Some(5))],
-            2
-        ));
+        assert!(validate_byte_ranges(&[ByteRange::FromStart(1, Some(5))], 6).is_ok());
+        assert!(validate_byte_ranges(&[ByteRange::FromStart(1, Some(5))], 2).is_err());
+
+        assert!(validate_byte_ranges(&[ByteRange::FromEnd(1, Some(5))], 6).is_ok());
+        assert!(validate_byte_ranges(&[ByteRange::FromEnd(1, Some(5))], 2).is_err());
 
         assert!(extract_byte_ranges(&[1, 2, 3], &[ByteRange::FromStart(1, Some(2))]).is_ok());
-        assert!(extract_byte_ranges(&[1, 2, 3], &[ByteRange::FromStart(1, Some(4))]).is_err())
+        let bytes = extract_byte_ranges(&[1, 2, 3], &[ByteRange::FromStart(1, Some(4))]);
+        assert!(bytes.is_err());
+        assert_eq!(
+            bytes.unwrap_err().to_string(),
+            "invalid byte range 1..5 for bytes of length 3"
+        );
+    }
+
+    #[test]
+    fn byte_range_display() {
+        assert_eq!(format!("{}", ByteRange::FromStart(0, None)), "..");
+        assert_eq!(format!("{}", ByteRange::FromStart(5, None)), "5..");
+        assert_eq!(format!("{}", ByteRange::FromStart(5, Some(2))), "5..7");
+        assert_eq!(format!("{}", ByteRange::FromEnd(5, None)), "..-5");
+        assert_eq!(format!("{}", ByteRange::FromEnd(0, Some(2))), "-2..");
+        assert_eq!(format!("{}", ByteRange::FromEnd(5, Some(2))), "-7..-5");
     }
 }

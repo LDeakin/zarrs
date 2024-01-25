@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Make `zip` a private dependency by not exposing `ZipError` in `ZipStorageAdapterCreateError`
  - Refine `UsageLogStorageTransformer` outputs and add docs
  - Improve `PerformanceMetricsStorageTransformer` docs
+ - **Breaking**: `InvalidByteRangeError` now holds a `ByteRange` and bytes length and returns a more informative error message
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`

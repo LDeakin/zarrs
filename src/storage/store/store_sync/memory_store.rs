@@ -102,7 +102,7 @@ impl ReadableStorageTraits for MemoryStore {
                 let start = usize::try_from(byte_range.start(data.len() as u64)).unwrap();
                 let end = usize::try_from(byte_range.end(data.len() as u64)).unwrap();
                 if end > data.len() {
-                    return Err(InvalidByteRangeError.into());
+                    return Err(InvalidByteRangeError::new(*byte_range, data.len() as u64).into());
                 }
                 let bytes = data[start..end].to_vec();
                 out.push(bytes);

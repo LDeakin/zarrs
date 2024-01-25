@@ -95,7 +95,8 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
                                 if (end - start) == bytes.len() as u64 {
                                     Ok(bytes)
                                 } else {
-                                    Err(InvalidByteRangeError.into())
+                                    Err(InvalidByteRangeError::new(*byte_range, bytes.len() as u64)
+                                        .into())
                                 }
                             }
                             Err(err) => Err(StorageError::from(err.to_string())),
