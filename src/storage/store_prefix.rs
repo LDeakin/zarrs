@@ -108,12 +108,17 @@ mod tests {
         assert!(StorePrefix::new("a/").is_ok());
         assert!(StorePrefix::new("a/b/").is_ok());
         assert!(StorePrefix::try_from("a/").is_ok());
+        assert_eq!(StorePrefix::try_from("a/").unwrap().to_string(), "a/");
     }
 
     #[test]
     fn invalid() {
         assert!(StorePrefix::new("a").is_err());
         assert!(StorePrefix::new("a/b").is_err());
+        assert_eq!(
+            StorePrefix::new("a/b").unwrap_err().to_string(),
+            "invalid store prefix a/b"
+        );
     }
 
     #[test]

@@ -68,7 +68,7 @@ impl StoreKey {
     /// Convert to a [`StoreKey`].
     #[must_use]
     pub fn to_prefix(&self) -> StorePrefix {
-        StorePrefix::new(self.0.clone() + "/").unwrap_or_else(|_| StorePrefix::root())
+        unsafe { StorePrefix::new_unchecked(self.0.clone() + "/") }
     }
 
     /// Returns the parent of this key.
@@ -106,7 +106,12 @@ mod tests {
     #[test]
     fn store_prefix() {
         assert!(StoreKey::new("a").is_ok());
+        assert_eq!(StoreKey::new("a").unwrap().to_string(), "a");
         assert!(StoreKey::new("a/").is_err());
+        assert_eq!(
+            StoreKey::new("a/").unwrap_err().to_string(),
+            "invalid store key a/"
+        );
         assert!(StoreKey::new("/a").is_err());
         assert_eq!(
             StoreKey::new("a").unwrap().to_prefix(),
