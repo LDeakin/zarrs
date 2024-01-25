@@ -90,6 +90,11 @@ impl FillValueFloat {
 pub struct HexString(Vec<u8>);
 
 impl HexString {
+    /// Create a new [`HexString`]
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
+    }
+
     /// Return the hex string as a big endian byte slice.
     #[must_use]
     pub fn as_be_bytes(&self) -> &[u8] {

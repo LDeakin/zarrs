@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `array::transmute_from_bytes_vec`
  - Re-export public dependencies at the crate root: `bytes`, `bytemuck`, `dyn_clone`, `serde_json`, `ndarray`, `object_store`, and `opendal`
  - Implement `Display` for `ByteRange`, `StoreKeyRange`, `NodeName`
+ - Add `HexString::new`
 
 ### Changed
  - **Breaking**: `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
@@ -47,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `ArrayBuilder` now validates additional fields
  - `FillValue::equals_all` incorrect behaviour with a `FillValue` with size not equal to 1, 2, 4, 8, or 16 bytes.
  - Fix `NodePath` display output
+ - Fix handling of non-standard `NaN` values for `f16` and `bf16`
 
 ## [0.10.0] - 2024-01-17
 
