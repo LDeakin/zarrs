@@ -52,9 +52,6 @@ pub enum NodeCreateError {
     /// A storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
-    /// An error parsing the metadata.
-    #[error("{0}")]
-    Metadata(String),
 }
 
 impl Node {
@@ -68,10 +65,12 @@ impl Node {
         path: &str,
     ) -> Result<Self, NodeCreateError> {
         let path: NodePath = path.try_into()?;
-        let metadata = storage.get(&meta_key(&path))?;
+        let key = meta_key(&path);
+        let metadata = storage.get(&key)?;
         let metadata: NodeMetadata = match metadata {
-            Some(metadata) => serde_json::from_slice(metadata.as_slice())
-                .map_err(|e| NodeCreateError::Metadata(e.to_string()))?,
+            Some(metadata) => serde_json::from_slice(metadata.as_slice()).map_err(|e| {
+                NodeCreateError::StorageError(StorageError::InvalidMetadata(key, e.to_string()))
+            })?,
             None => NodeMetadata::Group(GroupMetadataV3::default().into()),
         };
         let children = match metadata {
@@ -99,10 +98,12 @@ impl Node {
         path: &str,
     ) -> Result<Self, NodeCreateError> {
         let path: NodePath = path.try_into()?;
-        let metadata = storage.get(&meta_key(&path)).await?;
+        let key = meta_key(&path);
+        let metadata = storage.get(&key).await?;
         let metadata: NodeMetadata = match metadata {
-            Some(metadata) => serde_json::from_slice(metadata.as_slice())
-                .map_err(|e| NodeCreateError::Metadata(e.to_string()))?,
+            Some(metadata) => serde_json::from_slice(metadata.as_slice()).map_err(|e| {
+                NodeCreateError::StorageError(StorageError::InvalidMetadata(key, e.to_string()))
+            })?,
             None => NodeMetadata::Group(GroupMetadataV3::default().into()),
         };
         let children = match metadata {
@@ -187,7 +188,11 @@ impl Node {
 
 #[cfg(test)]
 mod tests {
-    use crate::{group::GroupMetadata, storage::store::MemoryStore};
+    use crate::{
+        array::{ArrayBuilder, FillValue},
+        group::GroupMetadata,
+        storage::{store::MemoryStore, StoreKey, WritableStorageTraits},
+    };
 
     use super::*;
 
@@ -270,6 +275,59 @@ mod tests {
         assert_eq!(
             node.metadata,
             NodeMetadata::Group(GroupMetadata::V3(GroupMetadataV3::default()))
+        );
+    }
+
+    #[test]
+    fn node_array() {
+        let store = std::sync::Arc::new(MemoryStore::new());
+        let node_path = "/node";
+        let array = ArrayBuilder::new(
+            vec![1, 2, 3],
+            crate::array::DataType::Float32,
+            vec![1, 1, 1].into(),
+            FillValue::from(0.0f32),
+        )
+        .build(store.clone(), node_path)
+        .unwrap();
+        array.store_metadata().unwrap();
+        let node = Node::new(&*store, node_path).unwrap();
+        assert_eq!(node.metadata, NodeMetadata::Array(array.metadata()));
+    }
+
+    #[test]
+    fn node_invalid_path() {
+        let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
+        let invalid_node_path = "node";
+        assert_eq!(
+            Node::new(&*store, invalid_node_path)
+                .unwrap_err()
+                .to_string(),
+            "invalid node path node"
+        );
+    }
+
+    #[test]
+    fn node_invalid_metadata() {
+        let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
+        store
+            .set(&StoreKey::new("node/zarr.json").unwrap(), &[0])
+            .unwrap();
+        assert_eq!(
+            Node::new(&*store, "/node").unwrap_err().to_string(),
+            "error parsing metadata for node/zarr.json: expected value at line 1 column 1"
+        );
+    }
+
+    #[test]
+    fn node_invalid_child() {
+        let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
+        store
+            .set(&StoreKey::new("node/array/zarr.json").unwrap(), &[0])
+            .unwrap();
+        assert_eq!(
+            Node::new(&*store, "/node").unwrap_err().to_string(),
+            "error parsing metadata for node/array/zarr.json: expected value at line 1 column 1"
         );
     }
 

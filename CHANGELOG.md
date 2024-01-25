@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Refine `UsageLogStorageTransformer` outputs and add docs
  - Improve `PerformanceMetricsStorageTransformer` docs
  - **Breaking**: `InvalidByteRangeError` now holds a `ByteRange` and bytes length and returns a more informative error message
+ - **Breaking**: Remove `StorageError::InvalidJSON` and add `StorageError::InvalidMetadata`
+   - `InvalidMetadata` additionally holds a `StoreKey` for more informative error messages
+ - **Breaking**: Remove `NodeCreateError::Metadata`
+   - `NodeCreateError::StorageError` with `StorageError::InvalidMetadata` is used instead
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`

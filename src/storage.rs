@@ -169,9 +169,12 @@ pub enum StorageError {
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    /// An error serialising or deserialising JSON.
-    #[error(transparent)]
-    InvalidJSON(#[from] serde_json::Error),
+    // /// An error serialising or deserialising JSON.
+    // #[error(transparent)]
+    // InvalidJSON(#[from] serde_json::Error),
+    /// An error parsing the metadata for a key.
+    #[error("error parsing metadata for {0}: {1}")]
+    InvalidMetadata(StoreKey, String),
     /// An invalid store prefix.
     #[error("invalid store prefix {0}")]
     StorePrefixError(#[from] StorePrefixError),

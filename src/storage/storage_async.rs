@@ -299,9 +299,11 @@ pub async fn async_get_child_nodes<
     let mut nodes: Vec<Node> = Vec::new();
     // FIXME: Asynchronously get metadata of all prefixes
     for prefix in &prefixes {
-        let child_metadata = match storage.get(&meta_key(&prefix.try_into()?)).await? {
+        let key = meta_key(&prefix.try_into()?);
+        let child_metadata = match storage.get(&key).await? {
             Some(child_metadata) => {
-                let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())?;
+                let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())
+                    .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
                 metadata
             }
             None => NodeMetadata::Group(GroupMetadataV3::default().into()),
@@ -325,7 +327,9 @@ pub async fn async_create_group(
     path: &NodePath,
     group: &GroupMetadata,
 ) -> Result<(), StorageError> {
-    let json = serde_json::to_vec_pretty(group)?;
+    let key = meta_key(path);
+    let json = serde_json::to_vec_pretty(group)
+        .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
     storage.set(&meta_key(path), json.into()).await?;
     Ok(())
 }
@@ -339,7 +343,9 @@ pub async fn async_create_array(
     path: &NodePath,
     array: &ArrayMetadata,
 ) -> Result<(), StorageError> {
-    let json = serde_json::to_vec_pretty(array)?;
+    let key = meta_key(path);
+    let json = serde_json::to_vec_pretty(array)
+        .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
     storage.set(&meta_key(path), json.into()).await?;
     Ok(())
 }
