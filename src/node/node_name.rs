@@ -5,7 +5,7 @@ use thiserror::Error;
 /// See
 /// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#name>, and
 /// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#node-names>.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, derive_more::Display)]
 pub struct NodeName(String);
 
 /// An invalid node name.
@@ -81,7 +81,12 @@ mod tests {
         assert_eq!(NodeName::root(), NodeName::new("").unwrap());
         assert!(NodeName::new("").unwrap().is_root());
         assert!(NodeName::new("a").is_ok());
+        assert_eq!(NodeName::new("a").unwrap().to_string(), "a");
         assert!(NodeName::new("a/b").is_err());
+        assert_eq!(
+            NodeName::new("a/b").unwrap_err().to_string(),
+            "invalid node name a/b"
+        );
         assert!(NodeName::new("__").is_err());
         assert!(NodeName::new(".").is_err());
         assert!(NodeName::new("..").is_err());

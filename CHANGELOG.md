@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `array_subset::IncompatibleStartEndIndicesError`
  - Add `array::transmute_from_bytes_vec`
  - Re-export public dependencies at the crate root: `bytes`, `bytemuck`, `dyn_clone`, `serde_json`, `ndarray`, `object_store`, and `opendal`
- - Implement `Display` for `ByteRange`, `StoreKeyRange`
+ - Implement `Display` for `ByteRange`, `StoreKeyRange`, `NodeName`
 
 ### Changed
  - **Breaking**: `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
