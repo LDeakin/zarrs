@@ -99,9 +99,8 @@ impl TryFrom<ArrayShape> for ChunkGrid {
         let regular_chunk_shape = regular_chunk_shape
             .into_iter()
             .map(|i| {
-                NonZeroU64::new(i).ok_or(PluginCreateError::from(
-                    "chunk shape elements must be non-zero",
-                ))
+                NonZeroU64::new(i)
+                    .ok_or_else(|| PluginCreateError::from("chunk shape elements must be non-zero"))
             })
             .collect::<Result<Vec<_>, _>>()?
             .into();

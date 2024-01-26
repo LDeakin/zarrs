@@ -163,21 +163,25 @@ impl Metadata {
             },
             |configuration| {
                 let value = serde_json::to_value(configuration);
-                match value {
-                    Ok(value) => serde_json::from_value(value).map_or_else(
-                        |_| {
-                            Err(ConfigurationInvalidError::new(
-                                self.name.clone(),
-                                self.configuration.clone(),
-                            ))
-                        },
-                        |configuration| Ok(configuration),
-                    ),
-                    Err(_) => Err(ConfigurationInvalidError::new(
-                        self.name.clone(),
-                        self.configuration.clone(),
-                    )),
-                }
+                value.map_or_else(
+                    |_| {
+                        Err(ConfigurationInvalidError::new(
+                            self.name.clone(),
+                            self.configuration.clone(),
+                        ))
+                    },
+                    |value| {
+                        serde_json::from_value(value).map_or_else(
+                            |_| {
+                                Err(ConfigurationInvalidError::new(
+                                    self.name.clone(),
+                                    self.configuration.clone(),
+                                ))
+                            },
+                            |configuration| Ok(configuration),
+                        )
+                    },
+                )
             },
         )
     }
