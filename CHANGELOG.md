@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2024-01-26
+
+### Highlights
+ - This release targeted
+   - Improving documentation
+   - Increasing coverage and correctness (line coverage increased from 70.66% to 78.46% since `0.10.0`)
+   - Consolidating and improving errors and their messages
+ - Major breaking changes
+   - `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
+   - Added `ChunkShape` (which wraps `Vec<NonZeroU64>`) and added `ChunkRepresentation`
+     - Chunks can no longer have any zero dimensions
+     - Creating an array now requires specifying a chunk shape like `vec![1, 2, 3].try_into()?` instead of `vec![1, 2, 3].into()`
+
 ### Added
  - Tests for `ByteRange`, `BytesRepresentation`, `StorePrefix`, `StoreKey`, `ArrayBuilder`, `ArraySubset`, `GroupBuilder`, `Group`, `NodeName`, `NodePath`, `Node`, `AdditionalFields`, `Metadata`, `FillValue`, `Group`, `Metadata`
  - `array_subset::IncompatibleStartEndIndicesError`
@@ -457,7 +470,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.10.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.0
 [0.10.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.10.0
 [0.9.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.9.0
 [0.8.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.8.0
