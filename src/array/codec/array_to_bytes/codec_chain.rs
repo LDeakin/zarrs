@@ -115,9 +115,7 @@ impl CodecChain {
                     if array_to_bytes.is_none() {
                         array_to_bytes = Some(codec);
                     } else {
-                        return Err(PluginCreateError::Other {
-                            error_str: "multiple array to bytes codecs".to_string(),
-                        });
+                        return Err(PluginCreateError::from("multiple array to bytes codecs"));
                     }
                 }
                 Codec::BytesToBytes(codec) => {
@@ -127,11 +125,7 @@ impl CodecChain {
         }
 
         array_to_bytes.map_or_else(
-            || {
-                Err(PluginCreateError::Other {
-                    error_str: "missing array to bytes codec".to_string(),
-                })
-            },
+            || Err(PluginCreateError::from("missing array to bytes codec")),
             |array_to_bytes| Ok(Self::new(array_to_array, array_to_bytes, bytes_to_bytes)),
         )
     }

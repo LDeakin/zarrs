@@ -13,7 +13,7 @@ use crate::{
         ArrayRepresentation, BytesRepresentation, DataType,
     },
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 use super::{
@@ -41,7 +41,9 @@ fn is_name_zfp(name: &str) -> bool {
 }
 
 fn create_codec_zfp(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: ZfpCodecConfiguration = metadata.to_configuration()?;
+    let configuration: ZfpCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec: Box<ZfpCodec> = Box::new(ZfpCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }

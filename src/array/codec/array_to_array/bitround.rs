@@ -24,7 +24,7 @@ use crate::{
         DataType,
     },
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 const IDENTIFIER: &str = "bitround";
@@ -39,7 +39,9 @@ fn is_name_bitround(name: &str) -> bool {
 }
 
 fn create_codec_bitround(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: BitroundCodecConfiguration = metadata.to_configuration()?;
+    let configuration: BitroundCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(BitroundCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToArray(codec))
 }

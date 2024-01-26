@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     array::chunk_key_encoding::{ChunkKeyEncodingPlugin, ChunkKeySeparator},
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
     storage::StoreKey,
 };
 
@@ -26,7 +26,10 @@ fn is_name_default(name: &str) -> bool {
 fn create_chunk_key_encoding_default(
     metadata: &Metadata,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
-    let configuration: DefaultChunkKeyEncodingConfiguration = metadata.to_configuration()?;
+    let configuration: DefaultChunkKeyEncodingConfiguration =
+        metadata.to_configuration().map_err(|_| {
+            PluginMetadataInvalidError::new(IDENTIFIER, "chunk key encoding", metadata.clone())
+        })?;
     let default = DefaultChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(default))
 }

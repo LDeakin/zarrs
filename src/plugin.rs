@@ -11,7 +11,7 @@
 
 use thiserror::Error;
 
-use crate::metadata::{ConfigurationInvalidError, Metadata};
+use crate::metadata::Metadata;
 
 /// A plugin.
 pub struct Plugin<TPlugin> {
@@ -23,25 +23,52 @@ pub struct Plugin<TPlugin> {
     create_fn: fn(metadata: &Metadata) -> Result<TPlugin, PluginCreateError>,
 }
 
+/// An invalid plugin metadata error.
+#[derive(Debug, Error)]
+#[error("{plugin_type} {identifier} is unsupported with metadata: {metadata}")]
+pub struct PluginMetadataInvalidError {
+    identifier: &'static str,
+    plugin_type: &'static str,
+    metadata: Metadata,
+}
+
+impl PluginMetadataInvalidError {
+    /// Create a new [`PluginMetadataInvalidError`].
+    #[must_use]
+    pub fn new(identifier: &'static str, plugin_type: &'static str, metadata: Metadata) -> Self {
+        Self {
+            identifier,
+            plugin_type,
+            metadata,
+        }
+    }
+}
+
 /// A plugin creation error.
 #[derive(Error, Debug)]
 #[allow(missing_docs)]
 pub enum PluginCreateError {
     /// An unsupported plugin.
-    #[error("{name:?} is not supported")]
-    Unsupported { name: String },
+    #[error("{plugin_type} {name} is not supported")]
+    Unsupported { name: String, plugin_type: String },
     /// Invalid metadata.
-    #[error("{identifier} is unsupported, metadata: {metadata:?}")]
-    MetadataInvalid {
-        identifier: &'static str,
-        metadata: Metadata,
-    },
-    /// Invalid configuration
     #[error(transparent)]
-    ConfigurationInvalidError(#[from] ConfigurationInvalidError),
+    MetadataInvalid(#[from] PluginMetadataInvalidError),
     /// Other
-    #[error("{error_str}")]
-    Other { error_str: String },
+    #[error("{_0}")]
+    Other(String),
+}
+
+impl From<&str> for PluginCreateError {
+    fn from(err_string: &str) -> Self {
+        Self::Other(err_string.to_string())
+    }
+}
+
+impl From<String> for PluginCreateError {
+    fn from(err_string: String) -> Self {
+        Self::Other(err_string)
+    }
 }
 
 impl<TPlugin> Plugin<TPlugin> {

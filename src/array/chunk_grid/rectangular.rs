@@ -5,7 +5,7 @@
 use crate::{
     array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape},
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 use derive_more::{Display, From};
@@ -25,7 +25,9 @@ fn is_name_rectangular(name: &str) -> bool {
 }
 
 fn create_chunk_grid_rectangular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
-    let configuration: RectangularChunkGridConfiguration = metadata.to_configuration()?;
+    let configuration: RectangularChunkGridConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
     let chunk_grid = RectangularChunkGrid::new(&configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))
 }

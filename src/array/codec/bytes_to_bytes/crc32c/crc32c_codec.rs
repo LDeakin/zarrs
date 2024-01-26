@@ -6,8 +6,8 @@ use crate::{
         },
         BytesRepresentation,
     },
-    metadata::{ConfigurationInvalidError, Metadata},
-    plugin::PluginCreateError,
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -34,7 +34,9 @@ fn create_codec_crc32c(metadata: &Metadata) -> Result<Codec, PluginCreateError> 
         let codec = Box::new(Crc32cCodec::new());
         Ok(Codec::BytesToBytes(codec))
     } else {
-        Err(ConfigurationInvalidError::new(IDENTIFIER, metadata.configuration().cloned()).into())
+        Err(PluginCreateError::MetadataInvalid(
+            PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()),
+        ))
     }
 }
 

@@ -5,7 +5,7 @@
 use crate::{
     array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape},
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 use derive_more::Display;
@@ -25,7 +25,9 @@ fn is_name_regular(name: &str) -> bool {
 }
 
 fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
-    let configuration: RegularChunkGridConfiguration = metadata.to_configuration()?;
+    let configuration: RegularChunkGridConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
     let chunk_grid = RegularChunkGrid::new(configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))
 }

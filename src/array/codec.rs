@@ -107,6 +107,7 @@ impl Codec {
         }
         Err(PluginCreateError::Unsupported {
             name: metadata.name().to_string(),
+            plugin_type: "codec".to_string(),
         })
     }
 }

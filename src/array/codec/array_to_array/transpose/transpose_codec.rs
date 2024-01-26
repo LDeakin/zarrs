@@ -10,7 +10,7 @@ use crate::{
         ArrayRepresentation,
     },
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -34,7 +34,9 @@ fn is_name_transpose(name: &str) -> bool {
 }
 
 fn create_codec_transpose(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: TransposeCodecConfiguration = metadata.to_configuration()?;
+    let configuration: TransposeCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(TransposeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }

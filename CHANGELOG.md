@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Re-export public dependencies at the crate root: `bytes`, `bytemuck`, `dyn_clone`, `serde_json`, `ndarray`, `object_store`, and `opendal`
  - Implement `Display` for `ByteRange`, `StoreKeyRange`, `NodeName`
  - Add `HexString::new`
+ - Add `PluginMetadataInvalidError`
 
 ### Changed
  - **Breaking**: `Array` `retrieve_` methods now return `Vec<u8>`/`Vec<T>` instead of `Box<[u8]>`/`Box<[T]>`
@@ -36,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Remove `StorageError::InvalidJSON` and add `StorageError::InvalidMetadata`
    - `InvalidMetadata` additionally holds a `StoreKey` for more informative error messages
  - More informative `Metadata` deserialisation error message with an invalid configuration
+ - **Breaking**: `PluginCreateError::Other` changed to unit struct and added `PluginCreateError::from<{String,&str}>`
+ - `PluginCreateError::Unsupported` now includes a `plugin_type` field for more informative error messages
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`
@@ -46,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Remove `{ArrayCreateError,GroupCreateError}::MetadataDeserializationError`
    - `{ArrayCreateError,GroupCreateError}::StorageError` with `StorageError::InvalidMetadata` is used instead
  - **Breaking**: Remove `GroupCreateError::Metadata` as it was unused
+ - **Breaking**: Remove `PluginCreateError::ConfigurationInvalidError`
 
 ### Fixed
  - Disallow an empty string for a `StoreKey`

@@ -12,7 +12,7 @@ use crate::{
     },
     array_subset::ArraySubset,
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -41,7 +41,9 @@ fn is_name_sharding(name: &str) -> bool {
 }
 
 fn create_codec_sharding(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: ShardingCodecConfiguration = metadata.to_configuration()?;
+    let configuration: ShardingCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = ShardingCodec::new_with_configuration(&configuration)?;
     Ok(Codec::ArrayToBytes(Box::new(codec)))
 }

@@ -49,6 +49,7 @@ pub fn try_create_storage_transformer(
     }
     Err(PluginCreateError::Unsupported {
         name: metadata.name().to_string(),
+        plugin_type: "storage transformer".to_string(),
     })
 }
 

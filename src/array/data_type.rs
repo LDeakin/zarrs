@@ -229,6 +229,7 @@ impl DataType {
         // }
         // Err(PluginCreateError::Unsupported {
         //     name: metadata.name().to_string(),
+        //     plugin_type: "data type".to_string(),
         // })
     }
 

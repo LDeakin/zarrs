@@ -11,7 +11,7 @@ use crate::{
         BytesRepresentation,
     },
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -35,7 +35,9 @@ fn is_name_blosc(name: &str) -> bool {
 }
 
 fn create_codec_blosc(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: BloscCodecConfiguration = metadata.to_configuration()?;
+    let configuration: BloscCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(BloscCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
@@ -65,10 +67,9 @@ impl BloscCodec {
         typesize: Option<usize>,
     ) -> Result<Self, PluginCreateError> {
         if shuffle_mode != BloscShuffleMode::NoShuffle && typesize.is_none() {
-            return Err(PluginCreateError::Other {
-                error_str: "typesize is a positive integer required if shuffle mode is not none."
-                    .into(),
-            });
+            return Err(PluginCreateError::from(
+                "typesize is a positive integer required if shuffle mode is not none.",
+            ));
         }
 
         // Check that the compressor is available
@@ -80,9 +81,9 @@ impl BloscCodec {
             )
         };
         if support < 0 {
-            return Err(PluginCreateError::Other {
-                error_str: format!("compressor {cname:?} is not supported."),
-            });
+            return Err(PluginCreateError::from(format!(
+                "compressor {cname:?} is not supported."
+            )));
         }
 
         let configuration = BloscCodecConfigurationV1 {

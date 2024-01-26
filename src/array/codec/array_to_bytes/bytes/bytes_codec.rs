@@ -9,7 +9,7 @@ use crate::{
         ArrayRepresentation, BytesRepresentation,
     },
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -32,7 +32,9 @@ fn is_name_bytes(name: &str) -> bool {
 }
 
 fn create_codec_bytes(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: BytesCodecConfiguration = metadata.to_configuration()?;
+    let configuration: BytesCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(BytesCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }

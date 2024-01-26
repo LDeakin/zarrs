@@ -9,7 +9,7 @@ use crate::{
         BytesRepresentation,
     },
     metadata::Metadata,
-    plugin::PluginCreateError,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -29,7 +29,9 @@ fn is_name_zstd(name: &str) -> bool {
 }
 
 fn create_codec_zstd(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: ZstdCodecConfiguration = metadata.to_configuration()?;
+    let configuration: ZstdCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(ZstdCodec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }

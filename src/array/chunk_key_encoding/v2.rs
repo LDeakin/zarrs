@@ -4,8 +4,10 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    array::chunk_key_encoding::ChunkKeyEncodingPlugin, metadata::Metadata,
-    plugin::PluginCreateError, storage::StoreKey,
+    array::chunk_key_encoding::ChunkKeyEncodingPlugin,
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+    storage::StoreKey,
 };
 
 use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator};
@@ -24,7 +26,10 @@ fn is_name_v2(name: &str) -> bool {
 fn create_chunk_key_encoding_v2(
     metadata: &Metadata,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
-    let configuration: V2ChunkKeyEncodingConfiguration = metadata.to_configuration()?;
+    let configuration: V2ChunkKeyEncodingConfiguration =
+        metadata.to_configuration().map_err(|_| {
+            PluginMetadataInvalidError::new(IDENTIFIER, "chunk key encoding", metadata.clone())
+        })?;
     let v2 = V2ChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(v2))
 }

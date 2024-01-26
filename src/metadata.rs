@@ -53,7 +53,12 @@ impl TryFrom<&str> for Metadata {
 impl core::fmt::Display for Metadata {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if let Some(configuration) = &self.configuration {
-            write!(f, "{} {:?}", self.name, configuration)
+            write!(
+                f,
+                "{} {}",
+                self.name,
+                serde_json::to_string(configuration).unwrap_or_default()
+            )
         } else {
             write!(f, "{}", self.name)
         }
@@ -152,7 +157,7 @@ impl Metadata {
         self.configuration.as_ref().map_or_else(
             || {
                 Err(ConfigurationInvalidError::new(
-                    &self.name,
+                    self.name.clone(),
                     self.configuration.clone(),
                 ))
             },
@@ -162,14 +167,14 @@ impl Metadata {
                     Ok(value) => serde_json::from_value(value).map_or_else(
                         |_| {
                             Err(ConfigurationInvalidError::new(
-                                &self.name,
+                                self.name.clone(),
                                 self.configuration.clone(),
                             ))
                         },
                         |configuration| Ok(configuration),
                     ),
                     Err(_) => Err(ConfigurationInvalidError::new(
-                        &self.name,
+                        self.name.clone(),
                         self.configuration.clone(),
                     )),
                 }
@@ -209,9 +214,9 @@ pub struct ConfigurationInvalidError {
 impl ConfigurationInvalidError {
     /// Create a new invalid configuration error.
     #[must_use]
-    pub fn new(name: &str, configuration: Option<MetadataConfiguration>) -> Self {
+    pub fn new(name: String, configuration: Option<MetadataConfiguration>) -> Self {
         Self {
-            name: name.to_string(),
+            name,
             configuration,
         }
     }
@@ -312,10 +317,7 @@ mod tests {
             Metadata::try_from(r#"{ "name": "bytes", "configuration": { "endian": "little" } }"#);
         assert!(metadata.is_ok());
         let metadata = metadata.unwrap();
-        assert_eq!(
-            metadata.to_string(),
-            r#"bytes {"endian": String("little")}"#
-        );
+        assert_eq!(metadata.to_string(), r#"bytes {"endian":"little"}"#);
         assert_eq!(metadata.name(), "bytes");
         assert!(metadata.configuration().is_some());
         let configuration = metadata.configuration().unwrap();
