@@ -49,7 +49,8 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let array_path = "/group/array";
     let shard_shape = vec![4, 8];
     let inner_chunk_shape = vec![4, 4];
-    let mut sharding_codec_builder = ShardingCodecBuilder::new(inner_chunk_shape.clone());
+    let mut sharding_codec_builder =
+        ShardingCodecBuilder::new(inner_chunk_shape.as_slice().try_into()?);
     sharding_codec_builder.bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
         Box::new(codec::GzipCodec::new(5)?),
@@ -57,7 +58,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
         DataType::UInt16,
-        shard_shape.into(),
+        shard_shape.try_into()?,
         FillValue::from(0u16),
     )
     .array_to_bytes_codec(Box::new(sharding_codec_builder.build()))
@@ -80,10 +81,13 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         let chunk_indices = vec![s, 0];
         if let Some(chunk_shape) = chunk_grid.chunk_shape(&chunk_indices, array.shape())? {
             let chunk_array = ndarray::ArrayD::<u16>::from_shape_fn(
-                chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
+                chunk_shape
+                    .iter()
+                    .map(|u| u.get() as usize)
+                    .collect::<Vec<_>>(),
                 |ij| {
-                    (s * chunk_shape[0] * chunk_shape[1]
-                        + ij[0] as u64 * chunk_shape[1]
+                    (s * chunk_shape[0].get() * chunk_shape[1].get()
+                        + ij[0] as u64 * chunk_shape[1].get()
                         + ij[1] as u64) as u16
                 },
             );
@@ -131,7 +135,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
             ndarray::ArrayD::<u16>::from_shape_vec(
                 inner_chunk_shape
                     .iter()
-                    .map(|u| *u as usize)
+                    .map(|&u| u as usize)
                     .collect::<Vec<_>>(),
                 elements,
             )

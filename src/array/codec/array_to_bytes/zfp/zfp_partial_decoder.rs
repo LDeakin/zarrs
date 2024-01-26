@@ -2,11 +2,12 @@ use zfp_sys::zfp_type;
 
 use crate::{
     array::{
+        chunk_shape_to_array_shape,
         codec::{
             ArrayPartialDecoderTraits, AsyncArrayPartialDecoderTraits,
             AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError,
         },
-        ArrayRepresentation,
+        ChunkRepresentation,
     },
     array_subset::ArraySubset,
     byte_range::extract_byte_ranges,
@@ -17,7 +18,7 @@ use super::{zarr_data_type_to_zfp_data_type, zfp_decode, ZfpMode};
 /// Partial decoder for the `zfp` codec.
 pub struct ZfpPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    decoded_representation: ArrayRepresentation,
+    decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
     zfp_type: zfp_type,
 }
@@ -26,7 +27,7 @@ impl<'a> ZfpPartialDecoder<'a> {
     /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
     ) -> Result<Self, CodecError> {
         zarr_data_type_to_zfp_data_type(decoded_representation.data_type()).map_or_else(
@@ -55,6 +56,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let encoded_value = self.input_handle.decode_opt(parallel)?;
         let mut out = Vec::with_capacity(decoded_regions.len());
+        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
         match encoded_value {
             Some(encoded_value) => {
                 let decoded_value = zfp_decode(
@@ -67,7 +69,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
                 for array_subset in decoded_regions {
                     let byte_ranges = unsafe {
                         array_subset.byte_ranges_unchecked(
-                            self.decoded_representation.shape(),
+                            &chunk_shape,
                             self.decoded_representation.element_size(),
                         )
                     };
@@ -93,7 +95,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
 /// Asynchronous partial decoder for the `zfp` codec.
 pub struct AsyncZfpPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-    decoded_representation: ArrayRepresentation,
+    decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
     zfp_type: zfp_type,
 }
@@ -102,7 +104,7 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
     /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
     ) -> Result<Self, CodecError> {
         zarr_data_type_to_zfp_data_type(decoded_representation.data_type()).map_or_else(
@@ -131,6 +133,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
         parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let encoded_value = self.input_handle.decode_opt(parallel).await?;
+        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
         let mut out = Vec::with_capacity(decoded_regions.len());
         match encoded_value {
             Some(encoded_value) => {
@@ -144,7 +147,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
                 for array_subset in decoded_regions {
                     let byte_ranges = unsafe {
                         array_subset.byte_ranges_unchecked(
-                            self.decoded_representation.shape(),
+                            &chunk_shape,
                             self.decoded_representation.element_size(),
                         )
                     };

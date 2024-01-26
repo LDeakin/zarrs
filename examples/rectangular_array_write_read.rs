@@ -38,7 +38,10 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
         DataType::Float32,
-        ChunkGrid::new(RectangularChunkGrid::new(&[[1, 2, 3, 2].into(), 4.into()])),
+        ChunkGrid::new(RectangularChunkGrid::new(&[
+            [1, 2, 3, 2].try_into()?,
+            4.try_into()?,
+        ])),
         FillValue::from(ZARR_NAN_F32),
     )
     .bytes_to_bytes_codecs(vec![
@@ -58,7 +61,10 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         let chunk_indices = vec![i, 0];
         if let Some(chunk_shape) = chunk_grid.chunk_shape(&chunk_indices, array.shape())? {
             let chunk_array = ndarray::ArrayD::<f32>::from_elem(
-                chunk_shape.iter().map(|u| *u as usize).collect::<Vec<_>>(),
+                chunk_shape
+                    .iter()
+                    .map(|u| u.get() as usize)
+                    .collect::<Vec<_>>(),
                 i as f32,
             );
             array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())

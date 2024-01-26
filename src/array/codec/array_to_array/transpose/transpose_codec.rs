@@ -3,11 +3,12 @@ use thiserror::Error;
 
 use crate::{
     array::{
+        chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, Codec,
             CodecError, CodecPlugin, CodecTraits,
         },
-        ArrayRepresentation,
+        ChunkRepresentation,
     },
     metadata::Metadata,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
@@ -94,7 +95,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
@@ -110,7 +111,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
@@ -124,11 +125,11 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
 
     fn compute_encoded_size(
         &self,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<ArrayRepresentation, CodecError> {
+        decoded_representation: &ChunkRepresentation,
+    ) -> Result<ChunkRepresentation, CodecError> {
         let transposed_shape = permute(decoded_representation.shape(), &self.order);
         Ok(unsafe {
-            ArrayRepresentation::new_unchecked(
+            ChunkRepresentation::new_unchecked(
                 transposed_shape,
                 decoded_representation.data_type().clone(),
                 decoded_representation.fill_value().clone(),
@@ -142,7 +143,7 @@ impl ArrayCodecTraits for TransposeCodec {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
@@ -156,7 +157,7 @@ impl ArrayCodecTraits for TransposeCodec {
             calculate_order_encode(&self.order, decoded_representation.shape().len());
         transpose_array(
             &order_encode,
-            decoded_representation.shape(),
+            &chunk_shape_to_array_shape(decoded_representation.shape()),
             decoded_representation.element_size(),
             &decoded_value,
         )
@@ -171,7 +172,7 @@ impl ArrayCodecTraits for TransposeCodec {
     fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let order_decode =
@@ -179,7 +180,7 @@ impl ArrayCodecTraits for TransposeCodec {
         let transposed_shape = permute(decoded_representation.shape(), &self.order);
         transpose_array(
             &order_decode,
-            &transposed_shape,
+            &chunk_shape_to_array_shape(&transposed_shape),
             decoded_representation.element_size(),
             &encoded_value,
         )

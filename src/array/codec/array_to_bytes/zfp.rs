@@ -28,7 +28,7 @@ use zfp_sys::{
     zfp_type_zfp_type_int32, zfp_type_zfp_type_int64,
 };
 
-use crate::array::{codec::CodecError, ArrayRepresentation, DataType};
+use crate::array::{codec::CodecError, ChunkRepresentation, DataType};
 
 use self::{zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream};
 
@@ -87,7 +87,7 @@ fn zfp_decode(
     zfp_mode: &ZfpMode,
     zfp_type: zfp_type,
     mut encoded_value: Vec<u8>,
-    decoded_representation: &ArrayRepresentation,
+    decoded_representation: &ChunkRepresentation,
     parallel: bool,
 ) -> Result<Vec<u8>, CodecError> {
     let mut decoded_value = vec![0u8; usize::try_from(decoded_representation.size()).unwrap()];
@@ -97,7 +97,7 @@ fn zfp_decode(
         &decoded_representation
             .shape()
             .iter()
-            .map(|u| usize::try_from(*u).unwrap())
+            .map(|u| usize::try_from(u.get()).unwrap())
             .collect::<Vec<usize>>(),
     ) else {
         return Err(CodecError::from("failed to create zfp field"));
@@ -131,10 +131,12 @@ fn zfp_decode(
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU64;
+
     use crate::{
         array::{
             codec::{ArrayCodecTraits, ArrayToBytesCodecTraits},
-            ArrayRepresentation, DataType,
+            DataType,
         },
         array_subset::ArraySubset,
     };
@@ -148,17 +150,22 @@ mod tests {
 
     #[test]
     fn codec_zfp_round_trip1() {
-        let array_representation =
-            ArrayRepresentation::new(vec![3, 3, 3], DataType::Float32, 0.0f32.into()).unwrap();
+        let chunk_shape = vec![
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::Float32, 0.0f32.into()).unwrap();
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements.clone());
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &array_representation)
+            .decode(encoded.clone(), &chunk_representation)
             .unwrap();
 
         let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded);
@@ -167,15 +174,20 @@ mod tests {
 
     #[test]
     fn codec_zfp_partial_decode() {
-        let array_representation =
-            ArrayRepresentation::new(vec![3, 3, 3], DataType::Float32, 0.0f32.into()).unwrap();
+        let chunk_shape = vec![
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::Float32, 0.0f32.into()).unwrap();
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded_regions = [
             ArraySubset::new_with_shape(vec![1, 2, 3]),
             ArraySubset::new_with_ranges(&[0..3, 1..3, 2..3]),
@@ -183,7 +195,7 @@ mod tests {
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &array_representation)
+            .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
 

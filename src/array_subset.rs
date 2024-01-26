@@ -9,7 +9,7 @@
 
 mod array_subset_iterators;
 
-use std::ops::Range;
+use std::{num::NonZeroU64, ops::Range};
 
 pub use array_subset_iterators::{
     ChunksIterator, ContiguousIndicesIterator, ContiguousLinearisedIndicesIterator,
@@ -622,7 +622,7 @@ impl ArraySubset {
     /// Returns an error if `chunk_shape` does not match the array subset dimensionality.
     pub fn iter_chunks<'a>(
         &'a self,
-        chunk_shape: &'a [u64],
+        chunk_shape: &'a [NonZeroU64],
     ) -> Result<ChunksIterator, IncompatibleDimensionalityError> {
         ChunksIterator::new(self, chunk_shape)
     }
@@ -635,7 +635,10 @@ impl ArraySubset {
     /// # Safety
     /// The length of `chunk_shape` must match the array subset dimensionality.
     #[must_use]
-    pub unsafe fn iter_chunks_unchecked<'a>(&'a self, chunk_shape: &'a [u64]) -> ChunksIterator {
+    pub unsafe fn iter_chunks_unchecked<'a>(
+        &'a self,
+        chunk_shape: &'a [NonZeroU64],
+    ) -> ChunksIterator {
         ChunksIterator::new_unchecked(self, chunk_shape)
     }
 

@@ -1,7 +1,8 @@
 use crate::{
     array::{
+        chunk_shape_to_array_shape,
         codec::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError},
-        ArrayRepresentation,
+        ChunkRepresentation,
     },
     array_subset::InvalidArraySubsetError,
 };
@@ -14,7 +15,7 @@ use super::{reverse_endianness, Endianness};
 /// Partial decoder for the `bytes` codec.
 pub struct BytesPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    decoded_representation: ArrayRepresentation,
+    decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
 }
 
@@ -22,7 +23,7 @@ impl<'a> BytesPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: ArrayRepresentation,
+        decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
     ) -> Self {
         Self {
@@ -40,13 +41,11 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
         parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
+        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
         for array_subset in decoded_regions {
             // Get byte ranges
             let byte_ranges = array_subset
-                .byte_ranges(
-                    self.decoded_representation.shape(),
-                    self.decoded_representation.element_size(),
-                )
+                .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
                 .map_err(|_| InvalidArraySubsetError)?;
 
             // Decode
@@ -85,7 +84,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
 /// Asynchronous partial decoder for the `bytes` codec.
 pub struct AsyncBytesPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-    decoded_representation: ArrayRepresentation,
+    decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
 }
 
@@ -94,7 +93,7 @@ impl<'a> AsyncBytesPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: ArrayRepresentation,
+        decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
     ) -> Self {
         Self {
@@ -114,13 +113,11 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
         parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
+        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
         for array_subset in decoded_regions {
             // Get byte ranges
             let byte_ranges = array_subset
-                .byte_ranges(
-                    self.decoded_representation.shape(),
-                    self.decoded_representation.element_size(),
-                )
+                .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
                 .map_err(|_| InvalidArraySubsetError)?;
 
             // Decode

@@ -1,8 +1,8 @@
-use std::iter::FusedIterator;
+use std::{iter::FusedIterator, num::NonZeroU64};
 
 use itertools::izip;
 
-use crate::array::{ravel_indices, ArrayIndices};
+use crate::array::{chunk_shape_to_array_shape, ravel_indices, ArrayIndices};
 
 use super::{ArraySubset, IncompatibleArrayShapeError, IncompatibleDimensionalityError};
 
@@ -291,7 +291,7 @@ impl FusedIterator for ContiguousLinearisedIndicesIterator<'_> {}
 /// The iterator item is a ([`ArrayIndices`], [`ArraySubset`]) tuple corresponding to the chunk indices and array subset.
 pub struct ChunksIterator<'a> {
     inner: IndicesIterator,
-    chunk_shape: &'a [u64],
+    chunk_shape: &'a [NonZeroU64],
 }
 
 impl<'a> ChunksIterator<'a> {
@@ -302,7 +302,7 @@ impl<'a> ChunksIterator<'a> {
     /// Returns [`IncompatibleDimensionalityError`] if `chunk_shape` does not match the dimensionality of `subset`.
     pub fn new(
         subset: &ArraySubset,
-        chunk_shape: &'a [u64],
+        chunk_shape: &'a [NonZeroU64],
     ) -> Result<Self, IncompatibleDimensionalityError> {
         if subset.dimensionality() == chunk_shape.len() {
             Ok(unsafe { Self::new_unchecked(subset, chunk_shape) })
@@ -320,13 +320,13 @@ impl<'a> ChunksIterator<'a> {
     ///
     /// The dimensionality of `chunk_shape` must match the dimensionality of `subset`.
     #[must_use]
-    pub unsafe fn new_unchecked(subset: &ArraySubset, chunk_shape: &'a [u64]) -> Self {
+    pub unsafe fn new_unchecked(subset: &ArraySubset, chunk_shape: &'a [NonZeroU64]) -> Self {
         debug_assert_eq!(subset.dimensionality(), chunk_shape.len());
         let chunk_start: ArrayIndices = std::iter::zip(subset.start(), chunk_shape)
-            .map(|(s, c)| s / c)
+            .map(|(s, c)| s / c.get())
             .collect();
         let chunk_end_inc: ArrayIndices = std::iter::zip(subset.end_inc(), chunk_shape)
-            .map(|(e, c)| e / c)
+            .map(|(e, c)| e / c.get())
             .collect();
         let subset_chunks =
             unsafe { ArraySubset::new_with_start_end_inc_unchecked(chunk_start, chunk_end_inc) };
@@ -341,9 +341,9 @@ impl Iterator for ChunksIterator<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|chunk_indices| {
             let start = std::iter::zip(&chunk_indices, self.chunk_shape)
-                .map(|(i, c)| i * c)
+                .map(|(i, c)| i * c.get())
                 .collect();
-            let shape = self.chunk_shape.to_vec();
+            let shape = chunk_shape_to_array_shape(self.chunk_shape);
             let chunk_subset = unsafe { ArraySubset::new_with_start_shape_unchecked(start, shape) };
             (chunk_indices, chunk_subset)
         })
@@ -430,7 +430,8 @@ mod tests {
     #[rustfmt::skip]
     fn array_subset_iter_chunks1() {
         let subset = ArraySubset::new_with_ranges(&[1..5, 1..5]);
-        let mut iter = subset.iter_chunks(&[2, 2]).unwrap();
+        let chunk_shape = [NonZeroU64::new(2).unwrap(), NonZeroU64::new(2).unwrap()];
+        let mut iter = subset.iter_chunks(&chunk_shape).unwrap();
         assert_eq!(iter.next(), Some((vec![0, 0], ArraySubset::new_with_ranges(&[0..2, 0..2]))));
         assert_eq!(iter.next(), Some((vec![0, 1], ArraySubset::new_with_ranges(&[0..2, 2..4]))));
         assert_eq!(iter.next(), Some((vec![0, 2], ArraySubset::new_with_ranges(&[0..2, 4..6]))));
@@ -447,7 +448,8 @@ mod tests {
     #[rustfmt::skip]
     fn array_subset_iter_chunks2() {
         let subset = ArraySubset::new_with_ranges(&[2..5, 2..6]);
-        let mut iter = subset.iter_chunks(&[2, 3]).unwrap();
+        let chunk_shape = [NonZeroU64::new(2).unwrap(), NonZeroU64::new(3).unwrap()];
+        let mut iter = subset.iter_chunks(&chunk_shape).unwrap();
         assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..3]))));
         assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 3..6]))));
         assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..3]))));

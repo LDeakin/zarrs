@@ -8,7 +8,7 @@ use crate::{
             ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
             CodecError, CodecTraits,
         },
-        ArrayRepresentation, BytesRepresentation,
+        BytesRepresentation, ChunkRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -172,8 +172,8 @@ impl CodecChain {
 
     fn get_array_representations(
         &self,
-        decoded_representation: ArrayRepresentation,
-    ) -> Result<Vec<ArrayRepresentation>, CodecError> {
+        decoded_representation: ChunkRepresentation,
+    ) -> Result<Vec<ChunkRepresentation>, CodecError> {
         let mut array_representations = Vec::with_capacity(self.array_to_array.len() + 1);
         array_representations.push(decoded_representation);
         for codec in &self.array_to_array {
@@ -185,7 +185,7 @@ impl CodecChain {
 
     fn get_bytes_representations(
         &self,
-        array_representation_last: &ArrayRepresentation,
+        array_representation_last: &ChunkRepresentation,
     ) -> Result<Vec<BytesRepresentation>, CodecError> {
         let mut bytes_representations = Vec::with_capacity(self.bytes_to_bytes.len() + 1);
         bytes_representations.push(
@@ -222,7 +222,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
     fn partial_decoder_opt<'a>(
         &'a self,
         mut input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
@@ -285,7 +285,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
@@ -358,7 +358,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
     fn compute_encoded_size(
         &self,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         let mut decoded_representation = decoded_representation.clone();
         for codec in &self.array_to_array {
@@ -382,7 +382,7 @@ impl ArrayCodecTraits for CodecChain {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
@@ -421,7 +421,7 @@ impl ArrayCodecTraits for CodecChain {
     fn decode_opt(
         &self,
         mut encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let array_representations =
@@ -466,7 +466,7 @@ impl ArrayCodecTraits for CodecChain {
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
@@ -509,7 +509,7 @@ impl ArrayCodecTraits for CodecChain {
     async fn async_decode_opt(
         &self,
         mut encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let array_representations =
@@ -560,6 +560,8 @@ impl ArrayCodecTraits for CodecChain {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroU64;
+
     use crate::{
         array::{DataType, FillValue},
         array_subset::ArraySubset,
@@ -626,10 +628,14 @@ mod tests {
 
     #[test]
     fn codec_chain_round_trip() {
-        let array_representation =
-            ArrayRepresentation::new(vec![2, 3, 4], DataType::UInt16, FillValue::from(0u16))
-                .unwrap();
-        let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
+        let chunk_shape = vec![
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(4).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(0u16)).unwrap();
+        let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configurations: Vec<Metadata> = vec![
@@ -651,9 +657,9 @@ mod tests {
         let not_just_bytes = codec_configurations.len() > 1;
         let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &array_representation)
+            .decode(encoded.clone(), &chunk_representation)
             .unwrap();
         if not_just_bytes {
             assert_ne!(encoded, decoded);
@@ -661,10 +667,10 @@ mod tests {
         assert_eq!(bytes, decoded);
 
         let encoded = codec
-            .par_encode(bytes.clone(), &array_representation)
+            .par_encode(bytes.clone(), &chunk_representation)
             .unwrap();
         let decoded = codec
-            .par_decode(encoded.clone(), &array_representation)
+            .par_decode(encoded.clone(), &chunk_representation)
             .unwrap();
         if not_just_bytes {
             assert_ne!(encoded, decoded);
@@ -676,10 +682,14 @@ mod tests {
 
     #[test]
     fn codec_chain_round_trip_partial() {
-        let array_representation =
-            ArrayRepresentation::new(vec![2, 2, 2], DataType::UInt16, FillValue::from(0u16))
-                .unwrap();
-        let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
+        let chunk_shape = vec![
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(0u16)).unwrap();
+        let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configurations: Vec<Metadata> = vec![
@@ -700,11 +710,11 @@ mod tests {
         println!("{codec_configurations:?}");
         let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
 
-        let encoded = codec.encode(bytes, &array_representation).unwrap();
+        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &array_representation)
+            .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
 

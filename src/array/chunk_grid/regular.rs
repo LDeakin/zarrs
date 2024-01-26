@@ -2,8 +2,10 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#regular-grids>.
 
+use std::num::NonZeroU64;
+
 use crate::{
-    array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape},
+    array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape, NonZeroError},
     metadata::Metadata,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -35,29 +37,77 @@ fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCre
 /// Configuration parameters for a `regular` chunk grid.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display(
+    fmt = "regular chunk grid {}",
+    "serde_json::to_string(self).unwrap_or_default()"
+)]
 pub struct RegularChunkGridConfiguration {
     /// The chunk shape.
-    pub chunk_shape: ArrayShape,
+    pub chunk_shape: ChunkShape,
 }
+
+macro_rules! from_chunkgrid_regular_configuration {
+    ( $t:ty ) => {
+        impl From<$t> for RegularChunkGridConfiguration {
+            fn from(value: $t) -> Self {
+                value.into()
+            }
+        }
+    };
+    ( $t:ty, $g:ident ) => {
+        impl<const $g: usize> From<$t> for RegularChunkGridConfiguration {
+            fn from(value: $t) -> Self {
+                value.into()
+            }
+        }
+    };
+}
+
+macro_rules! try_from_chunkgrid_regular_configuration {
+    ( $t:ty ) => {
+        impl TryFrom<$t> for RegularChunkGridConfiguration {
+            type Error = NonZeroError;
+            fn try_from(value: $t) -> Result<Self, Self::Error> {
+                value.try_into()
+            }
+        }
+    };
+    ( $t:ty, $g:ident ) => {
+        impl<const $g: usize> TryFrom<$t> for RegularChunkGridConfiguration {
+            type Error = NonZeroError;
+            fn try_from(value: $t) -> Result<Self, Self::Error> {
+                value.try_into()
+            }
+        }
+    };
+}
+
+from_chunkgrid_regular_configuration!(Vec<NonZeroU64>);
+from_chunkgrid_regular_configuration!(&[NonZeroU64]);
+from_chunkgrid_regular_configuration!([NonZeroU64; N], N);
+from_chunkgrid_regular_configuration!(&[NonZeroU64; N], N);
+try_from_chunkgrid_regular_configuration!(Vec<u64>);
+try_from_chunkgrid_regular_configuration!(&[u64]);
+try_from_chunkgrid_regular_configuration!([u64; N], N);
+try_from_chunkgrid_regular_configuration!(&[u64; N], N);
 
 /// A `regular` chunk grid.
 #[derive(Debug, Clone)]
 pub struct RegularChunkGrid {
-    chunk_shape: ArrayShape,
+    chunk_shape: ChunkShape,
 }
 
 impl RegularChunkGrid {
     /// Create a new regular chunk grid with chunk shape `chunk_shape`.
     #[must_use]
-    pub fn new(chunk_shape: ArrayShape) -> Self {
+    pub fn new(chunk_shape: ChunkShape) -> Self {
         Self { chunk_shape }
     }
 
     /// Return the chunk shape.
     #[must_use]
-    pub fn chunk_shape(&self) -> &[u64] {
-        &self.chunk_shape
+    pub fn chunk_shape(&self) -> &[NonZeroU64] {
+        self.chunk_shape.as_slice()
     }
 }
 
@@ -76,8 +126,11 @@ impl ChunkGridTraits for RegularChunkGrid {
     unsafe fn grid_shape_unchecked(&self, array_shape: &[u64]) -> Option<ArrayShape> {
         assert_eq!(array_shape.len(), self.dimensionality());
         Some(
-            std::iter::zip(array_shape, &self.chunk_shape)
-                .map(|(a, s)| if *s == 0 { 0 } else { (a + s - 1) / s })
+            std::iter::zip(array_shape, self.chunk_shape.as_slice())
+                .map(|(a, s)| {
+                    let s = s.get();
+                    (a + s - 1) / s
+                })
                 .collect(),
         )
     }
@@ -87,7 +140,7 @@ impl ChunkGridTraits for RegularChunkGrid {
         &self,
         chunk_indices: &[u64],
         _array_shape: &[u64],
-    ) -> Option<ArrayShape> {
+    ) -> Option<ChunkShape> {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         Some(self.chunk_shape.clone())
     }
@@ -99,8 +152,8 @@ impl ChunkGridTraits for RegularChunkGrid {
     ) -> Option<ArrayIndices> {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         Some(
-            std::iter::zip(chunk_indices, &self.chunk_shape)
-                .map(|(i, s)| i * s)
+            std::iter::zip(chunk_indices, self.chunk_shape.as_slice())
+                .map(|(i, s)| i * s.get())
                 .collect(),
         )
     }
@@ -112,8 +165,8 @@ impl ChunkGridTraits for RegularChunkGrid {
     ) -> Option<ArrayIndices> {
         debug_assert_eq!(self.dimensionality(), array_indices.len());
         Some(
-            std::iter::zip(array_indices, &self.chunk_shape)
-                .map(|(i, s)| i / s)
+            std::iter::zip(array_indices, self.chunk_shape.as_slice())
+                .map(|(i, s)| i / s.get())
                 .collect(),
         )
     }
@@ -125,8 +178,8 @@ impl ChunkGridTraits for RegularChunkGrid {
     ) -> Option<ArrayIndices> {
         debug_assert_eq!(self.dimensionality(), array_indices.len());
         Some(
-            std::iter::zip(array_indices, &self.chunk_shape)
-                .map(|(i, s)| i % s)
+            std::iter::zip(array_indices, self.chunk_shape.as_slice())
+                .map(|(i, s)| i % s.get())
                 .collect(),
         )
     }
@@ -137,19 +190,52 @@ mod tests {
     use super::*;
 
     #[test]
+    fn chunk_grid_regular_configuration() {
+        let configuration: RegularChunkGridConfiguration =
+            serde_json::from_str(r#"{"chunk_shape":[1,2,3]}"#).unwrap();
+        assert_eq!(configuration.chunk_shape, vec![1, 2, 3].try_into().unwrap());
+        assert_eq!(
+            configuration.to_string(),
+            r#"regular chunk grid {"chunk_shape":[1,2,3]}"#
+        )
+    }
+
+    #[test]
+    fn chunk_grid_regular_metadata() {
+        let metadata: Metadata =
+            serde_json::from_str(r#"{"name":"regular","configuration":{"chunk_shape":[1,2,3]}}"#)
+                .unwrap();
+        assert!(create_chunk_grid_regular(&metadata).is_ok());
+    }
+
+    #[test]
+    fn chunk_grid_regular_metadata_invalid() {
+        let metadata: Metadata =
+            serde_json::from_str(r#"{"name":"regular","configuration":{"invalid":[1,2,3]}}"#)
+                .unwrap();
+        assert!(create_chunk_grid_regular(&metadata).is_err());
+        assert_eq!(
+            create_chunk_grid_regular(&metadata)
+                .unwrap_err()
+                .to_string(),
+            r#"chunk grid regular is unsupported with metadata: regular {"invalid":[1,2,3]}"#
+        );
+    }
+
+    #[test]
     fn chunk_grid_regular() {
         let array_shape: ArrayShape = vec![5, 7, 52];
-        let chunk_shape: ArrayShape = vec![1, 2, 3];
+        let chunk_shape: ChunkShape = vec![1, 2, 3].try_into().unwrap();
         let chunk_grid = RegularChunkGrid::new(chunk_shape.clone());
 
         assert_eq!(chunk_grid.dimensionality(), 3);
 
         assert_eq!(
             chunk_grid.chunk_origin(&[1, 1, 1], &array_shape).unwrap(),
-            Some(chunk_shape.clone())
+            Some(vec![1, 2, 3])
         );
 
-        assert_eq!(chunk_grid.chunk_shape(), chunk_shape);
+        assert_eq!(chunk_grid.chunk_shape(), chunk_shape.as_slice());
 
         let chunk_grid_shape = chunk_grid.grid_shape(&array_shape).unwrap();
         assert_eq!(chunk_grid_shape, Some(vec![5, 4, 18]));
@@ -172,7 +258,7 @@ mod tests {
     #[test]
     fn chunk_grid_regular_out_of_bounds() {
         let array_shape: ArrayShape = vec![5, 7, 52];
-        let chunk_shape: ArrayShape = vec![1, 2, 3];
+        let chunk_shape: ChunkShape = vec![1, 2, 3].try_into().unwrap();
         let chunk_grid = RegularChunkGrid::new(chunk_shape);
 
         let array_indices: ArrayIndices = vec![3, 5, 53];
@@ -196,7 +282,7 @@ mod tests {
     #[test]
     fn chunk_grid_regular_unlimited() {
         let array_shape: ArrayShape = vec![5, 7, 0];
-        let chunk_shape: ArrayShape = vec![1, 2, 3];
+        let chunk_shape: ChunkShape = vec![1, 2, 3].try_into().unwrap();
         let chunk_grid = RegularChunkGrid::new(chunk_shape);
 
         let array_indices: ArrayIndices = vec![3, 5, 1000];

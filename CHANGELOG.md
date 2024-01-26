@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - More informative `Metadata` deserialisation error message with an invalid configuration
  - **Breaking**: `PluginCreateError::Other` changed to unit struct and added `PluginCreateError::from<{String,&str}>`
  - `PluginCreateError::Unsupported` now includes a `plugin_type` field for more informative error messages
+ - Add `array::ChunkShape` wrapping `Vec<NonZeroU64>` and `array::ChunkRepresentation` which is essentially `ArrayRepresentation` with a `NonZeroU64` shape
+   - **Breaking**: Relevant codec and partial decoder methods now use `ChunkRepresentation` instead of `ArrayRepresentation`
+   - **Breaking**: Relevant chunk grid methods now use `ChunkShape` instead of `ArrayShape`
+   - **Breaking**: Relevant array methods now use `ChunkShape` instead of `ArrayShape`
 
 ### Removed
  - **Breaking**: Remove `StorePrefixError::new`, deprecated since `v0.7.3`

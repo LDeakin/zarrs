@@ -32,7 +32,7 @@ use super::{
 /// let mut array = ArrayBuilder::new(
 ///     vec![8, 8], // array shape
 ///     DataType::Float32,
-///     vec![4, 4].into(), // regular chunk shape
+///     vec![4, 4].try_into()?, // regular chunk shape (elements must be non-zero)
 ///     FillValue::from(ZARR_NAN_F32),
 /// )
 /// .bytes_to_bytes_codecs(vec![
@@ -332,14 +332,17 @@ mod tests {
         let mut builder = ArrayBuilder::new(
             vec![8, 8],
             DataType::Int8,
-            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])),
+            vec![2, 2].try_into().unwrap(),
             FillValue::from(0i8),
         );
 
         // Coverage
         builder.shape(vec![8, 8]);
         builder.data_type(DataType::Int8);
-        builder.chunk_grid(ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])));
+        // builder.chunk_grid(vec![2, 2].try_into().unwrap());
+        builder.chunk_grid(ChunkGrid::new(RegularChunkGrid::new(
+            vec![2, 2].try_into().unwrap(),
+        )));
         builder.fill_value(FillValue::from(0i8));
 
         builder.dimension_names(Some(vec!["y".into(), "x".into()]));
@@ -394,7 +397,7 @@ mod tests {
         let builder = ArrayBuilder::new(
             vec![8, 8],
             DataType::Int8,
-            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2, 2])),
+            vec![2, 2, 2].try_into().unwrap(),
             FillValue::from(0i8),
         );
         assert!(builder.build(storage.clone(), "/").is_err());
@@ -402,7 +405,7 @@ mod tests {
         let builder = ArrayBuilder::new(
             vec![8, 8],
             DataType::Int8,
-            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])),
+            vec![2, 2].try_into().unwrap(),
             FillValue::from(0i16),
         );
         assert!(builder.build(storage.clone(), "/").is_err());
@@ -410,7 +413,7 @@ mod tests {
         let mut builder = ArrayBuilder::new(
             vec![8, 8],
             DataType::Int8,
-            ChunkGrid::new(RegularChunkGrid::new(vec![2, 2])),
+            vec![2, 2].try_into().unwrap(),
             FillValue::from(0i8),
         );
         builder.dimension_names(Some(vec!["z".into(), "y".into(), "x".into()]));

@@ -76,7 +76,7 @@ use std::{
     io::{Read, Seek, SeekFrom},
 };
 
-use super::{ArrayRepresentation, BytesRepresentation, DataType, MaybeBytes};
+use super::{BytesRepresentation, ChunkRepresentation, DataType, MaybeBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -138,7 +138,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError>;
 
@@ -152,7 +152,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     async fn async_encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         self.encode_opt(decoded_value, decoded_representation, false)
@@ -165,7 +165,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError>;
 
@@ -179,7 +179,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     async fn async_decode_opt(
         &self,
         encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         self.decode_opt(encoded_value, decoded_representation, false)
@@ -192,7 +192,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     fn encode(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
         self.encode_opt(decoded_value, decoded_representation, false)
     }
@@ -204,7 +204,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     fn par_encode(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
         self.encode_opt(decoded_value, decoded_representation, true)
     }
@@ -216,7 +216,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     fn decode(
         &self,
         encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
         self.decode_opt(encoded_value, decoded_representation, false)
     }
@@ -228,7 +228,7 @@ pub trait ArrayCodecTraits: CodecTraits {
     fn par_decode(
         &self,
         encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
         self.decode_opt(encoded_value, decoded_representation, true)
     }
@@ -536,7 +536,7 @@ pub trait ArrayToArrayCodecTraits:
     fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
@@ -551,7 +551,7 @@ pub trait ArrayToArrayCodecTraits:
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
 
@@ -562,8 +562,8 @@ pub trait ArrayToArrayCodecTraits:
     /// Returns a [`CodecError`] if the decoded representation is not supported by this codec.
     fn compute_encoded_size(
         &self,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<ArrayRepresentation, CodecError>;
+        decoded_representation: &ChunkRepresentation,
+    ) -> Result<ChunkRepresentation, CodecError>;
 
     /// Initialise a partial decoder.
     ///
@@ -572,7 +572,7 @@ pub trait ArrayToArrayCodecTraits:
     fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         self.partial_decoder_opt(input_handle, decoded_representation, false)
     }
@@ -584,7 +584,7 @@ pub trait ArrayToArrayCodecTraits:
     fn par_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         self.partial_decoder_opt(input_handle, decoded_representation, true)
     }
@@ -597,7 +597,7 @@ pub trait ArrayToArrayCodecTraits:
     async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         self.async_partial_decoder_opt(input_handle, decoded_representation, false)
             .await
@@ -611,7 +611,7 @@ pub trait ArrayToArrayCodecTraits:
     async fn async_par_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         self.async_partial_decoder_opt(input_handle, decoded_representation, true)
             .await
@@ -632,7 +632,7 @@ pub trait ArrayToBytesCodecTraits:
     fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
@@ -644,7 +644,7 @@ pub trait ArrayToBytesCodecTraits:
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
 
@@ -655,7 +655,7 @@ pub trait ArrayToBytesCodecTraits:
     /// Returns a [`CodecError`] if the decoded representation is not supported by this codec.
     fn compute_encoded_size(
         &self,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError>;
 
     /// Initialise a partial decoder.
@@ -665,7 +665,7 @@ pub trait ArrayToBytesCodecTraits:
     fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         self.partial_decoder_opt(input_handle, decoded_representation, false)
     }
@@ -677,7 +677,7 @@ pub trait ArrayToBytesCodecTraits:
     fn par_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         self.partial_decoder_opt(input_handle, decoded_representation, true)
     }
@@ -690,7 +690,7 @@ pub trait ArrayToBytesCodecTraits:
     async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         self.async_partial_decoder_opt(input_handle, decoded_representation, false)
             .await
@@ -704,7 +704,7 @@ pub trait ArrayToBytesCodecTraits:
     async fn async_par_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         self.async_partial_decoder_opt(input_handle, decoded_representation, true)
             .await

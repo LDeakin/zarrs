@@ -10,7 +10,7 @@ use crate::{
             AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits,
             BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
-        ArrayRepresentation, BytesRepresentation, DataType,
+        BytesRepresentation, ChunkRepresentation, DataType,
     },
     metadata::Metadata,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
@@ -144,7 +144,7 @@ impl ArrayCodecTraits for ZfpCodec {
     fn encode_opt(
         &self,
         mut decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
@@ -159,7 +159,7 @@ impl ArrayCodecTraits for ZfpCodec {
             &decoded_representation
                 .shape()
                 .iter()
-                .map(|u| usize::try_from(*u).unwrap())
+                .map(|u| usize::try_from(u.get()).unwrap())
                 .collect::<Vec<usize>>(),
         ) else {
             return Err(CodecError::from("failed to create zfp field"));
@@ -199,7 +199,7 @@ impl ArrayCodecTraits for ZfpCodec {
     fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
@@ -223,7 +223,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
     fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
@@ -236,7 +236,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
@@ -248,7 +248,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
 
     fn compute_encoded_size(
         &self,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         let data_type = decoded_representation.data_type();
         match data_type {

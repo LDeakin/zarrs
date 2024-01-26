@@ -23,7 +23,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
         DataType::Float32,
-        vec![4, 4].into(), // regular chunk shape
+        vec![4, 4].try_into()?, // regular chunk shape
         FillValue::from(ZARR_NAN_F32),
     )
     .bytes_to_bytes_codecs(vec![

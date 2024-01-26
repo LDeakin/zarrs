@@ -9,6 +9,7 @@ use crate::{
 };
 
 use super::{
+    chunk_shape_to_array_shape,
     codec::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, StoragePartialDecoder,
     },
@@ -151,10 +152,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        let shape = self
-            .chunk_grid()
-            .chunk_shape(chunk_indices, self.shape())?
-            .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?;
+        let shape = crate::array::chunk_shape_to_array_shape(
+            &self
+                .chunk_grid()
+                .chunk_shape(chunk_indices, self.shape())?
+                .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?,
+        );
         array_retrieve_ndarray!(self, shape, retrieve_chunk_elements(chunk_indices))
     }
 
@@ -597,7 +600,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Array<TStorage> {
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<u8>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-        if !chunk_subset.inbounds(chunk_representation.shape()) {
+        if !chunk_subset.inbounds(&chunk_shape_to_array_shape(chunk_representation.shape())) {
             return Err(ArrayError::InvalidArraySubset(
                 chunk_subset.clone(),
                 self.shape().to_vec(),

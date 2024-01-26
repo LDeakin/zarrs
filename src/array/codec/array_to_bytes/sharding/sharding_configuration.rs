@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::metadata::Metadata;
+use crate::{array::ChunkShape, metadata::Metadata};
 
 /// A wrapper to handle various versions of Sharding codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -52,7 +52,7 @@ pub enum ShardingCodecConfiguration {
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct ShardingCodecConfigurationV1 {
     /// An array of integers specifying the shape of the inner chunks in a shard along each dimension of the outer array.
-    pub chunk_shape: Vec<u64>,
+    pub chunk_shape: ChunkShape,
     /// A list of codecs to be used for encoding and decoding inner chunks.
     pub codecs: Vec<Metadata>,
     /// A list of codecs to be used for encoding and decoding the shard index.

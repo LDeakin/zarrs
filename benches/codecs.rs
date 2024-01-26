@@ -8,7 +8,7 @@ use zarrs::array::{
         bytes_to_bytes::blosc::{BloscCompressor, BloscShuffleMode},
         ArrayCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits,
     },
-    ArrayRepresentation, BytesRepresentation, DataType,
+    BytesRepresentation, ChunkRepresentation, DataType,
 };
 
 fn codec_bytes(c: &mut Criterion) {
@@ -25,8 +25,12 @@ fn codec_bytes(c: &mut Criterion) {
     for size in [32, 64, 128, 256, 512].iter() {
         let size3 = size * size * size;
         let num_elements = size3 / 2;
-        let rep =
-            ArrayRepresentation::new(vec![num_elements; 1], DataType::UInt16, 0u16.into()).unwrap();
+        let rep = ChunkRepresentation::new(
+            vec![num_elements.try_into().unwrap(); 1],
+            DataType::UInt16,
+            0u16.into(),
+        )
+        .unwrap();
 
         let data = vec![0u8; size3.try_into().unwrap()];
         group.throughput(Throughput::Bytes(size3));

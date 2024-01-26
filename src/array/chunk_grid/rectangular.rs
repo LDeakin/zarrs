@@ -2,13 +2,16 @@
 //!
 //! See <https://zarr.dev/zeps/draft/ZEP0003.html>.
 
+use std::num::NonZeroU64;
+
 use crate::{
-    array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape},
+    array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape, NonZeroError},
     metadata::Metadata,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 use derive_more::{Display, From};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use super::{ChunkGrid, ChunkGridTraits};
@@ -44,21 +47,64 @@ pub struct RectangularChunkGridConfiguration {
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, From)]
 #[serde(untagged)]
 pub enum RectangularChunkGridDimensionConfiguration {
-    Fixed(u64),
-    Varying(ArrayShape),
+    Fixed(NonZeroU64),
+    Varying(ChunkShape),
 }
 
-impl From<&[u64]> for RectangularChunkGridDimensionConfiguration {
-    fn from(value: &[u64]) -> Self {
-        Self::Varying(value.to_vec())
+impl TryFrom<u64> for RectangularChunkGridDimensionConfiguration {
+    type Error = NonZeroError;
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        let value = NonZeroU64::new(value).ok_or(NonZeroError)?;
+        Ok(Self::Fixed(value))
     }
 }
 
-impl<const N: usize> From<[u64; N]> for RectangularChunkGridDimensionConfiguration {
-    fn from(value: [u64; N]) -> Self {
-        Self::Varying(value.to_vec())
-    }
+macro_rules! from_chunkgrid_rectangular {
+    ( $t:ty ) => {
+        impl From<$t> for RectangularChunkGridDimensionConfiguration {
+            fn from(value: $t) -> Self {
+                Self::Varying(value.to_vec().into())
+            }
+        }
+    };
+    ( $t:ty, $g:ident ) => {
+        impl<const $g: usize> From<$t> for RectangularChunkGridDimensionConfiguration {
+            fn from(value: $t) -> Self {
+                Self::Varying(value.to_vec().into())
+            }
+        }
+    };
 }
+
+macro_rules! try_from_chunkgrid_rectangular_configuration {
+    ( $t:ty ) => {
+        impl TryFrom<$t> for RectangularChunkGridDimensionConfiguration {
+            type Error = NonZeroError;
+            fn try_from(value: $t) -> Result<Self, Self::Error> {
+                let vec = value.try_into()?;
+                Ok(Self::Varying(vec))
+            }
+        }
+    };
+    ( $t:ty, $g:ident ) => {
+        impl<const $g: usize> TryFrom<$t> for RectangularChunkGridDimensionConfiguration {
+            type Error = NonZeroError;
+            fn try_from(value: $t) -> Result<Self, Self::Error> {
+                let vec = value.try_into()?;
+                Ok(Self::Varying(vec))
+            }
+        }
+    };
+}
+
+from_chunkgrid_rectangular!(Vec<NonZeroU64>);
+from_chunkgrid_rectangular!(&[NonZeroU64]);
+from_chunkgrid_rectangular!([NonZeroU64; N], N);
+from_chunkgrid_rectangular!(&[NonZeroU64; N], N);
+try_from_chunkgrid_rectangular_configuration!(Vec<u64>);
+try_from_chunkgrid_rectangular_configuration!(&[u64]);
+try_from_chunkgrid_rectangular_configuration!([u64; N], N);
+try_from_chunkgrid_rectangular_configuration!(&[u64; N], N);
 
 /// A `rectangular` chunk grid.
 #[derive(Debug, Clone)]
@@ -69,12 +115,12 @@ pub struct RectangularChunkGrid {
 #[derive(Debug, Clone)]
 struct OffsetSize {
     offset: u64,
-    size: u64,
+    size: NonZeroU64,
 }
 
 #[derive(Debug, Clone, From)]
 enum RectangularChunkGridDimension {
-    Fixed(u64),
+    Fixed(NonZeroU64),
     Varying(Vec<OffsetSize>),
 }
 
@@ -91,10 +137,11 @@ impl RectangularChunkGrid {
                 RectangularChunkGridDimensionConfiguration::Varying(chunk_sizes) => {
                     RectangularChunkGridDimension::Varying(
                         chunk_sizes
+                            .as_slice()
                             .iter()
                             .scan(0, |offset, &size| {
                                 let last_offset = *offset;
-                                *offset += size;
+                                *offset += size.get();
                                 Some(OffsetSize {
                                     offset: last_offset,
                                     size,
@@ -123,7 +170,8 @@ impl ChunkGridTraits for RectangularChunkGrid {
                         offsets_sizes
                             .iter()
                             .map(|offset_size| offset_size.size)
-                            .collect(),
+                            .collect_vec()
+                            .into(),
                     )
                 }
             })
@@ -140,10 +188,17 @@ impl ChunkGridTraits for RectangularChunkGrid {
         assert_eq!(array_shape.len(), self.dimensionality());
         std::iter::zip(array_shape, &self.chunks)
             .map(|(array_shape, chunks)| match chunks {
-                RectangularChunkGridDimension::Fixed(s) => Some((array_shape + s - 1) / s),
+                RectangularChunkGridDimension::Fixed(s) => {
+                    let s = s.get();
+                    Some((array_shape + s - 1) / s)
+                }
                 RectangularChunkGridDimension::Varying(s) => {
-                    let last = s.last().unwrap_or(&OffsetSize { offset: 0, size: 0 });
-                    if *array_shape == last.offset + last.size {
+                    let last_default = OffsetSize {
+                        offset: 0,
+                        size: NonZeroU64::new_unchecked(1),
+                    };
+                    let last = s.last().unwrap_or(&last_default);
+                    if *array_shape == last.offset + last.size.get() {
                         Some(s.len() as u64)
                     } else {
                         None
@@ -157,7 +212,7 @@ impl ChunkGridTraits for RectangularChunkGrid {
         &self,
         chunk_indices: &[u64],
         _array_shape: &[u64],
-    ) -> Option<ArrayShape> {
+    ) -> Option<ChunkShape> {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         std::iter::zip(chunk_indices, &self.chunks)
             .map(|(chunk_index, chunks)| match chunks {
@@ -171,7 +226,8 @@ impl ChunkGridTraits for RectangularChunkGrid {
                     }
                 }
             })
-            .collect()
+            .collect::<Option<Vec<_>>>()
+            .map(std::convert::Into::into)
     }
 
     unsafe fn chunk_origin_unchecked(
@@ -182,7 +238,9 @@ impl ChunkGridTraits for RectangularChunkGrid {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         std::iter::zip(chunk_indices, &self.chunks)
             .map(|(chunk_index, chunks)| match chunks {
-                RectangularChunkGridDimension::Fixed(chunk_size) => Some(chunk_index * chunk_size),
+                RectangularChunkGridDimension::Fixed(chunk_size) => {
+                    Some(chunk_index * chunk_size.get())
+                }
                 RectangularChunkGridDimension::Varying(offsets_sizes) => {
                     let chunk_index = usize::try_from(*chunk_index).unwrap();
                     if chunk_index < offsets_sizes.len() {
@@ -203,12 +261,14 @@ impl ChunkGridTraits for RectangularChunkGrid {
         debug_assert_eq!(self.dimensionality(), array_indices.len());
         std::iter::zip(array_indices, &self.chunks)
             .map(|(index, chunks)| match chunks {
-                RectangularChunkGridDimension::Fixed(size) => Some(index / size),
+                RectangularChunkGridDimension::Fixed(size) => Some(index / size.get()),
                 RectangularChunkGridDimension::Varying(offsets_sizes) => {
-                    let last = offsets_sizes
-                        .last()
-                        .unwrap_or(&OffsetSize { offset: 0, size: 0 });
-                    if *index < last.offset + last.size {
+                    let last_default = OffsetSize {
+                        offset: 0,
+                        size: NonZeroU64::new_unchecked(1),
+                    };
+                    let last = offsets_sizes.last().unwrap_or(&last_default);
+                    if *index < last.offset + last.size.get() {
                         let partition = offsets_sizes
                             .partition_point(|offset_size| *index >= offset_size.offset);
                         if partition <= offsets_sizes.len() {
@@ -251,7 +311,7 @@ impl ChunkGridTraits for RectangularChunkGrid {
                             RectangularChunkGridDimension::Fixed(_) => true,
                             RectangularChunkGridDimension::Varying(offsets_sizes) => offsets_sizes
                                 .last()
-                                .map_or(false, |last| *array_index < last.offset + last.size),
+                                .map_or(false, |last| *array_index < last.offset + last.size.get()),
                         }
                 },
             )
@@ -265,8 +325,10 @@ mod tests {
     #[test]
     fn chunk_grid_rectangular() {
         let array_shape: ArrayShape = vec![100, 100];
-        let chunk_shapes: Vec<RectangularChunkGridDimensionConfiguration> =
-            vec![vec![5, 5, 5, 15, 15, 20, 35].into(), 10.into()];
+        let chunk_shapes: Vec<RectangularChunkGridDimensionConfiguration> = vec![
+            [5, 5, 5, 15, 15, 20, 35].try_into().unwrap(),
+            10.try_into().unwrap(),
+        ];
         let chunk_grid = RectangularChunkGrid::new(&chunk_shapes);
 
         assert_eq!(chunk_grid.dimensionality(), 2);
@@ -298,8 +360,10 @@ mod tests {
     #[test]
     fn chunk_grid_rectangular_out_of_bounds() {
         let array_shape: ArrayShape = vec![100, 100];
-        let chunk_shapes: Vec<RectangularChunkGridDimensionConfiguration> =
-            vec![vec![5, 5, 5, 15, 15, 20, 35].into(), 10.into()];
+        let chunk_shapes: Vec<RectangularChunkGridDimensionConfiguration> = vec![
+            [5, 5, 5, 15, 15, 20, 35].try_into().unwrap(),
+            10.try_into().unwrap(),
+        ];
         let chunk_grid = RectangularChunkGrid::new(&chunk_shapes);
 
         assert_eq!(
@@ -340,8 +404,10 @@ mod tests {
     #[test]
     fn chunk_grid_rectangular_unlimited() {
         let array_shape: ArrayShape = vec![100, 0];
-        let chunk_shapes: Vec<RectangularChunkGridDimensionConfiguration> =
-            vec![vec![5, 5, 5, 15, 15, 20, 35].into(), 10.into()];
+        let chunk_shapes: Vec<RectangularChunkGridDimensionConfiguration> = vec![
+            [5, 5, 5, 15, 15, 20, 35].try_into().unwrap(),
+            10.try_into().unwrap(),
+        ];
         let chunk_grid = RectangularChunkGrid::new(&chunk_shapes);
 
         assert_eq!(

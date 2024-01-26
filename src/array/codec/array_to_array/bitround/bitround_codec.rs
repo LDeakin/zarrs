@@ -4,7 +4,7 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
             AsyncArrayPartialDecoderTraits, CodecError, CodecTraits,
         },
-        ArrayRepresentation, DataType,
+        ChunkRepresentation, DataType,
     },
     metadata::Metadata,
 };
@@ -60,7 +60,7 @@ impl ArrayCodecTraits for BitroundCodec {
     fn encode_opt(
         &self,
         mut decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         round_bytes(
@@ -74,7 +74,7 @@ impl ArrayCodecTraits for BitroundCodec {
     fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
-        _decoded_representation: &ArrayRepresentation,
+        _decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         Ok(encoded_value)
@@ -86,7 +86,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
     fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
@@ -101,7 +101,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
@@ -115,8 +115,8 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
 
     fn compute_encoded_size(
         &self,
-        decoded_representation: &ArrayRepresentation,
-    ) -> Result<ArrayRepresentation, CodecError> {
+        decoded_representation: &ChunkRepresentation,
+    ) -> Result<ChunkRepresentation, CodecError> {
         let data_type = decoded_representation.data_type();
         match data_type {
             DataType::Float16 | DataType::BFloat16 | DataType::Float32 | DataType::Float64 => {

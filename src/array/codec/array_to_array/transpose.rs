@@ -65,30 +65,40 @@ fn transpose_array(
     Ok(array_transposed.into_owned().into_raw_vec())
 }
 
-fn permute(v: &[u64], order: &TransposeOrder) -> Vec<u64> {
-    let mut shape_encoded: crate::array::ArrayShape = Vec::with_capacity(v.len());
+fn permute<T: Copy>(v: &[T], order: &TransposeOrder) -> Vec<T> {
+    let mut vec = Vec::<T>::with_capacity(v.len());
     for axis in &order.0 {
-        shape_encoded.push(v[*axis]);
+        vec.push(v[*axis]);
     }
-    shape_encoded
+    vec
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::array::{codec::ArrayCodecTraits, ArrayRepresentation, DataType, FillValue};
+    use std::num::NonZeroU64;
+
+    use crate::array::{codec::ArrayCodecTraits, ChunkRepresentation, DataType, FillValue};
 
     use super::*;
 
     fn codec_transpose_round_trip_impl(json: &str, data_type: DataType, fill_value: FillValue) {
-        let array_representation =
-            ArrayRepresentation::new(vec![2, 2, 3], data_type, fill_value).unwrap();
-        let bytes: Vec<u8> = (0..array_representation.size()).map(|s| s as u8).collect();
+        let chunk_representation = ChunkRepresentation::new(
+            vec![
+                NonZeroU64::new(2).unwrap(),
+                NonZeroU64::new(2).unwrap(),
+                NonZeroU64::new(3).unwrap(),
+            ],
+            data_type,
+            fill_value,
+        )
+        .unwrap();
+        let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
 
         let configuration: TransposeCodecConfiguration = serde_json::from_str(json).unwrap();
         let codec = TransposeCodec::new_with_configuration(&configuration).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
-        let decoded = codec.decode(encoded, &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let decoded = codec.decode(encoded, &chunk_representation).unwrap();
         assert_eq!(bytes, decoded);
 
         // let array = ndarray::ArrayViewD::from_shape(array_representation.shape(), &bytes).unwrap();

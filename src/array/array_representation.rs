@@ -1,26 +1,40 @@
-use super::{data_type::IncompatibleFillValueError, ArrayShape, DataType, FillValue};
+use std::num::NonZeroU64;
+
+use super::{data_type::IncompatibleFillValueError, DataType, FillValue};
 use derive_more::Display;
 
 /// The shape, data type, and fill value of an `array`.
 #[derive(Clone, Debug, Display)]
 #[display(fmt = "{array_shape:?} {data_type} {fill_value}")]
-pub struct ArrayRepresentation {
+pub struct ArrayRepresentationBase<TDim>
+where
+    TDim: Into<u64> + core::fmt::Debug + Copy,
+{
     /// The shape of the array.
-    array_shape: ArrayShape,
+    array_shape: Vec<TDim>,
     /// The data type of the array.
     data_type: DataType,
     /// The fill value of the array.
     fill_value: FillValue,
 }
 
-impl ArrayRepresentation {
+/// The array representation of an array, which can have zero dimensions.
+pub type ArrayRepresentation = ArrayRepresentationBase<u64>;
+
+/// The array representation of a chunk, which must have nonzero dimensions.
+pub type ChunkRepresentation = ArrayRepresentationBase<NonZeroU64>;
+
+impl<TDim> ArrayRepresentationBase<TDim>
+where
+    TDim: Into<u64> + core::fmt::Debug + Copy,
+{
     /// Create a new [`ArrayRepresentation`].
     ///
     /// # Errors
     ///
     /// Returns [`IncompatibleFillValueError`] if the `data_type` and `fill_value` are incompatible.
     pub fn new(
-        array_shape: ArrayShape,
+        array_shape: Vec<TDim>,
         data_type: DataType,
         fill_value: FillValue,
     ) -> Result<Self, IncompatibleFillValueError> {
@@ -44,7 +58,7 @@ impl ArrayRepresentation {
     /// `data_type` and `fill_value` must be compatible.
     #[must_use]
     pub unsafe fn new_unchecked(
-        array_shape: ArrayShape,
+        array_shape: Vec<TDim>,
         data_type: DataType,
         fill_value: FillValue,
     ) -> Self {
@@ -58,7 +72,7 @@ impl ArrayRepresentation {
 
     /// Return the shape of the array.
     #[must_use]
-    pub fn shape(&self) -> &[u64] {
+    pub fn shape(&self) -> &[TDim] {
         &self.array_shape
     }
 
@@ -79,7 +93,7 @@ impl ArrayRepresentation {
     /// Equal to the product of its shape.
     #[must_use]
     pub fn num_elements(&self) -> u64 {
-        self.array_shape.iter().product()
+        self.array_shape.iter().map(|&i| i.into()).product::<u64>()
     }
 
     /// Return the number of elements of the array as a `usize`.

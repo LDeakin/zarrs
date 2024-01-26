@@ -12,18 +12,21 @@
 mod rectangular;
 mod regular;
 
+use std::num::NonZeroU64;
+
 pub use rectangular::{RectangularChunkGrid, RectangularChunkGridConfiguration};
 pub use regular::{RegularChunkGrid, RegularChunkGridConfiguration};
 
 use derive_more::{Deref, From};
 
 use crate::{
+    array::chunk_shape_to_array_shape,
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
 };
 
-use super::{ArrayIndices, ArrayShape};
+use super::{ArrayIndices, ArrayShape, ChunkShape};
 
 /// A chunk grid.
 #[derive(Debug, Clone, Deref, From)]
@@ -58,10 +61,51 @@ impl ChunkGrid {
     }
 }
 
-impl From<ArrayShape> for ChunkGrid {
+macro_rules! from_chunkgrid_regular {
+    ( $t:ty ) => {
+        impl From<$t> for ChunkGrid {
+            /// Create a regular chunk grid from a chunk shape.
+            fn from(regular_chunk_shape: $t) -> Self {
+                Self::new(RegularChunkGrid::new(regular_chunk_shape.into()))
+            }
+        }
+    };
+    ( $t:ty, $g:ident ) => {
+        impl<const $g: usize> From<$t> for ChunkGrid {
+            /// Create a regular chunk grid from a chunk shape.
+            fn from(regular_chunk_shape: $t) -> Self {
+                Self::new(RegularChunkGrid::new(regular_chunk_shape.into()))
+            }
+        }
+    };
+}
+
+from_chunkgrid_regular!(&[NonZeroU64]);
+from_chunkgrid_regular!(Vec<NonZeroU64>);
+from_chunkgrid_regular!([NonZeroU64; N], N);
+from_chunkgrid_regular!(&[NonZeroU64; N], N);
+
+impl From<ChunkShape> for ChunkGrid {
     /// Create a regular chunk grid from a chunk shape.
-    fn from(regular_chunk_shape: ArrayShape) -> Self {
+    fn from(regular_chunk_shape: ChunkShape) -> Self {
         Self::new(RegularChunkGrid::new(regular_chunk_shape))
+    }
+}
+
+impl TryFrom<ArrayShape> for ChunkGrid {
+    type Error = PluginCreateError;
+    /// Create a regular chunk grid from a chunk shape.
+    fn try_from(regular_chunk_shape: ArrayShape) -> Result<Self, PluginCreateError> {
+        let regular_chunk_shape = regular_chunk_shape
+            .into_iter()
+            .map(|i| {
+                NonZeroU64::new(i).ok_or(PluginCreateError::from(
+                    "chunk shape elements must be non-zero",
+                ))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into();
+        Ok(Self::new(RegularChunkGrid::new(regular_chunk_shape)))
     }
 }
 
@@ -105,7 +149,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         &self,
         chunk_indices: &[u64],
         array_shape: &[u64],
-    ) -> Result<Option<ArrayShape>, IncompatibleDimensionalityError> {
+    ) -> Result<Option<ChunkShape>, IncompatibleDimensionalityError> {
         if chunk_indices.len() != self.dimensionality() {
             Err(IncompatibleDimensionalityError::new(
                 chunk_indices.len(),
@@ -277,7 +321,7 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         &self,
         chunk_indices: &[u64],
         array_shape: &[u64],
-    ) -> Option<ArrayShape>;
+    ) -> Option<ChunkShape>;
 
     /// See [`ChunkGridTraits::chunk_indices`].
     ///
@@ -309,13 +353,14 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         array_shape: &[u64],
     ) -> Option<ArraySubset> {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
-        if let (Some(chunk_origin), Some(chunk_size)) = (
+        if let (Some(chunk_origin), Some(chunk_shape)) = (
             self.chunk_origin_unchecked(chunk_indices, array_shape),
             self.chunk_shape_unchecked(chunk_indices, array_shape),
         ) {
+            let chunk_shape = chunk_shape_to_array_shape(&chunk_shape);
             Some(ArraySubset::new_with_start_shape_unchecked(
                 chunk_origin,
-                chunk_size,
+                chunk_shape,
             ))
         } else {
             None

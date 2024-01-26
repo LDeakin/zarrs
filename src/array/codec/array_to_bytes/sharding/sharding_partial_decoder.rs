@@ -1,15 +1,18 @@
+use std::num::NonZeroU64;
+
 use rayon::prelude::*;
 
 use crate::{
     array::{
         chunk_grid::RegularChunkGrid,
+        chunk_shape_to_array_shape,
         codec::{
             ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
             ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
         },
         ravel_indices,
         unsafe_cell_slice::UnsafeCellSlice,
-        ArrayRepresentation, ArrayShape,
+        ChunkRepresentation, ChunkShape,
     },
     byte_range::ByteRange,
 };
@@ -31,7 +34,7 @@ use super::async_decode_shard_index;
 /// Partial decoder for the sharding codec.
 pub struct ShardingPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-    decoded_representation: ArrayRepresentation,
+    decoded_representation: ChunkRepresentation,
     chunk_grid: RegularChunkGrid,
     inner_codecs: &'a CodecChain,
     shard_index: Option<Vec<u64>>,
@@ -41,8 +44,8 @@ impl<'a> ShardingPartialDecoder<'a> {
     /// Create a new partial decoder for the sharding codec.
     pub fn new(
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: ArrayRepresentation,
-        chunk_shape: ArrayShape,
+        decoded_representation: ChunkRepresentation,
+        chunk_shape: ChunkShape,
         inner_codecs: &'a CodecChain,
         index_codecs: &'a CodecChain,
         index_location: ShardingIndexLocation,
@@ -52,7 +55,7 @@ impl<'a> ShardingPartialDecoder<'a> {
             &*input_handle,
             index_codecs,
             index_location,
-            &chunk_shape,
+            chunk_shape.as_slice(),
             &decoded_representation,
             parallel,
         )?;
@@ -70,13 +73,13 @@ impl<'a> ShardingPartialDecoder<'a> {
         input_handle: &dyn BytesPartialDecoderTraits,
         index_codecs: &'a CodecChain,
         index_location: ShardingIndexLocation,
-        chunk_shape: &[u64],
-        decoded_representation: &ArrayRepresentation,
+        chunk_shape: &[NonZeroU64],
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Option<Vec<u64>>, CodecError> {
         let shard_shape = decoded_representation.shape();
         let chunk_representation = unsafe {
-            ArrayRepresentation::new_unchecked(
+            ChunkRepresentation::new_unchecked(
                 chunk_shape.to_vec(),
                 decoded_representation.data_type().clone(),
                 decoded_representation.fill_value().clone(),
@@ -89,7 +92,8 @@ impl<'a> ShardingPartialDecoder<'a> {
                 .map_err(|e| CodecError::Other(e.to_string()))?;
 
         // Get index array representation and encoded size
-        let index_array_representation = sharding_index_decoded_representation(&chunks_per_shard);
+        let index_array_representation =
+            sharding_index_decoded_representation(chunks_per_shard.as_slice());
         let index_encoded_size =
             compute_index_encoded_size(index_codecs, &index_array_representation)
                 .map_err(|e| CodecError::Other(e.to_string()))?;
@@ -143,7 +147,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         };
 
         let chunk_representation = unsafe {
-            ArrayRepresentation::new_unchecked(
+            ChunkRepresentation::new_unchecked(
                 self.chunk_grid.chunk_shape().to_vec(),
                 self.decoded_representation.data_type().clone(),
                 self.decoded_representation.fill_value().clone(),
@@ -155,6 +159,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             chunk_representation.shape(),
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
+        let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
 
         let element_size = self.decoded_representation.element_size();
         let element_size_u64 = element_size as u64;
@@ -245,7 +250,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         };
 
         let chunk_representation = unsafe {
-            ArrayRepresentation::new_unchecked(
+            ChunkRepresentation::new_unchecked(
                 self.chunk_grid.chunk_shape().to_vec(),
                 self.decoded_representation.data_type().clone(),
                 self.decoded_representation.fill_value().clone(),
@@ -257,6 +262,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             chunk_representation.shape(),
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
+        let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
 
         let element_size = self.decoded_representation.element_size() as u64;
         let fill_value = chunk_representation.fill_value().as_ne_bytes();
@@ -333,7 +339,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
 /// Asynchronous partial decoder for the sharding codec.
 pub struct AsyncShardingPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-    decoded_representation: ArrayRepresentation,
+    decoded_representation: ChunkRepresentation,
     chunk_grid: RegularChunkGrid,
     inner_codecs: &'a CodecChain,
     shard_index: Option<Vec<u64>>,
@@ -344,8 +350,8 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
     /// Create a new partial decoder for the sharding codec.
     pub async fn new(
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: ArrayRepresentation,
-        chunk_shape: ArrayShape,
+        decoded_representation: ChunkRepresentation,
+        chunk_shape: ChunkShape,
         inner_codecs: &'a CodecChain,
         index_codecs: &'a CodecChain,
         index_location: ShardingIndexLocation,
@@ -355,7 +361,7 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
             &*input_handle,
             index_codecs,
             index_location,
-            &chunk_shape,
+            chunk_shape.as_slice(),
             &decoded_representation,
             parallel,
         )
@@ -374,13 +380,13 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
         input_handle: &dyn AsyncBytesPartialDecoderTraits,
         index_codecs: &'a CodecChain,
         index_location: ShardingIndexLocation,
-        chunk_shape: &[u64],
-        decoded_representation: &ArrayRepresentation,
+        chunk_shape: &[NonZeroU64],
+        decoded_representation: &ChunkRepresentation,
         parallel: bool,
     ) -> Result<Option<Vec<u64>>, CodecError> {
         let shard_shape = decoded_representation.shape();
         let chunk_representation = unsafe {
-            ArrayRepresentation::new_unchecked(
+            ChunkRepresentation::new_unchecked(
                 chunk_shape.to_vec(),
                 decoded_representation.data_type().clone(),
                 decoded_representation.fill_value().clone(),
@@ -393,7 +399,8 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
                 .map_err(|e| CodecError::Other(e.to_string()))?;
 
         // Get index array representation and encoded size
-        let index_array_representation = sharding_index_decoded_representation(&chunks_per_shard);
+        let index_array_representation =
+            sharding_index_decoded_representation(chunks_per_shard.as_slice());
         let index_encoded_size =
             compute_index_encoded_size(index_codecs, &index_array_representation)
                 .map_err(|e| CodecError::Other(e.to_string()))?;
@@ -456,7 +463,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         };
 
         let chunk_representation = unsafe {
-            ArrayRepresentation::new_unchecked(
+            ChunkRepresentation::new_unchecked(
                 self.chunk_grid.chunk_shape().to_vec(),
                 self.decoded_representation.data_type().clone(),
                 self.decoded_representation.fill_value().clone(),
@@ -468,6 +475,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
             chunk_representation.shape(),
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
+        let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
 
         let element_size = self.decoded_representation.element_size() as u64;
         let fill_value = chunk_representation.fill_value().as_ne_bytes();
@@ -555,6 +563,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
             self.chunk_grid.chunk_shape(),
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
+        let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
 
         let element_size = self.decoded_representation.element_size();
         let mut out = Vec::with_capacity(array_subsets.len());
@@ -600,7 +609,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                     })
                     .map(|(chunk_subset, (offset, size))| async move {
                         let chunk_representation = unsafe {
-                            ArrayRepresentation::new_unchecked(
+                            ChunkRepresentation::new_unchecked(
                                 self.chunk_grid.chunk_shape().to_vec(),
                                 self.decoded_representation.data_type().clone(),
                                 self.decoded_representation.fill_value().clone(),
@@ -672,8 +681,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                 })
                 .collect::<Vec<_>>();
             if !filled_chunks.is_empty() {
-                let chunk_array_ss =
-                    ArraySubset::new_with_shape(self.chunk_grid.chunk_shape().to_vec());
+                let chunk_array_ss = ArraySubset::new_with_shape(chunk_shape_to_array_shape(
+                    self.chunk_grid.chunk_shape(),
+                ));
                 let filled_chunk = self
                     .decoded_representation
                     .fill_value()

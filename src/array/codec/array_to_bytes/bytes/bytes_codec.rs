@@ -6,7 +6,7 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
-        ArrayRepresentation, BytesRepresentation,
+        BytesRepresentation, ChunkRepresentation,
     },
     metadata::Metadata,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
@@ -82,7 +82,7 @@ impl BytesCodec {
     fn do_encode_or_decode(
         &self,
         mut value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
         if value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -127,7 +127,7 @@ impl ArrayCodecTraits for BytesCodec {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(decoded_value, decoded_representation)
@@ -136,7 +136,7 @@ impl ArrayCodecTraits for BytesCodec {
     fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(encoded_value, decoded_representation)
@@ -148,7 +148,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
     fn partial_decoder_opt<'a>(
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bytes_partial_decoder::BytesPartialDecoder::new(
@@ -162,7 +162,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
         _parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
@@ -176,7 +176,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
 
     fn compute_encoded_size(
         &self,
-        decoded_representation: &ArrayRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         Ok(BytesRepresentation::FixedSize(
             decoded_representation.num_elements() * decoded_representation.element_size() as u64,

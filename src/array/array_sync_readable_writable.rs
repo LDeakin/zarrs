@@ -5,7 +5,7 @@ use crate::{
     storage::{data_key, ReadableWritableStorageTraits},
 };
 
-use super::{unravel_index, Array, ArrayError};
+use super::{chunk_shape_to_array_shape, unravel_index, Array, ArrayError};
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
@@ -259,10 +259,12 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
         chunk_subset: &ArraySubset,
         chunk_subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        let chunk_shape = self
-            .chunk_grid()
-            .chunk_shape(chunk_indices, self.shape())?
-            .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?;
+        let chunk_shape = chunk_shape_to_array_shape(
+            &self
+                .chunk_grid()
+                .chunk_shape(chunk_indices, self.shape())?
+                .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?,
+        );
 
         // Validation
         if std::iter::zip(chunk_subset.end_exc(), &chunk_shape)

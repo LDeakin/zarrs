@@ -159,7 +159,9 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
 
 #[cfg(test)]
 mod tests {
-    use array_representation::ArrayRepresentation;
+    use std::num::NonZeroU64;
+
+    use array_representation::ChunkRepresentation;
     use itertools::Itertools;
 
     use crate::{
@@ -179,8 +181,12 @@ mod tests {
     fn codec_bitround_float() {
         // 1 sign bit, 8 exponent, 3 mantissa
         const JSON: &'static str = r#"{ "keepbits": 3 }"#;
-        let array_representation =
-            ArrayRepresentation::new(vec![4], DataType::Float32, 0.0f32.into()).unwrap();
+        let chunk_representation = ChunkRepresentation::new(
+            vec![NonZeroU64::new(4).unwrap()],
+            DataType::Float32,
+            0.0f32.into(),
+        )
+        .unwrap();
         let elements: Vec<f32> = vec![
             //                         |
             0.0,
@@ -199,9 +205,9 @@ mod tests {
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &array_representation)
+            .decode(encoded.clone(), &chunk_representation)
             .unwrap();
         let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded);
         assert_eq!(decoded_elements, &[0.0f32, 1.25f32, -8.0f32, 98304.0f32]);
@@ -210,17 +216,21 @@ mod tests {
     #[test]
     fn codec_bitround_uint() {
         const JSON: &'static str = r#"{ "keepbits": 3 }"#;
-        let array_representation =
-            ArrayRepresentation::new(vec![4], DataType::UInt32, 0u32.into()).unwrap();
+        let chunk_representation = ChunkRepresentation::new(
+            vec![NonZeroU64::new(4).unwrap()],
+            DataType::UInt32,
+            0u32.into(),
+        )
+        .unwrap();
         let elements: Vec<u32> = vec![0, 1024, 1280, 1664, 1685, 123145182];
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &array_representation)
+            .decode(encoded.clone(), &chunk_representation)
             .unwrap();
         let decoded_elements = crate::array::transmute_from_bytes_vec::<u32>(decoded);
         for element in &decoded_elements {
@@ -236,15 +246,15 @@ mod tests {
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
         let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
-        let array_representation = ArrayRepresentation::new(
-            vec![elements.len().try_into().unwrap()],
+        let chunk_representation = ChunkRepresentation::new(
+            vec![(elements.len() as u64).try_into().unwrap()],
             DataType::Float32,
             0.0f32.into(),
         )
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded_regions = [
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
@@ -252,10 +262,10 @@ mod tests {
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
-            .partial_decoder(input_handle, &array_representation)
+            .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let partial_decoder = codec
-            .partial_decoder(input_handle, &array_representation)
+            .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
         let decoded_partial_chunk = decoded_partial_chunk

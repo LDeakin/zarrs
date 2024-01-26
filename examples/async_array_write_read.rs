@@ -32,7 +32,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "The group metadata is:\n{}\n",
-        serde_json::to_string_pretty(&group.metadata()).unwrap()
+        serde_json::to_string_pretty(&group.metadata())?
     );
 
     // Create an array
@@ -40,7 +40,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
         DataType::Float32,
-        vec![4, 4].into(), // regular chunk shape
+        vec![4, 4].try_into()?, // regular chunk shape
         FillValue::from(ZARR_NAN_F32),
     )
     // .bytes_to_bytes_codecs(vec![]) // uncompressed
@@ -53,7 +53,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "The array metadata is:\n{}\n",
-        serde_json::to_string_pretty(&array.metadata()).unwrap()
+        serde_json::to_string_pretty(&array.metadata())?
     );
 
     // Write some chunks

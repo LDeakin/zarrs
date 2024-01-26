@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    array::{ArrayRepresentation, MaybeBytes},
+    array::{chunk_shape_to_array_shape, ChunkRepresentation, MaybeBytes},
     array_subset::InvalidArraySubsetError,
     byte_range::{extract_byte_ranges, ByteRange},
 };
@@ -87,7 +87,7 @@ impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
 
 /// An array partial decoder cache.
 pub struct ArrayPartialDecoderCache<'a> {
-    decoded_representation: ArrayRepresentation,
+    decoded_representation: ChunkRepresentation,
     cache: Vec<u8>,
     phantom: PhantomData<&'a ()>,
 }
@@ -99,14 +99,14 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
     pub fn new(
         input_handle: &dyn ArrayPartialDecoderTraits,
-        decoded_representation: ArrayRepresentation,
+        decoded_representation: ChunkRepresentation,
         parallel: bool,
     ) -> Result<Self, CodecError> {
         let cache = input_handle
             .partial_decode_opt(
-                &[ArraySubset::new_with_shape(
-                    decoded_representation.shape().to_vec(),
-                )],
+                &[ArraySubset::new_with_shape(chunk_shape_to_array_shape(
+                    decoded_representation.shape(),
+                ))],
                 parallel,
             )?
             .remove(0);
@@ -124,14 +124,14 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
     pub async fn async_new(
         input_handle: &dyn AsyncArrayPartialDecoderTraits,
-        decoded_representation: ArrayRepresentation,
+        decoded_representation: ChunkRepresentation,
         parallel: bool,
     ) -> Result<ArrayPartialDecoderCache<'a>, CodecError> {
         let cache = input_handle
             .partial_decode_opt(
-                &[ArraySubset::new_with_shape(
-                    decoded_representation.shape().to_vec(),
-                )],
+                &[ArraySubset::new_with_shape(chunk_shape_to_array_shape(
+                    decoded_representation.shape(),
+                ))],
                 parallel,
             )
             .await?
@@ -151,12 +151,12 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
         _parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut out: Vec<Vec<u8>> = Vec::with_capacity(decoded_regions.len());
-        let array_shape = self.decoded_representation.shape();
+        let array_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
         let element_size = self.decoded_representation.element_size();
         for array_subset in decoded_regions {
             out.push(
                 array_subset
-                    .extract_bytes(&self.cache, array_shape, element_size)
+                    .extract_bytes(&self.cache, &array_shape, element_size)
                     .map_err(|_| InvalidArraySubsetError)?,
             );
         }

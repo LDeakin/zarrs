@@ -91,7 +91,9 @@ fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
 
 #[cfg(test)]
 mod tests {
-    use crate::array::{codec::ArrayCodecTraits, ArrayRepresentation, DataType, FillValue};
+    use std::num::NonZeroU64;
+
+    use crate::array::{codec::ArrayCodecTraits, ChunkRepresentation, DataType, FillValue};
 
     use super::*;
 
@@ -119,14 +121,15 @@ mod tests {
         data_type: DataType,
         fill_value: FillValue,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let array_representation =
-            ArrayRepresentation::new(vec![10, 10], data_type, fill_value).unwrap();
-        let bytes: Vec<u8> = (0..array_representation.size()).map(|s| s as u8).collect();
+        let chunk_shape = vec![NonZeroU64::new(10).unwrap(), NonZeroU64::new(10).unwrap()];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, data_type, fill_value).unwrap();
+        let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
 
         let codec = BytesCodec::new(endianness);
 
-        let encoded = codec.encode(bytes.clone(), &array_representation)?;
-        let decoded = codec.decode(encoded, &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation)?;
+        let decoded = codec.decode(encoded, &chunk_representation).unwrap();
         assert_eq!(bytes, decoded);
         Ok(())
     }

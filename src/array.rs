@@ -13,6 +13,7 @@ mod array_representation;
 mod bytes_representation;
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
+mod chunk_shape;
 pub mod codec;
 pub mod data_type;
 mod dimension_name;
@@ -27,10 +28,11 @@ pub use self::{
     array_builder::ArrayBuilder,
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata::{ArrayMetadata, ArrayMetadataV3},
-    array_representation::ArrayRepresentation,
+    array_representation::{ArrayRepresentation, ChunkRepresentation},
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
     chunk_key_encoding::ChunkKeyEncoding,
+    chunk_shape::{chunk_shape_to_array_shape, ChunkShape},
     codec::CodecChain,
     data_type::DataType,
     dimension_name::DimensionName,
@@ -40,6 +42,7 @@ pub use self::{
 };
 
 use serde::Serialize;
+use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
@@ -53,6 +56,14 @@ pub type ArrayIndices = Vec<u64>;
 
 /// The shape of an array.
 pub type ArrayShape = Vec<u64>;
+
+/// A non zero error.
+///
+/// This is used in cases where a non-zero type cannot be converted to its equivalent integer type (e.g. [`NonZeroU64`](std::num::NonZeroU64) to [`u64`]).
+/// It is used in the [`ChunkShape`] `try_from` methods.
+#[derive(Debug, Error)]
+#[error("value must be non-zero")]
+pub struct NonZeroError;
 
 /// An alias for bytes which may or may not be available.
 ///
@@ -427,7 +438,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Return the shape of the chunk grid (i.e., the number of chunks).
     #[must_use]
-    pub fn chunk_grid_shape(&self) -> Option<Vec<u64>> {
+    pub fn chunk_grid_shape(&self) -> Option<ArrayShape> {
         unsafe { self.chunk_grid().grid_shape_unchecked(self.shape()) }
     }
 
@@ -435,7 +446,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     ///
     /// # Errors
     /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
-    pub fn chunk_shape(&self, chunk_indices: &[u64]) -> Result<Vec<u64>, ArrayError> {
+    pub fn chunk_shape(&self, chunk_indices: &[u64]) -> Result<ChunkShape, ArrayError> {
         self.chunk_grid()
             .chunk_shape(chunk_indices, self.shape())
             .map_err(|_| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?
@@ -491,7 +502,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     pub fn chunk_array_representation(
         &self,
         chunk_indices: &[u64],
-    ) -> Result<ArrayRepresentation, ArrayError> {
+    ) -> Result<ChunkRepresentation, ArrayError> {
         (self.chunk_grid().chunk_shape(chunk_indices, self.shape())?).map_or_else(
             || {
                 Err(ArrayError::InvalidChunkGridIndicesError(
@@ -500,8 +511,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
             },
             |chunk_shape| {
                 Ok(unsafe {
-                    ArrayRepresentation::new_unchecked(
-                        chunk_shape,
+                    ChunkRepresentation::new_unchecked(
+                        chunk_shape.to_vec(),
                         self.data_type().clone(),
                         self.fill_value().clone(),
                     )
@@ -686,7 +697,7 @@ mod tests {
         let array = ArrayBuilder::new(
             vec![8, 8],
             DataType::UInt8,
-            vec![4, 4].into(),
+            vec![4, 4].try_into().unwrap(),
             FillValue::from(0u8),
         )
         .build(store.clone(), array_path)
@@ -708,7 +719,7 @@ mod tests {
         let mut array = ArrayBuilder::new(
             vec![8, 8], // array shape
             DataType::Float32,
-            vec![4, 4].into(),
+            vec![4, 4].try_into().unwrap(),
             FillValue::from(ZARR_NAN_F32),
         )
         .bytes_to_bytes_codecs(vec![
@@ -740,7 +751,7 @@ mod tests {
         let array = ArrayBuilder::new(
             vec![8, 8], // array shape
             DataType::Float32,
-            vec![4, 4].into(), // regular chunk shape
+            vec![4, 4].try_into().unwrap(), // regular chunk shape
             FillValue::from(1f32),
         )
         .bytes_to_bytes_codecs(vec![
@@ -786,7 +797,7 @@ mod tests {
         let array = ArrayBuilder::new(
             vec![100, 4],
             DataType::UInt8,
-            vec![10, 2].into(),
+            vec![10, 2].try_into().unwrap(),
             FillValue::from(0u8),
         )
         .build(store, array_path)

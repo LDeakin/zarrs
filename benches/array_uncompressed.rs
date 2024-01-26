@@ -12,7 +12,7 @@ fn array_write_all(c: &mut Criterion) {
                 let array = zarrs::array::ArrayBuilder::new(
                     vec![size; 3],
                     zarrs::array::DataType::UInt8,
-                    vec![32; 3].into(),
+                    vec![32; 3].try_into().unwrap(),
                     zarrs::array::FillValue::from(0u8),
                 )
                 .build(store.into(), "/")
@@ -36,11 +36,12 @@ fn array_write_all_sharded(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| {
                 let store = zarrs::storage::store::MemoryStore::new();
-                let sharding_codec = Box::new(ShardingCodecBuilder::new(vec![32; 3]).build());
+                let sharding_codec =
+                    Box::new(ShardingCodecBuilder::new(vec![32; 3].try_into().unwrap()).build());
                 let array = zarrs::array::ArrayBuilder::new(
                     vec![size; 3],
                     zarrs::array::DataType::UInt16,
-                    vec![size; 3].into(),
+                    vec![size; 3].try_into().unwrap(),
                     zarrs::array::FillValue::from(0u16),
                 )
                 .array_to_bytes_codec(sharding_codec)
@@ -68,7 +69,7 @@ fn array_read_all(c: &mut Criterion) {
             let array = zarrs::array::ArrayBuilder::new(
                 vec![size; 3],
                 zarrs::array::DataType::UInt16,
-                vec![32; 3].into(),
+                vec![32; 3].try_into().unwrap(),
                 zarrs::array::FillValue::from(0u16),
             )
             .build(store.into(), "/")
@@ -96,11 +97,12 @@ fn array_read_all_sharded(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             // Write the data
             let store = zarrs::storage::store::MemoryStore::new();
-            let sharding_codec = Box::new(ShardingCodecBuilder::new(vec![32; 3]).build());
+            let sharding_codec =
+                Box::new(ShardingCodecBuilder::new(vec![32; 3].try_into().unwrap()).build());
             let array = zarrs::array::ArrayBuilder::new(
                 vec![size; 3],
                 zarrs::array::DataType::UInt8,
-                vec![size; 3].into(),
+                vec![size; 3].try_into().unwrap(),
                 zarrs::array::FillValue::from(1u8),
             )
             .array_to_bytes_codec(sharding_codec)

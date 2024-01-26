@@ -15,6 +15,8 @@ mod sharding_codec_builder;
 mod sharding_configuration;
 mod sharding_partial_decoder;
 
+use std::num::NonZeroU64;
+
 pub use sharding_configuration::{
     ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
 };
@@ -25,46 +27,49 @@ use thiserror::Error;
 
 use crate::array::{
     codec::{ArrayToBytesCodecTraits, CodecError},
-    ArrayRepresentation, ArrayShape, BytesRepresentation, DataType, FillValue,
+    BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
 };
 
 #[derive(Debug, Error)]
 #[error("invalid inner chunk shape {chunk_shape:?}, it must evenly divide {shard_shape:?}")]
 struct ChunksPerShardError {
-    chunk_shape: Vec<u64>,
-    shard_shape: Vec<u64>,
+    chunk_shape: ChunkShape,
+    shard_shape: ChunkShape,
 }
 
 fn calculate_chunks_per_shard(
-    shard_shape: &[u64],
-    chunk_shape: &[u64],
-) -> Result<ArrayShape, ChunksPerShardError> {
+    shard_shape: &[NonZeroU64],
+    chunk_shape: &[NonZeroU64],
+) -> Result<ChunkShape, ChunksPerShardError> {
     use num::Integer;
 
-    std::iter::zip(shard_shape, chunk_shape)
+    Ok(std::iter::zip(shard_shape, chunk_shape)
         .map(|(s, c)| {
-            if s.is_multiple_of(c) {
-                Ok(s / c)
+            let s = s.get();
+            let c = c.get();
+            if s.is_multiple_of(&c) {
+                Ok(unsafe { NonZeroU64::new_unchecked(s / c) })
             } else {
                 Err(ChunksPerShardError {
-                    chunk_shape: chunk_shape.to_vec(),
-                    shard_shape: shard_shape.to_vec(),
+                    chunk_shape: chunk_shape.into(),
+                    shard_shape: shard_shape.into(),
                 })
             }
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?
+        .into())
 }
 
-fn sharding_index_decoded_representation(chunks_per_shard: &[u64]) -> ArrayRepresentation {
+fn sharding_index_decoded_representation(chunks_per_shard: &[NonZeroU64]) -> ChunkRepresentation {
     let mut index_shape = Vec::with_capacity(chunks_per_shard.len() + 1);
     index_shape.extend(chunks_per_shard);
-    index_shape.push(2);
-    ArrayRepresentation::new(index_shape, DataType::UInt64, FillValue::from(u64::MAX)).unwrap()
+    index_shape.push(unsafe { NonZeroU64::new_unchecked(2) });
+    ChunkRepresentation::new(index_shape, DataType::UInt64, FillValue::from(u64::MAX)).unwrap()
 }
 
 fn compute_index_encoded_size(
     index_codecs: &dyn ArrayToBytesCodecTraits,
-    index_array_representation: &ArrayRepresentation,
+    index_array_representation: &ChunkRepresentation,
 ) -> Result<u64, CodecError> {
     let bytes_representation = index_codecs.compute_encoded_size(index_array_representation)?;
     match bytes_representation {
@@ -77,7 +82,7 @@ fn compute_index_encoded_size(
 
 fn decode_shard_index(
     encoded_shard_index: Vec<u8>,
-    index_array_representation: &ArrayRepresentation,
+    index_array_representation: &ChunkRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
     parallel: bool,
 ) -> Result<Vec<u64>, CodecError> {
@@ -93,7 +98,7 @@ fn decode_shard_index(
 #[cfg(feature = "async")]
 async fn async_decode_shard_index(
     encoded_shard_index: Vec<u8>,
-    index_array_representation: &ArrayRepresentation,
+    index_array_representation: &ChunkRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
     parallel: bool,
 ) -> Result<Vec<u64>, CodecError> {
@@ -181,29 +186,33 @@ mod tests {
     "index_location": "start"
 }"#;
 
-    fn codec_sharding_round_trip_impl(json: &str, chunk_shape: Vec<u64>) {
-        let array_representation =
-            ArrayRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(0u16)).unwrap();
-        let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
+    fn codec_sharding_round_trip_impl(json: &str, chunk_shape: ChunkShape) {
+        let chunk_representation = ChunkRepresentation::new(
+            chunk_shape.to_vec(),
+            DataType::UInt16,
+            FillValue::from(0u16),
+        )
+        .unwrap();
+        let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: ShardingCodecConfiguration = serde_json::from_str(json).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &array_representation)
+            .decode(encoded.clone(), &chunk_representation)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
 
         // println!("bytes {bytes:?}");
         let encoded = codec
-            .par_encode(bytes.clone(), &array_representation)
+            .par_encode(bytes.clone(), &chunk_representation)
             .unwrap();
         // println!("encoded {encoded:?}");
         let decoded = codec
-            .par_decode(encoded.clone(), &array_representation)
+            .par_decode(encoded.clone(), &chunk_representation)
             .unwrap();
         // println!("decoded {decoded:?}");
         assert_ne!(encoded, decoded);
@@ -212,7 +221,7 @@ mod tests {
 
     #[test]
     fn codec_sharding_round_trip1() {
-        let chunk_shape = vec![4, 4];
+        let chunk_shape = vec![4, 4].try_into().unwrap();
         codec_sharding_round_trip_impl(JSON_VALID1, chunk_shape);
     }
 
@@ -220,33 +229,37 @@ mod tests {
     #[cfg(feature = "crc32c")]
     #[test]
     fn codec_sharding_round_trip2() {
-        let chunk_shape = vec![2, 4, 4];
+        let chunk_shape = vec![2, 4, 4].try_into().unwrap();
         codec_sharding_round_trip_impl(JSON_VALID2, chunk_shape);
     }
 
     #[test]
     fn codec_sharding_round_trip3() {
-        let chunk_shape = vec![4, 4];
+        let chunk_shape = vec![4, 4].try_into().unwrap();
         codec_sharding_round_trip_impl(JSON_VALID3, chunk_shape);
     }
 
     #[test]
     fn codec_sharding_fill_value() {
-        let chunk_shape = vec![4, 4];
-        let array_representation =
-            ArrayRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(1u16)).unwrap();
-        let bytes = array_representation
+        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+        let chunk_representation = ChunkRepresentation::new(
+            chunk_shape.to_vec(),
+            DataType::UInt16,
+            FillValue::from(1u16),
+        )
+        .unwrap();
+        let bytes = chunk_representation
             .fill_value()
             .as_ne_bytes()
-            .repeat(array_representation.num_elements() as usize);
+            .repeat(chunk_representation.num_elements() as usize);
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID1).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &array_representation).unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &array_representation)
+            .decode(encoded.clone(), &chunk_representation)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
@@ -260,20 +273,22 @@ mod tests {
 
     #[test]
     fn codec_sharding_partial_decode1() {
-        let array_representation =
-            ArrayRepresentation::new(vec![4, 4], DataType::UInt8, FillValue::from(0u8)).unwrap();
-        let elements: Vec<u8> = (0..array_representation.num_elements() as u8).collect();
+        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
+                .unwrap();
+        let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
         let bytes = elements;
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID1).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &array_representation).unwrap();
+        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &array_representation)
+            .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
 
@@ -294,21 +309,25 @@ mod tests {
     fn codec_sharding_partial_decode2() {
         use crate::array::codec::ArrayCodecTraits;
 
-        let array_representation =
-            ArrayRepresentation::new(vec![2, 4, 4], DataType::UInt16, FillValue::from(0u16))
-                .unwrap();
-        let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
+        let chunk_shape: ChunkShape = vec![2, 4, 4].try_into().unwrap();
+        let chunk_representation = ChunkRepresentation::new(
+            chunk_shape.to_vec(),
+            DataType::UInt16,
+            FillValue::from(0u16),
+        )
+        .unwrap();
+        let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &array_representation).unwrap();
+        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..2, 0..2, 0..3])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &array_representation)
+            .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");
@@ -326,20 +345,22 @@ mod tests {
 
     #[test]
     fn codec_sharding_partial_decode3() {
-        let array_representation =
-            ArrayRepresentation::new(vec![4, 4], DataType::UInt8, FillValue::from(0u8)).unwrap();
-        let elements: Vec<u8> = (0..array_representation.num_elements() as u8).collect();
+        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
+                .unwrap();
+        let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
         let bytes = elements;
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID3).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &array_representation).unwrap();
+        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &array_representation)
+            .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
 

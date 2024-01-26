@@ -1,7 +1,8 @@
 use codec::CodecChain;
 
-use crate::array::codec::{
-    self, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesToBytesCodecTraits,
+use crate::array::{
+    codec::{self, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesToBytesCodecTraits},
+    ChunkShape,
 };
 
 use super::{sharding_configuration::ShardingIndexLocation, ShardingCodec};
@@ -14,7 +15,7 @@ use super::{sharding_configuration::ShardingIndexLocation, ShardingCodec};
 /// Use the methods in the `sharding` codec builder to change the configuration away from these defaults, and then build the `sharding` codec with [`build`](ShardingCodecBuilder::build).
 #[derive(Debug)]
 pub struct ShardingCodecBuilder {
-    inner_chunk_shape: Vec<u64>,
+    inner_chunk_shape: ChunkShape,
     index_array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
     index_bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
     array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
@@ -26,7 +27,7 @@ pub struct ShardingCodecBuilder {
 impl ShardingCodecBuilder {
     /// Create a new `sharding` codec builder.
     #[must_use]
-    pub fn new(inner_chunk_shape: Vec<u64>) -> Self {
+    pub fn new(inner_chunk_shape: ChunkShape) -> Self {
         Self {
             inner_chunk_shape,
             index_array_to_bytes_codec: Box::<codec::BytesCodec>::default(),
