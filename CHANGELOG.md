@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2024-01-29
+
 ### Fixed
  - Fixed build with `bitround` or `zfp` features without `async` feature
 
@@ -473,7 +475,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.1
 [0.11.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.0
 [0.10.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.10.0
 [0.9.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.9.0
