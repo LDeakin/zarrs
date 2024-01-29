@@ -26,9 +26,12 @@
 //! - [x] Chunk grids: [regular](crate::array::chunk_grid::RegularChunkGrid), [rectangular](crate::array::chunk_grid::RectangularChunkGrid) ([draft](https://github.com/orgs/zarr-developers/discussions/52)).
 //! - [x] Chunk key encoding: [default](crate::array::chunk_key_encoding::DefaultChunkKeyEncoding), [v2](crate::array::chunk_key_encoding::V2ChunkKeyEncoding).
 //! - [x] Codecs:
-//!   - array to array: [transpose](crate::array::codec::array_to_array::transpose), [bitround](crate::array::codec::array_to_array::bitround) (experimental).
-//!   - array to bytes: [bytes](crate::array::codec::array_to_bytes::bytes), [sharding indexed](crate::array::codec::array_to_bytes::sharding), [zfp](crate::array::codec::array_to_bytes::zfp) (experimental).
-//!   - bytes to bytes: [blosc](crate::array::codec::bytes_to_bytes::blosc), [gzip](crate::array::codec::bytes_to_bytes::gzip), [zstd](crate::array::codec::bytes_to_bytes::zstd) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [crc32c checksum](crate::array::codec::bytes_to_bytes::crc32c).
+//!   - Array to array: [transpose](crate::array::codec::array_to_array::transpose).
+//!     - Experimental: [bitround](crate::array::codec::array_to_array::bitround).
+//!   - Array to bytes: [bytes](crate::array::codec::array_to_bytes::bytes), [sharding indexed](crate::array::codec::array_to_bytes::sharding).
+//!     - Experimental: [zfp](crate::array::codec::array_to_bytes::zfp).
+//!   - Bytes to bytes: [blosc](crate::array::codec::bytes_to_bytes::blosc), [gzip](crate::array::codec::bytes_to_bytes::gzip), [zstd](crate::array::codec::bytes_to_bytes::zstd) [(spec issue)](https://github.com/zarr-developers/zarr-specs/pull/256), [crc32c checksum](crate::array::codec::bytes_to_bytes::crc32c).
+//!     - Experimental: [bz2](crate::array::codec::bytes_to_bytes::bz2).
 //! - [x] Storage transformers: [usage log](crate::storage::storage_transformer::UsageLogStorageTransformer), [performance metrics](crate::storage::storage_transformer::PerformanceMetricsStorageTransformer).
 //!
 //! ## Crate Features
@@ -41,7 +44,7 @@
 //!  - `async`: an experimental asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [Group](group::Group).
 //!    - currently, this API is not as performant as the synchronous API
 //!  - Codecs
-//!    - `bitround`, `zfp`.
+//!    - `bitround`, `zfp`, `bz2`.
 //!  - Stores
 //!    - `object_store`: support for [`object_store`] stores.
 //!    - `opendal`: support for [`opendal`] stores.

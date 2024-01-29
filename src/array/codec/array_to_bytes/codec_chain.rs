@@ -614,6 +614,14 @@ mod tests {
     }
 }"#;
 
+    #[cfg(feature = "bz2")]
+    const JSON_BZ2: &str = r#"{ 
+    "name": "bz2",
+    "configuration": {
+        "level": 5
+    }
+}"#;
+
     const JSON_BYTES: &str = r#"{
     "name": "bytes",
     "configuration": {
@@ -650,6 +658,8 @@ mod tests {
             serde_json::from_str(JSON_GZIP).unwrap(),
             #[cfg(feature = "zstd")]
             serde_json::from_str(JSON_ZSTD).unwrap(),
+            #[cfg(feature = "bz2")]
+            serde_json::from_str(JSON_BZ2).unwrap(),
             #[cfg(feature = "crc32c")]
             serde_json::from_str(JSON_CRC32C).unwrap(),
         ];
@@ -704,6 +714,8 @@ mod tests {
             serde_json::from_str(JSON_GZIP).unwrap(),
             #[cfg(feature = "zstd")]
             serde_json::from_str(JSON_ZSTD).unwrap(),
+            #[cfg(feature = "bz2")]
+            serde_json::from_str(JSON_BZ2).unwrap(),
             #[cfg(feature = "crc32c")]
             serde_json::from_str(JSON_CRC32C).unwrap(),
         ];

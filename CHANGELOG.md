@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Added experimental `bz2` (bzip2) codec behind `bz2` feature
+
 ## [0.11.1] - 2024-01-29
 
 ### Fixed
