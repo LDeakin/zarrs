@@ -84,7 +84,7 @@ impl<'a> AsyncByteIntervalPartialDecoder<'a> {
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> {
     async fn partial_decode_opt(
         &self,

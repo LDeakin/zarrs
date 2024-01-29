@@ -375,7 +375,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTr
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
@@ -461,7 +461,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
@@ -509,7 +509,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
@@ -570,7 +570,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {

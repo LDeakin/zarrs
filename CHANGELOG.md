@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+ - Fixed build with `bitround` or `zfp` features without `async` feature
+
 ## [0.11.0] - 2024-01-26
 
 ### Highlights

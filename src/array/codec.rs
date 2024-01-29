@@ -309,7 +309,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial bytes decoder traits.
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
     /// Partially decode bytes with optional parallelism.
     ///
@@ -424,7 +424,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial array decoder traits.
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     /// Partially decode an array.
     ///
@@ -507,7 +507,7 @@ impl<'a> AsyncStoragePartialDecoder<'a> {
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

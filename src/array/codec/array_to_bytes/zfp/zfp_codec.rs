@@ -7,7 +7,6 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits,
             BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
         },
         BytesRepresentation, ChunkRepresentation, DataType,
@@ -15,6 +14,9 @@ use crate::{
     metadata::Metadata,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{
     zarr_data_type_to_zfp_data_type,
@@ -233,6 +235,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         )?))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,

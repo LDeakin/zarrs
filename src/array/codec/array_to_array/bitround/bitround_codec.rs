@@ -1,13 +1,16 @@
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
-            AsyncArrayPartialDecoderTraits, CodecError, CodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, CodecError,
+            CodecTraits,
         },
         ChunkRepresentation, DataType,
     },
     metadata::Metadata,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 use super::{bitround_partial_decoder, round_bytes, BitroundCodecConfiguration, IDENTIFIER};
 
@@ -98,6 +101,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         ))
     }
 
+    #[cfg(feature = "async")]
     async fn async_partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,

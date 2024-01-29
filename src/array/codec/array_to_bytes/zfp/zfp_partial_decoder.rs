@@ -3,15 +3,15 @@ use zfp_sys::zfp_type;
 use crate::{
     array::{
         chunk_shape_to_array_shape,
-        codec::{
-            ArrayPartialDecoderTraits, AsyncArrayPartialDecoderTraits,
-            AsyncBytesPartialDecoderTraits, BytesPartialDecoderTraits, CodecError,
-        },
+        codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError},
         ChunkRepresentation,
     },
     array_subset::ArraySubset,
     byte_range::extract_byte_ranges,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{zarr_data_type_to_zfp_data_type, zfp_decode, ZfpMode};
 
@@ -92,6 +92,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `zfp` codec.
 pub struct AsyncZfpPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
@@ -100,6 +101,7 @@ pub struct AsyncZfpPartialDecoder<'a> {
     zfp_type: zfp_type,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncZfpPartialDecoder<'a> {
     /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
@@ -125,7 +127,8 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

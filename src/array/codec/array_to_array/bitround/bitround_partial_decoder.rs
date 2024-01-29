@@ -1,10 +1,13 @@
 use crate::{
     array::{
-        codec::{ArrayPartialDecoderTraits, AsyncArrayPartialDecoderTraits, CodecError},
+        codec::{ArrayPartialDecoderTraits, CodecError},
         DataType,
     },
     array_subset::ArraySubset,
 };
+
+#[cfg(feature = "async")]
+use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 use super::{round_bytes, IDENTIFIER};
 
@@ -65,6 +68,7 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
     }
 }
 
+#[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bitround` codec.
 pub struct AsyncBitroundPartialDecoder<'a> {
     input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
@@ -72,6 +76,7 @@ pub struct AsyncBitroundPartialDecoder<'a> {
     keepbits: u32,
 }
 
+#[cfg(feature = "async")]
 impl<'a> AsyncBitroundPartialDecoder<'a> {
     /// Create a new partial decoder for the `bitround` codec.
     pub fn new(
@@ -104,7 +109,8 @@ impl<'a> AsyncBitroundPartialDecoder<'a> {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,

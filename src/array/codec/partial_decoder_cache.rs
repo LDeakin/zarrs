@@ -74,7 +74,7 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
     async fn partial_decode_opt(
         &self,
@@ -165,7 +165,7 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
 }
 
 #[cfg(feature = "async")]
-#[cfg_attr(feature = "async", async_trait::async_trait)]
+#[async_trait::async_trait]
 impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
     async fn partial_decode_opt(
         &self,
