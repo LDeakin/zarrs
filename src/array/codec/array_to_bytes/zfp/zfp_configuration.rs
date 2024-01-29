@@ -7,11 +7,11 @@ use super::ZfpExpertParams;
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
 #[serde(untagged)]
 pub enum ZfpCodecConfiguration {
-    /// Version 1.0.
+    /// Version 1.0 draft.
     V1(ZfpCodecConfigurationV1),
 }
 
-/// Configuration parameters for the `zfp` codec (version 1.0).
+/// Configuration parameters for the `zfp` codec (version 1.0 draft).
 ///
 /// Further information on the meaning of these parameters can be found in the [zfp documentation](https://zfp.readthedocs.io/en/latest/).
 ///

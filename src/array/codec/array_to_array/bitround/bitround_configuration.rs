@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum BitroundCodecConfiguration {
-    /// Version 1.0.
+    /// Version 1.0 draft.
     V1(BitroundCodecConfigurationV1),
 }
 
-/// `bitround` codec configuration parameters (version 1.0).
+/// `bitround` codec configuration parameters (version 1.0 draft).
 ///
 /// ### Example: Keep 10 bits of the mantissa
 /// ```rust
