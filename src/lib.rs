@@ -44,7 +44,7 @@
 //!  - `async`: an experimental asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [Group](group::Group).
 //!    - currently, this API is not as performant as the synchronous API
 //!  - Codecs
-//!    - `bitround`, `zfp`, `bz2`, 'pcodec'.
+//!    - `bitround`, `zfp`, `bz2`, `pcodec`.
 //!  - Stores
 //!    - `object_store`: support for [`object_store`] stores.
 //!    - `opendal`: support for [`opendal`] stores.
