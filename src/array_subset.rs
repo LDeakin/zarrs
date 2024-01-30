@@ -751,6 +751,7 @@ pub struct IncompatibleArrayShapeError(ArrayShape, ArraySubset);
 #[derive(Copy, Clone, Debug, Error)]
 #[error("invalid array subset")]
 pub struct InvalidArraySubsetError;
+// TODO: make this more informating and include (ArraySubset)
 
 /// An incompatible start/end indices error.
 #[derive(Clone, Debug, Error, From)]

@@ -634,16 +634,18 @@ mod tests {
     "name": "crc32c"
 }"#;
 
-    #[test]
-    fn codec_chain_round_trip() {
-        let chunk_shape = vec![
-            NonZeroU64::new(2).unwrap(),
-            NonZeroU64::new(3).unwrap(),
-            NonZeroU64::new(4).unwrap(),
-        ];
-        let chunk_representation =
-            ChunkRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(0u16)).unwrap();
-        let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
+    #[cfg(feature = "pcodec")]
+    const JSON_PCODEC: &str = r#"{ 
+    "name": "pcodec"
+}"#;
+
+    fn codec_chain_round_trip_impl(
+        chunk_representation: ChunkRepresentation,
+        elements: Vec<f32>,
+        json_array_to_bytes: &str,
+        decoded_regions: &[ArraySubset],
+        decoded_partial_chunk_true: Vec<f32>,
+    ) {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configurations: Vec<Metadata> = vec![
@@ -651,7 +653,7 @@ mod tests {
             serde_json::from_str(JSON_TRANSPOSE1).unwrap(),
             #[cfg(feature = "transpose")]
             serde_json::from_str(JSON_TRANSPOSE2).unwrap(),
-            serde_json::from_str(JSON_BYTES).unwrap(),
+            serde_json::from_str(json_array_to_bytes).unwrap(),
             #[cfg(feature = "blosc")]
             serde_json::from_str(JSON_BLOSC).unwrap(),
             #[cfg(feature = "gzip")]
@@ -687,60 +689,71 @@ mod tests {
         }
         assert_eq!(bytes, decoded);
 
-        // println!("{} {}", encoded_chunk.len(), decoded_chunk.len());
-    }
-
-    #[test]
-    fn codec_chain_round_trip_partial() {
-        let chunk_shape = vec![
-            NonZeroU64::new(2).unwrap(),
-            NonZeroU64::new(2).unwrap(),
-            NonZeroU64::new(2).unwrap(),
-        ];
-        let chunk_representation =
-            ChunkRepresentation::new(chunk_shape, DataType::UInt16, FillValue::from(0u16)).unwrap();
-        let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
-        let bytes = crate::array::transmute_to_bytes_vec(elements);
-
-        let codec_configurations: Vec<Metadata> = vec![
-            #[cfg(feature = "transpose")]
-            serde_json::from_str(JSON_TRANSPOSE1).unwrap(),
-            #[cfg(feature = "transpose")]
-            serde_json::from_str(JSON_TRANSPOSE2).unwrap(),
-            serde_json::from_str(JSON_BYTES).unwrap(),
-            #[cfg(feature = "blosc")]
-            serde_json::from_str(JSON_BLOSC).unwrap(),
-            #[cfg(feature = "gzip")]
-            serde_json::from_str(JSON_GZIP).unwrap(),
-            #[cfg(feature = "zstd")]
-            serde_json::from_str(JSON_ZSTD).unwrap(),
-            #[cfg(feature = "bz2")]
-            serde_json::from_str(JSON_BZ2).unwrap(),
-            #[cfg(feature = "crc32c")]
-            serde_json::from_str(JSON_CRC32C).unwrap(),
-        ];
-        println!("{codec_configurations:?}");
-        let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
-
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
-        let decoded_regions = [ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(input_handle, &chunk_representation)
             .unwrap();
         let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
 
-        let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
+        let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u16>())
-            .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
+            .chunks(std::mem::size_of::<f32>())
+            .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");
-        let answer: Vec<u16> = vec![2, 6];
-        assert_eq!(answer, decoded_partial_chunk);
+        assert_eq!(decoded_partial_chunk_true, decoded_partial_chunk);
 
         // println!("{} {}", encoded_chunk.len(), decoded_chunk.len());
+    }
+
+    #[test]
+    fn codec_chain_round_trip_bytes() {
+        let chunk_shape = vec![
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::Float32, FillValue::from(0f32))
+                .unwrap();
+        let elements: Vec<f32> = (0..chunk_representation.num_elements())
+            .map(|i| i as f32)
+            .collect();
+        let decoded_regions = [ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])];
+        let decoded_partial_chunk_true = vec![2.0, 6.0];
+        codec_chain_round_trip_impl(
+            chunk_representation,
+            elements,
+            JSON_BYTES,
+            &decoded_regions,
+            decoded_partial_chunk_true,
+        );
+    }
+
+    #[cfg(feature = "pcodec")]
+    #[test]
+    fn codec_chain_round_trip_pcodec() {
+        let chunk_shape = vec![
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::Float32, FillValue::from(0f32))
+                .unwrap();
+        let elements: Vec<f32> = (0..chunk_representation.num_elements())
+            .map(|i| i as f32)
+            .collect();
+        let decoded_regions = [ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])];
+        let decoded_partial_chunk_true = vec![2.0, 6.0];
+        codec_chain_round_trip_impl(
+            chunk_representation,
+            elements,
+            JSON_PCODEC,
+            &decoded_regions,
+            decoded_partial_chunk_true,
+        );
     }
 }

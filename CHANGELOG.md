@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - Added experimental `bz2` (bzip2) codec behind `bz2` feature
+ - Added experimental `pcodec` codec behind `pcodec` feature
 
 ### Changed
  - docs: clarify that `bitround` and `zfp` codec configurations are draft
