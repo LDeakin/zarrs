@@ -8,5 +8,7 @@ pub mod bz2;
 pub mod crc32c;
 #[cfg(feature = "gzip")]
 pub mod gzip;
+#[cfg(feature = "lzma")]
+pub mod lzma;
 #[cfg(feature = "zstd")]
 pub mod zstd;

@@ -622,6 +622,14 @@ mod tests {
     }
 }"#;
 
+    #[cfg(feature = "lzma")]
+    const JSON_LZMA: &str = r#"{ 
+"name": "lzma",
+"configuration": {
+    "level": 5
+}
+}"#;
+
     const JSON_BYTES: &str = r#"{
     "name": "bytes",
     "configuration": {
@@ -662,6 +670,8 @@ mod tests {
             serde_json::from_str(JSON_ZSTD).unwrap(),
             #[cfg(feature = "bz2")]
             serde_json::from_str(JSON_BZ2).unwrap(),
+            #[cfg(feature = "lzma")]
+            serde_json::from_str(JSON_LZMA).unwrap(),
             #[cfg(feature = "crc32c")]
             serde_json::from_str(JSON_CRC32C).unwrap(),
         ];
