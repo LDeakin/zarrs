@@ -139,12 +139,17 @@ impl Metadata {
         configuration: &TConfiguration,
     ) -> Result<Self, serde_json::Error> {
         let configuration = serde_json::to_value(configuration)?;
-        let serde_json::Value::Object(configuration) = configuration else {
-            return Err(serde::ser::Error::custom(
+        if let serde_json::Value::Object(configuration) = configuration {
+            if configuration.is_empty() {
+                Ok(Self::new(name))
+            } else {
+                Ok(Self::new_with_configuration(name, configuration))
+            }
+        } else {
+            Err(serde::ser::Error::custom(
                 "the configuration cannot be serialized to a JSON struct",
-            ));
-        };
-        Ok(Self::new_with_configuration(name, configuration))
+            ))
+        }
     }
 
     /// Try and convert [`Metadata`] to a serializable configuration.

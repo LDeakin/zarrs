@@ -18,7 +18,7 @@ pub enum BytesCodecConfiguration {
 pub struct BytesCodecConfigurationV1 {
     /// The target endianness. Required if the data type is larger than one byte.
     /// A string equal to either "big" or "little" in JSON.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub endian: Option<Endianness>,
 }
 
@@ -36,40 +36,21 @@ mod tests {
 
     #[test]
     fn codec_bytes_big() {
-        serde_json::from_str::<BytesCodecConfiguration>(
-            r#"{
-            "endian": "big"
-        }"#,
-        )
-        .unwrap();
+        serde_json::from_str::<BytesCodecConfiguration>(r#"{"endian":"big"}"#).unwrap();
     }
 
     #[test]
     fn codec_bytes_little() {
-        serde_json::from_str::<BytesCodecConfiguration>(
-            r#"{
-            "endian": "little"
-        }"#,
-        )
-        .unwrap();
+        serde_json::from_str::<BytesCodecConfiguration>(r#"{"endian":"little"}"#).unwrap();
     }
 
     #[test]
     fn codec_bytes_empty() {
-        serde_json::from_str::<BytesCodecConfiguration>(
-            r#"{
-        }"#,
-        )
-        .unwrap();
+        serde_json::from_str::<BytesCodecConfiguration>(r#"{}"#).unwrap();
     }
 
     #[test]
     fn codec_bytes_invalid() {
-        assert!(serde_json::from_str::<BytesCodecConfiguration>(
-            r#"{
-            "endian": ""
-        }"#
-        )
-        .is_err());
+        assert!(serde_json::from_str::<BytesCodecConfiguration>(r#"{"endian":""}"#).is_err());
     }
 }
