@@ -155,32 +155,43 @@ impl FillValue {
                     && aligned.iter().all(|x| x == &fill_value_128)
             }
             2 => {
-                let fill_value_128 = u128::from_ne_bytes(self.0[..2].repeat(8).try_into().unwrap());
                 let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
-                prefix.chunks_exact(2).all(|x| x == self.0)
-                    && suffix.chunks_exact(2).all(|x| x == self.0)
-                    && aligned.iter().all(|x| x == &fill_value_128)
+                if prefix.is_empty() && suffix.is_empty() {
+                    let fill_value_128 =
+                        u128::from_ne_bytes(self.0[..2].repeat(8).try_into().unwrap());
+                    aligned.iter().all(|x| x == &fill_value_128)
+                } else {
+                    bytes.chunks_exact(2).all(|x| x == self.0)
+                }
             }
             4 => {
-                let fill_value_128 = u128::from_ne_bytes(self.0[..4].repeat(4).try_into().unwrap());
                 let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
-                prefix.chunks_exact(4).all(|x| x == self.0)
-                    && suffix.chunks_exact(4).all(|x| x == self.0)
-                    && aligned.iter().all(|x| x == &fill_value_128)
+                if prefix.is_empty() && suffix.is_empty() {
+                    let fill_value_128 =
+                        u128::from_ne_bytes(self.0[..4].repeat(4).try_into().unwrap());
+                    aligned.iter().all(|x| x == &fill_value_128)
+                } else {
+                    bytes.chunks_exact(4).all(|x| x == self.0)
+                }
             }
             8 => {
-                let fill_value_128 = u128::from_ne_bytes(self.0[..8].repeat(2).try_into().unwrap());
                 let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
-                prefix.chunks_exact(8).all(|x| x == self.0)
-                    && suffix.chunks_exact(8).all(|x| x == self.0)
-                    && aligned.iter().all(|x| x == &fill_value_128)
+                if prefix.is_empty() && suffix.is_empty() {
+                    let fill_value_128 =
+                        u128::from_ne_bytes(self.0[..8].repeat(2).try_into().unwrap());
+                    aligned.iter().all(|x| x == &fill_value_128)
+                } else {
+                    bytes.chunks_exact(8).all(|x| x == self.0)
+                }
             }
             16 => {
-                let fill_value_128 = u128::from_ne_bytes(self.0[..16].try_into().unwrap());
                 let (prefix, aligned, suffix) = unsafe { bytes.align_to::<u128>() };
-                prefix.chunks_exact(16).all(|x| x == self.0)
-                    && suffix.chunks_exact(16).all(|x| x == self.0)
-                    && aligned.iter().all(|x| x == &fill_value_128)
+                if prefix.is_empty() && suffix.is_empty() {
+                    let fill_value_128 = u128::from_ne_bytes(self.0[..16].try_into().unwrap());
+                    aligned.iter().all(|x| x == &fill_value_128)
+                } else {
+                    bytes.chunks_exact(16).all(|x| x == self.0)
+                }
             }
             _ => bytes
                 .chunks_exact(self.0.len())
@@ -242,9 +253,30 @@ mod tests {
     }
 
     #[test]
-    fn fill_value_equals() {
+    fn fill_value_equals_u8() {
+        assert!(FillValue::from(vec![1u8; 32]).equals_all(&vec![1u8; 32 * 5]));
+    }
+
+    #[test]
+    fn fill_value_equals_u16() {
+        assert!(FillValue::from(1u16).equals_all(&transmute_to_bytes_vec(vec![1u16; 5])));
+        assert!(!FillValue::from(1u16).equals_all(&transmute_to_bytes_vec(vec![0u16; 5])));
+    }
+
+    #[test]
+    fn fill_value_equals_u32() {
+        assert!(FillValue::from(1u32).equals_all(&transmute_to_bytes_vec(vec![1u32; 5])));
+        assert!(!FillValue::from(1u32).equals_all(&transmute_to_bytes_vec(vec![0u32; 5])));
+    }
+
+    #[test]
+    fn fill_value_equals_u64() {
         assert!(FillValue::from(1u64).equals_all(&transmute_to_bytes_vec(vec![1u64; 5])));
         assert!(!FillValue::from(1u64).equals_all(&transmute_to_bytes_vec(vec![0u64; 5])));
+    }
+
+    #[test]
+    fn fill_value_equals_complex32() {
         assert!(
             FillValue::from(num::complex::Complex32::new(1.0, 2.0)).equals_all(
                 &transmute_to_bytes_vec(
@@ -254,6 +286,10 @@ mod tests {
                 )
             )
         );
+    }
+
+    #[test]
+    fn fill_value_equals_complex64() {
         assert!(
             FillValue::from(num::complex::Complex64::new(1.0, 2.0)).equals_all(
                 &transmute_to_bytes_vec(
@@ -263,6 +299,5 @@ mod tests {
                 )
             )
         );
-        assert!(FillValue::from(vec![1u8; 32]).equals_all(&vec![1u8; 32 * 5]));
     }
 }
