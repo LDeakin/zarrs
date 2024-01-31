@@ -1,13 +1,9 @@
 use crate::{
     array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
-            CodecTraits,
-        },
+        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
         BytesRepresentation,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -15,30 +11,8 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     crc32c_configuration::Crc32cCodecConfigurationV1, crc32c_partial_decoder,
-    Crc32cCodecConfiguration, CHECKSUM_SIZE,
+    Crc32cCodecConfiguration, CHECKSUM_SIZE, IDENTIFIER,
 };
-
-const IDENTIFIER: &str = "crc32c";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_crc32c, create_codec_crc32c)
-}
-
-fn is_name_crc32c(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_crc32c(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    if metadata.configuration_is_none_or_empty() {
-        let codec = Box::new(Crc32cCodec::new());
-        Ok(Codec::BytesToBytes(codec))
-    } else {
-        Err(PluginCreateError::MetadataInvalid(
-            PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()),
-        ))
-    }
-}
 
 /// A `CRC32C checksum` codec implementation.
 #[derive(Clone, Debug, Default)]

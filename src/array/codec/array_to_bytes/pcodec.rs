@@ -10,7 +10,35 @@ pub use pcodec_codec::PcodecCodec;
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-const IDENTIFIER: &str = "pcodec";
+use crate::{
+    array::codec::{Codec, CodecPlugin},
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+/// The identifier for the `pcodec` codec.
+pub const IDENTIFIER: &str = "pcodec";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_pcodec, create_codec_pcodec)
+}
+
+fn is_name_pcodec(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_pcodec(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration = if metadata.configuration_is_none_or_empty() {
+        PcodecCodecConfiguration::default()
+    } else {
+        metadata
+            .to_configuration()
+            .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?
+    };
+    let codec = Box::new(PcodecCodec::new_with_configuration(&configuration));
+    Ok(Codec::ArrayToBytes(codec))
+}
 
 /// An integer from 0 to 12 controlling the compression level.
 ///
@@ -200,6 +228,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_u32() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -210,6 +239,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_u64() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -220,6 +250,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_i32() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -230,6 +261,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_i64() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -240,6 +272,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_f32() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -250,6 +283,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_f64() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -260,6 +294,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_complex64() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -270,6 +305,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_round_trip_complex128() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),

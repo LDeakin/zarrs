@@ -5,7 +5,6 @@
 //! This codec requires the `zfp` feature, which is disabled by default.
 //!
 //! See [`ZfpCodecConfigurationV1`] for example `JSON` metadata.
-//!
 
 mod zfp_bitstream;
 mod zfp_codec;
@@ -28,9 +27,36 @@ use zfp_sys::{
     zfp_type_zfp_type_int32, zfp_type_zfp_type_int64,
 };
 
-use crate::array::{codec::CodecError, ChunkRepresentation, DataType};
+use crate::{
+    array::{
+        codec::{Codec, CodecError, CodecPlugin},
+        ChunkRepresentation, DataType,
+    },
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
 
 use self::{zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream};
+
+/// The identifier for the `zfp` codec.
+pub const IDENTIFIER: &str = "zfp";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_zfp, create_codec_zfp)
+}
+
+fn is_name_zfp(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_zfp(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: ZfpCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec: Box<ZfpCodec> = Box::new(ZfpCodec::new_with_configuration(&configuration));
+    Ok(Codec::ArrayToBytes(codec))
+}
 
 /// The `zfp` mode.
 #[derive(Clone, Copy, Debug)]
@@ -149,6 +175,7 @@ mod tests {
     }"#;
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_zfp_round_trip1() {
         let chunk_shape = vec![
             NonZeroU64::new(3).unwrap(),
@@ -173,6 +200,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_zfp_partial_decode() {
         let chunk_shape = vec![
             NonZeroU64::new(3).unwrap(),

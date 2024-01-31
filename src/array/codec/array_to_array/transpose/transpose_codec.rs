@@ -5,13 +5,13 @@ use crate::{
     array::{
         chunk_shape_to_array_shape,
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, Codec,
-            CodecError, CodecPlugin, CodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, CodecError,
+            CodecTraits,
         },
         ChunkRepresentation,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
+    plugin::PluginCreateError,
 };
 
 #[cfg(feature = "async")]
@@ -20,27 +20,8 @@ use crate::array::codec::AsyncArrayPartialDecoderTraits;
 use super::{
     calculate_order_decode, calculate_order_encode, permute, transpose_array,
     transpose_configuration::TransposeCodecConfigurationV1, TransposeCodecConfiguration,
-    TransposeOrder,
+    TransposeOrder, IDENTIFIER,
 };
-
-const IDENTIFIER: &str = "transpose";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_transpose, create_codec_transpose)
-}
-
-fn is_name_transpose(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_transpose(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: TransposeCodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(TransposeCodec::new_with_configuration(&configuration)?);
-    Ok(Codec::ArrayToArray(codec))
-}
 
 /// A Transpose codec implementation.
 #[derive(Clone, Debug)]

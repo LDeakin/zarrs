@@ -5,7 +5,7 @@ use crate::{
         chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, Codec, CodecChain, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, CodecChain, CodecError, CodecTraits,
         },
         transmute_to_bytes_vec, unravel_index,
         unsafe_cell_slice::UnsafeCellSlice,
@@ -13,7 +13,7 @@ use crate::{
     },
     array_subset::ArraySubset,
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
+    plugin::PluginCreateError,
 };
 
 #[cfg(feature = "async")]
@@ -22,32 +22,13 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
     sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
-    sharding_partial_decoder, ShardingCodecConfiguration, ShardingCodecConfigurationV1,
+    sharding_partial_decoder, ShardingCodecConfiguration, ShardingCodecConfigurationV1, IDENTIFIER,
 };
 
 #[cfg(feature = "async")]
 use super::async_decode_shard_index;
 
 use rayon::prelude::*;
-
-const IDENTIFIER: &str = "sharding_indexed";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_sharding, create_codec_sharding)
-}
-
-fn is_name_sharding(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_sharding(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: ShardingCodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = ShardingCodec::new_with_configuration(&configuration)?;
-    Ok(Codec::ArrayToBytes(Box::new(codec)))
-}
 
 /// A `sharding` codec implementation.
 #[derive(Clone, Debug)]

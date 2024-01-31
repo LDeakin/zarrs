@@ -27,7 +27,8 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-const IDENTIFIER: &str = "bitround";
+/// The identifier for the `bitround` codec.
+pub const IDENTIFIER: &str = "bitround";
 
 // Register the codec.
 inventory::submit! {
@@ -38,7 +39,7 @@ fn is_name_bitround(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-fn create_codec_bitround(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_bitround(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
     let configuration: BitroundCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;

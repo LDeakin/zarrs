@@ -54,6 +54,19 @@ impl ChunkGrid {
                 return plugin.create(metadata);
             }
         }
+        #[cfg(miri)]
+        {
+            // Inventory does not work in miri, so manually handle all known chunk grids
+            match metadata.name() {
+                regular::IDENTIFIER => {
+                    return regular::create_chunk_grid_regular(metadata);
+                }
+                rectangular::IDENTIFIER => {
+                    return rectangular::create_chunk_grid_rectangular(metadata);
+                }
+                _ => {}
+            }
+        }
         Err(PluginCreateError::Unsupported {
             name: metadata.name().to_string(),
             plugin_type: "chunk grid".to_string(),

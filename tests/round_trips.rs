@@ -26,8 +26,7 @@ fn array_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
     let array: ArrayMetadata = serde_json::from_value(json.clone())?;
     println!("{array:#?}");
 
-    let path = tempfile::TempDir::new()?;
-    let store = FilesystemStore::new(path.path())?;
+    let store = MemoryStore::new();
 
     create_array(&store, &"/array".try_into()?, &array)?;
 
@@ -43,8 +42,7 @@ fn group_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
     let group: GroupMetadata = serde_json::from_value(json.clone())?;
     println!("{group:#?}");
 
-    let path = tempfile::TempDir::new()?;
-    let store = FilesystemStore::new(path.path())?;
+    let store = MemoryStore::new();
 
     create_group(&store, &"/group".try_into()?, &group)?;
 
@@ -64,6 +62,7 @@ fn metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn metadata_round_trip_filesystem() -> Result<(), Box<dyn Error>> {
     let path = tempfile::TempDir::new()?;
     let store = FilesystemStore::new(path.path())?;
@@ -96,6 +95,7 @@ fn filesystem_chunk_round_trip_impl(
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn chunk_round_trip_filesystem_key_encoding_default_slash() -> Result<(), Box<dyn Error>> {
     let path = tempfile::TempDir::new()?;
     let chunk_key_encoding = ChunkKeyEncoding::new(DefaultChunkKeyEncoding::default());
@@ -107,6 +107,7 @@ fn chunk_round_trip_filesystem_key_encoding_default_slash() -> Result<(), Box<dy
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn chunk_round_trip_filesystem_key_encoding_default_dot() -> Result<(), Box<dyn Error>> {
     let path = tempfile::TempDir::new()?;
     let chunk_key_encoding = ChunkKeyEncoding::new(DefaultChunkKeyEncoding::new_dot());
@@ -118,6 +119,7 @@ fn chunk_round_trip_filesystem_key_encoding_default_dot() -> Result<(), Box<dyn 
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn chunk_round_trip_filesystem_key_encoding_v2_dot() -> Result<(), Box<dyn Error>> {
     let path = tempfile::TempDir::new()?;
     let chunk_key_encoding = ChunkKeyEncoding::new(V2ChunkKeyEncoding::default());
@@ -129,6 +131,7 @@ fn chunk_round_trip_filesystem_key_encoding_v2_dot() -> Result<(), Box<dyn Error
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn chunk_round_trip_filesystem_key_encoding_v2_slash() -> Result<(), Box<dyn Error>> {
     let path = tempfile::TempDir::new()?;
     let chunk_key_encoding = ChunkKeyEncoding::new(V2ChunkKeyEncoding::new_slash());

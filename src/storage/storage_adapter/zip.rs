@@ -307,6 +307,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn zip_root() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let mut path = path.path().to_path_buf();
@@ -376,6 +377,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn zip_path() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let mut path = path.path().to_path_buf();

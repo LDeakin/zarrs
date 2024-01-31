@@ -236,6 +236,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let mut builder = opendal::services::Fs::default();

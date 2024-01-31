@@ -13,6 +13,32 @@ pub use zstd_configuration::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
 
+use crate::{
+    array::codec::{Codec, CodecPlugin},
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+/// The identifier for the `zstd` codec.
+pub const IDENTIFIER: &str = "zstd";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_zstd, create_codec_zstd)
+}
+
+fn is_name_zstd(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_zstd(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: ZstdCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = Box::new(ZstdCodec::new_with_configuration(&configuration));
+    Ok(Codec::BytesToBytes(codec))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -28,6 +54,7 @@ mod tests {
 }"#;
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_zstd_round_trip1() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -46,6 +73,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_zstd_partial_decode() {
         let elements: Vec<u16> = (0..8).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);

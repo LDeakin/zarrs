@@ -8,6 +8,34 @@ use derive_more::From;
 use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
 
+use crate::{
+    array::codec::{Codec, CodecPlugin},
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+use self::{bz2_codec::Bz2Codec, bz2_configuration::Bz2CodecConfiguration};
+
+/// The identifier for the `bz2` codec.
+pub const IDENTIFIER: &str = "bz2";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_bz2, create_codec_bz2)
+}
+
+fn is_name_bz2(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_bz2(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: Bz2CodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = Box::new(Bz2Codec::new_with_configuration(&configuration));
+    Ok(Codec::BytesToBytes(codec))
+}
+
 #[derive(Debug, Error, From)]
 #[error("{0}")]
 struct Bz2Error(String);
@@ -103,6 +131,7 @@ mod tests {
 }"#;
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_bz2_round_trip1() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -117,6 +146,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_bz2_partial_decode() {
         let array_representation =
             ArrayRepresentation::new(vec![2, 2, 2], DataType::UInt16, FillValue::from(0u16))

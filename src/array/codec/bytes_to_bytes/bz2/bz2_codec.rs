@@ -2,14 +2,10 @@ use std::io::Read;
 
 use crate::{
     array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
-            CodecTraits,
-        },
+        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
         BytesRepresentation,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -17,27 +13,8 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     bz2_configuration::{Bz2CodecConfiguration, Bz2CodecConfigurationV1},
-    bz2_partial_decoder, Bz2CompressionLevel,
+    bz2_partial_decoder, Bz2CompressionLevel, IDENTIFIER,
 };
-
-const IDENTIFIER: &str = "bz2";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_bz2, create_codec_bz2)
-}
-
-fn is_name_bz2(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_bz2(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: Bz2CodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(Bz2Codec::new_with_configuration(&configuration));
-    Ok(Codec::BytesToBytes(codec))
-}
 
 /// A `bz2` codec implementation.
 #[derive(Clone, Debug)]

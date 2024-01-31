@@ -824,12 +824,14 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_subset_locking_default() {
         array_subset_locking(Arc::new(DefaultStoreLocks::default()), true);
     }
 
     // // Due to the nature of this test, it can fail sometimes. It was used for development but is now disabled.
     // #[test]
+    // #[cfg_attr(miri, ignore)]
     // fn array_subset_locking_disabled() {
     //     array_subset_locking(
     //         Arc::new(crate::storage::store_lock::DisabledStoreLocks::default()),

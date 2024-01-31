@@ -4,12 +4,11 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecTraits,
         },
         BytesRepresentation, ChunkRepresentation,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -17,27 +16,8 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{
     bytes_configuration::BytesCodecConfigurationV1, bytes_partial_decoder, reverse_endianness,
-    BytesCodecConfiguration, Endianness, NATIVE_ENDIAN,
+    BytesCodecConfiguration, Endianness, IDENTIFIER, NATIVE_ENDIAN,
 };
-
-const IDENTIFIER: &str = "bytes";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_bytes, create_codec_bytes)
-}
-
-fn is_name_bytes(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_bytes(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: BytesCodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(BytesCodec::new_with_configuration(&configuration));
-    Ok(Codec::ArrayToBytes(codec))
-}
 
 /// A `bytes` codec implementation.
 #[derive(Debug, Clone)]

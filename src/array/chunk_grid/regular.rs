@@ -15,7 +15,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{ChunkGrid, ChunkGridTraits};
 
-const IDENTIFIER: &str = "regular";
+/// The identifier for the `regular` chunk grid.
+pub const IDENTIFIER: &str = "regular";
 
 // Register the chunk grid.
 inventory::submit! {
@@ -26,7 +27,9 @@ fn is_name_regular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
+pub(crate) fn create_chunk_grid_regular(
+    metadata: &Metadata,
+) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;

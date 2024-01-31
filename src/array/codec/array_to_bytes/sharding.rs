@@ -25,10 +25,34 @@ pub use sharding_codec::ShardingCodec;
 pub use sharding_codec_builder::ShardingCodecBuilder;
 use thiserror::Error;
 
-use crate::array::{
-    codec::{ArrayToBytesCodecTraits, CodecError},
-    BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
+use crate::{
+    array::{
+        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecPlugin},
+        BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
+    },
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
+
+/// The identifier for the `sharding_indexed` codec.
+pub const IDENTIFIER: &str = "sharding_indexed";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_sharding, create_codec_sharding)
+}
+
+fn is_name_sharding(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_sharding(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: ShardingCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = ShardingCodec::new_with_configuration(&configuration)?;
+    Ok(Codec::ArrayToBytes(Box::new(codec)))
+}
 
 #[derive(Debug, Error)]
 #[error("invalid inner chunk shape {chunk_shape:?}, it must evenly divide {shard_shape:?}")]
@@ -219,26 +243,33 @@ mod tests {
         assert_eq!(bytes, decoded);
     }
 
+    // FIXME: Investigate miri error for this test
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip1() {
         let chunk_shape = vec![4, 4].try_into().unwrap();
         codec_sharding_round_trip_impl(JSON_VALID1, chunk_shape);
     }
 
+    // FIXME: Investigate miri error for this test
     #[cfg(feature = "gzip")]
     #[cfg(feature = "crc32c")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip2() {
         let chunk_shape = vec![2, 4, 4].try_into().unwrap();
         codec_sharding_round_trip_impl(JSON_VALID2, chunk_shape);
     }
 
+    // FIXME: Investigate miri error for this test
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip3() {
         let chunk_shape = vec![4, 4].try_into().unwrap();
         codec_sharding_round_trip_impl(JSON_VALID3, chunk_shape);
     }
 
+    // TODO: This test non deterministically fails in miri
     #[test]
     fn codec_sharding_fill_value() {
         let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();

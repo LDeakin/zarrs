@@ -12,7 +12,8 @@ use crate::{
 
 use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits};
 
-const IDENTIFIER: &str = "default";
+/// The identifier for the `default` chunk key encoding.
+pub const IDENTIFIER: &str = "default";
 
 // Register the chunk key encoding.
 inventory::submit! {
@@ -23,7 +24,7 @@ fn is_name_default(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-fn create_chunk_key_encoding_default(
+pub(crate) fn create_chunk_key_encoding_default(
     metadata: &Metadata,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: DefaultChunkKeyEncodingConfiguration =

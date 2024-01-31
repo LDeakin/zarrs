@@ -46,3 +46,11 @@ Generate a coverage file for [Coverage Gutters](https://marketplace.visualstudio
 ```bash
 cargo +nightly llvm-cov --doctests --lcov --output-path lcov.info
 ```
+
+## [Miri](https://github.com/rust-lang/miri)
+Tests which call foreign functions or access the filesystem are disabled.
+The [inventory](https://crates.io/crates/inventory) crate does not work in miri, so there are workarounds in place for codecs, chunk key encodings, and chunk grids.
+```bash
+# FIXME: Why is `-Zmiri-ignore-leaks` needed?
+MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-permissive-provenance -Zmiri-ignore-leaks" cargo +nightly miri test --all-features
+```

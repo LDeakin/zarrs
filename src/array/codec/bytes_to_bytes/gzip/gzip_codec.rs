@@ -4,14 +4,10 @@ use flate2::bufread::{GzDecoder, GzEncoder};
 
 use crate::{
     array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
-            CodecTraits,
-        },
+        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
         BytesRepresentation,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -20,27 +16,8 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{
     gzip_compression_level::GzipCompressionLevelError,
     gzip_configuration::GzipCodecConfigurationV1, gzip_partial_decoder, GzipCodecConfiguration,
-    GzipCompressionLevel,
+    GzipCompressionLevel, IDENTIFIER,
 };
-
-const IDENTIFIER: &str = "gzip";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_gzip, create_codec_gzip)
-}
-
-fn is_name_gzip(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_gzip(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: GzipCodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(GzipCodec::new_with_configuration(&configuration));
-    Ok(Codec::BytesToBytes(codec))
-}
 
 /// A `gzip` codec implementation.
 #[derive(Clone, Debug)]

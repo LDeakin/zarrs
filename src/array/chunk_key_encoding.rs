@@ -42,6 +42,19 @@ impl ChunkKeyEncoding {
                 return plugin.create(metadata);
             }
         }
+        #[cfg(miri)]
+        {
+            // Inventory does not work in miri, so manually handle all known chunk key encodings
+            match metadata.name() {
+                default::IDENTIFIER => {
+                    return default::create_chunk_key_encoding_default(metadata);
+                }
+                v2::IDENTIFIER => {
+                    return v2::create_chunk_key_encoding_v2(metadata);
+                }
+                _ => {}
+            }
+        }
         Err(PluginCreateError::Unsupported {
             name: metadata.name().to_string(),
             plugin_type: "chunk key encoding".to_string(),

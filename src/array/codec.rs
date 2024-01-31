@@ -105,6 +105,56 @@ impl Codec {
                 return plugin.create(metadata);
             }
         }
+        #[cfg(miri)]
+        {
+            // Inventory does not work in miri, so manually handle all known codecs
+            match metadata.name() {
+                #[cfg(feature = "transpose")]
+                array_to_array::transpose::IDENTIFIER => {
+                    return array_to_array::transpose::create_codec_transpose(metadata);
+                }
+                #[cfg(feature = "bitround")]
+                array_to_array::bitround::IDENTIFIER => {
+                    return array_to_array::bitround::create_codec_bitround(metadata);
+                }
+                array_to_bytes::bytes::IDENTIFIER => {
+                    return array_to_bytes::bytes::create_codec_bytes(metadata);
+                }
+                #[cfg(feature = "pcodec")]
+                array_to_bytes::pcodec::IDENTIFIER => {
+                    return array_to_bytes::pcodec::create_codec_pcodec(metadata);
+                }
+                #[cfg(feature = "sharding")]
+                array_to_bytes::sharding::IDENTIFIER => {
+                    return array_to_bytes::sharding::create_codec_sharding(metadata);
+                }
+                #[cfg(feature = "zfp")]
+                array_to_bytes::zfp::IDENTIFIER => {
+                    return array_to_bytes::zfp::create_codec_zfp(metadata);
+                }
+                #[cfg(feature = "blosc")]
+                bytes_to_bytes::blosc::IDENTIFIER => {
+                    return bytes_to_bytes::blosc::create_codec_blosc(metadata);
+                }
+                #[cfg(feature = "bz2")]
+                bytes_to_bytes::bz2::IDENTIFIER => {
+                    return bytes_to_bytes::bz2::create_codec_bz2(metadata);
+                }
+                #[cfg(feature = "crc32c")]
+                bytes_to_bytes::crc32c::IDENTIFIER => {
+                    return bytes_to_bytes::crc32c::create_codec_crc32c(metadata);
+                }
+                #[cfg(feature = "gzip")]
+                bytes_to_bytes::gzip::IDENTIFIER => {
+                    return bytes_to_bytes::gzip::create_codec_gzip(metadata);
+                }
+                #[cfg(feature = "zstd")]
+                bytes_to_bytes::zstd::IDENTIFIER => {
+                    return bytes_to_bytes::zstd::create_codec_zstd(metadata);
+                }
+                _ => {}
+            }
+        }
         Err(PluginCreateError::Unsupported {
             name: metadata.name().to_string(),
             plugin_type: "codec".to_string(),

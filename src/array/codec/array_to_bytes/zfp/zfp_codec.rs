@@ -7,12 +7,11 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecTraits,
         },
         BytesRepresentation, ChunkRepresentation, DataType,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -28,27 +27,8 @@ use super::{
     zfp_field::ZfpField,
     zfp_partial_decoder,
     zfp_stream::ZfpStream,
-    ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertParams, ZfpMode,
+    ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertParams, ZfpMode, IDENTIFIER,
 };
-
-const IDENTIFIER: &str = "zfp";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zfp, create_codec_zfp)
-}
-
-fn is_name_zfp(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_zfp(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: ZfpCodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec: Box<ZfpCodec> = Box::new(ZfpCodec::new_with_configuration(&configuration));
-    Ok(Codec::ArrayToBytes(codec))
-}
 
 /// A `zfp` codec implementation.
 #[derive(Clone, Copy, Debug)]

@@ -13,6 +13,32 @@ pub use gzip_codec::GzipCodec;
 pub use gzip_compression_level::{GzipCompressionLevel, GzipCompressionLevelError};
 pub use gzip_configuration::{GzipCodecConfiguration, GzipCodecConfigurationV1};
 
+use crate::{
+    array::codec::{Codec, CodecPlugin},
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+/// The identifier for the `gzip` codec.
+pub const IDENTIFIER: &str = "gzip";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_gzip, create_codec_gzip)
+}
+
+fn is_name_gzip(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_gzip(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: GzipCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = Box::new(GzipCodec::new_with_configuration(&configuration));
+    Ok(Codec::BytesToBytes(codec))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{

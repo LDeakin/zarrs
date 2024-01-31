@@ -273,6 +273,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let store = AsyncObjectStore::new(object_store::local::LocalFileSystem::new_with_prefix(

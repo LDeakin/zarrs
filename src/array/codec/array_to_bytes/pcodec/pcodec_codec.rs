@@ -6,13 +6,12 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, Codec, CodecError, CodecPlugin, CodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecTraits,
         },
         transmute_from_bytes_vec, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
         DataType,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 #[cfg(feature = "async")]
@@ -22,27 +21,6 @@ use super::{
     pcodec_partial_decoder, PcodecCodecConfiguration, PcodecCodecConfigurationV1,
     PcodecCompressionLevel, PcodecDeltaEncodingOrder, IDENTIFIER,
 };
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_pcodec, create_codec_pcodec)
-}
-
-fn is_name_pcodec(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_pcodec(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration = if metadata.configuration_is_none_or_empty() {
-        PcodecCodecConfiguration::default()
-    } else {
-        metadata
-            .to_configuration()
-            .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?
-    };
-    let codec = Box::new(PcodecCodec::new_with_configuration(&configuration));
-    Ok(Codec::ArrayToBytes(codec))
-}
 
 /// A `pcodec` codec implementation.
 #[derive(Debug, Clone)]

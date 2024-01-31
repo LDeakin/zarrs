@@ -34,6 +34,32 @@ use derive_more::From;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::{
+    array::codec::{Codec, CodecPlugin},
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+/// The identifier for the `blosc` codec.
+pub const IDENTIFIER: &str = "blosc";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_blosc, create_codec_blosc)
+}
+
+fn is_name_blosc(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_blosc(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: BloscCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = Box::new(BloscCodec::new_with_configuration(&configuration)?);
+    Ok(Codec::BytesToBytes(codec))
+}
+
 #[derive(Debug, Error, From)]
 #[error("{0}")]
 struct BloscError(String);
@@ -307,6 +333,7 @@ mod tests {
 }"#;
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_blosc_round_trip1() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -322,6 +349,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_blosc_round_trip2() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -337,6 +365,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_blosc_partial_decode() {
         let array_representation =
             ArrayRepresentation::new(vec![2, 2, 2], DataType::UInt16, FillValue::from(0u16))

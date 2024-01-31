@@ -11,6 +11,35 @@ mod crc32c_partial_decoder;
 pub use crc32c_codec::Crc32cCodec;
 pub use crc32c_configuration::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1};
 
+use crate::{
+    array::codec::{Codec, CodecPlugin},
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+/// The identifier for the `crc32c` codec.
+pub const IDENTIFIER: &str = "crc32c";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_crc32c, create_codec_crc32c)
+}
+
+fn is_name_crc32c(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_crc32c(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    if metadata.configuration_is_none_or_empty() {
+        let codec = Box::new(Crc32cCodec::new());
+        Ok(Codec::BytesToBytes(codec))
+    } else {
+        Err(PluginCreateError::MetadataInvalid(
+            PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()),
+        ))
+    }
+}
+
 const CHECKSUM_SIZE: usize = core::mem::size_of::<u32>();
 
 #[cfg(test)]

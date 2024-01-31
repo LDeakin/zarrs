@@ -210,6 +210,7 @@ mod tests {
     const ARRAY_PATH_REF: &str = "/a/baz";
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn http_store_size() {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let len = store
@@ -219,6 +220,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn http_store_get() {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let metadata = store
@@ -230,6 +232,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn http_store_array() {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let array = Array::new(store.into(), ARRAY_PATH_REF).unwrap();
@@ -238,6 +241,7 @@ mod tests {
 
     #[cfg(feature = "gzip")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn http_store_array_get() {
         const HTTP_TEST_PATH: &str =
             "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/array_write_read.zarr";
@@ -267,6 +271,7 @@ mod tests {
 
     #[cfg(all(feature = "sharding", feature = "gzip", feature = "crc32c"))]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn http_store_sharded_array_get() {
         const HTTP_TEST_PATH_SHARDED: &str =
             "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/sharded_array_write_read.zarr";

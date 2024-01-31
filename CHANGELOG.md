@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Added support for [miri](https://github.com/rust-lang/miri) testing and accompanying notes in `BUILD.md`
+
+### Changed
+ - Make `IDENTIFIER` public for codecs, chunk key encodings, and chunk grids
+
 ### Fixed
  - Fix formatting of `pcodec` feature in `lib.rs` docs
  - Remove `println!` in `PcodecCodec`

@@ -14,7 +14,34 @@ pub use bytes_codec::BytesCodec;
 
 use derive_more::Display;
 
-use crate::array::DataType;
+use crate::{
+    array::{
+        codec::{Codec, CodecPlugin},
+        DataType,
+    },
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+/// The identifier for the `bytes` codec.
+pub const IDENTIFIER: &str = "bytes";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_bytes, create_codec_bytes)
+}
+
+fn is_name_bytes(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_bytes(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: BytesCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = Box::new(BytesCodec::new_with_configuration(&configuration));
+    Ok(Codec::ArrayToBytes(codec))
+}
 
 /// The endianness of each element in an array, either `big` or `little`.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]

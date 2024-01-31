@@ -12,7 +12,8 @@ use crate::{
 
 use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator};
 
-const IDENTIFIER: &str = "v2";
+/// The identifier for the `v2` chunk key encoding.
+pub const IDENTIFIER: &str = "v2";
 
 // Register the chunk key encoding.
 inventory::submit! {
@@ -23,7 +24,7 @@ fn is_name_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-fn create_chunk_key_encoding_v2(
+pub(crate) fn create_chunk_key_encoding_v2(
     metadata: &Metadata,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: V2ChunkKeyEncodingConfiguration =

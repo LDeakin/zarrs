@@ -4,14 +4,11 @@ use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
 
 use crate::{
     array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecPlugin,
-            CodecTraits,
-        },
+        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
         BytesRepresentation,
     },
     metadata::Metadata,
-    plugin::{PluginCreateError, PluginMetadataInvalidError},
+    plugin::PluginCreateError,
 };
 
 #[cfg(feature = "async")]
@@ -20,27 +17,8 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{
     blosc_compress_bytes, blosc_decompress_bytes, blosc_partial_decoder, blosc_validate,
     BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
-    BloscError, BloscShuffleMode,
+    BloscError, BloscShuffleMode, IDENTIFIER,
 };
-
-const IDENTIFIER: &str = "blosc";
-
-// Register the codec.
-inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_blosc, create_codec_blosc)
-}
-
-fn is_name_blosc(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-}
-
-fn create_codec_blosc(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
-    let configuration: BloscCodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(BloscCodec::new_with_configuration(&configuration)?);
-    Ok(Codec::BytesToBytes(codec))
-}
 
 /// A `blosc` codec implementation.
 #[derive(Clone, Debug)]

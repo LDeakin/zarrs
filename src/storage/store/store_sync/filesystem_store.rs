@@ -414,6 +414,7 @@ mod tests {
     use std::error::Error;
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?.sorted();

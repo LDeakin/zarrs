@@ -13,6 +13,32 @@ pub use transpose_configuration::{
     TransposeCodecConfiguration, TransposeCodecConfigurationV1, TransposeOrder,
 };
 
+use crate::{
+    array::codec::{Codec, CodecPlugin},
+    metadata::Metadata,
+    plugin::{PluginCreateError, PluginMetadataInvalidError},
+};
+
+/// The identifier for the `transpose` codec.
+pub const IDENTIFIER: &str = "transpose";
+
+// Register the codec.
+inventory::submit! {
+    CodecPlugin::new(IDENTIFIER, is_name_transpose, create_codec_transpose)
+}
+
+fn is_name_transpose(name: &str) -> bool {
+    name.eq(IDENTIFIER)
+}
+
+pub(crate) fn create_codec_transpose(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+    let configuration: TransposeCodecConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = Box::new(TransposeCodec::new_with_configuration(&configuration)?);
+    Ok(Codec::ArrayToArray(codec))
+}
+
 fn to_vec_unique(v: &[usize]) -> Vec<usize> {
     let mut v = v.to_vec();
     v.sort_unstable();

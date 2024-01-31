@@ -709,6 +709,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_chain_round_trip_bytes() {
         let chunk_shape = vec![
             NonZeroU64::new(2).unwrap(),
@@ -734,6 +735,7 @@ mod tests {
 
     #[cfg(feature = "pcodec")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_chain_round_trip_pcodec() {
         let chunk_shape = vec![
             NonZeroU64::new(2).unwrap(),
