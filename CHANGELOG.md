@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2024-01-31
+
 ### Added
  - Added support for [miri](https://github.com/rust-lang/miri) testing and accompanying notes in `BUILD.md`
 
@@ -499,7 +501,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.2...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.3...HEAD
+[0.11.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.3
 [0.11.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.2
 [0.11.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.1
 [0.11.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.0
