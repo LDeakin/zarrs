@@ -128,8 +128,6 @@ impl ArrayCodecTraits for PcodecCodec {
             };
         }
 
-        println!("{:?}", self.chunk_config);
-
         match data_type {
             DataType::UInt32 => {
                 pcodec_encode!(u32)
