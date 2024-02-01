@@ -1,4 +1,9 @@
-# zarrs &emsp; [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml) [![Latest Version](https://img.shields.io/crates/v/zarrs.svg)](https://crates.io/crates/zarrs)
+# zarrs
+
+[![Latest Version](https://img.shields.io/crates/v/zarrs.svg)](https://crates.io/crates/zarrs)
+[![zarrs documentation](https://docs.rs/zarrs/badge.svg)](https://docs.rs/zarrs)
+![msrv](https://img.shields.io/crates/msrv/zarrs)
+[![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
 
 A rust library for the [Zarr V3](https://zarr.dev) storage format for multidimensional arrays and metadata.
 
