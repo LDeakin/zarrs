@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.5] - 2024-02-05
+
 ### Fixed
  - **Major bug** Fixed the `crc32c` codec so it uses `CRC32C` rather than `CRC32`
    - All arrays written prior to this release that use the `crc32c` codec are not correct
@@ -515,7 +517,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.4...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.5...HEAD
+[0.11.5]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.5
 [0.11.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.4
 [0.11.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.3
 [0.11.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.2
