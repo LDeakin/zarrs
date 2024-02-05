@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.4] - 2024-01-05
+
 ### Added
  - Add `codecov` support to CI
 
@@ -508,7 +510,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.3...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.4...HEAD
+[0.11.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.4
 [0.11.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.3
 [0.11.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.2
 [0.11.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.1
