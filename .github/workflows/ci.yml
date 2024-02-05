@@ -50,3 +50,12 @@ jobs:
       - run: rustup component add clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-features -- -D warnings
+  codecov:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+            CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+            fail_ci_if_error: false

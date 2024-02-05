@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `codecov` support to CI
+
 ## [0.11.3] - 2024-01-31
 
 ### Added
