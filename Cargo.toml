@@ -1,6 +1,6 @@
 [package]
 name = "zarrs"
-version = "0.11.4"
+version = "0.11.5"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.71"
@@ -17,7 +17,7 @@ default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "ndarray"
 bitround = [] # Enable the experimental bitround codec
 blosc = ["dep:blosc-sys"] # Enable the blosc codec
 bz2 = ["dep:bzip2"] # Enable the experimental bz2 codec
-crc32c = ["dep:crc32fast"] # Enable the crc32c checksum codec
+crc32c = ["dep:crc32c"] # Enable the crc32c checksum codec
 gzip = ["dep:flate2"] # Enable the gzip codec
 pcodec = ["dep:pco"] # Enable the experimental pcodec codec
 sharding = [] # Enable the sharding codec
@@ -46,7 +46,7 @@ blosc-sys = { version = "0.3.0", package = "blosc-src", features = ["lz4", "zlib
 bytemuck = { version = "1.14.0", features = ["extern_crate_alloc"] }
 bytes = "1.5.0"
 bzip2 = { version = "0.4.4", optional = true, features = ["static"] }
-crc32fast = { version = "1.3", optional = true }
+crc32c = { version = "0.6.4", optional = true }
 derive_more = "0.99"
 dyn-clone = "1"
 flate2 = { version = "1", optional = true }

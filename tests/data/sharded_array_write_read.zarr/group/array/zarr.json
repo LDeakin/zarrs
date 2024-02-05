@@ -50,15 +50,19 @@
             "configuration": {
               "endian": "little"
             }
-          },
-          {
-            "name": "crc32c",
-            "configuration": {}
           }
-        ]
+        ],
+        "index_location": "end"
       }
     }
   ],
+  "attributes": {
+    "_zarrs": {
+      "description": "This array was created with zarrs",
+      "repository": "https://github.com/LDeakin/zarrs",
+      "version": "0.11.4"
+    }
+  },
   "dimension_names": [
     "y",
     "x"

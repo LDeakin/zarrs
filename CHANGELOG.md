@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+ - **Major bug** Fixed the `crc32c` codec so it uses `CRC32C` rather than `CRC32`
+   - All arrays written prior to this release that use the `crc32c` codec are not correct
  - Fixed the `crc32c` codec reserving more memory than necessary
 
 ## [0.11.4] - 2024-02-05

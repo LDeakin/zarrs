@@ -54,7 +54,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         mut decoded_value: Vec<u8>,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
-        let checksum = crc32fast::hash(&decoded_value).to_le_bytes();
+        let checksum = crc32c::crc32c(&decoded_value).to_le_bytes();
         decoded_value.reserve_exact(checksum.len());
         decoded_value.extend(&checksum);
         Ok(decoded_value)
@@ -68,7 +68,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
     ) -> Result<Vec<u8>, CodecError> {
         if encoded_value.len() >= CHECKSUM_SIZE {
             let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
-            let checksum = crc32fast::hash(decoded_value).to_le_bytes();
+            let checksum = crc32c::crc32c(decoded_value).to_le_bytes();
             if checksum == encoded_value[encoded_value.len() - CHECKSUM_SIZE..] {
                 encoded_value.resize_with(encoded_value.len() - CHECKSUM_SIZE, Default::default);
                 Ok(encoded_value)

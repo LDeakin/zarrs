@@ -88,8 +88,7 @@ mod tests {
             .try_into()
             .unwrap();
         println!("checksum {checksum:?}");
-        assert_eq!(checksum, &[74, 207, 235, 48]);
-        // println!("checksum {:?}", checksum);
+        assert_eq!(checksum, &[20, 133, 9, 65]);
     }
 
     #[test]
