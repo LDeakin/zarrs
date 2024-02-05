@@ -68,10 +68,16 @@ impl core::fmt::Display for Metadata {
 impl serde::Serialize for Metadata {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         if let Some(configuration) = &self.configuration {
-            let mut s = s.serialize_map(Some(2))?;
-            s.serialize_entry("name", &self.name)?;
-            s.serialize_entry("configuration", configuration)?;
-            s.end()
+            if configuration.is_empty() {
+                let mut s = s.serialize_map(Some(1))?;
+                s.serialize_entry("name", &self.name)?;
+                s.end()
+            } else {
+                let mut s = s.serialize_map(Some(2))?;
+                s.serialize_entry("name", &self.name)?;
+                s.serialize_entry("configuration", configuration)?;
+                s.end()
+            }
         } else {
             s.serialize_str(self.name.as_str())
         }
@@ -140,11 +146,7 @@ impl Metadata {
     ) -> Result<Self, serde_json::Error> {
         let configuration = serde_json::to_value(configuration)?;
         if let serde_json::Value::Object(configuration) = configuration {
-            if configuration.is_empty() {
-                Ok(Self::new(name))
-            } else {
-                Ok(Self::new_with_configuration(name, configuration))
-            }
+            Ok(Self::new_with_configuration(name, configuration))
         } else {
             Err(serde::ser::Error::custom(
                 "the configuration cannot be serialized to a JSON struct",

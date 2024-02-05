@@ -45,13 +45,27 @@ const CHECKSUM_SIZE: usize = core::mem::size_of::<u32>();
 #[cfg(test)]
 mod tests {
     use crate::{
-        array::{codec::BytesToBytesCodecTraits, BytesRepresentation},
+        array::{
+            codec::{BytesToBytesCodecTraits, CodecTraits},
+            BytesRepresentation,
+        },
         byte_range::ByteRange,
     };
 
     use super::*;
 
     const JSON1: &str = r#"{}"#;
+
+    #[test]
+    fn codec_crc32c_configuration_none() {
+        let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
+        let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
+        let metadata = codec.create_metadata().unwrap();
+        assert_eq!(
+            serde_json::to_string(&metadata).unwrap(),
+            r#"{"name":"crc32c"}"#
+        );
+    }
 
     #[test]
     fn codec_crc32c() {

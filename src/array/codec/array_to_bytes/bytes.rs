@@ -156,7 +156,10 @@ mod tests {
         let codec_configuration: BytesCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
         let codec = BytesCodec::new_with_configuration(&codec_configuration);
         let metadata = codec.create_metadata().unwrap();
-        assert_eq!(serde_json::to_string(&metadata).unwrap(), r#""bytes""#);
+        assert_eq!(
+            serde_json::to_string(&metadata).unwrap(),
+            r#"{"name":"bytes"}"#
+        );
     }
 
     fn codec_bytes_round_trip_impl(

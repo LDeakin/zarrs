@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add `codecov` support to CI
 
+### Fixed
+  - Fixed a regression introduced in v0.11.2 ([89fc63f](https://github.com/LDeakin/zarrs/commit/89fc63fa318cfd780e85fec6f9506ca65336a2c3)) where codecs with an empty configuration would serialise as a string rather than a struct with a `name` field, which goes against the zarr spec
+    - Fixes the `codec_bytes_configuration_none` test and adds `codec_crc32c_configuration_none` test
+
 ## [0.11.3] - 2024-01-31
 
 ### Added
