@@ -53,9 +53,15 @@ jobs:
   codecov:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt update && sudo apt install -y cmake clang-15
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo +nightly install cargo-llvm-cov --locked
+      - run: cargo +nightly llvm-cov --doctests --lcov --output-path lcov.info
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:
             CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-            fail_ci_if_error: false
+            fail_ci_if_error: true
