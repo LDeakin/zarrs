@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add a global configuration `config::Config` accessible via `config::{get_config,get_config_mut}`
+   - Currently it exposes a single configuration option: `validate_checksums` (default: `true`)
+
 ## [0.11.5] - 2024-02-05
 
 ### Fixed
