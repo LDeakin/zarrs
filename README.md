@@ -4,6 +4,7 @@
 [![zarrs documentation](https://docs.rs/zarrs/badge.svg)](https://docs.rs/zarrs)
 ![msrv](https://img.shields.io/crates/msrv/zarrs)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?token=OBKJQNAZPP)](https://codecov.io/gh/LDeakin/zarrs)
 
 A rust library for the [Zarr V3](https://zarr.dev) storage format for multidimensional arrays and metadata.
 
