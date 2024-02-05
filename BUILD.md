@@ -38,13 +38,13 @@ cargo +stable install cargo-llvm-cov --locked
 
 Generate a HTML report
 ```bash
-cargo +nightly llvm-cov --doctests --html
+cargo +nightly llvm-cov --all-features --doctests --html
 open target/llvm-cov/html/index.html
 ```
 
 Generate a coverage file for [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) in VSCode
 ```bash
-cargo +nightly llvm-cov --doctests --lcov --output-path lcov.info
+cargo +nightly llvm-cov --all-features --doctests --lcov --output-path lcov.info
 ```
 
 ## [Miri](https://github.com/rust-lang/miri)
