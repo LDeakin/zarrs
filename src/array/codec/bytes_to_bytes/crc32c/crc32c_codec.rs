@@ -67,14 +67,15 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         if encoded_value.len() >= CHECKSUM_SIZE {
-            let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
-            let checksum = crc32c::crc32c(decoded_value).to_le_bytes();
-            if checksum == encoded_value[encoded_value.len() - CHECKSUM_SIZE..] {
-                encoded_value.resize_with(encoded_value.len() - CHECKSUM_SIZE, Default::default);
-                Ok(encoded_value)
-            } else {
-                Err(CodecError::InvalidChecksum)
+            if crate::config::global_config().validate_checksums() {
+                let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
+                let checksum = crc32c::crc32c(decoded_value).to_le_bytes();
+                if checksum != encoded_value[encoded_value.len() - CHECKSUM_SIZE..] {
+                    return Err(CodecError::InvalidChecksum);
+                }
             }
+            encoded_value.resize_with(encoded_value.len() - CHECKSUM_SIZE, Default::default);
+            Ok(encoded_value)
         } else {
             Err(CodecError::Other(
                 "CRC32C checksum decoder expects a 32 bit input".to_string(),

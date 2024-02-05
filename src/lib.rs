@@ -87,6 +87,7 @@
 pub mod array;
 pub mod array_subset;
 pub mod byte_range;
+pub mod config;
 pub mod group;
 pub mod metadata;
 pub mod node;
