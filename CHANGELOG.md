@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+ - Fixed the `crc32c` codec reserving more memory than necessary
+
 ## [0.11.4] - 2024-02-05
 
 ### Added

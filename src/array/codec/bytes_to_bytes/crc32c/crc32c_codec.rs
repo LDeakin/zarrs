@@ -55,7 +55,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
         let checksum = crc32fast::hash(&decoded_value).to_le_bytes();
-        decoded_value.reserve_exact(decoded_value.len() + checksum.len());
+        decoded_value.reserve_exact(checksum.len());
         decoded_value.extend(&checksum);
         Ok(decoded_value)
     }
