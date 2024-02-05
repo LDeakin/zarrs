@@ -10,7 +10,7 @@ A rust library for the [Zarr V3](https://zarr.dev) storage format for multidimen
 
 Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 
-**zarrs is experimental and in limited production use. Use at your own risk!**
+**zarrs is experimental and in limited production use. Use at your own risk! Correctness issues with past versions are [detailed here](https://docs.rs/zarrs/latest/zarrs/#correctness-issues-with-past-versions).**
 
 - [API documentation (`docs.rs`)](https://docs.rs/zarrs/latest/zarrs/)
 - [Changelog (`CHANGELOG.md`)](./CHANGELOG.md)
