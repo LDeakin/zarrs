@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.6] - 2024-02-06
+
 ### Added
  - Add a global configuration `config::Config` accessible via `config::{get_config,get_config_mut}`
    - Currently it exposes a single configuration option: `validate_checksums` (default: `true`)
@@ -522,7 +524,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.5...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.11.6...HEAD
+[0.11.6]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.6
 [0.11.5]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.5
 [0.11.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.4
 [0.11.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.3
