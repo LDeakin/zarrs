@@ -47,6 +47,12 @@ impl CodecTraits for Crc32cCodec {
     }
 }
 
+fn get_checksum_le_bytes(decoded_value: &[u8]) -> [u8; 4] {
+    let mut crc32c = crc_any::CRCu32::crc32c();
+    crc32c.digest(&decoded_value);
+    crc32c.get_crc().to_le_bytes()
+}
+
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Crc32cCodec {
     fn encode_opt(
@@ -54,7 +60,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         mut decoded_value: Vec<u8>,
         _parallel: bool,
     ) -> Result<Vec<u8>, CodecError> {
-        let checksum = crc32c::crc32c(&decoded_value).to_le_bytes();
+        let checksum = get_checksum_le_bytes(&decoded_value);
         decoded_value.reserve_exact(checksum.len());
         decoded_value.extend(&checksum);
         Ok(decoded_value)
@@ -69,7 +75,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         if encoded_value.len() >= CHECKSUM_SIZE {
             if crate::config::global_config().validate_checksums() {
                 let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
-                let checksum = crc32c::crc32c(decoded_value).to_le_bytes();
+                let checksum = get_checksum_le_bytes(decoded_value);
                 if checksum != encoded_value[encoded_value.len() - CHECKSUM_SIZE..] {
                     return Err(CodecError::InvalidChecksum);
                 }
