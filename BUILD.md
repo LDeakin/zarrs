@@ -21,6 +21,11 @@ cargo +nightly clippy --all-features -- -D warnings -W clippy::nursery -A clippy
 # cargo clippy --all-features -- -D warnings -W clippy::unwrap_used -W clippy::expect_used
 ```
 
+## Docs with Examples
+```bash
+cargo +nightly doc -Z unstable-options -Z rustdoc-scrape-examples --all-features
+```
+
 ## Performance
 ```bash
 # Set a baseline

@@ -78,25 +78,33 @@ criterion = "0.5.1"
 tempfile = "3"
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
 
+[build-dependencies]
+rustversion = "1.0.14"
+
 [[example]]
 name = "array_write_read"
 required-features = ["ndarray"]
+doc-scrape-examples = true
 
 [[example]]
 name = "async_array_write_read"
 required-features = ["ndarray", "async", "object_store"]
+doc-scrape-examples = true
 
 [[example]]
 name = "async_http_array_read"
 required-features = ["ndarray", "async", "object_store/http"]
+doc-scrape-examples = true
 
 [[example]]
 name = "http_array_read"
 required-features = ["ndarray", "http"]
+doc-scrape-examples = true
 
 [[example]]
 name = "rectangular_array_write_read"
 required-features = ["ndarray"]
+doc-scrape-examples = true
 
 [[example]]
 name = "sharded_array_write_read"
@@ -105,6 +113,7 @@ required-features = ["ndarray", "sharding"]
 [[example]]
 name = "zip_array_write_read"
 required-features = ["ndarray", "zip"]
+doc-scrape-examples = false
 
 [[bench]]
 name = "array_subset"
@@ -125,6 +134,3 @@ harness = false
 [[bench]]
 name = "fill_value"
 harness = false
-
-[build-dependencies]
-rustversion = "1.0.14"

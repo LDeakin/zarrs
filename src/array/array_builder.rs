@@ -28,7 +28,7 @@ use super::{
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use std::sync::Arc;
 /// use zarrs::array::{ArrayBuilder, DataType, FillValue, ZARR_NAN_F32};
-/// # let store = Arc::new(zarrs::storage::store::MemoryStore::default());
+/// # let store = Arc::new(zarrs::storage::store::MemoryStore::new());
 /// let mut array = ArrayBuilder::new(
 ///     vec![8, 8], // array shape
 ///     DataType::Float32,

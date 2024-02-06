@@ -15,9 +15,9 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // let store = Arc::new(store::FilesystemStore::new(
     //     "tests/data/array_write_read.zarr",
     // )?);
-    let store = Arc::new(store::MemoryStore::default());
+    let store = Arc::new(store::MemoryStore::new());
 
-    // Create a group and write metadata to filesystem
+    // Create a group
     let group_path = "/group";
     let mut group = zarrs::group::GroupBuilder::new().build(store.clone(), group_path)?;
 

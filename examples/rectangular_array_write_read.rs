@@ -14,9 +14,9 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Create a store
     // let path = tempfile::TempDir::new()?;
     // let store = Arc::new(store::FilesystemStore::new(path.path())?);
-    let store = std::sync::Arc::new(store::MemoryStore::default());
+    let store = std::sync::Arc::new(store::MemoryStore::new());
 
-    // Create a group and write metadata to filesystem
+    // Create a group
     let group_path = "/group";
     let mut group = zarrs::group::GroupBuilder::new().build(store.clone(), group_path)?;
 

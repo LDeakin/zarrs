@@ -18,7 +18,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         object_store::memory::InMemory::new(),
     ));
 
-    // Create a group and write metadata to filesystem
+    // Create a group
     let group_path = "/group";
     let mut group = zarrs::group::GroupBuilder::new().build(store.clone(), group_path)?;
 

@@ -21,7 +21,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // let path = tempfile::TempDir::new()?;
     // let store = Arc::new(store::FilesystemStore::new(path.path())?);
     // let store = Arc::new(store::FilesystemStore::new("tests/data/sharded_array_write_read.zarr")?);
-    let store = Arc::new(store::MemoryStore::default());
+    let store = Arc::new(store::MemoryStore::new());
     let log_writer = Arc::new(std::sync::Mutex::new(
         // std::io::BufWriter::new(
         std::io::stdout(),
@@ -33,7 +33,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let store_readable_listable = usage_log.create_readable_listable_transformer(store.clone());
     let store = usage_log.create_readable_writable_transformer(store);
 
-    // Create a group and write metadata to filesystem
+    // Create a group
     let group_path = "/group";
     let mut group = zarrs::group::GroupBuilder::new().build(store.clone(), group_path)?;
 
