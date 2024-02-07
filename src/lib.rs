@@ -80,7 +80,7 @@
 //!
 //! [zarrs_tools](https://github.com/LDeakin/zarrs_tools) v0.2.3+ can fix arrays with the above correctness issues with `zarrs_reencode`. Example:
 //! ```bash
-//! zarrs_reencode --ignore-checksums -p 4 array.zarr array_fixed.zarr
+//! zarrs_reencode --ignore-checksums array.zarr array_fixed.zarr
 //! ```
 //!
 //! ## Licence
