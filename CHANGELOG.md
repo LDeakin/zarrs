@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Bump `crc32` to 0.6.5 to fix nightly build
+ - Bump `opendal` to `0.45`
 
 ## [0.11.6] - 2024-02-06
 

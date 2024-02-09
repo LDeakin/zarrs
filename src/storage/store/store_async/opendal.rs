@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{future::IntoFuture, sync::Arc};
 
 use opendal::Operator;
 
@@ -74,6 +74,7 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
                     self.operator
                         .read_with(key.as_str())
                         .range(byte_range.offset()..)
+                        .into_future()
                 })
                 .collect::<Vec<_>>();
             handle_result(futures::future::try_join_all(futures).await)
@@ -90,6 +91,7 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
                     self.operator
                         .read_with(key.as_str())
                         .range(start..end)
+                        .into_future()
                         .map(move |bytes| match bytes {
                             Ok(bytes) => {
                                 if (end - start) == bytes.len() as u64 {
