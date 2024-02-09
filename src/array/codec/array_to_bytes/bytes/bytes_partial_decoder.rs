@@ -4,7 +4,7 @@ use crate::{
         codec::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError},
         ChunkRepresentation,
     },
-    array_subset::InvalidArraySubsetError,
+    array_subset::IncompatibleArraySubsetAndShapeError,
 };
 
 #[cfg(feature = "async")]
@@ -46,7 +46,12 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
             // Get byte ranges
             let byte_ranges = array_subset
                 .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
-                .map_err(|_| InvalidArraySubsetError)?;
+                .map_err(|_| {
+                    IncompatibleArraySubsetAndShapeError::from((
+                        array_subset.clone(),
+                        self.decoded_representation.shape_u64(),
+                    ))
+                })?;
 
             // Decode
             let decoded = self
@@ -118,7 +123,12 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
             // Get byte ranges
             let byte_ranges = array_subset
                 .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
-                .map_err(|_| InvalidArraySubsetError)?;
+                .map_err(|_| {
+                    IncompatibleArraySubsetAndShapeError::from((
+                        array_subset.clone(),
+                        self.decoded_representation.shape_u64(),
+                    ))
+                })?;
 
             // Decode
             let decoded = self

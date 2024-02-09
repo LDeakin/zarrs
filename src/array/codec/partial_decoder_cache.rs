@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::{
     array::{chunk_shape_to_array_shape, ChunkRepresentation, MaybeBytes},
-    array_subset::InvalidArraySubsetError,
+    array_subset::IncompatibleArraySubsetAndShapeError,
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
@@ -157,7 +157,12 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
             out.push(
                 array_subset
                     .extract_bytes(&self.cache, &array_shape, element_size)
-                    .map_err(|_| InvalidArraySubsetError)?,
+                    .map_err(|_| {
+                        IncompatibleArraySubsetAndShapeError::from((
+                            array_subset.clone(),
+                            self.decoded_representation.shape_u64(),
+                        ))
+                    })?,
             );
         }
         Ok(out)

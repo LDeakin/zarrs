@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump `crc32` to 0.6.5 to fix nightly build
  - Bump `opendal` to `0.45`
  - Minor docs fixes
+ - **Breaking**: rename `IncompatibleArrayShapeError` to `IncompatibleArraySubsetAndShapeError`
+ - **Breaking**: use `IncompatibleArraySubsetAndShapeError` in `ArrayStoreBytesError::InvalidArrayShape`
+
+### Removed
+ - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
 
 ## [0.11.6] - 2024-02-06
 

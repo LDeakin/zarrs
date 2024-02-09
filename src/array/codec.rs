@@ -61,7 +61,7 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 
 use crate::{
-    array_subset::{ArraySubset, InvalidArraySubsetError},
+    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
@@ -975,7 +975,7 @@ pub enum CodecError {
     InvalidByteRangeError(#[from] InvalidByteRangeError),
     /// An invalid array subset was requested.
     #[error(transparent)]
-    InvalidArraySubsetError(#[from] InvalidArraySubsetError),
+    InvalidArraySubsetError(#[from] IncompatibleArraySubsetAndShapeError),
     /// The decoded size of a chunk did not match what was expected.
     #[error("the size of a decoded chunk is {_0}, expected {_1}")]
     UnexpectedChunkDecodedSize(usize, u64),

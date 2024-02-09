@@ -4,7 +4,7 @@ use itertools::izip;
 
 use crate::array::{chunk_shape_to_array_shape, ravel_indices, ArrayIndices};
 
-use super::{ArraySubset, IncompatibleArrayShapeError, IncompatibleDimensionalityError};
+use super::{ArraySubset, IncompatibleArraySubsetAndShapeError, IncompatibleDimensionalityError};
 
 /// Iterates over element indices in an array subset.
 pub struct IndicesIterator {
@@ -71,11 +71,11 @@ impl<'a> LinearisedIndicesIterator<'a> {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if `array_shape` does not encapsulate `subset`.
+    /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
         subset: ArraySubset,
         array_shape: &'a [u64],
-    ) -> Result<Self, IncompatibleArrayShapeError> {
+    ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
         if subset.dimensionality() == array_shape.len()
             && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
         {
@@ -85,7 +85,10 @@ impl<'a> LinearisedIndicesIterator<'a> {
                 array_shape,
             })
         } else {
-            Err(IncompatibleArrayShapeError(array_shape.to_vec(), subset))
+            Err(IncompatibleArraySubsetAndShapeError(
+                subset,
+                array_shape.to_vec(),
+            ))
         }
     }
 
@@ -156,19 +159,19 @@ impl ContiguousIndicesIterator {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if `array_shape` does not encapsulate `subset`.
+    /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
         subset: &ArraySubset,
         array_shape: &[u64],
-    ) -> Result<Self, IncompatibleArrayShapeError> {
+    ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
         if subset.dimensionality() == array_shape.len()
             && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
         {
             Ok(unsafe { Self::new_unchecked(subset, array_shape) })
         } else {
-            Err(IncompatibleArrayShapeError(
-                array_shape.to_vec(),
+            Err(IncompatibleArraySubsetAndShapeError(
                 subset.clone(),
+                array_shape.to_vec(),
             ))
         }
     }
@@ -246,11 +249,11 @@ impl<'a> ContiguousLinearisedIndicesIterator<'a> {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if `array_shape` does not encapsulate `subset`.
+    /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
         subset: &ArraySubset,
         array_shape: &'a [u64],
-    ) -> Result<Self, IncompatibleArrayShapeError> {
+    ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
         let inner = subset.iter_contiguous_indices(array_shape)?;
         Ok(Self { inner, array_shape })
     }

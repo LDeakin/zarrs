@@ -1,9 +1,11 @@
 //! Array subsets.
 //!
-//! An [`ArraySubset`] is widely used throughout this library when extracting a subset of data from an array.
-//! It can produce convenient iterators over the indices or linearised indices of an array subset.
+//! An [`ArraySubset`] represents a subset of an array or chunk.
 //!
-//! This module provides convenience functions for:
+//! Many [`Array`](crate::array::Array) store and retrieve methods have an [`ArraySubset`] parameter.
+//! This module includes various iterators supporting iteration over the indices of an [`ArraySubset`] with respect to an array (or chunk).
+//!
+//! This module also provides convenience functions for:
 //!  - computing the byte ranges of array subsets within an array, and
 //!  - extracting the bytes within subsets of an array.
 
@@ -26,6 +28,8 @@ use crate::{
 };
 
 /// An array subset.
+///
+/// The unsafe `_unchecked methods` are mostly intended for internal use to avoid redundant input validation.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Default)]
 #[display(fmt = "start {start:?} shape {shape:?}")]
 pub struct ArraySubset {
@@ -40,17 +44,12 @@ pub struct ArraySubset {
 #[error("array subset {_0} is incompatible with array of shape {_1:?} and element size {_2}")]
 pub struct ArrayExtractBytesError(ArraySubset, ArrayShape, usize);
 
-/// An array extract elements error.
-#[derive(Debug, Error)]
-#[error("array subset {_0} is incompatible with array of shape {_1:?}")]
-pub struct ArrayExtractElementsError(ArraySubset, ArrayShape);
-
 /// An array extract bytes error.
 #[derive(Debug, Error)]
 pub enum ArrayStoreBytesError {
-    /// Invalid array shape.
-    #[error("array shape {_1:?} is incompatible with array subset {_0:?}")]
-    InvalidArrayShape(ArraySubset, ArrayShape),
+    /// Incompatible array subset and array shape.
+    #[error(transparent)]
+    InvalidArrayShape(#[from] IncompatibleArraySubsetAndShapeError),
     /// Invalid subset bytes.
     #[error("expected subset bytes to have length {_1}, got {_0}")]
     InvalidSubsetBytes(usize, usize),
@@ -256,12 +255,12 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn byte_ranges(
         &self,
         array_shape: &[u64],
         element_size: usize,
-    ) -> Result<Vec<ByteRange>, IncompatibleArrayShapeError> {
+    ) -> Result<Vec<ByteRange>, IncompatibleArraySubsetAndShapeError> {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
         for (array_index, contiguous_elements) in
             self.iter_contiguous_linearised_indices(array_shape)?
@@ -385,7 +384,7 @@ impl ArraySubset {
         &self,
         elements: &[T],
         array_shape: &[u64],
-    ) -> Result<Vec<T>, ArrayExtractElementsError> {
+    ) -> Result<Vec<T>, IncompatibleArraySubsetAndShapeError> {
         if elements.len() as u64 == array_shape.iter().product::<u64>()
             && array_shape.len() == self.dimensionality()
             && self
@@ -396,7 +395,7 @@ impl ArraySubset {
         {
             Ok(unsafe { self.extract_elements_unchecked(elements, array_shape) })
         } else {
-            Err(ArrayExtractElementsError(
+            Err(IncompatibleArraySubsetAndShapeError(
                 self.clone(),
                 array_shape.to_vec(),
             ))
@@ -477,9 +476,8 @@ impl ArraySubset {
             ))
         } else {
             let mut offset = 0;
-            for (array_index, contiguous_elements) in self
-                .iter_contiguous_linearised_indices(array_shape)
-                .map_err(|err| ArrayStoreBytesError::InvalidArrayShape(err.1, err.0))?
+            for (array_index, contiguous_elements) in
+                self.iter_contiguous_linearised_indices(array_shape)?
             {
                 let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
                 let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
@@ -544,11 +542,11 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn iter_linearised_indices<'a>(
         &self,
         array_shape: &'a [u64],
-    ) -> Result<LinearisedIndicesIterator<'a>, IncompatibleArrayShapeError> {
+    ) -> Result<LinearisedIndicesIterator<'a>, IncompatibleArraySubsetAndShapeError> {
         LinearisedIndicesIterator::new(self.clone(), array_shape)
     }
 
@@ -568,11 +566,11 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn iter_contiguous_indices<'a>(
         &'a self,
         array_shape: &'a [u64],
-    ) -> Result<ContiguousIndicesIterator, IncompatibleArrayShapeError> {
+    ) -> Result<ContiguousIndicesIterator, IncompatibleArraySubsetAndShapeError> {
         ContiguousIndicesIterator::new(self, array_shape)
     }
 
@@ -592,11 +590,11 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArrayShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn iter_contiguous_linearised_indices<'a>(
         &'a self,
         array_shape: &'a [u64],
-    ) -> Result<ContiguousLinearisedIndicesIterator, IncompatibleArrayShapeError> {
+    ) -> Result<ContiguousLinearisedIndicesIterator, IncompatibleArraySubsetAndShapeError> {
         ContiguousLinearisedIndicesIterator::new(self, array_shape)
     }
 
@@ -742,16 +740,10 @@ impl IncompatibleDimensionalityError {
     }
 }
 
-/// An incompatible array shape error.
+/// An incompatible array and array shape error.
 #[derive(Clone, Debug, Error, From)]
-#[error("incompatible array shape {0:?} with array subset {1}")]
-pub struct IncompatibleArrayShapeError(ArrayShape, ArraySubset);
-
-/// An invalid array subset error.
-#[derive(Copy, Clone, Debug, Error)]
-#[error("invalid array subset")]
-pub struct InvalidArraySubsetError;
-// TODO: make this more informating and include (ArraySubset)
+#[error("incompatible array subset {0} with array shape {1:?}")]
+pub struct IncompatibleArraySubsetAndShapeError(ArraySubset, ArrayShape);
 
 /// An incompatible start/end indices error.
 #[derive(Clone, Debug, Error, From)]

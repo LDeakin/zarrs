@@ -4,7 +4,7 @@ use crate::{
         codec::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError},
         ChunkRepresentation, DataType,
     },
-    array_subset::InvalidArraySubsetError,
+    array_subset::IncompatibleArraySubsetAndShapeError,
 };
 
 #[cfg(feature = "async")]
@@ -59,7 +59,12 @@ fn do_partial_decode(
                                 &chunk_shape,
                                 decoded_representation.element_size(),
                             )
-                            .map_err(|_| InvalidArraySubsetError)?;
+                            .map_err(|_| {
+                                IncompatibleArraySubsetAndShapeError::from((
+                                    array_subset.clone(),
+                                    decoded_representation.shape_u64(),
+                                ))
+                            })?;
                         decoded_bytes.push(bytes_subset);
                     }
                 };
