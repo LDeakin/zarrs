@@ -1,6 +1,5 @@
 use crate::{
     array::{
-        chunk_shape_to_array_shape,
         codec::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError},
         ChunkRepresentation,
     },
@@ -41,7 +40,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
         parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
-        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
+        let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
             // Get byte ranges
             let byte_ranges = array_subset
@@ -118,7 +117,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
         parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
-        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
+        let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
             // Get byte ranges
             let byte_ranges = array_subset

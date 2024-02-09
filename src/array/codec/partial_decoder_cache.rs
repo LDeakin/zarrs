@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    array::{chunk_shape_to_array_shape, ChunkRepresentation, MaybeBytes},
+    array::{ChunkRepresentation, MaybeBytes},
     array_subset::IncompatibleArraySubsetAndShapeError,
     byte_range::{extract_byte_ranges, ByteRange},
 };
@@ -104,9 +104,9 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     ) -> Result<Self, CodecError> {
         let cache = input_handle
             .partial_decode_opt(
-                &[ArraySubset::new_with_shape(chunk_shape_to_array_shape(
-                    decoded_representation.shape(),
-                ))],
+                &[ArraySubset::new_with_shape(
+                    decoded_representation.shape_u64(),
+                )],
                 parallel,
             )?
             .remove(0);
@@ -129,9 +129,9 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     ) -> Result<ArrayPartialDecoderCache<'a>, CodecError> {
         let cache = input_handle
             .partial_decode_opt(
-                &[ArraySubset::new_with_shape(chunk_shape_to_array_shape(
-                    decoded_representation.shape(),
-                ))],
+                &[ArraySubset::new_with_shape(
+                    decoded_representation.shape_u64(),
+                )],
                 parallel,
             )
             .await?
@@ -151,7 +151,7 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
         _parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut out: Vec<Vec<u8>> = Vec::with_capacity(decoded_regions.len());
-        let array_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
+        let array_shape = self.decoded_representation.shape_u64();
         let element_size = self.decoded_representation.element_size();
         for array_subset in decoded_regions {
             out.push(

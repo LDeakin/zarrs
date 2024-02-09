@@ -3,7 +3,6 @@ use thiserror::Error;
 
 use crate::{
     array::{
-        chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, CodecError,
             CodecTraits,
@@ -138,7 +137,7 @@ impl ArrayCodecTraits for TransposeCodec {
             calculate_order_encode(&self.order, decoded_representation.shape().len());
         transpose_array(
             &order_encode,
-            &chunk_shape_to_array_shape(decoded_representation.shape()),
+            &decoded_representation.shape_u64(),
             decoded_representation.element_size(),
             &decoded_value,
         )
@@ -158,10 +157,10 @@ impl ArrayCodecTraits for TransposeCodec {
     ) -> Result<Vec<u8>, CodecError> {
         let order_decode =
             calculate_order_decode(&self.order, decoded_representation.shape().len());
-        let transposed_shape = permute(decoded_representation.shape(), &self.order);
+        let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order);
         transpose_array(
             &order_decode,
-            &chunk_shape_to_array_shape(&transposed_shape),
+            &transposed_shape,
             decoded_representation.element_size(),
             &encoded_value,
         )

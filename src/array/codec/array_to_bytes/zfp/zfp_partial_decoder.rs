@@ -2,7 +2,6 @@ use zfp_sys::zfp_type;
 
 use crate::{
     array::{
-        chunk_shape_to_array_shape,
         codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError},
         ChunkRepresentation,
     },
@@ -56,7 +55,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let encoded_value = self.input_handle.decode_opt(parallel)?;
         let mut out = Vec::with_capacity(decoded_regions.len());
-        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
+        let chunk_shape = self.decoded_representation.shape_u64();
         match encoded_value {
             Some(encoded_value) => {
                 let decoded_value = zfp_decode(
@@ -136,7 +135,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
         parallel: bool,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let encoded_value = self.input_handle.decode_opt(parallel).await?;
-        let chunk_shape = chunk_shape_to_array_shape(self.decoded_representation.shape());
+        let chunk_shape = self.decoded_representation.shape_u64();
         let mut out = Vec::with_capacity(decoded_regions.len());
         match encoded_value {
             Some(encoded_value) => {

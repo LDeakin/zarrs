@@ -681,9 +681,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                 })
                 .collect::<Vec<_>>();
             if !filled_chunks.is_empty() {
-                let chunk_array_ss = ArraySubset::new_with_shape(chunk_shape_to_array_shape(
-                    self.chunk_grid.chunk_shape(),
-                ));
+                let chunk_array_ss = ArraySubset::new_with_shape(self.chunk_grid.chunk_shape_u64());
                 let filled_chunk = self
                     .decoded_representation
                     .fill_value()

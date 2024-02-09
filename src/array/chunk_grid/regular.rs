@@ -112,6 +112,16 @@ impl RegularChunkGrid {
     pub fn chunk_shape(&self) -> &[NonZeroU64] {
         self.chunk_shape.as_slice()
     }
+
+    /// Return the chunk shape as an [`ArrayShape`] ([`Vec<u64>`]).
+    #[must_use]
+    pub fn chunk_shape_u64(&self) -> Vec<u64> {
+        self.chunk_shape
+            .iter()
+            .copied()
+            .map(NonZeroU64::get)
+            .collect::<Vec<_>>()
+    }
 }
 
 impl ChunkGridTraits for RegularChunkGrid {

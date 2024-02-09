@@ -20,7 +20,6 @@ pub use regular::{RegularChunkGrid, RegularChunkGridConfiguration};
 use derive_more::{Deref, From};
 
 use crate::{
-    array::chunk_shape_to_array_shape,
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
     metadata::Metadata,
     plugin::{Plugin, PluginCreateError},
@@ -403,9 +402,8 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
         if let (Some(chunk_origin), Some(chunk_shape)) = (
             self.chunk_origin_unchecked(chunk_indices, array_shape),
-            self.chunk_shape_unchecked(chunk_indices, array_shape),
+            self.chunk_shape_u64_unchecked(chunk_indices, array_shape),
         ) {
-            let chunk_shape = chunk_shape_to_array_shape(&chunk_shape);
             Some(ArraySubset::new_with_start_shape_unchecked(
                 chunk_origin,
                 chunk_shape,

@@ -384,7 +384,7 @@ impl ShardingCodec {
             let shard_slice = unsafe {
                 std::slice::from_raw_parts_mut(shard.as_mut_ptr().cast::<u8>(), shard.len())
             };
-            let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+            let shard_shape = shard_representation.shape_u64();
             for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
                 ArraySubset::new_with_shape(shard_shape.clone())
                     .iter_chunks_unchecked(self.chunk_shape.as_slice())
@@ -468,7 +468,7 @@ impl ShardingCodec {
             ShardingIndexLocation::Start => index_encoded_size,
             ShardingIndexLocation::End => 0,
         };
-        let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+        let shard_shape = shard_representation.shape_u64();
         for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
             ArraySubset::new_with_shape(shard_shape.clone())
                 .iter_chunks_unchecked(self.chunk_shape.as_slice())
@@ -562,7 +562,7 @@ impl ShardingCodec {
             };
             let shard_slice = UnsafeCellSlice::new(shard_slice);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
-            let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+            let shard_shape = shard_representation.shape_u64();
             (0..chunks_per_shard
                 .as_slice()
                 .iter()
@@ -660,7 +660,7 @@ impl ShardingCodec {
         let index_encoded_size = usize::try_from(index_encoded_size).unwrap();
 
         // Find chunks that are not entirely the fill value and collect their decoded bytes
-        let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+        let shard_shape = shard_representation.shape_u64();
         let encoded_chunks: Vec<(u64, Vec<u8>)> = (0..chunks_per_shard
             .as_slice()
             .iter()
@@ -780,7 +780,7 @@ impl ShardingCodec {
             ShardingIndexLocation::Start => index_encoded_size,
             ShardingIndexLocation::End => 0,
         };
-        let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+        let shard_shape = shard_representation.shape_u64();
         for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
             ArraySubset::new_with_shape(shard_shape.clone())
                 .iter_chunks_unchecked(self.chunk_shape.as_slice())
@@ -884,7 +884,7 @@ impl ShardingCodec {
             let shard_slice = unsafe {
                 std::slice::from_raw_parts_mut(shard.as_mut_ptr().cast::<u8>(), shard.len())
             };
-            let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+            let shard_shape = shard_representation.shape_u64();
             for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
                 ArraySubset::new_with_shape(shard_shape.clone())
                     .iter_chunks_unchecked(self.chunk_shape.as_slice())
@@ -998,7 +998,7 @@ impl ShardingCodec {
             let shard_slice = UnsafeCellSlice::new(shard_slice);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             let chunks_per_shard = &chunks_per_shard;
-            let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+            let shard_shape = shard_representation.shape_u64();
             let futures = (0..chunks_per_shard
                 .as_slice()
                 .iter()
@@ -1119,7 +1119,7 @@ impl ShardingCodec {
         let index_encoded_size = usize::try_from(index_encoded_size).unwrap();
 
         // Encode the chunks
-        let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+        let shard_shape = shard_representation.shape_u64();
         let encoded_chunks = futures::future::join_all(
             (0..chunks_per_shard
                 .as_slice()
@@ -1332,7 +1332,7 @@ impl ShardingCodec {
             )
         };
 
-        let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+        let shard_shape = shard_representation.shape_u64();
         if parallel {
             let chunks_per_shard = calculate_chunks_per_shard(
                 shard_representation.shape(),
@@ -1387,7 +1387,7 @@ impl ShardingCodec {
                 })?;
         } else {
             let element_size = chunk_representation.element_size() as u64;
-            let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+            let shard_shape = shard_representation.shape_u64();
             for (chunk_index, (_chunk_indices, chunk_subset)) in unsafe {
                 ArraySubset::new_with_shape(shard_shape.clone())
                     .iter_chunks_unchecked(self.chunk_shape.as_slice())
@@ -1453,7 +1453,7 @@ impl ShardingCodec {
         };
 
         // Decode chunks
-        let shard_shape = chunk_shape_to_array_shape(shard_representation.shape());
+        let shard_shape = shard_representation.shape_u64();
         if parallel {
             let chunks_per_shard = calculate_chunks_per_shard(
                 shard_representation.shape(),

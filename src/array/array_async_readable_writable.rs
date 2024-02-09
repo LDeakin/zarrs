@@ -5,7 +5,7 @@ use crate::{
     storage::{data_key, AsyncReadableWritableStorageTraits},
 };
 
-use super::{chunk_shape_to_array_shape, Array, ArrayError};
+use super::{Array, ArrayError};
 
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
@@ -195,8 +195,10 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
         chunk_subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
         // Validation
-        if let Some(chunk_shape) = self.chunk_grid().chunk_shape(chunk_indices, self.shape())? {
-            let chunk_shape = chunk_shape_to_array_shape(&chunk_shape);
+        if let Some(chunk_shape) = self
+            .chunk_grid()
+            .chunk_shape_u64(chunk_indices, self.shape())?
+        {
             if std::iter::zip(chunk_subset.end_exc(), &chunk_shape)
                 .any(|(end_exc, shape)| end_exc > *shape)
             {

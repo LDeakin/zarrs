@@ -1,6 +1,5 @@
 use crate::{
     array::{
-        chunk_shape_to_array_shape,
         codec::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError},
         ChunkRepresentation, DataType,
     },
@@ -35,7 +34,7 @@ fn do_partial_decode(
     decoded_representation: &ChunkRepresentation,
 ) -> Result<Vec<Vec<u8>>, CodecError> {
     let mut decoded_bytes = Vec::with_capacity(decoded_regions.len());
-    let chunk_shape = chunk_shape_to_array_shape(decoded_representation.shape());
+    let chunk_shape = decoded_representation.shape_u64();
     match decoded {
         None => {
             for array_subset in decoded_regions {
