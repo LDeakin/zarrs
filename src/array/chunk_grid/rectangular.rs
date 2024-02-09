@@ -233,6 +233,28 @@ impl ChunkGridTraits for RectangularChunkGrid {
             .map(std::convert::Into::into)
     }
 
+    unsafe fn chunk_shape_u64_unchecked(
+        &self,
+        chunk_indices: &[u64],
+        _array_shape: &[u64],
+    ) -> Option<ArrayShape> {
+        debug_assert_eq!(self.dimensionality(), chunk_indices.len());
+        std::iter::zip(chunk_indices, &self.chunks)
+            .map(|(chunk_index, chunks)| match chunks {
+                RectangularChunkGridDimension::Fixed(chunk_size) => Some(chunk_size.get()),
+                RectangularChunkGridDimension::Varying(offsets_sizes) => {
+                    let chunk_index = usize::try_from(*chunk_index).unwrap();
+                    if chunk_index < offsets_sizes.len() {
+                        Some(offsets_sizes[chunk_index].size.get())
+                    } else {
+                        None
+                    }
+                }
+            })
+            .collect::<Option<Vec<_>>>()
+            .map(std::convert::Into::into)
+    }
+
     unsafe fn chunk_origin_unchecked(
         &self,
         chunk_indices: &[u64],

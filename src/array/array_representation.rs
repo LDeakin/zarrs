@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 
-use super::{data_type::IncompatibleFillValueError, DataType, FillValue};
+use super::{data_type::IncompatibleFillValueError, ArrayShape, DataType, FillValue};
 use derive_more::Display;
 
 /// The shape, data type, and fill value of an `array`.
@@ -74,6 +74,15 @@ where
     #[must_use]
     pub fn shape(&self) -> &[TDim] {
         &self.array_shape
+    }
+
+    /// Return the shape as an [`ArrayShape`] ([`Vec<u64>`]).
+    #[must_use]
+    pub fn shape_u64(&self) -> ArrayShape {
+        self.array_shape
+            .iter()
+            .map(|&i| i.into())
+            .collect::<Vec<u64>>()
     }
 
     /// Return the data type of the array.

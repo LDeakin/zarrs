@@ -177,6 +177,32 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         }
     }
 
+    /// The shape of the chunk at `chunk_indices` as an [`ArrayShape`] ([`Vec<u64>`]).
+    ///
+    /// Returns [`None`] if the shape of the chunk at `chunk_indices` cannot be determined.
+    ///
+    /// # Errors
+    /// Returns [`IncompatibleDimensionalityError`] if `chunk_indices` or `array_shape` do not match the dimensionality of the chunk grid.
+    fn chunk_shape_u64(
+        &self,
+        chunk_indices: &[u64],
+        array_shape: &[u64],
+    ) -> Result<Option<ArrayShape>, IncompatibleDimensionalityError> {
+        if chunk_indices.len() != self.dimensionality() {
+            Err(IncompatibleDimensionalityError::new(
+                chunk_indices.len(),
+                self.dimensionality(),
+            ))
+        } else if array_shape.len() != self.dimensionality() {
+            Err(IncompatibleDimensionalityError::new(
+                array_shape.len(),
+                self.dimensionality(),
+            ))
+        } else {
+            Ok(unsafe { self.chunk_shape_u64_unchecked(chunk_indices, array_shape) })
+        }
+    }
+
     /// The origin of the chunk at `chunk_indices`.
     ///
     /// Returns [`None`] if the chunk origin cannot be determined.
@@ -334,6 +360,16 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         chunk_indices: &[u64],
         array_shape: &[u64],
     ) -> Option<ChunkShape>;
+
+    /// See [`ChunkGridTraits::chunk_shape_u64`].
+    ///
+    /// # Safety
+    /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
+    unsafe fn chunk_shape_u64_unchecked(
+        &self,
+        chunk_indices: &[u64],
+        array_shape: &[u64],
+    ) -> Option<ArrayShape>;
 
     /// See [`ChunkGridTraits::chunk_indices`].
     ///

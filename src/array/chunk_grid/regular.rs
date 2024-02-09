@@ -148,6 +148,22 @@ impl ChunkGridTraits for RegularChunkGrid {
         Some(self.chunk_shape.clone())
     }
 
+    /// The chunk shape as an [`ArrayShape`] ([`Vec<u64>`]). Fixed for a regular grid.
+    unsafe fn chunk_shape_u64_unchecked(
+        &self,
+        chunk_indices: &[u64],
+        _array_shape: &[u64],
+    ) -> Option<ArrayShape> {
+        debug_assert_eq!(self.dimensionality(), chunk_indices.len());
+        Some(
+            self.chunk_shape
+                .iter()
+                .copied()
+                .map(NonZeroU64::get)
+                .collect::<ArrayShape>(),
+        )
+    }
+
     unsafe fn chunk_origin_unchecked(
         &self,
         chunk_indices: &[u64],

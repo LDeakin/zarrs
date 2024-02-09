@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Added `{Chunk,Array}Representation::shape_u64`
+ - Added `ChunkGridTraits::chunk_shape_u64` to `ChunkGridTraits`
+   - **Breaking** added `chunk_shape_u64_unchecked` to `ChunkGridTraits` which must be implemented by chunk grids
+
 ### Changed
  - Bump `crc32` to 0.6.5 to fix nightly build
  - Bump `opendal` to `0.45`
