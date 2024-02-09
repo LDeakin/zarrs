@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking** added `chunk_shape_u64_unchecked` to `ChunkGridTraits` which must be implemented by chunk grids
 
 ### Changed
- - Bump `crc32` to 0.6.5 to fix nightly build
- - Bump `opendal` to `0.45`
+ - Dependency bumps
+   - `crc32` (private) to [0.6.5](https://github.com/zowens/crc32c/releases/tag/v0.6.5) to fix nightly build
+   - `opendal` (public) to [0.45](https://github.com/apache/opendal/releases/v0.45.0)
  - Minor docs fixes
  - **Breaking**: rename `IncompatibleArrayShapeError` to `IncompatibleArraySubsetAndShapeError`
  - **Breaking**: use `IncompatibleArraySubsetAndShapeError` in `ArrayStoreBytesError::InvalidArrayShape`
