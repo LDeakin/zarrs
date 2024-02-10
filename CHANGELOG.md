@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Implement `AsyncBytesPartialDecoderTraits` for `std::io::Cursor<{&[u8],Vec<u8>}>`
  - Added missing partial decoding tests for codecs
  - Implement `From<ChunkShape>` for `Vec<NonZeroU64>`
+ - Add `TestUnbounded` codec for internal testing
 
 ### Changed
  - Dependency bumps

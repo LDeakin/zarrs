@@ -10,3 +10,6 @@ pub mod crc32c;
 pub mod gzip;
 #[cfg(feature = "zstd")]
 pub mod zstd;
+
+#[cfg(test)]
+pub mod test_unbounded;
