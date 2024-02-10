@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Implement `From<ChunkShape>` for `Vec<NonZeroU64>`
  - Add `TestUnbounded` codec for internal testing
  - Additional sharding tests
+ - Add store lock tests
 
 ### Changed
  - Dependency bumps
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
+ - Remove non-default store lock constructors
 
 ## [0.11.6] - 2024-02-06
 

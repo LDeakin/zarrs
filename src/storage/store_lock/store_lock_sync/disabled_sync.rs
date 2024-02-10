@@ -24,11 +24,40 @@ impl StoreKeyMutexTraits for DisabledStoreMutex {
 }
 
 /// Disabled store locks.
-#[derive(Debug, Default, derive_more::Constructor)]
+#[derive(Debug, Default)]
 pub struct DisabledStoreLocks;
 
 impl StoreLocksTraits for DisabledStoreLocks {
     fn mutex(&self, _key: &StoreKey) -> StoreKeyMutex {
         Box::new(DisabledStoreMutex)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        sync::{atomic::AtomicUsize, Arc},
+        time::Duration,
+    };
+
+    use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
+    use crate::storage::{store::MemoryStore, ReadableWritableStorageTraits};
+
+    use super::*;
+
+    #[test]
+    fn store_disable_lock_sync() {
+        let store = MemoryStore::new_with_locks(Arc::new(DisabledStoreLocks::default()));
+        let key = StoreKey::new("key").unwrap();
+        let locks_held = AtomicUsize::new(0);
+        assert!((0..20).into_par_iter().any(|_| {
+            let mutex = store.mutex(&key).unwrap();
+            let _lock = mutex.lock();
+            locks_held.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            std::thread::sleep(Duration::from_millis(10));
+            let locks_held = locks_held.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+            locks_held > 1
+        }));
     }
 }
