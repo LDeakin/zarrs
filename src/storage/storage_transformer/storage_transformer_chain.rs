@@ -55,104 +55,107 @@ impl StorageTransformerChain {
 
 impl StorageTransformerChain {
     /// Create a readable storage transformer.
-    pub fn create_readable_transformer<'a>(
-        &'a self,
-        mut storage: ReadableStorage<'a>,
-    ) -> ReadableStorage<'a> {
+    pub fn create_readable_transformer(&self, mut storage: ReadableStorage) -> ReadableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_readable_transformer(storage);
+            storage = transformer.clone().create_readable_transformer(storage);
         }
         storage
     }
 
     /// Create a writable storage transformer.
-    pub fn create_writable_transformer<'a>(
-        &'a self,
-        mut storage: WritableStorage<'a>,
-    ) -> WritableStorage<'a> {
+    pub fn create_writable_transformer(&self, mut storage: WritableStorage) -> WritableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_writable_transformer(storage);
+            storage = transformer.clone().create_writable_transformer(storage);
         }
         storage
     }
 
     /// Create a readable and writable storage transformer.
-    pub fn create_readable_writable_transformer<'a>(
-        &'a self,
-        mut storage: ReadableWritableStorage<'a>,
-    ) -> ReadableWritableStorage<'a> {
+    pub fn create_readable_writable_transformer(
+        &self,
+        mut storage: ReadableWritableStorage,
+    ) -> ReadableWritableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_readable_writable_transformer(storage);
+            storage = transformer
+                .clone()
+                .create_readable_writable_transformer(storage);
         }
         storage
     }
 
     /// Create a listable storage transformer.
-    pub fn create_listable_transformer<'a>(
-        &'a self,
-        mut storage: ListableStorage<'a>,
-    ) -> ListableStorage<'a> {
+    pub fn create_listable_transformer(&self, mut storage: ListableStorage) -> ListableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_listable_transformer(storage);
+            storage = transformer.clone().create_listable_transformer(storage);
         }
         storage
     }
 
     /// Create a readable and listable storage transformer.
-    pub fn create_readable_listable_transformer<'a>(
-        &'a self,
-        mut storage: ReadableListableStorage<'a>,
-    ) -> ReadableListableStorage<'a> {
+    pub fn create_readable_listable_transformer(
+        &self,
+        mut storage: ReadableListableStorage,
+    ) -> ReadableListableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_readable_listable_transformer(storage);
+            storage = transformer
+                .clone()
+                .create_readable_listable_transformer(storage);
         }
         storage
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous readable storage transformer.
-    pub fn create_async_readable_transformer<'a>(
-        &'a self,
-        mut storage: AsyncReadableStorage<'a>,
-    ) -> AsyncReadableStorage<'a> {
+    pub fn create_async_readable_transformer(
+        &self,
+        mut storage: AsyncReadableStorage,
+    ) -> AsyncReadableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_async_readable_transformer(storage);
+            storage = transformer
+                .clone()
+                .create_async_readable_transformer(storage);
         }
         storage
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous writable storage transformer.
-    pub fn create_async_writable_transformer<'a>(
-        &'a self,
-        mut storage: AsyncWritableStorage<'a>,
-    ) -> AsyncWritableStorage<'a> {
+    pub fn create_async_writable_transformer(
+        &self,
+        mut storage: AsyncWritableStorage,
+    ) -> AsyncWritableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_async_writable_transformer(storage);
+            storage = transformer
+                .clone()
+                .create_async_writable_transformer(storage);
         }
         storage
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous listable storage transformer.
-    pub fn create_async_listable_transformer<'a>(
-        &'a self,
-        mut storage: AsyncListableStorage<'a>,
-    ) -> AsyncListableStorage<'a> {
+    pub fn create_async_listable_transformer(
+        &self,
+        mut storage: AsyncListableStorage,
+    ) -> AsyncListableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_async_listable_transformer(storage);
+            storage = transformer
+                .clone()
+                .create_async_listable_transformer(storage);
         }
         storage
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous readable listable storage transformer.
-    pub fn create_async_readable_listable_transformer<'a>(
-        &'a self,
-        mut storage: AsyncReadableListableStorage<'a>,
-    ) -> AsyncReadableListableStorage<'a> {
+    pub fn create_async_readable_listable_transformer(
+        &self,
+        mut storage: AsyncReadableListableStorage,
+    ) -> AsyncReadableListableStorage {
         for transformer in &self.0 {
-            storage = transformer.create_async_readable_listable_transformer(storage);
+            storage = transformer
+                .clone()
+                .create_async_readable_listable_transformer(storage);
         }
         storage
     }

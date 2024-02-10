@@ -517,19 +517,19 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
 }
 
 /// A [`ReadableStorage`] partial decoder.
-pub struct StoragePartialDecoder<'a> {
-    storage: ReadableStorage<'a>,
+pub struct StoragePartialDecoder {
+    storage: ReadableStorage,
     key: StoreKey,
 }
 
-impl<'a> StoragePartialDecoder<'a> {
+impl StoragePartialDecoder {
     /// Create a new storage partial decoder.
-    pub fn new(storage: ReadableStorage<'a>, key: StoreKey) -> Self {
+    pub fn new(storage: ReadableStorage, key: StoreKey) -> Self {
         Self { storage, key }
     }
 }
 
-impl BytesPartialDecoderTraits for StoragePartialDecoder<'_> {
+impl BytesPartialDecoderTraits for StoragePartialDecoder {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ByteRange],
@@ -543,22 +543,22 @@ impl BytesPartialDecoderTraits for StoragePartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// A [`ReadableStorage`] partial decoder.
-pub struct AsyncStoragePartialDecoder<'a> {
-    storage: AsyncReadableStorage<'a>,
+pub struct AsyncStoragePartialDecoder {
+    storage: AsyncReadableStorage,
     key: StoreKey,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncStoragePartialDecoder<'a> {
+impl AsyncStoragePartialDecoder {
     /// Create a new storage partial decoder.
-    pub fn new(storage: AsyncReadableStorage<'a>, key: StoreKey) -> Self {
+    pub fn new(storage: AsyncReadableStorage, key: StoreKey) -> Self {
         Self { storage, key }
     }
 }
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder<'_> {
+impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ByteRange],

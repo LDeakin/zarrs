@@ -14,7 +14,7 @@ use zarrs::{
 // const ARRAY_PATH: &'static str = "/array";
 const ARRAY_PATH: &str = "/";
 
-fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
+fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + 'static>(
     storage: Arc<TStorage>,
 ) -> Result<Array<TStorage>, Box<dyn std::error::Error>> {
     use zarrs::array::{chunk_grid::ChunkGridTraits, codec, DataType, FillValue};
@@ -87,7 +87,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits>(
     Ok(array)
 }
 
-fn read_array_from_store<TStorage: ReadableStorageTraits>(
+fn read_array_from_store<TStorage: ReadableStorageTraits + 'static>(
     array: Array<TStorage>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Read the whole array

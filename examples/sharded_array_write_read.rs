@@ -27,11 +27,15 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         std::io::stdout(),
         //    )
     ));
-    let usage_log = UsageLogStorageTransformer::new(log_writer, || {
+    let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
         chrono::Utc::now().format("[%T%.3f] ").to_string()
-    });
-    let store_readable_listable = usage_log.create_readable_listable_transformer(store.clone());
-    let store = usage_log.create_readable_writable_transformer(store);
+    }));
+    let store_readable_listable = usage_log
+        .clone()
+        .create_readable_listable_transformer(store.clone());
+    let store = usage_log
+        .clone()
+        .create_readable_writable_transformer(store);
 
     // Create a group
     let group_path = "/group";

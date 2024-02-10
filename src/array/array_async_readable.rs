@@ -22,7 +22,7 @@ use super::{
 #[cfg(feature = "ndarray")]
 use super::elements_to_ndarray;
 
-impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Create an array in `storage` at `path`. The metadata is read from the store.
     ///
     /// # Errors
@@ -54,7 +54,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
     ) -> Result<Option<Vec<u8>>, ArrayError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_readable_transformer(storage_handle);
@@ -438,7 +438,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
                                 overlap.relative_to_unchecked(chunk_subset_in_array.start())
                             };
 
-                            let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+                            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
                             let storage_transformer = self
                                 .storage_transformers()
                                 .create_async_readable_transformer(storage_handle);
@@ -565,7 +565,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
             ));
         }
 
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_readable_transformer(storage_handle);
@@ -646,7 +646,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Array<TStorage> {
         chunk_indices: &[u64],
         parallel: bool,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_readable_transformer(storage_handle);

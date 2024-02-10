@@ -7,7 +7,7 @@ use crate::{
 
 use super::{unravel_index, Array, ArrayError};
 
-impl<TStorage: ?Sized + ReadableWritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
     ///
     /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
