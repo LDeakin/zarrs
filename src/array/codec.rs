@@ -964,6 +964,36 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
     }
 }
 
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
+    async fn partial_decode_opt(
+        &self,
+        decoded_regions: &[ByteRange],
+        _parallel: bool,
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        Ok(Some(extract_byte_ranges_read_seek(
+            &mut self.clone(),
+            decoded_regions,
+        )?))
+    }
+}
+
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
+    async fn partial_decode_opt(
+        &self,
+        decoded_regions: &[ByteRange],
+        _parallel: bool,
+    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+        Ok(Some(extract_byte_ranges_read_seek(
+            &mut self.clone(),
+            decoded_regions,
+        )?))
+    }
+}
+
 /// A codec error.
 #[derive(Debug, Error)]
 pub enum CodecError {
