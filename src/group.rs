@@ -193,14 +193,14 @@ fn validate_group_metadata(metadata: &GroupMetadataV3) -> Result<(), GroupCreate
 
 impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {}
 
-impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
+impl<TStorage: ?Sized + WritableStorageTraits + 'static> Group<TStorage> {
     /// Store metadata.
     ///
     /// # Errors
     ///
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata(&self) -> Result<(), StorageError> {
-        let storage_handle = StorageHandle::new(&*self.storage);
+        let storage_handle = StorageHandle::new(self.storage.clone());
         crate::storage::create_group(&storage_handle, self.path(), &self.metadata())
     }
 }
@@ -213,7 +213,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
     ///
     /// Returns [`StorageError`] if there is an underlying store error.
     pub async fn async_store_metadata(&self) -> Result<(), StorageError> {
-        let storage_handle = StorageHandle::new(&*self.storage);
+        let storage_handle = StorageHandle::new(self.storage.clone());
         crate::storage::async_create_group(&storage_handle, self.path(), &self.metadata()).await
     }
 }

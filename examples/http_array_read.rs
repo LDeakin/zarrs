@@ -20,9 +20,9 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
         std::io::stdout(),
         //    )
     ));
-    let usage_log = UsageLogStorageTransformer::new(log_writer, || {
+    let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
         chrono::Utc::now().format("[%T%.3f] ").to_string()
-    });
+    }));
     let store = usage_log.create_readable_transformer(store);
 
     // Init the existing array, reading metadata

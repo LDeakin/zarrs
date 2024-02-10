@@ -70,8 +70,8 @@ impl PerformanceMetricsStorageTransformer {
         self.locks.load(Ordering::Relaxed)
     }
 
-    fn create_transformer<TStorage: ?Sized>(
-        &self,
+    fn create_transformer<TStorage: ?Sized + 'static>(
+        self: Arc<Self>,
         storage: Arc<TStorage>,
     ) -> Arc<PerformanceMetricsStorageTransformerImpl<TStorage>> {
         Arc::new(PerformanceMetricsStorageTransformerImpl {
@@ -87,86 +87,77 @@ impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
         None
     }
 
-    fn create_readable_transformer<'a>(
-        &'a self,
-        storage: ReadableStorage<'a>,
-    ) -> ReadableStorage<'a> {
+    fn create_readable_transformer(self: Arc<Self>, storage: ReadableStorage) -> ReadableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_writable_transformer<'a>(
-        &'a self,
-        storage: WritableStorage<'a>,
-    ) -> WritableStorage<'a> {
+    fn create_writable_transformer(self: Arc<Self>, storage: WritableStorage) -> WritableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_readable_writable_transformer<'a>(
-        &'a self,
-        storage: ReadableWritableStorage<'a>,
-    ) -> ReadableWritableStorage<'a> {
+    fn create_readable_writable_transformer(
+        self: Arc<Self>,
+        storage: ReadableWritableStorage,
+    ) -> ReadableWritableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_listable_transformer<'a>(
-        &'a self,
-        storage: ListableStorage<'a>,
-    ) -> ListableStorage<'a> {
+    fn create_listable_transformer(self: Arc<Self>, storage: ListableStorage) -> ListableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_readable_listable_transformer<'a>(
-        &'a self,
-        storage: ReadableListableStorage<'a>,
-    ) -> ReadableListableStorage<'a> {
+    fn create_readable_listable_transformer(
+        self: Arc<Self>,
+        storage: ReadableListableStorage,
+    ) -> ReadableListableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous readable transformer.
-    fn create_async_readable_transformer<'a>(
-        &'a self,
-        storage: AsyncReadableStorage<'a>,
-    ) -> AsyncReadableStorage<'a> {
+    fn create_async_readable_transformer(
+        self: Arc<Self>,
+        storage: AsyncReadableStorage,
+    ) -> AsyncReadableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous writable transformer.
-    fn create_async_writable_transformer<'a>(
-        &'a self,
-        storage: AsyncWritableStorage<'a>,
-    ) -> AsyncWritableStorage<'a> {
+    fn create_async_writable_transformer(
+        self: Arc<Self>,
+        storage: AsyncWritableStorage,
+    ) -> AsyncWritableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous listable transformer.
-    fn create_async_listable_transformer<'a>(
-        &'a self,
-        storage: AsyncListableStorage<'a>,
-    ) -> AsyncListableStorage<'a> {
+    fn create_async_listable_transformer(
+        self: Arc<Self>,
+        storage: AsyncListableStorage,
+    ) -> AsyncListableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous readable and listable transformer.
-    fn create_async_readable_listable_transformer<'a>(
-        &'a self,
-        storage: AsyncReadableListableStorage<'a>,
-    ) -> AsyncReadableListableStorage<'a> {
+    fn create_async_readable_listable_transformer(
+        self: Arc<Self>,
+        storage: AsyncReadableListableStorage,
+    ) -> AsyncReadableListableStorage {
         self.create_transformer(storage)
     }
 }
 
 #[derive(Debug)]
-struct PerformanceMetricsStorageTransformerImpl<'a, TStorage: ?Sized> {
+struct PerformanceMetricsStorageTransformerImpl<TStorage: ?Sized + 'static> {
     storage: Arc<TStorage>,
-    transformer: &'a PerformanceMetricsStorageTransformer,
+    transformer: Arc<PerformanceMetricsStorageTransformer>,
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let value = self.storage.get(key);
@@ -230,7 +221,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
 }
 
 impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     fn list(&self) -> Result<StoreKeys, StorageError> {
         self.storage.list()
@@ -246,7 +237,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
 }
 
 impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
         self.transformer
@@ -287,7 +278,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 }
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
         self.transformer.locks.fetch_add(1, Ordering::Relaxed);
@@ -298,7 +289,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTr
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let value = self.storage.get(key).await;
@@ -367,7 +358,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     async fn list(&self) -> Result<StoreKeys, StorageError> {
         self.storage.list().await
@@ -385,7 +376,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
         self.transformer
@@ -428,7 +419,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<'_, TStorage>
+    for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
     async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
         self.transformer.locks.fetch_add(1, Ordering::Relaxed);

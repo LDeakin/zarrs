@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{array::MaybeBytes, byte_range::ByteRange};
 
 use super::{
@@ -15,18 +17,16 @@ use super::{
 ///
 /// This is a handle to borrowed storage which can be owned and cloned, even if the storage it references is unsized.
 #[derive(Clone)]
-pub struct StorageHandle<'a, TStorage: ?Sized>(&'a TStorage);
+pub struct StorageHandle<TStorage: ?Sized>(Arc<TStorage>);
 
-impl<'a, TStorage: ?Sized> StorageHandle<'a, TStorage> {
+impl<TStorage: ?Sized> StorageHandle<TStorage> {
     /// Create a new storage handle.
-    pub const fn new(storage: &'a TStorage) -> Self {
+    pub const fn new(storage: Arc<TStorage>) -> Self {
         Self(storage)
     }
 }
 
-impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
-    for StorageHandle<'_, TStorage>
-{
+impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits for StorageHandle<TStorage> {
     fn get(&self, key: &super::StoreKey) -> Result<MaybeBytes, super::StorageError> {
         self.0.get(key)
     }
@@ -59,9 +59,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     }
 }
 
-impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
-    for StorageHandle<'_, TStorage>
-{
+impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits for StorageHandle<TStorage> {
     fn list(&self) -> Result<super::StoreKeys, super::StorageError> {
         self.0.list()
     }
@@ -81,9 +79,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
     }
 }
 
-impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
-    for StorageHandle<'_, TStorage>
-{
+impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for StorageHandle<TStorage> {
     fn set(&self, key: &super::StoreKey, value: &[u8]) -> Result<(), super::StorageError> {
         self.0.set(key, value)
     }
@@ -109,7 +105,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 }
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
-    for StorageHandle<'_, TStorage>
+    for StorageHandle<TStorage>
 {
     fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
         self.0.mutex(key)
@@ -119,7 +115,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTr
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
-    for StorageHandle<'_, TStorage>
+    for StorageHandle<TStorage>
 {
     async fn get(&self, key: &super::StoreKey) -> Result<MaybeBytes, super::StorageError> {
         self.0.get(key).await
@@ -156,7 +152,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
-    for StorageHandle<'_, TStorage>
+    for StorageHandle<TStorage>
 {
     async fn list(&self) -> Result<super::StoreKeys, super::StorageError> {
         self.0.list().await
@@ -180,7 +176,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
-    for StorageHandle<'_, TStorage>
+    for StorageHandle<TStorage>
 {
     async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
         self.0.set(key, value).await
@@ -209,7 +205,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for StorageHandle<'_, TStorage>
+    for StorageHandle<TStorage>
 {
     async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
         self.0.mutex(key).await

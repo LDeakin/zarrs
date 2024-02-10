@@ -7,7 +7,7 @@ use crate::{
 
 use super::{Array, ArrayError};
 
-impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
     ///
     /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.

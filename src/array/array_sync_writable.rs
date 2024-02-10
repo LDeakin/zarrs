@@ -9,13 +9,13 @@ use crate::{
 
 use super::{codec::ArrayCodecTraits, unravel_index, Array, ArrayError};
 
-impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     /// Store metadata.
     ///
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata(&self) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
@@ -51,7 +51,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
             self.erase_chunk(chunk_indices)?;
             Ok(())
         } else {
-            let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
                 .storage_transformers()
                 .create_writable_transformer(storage_handle);
@@ -315,7 +315,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub fn erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
@@ -336,7 +336,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Array<TStorage> {
         chunks: &ArraySubset,
         parallel: bool,
     ) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);

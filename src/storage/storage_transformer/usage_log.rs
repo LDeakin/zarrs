@@ -44,9 +44,9 @@ use super::StorageTransformerExtension;
 ///     std::io::stdout(),
 ///     //    )
 /// ));
-/// let usage_log = UsageLogStorageTransformer::new(log_writer, || {
+/// let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
 ///     chrono::Utc::now().format("[%T%.3f] ").to_string()
-/// });
+/// }));
 /// let store = usage_log.create_readable_writable_transformer(store);
 /// ````
 ///
@@ -101,65 +101,65 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
         None
     }
 
-    fn create_readable_transformer<'a>(&self, storage: ReadableStorage<'a>) -> ReadableStorage<'a> {
+    fn create_readable_transformer(self: Arc<Self>, storage: ReadableStorage) -> ReadableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_readable_writable_transformer<'a>(
-        &'a self,
-        storage: ReadableWritableStorage<'a>,
-    ) -> ReadableWritableStorage<'a> {
+    fn create_readable_writable_transformer(
+        self: Arc<Self>,
+        storage: ReadableWritableStorage,
+    ) -> ReadableWritableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_writable_transformer<'a>(&self, storage: WritableStorage<'a>) -> WritableStorage<'a> {
+    fn create_writable_transformer(self: Arc<Self>, storage: WritableStorage) -> WritableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_listable_transformer<'a>(&self, storage: ListableStorage<'a>) -> ListableStorage<'a> {
+    fn create_listable_transformer(self: Arc<Self>, storage: ListableStorage) -> ListableStorage {
         self.create_transformer(storage)
     }
 
-    fn create_readable_listable_transformer<'a>(
-        &self,
-        storage: ReadableListableStorage<'a>,
-    ) -> ReadableListableStorage<'a> {
+    fn create_readable_listable_transformer(
+        self: Arc<Self>,
+        storage: ReadableListableStorage,
+    ) -> ReadableListableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous readable transformer.
-    fn create_async_readable_transformer<'a>(
-        &'a self,
-        storage: AsyncReadableStorage<'a>,
-    ) -> AsyncReadableStorage<'a> {
+    fn create_async_readable_transformer(
+        self: Arc<Self>,
+        storage: AsyncReadableStorage,
+    ) -> AsyncReadableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous writable transformer.
-    fn create_async_writable_transformer<'a>(
-        &'a self,
-        storage: AsyncWritableStorage<'a>,
-    ) -> AsyncWritableStorage<'a> {
+    fn create_async_writable_transformer(
+        self: Arc<Self>,
+        storage: AsyncWritableStorage,
+    ) -> AsyncWritableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous listable transformer.
-    fn create_async_listable_transformer<'a>(
-        &'a self,
-        storage: AsyncListableStorage<'a>,
-    ) -> AsyncListableStorage<'a> {
+    fn create_async_listable_transformer(
+        self: Arc<Self>,
+        storage: AsyncListableStorage,
+    ) -> AsyncListableStorage {
         self.create_transformer(storage)
     }
 
     #[cfg(feature = "async")]
     /// Create an asynchronous readable and listable transformer.
-    fn create_async_readable_listable_transformer<'a>(
-        &'a self,
-        storage: AsyncReadableListableStorage<'a>,
-    ) -> AsyncReadableListableStorage<'a> {
+    fn create_async_readable_listable_transformer(
+        self: Arc<Self>,
+        storage: AsyncReadableListableStorage,
+    ) -> AsyncReadableListableStorage {
         self.create_transformer(storage)
     }
 }

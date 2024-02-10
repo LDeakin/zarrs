@@ -60,35 +60,35 @@ pub use self::storage_handle::StorageHandle;
 pub use storage_value_io::StorageValueIO;
 
 /// [`Arc`] wrapped readable storage.
-pub type ReadableStorage<'a> = Arc<dyn ReadableStorageTraits + 'a>;
+pub type ReadableStorage = Arc<dyn ReadableStorageTraits>;
 
 /// [`Arc`] wrapped writable storage.
-pub type WritableStorage<'a> = Arc<dyn WritableStorageTraits + 'a>;
+pub type WritableStorage = Arc<dyn WritableStorageTraits>;
 
 /// [`Arc`] wrapped readable and writable storage.
-pub type ReadableWritableStorage<'a> = Arc<dyn ReadableWritableStorageTraits + 'a>;
+pub type ReadableWritableStorage = Arc<dyn ReadableWritableStorageTraits>;
 
 /// [`Arc`] wrapped listable storage.
-pub type ListableStorage<'a> = Arc<dyn ListableStorageTraits + 'a>;
+pub type ListableStorage = Arc<dyn ListableStorageTraits>;
 
 /// [`Arc`] wrapped readable and listable storage.
-pub type ReadableListableStorage<'a> = Arc<dyn ReadableListableStorageTraits + 'a>;
+pub type ReadableListableStorage = Arc<dyn ReadableListableStorageTraits>;
 
 #[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchronous readable storage.
-pub type AsyncReadableStorage<'a> = Arc<dyn AsyncReadableStorageTraits + 'a>;
+pub type AsyncReadableStorage = Arc<dyn AsyncReadableStorageTraits>;
 
 #[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchronous writable storage.
-pub type AsyncWritableStorage<'a> = Arc<dyn AsyncWritableStorageTraits + 'a>;
+pub type AsyncWritableStorage = Arc<dyn AsyncWritableStorageTraits>;
 
 #[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchronous listable storage.
-pub type AsyncListableStorage<'a> = Arc<dyn AsyncListableStorageTraits + 'a>;
+pub type AsyncListableStorage = Arc<dyn AsyncListableStorageTraits>;
 
 #[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchronous readable and listable storage.
-pub type AsyncReadableListableStorage<'a> = Arc<dyn AsyncReadableListableStorageTraits + 'a>;
+pub type AsyncReadableListableStorage = Arc<dyn AsyncReadableListableStorageTraits>;
 
 /// A [`StoreKey`] and [`ByteRange`].
 #[derive(Debug, Clone)]

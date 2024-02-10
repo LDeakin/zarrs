@@ -9,13 +9,13 @@ use crate::{
 
 use super::{codec::ArrayCodecTraits, Array, ArrayError};
 
-impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
+impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Store metadata.
     ///
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying store error.
     pub async fn async_store_metadata(&self) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_writable_transformer(storage_handle);
@@ -52,7 +52,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
             self.async_erase_chunk(chunk_indices).await?;
             Ok(())
         } else {
-            let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
                 .storage_transformers()
                 .create_async_writable_transformer(storage_handle);
@@ -234,7 +234,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_writable_transformer(storage_handle);
@@ -252,7 +252,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Array<TStorage> {
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub async fn async_erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(&*self.storage));
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_writable_transformer(storage_handle);
