@@ -104,6 +104,13 @@ mod tests {
             ]
         }"#;
         let config = serde_json::from_str::<ShardingCodecConfiguration>(JSON).unwrap();
+
+        // check that index_location is added if missing
+        assert_eq!(
+            config.to_string(),
+            r#"{"chunk_shape":[2,2],"codecs":[{"name":"bytes","configuration":{"endian":"little"}}],"index_codecs":[{"name":"bytes","configuration":{"endian":"little"}}],"index_location":"end"}"#
+        );
+
         let ShardingCodecConfiguration::V1(config) = config;
         assert_eq!(config.index_location, ShardingIndexLocation::End);
     }

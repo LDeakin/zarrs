@@ -138,29 +138,15 @@ async fn async_decode_shard_index(
 
 #[cfg(test)]
 mod tests {
-    use crate::{array::codec::ArrayCodecTraits, array_subset::ArraySubset};
+    use crate::{
+        array::codec::{
+            bytes_to_bytes::test_unbounded::TestUnboundedCodec, ArrayCodecTraits,
+            BytesToBytesCodecTraits,
+        },
+        array_subset::ArraySubset,
+    };
 
     use super::*;
-
-    const JSON_VALID1: &str = r#"{
-    "chunk_shape": [2, 2],
-    "codecs": [
-        {
-            "name": "bytes",
-            "configuration": {
-                "endian": "little"
-            }
-        }
-    ],
-    "index_codecs": [
-        {
-            "name": "bytes",
-            "configuration": {
-                "endian": "little"
-            }
-        }
-    ]
-}"#;
 
     const JSON_VALID2: &str = r#"{
     "chunk_shape": [1, 2, 2],
@@ -210,35 +196,44 @@ mod tests {
     "index_location": "start"
 }"#;
 
-    fn codec_sharding_round_trip_impl(json: &str, chunk_shape: ChunkShape) {
+    fn codec_sharding_round_trip_impl(
+        parallel: bool,
+        unbounded: bool,
+        index_at_end: bool,
+        all_fill_value: bool,
+        mut bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+    ) {
         let chunk_representation = ChunkRepresentation::new(
-            chunk_shape.to_vec(),
+            ChunkShape::try_from(vec![4, 4]).unwrap().into(),
             DataType::UInt16,
             FillValue::from(0u16),
         )
         .unwrap();
-        let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
+        let elements: Vec<u16> = if all_fill_value {
+            vec![0; chunk_representation.num_elements() as usize]
+        } else {
+            (0..chunk_representation.num_elements() as u16).collect()
+        };
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let codec_configuration: ShardingCodecConfiguration = serde_json::from_str(json).unwrap();
-        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
+        if unbounded {
+            bytes_to_bytes_codecs.push(Box::new(TestUnboundedCodec::new()))
+        }
+        let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
+            .index_location(if index_at_end {
+                ShardingIndexLocation::End
+            } else {
+                ShardingIndexLocation::Start
+            })
+            .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
+            .build();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
-        let decoded = codec
-            .decode(encoded.clone(), &chunk_representation)
-            .unwrap();
-        assert_ne!(encoded, decoded);
-        assert_eq!(bytes, decoded);
-
-        // println!("bytes {bytes:?}");
         let encoded = codec
-            .par_encode(bytes.clone(), &chunk_representation)
+            .encode_opt(bytes.clone(), &chunk_representation, parallel)
             .unwrap();
-        // println!("encoded {encoded:?}");
         let decoded = codec
-            .par_decode(encoded.clone(), &chunk_representation)
+            .decode_opt(encoded.clone(), &chunk_representation, parallel)
             .unwrap();
-        // println!("decoded {decoded:?}");
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
     }
@@ -247,8 +242,21 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip1() {
-        let chunk_shape = vec![4, 4].try_into().unwrap();
-        codec_sharding_round_trip_impl(JSON_VALID1, chunk_shape);
+        for index_at_end in [true, false] {
+            for all_fill_value in [true, false] {
+                for unbounded in [true, false] {
+                    for parallel in [true, false] {
+                        codec_sharding_round_trip_impl(
+                            parallel,
+                            unbounded,
+                            all_fill_value,
+                            index_at_end,
+                            vec![],
+                        );
+                    }
+                }
+            }
+        }
     }
 
     // FIXME: Investigate miri error for this test
@@ -257,71 +265,144 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip2() {
-        let chunk_shape = vec![2, 4, 4].try_into().unwrap();
-        codec_sharding_round_trip_impl(JSON_VALID2, chunk_shape);
+        use crate::array::codec::{Crc32cCodec, GzipCodec};
+
+        for index_at_end in [true, false] {
+            for all_fill_value in [true, false] {
+                for unbounded in [true, false] {
+                    for parallel in [true, false] {
+                        codec_sharding_round_trip_impl(
+                            parallel,
+                            unbounded,
+                            all_fill_value,
+                            index_at_end,
+                            vec![
+                                Box::new(GzipCodec::new(5).unwrap()),
+                                Box::new(Crc32cCodec::new()),
+                            ],
+                        );
+                    }
+                }
+            }
+        }
     }
 
-    // FIXME: Investigate miri error for this test
-    #[test]
-    #[cfg_attr(miri, ignore)]
-    fn codec_sharding_round_trip3() {
-        let chunk_shape = vec![4, 4].try_into().unwrap();
-        codec_sharding_round_trip_impl(JSON_VALID3, chunk_shape);
-    }
-
-    // TODO: This test non deterministically fails in miri
-    #[test]
-    fn codec_sharding_fill_value() {
-        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+    #[cfg(feature = "async")]
+    async fn codec_sharding_async_round_trip_impl(
+        parallel: bool,
+        unbounded: bool,
+        index_at_end: bool,
+        all_fill_value: bool,
+        mut bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+    ) {
         let chunk_representation = ChunkRepresentation::new(
-            chunk_shape.to_vec(),
+            ChunkShape::try_from(vec![4, 4]).unwrap().into(),
             DataType::UInt16,
-            FillValue::from(1u16),
+            FillValue::from(0u16),
         )
         .unwrap();
-        let bytes = chunk_representation
-            .fill_value()
-            .as_ne_bytes()
-            .repeat(chunk_representation.num_elements() as usize);
+        let elements: Vec<u16> = if all_fill_value {
+            vec![0; chunk_representation.num_elements() as usize]
+        } else {
+            (0..chunk_representation.num_elements() as u16).collect()
+        };
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let codec_configuration: ShardingCodecConfiguration =
-            serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
+        if unbounded {
+            bytes_to_bytes_codecs.push(Box::new(TestUnboundedCodec::new()))
+        }
+        let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
+            .index_location(if index_at_end {
+                ShardingIndexLocation::End
+            } else {
+                ShardingIndexLocation::Start
+            })
+            .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
+            .build();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .async_encode_opt(bytes.clone(), &chunk_representation, parallel)
+            .await
+            .unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &chunk_representation)
+            .async_decode_opt(encoded.clone(), &chunk_representation, parallel)
+            .await
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
-
-        let encoded_u64: Vec<u64> = encoded
-            .chunks_exact(8)
-            .map(|b| u64::from_ne_bytes(b.try_into().unwrap()))
-            .collect();
-        assert_eq!(encoded_u64, vec![u64::MAX; 2 * 2 * 2]); // 2 * chunk_shape / sharding.chunk_shape
     }
 
-    #[test]
-    fn codec_sharding_partial_decode1() {
+    // FIXME: Investigate miri error for this test
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn codec_sharding_async_round_trip() {
+        for index_at_end in [true, false] {
+            for all_fill_value in [true, false] {
+                for unbounded in [true, false] {
+                    for parallel in [true, false] {
+                        codec_sharding_async_round_trip_impl(
+                            parallel,
+                            unbounded,
+                            all_fill_value,
+                            index_at_end,
+                            vec![],
+                        )
+                        .await;
+                    }
+                }
+            }
+        }
+    }
+
+    fn codec_sharding_partial_decode(
+        parallel: bool,
+        unbounded: bool,
+        index_at_end: bool,
+        all_fill_value: bool,
+    ) {
         let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
         let chunk_representation =
             ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
                 .unwrap();
-        let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
+        let elements: Vec<u8> = if all_fill_value {
+            vec![0; chunk_representation.num_elements() as usize]
+        } else {
+            (0..chunk_representation.num_elements() as u8).collect()
+        };
+        let answer: Vec<u8> = if all_fill_value {
+            vec![0, 0]
+        } else {
+            vec![4, 8]
+        };
+
         let bytes = elements;
 
-        let codec_configuration: ShardingCodecConfiguration =
-            serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
+        let bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>> = if unbounded {
+            vec![Box::new(TestUnboundedCodec::new())]
+        } else {
+            vec![]
+        };
+        let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
+            .index_location(if index_at_end {
+                ShardingIndexLocation::End
+            } else {
+                ShardingIndexLocation::Start
+            })
+            .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
+            .build();
 
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode_opt(bytes.clone(), &chunk_representation, parallel)
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder_opt(input_handle, &chunk_representation, parallel)
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, parallel)
+            .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
@@ -330,45 +411,107 @@ mod tests {
             .chunks(std::mem::size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
-        let answer: Vec<u8> = vec![4, 8];
+        assert_eq!(answer, decoded_partial_chunk);
+    }
+
+    #[test]
+    fn codec_sharding_partial_decode_all() {
+        for index_at_end in [true, false] {
+            for all_fill_value in [true, false] {
+                for unbounded in [true, false] {
+                    for parallel in [true, false] {
+                        codec_sharding_partial_decode(
+                            parallel,
+                            unbounded,
+                            all_fill_value,
+                            index_at_end,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(feature = "async")]
+    async fn codec_sharding_async_partial_decode(
+        parallel: bool,
+        unbounded: bool,
+        index_at_end: bool,
+        all_fill_value: bool,
+    ) {
+        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
+                .unwrap();
+        let elements: Vec<u8> = if all_fill_value {
+            vec![0; chunk_representation.num_elements() as usize]
+        } else {
+            (0..chunk_representation.num_elements() as u8).collect()
+        };
+        let answer: Vec<u8> = if all_fill_value {
+            vec![0, 0]
+        } else {
+            vec![4, 8]
+        };
+
+        let bytes = elements;
+
+        let bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>> = if unbounded {
+            vec![Box::new(TestUnboundedCodec::new())]
+        } else {
+            vec![]
+        };
+        let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
+            .index_location(if index_at_end {
+                ShardingIndexLocation::End
+            } else {
+                ShardingIndexLocation::Start
+            })
+            .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
+            .build();
+
+        let encoded = codec
+            .encode_opt(bytes.clone(), &chunk_representation, parallel)
+            .unwrap();
+        let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec
+            .async_partial_decoder_opt(input_handle, &chunk_representation, parallel)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, parallel)
+            .await
+            .unwrap();
+
+        let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .chunks(std::mem::size_of::<u8>())
+            .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
+            .collect();
         assert_eq!(answer, decoded_partial_chunk);
     }
 
     #[cfg(feature = "async")]
     #[tokio::test]
-    async fn codec_sharding_async_partial_decode1() {
-        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
-        let chunk_representation =
-            ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
-                .unwrap();
-        let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
-        let bytes = elements;
-
-        let codec_configuration: ShardingCodecConfiguration =
-            serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
-
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
-        let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
-        let partial_decoder = codec
-            .async_partial_decoder(input_handle, &chunk_representation)
-            .await
-            .unwrap();
-        let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
-            .await
-            .unwrap();
-
-        let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
-            .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
-            .collect();
-        let answer: Vec<u8> = vec![4, 8];
-        assert_eq!(answer, decoded_partial_chunk);
+    async fn codec_sharding_async_partial_decode_all() {
+        for index_at_end in [true, false] {
+            for all_fill_value in [true, false] {
+                for unbounded in [true, false] {
+                    for parallel in [true, false] {
+                        codec_sharding_async_partial_decode(
+                            parallel,
+                            unbounded,
+                            all_fill_value,
+                            index_at_end,
+                        )
+                        .await;
+                    }
+                }
+            }
+        }
     }
 
     #[cfg(feature = "gzip")]

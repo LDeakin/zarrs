@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added missing partial decoding tests for codecs
  - Implement `From<ChunkShape>` for `Vec<NonZeroU64>`
  - Add `TestUnbounded` codec for internal testing
+ - Additional sharding tests
 
 ### Changed
  - Dependency bumps
