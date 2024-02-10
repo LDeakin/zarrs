@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking** added `chunk_shape_u64_unchecked` to `ChunkGridTraits` which must be implemented by chunk grids
  - Added `Array::retrieve_chunk_if_exists` and variants (`async_`, `_elements`, `_ndarray`)
  - Implement `AsyncBytesPartialDecoderTraits` for `std::io::Cursor<{&[u8],Vec<u8>}>`
+ - Added missing partial decoding tests for codecs
 
 ### Changed
  - Dependency bumps

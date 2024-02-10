@@ -103,7 +103,15 @@ fn permute<T: Copy>(v: &[T], order: &TransposeOrder) -> Vec<T> {
 mod tests {
     use std::num::NonZeroU64;
 
-    use crate::array::{codec::ArrayCodecTraits, ChunkRepresentation, DataType, FillValue};
+    use crate::{
+        array::{
+            codec::{
+                ArrayCodecTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec,
+            },
+            ChunkRepresentation, DataType, FillValue,
+        },
+        array_subset::ArraySubset,
+    };
 
     use super::*;
 
@@ -153,5 +161,87 @@ mod tests {
             "order": [2, 1, 0]
         }"#;
         codec_transpose_round_trip_impl(JSON, DataType::UInt16, FillValue::from(0u16));
+    }
+
+    #[test]
+    fn codec_transpose_partial_decode() {
+        let codec = TransposeCodec::new(TransposeOrder::new(&[1, 0]).unwrap());
+
+        let elements: Vec<f32> = (0..16).map(|i| i as f32).collect();
+        let chunk_representation = ChunkRepresentation::new(
+            vec![NonZeroU64::new(4).unwrap(), NonZeroU64::new(4).unwrap()],
+            DataType::Float32,
+            0.0f32.into(),
+        )
+        .unwrap();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
+
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let decoded_regions = [
+            ArraySubset::new_with_ranges(&[1..3, 1..4]),
+            ArraySubset::new_with_ranges(&[2..4, 0..2]),
+        ];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let bytes_codec = BytesCodec::default();
+        let input_handle = bytes_codec
+            .partial_decoder(input_handle, &chunk_representation)
+            .unwrap();
+        let partial_decoder = codec
+            .partial_decoder(input_handle, &chunk_representation)
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = decoded_partial_chunk
+            .into_iter()
+            .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
+            .collect::<Vec<_>>();
+        let answer: &[Vec<f32>] = &[
+            vec![5.0, 9.0, 6.0, 10.0, 7.0, 11.0],
+            vec![8.0, 12.0, 9.0, 13.0],
+        ];
+        assert_eq!(answer, decoded_partial_chunk);
+    }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    async fn codec_transpose_async_partial_decode() {
+        let codec = TransposeCodec::new(TransposeOrder::new(&[1, 0]).unwrap());
+
+        let elements: Vec<f32> = (0..16).map(|i| i as f32).collect();
+        let chunk_representation = ChunkRepresentation::new(
+            vec![NonZeroU64::new(4).unwrap(), NonZeroU64::new(4).unwrap()],
+            DataType::Float32,
+            0.0f32.into(),
+        )
+        .unwrap();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
+
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let decoded_regions = [
+            ArraySubset::new_with_ranges(&[1..3, 1..4]),
+            ArraySubset::new_with_ranges(&[2..4, 0..2]),
+        ];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let bytes_codec = BytesCodec::default();
+        let input_handle = bytes_codec
+            .async_partial_decoder(input_handle, &chunk_representation)
+            .await
+            .unwrap();
+        let partial_decoder = codec
+            .async_partial_decoder(input_handle, &chunk_representation)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode(&decoded_regions)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = decoded_partial_chunk
+            .into_iter()
+            .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
+            .collect::<Vec<_>>();
+        let answer: &[Vec<f32>] = &[
+            vec![5.0, 9.0, 6.0, 10.0, 7.0, 11.0],
+            vec![8.0, 12.0, 9.0, 13.0],
+        ];
+        assert_eq!(answer, decoded_partial_chunk);
     }
 }

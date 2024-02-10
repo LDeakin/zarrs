@@ -186,4 +186,49 @@ mod tests {
         let answer: Vec<u16> = vec![2, 6];
         assert_eq!(answer, decoded);
     }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn codec_bz2_async_partial_decode() {
+        let array_representation =
+            ArrayRepresentation::new(vec![2, 2, 2], DataType::UInt16, FillValue::from(0u16))
+                .unwrap();
+        let bytes_representation = BytesRepresentation::FixedSize(array_representation.size());
+
+        let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
+
+        let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
+        let codec = Bz2Codec::new_with_configuration(&codec_configuration);
+
+        let encoded = codec.encode(bytes).unwrap();
+        let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
+            .byte_ranges(
+                array_representation.shape(),
+                array_representation.element_size(),
+            )
+            .unwrap();
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec
+            .async_partial_decoder(input_handle, &bytes_representation)
+            .await
+            .unwrap();
+        let decoded = partial_decoder
+            .partial_decode(&decoded_regions)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let decoded: Vec<u16> = decoded
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .chunks(std::mem::size_of::<u16>())
+            .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
+            .collect();
+
+        let answer: Vec<u16> = vec![2, 6];
+        assert_eq!(answer, decoded);
+    }
 }

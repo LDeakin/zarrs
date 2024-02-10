@@ -276,4 +276,47 @@ mod tests {
         let answer: &[Vec<f32>] = &[vec![3.0, 4.0], vec![16.0, 16.0, 20.0, 20.0]];
         assert_eq!(answer, decoded_partial_chunk);
     }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    async fn codec_bitround_async_partial_decode() {
+        const JSON: &'static str = r#"{ "keepbits": 2 }"#;
+        let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+
+        let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
+        let chunk_representation = ChunkRepresentation::new(
+            vec![(elements.len() as u64).try_into().unwrap()],
+            DataType::Float32,
+            0.0f32.into(),
+        )
+        .unwrap();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
+
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let decoded_regions = [
+            ArraySubset::new_with_ranges(&[3..5]),
+            ArraySubset::new_with_ranges(&[17..21]),
+        ];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let bytes_codec = BytesCodec::default();
+        let input_handle = bytes_codec
+            .async_partial_decoder(input_handle, &chunk_representation)
+            .await
+            .unwrap();
+        let partial_decoder = codec
+            .async_partial_decoder(input_handle, &chunk_representation)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode(&decoded_regions)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = decoded_partial_chunk
+            .into_iter()
+            .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
+            .collect_vec();
+        let answer: &[Vec<f32>] = &[vec![3.0, 4.0], vec![16.0, 16.0, 20.0, 20.0]];
+        assert_eq!(answer, decoded_partial_chunk);
+    }
 }

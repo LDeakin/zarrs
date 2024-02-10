@@ -239,4 +239,50 @@ mod tests {
         ];
         assert_eq!(answer, decoded_partial_chunk);
     }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    async fn codec_zfp_async_partial_decode() {
+        let chunk_shape = vec![
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::Float32, 0.0f32.into()).unwrap();
+        let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
+
+        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
+        let codec = ZfpCodec::new_with_configuration(&configuration);
+
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let decoded_regions = [
+            ArraySubset::new_with_shape(vec![1, 2, 3]),
+            ArraySubset::new_with_ranges(&[0..3, 1..3, 2..3]),
+        ];
+
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec
+            .async_partial_decoder(input_handle, &chunk_representation)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode(&decoded_regions)
+            .await
+            .unwrap();
+
+        let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .chunks(std::mem::size_of::<f32>())
+            .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
+            .collect();
+        let answer: Vec<f32> = vec![
+            0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 8.0, 14.0, 17.0, 23.0, 26.0,
+        ];
+        assert_eq!(answer, decoded_partial_chunk);
+    }
 }

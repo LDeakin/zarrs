@@ -334,6 +334,43 @@ mod tests {
         assert_eq!(answer, decoded_partial_chunk);
     }
 
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    async fn codec_sharding_async_partial_decode1() {
+        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
+                .unwrap();
+        let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
+        let bytes = elements;
+
+        let codec_configuration: ShardingCodecConfiguration =
+            serde_json::from_str(JSON_VALID1).unwrap();
+        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
+
+        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec
+            .async_partial_decoder(input_handle, &chunk_representation)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode(&decoded_regions)
+            .await
+            .unwrap();
+
+        let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .chunks(std::mem::size_of::<u8>())
+            .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
+            .collect();
+        let answer: Vec<u8> = vec![4, 8];
+        assert_eq!(answer, decoded_partial_chunk);
+    }
+
     #[cfg(feature = "gzip")]
     #[cfg(feature = "crc32c")]
     #[test]

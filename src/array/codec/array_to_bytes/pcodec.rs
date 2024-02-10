@@ -192,7 +192,13 @@ impl PcodecDeltaEncodingOrder {
 mod tests {
     use std::num::NonZeroU64;
 
-    use crate::array::{codec::ArrayCodecTraits, ChunkRepresentation, DataType, FillValue};
+    use crate::{
+        array::{
+            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits},
+            transmute_to_bytes_vec, ChunkRepresentation, ChunkShape, DataType, FillValue,
+        },
+        array_subset::ArraySubset,
+    };
 
     use super::*;
 
@@ -323,5 +329,76 @@ mod tests {
             FillValue::from(0u8),
         )
         .is_err());
+    }
+
+    #[test]
+    fn codec_pcodec_partial_decode() {
+        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+        let chunk_representation = ChunkRepresentation::new(
+            chunk_shape.to_vec(),
+            DataType::UInt32,
+            FillValue::from(0u32),
+        )
+        .unwrap();
+        let elements: Vec<u32> = (0..chunk_representation.num_elements() as u32).collect();
+        let bytes = transmute_to_bytes_vec(elements);
+
+        let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
+
+        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec
+            .partial_decoder(input_handle, &chunk_representation)
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+
+        let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .chunks(std::mem::size_of::<u8>())
+            .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
+            .collect();
+        let answer: Vec<u32> = vec![4, 8];
+        assert_eq!(transmute_to_bytes_vec(answer), decoded_partial_chunk);
+    }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    async fn codec_pcodec_async_partial_decode() {
+        let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
+        let chunk_representation = ChunkRepresentation::new(
+            chunk_shape.to_vec(),
+            DataType::UInt32,
+            FillValue::from(0u32),
+        )
+        .unwrap();
+        let elements: Vec<u32> = (0..chunk_representation.num_elements() as u32).collect();
+        let bytes = transmute_to_bytes_vec(elements);
+
+        let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
+
+        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec
+            .async_partial_decoder(input_handle, &chunk_representation)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode(&decoded_regions)
+            .await
+            .unwrap();
+
+        let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .chunks(std::mem::size_of::<u8>())
+            .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
+            .collect();
+        let answer: Vec<u32> = vec![4, 8];
+        assert_eq!(transmute_to_bytes_vec(answer), decoded_partial_chunk);
     }
 }

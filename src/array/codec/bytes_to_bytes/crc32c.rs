@@ -113,4 +113,30 @@ mod tests {
         let answer: &[Vec<u8>] = &[vec![3, 4]];
         assert_eq!(answer, decoded_partial_chunk);
     }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    async fn codec_crc32c_async_partial_decode() {
+        let elements: Vec<u8> = (0..32).collect();
+        let bytes = elements;
+        let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
+
+        let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
+        let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
+
+        let encoded = codec.encode(bytes).unwrap();
+        let decoded_regions = [ByteRange::FromStart(3, Some(2))];
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let partial_decoder = codec
+            .async_partial_decoder(input_handle, &bytes_representation)
+            .await
+            .unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode(&decoded_regions)
+            .await
+            .unwrap()
+            .unwrap();
+        let answer: &[Vec<u8>] = &[vec![3, 4]];
+        assert_eq!(answer, decoded_partial_chunk);
+    }
 }
