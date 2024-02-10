@@ -674,6 +674,31 @@ fn iter_u64_to_usize<'a, I: Iterator<Item = &'a u64>>(iter: I) -> Vec<usize> {
         .collect::<Vec<_>>()
 }
 
+fn validate_element_size<T>(data_type: &DataType) -> Result<(), ArrayError> {
+    if data_type.size() == std::mem::size_of::<T>() {
+        Ok(())
+    } else {
+        Err(ArrayError::IncompatibleElementSize(
+            data_type.size(),
+            std::mem::size_of::<T>(),
+        ))
+    }
+}
+
+#[cfg(feature = "ndarray")]
+fn elements_to_ndarray<T>(
+    shape: &[u64],
+    elements: Vec<T>,
+) -> Result<ndarray::ArrayD<T>, ArrayError> {
+    let length = elements.len();
+    ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(|_| {
+        ArrayError::CodecError(codec::CodecError::UnexpectedChunkDecodedSize(
+            length * std::mem::size_of::<T>(),
+            shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
+        ))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
@@ -765,7 +790,7 @@ mod tests {
         array
             .store_array_subset_elements::<f32>(
                 &ArraySubset::new_with_ranges(&[3..6, 3..6]),
-                vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+                vec![1.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
             )
             .unwrap();
 
@@ -781,13 +806,22 @@ mod tests {
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 0
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 1
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 2
-                1.0, 1.0, 1.0, 0.1, 0.2, 0.3, 1.0, 1.0, //_3____________
+                1.0, 1.0, 1.0, 1.0, 0.2, 0.3, 1.0, 1.0, //_3____________
                 1.0, 1.0, 1.0, 0.4, 0.5, 0.6, 1.0, 1.0, // 4
                 1.0, 1.0, 1.0, 0.7, 0.8, 0.9, 1.0, 1.0, // 5 (1, 1)
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 6
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 7
             ]
         );
+        assert!(array
+            .retrieve_chunk_elements_if_exists::<f32>(&[0; 2])
+            .unwrap()
+            .is_none());
+        #[cfg(feature = "ndarray")]
+        assert!(array
+            .retrieve_chunk_ndarray_if_exists::<f32>(&[0; 2])
+            .unwrap()
+            .is_none());
     }
 
     fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {

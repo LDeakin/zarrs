@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `{Chunk,Array}Representation::shape_u64`
  - Added `ChunkGridTraits::chunk_shape_u64` to `ChunkGridTraits`
    - **Breaking** added `chunk_shape_u64_unchecked` to `ChunkGridTraits` which must be implemented by chunk grids
+ - Added `Array::retrieve_chunk_if_exists` and variants (`async_`, `_elements`, `_ndarray`)
 
 ### Changed
  - Dependency bumps
