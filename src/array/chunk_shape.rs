@@ -8,6 +8,12 @@ use super::{ArrayShape, NonZeroError};
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub struct ChunkShape(Vec<NonZeroU64>);
 
+impl From<ChunkShape> for Vec<NonZeroU64> {
+    fn from(val: ChunkShape) -> Self {
+        val.0.clone()
+    }
+}
+
 impl std::ops::Deref for ChunkShape {
     type Target = Vec<NonZeroU64>;
     fn deref(&self) -> &Self::Target {
