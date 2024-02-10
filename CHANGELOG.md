@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Minor docs fixes
  - **Breaking**: rename `IncompatibleArrayShapeError` to `IncompatibleArraySubsetAndShapeError`
  - **Breaking**: use `IncompatibleArraySubsetAndShapeError` in `ArrayStoreBytesError::InvalidArrayShape`
+ - Increase coverage for:
+   - `array_subset_iterators.rs`
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
