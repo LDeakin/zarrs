@@ -68,12 +68,6 @@ fn codec_blosc(c: &mut Criterion) {
         group.bench_function(BenchmarkId::new("decode", size3), |b| {
             b.iter(|| codec.decode(data_encoded.clone(), &rep).unwrap());
         });
-        group.bench_function(BenchmarkId::new("par_encode", size3), |b| {
-            b.iter(|| codec.par_encode(data_decoded.clone()).unwrap());
-        });
-        group.bench_function(BenchmarkId::new("par_decode", size3), |b| {
-            b.iter(|| codec.par_decode(data_encoded.clone(), &rep).unwrap());
-        });
     }
 }
 

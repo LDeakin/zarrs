@@ -7,7 +7,10 @@ use crate::{
     storage::{StorageError, StorageHandle, WritableStorageTraits},
 };
 
-use super::{codec::ArrayCodecTraits, unravel_index, Array, ArrayError};
+use super::{
+    codec::{ArrayCodecTraits, EncodeOptions},
+    unravel_index, Array, ArrayError,
+};
 
 impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     /// Store metadata.
@@ -32,10 +35,11 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
-    pub fn store_chunk(
+    pub fn store_chunk_opt(
         &self,
         chunk_indices: &[u64],
         chunk_bytes: Vec<u8>,
+        options: &EncodeOptions,
     ) -> Result<(), ArrayError> {
         // Validation
         let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
@@ -57,11 +61,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 .create_writable_transformer(storage_handle);
             let chunk_encoded: Vec<u8> = self
                 .codecs()
-                .encode_opt(
-                    chunk_bytes,
-                    &chunk_array_representation,
-                    self.parallel_codecs(),
-                )
+                .encode_opt(chunk_bytes, &chunk_array_representation, options)
                 .map_err(ArrayError::CodecError)?;
             crate::storage::store_chunk(
                 &*storage_transformer,
@@ -74,6 +74,16 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
+    /// Encode `chunk_bytes` and store at `chunk_indices` (default options).    
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub fn store_chunk(
+        &self,
+        chunk_indices: &[u64],
+        chunk_bytes: Vec<u8>,
+    ) -> Result<(), ArrayError> {
+        self.store_chunk_opt(chunk_indices, chunk_bytes, &EncodeOptions::default())
+    }
+
     /// Encode `chunk_elements` and store at `chunk_indices`.
     ///
     /// A chunk composed entirely of the fill value will not be written to the store.
@@ -82,16 +92,27 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
+    pub fn store_chunk_elements_opt<T: bytemuck::Pod>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_elements: Vec<T>,
+        options: &EncodeOptions,
+    ) -> Result<(), ArrayError> {
+        array_store_elements!(
+            self,
+            chunk_elements,
+            store_chunk_opt(chunk_indices, chunk_elements, options)
+        )
+    }
+
+    /// Encode `chunk_elements` and store at `chunk_indices` (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_chunk_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
-            chunk_elements,
-            store_chunk(chunk_indices, chunk_elements)
-        )
+        self.store_chunk_elements_opt(chunk_indices, chunk_elements, &EncodeOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -102,16 +123,28 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the size of `T` does not match the size of the data type,
     ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
+    pub fn store_chunk_ndarray_opt<T: bytemuck::Pod>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_array: &ndarray::ArrayViewD<T>,
+        options: &EncodeOptions,
+    ) -> Result<(), ArrayError> {
+        array_store_ndarray!(
+            self,
+            chunk_array,
+            store_chunk_elements_opt(chunk_indices, chunk_array, options)
+        )
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Encode `chunk_array` and store at `chunk_indices` (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_chunk_ndarray<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
-        array_store_ndarray!(
-            self,
-            chunk_array,
-            store_chunk_elements(chunk_indices, chunk_array)
-        )
+        self.store_chunk_ndarray_opt(chunk_indices, chunk_array, &EncodeOptions::default())
     }
 
     /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset.
@@ -129,12 +162,12 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
         chunks_bytes: Vec<u8>,
-        parallel: bool,
+        options: &EncodeOptions,
     ) -> Result<(), ArrayError> {
         let num_chunks = chunks.num_elements_usize();
         if num_chunks == 1 {
             let chunk_indices = chunks.start();
-            self.store_chunk(chunk_indices, chunks_bytes)?;
+            self.store_chunk_opt(chunk_indices, chunks_bytes, options)?;
         } else {
             let array_subset = self.chunks_subset(chunks)?;
             let element_size = self.data_type().size();
@@ -172,11 +205,11 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 );
 
                 // Store the chunk
-                self.store_chunk(&chunk_indices, chunk_bytes)?;
+                self.store_chunk_opt(&chunk_indices, chunk_bytes, options)?;
 
                 Ok(())
             };
-            if parallel {
+            if options.is_parallel() {
                 (0..chunks.shape().iter().product())
                     .into_par_iter()
                     .map(|chunk_index| {
@@ -195,24 +228,15 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         Ok(())
     }
 
-    /// Serial version of [`Array::store_chunks_opt`].
+    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset (default options).
+    #[allow(clippy::similar_names)]
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_chunks(
         &self,
         chunks: &ArraySubset,
         chunks_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self.store_chunks_opt(chunks, chunks_bytes, false)
-    }
-
-    /// Parallel version of [`Array::store_chunks_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_chunks(
-        &self,
-        chunks: &ArraySubset,
-        chunks_bytes: Vec<u8>,
-    ) -> Result<(), ArrayError> {
-        self.store_chunks_opt(chunks, chunks_bytes, true)
+        self.store_chunks_opt(chunks, chunks_bytes, &EncodeOptions::default())
     }
 
     /// Variation of [`Array::store_chunks_opt`] for elements with a known type.
@@ -223,41 +247,23 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
-        parallel: bool,
+        options: &EncodeOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
             chunks_elements,
-            store_chunks_opt(chunks, chunks_elements, parallel)
+            store_chunks_opt(chunks, chunks_elements, options)
         )
     }
 
-    /// Serial version of [`Array::store_chunks_elements_opt`].
+    /// Variation of [`Array::store_chunks_opt`] for elements with a known type (default options).
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
-            chunks_elements,
-            store_chunks_opt(chunks, chunks_elements, false)
-        )
-    }
-
-    /// Parallel version of [`Array::store_chunks_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_chunks_elements<T: bytemuck::Pod>(
-        &self,
-        chunks: &ArraySubset,
-        chunks_elements: Vec<T>,
-    ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
-            chunks_elements,
-            store_chunks_opt(chunks, chunks_elements, true)
-        )
+        self.store_chunks_elements_opt(chunks, chunks_elements, &EncodeOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -269,43 +275,24 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,
-        parallel: bool,
+        options: &EncodeOptions,
     ) -> Result<(), ArrayError> {
         array_store_ndarray!(
             self,
             chunks_array,
-            store_chunks_elements_opt(chunks, chunks_array, parallel)
+            store_chunks_elements_opt(chunks, chunks_array, options)
         )
     }
 
     #[cfg(feature = "ndarray")]
-    /// Serial version of [`Array::store_chunks_ndarray_opt`].
+    /// Variation of [`Array::store_chunks_opt`] for an [`ndarray::ArrayViewD`] (default options).
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_chunks_ndarray<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,
     ) -> Result<(), ArrayError> {
-        array_store_ndarray!(
-            self,
-            chunks_array,
-            store_chunks_elements_opt(chunks, chunks_array, false)
-        )
-    }
-
-    #[cfg(feature = "ndarray")]
-    /// Parallel version of [`Array::store_chunks_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_chunks_ndarray<T: bytemuck::Pod>(
-        &self,
-        chunks: &ArraySubset,
-        chunks_array: &ndarray::ArrayViewD<'_, T>,
-    ) -> Result<(), ArrayError> {
-        array_store_ndarray!(
-            self,
-            chunks_array,
-            store_chunks_elements_opt(chunks, chunks_array, true)
-        )
+        self.store_chunks_ndarray_opt(chunks, chunks_array, &EncodeOptions::default())
     }
 
     /// Erase the chunk at `chunk_indices`.
@@ -331,57 +318,29 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
-    pub fn erase_chunks_opt(
-        &self,
-        chunks: &ArraySubset,
-        parallel: bool,
-    ) -> Result<(), StorageError> {
+    pub fn erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
-        if parallel {
-            (0..chunks.shape().iter().product())
-                .into_par_iter()
-                .map(|chunk_index| {
-                    std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
-                        .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                        .collect::<Vec<_>>()
-                })
-                // chunks
-                // .iter_indices()
-                // .par_bridge()
-                .try_for_each(|chunk_indices| {
-                    crate::storage::erase_chunk(
-                        &*storage_transformer,
-                        self.path(),
-                        &chunk_indices,
-                        self.chunk_key_encoding(),
-                    )?;
-                    Ok::<_, StorageError>(())
-                })?;
-        } else {
-            for chunk_indices in chunks.iter_indices() {
+        (0..chunks.shape().iter().product())
+            .into_par_iter()
+            .map(|chunk_index| {
+                std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
+                    .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
+                    .collect::<Vec<_>>()
+            })
+            // chunks
+            // .iter_indices()
+            // .par_bridge()
+            .try_for_each(|chunk_indices| {
                 crate::storage::erase_chunk(
                     &*storage_transformer,
                     self.path(),
                     &chunk_indices,
                     self.chunk_key_encoding(),
                 )?;
-            }
-        }
-        Ok(())
-    }
-
-    /// Serial version of [`Array::store_chunks_ndarray_opt`].
-    #[allow(clippy::missing_errors_doc)]
-    pub fn erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
-        self.erase_chunks_opt(chunks, false)
-    }
-
-    /// Parallel version of [`Array::store_chunks_ndarray_opt`].
-    #[allow(clippy::missing_errors_doc)]
-    pub fn par_erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
-        self.erase_chunks_opt(chunks, true)
+                Ok::<_, StorageError>(())
+            })
     }
 }

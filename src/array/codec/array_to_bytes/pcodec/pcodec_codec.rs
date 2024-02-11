@@ -1,12 +1,11 @@
-// Note: No validation that this codec is created *without* a specified endianness for multi-byte data types.
-
 use pco::{ChunkConfig, FloatMultSpec, IntMultSpec, PagingSpec};
 
 use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
+            PartialDecoderOptions, RecommendedConcurrency,
         },
         transmute_from_bytes_vec, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
         DataType,
@@ -89,11 +88,19 @@ impl CodecTraits for PcodecCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for PcodecCodec {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // pcodec does not support parallel decode
+        Ok(RecommendedConcurrency::one())
+    }
+
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_encode {
@@ -136,7 +143,7 @@ impl ArrayCodecTraits for PcodecCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_decode {
@@ -180,7 +187,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(pcodec_partial_decoder::PcodecPartialDecoder::new(
             input_handle,
@@ -193,7 +200,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             pcodec_partial_decoder::AsyncPCodecPartialDecoder::new(

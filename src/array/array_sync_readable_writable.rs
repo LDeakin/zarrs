@@ -5,7 +5,10 @@ use crate::{
     storage::{data_key, ReadableWritableStorageTraits},
 };
 
-use super::{unravel_index, Array, ArrayError};
+use super::{
+    codec::{DecodeOptions, EncodeOptions},
+    unravel_index, Array, ArrayError,
+};
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage> {
     /// Encode `subset_bytes` and store in `array_subset`.
@@ -24,7 +27,8 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         &self,
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
-        parallel: bool,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
     ) -> Result<(), ArrayError> {
         // Validation
         if array_subset.dimensionality() != self.shape().len() {
@@ -61,7 +65,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             if array_subset == &chunk_subset_in_array {
                 // A fast path if the array subset matches the chunk subset
                 // This skips the internal decoding occurring in store_chunk_subset
-                self.store_chunk(chunk_indices, subset_bytes)?;
+                self.store_chunk_opt(chunk_indices, subset_bytes, encode_options)?;
             } else {
                 let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                 let chunk_subset_in_array_subset =
@@ -78,10 +82,12 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 let array_subset_in_chunk_subset =
                     unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
 
-                self.store_chunk_subset(
+                self.store_chunk_subset_opt(
                     chunk_indices,
                     &array_subset_in_chunk_subset,
                     chunk_subset_bytes,
+                    encode_options,
+                    decode_options,
                 )?;
             }
         } else {
@@ -106,15 +112,17 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 let array_subset_in_chunk_subset =
                     unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
 
-                self.store_chunk_subset(
+                self.store_chunk_subset_opt(
                     &chunk_indices,
                     &array_subset_in_chunk_subset,
                     chunk_subset_bytes,
+                    encode_options,
+                    decode_options,
                 )?;
 
                 Ok(())
             };
-            if parallel {
+            if encode_options.is_parallel() {
                 (0..chunks.shape().iter().product())
                     .into_par_iter()
                     .map(|chunk_index| {
@@ -135,24 +143,21 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         Ok(())
     }
 
-    /// Serial version of [`Array::store_array_subset_opt`].
+    /// Encode `subset_bytes` and store in `array_subset` (default options).
+    ///
+    /// See [`Array::store_array_subset_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_array_subset(
         &self,
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self.store_array_subset_opt(array_subset, subset_bytes, false)
-    }
-
-    /// Parallel version of [`Array::store_array_subset_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_array_subset(
-        &self,
-        array_subset: &ArraySubset,
-        subset_bytes: Vec<u8>,
-    ) -> Result<(), ArrayError> {
-        self.store_array_subset_opt(array_subset, subset_bytes, true)
+        self.store_array_subset_opt(
+            array_subset,
+            subset_bytes,
+            &EncodeOptions::default(),
+            &DecodeOptions::default(),
+        )
     }
 
     /// Encode `subset_elements` and store in `array_subset`.
@@ -167,33 +172,34 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
-        parallel: bool,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
             subset_elements,
-            store_array_subset_opt(array_subset, subset_elements, parallel)
+            store_array_subset_opt(
+                array_subset,
+                subset_elements,
+                encode_options,
+                decode_options
+            )
         )
     }
 
-    /// Serial version of [`Array::store_array_subset_elements_opt`].
+    /// Encode `subset_elements` and store in `array_subset` (default options).
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_array_subset_elements<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        self.store_array_subset_elements_opt(array_subset, subset_elements, false)
-    }
-
-    /// Parallel version of [`Array::store_array_subset_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_array_subset_elements<T: bytemuck::Pod>(
-        &self,
-        array_subset: &ArraySubset,
-        subset_elements: Vec<T>,
-    ) -> Result<(), ArrayError> {
-        self.store_array_subset_elements_opt(array_subset, subset_elements, true)
+        self.store_array_subset_elements_opt(
+            array_subset,
+            subset_elements,
+            &EncodeOptions::default(),
+            &DecodeOptions::default(),
+        )
     }
 
     #[cfg(feature = "ndarray")]
@@ -206,7 +212,8 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
-        parallel: bool,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
     ) -> Result<(), ArrayError> {
         let subset = ArraySubset::new_with_start_shape(
             subset_start.to_vec(),
@@ -215,30 +222,24 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         array_store_ndarray!(
             self,
             subset_array,
-            store_array_subset_elements_opt(&subset, subset_array, parallel)
+            store_array_subset_elements_opt(&subset, subset_array, encode_options, decode_options)
         )
     }
 
     #[cfg(feature = "ndarray")]
-    /// Serial version of [`Array::store_array_subset_ndarray_opt`].
+    /// Encode `subset_array` and store in the array subset starting at `subset_start` (default options).
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_array_subset_ndarray<T: bytemuck::Pod>(
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
-        self.store_array_subset_ndarray_opt(subset_start, subset_array, false)
-    }
-
-    #[cfg(feature = "ndarray")]
-    /// Parallel version of [`Array::store_array_subset_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn par_store_array_subset_ndarray<T: bytemuck::Pod>(
-        &self,
-        subset_start: &[u64],
-        subset_array: &ndarray::ArrayViewD<T>,
-    ) -> Result<(), ArrayError> {
-        self.store_array_subset_ndarray_opt(subset_start, subset_array, true)
+        self.store_array_subset_ndarray_opt(
+            subset_start,
+            subset_array,
+            &EncodeOptions::default(),
+            &DecodeOptions::default(),
+        )
     }
 
     /// Encode `chunk_subset_bytes` and store in `chunk_subset` of the chunk at `chunk_indices`.
@@ -253,11 +254,13 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     ///
     /// # Panics
     /// Panics if attempting to reference a byte beyond `usize::MAX`.
-    pub fn store_chunk_subset(
+    pub fn store_chunk_subset_opt(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_bytes: Vec<u8>,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
     ) -> Result<(), ArrayError> {
         let chunk_shape = self
             .chunk_grid()
@@ -285,7 +288,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
 
         if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
             // The subset spans the whole chunk, so store the bytes directly and skip decoding
-            self.store_chunk(chunk_indices, chunk_subset_bytes)
+            self.store_chunk_opt(chunk_indices, chunk_subset_bytes, encode_options)
         } else {
             // Lock the chunk
             let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
@@ -293,7 +296,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             let _lock = mutex.lock();
 
             // Decode the entire chunk
-            let mut chunk_bytes = self.retrieve_chunk(chunk_indices)?;
+            let mut chunk_bytes = self.retrieve_chunk_opt(chunk_indices, decode_options)?;
 
             // Update the intersecting subset of the chunk
             let element_size = self.data_type().size() as u64;
@@ -311,8 +314,25 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             }
 
             // Store the updated chunk
-            self.store_chunk(chunk_indices, chunk_bytes)
+            self.store_chunk_opt(chunk_indices, chunk_bytes, encode_options)
         }
+    }
+
+    /// Encode `chunk_subset_bytes` and store in `chunk_subset` of the chunk at `chunk_indices` (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub fn store_chunk_subset(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+        chunk_subset_bytes: Vec<u8>,
+    ) -> Result<(), ArrayError> {
+        self.store_chunk_subset_opt(
+            chunk_indices,
+            chunk_subset,
+            chunk_subset_bytes,
+            &EncodeOptions::default(),
+            &DecodeOptions::default(),
+        )
     }
 
     /// Encode `chunk_subset_elements` and store in `chunk_subset` of the chunk at `chunk_indices`.
@@ -323,16 +343,41 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk_subset`](Array::store_chunk_subset) error condition is met.
+    pub fn store_chunk_subset_elements_opt<T: bytemuck::Pod>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+        chunk_subset_elements: Vec<T>,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
+    ) -> Result<(), ArrayError> {
+        array_store_elements!(
+            self,
+            chunk_subset_elements,
+            store_chunk_subset_opt(
+                chunk_indices,
+                chunk_subset,
+                chunk_subset_elements,
+                encode_options,
+                decode_options
+            )
+        )
+    }
+
+    /// Encode `chunk_subset_elements` and store in `chunk_subset` of the chunk at `chunk_indices` (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn store_chunk_subset_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
+        self.store_chunk_subset_elements_opt(
+            chunk_indices,
+            chunk_subset,
             chunk_subset_elements,
-            store_chunk_subset(chunk_indices, chunk_subset, chunk_subset_elements)
+            &EncodeOptions::default(),
+            &DecodeOptions::default(),
         )
     }
 
@@ -344,11 +389,13 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_chunk_subset_elements`](Array::store_chunk_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub fn store_chunk_subset_ndarray<T: bytemuck::Pod>(
+    pub fn store_chunk_subset_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
         chunk_subset_array: &ndarray::ArrayViewD<T>,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
     ) -> Result<(), ArrayError> {
         let subset = ArraySubset::new_with_start_shape(
             chunk_subset_start.to_vec(),
@@ -361,7 +408,31 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         array_store_ndarray!(
             self,
             chunk_subset_array,
-            store_chunk_subset_elements(chunk_indices, &subset, chunk_subset_array)
+            store_chunk_subset_elements_opt(
+                chunk_indices,
+                &subset,
+                chunk_subset_array,
+                encode_options,
+                decode_options
+            )
+        )
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Encode `chunk_subset_array` and store in `chunk_subset` of the chunk in the subset starting at `chunk_subset_start` (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub fn store_chunk_subset_ndarray<T: bytemuck::Pod>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset_start: &[u64],
+        chunk_subset_array: &ndarray::ArrayViewD<T>,
+    ) -> Result<(), ArrayError> {
+        self.store_chunk_subset_ndarray_opt(
+            chunk_indices,
+            chunk_subset_start,
+            chunk_subset_array,
+            &EncodeOptions::default(),
+            &DecodeOptions::default(),
         )
     }
 }

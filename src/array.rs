@@ -215,8 +215,6 @@ pub struct Array<TStorage: ?Sized> {
     dimension_names: Option<Vec<DimensionName>>,
     /// Additional fields annotated with `"must_understand": false`.
     additional_fields: AdditionalFields,
-    /// If true, codecs run with multithreading (where supported)
-    parallel_codecs: bool,
     /// Zarrs metadata.
     include_zarrs_metadata: bool,
 }
@@ -289,7 +287,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
             additional_fields: metadata.additional_fields,
             storage_transformers,
             dimension_names: metadata.dimension_names,
-            parallel_codecs: true,
             include_zarrs_metadata: true,
         })
     }
@@ -369,19 +366,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
     #[must_use]
     pub const fn additional_fields(&self) -> &AdditionalFields {
         &self.additional_fields
-    }
-
-    /// Returns true if codecs can use multiple threads for encoding and decoding (where supported).
-    #[must_use]
-    pub const fn parallel_codecs(&self) -> bool {
-        self.parallel_codecs
-    }
-
-    /// Enable or disable multithreaded codec encoding/decoding. Enabled by default.
-    ///
-    /// It may be advantageous to turn this off if parallelisation is external to avoid thrashing.
-    pub fn set_parallel_codecs(&mut self, parallel_codecs: bool) {
-        self.parallel_codecs = parallel_codecs;
     }
 
     /// Enable or disable the inclusion of zarrs metadata in the array attributes. Enabled by default.

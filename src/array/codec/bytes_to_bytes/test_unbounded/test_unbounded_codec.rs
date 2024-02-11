@@ -1,6 +1,9 @@
 use crate::{
     array::{
-        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
+        codec::{
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
+            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+        },
         BytesRepresentation,
     },
     metadata::Metadata,
@@ -41,7 +44,19 @@ impl CodecTraits for TestUnboundedCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for TestUnboundedCodec {
-    fn encode_opt(&self, decoded_value: Vec<u8>, _parallel: bool) -> Result<Vec<u8>, CodecError> {
+    /// Return the maximum internal concurrency supported for the requested decoded representation.
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &BytesRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        Ok(RecommendedConcurrency::one())
+    }
+
+    fn encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        _options: &EncodeOptions,
+    ) -> Result<Vec<u8>, CodecError> {
         Ok(decoded_value)
     }
 
@@ -49,7 +64,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         Ok(encoded_value)
     }
@@ -58,7 +73,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             test_unbounded_partial_decoder::TestUnboundedPartialDecoder::new(r),
@@ -70,7 +85,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             test_unbounded_partial_decoder::AsyncTestUnboundedPartialDecoder::new(r),

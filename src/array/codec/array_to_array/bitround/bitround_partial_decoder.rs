@@ -1,6 +1,6 @@
 use crate::{
     array::{
-        codec::{ArrayPartialDecoderTraits, CodecError},
+        codec::{ArrayPartialDecoderTraits, CodecError, PartialDecodeOptions},
         DataType,
     },
     array_subset::ArraySubset,
@@ -54,11 +54,11 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = self
             .input_handle
-            .partial_decode_opt(array_subsets, parallel)?;
+            .partial_decode_opt(array_subsets, options)?;
 
         for bytes in &mut bytes {
             round_bytes(bytes, &self.data_type, self.keepbits)?;
@@ -115,11 +115,11 @@ impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = self
             .input_handle
-            .partial_decode_opt(array_subsets, parallel)
+            .partial_decode_opt(array_subsets, options)
             .await?;
 
         for bytes in &mut bytes {

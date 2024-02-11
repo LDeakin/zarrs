@@ -2,7 +2,10 @@ use std::io::Read;
 
 use crate::{
     array::{
-        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
+        codec::{
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
+            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+        },
         BytesRepresentation,
     },
     metadata::Metadata,
@@ -58,7 +61,19 @@ impl CodecTraits for Bz2Codec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Bz2Codec {
-    fn encode_opt(&self, decoded_value: Vec<u8>, _parallel: bool) -> Result<Vec<u8>, CodecError> {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &BytesRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // bz2 does not support parallel decode
+        Ok(RecommendedConcurrency::one())
+    }
+
+    fn encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        _options: &EncodeOptions,
+    ) -> Result<Vec<u8>, CodecError> {
         let mut encoder = bzip2::read::BzEncoder::new(decoded_value.as_slice(), self.compression);
         let mut out: Vec<u8> = Vec::new();
         encoder.read_to_end(&mut out)?;
@@ -69,7 +84,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut decoder = bzip2::read::BzDecoder::new(encoded_value.as_slice());
         let mut out: Vec<u8> = Vec::new();
@@ -81,7 +96,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bz2_partial_decoder::Bz2PartialDecoder::new(
             input_handle,
@@ -93,7 +108,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bz2_partial_decoder::AsyncBz2PartialDecoder::new(
             input_handle,

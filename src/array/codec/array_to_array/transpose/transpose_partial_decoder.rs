@@ -1,6 +1,6 @@
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
-    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError},
+    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, PartialDecodeOptions},
     ChunkRepresentation,
 };
 
@@ -33,7 +33,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         // Get transposed array subsets
         let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
@@ -46,7 +46,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
         }
         let mut encoded_value = self
             .input_handle
-            .partial_decode_opt(&decoded_regions_transposed, parallel)?;
+            .partial_decode_opt(&decoded_regions_transposed, options)?;
 
         // Reverse the transpose on each subset
         let order_decode =
@@ -99,7 +99,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         // Get transposed array subsets
         let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
@@ -112,7 +112,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
         }
         let mut encoded_value = self
             .input_handle
-            .partial_decode_opt(&decoded_regions_transposed, parallel)
+            .partial_decode_opt(&decoded_regions_transposed, options)
             .await?;
 
         // Reverse the transpose on each subset

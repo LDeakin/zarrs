@@ -4,7 +4,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
+            PartialDecoderOptions, RecommendedConcurrency,
         },
         BytesRepresentation, ChunkRepresentation,
     },
@@ -104,11 +105,31 @@ impl CodecTraits for BytesCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for BytesCodec {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // TODO: Recomment > 1 if endianness needs changing and input is sufficiently large
+        // if let Some(endian) = &self.endian {
+        //     if !endian.is_native() {
+        //         FIXME: Support parallel
+        //         let min_elements_per_thread = 32768; // 32^3
+        //         unsafe {
+        //             NonZeroU64::new_unchecked(
+        //                 (decoded_representation.num_elements() + min_elements_per_thread - 1)
+        //                     / min_elements_per_thread,
+        //             )
+        //         }
+        //     }
+        // }
+        Ok(RecommendedConcurrency::one())
+    }
+
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(decoded_value, decoded_representation)
     }
@@ -117,7 +138,7 @@ impl ArrayCodecTraits for BytesCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(encoded_value, decoded_representation)
     }
@@ -129,7 +150,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bytes_partial_decoder::BytesPartialDecoder::new(
             input_handle,
@@ -143,7 +164,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             bytes_partial_decoder::AsyncBytesPartialDecoder::new(

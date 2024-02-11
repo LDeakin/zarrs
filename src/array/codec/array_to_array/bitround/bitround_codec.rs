@@ -2,7 +2,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, CodecError,
-            CodecTraits,
+            CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
+            RecommendedConcurrency,
         },
         ChunkRepresentation, DataType,
     },
@@ -60,11 +61,19 @@ impl CodecTraits for BitroundCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for BitroundCodec {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // TODO: bitround is well suited to multithread, when is it optimal to kick in?
+        Ok(RecommendedConcurrency::one())
+    }
+
     fn encode_opt(
         &self,
         mut decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         round_bytes(
             &mut decoded_value,
@@ -78,7 +87,7 @@ impl ArrayCodecTraits for BitroundCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         Ok(encoded_value)
     }
@@ -90,7 +99,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             bitround_partial_decoder::BitroundPartialDecoder::new(
@@ -106,7 +115,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             bitround_partial_decoder::AsyncBitroundPartialDecoder::new(

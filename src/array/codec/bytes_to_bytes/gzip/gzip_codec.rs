@@ -4,7 +4,10 @@ use flate2::bufread::{GzDecoder, GzEncoder};
 
 use crate::{
     array::{
-        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
+        codec::{
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
+            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+        },
         BytesRepresentation,
     },
     metadata::Metadata,
@@ -64,7 +67,18 @@ impl CodecTraits for GzipCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for GzipCodec {
-    fn encode_opt(&self, decoded_value: Vec<u8>, _parallel: bool) -> Result<Vec<u8>, CodecError> {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &BytesRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        Ok(RecommendedConcurrency::one())
+    }
+
+    fn encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        _options: &EncodeOptions,
+    ) -> Result<Vec<u8>, CodecError> {
         let mut encoder = GzEncoder::new(
             Cursor::new(decoded_value),
             flate2::Compression::new(self.compression_level.as_u32()),
@@ -78,7 +92,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut decoder = GzDecoder::new(Cursor::new(encoded_value));
         let mut out: Vec<u8> = Vec::new();
@@ -90,7 +104,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(gzip_partial_decoder::GzipPartialDecoder::new(r)))
     }
@@ -100,7 +114,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             gzip_partial_decoder::AsyncGzipPartialDecoder::new(r),

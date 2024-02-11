@@ -27,7 +27,7 @@ use thiserror::Error;
 
 use crate::{
     array::{
-        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecPlugin},
+        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecPlugin, DecodeOptions},
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
     },
     metadata::Metadata,
@@ -108,11 +108,11 @@ fn decode_shard_index(
     encoded_shard_index: Vec<u8>,
     index_array_representation: &ChunkRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
-    parallel: bool,
+    options: &DecodeOptions,
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
     let decoded_shard_index =
-        index_codecs.decode_opt(encoded_shard_index, index_array_representation, parallel)?;
+        index_codecs.decode_opt(encoded_shard_index, index_array_representation, options)?;
     Ok(decoded_shard_index
         .chunks_exact(core::mem::size_of::<u64>())
         .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
@@ -124,11 +124,11 @@ async fn async_decode_shard_index(
     encoded_shard_index: Vec<u8>,
     index_array_representation: &ChunkRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
-    parallel: bool,
+    options: &DecodeOptions,
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
     let decoded_shard_index = index_codecs
-        .async_decode_opt(encoded_shard_index, index_array_representation, parallel)
+        .async_decode_opt(encoded_shard_index, index_array_representation, options)
         .await?;
     Ok(decoded_shard_index
         .chunks_exact(core::mem::size_of::<u64>())
@@ -141,10 +141,11 @@ mod tests {
     use crate::{
         array::codec::{
             bytes_to_bytes::test_unbounded::TestUnboundedCodec, ArrayCodecTraits,
-            BytesToBytesCodecTraits,
+            BytesToBytesCodecTraits, EncodeOptions, PartialDecodeOptions,
         },
         array_subset::ArraySubset,
     };
+    use std::num::NonZeroUsize;
 
     use super::*;
 
@@ -197,7 +198,8 @@ mod tests {
 }"#;
 
     fn codec_sharding_round_trip_impl(
-        parallel: bool,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -229,10 +231,10 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode_opt(bytes.clone(), &chunk_representation, parallel)
+            .encode_opt(bytes.clone(), &chunk_representation, encode_options)
             .unwrap();
         let decoded = codec
-            .decode_opt(encoded.clone(), &chunk_representation, parallel)
+            .decode_opt(encoded.clone(), &chunk_representation, decode_options)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
@@ -246,8 +248,15 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
+                        let mut encode_options = EncodeOptions::default();
+                        let mut decode_options = DecodeOptions::default();
+                        if !parallel {
+                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                        }
                         codec_sharding_round_trip_impl(
-                            parallel,
+                            &encode_options,
+                            &decode_options,
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -265,14 +274,23 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip2() {
+        use std::num::NonZeroUsize;
+
         use crate::array::codec::{Crc32cCodec, GzipCodec};
 
         for index_at_end in [true, false] {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
+                        let mut encode_options = EncodeOptions::default();
+                        let mut decode_options = DecodeOptions::default();
+                        if !parallel {
+                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                        }
                         codec_sharding_round_trip_impl(
-                            parallel,
+                            &encode_options,
+                            &decode_options,
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -289,7 +307,8 @@ mod tests {
 
     #[cfg(feature = "async")]
     async fn codec_sharding_async_round_trip_impl(
-        parallel: bool,
+        encode_options: &EncodeOptions,
+        decode_options: &DecodeOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -321,11 +340,11 @@ mod tests {
             .build();
 
         let encoded = codec
-            .async_encode_opt(bytes.clone(), &chunk_representation, parallel)
+            .async_encode_opt(bytes.clone(), &chunk_representation, encode_options)
             .await
             .unwrap();
         let decoded = codec
-            .async_decode_opt(encoded.clone(), &chunk_representation, parallel)
+            .async_decode_opt(encoded.clone(), &chunk_representation, decode_options)
             .await
             .unwrap();
         assert_ne!(encoded, decoded);
@@ -341,8 +360,15 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
+                        let mut encode_options = EncodeOptions::default();
+                        let mut decode_options = DecodeOptions::default();
+                        if !parallel {
+                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                        }
                         codec_sharding_async_round_trip_impl(
-                            parallel,
+                            &encode_options,
+                            &decode_options,
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -356,7 +382,7 @@ mod tests {
     }
 
     fn codec_sharding_partial_decode(
-        parallel: bool,
+        options: &PartialDecodeOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -392,16 +418,14 @@ mod tests {
             .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
             .build();
 
-        let encoded = codec
-            .encode_opt(bytes.clone(), &chunk_representation, parallel)
-            .unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder_opt(input_handle, &chunk_representation, parallel)
+            .partial_decoder_opt(input_handle, &chunk_representation, options)
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, parallel)
+            .partial_decode_opt(&decoded_regions, options)
             .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
@@ -420,8 +444,14 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
+                        let mut encode_options = EncodeOptions::default();
+                        let mut decode_options = DecodeOptions::default();
+                        if !parallel {
+                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                        }
                         codec_sharding_partial_decode(
-                            parallel,
+                            &decode_options,
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -434,7 +464,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     async fn codec_sharding_async_partial_decode(
-        parallel: bool,
+        options: &PartialDecodeOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -470,17 +500,15 @@ mod tests {
             .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
             .build();
 
-        let encoded = codec
-            .encode_opt(bytes.clone(), &chunk_representation, parallel)
-            .unwrap();
+        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .async_partial_decoder_opt(input_handle, &chunk_representation, parallel)
+            .async_partial_decoder_opt(input_handle, &chunk_representation, options)
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, parallel)
+            .partial_decode_opt(&decoded_regions, options)
             .await
             .unwrap();
 
@@ -501,8 +529,14 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
+                        let mut encode_options = EncodeOptions::default();
+                        let mut decode_options = DecodeOptions::default();
+                        if !parallel {
+                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                        }
                         codec_sharding_async_partial_decode(
-                            parallel,
+                            &decode_options,
                             unbounded,
                             all_fill_value,
                             index_at_end,

@@ -131,7 +131,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         ArraySubset::new_with_start_shape(vec![0, 0], inner_chunk_shape.clone())?,
         ArraySubset::new_with_start_shape(vec![0, 4], inner_chunk_shape.clone())?,
     ];
-    let decoded_inner_chunks = partial_decoder.par_partial_decode(&inner_chunks_to_decode)?;
+    let decoded_inner_chunks = partial_decoder.partial_decode(&inner_chunks_to_decode)?;
     let decoded_inner_chunks = decoded_inner_chunks
         .into_iter()
         .map(|bytes| {

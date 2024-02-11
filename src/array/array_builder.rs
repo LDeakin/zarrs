@@ -78,8 +78,6 @@ pub struct ArrayBuilder {
     pub dimension_names: Option<Vec<DimensionName>>,
     /// Additional fields.
     pub additional_fields: AdditionalFields,
-    /// Parallel codecs.
-    pub parallel_codecs: bool,
 }
 
 impl ArrayBuilder {
@@ -107,7 +105,6 @@ impl ArrayBuilder {
             storage_transformers: StorageTransformerChain::default(),
             dimension_names: None,
             additional_fields: AdditionalFields::default(),
-            parallel_codecs: true,
         }
     }
 
@@ -125,7 +122,6 @@ impl ArrayBuilder {
             .attributes(array.attributes().clone())
             .chunk_key_encoding(array.chunk_key_encoding().clone())
             .dimension_names(array.dimension_names().clone())
-            .parallel_codecs(array.parallel_codecs())
             .array_to_array_codecs(array.codecs().array_to_array_codecs().to_vec())
             .array_to_bytes_codec(array.codecs().array_to_bytes_codec().clone())
             .bytes_to_bytes_codecs(array.codecs().bytes_to_bytes_codecs().to_vec())
@@ -251,14 +247,6 @@ impl ArrayBuilder {
         self
     }
 
-    /// Set whether or not to use multithreaded codec encoding and decoding.
-    ///
-    /// If parallel codecs is not set, it defaults to true.
-    pub fn parallel_codecs(&mut self, parallel_codecs: bool) -> &mut Self {
-        self.parallel_codecs = parallel_codecs;
-        self
-    }
-
     /// Build into an [`Array`].
     ///
     /// # Errors
@@ -312,7 +300,6 @@ impl ArrayBuilder {
             attributes: self.attributes.clone(),
             dimension_names: self.dimension_names.clone(),
             additional_fields: self.additional_fields.clone(),
-            parallel_codecs: self.parallel_codecs,
             include_zarrs_metadata: true,
         })
     }
@@ -346,7 +333,6 @@ mod tests {
         builder.fill_value(FillValue::from(0i8));
 
         builder.dimension_names(Some(vec!["y".into(), "x".into()]));
-        builder.parallel_codecs(true);
 
         let mut attributes = serde_json::Map::new();
         attributes.insert("key".to_string(), "value".into());
@@ -376,7 +362,6 @@ mod tests {
         assert_eq!(array.chunk_grid_shape(), Some(vec![4, 4]));
         assert_eq!(array.fill_value(), &FillValue::from(0i8));
         assert_eq!(array.dimension_names(), &Some(vec!["y".into(), "x".into()]));
-        assert!(array.parallel_codecs());
         assert_eq!(array.attributes(), &attributes);
         assert_eq!(array.additional_fields(), &additional_fields);
 
@@ -387,7 +372,6 @@ mod tests {
         assert_eq!(builder.attributes, builder2.attributes);
         assert_eq!(builder.dimension_names, builder2.dimension_names);
         assert_eq!(builder.additional_fields, builder2.additional_fields);
-        assert_eq!(builder.parallel_codecs, builder2.parallel_codecs);
     }
 
     #[test]

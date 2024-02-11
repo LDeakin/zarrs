@@ -1,12 +1,15 @@
 //! An array to bytes codec formed by joining an array to array sequence, array to bytes, and bytes to bytes sequence of codecs.
 
+use std::num::NonZeroU64;
+
 use crate::{
     array::{
         codec::{
             partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache},
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
             ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
-            CodecError, CodecTraits,
+            CodecError, CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
+            RecommendedConcurrency,
         },
         BytesRepresentation, ChunkRepresentation,
     },
@@ -223,7 +226,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         &'a self,
         mut input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        options: &PartialDecoderOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -236,22 +239,22 @@ impl ArrayToBytesCodecTraits for CodecChain {
             bytes_representations.iter().rev().skip(1),
         ) {
             if Some(codec_index) == self.cache_index {
-                input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, parallel)?);
+                input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
             }
             codec_index += 1;
             input_handle =
-                codec.partial_decoder_opt(input_handle, bytes_representation, parallel)?;
+                codec.partial_decoder_opt(input_handle, bytes_representation, options)?;
         }
 
         if Some(codec_index) == self.cache_index {
-            input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, parallel)?);
+            input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
         };
 
         let mut input_handle = {
             let array_representation = array_representations.last().unwrap();
             let codec = &self.array_to_bytes;
             codec_index += 1;
-            codec.partial_decoder_opt(input_handle, array_representation, parallel)?
+            codec.partial_decoder_opt(input_handle, array_representation, options)?
         };
 
         for (codec, array_representation) in std::iter::zip(
@@ -262,19 +265,19 @@ impl ArrayToBytesCodecTraits for CodecChain {
                 input_handle = Box::new(ArrayPartialDecoderCache::new(
                     &*input_handle,
                     array_representation.clone(),
-                    parallel,
+                    options,
                 )?);
             }
             codec_index += 1;
             input_handle =
-                codec.partial_decoder_opt(input_handle, array_representation, parallel)?;
+                codec.partial_decoder_opt(input_handle, array_representation, options)?;
         }
 
         if Some(codec_index) == self.cache_index {
             input_handle = Box::new(ArrayPartialDecoderCache::new(
                 &*input_handle,
                 array_representations.first().unwrap().clone(),
-                parallel,
+                options,
             )?);
         }
 
@@ -286,7 +289,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         &'a self,
         mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -300,17 +303,17 @@ impl ArrayToBytesCodecTraits for CodecChain {
         ) {
             if Some(codec_index) == self.cache_index {
                 input_handle =
-                    Box::new(BytesPartialDecoderCache::async_new(&*input_handle, parallel).await?);
+                    Box::new(BytesPartialDecoderCache::async_new(&*input_handle, options).await?);
             }
             codec_index += 1;
             input_handle = codec
-                .async_partial_decoder_opt(input_handle, bytes_representation, parallel)
+                .async_partial_decoder_opt(input_handle, bytes_representation, options)
                 .await?;
         }
 
         if Some(codec_index) == self.cache_index {
             input_handle =
-                Box::new(BytesPartialDecoderCache::async_new(&*input_handle, parallel).await?);
+                Box::new(BytesPartialDecoderCache::async_new(&*input_handle, options).await?);
         };
 
         let mut input_handle = {
@@ -318,7 +321,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             let codec = &self.array_to_bytes;
             codec_index += 1;
             codec
-                .async_partial_decoder_opt(input_handle, array_representation, parallel)
+                .async_partial_decoder_opt(input_handle, array_representation, options)
                 .await?
         };
 
@@ -331,14 +334,14 @@ impl ArrayToBytesCodecTraits for CodecChain {
                     ArrayPartialDecoderCache::async_new(
                         &*input_handle,
                         array_representation.clone(),
-                        parallel,
+                        options,
                     )
                     .await?,
                 );
             }
             codec_index += 1;
             input_handle = codec
-                .async_partial_decoder_opt(input_handle, array_representation, parallel)
+                .async_partial_decoder_opt(input_handle, array_representation, options)
                 .await?;
         }
 
@@ -347,7 +350,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
                 ArrayPartialDecoderCache::async_new(
                     &*input_handle,
                     array_representations.first().unwrap().clone(),
-                    parallel,
+                    options,
                 )
                 .await?,
             );
@@ -379,11 +382,52 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for CodecChain {
+    fn recommended_concurrency(
+        &self,
+        decoded_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        let mut recommended_concurrency =
+            RecommendedConcurrency::new(unsafe { NonZeroU64::new_unchecked(u64::MAX) }, unsafe {
+                NonZeroU64::new_unchecked(1)
+            });
+
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        // bytes->bytes
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            recommended_concurrency.merge(&codec.recommended_concurrency(bytes_representation)?);
+        }
+
+        recommended_concurrency.merge(
+            &self
+                .array_to_bytes
+                .recommended_concurrency(array_representations.last().unwrap())?,
+        );
+
+        // array->array
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            recommended_concurrency.merge(&codec.recommended_concurrency(array_representation)?);
+        }
+
+        // FIXME: Check if maximum < efficient, if so set maximum to efficient
+
+        Ok(recommended_concurrency)
+    }
+
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -397,21 +441,21 @@ impl ArrayCodecTraits for CodecChain {
         let mut value = decoded_value;
         // array->array
         for codec in &self.array_to_array {
-            value = codec.encode_opt(value, &decoded_representation, parallel)?;
+            value = codec.encode_opt(value, &decoded_representation, options)?;
             decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
         }
 
         // array->bytes
         value = self
             .array_to_bytes
-            .encode_opt(value, &decoded_representation, parallel)?;
+            .encode_opt(value, &decoded_representation, options)?;
         let mut decoded_representation = self
             .array_to_bytes
             .compute_encoded_size(&decoded_representation)?;
 
         // bytes->bytes
         for codec in &self.bytes_to_bytes {
-            value = codec.encode_opt(value, parallel)?;
+            value = codec.encode_opt(value, options)?;
             decoded_representation = codec.compute_encoded_size(&decoded_representation);
         }
 
@@ -422,7 +466,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         mut encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -434,14 +478,14 @@ impl ArrayCodecTraits for CodecChain {
             self.bytes_to_bytes.iter().rev(),
             bytes_representations.iter().rev().skip(1),
         ) {
-            encoded_value = codec.decode_opt(encoded_value, bytes_representation, parallel)?;
+            encoded_value = codec.decode_opt(encoded_value, bytes_representation, options)?;
         }
 
         // bytes->array
         encoded_value = self.array_to_bytes.decode_opt(
             encoded_value,
             array_representations.last().unwrap(),
-            parallel,
+            options,
         )?;
 
         // array->array
@@ -449,7 +493,7 @@ impl ArrayCodecTraits for CodecChain {
             self.array_to_array.iter().rev(),
             array_representations.iter().rev().skip(1),
         ) {
-            encoded_value = codec.decode_opt(encoded_value, array_representation, parallel)?;
+            encoded_value = codec.decode_opt(encoded_value, array_representation, options)?;
         }
 
         if encoded_value.len() as u64 != decoded_representation.size() {
@@ -467,7 +511,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -482,7 +526,7 @@ impl ArrayCodecTraits for CodecChain {
         // array->array
         for codec in &self.array_to_array {
             value = codec
-                .async_encode_opt(value, &decoded_representation, parallel)
+                .async_encode_opt(value, &decoded_representation, options)
                 .await?;
             decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
         }
@@ -490,7 +534,7 @@ impl ArrayCodecTraits for CodecChain {
         // array->bytes
         value = self
             .array_to_bytes
-            .async_encode_opt(value, &decoded_representation, parallel)
+            .async_encode_opt(value, &decoded_representation, options)
             .await?;
         let mut decoded_representation = self
             .array_to_bytes
@@ -498,7 +542,7 @@ impl ArrayCodecTraits for CodecChain {
 
         // bytes->bytes
         for codec in &self.bytes_to_bytes {
-            value = codec.async_encode_opt(value, parallel).await?;
+            value = codec.async_encode_opt(value, options).await?;
             decoded_representation = codec.compute_encoded_size(&decoded_representation);
         }
 
@@ -510,7 +554,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         mut encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -523,7 +567,7 @@ impl ArrayCodecTraits for CodecChain {
             bytes_representations.iter().rev().skip(1),
         ) {
             encoded_value = codec
-                .async_decode_opt(encoded_value, bytes_representation, parallel)
+                .async_decode_opt(encoded_value, bytes_representation, options)
                 .await?;
         }
 
@@ -533,7 +577,7 @@ impl ArrayCodecTraits for CodecChain {
             .async_decode_opt(
                 encoded_value,
                 array_representations.last().unwrap(),
-                parallel,
+                options,
             )
             .await?;
 
@@ -543,7 +587,7 @@ impl ArrayCodecTraits for CodecChain {
             array_representations.iter().rev().skip(1),
         ) {
             encoded_value = codec
-                .async_decode_opt(encoded_value, array_representation, parallel)
+                .async_decode_opt(encoded_value, array_representation, options)
                 .await?;
         }
 
@@ -678,16 +722,16 @@ mod tests {
         }
         assert_eq!(bytes, decoded);
 
-        let encoded = codec
-            .par_encode(bytes.clone(), &chunk_representation)
-            .unwrap();
-        let decoded = codec
-            .par_decode(encoded.clone(), &chunk_representation)
-            .unwrap();
-        if not_just_bytes {
-            assert_ne!(encoded, decoded);
-        }
-        assert_eq!(bytes, decoded);
+        // let encoded = codec
+        //     .par_encode(bytes.clone(), &chunk_representation)
+        //     .unwrap();
+        // let decoded = codec
+        //     .par_decode(encoded.clone(), &chunk_representation)
+        //     .unwrap();
+        // if not_just_bytes {
+        //     assert_ne!(encoded, decoded);
+        // }
+        // assert_eq!(bytes, decoded);
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
