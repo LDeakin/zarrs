@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Additional sharding tests
  - Add store lock tests
  - Added `contiguous_elements` method to `ContiguousIndicesIterator` and `ContiguousLinearisedIndicesIterator`
+ - Added `ChunkShape::num_elements`
 
 ### Changed
  - Dependency bumps

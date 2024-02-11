@@ -5,8 +5,21 @@ use serde::{Deserialize, Serialize};
 use super::{ArrayShape, NonZeroError};
 
 /// The shape of a chunk. All dimensions must be non-zero.
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub struct ChunkShape(Vec<NonZeroU64>);
+
+impl ChunkShape {
+    /// Return the number of elements.
+    ///
+    /// Equal to the product of the components of its shape.
+    pub fn num_elements(&self) -> NonZeroU64 {
+        unsafe {
+            // Multiplying NonZeroU64 must result in NonZeroU64
+            NonZeroU64::new_unchecked(self.0.iter().copied().map(NonZeroU64::get).product::<u64>())
+        }
+    }
+}
 
 impl From<ChunkShape> for Vec<NonZeroU64> {
     fn from(val: ChunkShape) -> Self {
