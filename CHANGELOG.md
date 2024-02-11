@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `TestUnbounded` codec for internal testing
  - Additional sharding tests
  - Add store lock tests
+ - Added `contiguous_elements` method to `ContiguousIndicesIterator` and `ContiguousLinearisedIndicesIterator`
 
 ### Changed
  - Dependency bumps

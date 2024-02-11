@@ -158,7 +158,6 @@ impl ContiguousIndicesIterator {
     /// Create a new contiguous indices iterator.
     ///
     /// # Errors
-    ///
     /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
         subset: &ArraySubset,
@@ -179,7 +178,6 @@ impl ContiguousIndicesIterator {
     /// Create a new contiguous indices iterator.
     ///
     /// # Safety
-    ///
     /// `array_shape` must encapsulate `subset`.
     #[must_use]
     #[allow(clippy::missing_panics_doc)]
@@ -215,6 +213,12 @@ impl ContiguousIndicesIterator {
             inner,
             contiguous_elements,
         }
+    }
+
+    /// Return the number of contiguous elements (fixed on each iteration).
+    #[must_use]
+    pub fn contiguous_elements(&self) -> u64 {
+        self.contiguous_elements
     }
 }
 
@@ -267,6 +271,12 @@ impl<'a> ContiguousLinearisedIndicesIterator<'a> {
     pub unsafe fn new_unchecked(subset: &ArraySubset, array_shape: &'a [u64]) -> Self {
         let inner = subset.iter_contiguous_indices_unchecked(array_shape);
         Self { inner, array_shape }
+    }
+
+    /// Return the number of contiguous elements (fixed on each iteration).
+    #[must_use]
+    pub fn contiguous_elements(&self) -> u64 {
+        self.inner.contiguous_elements()
     }
 }
 
