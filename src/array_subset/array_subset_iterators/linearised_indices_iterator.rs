@@ -1,89 +1,109 @@
 use std::iter::FusedIterator;
 
-use itertools::izip;
+use crate::{
+    array::{ravel_indices, ArrayShape},
+    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
+};
 
-use crate::array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError};
+use super::IndicesIterator;
 
-/// Iterates over linearised element indices of an array subset in an array.
-pub struct LinearisedIndicesIterator<'a> {
+/// An iterator over the linearised indices in an array subset.
+///
+/// Iterates over the last dimension fastest (i.e. C-contiguous order).
+/// For example, consider a 4x3 array with linearised element indices
+/// ```text
+/// 0   1   2
+/// 3   4   5
+/// 6   7   8
+/// 9  10  11
+/// ```
+/// An iterator with an array subset corresponding to the lower right 2x2 region will produce `[7, 8, 10, 11]`.
+pub struct LinearisedIndices {
     subset: ArraySubset,
-    index: u64,
-    array_shape: &'a [u64],
+    array_shape: ArrayShape,
 }
 
-impl<'a> LinearisedIndicesIterator<'a> {
+impl LinearisedIndices {
     /// Create a new linearised indices iterator.
     ///
     /// # Errors
-    ///
     /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
         subset: ArraySubset,
-        array_shape: &'a [u64],
+        array_shape: ArrayShape,
     ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
         if subset.dimensionality() == array_shape.len()
-            && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
+            && std::iter::zip(subset.end_exc(), &array_shape).all(|(end, shape)| end <= *shape)
         {
             Ok(Self {
                 subset,
-                index: 0,
                 array_shape,
             })
         } else {
-            Err(IncompatibleArraySubsetAndShapeError(
-                subset,
-                array_shape.to_vec(),
-            ))
+            Err(IncompatibleArraySubsetAndShapeError(subset, array_shape))
         }
     }
 
     /// Create a new linearised indices iterator.
     ///
     /// # Safety
-    ///
     /// `array_shape` must encapsulate `subset`.
     #[must_use]
-    pub unsafe fn new_unchecked(subset: ArraySubset, array_shape: &'a [u64]) -> Self {
+    pub unsafe fn new_unchecked(subset: ArraySubset, array_shape: ArrayShape) -> Self {
         debug_assert_eq!(subset.dimensionality(), array_shape.len());
         debug_assert!(
-            std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
+            std::iter::zip(subset.end_exc(), &array_shape).all(|(end, shape)| end <= *shape)
         );
         Self {
             subset,
-            index: 0,
             array_shape,
         }
     }
+
+    /// Create a new serial iterator.
+    #[must_use]
+    pub fn iter(&self) -> LinearisedIndicesIterator<'_> {
+        <&Self as IntoIterator>::into_iter(self)
+    }
+}
+
+impl<'a> IntoIterator for &'a LinearisedIndices {
+    type Item = u64;
+    type IntoIter = LinearisedIndicesIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        LinearisedIndicesIterator {
+            inner: IndicesIterator::new(&self.subset),
+            array_shape: &self.array_shape,
+        }
+    }
+}
+
+/// Iterates over linearised element indices of an array subset in an array.
+pub struct LinearisedIndicesIterator<'a> {
+    inner: IndicesIterator<'a>,
+    array_shape: &'a [u64],
 }
 
 impl Iterator for LinearisedIndicesIterator<'_> {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut current = self.index;
-        let mut out = 0;
-        let mut mult = 1;
-        for (&subset_start, &subset_size, &array_size) in izip!(
-            self.subset.start.iter().rev(),
-            self.subset.shape.iter().rev(),
-            self.array_shape.iter().rev()
-        ) {
-            let index = current % subset_size + subset_start;
-            current /= subset_size;
-            out += index * mult;
-            mult *= array_size;
-        }
-        if current == 0 {
-            self.index += 1;
-            Some(out)
-        } else {
-            None
-        }
+        self.inner
+            .next()
+            .map(|indices| ravel_indices(&indices, self.array_shape))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let num_elements = self.subset.num_elements_usize();
-        (num_elements, Some(num_elements))
+        self.inner.size_hint()
+    }
+}
+
+impl DoubleEndedIterator for LinearisedIndicesIterator<'_> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner
+            .next_back()
+            .map(|indices| ravel_indices(&indices, self.array_shape))
     }
 }
 

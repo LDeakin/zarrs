@@ -165,10 +165,13 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             let out_array_subset_slice = UnsafeCellSlice::new(out_array_subset.as_mut_slice());
 
             // Decode those chunks if required
-            // FIXME: Concurrent limit here
-            unsafe { array_subset.iter_chunks_unchecked(chunk_representation.shape()) }
-                .par_bridge()
-                .try_for_each(|(chunk_indices, chunk_subset)| {
+            let chunks = unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
+
+            rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                options.concurrent_limit().get(),
+                chunks.into_par_iter(),
+                try_for_each,
+                |(chunk_indices, chunk_subset)| {
                     let out_array_subset_slice = unsafe { out_array_subset_slice.get() };
 
                     let shard_index_idx: usize =
@@ -206,13 +209,16 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                     let chunk_subset_in_array_subset =
                         unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                     let mut decoded_offset = 0;
-                    for (array_subset_element_index, num_elements) in unsafe {
+                    let contiguous_iterator = unsafe {
                         chunk_subset_in_array_subset
-                            .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
-                    } {
+                            .contiguous_linearised_indices_unchecked(array_subset.shape())
+                    };
+                    let length =
+                        usize::try_from(contiguous_iterator.contiguous_elements() * element_size)
+                            .unwrap();
+                    for (array_subset_element_index, _num_elements) in &contiguous_iterator {
                         let output_offset =
                             usize::try_from(array_subset_element_index * element_size).unwrap();
-                        let length = usize::try_from(num_elements * element_size).unwrap();
                         out_array_subset_slice[output_offset..output_offset + length]
                             .copy_from_slice(
                                 &decoded_bytes[decoded_offset..decoded_offset + length],
@@ -220,7 +226,8 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         decoded_offset += length;
                     }
                     Ok::<_, CodecError>(())
-                })?;
+                }
+            )?;
             out.push(out_array_subset);
         }
         Ok(out)
@@ -453,6 +460,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
         let element_size = self.decoded_representation.element_size();
         let mut out = Vec::with_capacity(array_subsets.len());
+        // FIXME: Could go parallel here
         for array_subset in array_subsets {
             // shard (subset)
             let mut shard = vec![
@@ -466,7 +474,8 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
             // Find filled / non filled chunks
             let chunk_info =
-                unsafe { array_subset.iter_chunks_unchecked(self.chunk_grid.chunk_shape()) }
+                unsafe { array_subset.chunks_unchecked(self.chunk_grid.chunk_shape()) }
+                    .into_iter()
                     .map(|(chunk_indices, chunk_subset)| {
                         let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
                         let chunk_index = usize::try_from(chunk_index).unwrap();
@@ -485,7 +494,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                     .collect::<Vec<_>>();
 
             // Decode unfilled chunks
-            futures::future::join_all(
+            let results = futures::future::join_all(
                 chunk_info
                     .iter()
                     .filter_map(|(chunk_subset, offset_size)| {
@@ -537,25 +546,38 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                         Ok::<_, CodecError>((chunk_subset_in_array_subset, decoded_chunk))
                     }),
             )
-            .await
-            .into_par_iter()
-            .try_for_each(|subset_and_decoded_chunk| {
-                let (chunk_subset_in_array_subset, decoded_chunk) = subset_and_decoded_chunk?;
-                let mut data_idx = 0;
-                let element_size = element_size as u64;
-                let shard_slice = unsafe { shard_slice.get() };
-                for (index, num_elements) in unsafe {
-                    chunk_subset_in_array_subset
-                        .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
-                } {
-                    let shard_offset = usize::try_from(index * element_size).unwrap();
-                    let length = usize::try_from(num_elements * element_size).unwrap();
-                    shard_slice[shard_offset..shard_offset + length]
-                        .copy_from_slice(&decoded_chunk[data_idx..data_idx + length]);
-                    data_idx += length;
-                }
-                Ok::<_, CodecError>(())
-            })?;
+            .await;
+            // FIXME: Concurrency limit for futures
+
+            if !results.is_empty() {
+                rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                    options.concurrent_limit().get(),
+                    results.into_par_iter(),
+                    try_for_each,
+                    |subset_and_decoded_chunk| {
+                        let (chunk_subset_in_array_subset, decoded_chunk) =
+                            subset_and_decoded_chunk?;
+                        let mut data_idx = 0;
+                        let element_size = element_size as u64;
+                        let shard_slice = unsafe { shard_slice.get() };
+                        let contiguous_iterator = unsafe {
+                            chunk_subset_in_array_subset
+                                .contiguous_linearised_indices_unchecked(array_subset.shape())
+                        };
+                        let length = usize::try_from(
+                            contiguous_iterator.contiguous_elements() * element_size,
+                        )
+                        .unwrap();
+                        for (index, _num_elements) in &contiguous_iterator {
+                            let shard_offset = usize::try_from(index * element_size).unwrap();
+                            shard_slice[shard_offset..shard_offset + length]
+                                .copy_from_slice(&decoded_chunk[data_idx..data_idx + length]);
+                            data_idx += length;
+                        }
+                        Ok::<_, CodecError>(())
+                    }
+                )?;
+            }
 
             // Write filled chunks
             let filled_chunks = chunk_info
@@ -577,24 +599,33 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                     .repeat(chunk_array_ss.num_elements_usize());
 
                 // Write filled chunks
-                filled_chunks.par_iter().for_each(|chunk_subset| {
-                    let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
-                    let chunk_subset_in_array_subset =
-                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    let mut data_idx = 0;
-                    let element_size = self.decoded_representation.element_size() as u64;
-                    let shard_slice = unsafe { shard_slice.get() };
-                    for (index, num_elements) in unsafe {
-                        chunk_subset_in_array_subset
-                            .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
-                    } {
-                        let shard_offset = usize::try_from(index * element_size).unwrap();
-                        let length = usize::try_from(num_elements * element_size).unwrap();
-                        shard_slice[shard_offset..shard_offset + length]
-                            .copy_from_slice(&filled_chunk[data_idx..data_idx + length]);
-                        data_idx += length;
+                rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                    options.concurrent_limit().get(),
+                    filled_chunks.into_par_iter(),
+                    for_each,
+                    |chunk_subset| {
+                        let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
+                        let chunk_subset_in_array_subset =
+                            unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                        let mut data_idx = 0;
+                        let element_size = self.decoded_representation.element_size() as u64;
+                        let shard_slice = unsafe { shard_slice.get() };
+                        let contiguous_iterator = unsafe {
+                            chunk_subset_in_array_subset
+                                .contiguous_linearised_indices_unchecked(array_subset.shape())
+                        };
+                        let length = usize::try_from(
+                            contiguous_iterator.contiguous_elements() * element_size,
+                        )
+                        .unwrap();
+                        for (index, _num_elements) in &contiguous_iterator {
+                            let shard_offset = usize::try_from(index * element_size).unwrap();
+                            shard_slice[shard_offset..shard_offset + length]
+                                .copy_from_slice(&filled_chunk[data_idx..data_idx + length]);
+                            data_idx += length;
+                        }
                     }
-                });
+                );
             };
 
             #[allow(clippy::transmute_undefined_repr)]

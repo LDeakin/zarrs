@@ -93,7 +93,8 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             }
         } else {
             let chunks_to_update = chunks
-                .iter_indices()
+                .indices()
+                .into_iter()
                 .map(|chunk_indices| {
                     let chunk_subset_in_array = unsafe {
                         self.chunk_grid()
@@ -310,11 +311,13 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 // Update the intersecting subset of the chunk
                 let element_size = self.data_type().size() as u64;
                 let mut offset = 0;
-                for (chunk_element_index, num_elements) in unsafe {
-                    chunk_subset.iter_contiguous_linearised_indices_unchecked(&chunk_shape)
-                } {
+                let contiguous_indices =
+                    unsafe { chunk_subset.contiguous_linearised_indices_unchecked(&chunk_shape) };
+                let length =
+                    usize::try_from(contiguous_indices.contiguous_elements() * element_size)
+                        .unwrap();
+                for (chunk_element_index, _num_elements) in &contiguous_indices {
                     let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
-                    let length = usize::try_from(num_elements * element_size).unwrap();
                     debug_assert!(chunk_offset + length <= chunk_bytes.len());
                     debug_assert!(offset + length <= chunk_subset_bytes.len());
                     chunk_bytes[chunk_offset..chunk_offset + length]

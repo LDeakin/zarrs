@@ -1,58 +1,264 @@
 use std::iter::FusedIterator;
 
-use itertools::izip;
+use crate::{
+    array::{unravel_index, ArrayIndices},
+    array_subset::ArraySubset,
+};
 
-use crate::{array::ArrayIndices, array_subset::ArraySubset};
+use rayon::iter::{
+    plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer},
+    IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
+};
 
-/// Iterates over element indices in an array subset.
-pub struct IndicesIterator {
-    subset_rev: ArraySubset,
-    index: u64,
+/// An iterator over the indices in an array subset.
+///
+/// Iterates over the last dimension fastest (i.e. C-contiguous order).
+/// For example, consider a 4x3 array with element indices
+/// ```text
+/// (0, 0)  (0, 1)  (0, 2)
+/// (1, 0)  (1, 1)  (1, 2)
+/// (2, 0)  (2, 1)  (2, 2)
+/// (3, 0)  (3, 1)  (3, 2)
+/// ```
+/// An iterator with an array subset corresponding to the lower right 2x2 region will produce `[(2, 1), (2, 2), (3, 1), (3, 2)]`.
+pub struct Indices {
+    subset: ArraySubset,
+    index_front: u64,
+    index_back: u64,
+    length: usize,
 }
 
-impl IndicesIterator {
-    /// Create a new indices iterator.
+impl Indices {
+    /// Create a new indices struct.
     #[must_use]
-    pub fn new(mut subset: ArraySubset) -> Self {
-        subset.start.reverse();
-        subset.shape.reverse();
+    pub fn new(subset: ArraySubset) -> Self {
+        let length = subset.num_elements_usize();
+        let index_front = 0;
+        let index_back = length as u64;
         Self {
-            subset_rev: subset,
-            index: 0,
+            subset,
+            index_front,
+            index_back,
+            length,
+        }
+    }
+
+    /// Create a new indices struct spanning an explicit index range.
+    ///
+    /// # Panics
+    /// Panics if `index_back` < `index_front`
+    #[must_use]
+    pub fn new_with_start_end(subset: ArraySubset, index_front: u64, index_back: u64) -> Self {
+        let length = usize::try_from(index_back - index_front).unwrap();
+        Self {
+            subset,
+            index_front,
+            index_back,
+            length,
+        }
+    }
+
+    /// Create a new serial iterator.
+    #[must_use]
+    pub fn iter(&self) -> IndicesIterator<'_> {
+        <&Self as IntoIterator>::into_iter(self)
+    }
+}
+
+impl<'a> IntoIterator for &'a Indices {
+    type Item = ArrayIndices;
+    type IntoIter = IndicesIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IndicesIterator {
+            subset: &self.subset,
+            index_front: self.index_front,
+            index_back: self.index_back,
+            length: self.length,
         }
     }
 }
 
-impl Iterator for IndicesIterator {
+impl<'a> IntoParallelIterator for &'a Indices {
+    type Item = ArrayIndices;
+    type Iter = ParIndicesIterator<'a>;
+
+    fn into_par_iter(self) -> Self::Iter {
+        ParIndicesIterator {
+            subset: &self.subset,
+            index_front: self.index_front,
+            index_back: self.index_back,
+            length: self.length,
+        }
+    }
+}
+
+/// Serial indices iterator.
+///
+/// See [`Indices`].
+pub struct IndicesIterator<'a> {
+    subset: &'a ArraySubset,
+    index_front: u64,
+    index_back: u64,
+    length: usize,
+}
+
+impl<'a> IndicesIterator<'a> {
+    /// Create a new indices iterator.
+    #[must_use]
+    pub(super) fn new(subset: &'a ArraySubset) -> Self {
+        let length = subset.num_elements_usize();
+        let index_front = 0;
+        let index_back = length as u64;
+        Self {
+            subset,
+            index_front,
+            index_back,
+            length,
+        }
+    }
+
+    /// Create a new indices iterator spanning an explicit index range.
+    ///
+    /// # Panics
+    /// Panics if `index_back` < `index_front`
+    #[must_use]
+    pub(super) fn new_with_start_end(
+        subset: &'a ArraySubset,
+        index_front: u64,
+        index_back: u64,
+    ) -> Self {
+        let length = usize::try_from(index_back - index_front).unwrap();
+        Self {
+            subset,
+            index_front,
+            index_back,
+            length,
+        }
+    }
+}
+
+impl Iterator for IndicesIterator<'_> {
     type Item = ArrayIndices;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut current = self.index;
-        // let mut indices = vec![0u64; self.subset_rev.dimensionality()];
-        let mut indices = vec![core::mem::MaybeUninit::uninit(); self.subset_rev.dimensionality()];
-        for (out, &subset_start, &subset_size) in izip!(
-            indices.iter_mut().rev(),
-            self.subset_rev.start.iter(),
-            self.subset_rev.shape.iter(),
-        ) {
-            out.write(current % subset_size + subset_start);
-            current /= subset_size;
-        }
-        if current == 0 {
-            self.index += 1;
-            #[allow(clippy::transmute_undefined_repr)]
-            Some(unsafe { std::mem::transmute(indices) })
+        let indices = std::iter::zip(
+            unravel_index(self.index_front, self.subset.shape()).iter(), // FIXME: iter variant
+            self.subset.start(),
+        )
+        .map(|(index, start)| index + start)
+        .collect::<Vec<_>>();
+
+        if self.index_front < self.index_back {
+            self.index_front += 1;
+            Some(indices)
         } else {
             None
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let num_elements = self.subset_rev.num_elements_usize();
-        (num_elements, Some(num_elements))
+        (self.length, Some(self.length))
     }
 }
 
-impl ExactSizeIterator for IndicesIterator {}
+impl DoubleEndedIterator for IndicesIterator<'_> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.index_back > self.index_front {
+            self.index_back -= 1;
+            let indices = std::iter::zip(
+                unravel_index(self.index_back, self.subset.shape()).iter(), // FIXME: iter variant
+                self.subset.start(),
+            )
+            .map(|(index, start)| index + start)
+            .collect::<Vec<_>>();
+            Some(indices)
+        } else {
+            None
+        }
+    }
+}
 
-impl FusedIterator for IndicesIterator {}
+impl ExactSizeIterator for IndicesIterator<'_> {}
+
+impl FusedIterator for IndicesIterator<'_> {}
+
+/// Parallel indices iterator.
+///
+/// See [`Indices`].
+pub struct ParIndicesIterator<'a> {
+    subset: &'a ArraySubset,
+    index_front: u64,
+    index_back: u64,
+    length: usize,
+}
+
+impl ParallelIterator for ParIndicesIterator<'_> {
+    type Item = ArrayIndices;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: UnindexedConsumer<Self::Item>,
+    {
+        bridge(self, consumer)
+    }
+
+    fn opt_len(&self) -> Option<usize> {
+        Some(self.len())
+    }
+}
+
+impl IndexedParallelIterator for ParIndicesIterator<'_> {
+    fn with_producer<CB: ProducerCallback<Self::Item>>(self, callback: CB) -> CB::Output {
+        let producer = ParIndicesIteratorProducer::from(&self);
+        callback.callback(producer)
+    }
+
+    fn drive<C: Consumer<Self::Item>>(self, consumer: C) -> C::Result {
+        bridge(self, consumer)
+    }
+
+    fn len(&self) -> usize {
+        self.length
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct ParIndicesIteratorProducer<'a> {
+    pub subset: &'a ArraySubset,
+    pub index_front: u64,
+    pub index_back: u64,
+}
+
+impl<'a> Producer for ParIndicesIteratorProducer<'a> {
+    type Item = ArrayIndices;
+    type IntoIter = IndicesIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IndicesIterator::new_with_start_end(self.subset, self.index_front, self.index_back)
+    }
+
+    fn split_at(self, index: usize) -> (Self, Self) {
+        let left = ParIndicesIteratorProducer {
+            subset: self.subset,
+            index_front: self.index_front,
+            index_back: self.index_front + index as u64,
+        };
+        let right = ParIndicesIteratorProducer {
+            subset: self.subset,
+            index_front: self.index_front + index as u64,
+            index_back: self.index_back,
+        };
+        (left, right)
+    }
+}
+
+impl<'a> From<&'a ParIndicesIterator<'_>> for ParIndicesIteratorProducer<'a> {
+    fn from(iterator: &'a ParIndicesIterator<'_>) -> Self {
+        Self {
+            subset: iterator.subset,
+            index_front: iterator.index_front,
+            index_back: iterator.index_back,
+        }
+    }
+}

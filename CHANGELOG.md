@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options`
  - Added new `Array::opt` methods which can use new encode/decode options
    - **Breaking** Existing `Array` `_opt` use new encode/decode options insted of `parallel: bool`
+ - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
+ - Add `ParIndicesIterator` and `ParChunksIterator`
 
 ### Changed
  - Dependency bumps
@@ -43,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking**: `_opt` variants use new `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options` instead of `parallel: bool`
    - variants without prefix/suffix are no longer serial variants but parallel
      - TODO: Remove these?
+ - **Major breaking**: refactor array subset iterators:
+   - `ArraySubset::iter_` methods no longer have an `iter_` prefix and return structures implementing `IntoIterator` including
+     - `Indices`, `LinearisedIndices`, `ContiguousIndices`, `ContiguousLinearisedIndices`, `Chunks`
+   - `Indices` and `Chunks` implement `IntoParIter`
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`

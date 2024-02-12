@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use futures::{stream::FuturesUnordered, StreamExt};
-use itertools::Itertools;
 
 use crate::{
     array_subset::ArraySubset,
@@ -301,7 +300,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             ));
         }
 
-        let array_subset = self.chunks_subset(chunks)?;
+        let array_subset = Arc::new(self.chunks_subset(chunks)?);
 
         // Retrieve chunk bytes
         let num_chunks = chunks.num_elements();
@@ -321,16 +320,20 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                     std::slice::from_raw_parts_mut(output.as_mut_ptr().cast::<u8>(), size_output)
                 };
                 let output_slice = UnsafeCellSlice::new(output_slice);
-                let indices = chunks.iter_indices().collect_vec();
-                let mut futures = indices
-                    .iter()
+                let mut futures = chunks
+                    .indices()
+                    .into_iter()
                     .map(|chunk_indices| {
-                        self._async_decode_chunk_into_array_subset(
-                            chunk_indices,
-                            &array_subset,
-                            unsafe { output_slice.get() },
-                            options,
-                        )
+                        let array_subset = array_subset.clone();
+                        async move {
+                            self._async_decode_chunk_into_array_subset(
+                                &chunk_indices,
+                                &array_subset,
+                                unsafe { output_slice.get() },
+                                options,
+                            )
+                            .await
+                        }
                     })
                     .collect::<FuturesUnordered<_>>();
                 while let Some(item) = futures.next().await {
@@ -437,12 +440,14 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let chunk_subset_in_array_subset =
             unsafe { overlap.relative_to_unchecked(array_subset.start()) };
         let mut decoded_offset = 0;
-        for (array_subset_element_index, num_elements) in unsafe {
+        let contiguous_indices = unsafe {
             chunk_subset_in_array_subset
-                .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
-        } {
+                .contiguous_linearised_indices_unchecked(array_subset.shape())
+        };
+        let length =
+            usize::try_from(contiguous_indices.contiguous_elements() * element_size).unwrap();
+        for (array_subset_element_index, _num_elements) in &contiguous_indices {
             let output_offset = usize::try_from(array_subset_element_index * element_size).unwrap();
-            let length = usize::try_from(num_elements * element_size).unwrap();
             debug_assert!((output_offset + length) <= output.len());
             debug_assert!((decoded_offset + length) <= decoded_bytes.len());
             output[output_offset..output_offset + length]
@@ -535,7 +540,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 };
                 let output_slice = UnsafeCellSlice::new(output_slice);
                 let mut futures = chunks
-                    .iter_indices()
+                    .indices()
+                    .into_iter()
                     .map(|chunk_indices| {
                         async move {
                             // Get the subset of the array corresponding to the chunk
@@ -589,16 +595,18 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                             let chunk_subset_in_array_subset =
                                 unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                             let mut decoded_offset = 0;
-                            for (array_subset_element_index, num_elements) in unsafe {
+                            let contiguous_indices = unsafe {
                                 chunk_subset_in_array_subset
-                                    .iter_contiguous_linearised_indices_unchecked(
-                                        array_subset.shape(),
-                                    )
-                            } {
+                                    .contiguous_linearised_indices_unchecked(array_subset.shape())
+                            };
+                            let length = usize::try_from(
+                                contiguous_indices.contiguous_elements() * element_size,
+                            )
+                            .unwrap();
+                            for (array_subset_element_index, _num_elements) in &contiguous_indices {
                                 let output_offset =
                                     usize::try_from(array_subset_element_index * element_size)
                                         .unwrap();
-                                let length = usize::try_from(num_elements * element_size).unwrap();
                                 debug_assert!((output_offset + length) <= size_output);
                                 debug_assert!((decoded_offset + length) <= decoded_bytes.len());
                                 unsafe {
