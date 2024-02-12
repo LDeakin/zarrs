@@ -5,7 +5,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, CodecError,
-            CodecTraits,
+            CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
+            RecommendedConcurrency,
         },
         ChunkRepresentation,
     },
@@ -76,7 +77,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             super::transpose_partial_decoder::TransposePartialDecoder::new(
@@ -92,7 +93,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             super::transpose_partial_decoder::AsyncTransposePartialDecoder::new(
@@ -120,11 +121,19 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for TransposeCodec {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // TODO: This could be increased, need to implement `transpose_array` without ndarray
+        Ok(RecommendedConcurrency::one())
+    }
+
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -153,7 +162,7 @@ impl ArrayCodecTraits for TransposeCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let order_decode =
             calculate_order_decode(&self.order, decoded_representation.shape().len());

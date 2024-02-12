@@ -4,7 +4,10 @@ use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
 
 use crate::{
     array::{
-        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
+        codec::{
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
+            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+        },
         BytesRepresentation,
     },
     metadata::Metadata,
@@ -135,34 +138,46 @@ impl CodecTraits for BloscCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for BloscCodec {
-    fn encode_opt(&self, decoded_value: Vec<u8>, parallel: bool) -> Result<Vec<u8>, CodecError> {
-        if parallel {
-            let n_threads = std::thread::available_parallelism().unwrap().get();
-            self.do_encode(&decoded_value, n_threads)
-        } else {
-            self.do_encode(&decoded_value, 1)
-        }
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &BytesRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // TODO: Dependent on the block size, recommended concurrency could be > 1
+        Ok(RecommendedConcurrency::one())
+    }
+
+    fn encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        _options: &EncodeOptions,
+    ) -> Result<Vec<u8>, CodecError> {
+        // if options.is_parallel() {
+        //     let n_threads = std::thread::available_parallelism().unwrap().get();
+        //     self.do_encode(&decoded_value, n_threads)
+        // } else {
+        self.do_encode(&decoded_value, 1)
+        // }
     }
 
     fn decode_opt(
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        if parallel {
-            let n_threads = std::thread::available_parallelism().unwrap().get();
-            Self::do_decode(&encoded_value, n_threads)
-        } else {
-            Self::do_decode(&encoded_value, 1)
-        }
+        // if options.is_parallel() {
+        //     let n_threads = std::thread::available_parallelism().unwrap().get();
+        //     Self::do_decode(&encoded_value, n_threads)
+        // } else {
+        Self::do_decode(&encoded_value, 1)
+        // }
     }
 
     fn partial_decoder_opt<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _parallel: &PartialDecoderOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(blosc_partial_decoder::BloscPartialDecoder::new(
             input_handle,
@@ -174,7 +189,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _parallel: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             blosc_partial_decoder::AsyncBloscPartialDecoder::new(input_handle),

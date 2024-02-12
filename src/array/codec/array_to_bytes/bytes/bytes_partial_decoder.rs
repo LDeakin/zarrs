@@ -1,6 +1,9 @@
 use crate::{
     array::{
-        codec::{ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError},
+        codec::{
+            ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
+            PartialDecodeOptions,
+        },
         ChunkRepresentation,
     },
     array_subset::IncompatibleArraySubsetAndShapeError,
@@ -37,7 +40,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
@@ -55,7 +58,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
             // Decode
             let decoded = self
                 .input_handle
-                .partial_decode_opt(&byte_ranges, parallel)?;
+                .partial_decode_opt(&byte_ranges, options)?;
 
             let bytes_subset = decoded.map_or_else(
                 || {
@@ -114,7 +117,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
@@ -132,7 +135,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
             // Decode
             let decoded = self
                 .input_handle
-                .partial_decode_opt(&byte_ranges, parallel)
+                .partial_decode_opt(&byte_ranges, options)
                 .await?;
 
             let bytes_subset = decoded.map_or_else(

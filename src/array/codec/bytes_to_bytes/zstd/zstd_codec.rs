@@ -2,7 +2,10 @@ use zstd::zstd_safe;
 
 use crate::{
     array::{
-        codec::{BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits},
+        codec::{
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
+            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+        },
         BytesRepresentation,
     },
     metadata::Metadata,
@@ -61,14 +64,26 @@ impl CodecTraits for ZstdCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for ZstdCodec {
-    fn encode_opt(&self, decoded_value: Vec<u8>, parallel: bool) -> Result<Vec<u8>, CodecError> {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &BytesRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // TODO: zstd supports multithread, but at what point is it good to kick in?
+        Ok(RecommendedConcurrency::one())
+    }
+
+    fn encode_opt(
+        &self,
+        decoded_value: Vec<u8>,
+        _options: &EncodeOptions,
+    ) -> Result<Vec<u8>, CodecError> {
         let mut result = Vec::<u8>::new();
         let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
         encoder.include_checksum(self.checksum)?;
-        if parallel {
-            let n_threads = std::thread::available_parallelism().unwrap().get();
-            encoder.multithread(u32::try_from(n_threads).unwrap())?; // TODO: Check overhead of zstd par_encode
-        }
+        // if parallel {
+        //     let n_threads = std::thread::available_parallelism().unwrap().get();
+        //     encoder.multithread(u32::try_from(n_threads).unwrap())?; // TODO: Check overhead of zstd par_encode
+        // }
         std::io::copy(&mut decoded_value.as_slice(), &mut encoder)?;
         encoder.finish()?;
         Ok(result)
@@ -78,7 +93,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         zstd::decode_all(encoded_value.as_slice()).map_err(CodecError::IOError)
     }
@@ -87,7 +102,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zstd_partial_decoder::ZstdPartialDecoder::new(r)))
     }
@@ -97,7 +112,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             zstd_partial_decoder::AsyncZstdPartialDecoder::new(r),

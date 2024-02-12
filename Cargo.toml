@@ -71,6 +71,7 @@ walkdir = "2.3.2"
 zfp-sys = {version = "0.1.4", features = ["static"], optional = true }
 zip = { version = "0.6", optional = true }
 zstd = { version = "0.13", features = ["zstdmt"], optional = true }
+rayon_iter_concurrent_limit = "0.1.0-alpha3"
 
 [dev-dependencies]
 chrono = "0.4"

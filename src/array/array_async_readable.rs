@@ -12,7 +12,7 @@ use crate::{
 use super::{
     codec::{
         ArrayCodecTraits, ArrayToBytesCodecTraits, AsyncArrayPartialDecoderTraits,
-        AsyncStoragePartialDecoder,
+        AsyncStoragePartialDecoder, DecodeOptions, PartialDecoderOptions,
     },
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
@@ -50,9 +50,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
-    pub async fn async_retrieve_chunk_if_exists(
+    pub async fn async_retrieve_chunk_if_exists_opt(
         &self,
         chunk_indices: &[u64],
+        options: &DecodeOptions,
     ) -> Result<Option<Vec<u8>>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -70,7 +71,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let chunk_decoded = self
                 .codecs()
-                .async_decode_opt(chunk_encoded, &chunk_representation, self.parallel_codecs())
+                .async_decode_opt(chunk_encoded, &chunk_representation, options)
                 .await
                 .map_err(ArrayError::CodecError)?;
             let chunk_decoded_size =
@@ -88,6 +89,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
+    /// Read and decode the chunk at `chunk_indices` into its bytes if it exists (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_if_exists(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<Vec<u8>>, ArrayError> {
+        self.async_retrieve_chunk_if_exists_opt(chunk_indices, &DecodeOptions::default())
+            .await
+    }
+
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist.
     ///
     /// # Errors
@@ -98,8 +109,14 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
-    pub async fn async_retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
-        let chunk = self.async_retrieve_chunk_if_exists(chunk_indices).await?;
+    pub async fn async_retrieve_chunk_opt(
+        &self,
+        chunk_indices: &[u64],
+        options: &DecodeOptions,
+    ) -> Result<Vec<u8>, ArrayError> {
+        let chunk = self
+            .async_retrieve_chunk_if_exists_opt(chunk_indices, options)
+            .await?;
         if let Some(chunk) = chunk {
             Ok(chunk)
         } else {
@@ -107,6 +124,13 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             let fill_value = chunk_representation.fill_value().as_ne_bytes();
             Ok(fill_value.repeat(chunk_representation.num_elements_usize()))
         }
+    }
+
+    /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_chunk_opt(chunk_indices, &DecodeOptions::default())
+            .await
     }
 
     /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists.
@@ -118,13 +142,26 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///  - `chunk_indices` are invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    pub async fn async_retrieve_chunk_elements_if_exists_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        options: &DecodeOptions,
+    ) -> Result<Option<Vec<T>>, ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
+        let bytes = self
+            .async_retrieve_chunk_if_exists_opt(chunk_indices, options)
+            .await?;
+        Ok(bytes.map(|bytes| transmute_from_bytes_vec::<T>(bytes)))
+    }
+
+    /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_elements_if_exists<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
     ) -> Result<Option<Vec<T>>, ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let bytes = self.async_retrieve_chunk_if_exists(chunk_indices).await?;
-        Ok(bytes.map(|bytes| transmute_from_bytes_vec::<T>(bytes)))
+        self.async_retrieve_chunk_elements_if_exists_opt(chunk_indices, &DecodeOptions::default())
+            .await
     }
 
     /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist.
@@ -136,13 +173,26 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///  - `chunk_indices` are invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    pub async fn async_retrieve_chunk_elements_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        options: &DecodeOptions,
+    ) -> Result<Vec<T>, ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
+        let bytes = self
+            .async_retrieve_chunk_opt(chunk_indices, options)
+            .await?;
+        Ok(transmute_from_bytes_vec::<T>(bytes))
+    }
+
+    /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
     ) -> Result<Vec<T>, ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let bytes = self.async_retrieve_chunk(chunk_indices).await?;
-        Ok(transmute_from_bytes_vec::<T>(bytes))
+        self.async_retrieve_chunk_elements_opt(chunk_indices, &DecodeOptions::default())
+            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -158,9 +208,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if a chunk dimension is larger than `usize::MAX`.
-    pub async fn async_retrieve_chunk_ndarray_if_exists<T: bytemuck::Pod + Send + Sync>(
+    pub async fn async_retrieve_chunk_ndarray_if_exists_opt<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
+        options: &DecodeOptions,
     ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; in // async_retrieve_chunk_elements_if_exists
         let shape = self
@@ -168,13 +219,24 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .chunk_shape_u64(chunk_indices, self.shape())?
             .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?;
         let elements = self
-            .async_retrieve_chunk_elements_if_exists(chunk_indices)
+            .async_retrieve_chunk_elements_if_exists_opt(chunk_indices, options)
             .await?;
         if let Some(elements) = elements {
             Ok(Some(elements_to_ndarray(&shape, elements)?))
         } else {
             Ok(None)
         }
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] if it exists (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_ndarray_if_exists<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
+        self.async_retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &DecodeOptions::default())
+            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -190,17 +252,31 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if a chunk dimension is larger than `usize::MAX`.
-    pub async fn async_retrieve_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
+    pub async fn async_retrieve_chunk_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
+        options: &DecodeOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; // in async_retrieve_chunk_elements
         let shape = self
             .chunk_grid()
             .chunk_shape_u64(chunk_indices, self.shape())?
             .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?;
-        let elements = self.async_retrieve_chunk_elements(chunk_indices).await?;
+        let elements = self
+            .async_retrieve_chunk_elements_opt(chunk_indices, options)
+            .await?;
         elements_to_ndarray(&shape, elements)
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`]. It is filled with the fill value if it does not exist (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        self.async_retrieve_chunk_ndarray_opt(chunk_indices, &DecodeOptions::default())
+            .await
     }
 
     /// Read and decode the chunk at `chunk_indices` into its bytes.
@@ -213,7 +289,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
-    pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
+    pub async fn async_retrieve_chunks_opt(
+        &self,
+        chunks: &ArraySubset,
+        options: &DecodeOptions,
+    ) -> Result<Vec<u8>, ArrayError> {
         if chunks.dimensionality() != self.chunk_grid().dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 chunks.clone(),
@@ -229,7 +309,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             0 => Ok(vec![]),
             1 => {
                 let chunk_indices = chunks.start();
-                self.async_retrieve_chunk(chunk_indices).await
+                self.async_retrieve_chunk_opt(chunk_indices, options).await
             }
             _ => {
                 // Decode chunks and copy to output
@@ -249,6 +329,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                             chunk_indices,
                             &array_subset,
                             unsafe { output_slice.get() },
+                            options,
                         )
                     })
                     .collect::<FuturesUnordered<_>>();
@@ -262,7 +343,28 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
+    /// Read and decode the chunk at `chunk_indices` into its bytes (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_chunks_opt(chunks, &DecodeOptions::default())
+            .await
+    }
+
     /// Read and decode the chunk at `chunk_indices` into a vector of its elements.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if the size of `T` does not match the data type size or a [`Array::async_retrieve_chunks`] error condition is met.
+    pub async fn async_retrieve_chunks_elements_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunks: &ArraySubset,
+        options: &DecodeOptions,
+    ) -> Result<Vec<T>, ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
+        let bytes = self.async_retrieve_chunks_opt(chunks, options).await?;
+        Ok(transmute_from_bytes_vec::<T>(bytes))
+    }
+
+    /// Read and decode the chunk at `chunk_indices` into a vector of its elements (default options).
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if the size of `T` does not match the data type size or a [`Array::async_retrieve_chunks`] error condition is met.
@@ -270,23 +372,37 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let bytes = self.async_retrieve_chunks(chunks).await?;
-        Ok(transmute_from_bytes_vec::<T>(bytes))
+        self.async_retrieve_chunks_elements_opt(chunks, &DecodeOptions::default())
+            .await
     }
 
+    #[cfg(feature = "ndarray")]
     /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`].
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if the size of `T` does not match the data type size or a [`Array::async_retrieve_chunks`] error condition is met.
+    pub async fn async_retrieve_chunks_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunks: &ArraySubset,
+        options: &DecodeOptions,
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
+        let array_subset = self.chunks_subset(chunks)?;
+        let elements = self
+            .async_retrieve_chunks_elements_opt(chunks, options)
+            .await?;
+        elements_to_ndarray(array_subset.shape(), elements)
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunks: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let array_subset = self.chunks_subset(chunks)?;
-        let elements = self.async_retrieve_chunks_elements(chunks).await?;
-        elements_to_ndarray(array_subset.shape(), elements)
+        self.async_retrieve_chunks_ndarray_opt(chunks, &DecodeOptions::default())
+            .await
     }
 
     async fn _async_decode_chunk_into_array_subset(
@@ -294,6 +410,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         array_subset: &ArraySubset,
         output: &mut [u8],
+        options: &DecodeOptions,
     ) -> Result<(), ArrayError> {
         // Get the subset of the array corresponding to the chunk
         let chunk_subset_in_array = unsafe {
@@ -312,7 +429,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let array_subset_in_chunk_subset =
             unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
         let decoded_bytes = self
-            .async_retrieve_chunk_subset(chunk_indices, &array_subset_in_chunk_subset)
+            .async_retrieve_chunk_subset_opt(chunk_indices, &array_subset_in_chunk_subset, options)
             .await?;
 
         // Copy decoded bytes to the output
@@ -349,9 +466,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// # Panics
     /// Panics if attempting to reference a byte beyond `usize::MAX`.
     #[allow(clippy::too_many_lines)]
-    pub async fn async_retrieve_array_subset(
+    pub async fn async_retrieve_array_subset_opt(
         &self,
         array_subset: &ArraySubset,
+        options: &DecodeOptions,
     ) -> Result<Vec<u8>, ArrayError> {
         if array_subset.dimensionality() != self.chunk_grid().dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
@@ -378,7 +496,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 let chunk_subset = self.chunk_subset(chunk_indices).unwrap();
                 if &chunk_subset == array_subset {
                     // Single chunk fast path if the array subset domain matches the chunk domain
-                    self.async_retrieve_chunk(chunk_indices).await
+                    self.async_retrieve_chunk_opt(chunk_indices, options).await
                 } else {
                     let size_output = usize::try_from(
                         array_subset.num_elements() * self.data_type().size() as u64,
@@ -395,6 +513,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                         chunk_indices,
                         array_subset,
                         output_slice,
+                        options,
                     )
                     .await?;
                     #[allow(clippy::transmute_undefined_repr)]
@@ -452,11 +571,15 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                     self.chunk_array_representation(&chunk_indices)?;
                                 let partial_decoder = self
                                     .codecs()
-                                    .async_partial_decoder(input_handle, &chunk_representation)
+                                    .async_partial_decoder_opt(
+                                        input_handle,
+                                        &chunk_representation,
+                                        options, // FIXME: Adjust internal decode options
+                                    )
                                     .await?;
 
                                 partial_decoder
-                                    .par_partial_decode(&[array_subset_in_chunk_subset])
+                                    .partial_decode_opt(&[array_subset_in_chunk_subset], options) // FIXME: Adjust internal decode options
                                     .await?
                                     .remove(0)
                             };
@@ -501,6 +624,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
+    /// Read and decode the `array_subset` of array into its bytes (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_array_subset(
+        &self,
+        array_subset: &ArraySubset,
+    ) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_array_subset_opt(array_subset, &DecodeOptions::default())
+            .await
+    }
+
     /// Read and decode the `array_subset` of array into a vector of its elements.
     ///
     /// # Errors
@@ -510,13 +643,26 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///  - an array subset is invalid or out of bounds of the array,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    pub async fn async_retrieve_array_subset_elements_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        array_subset: &ArraySubset,
+        options: &DecodeOptions,
+    ) -> Result<Vec<T>, ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
+        let bytes = self
+            .async_retrieve_array_subset_opt(array_subset, options)
+            .await?;
+        Ok(transmute_from_bytes_vec::<T>(bytes))
+    }
+
+    /// Read and decode the `array_subset` of array into a vector of its elements (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_array_subset_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let bytes = self.async_retrieve_array_subset(array_subset).await?;
-        Ok(transmute_from_bytes_vec::<T>(bytes))
+        self.async_retrieve_array_subset_elements_opt(array_subset, &DecodeOptions::default())
+            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -530,15 +676,27 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
+    pub async fn async_retrieve_array_subset_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        array_subset: &ArraySubset,
+        options: &DecodeOptions,
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        // validate_element_size::<T>(self.data_type())?; // in async_retrieve_array_subset_elements
+        let elements = self
+            .async_retrieve_array_subset_elements_opt(array_subset, options)
+            .await?;
+        elements_to_ndarray(array_subset.shape(), elements)
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`] (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_array_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        // validate_element_size::<T>(self.data_type())?; // in async_retrieve_array_subset_elements
-        let elements = self
-            .async_retrieve_array_subset_elements(array_subset)
-            .await?;
-        elements_to_ndarray(array_subset.shape(), elements)
+        self.async_retrieve_array_subset_ndarray_opt(array_subset, &DecodeOptions::default())
+            .await
     }
 
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes.
@@ -552,10 +710,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
-    pub async fn async_retrieve_chunk_subset(
+    pub async fn async_retrieve_chunk_subset_opt(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
+        options: &DecodeOptions,
     ) -> Result<Vec<u8>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         if !chunk_subset.inbounds(&chunk_representation.shape_u64()) {
@@ -576,9 +735,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
         let decoded_bytes = self
             .codecs()
-            .async_partial_decoder_opt(input_handle, &chunk_representation, self.parallel_codecs())
+            .async_partial_decoder_opt(input_handle, &chunk_representation, options)
             .await?
-            .partial_decode_opt(&[chunk_subset.clone()], self.parallel_codecs())
+            .partial_decode_opt(&[chunk_subset.clone()], options)
             .await?;
 
         let total_size = decoded_bytes.iter().map(Vec::len).sum::<usize>();
@@ -593,6 +752,17 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_subset(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+    ) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_chunk_subset_opt(chunk_indices, chunk_subset, &DecodeOptions::default())
+            .await
+    }
+
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements.
     ///
     /// # Errors
@@ -601,16 +771,32 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///  - the chunk subset is invalid,
     ///  - there is a codec decoding error, or
     ///  - an underlying store error.
+    pub async fn async_retrieve_chunk_subset_elements_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+        options: &DecodeOptions,
+    ) -> Result<Vec<T>, ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
+        let bytes = self
+            .async_retrieve_chunk_subset_opt(chunk_indices, chunk_subset, options)
+            .await?;
+        Ok(transmute_from_bytes_vec::<T>(bytes))
+    }
+
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_subset_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let bytes = self
-            .async_retrieve_chunk_subset(chunk_indices, chunk_subset)
-            .await?;
-        Ok(transmute_from_bytes_vec::<T>(bytes))
+        self.async_retrieve_chunk_subset_elements_opt(
+            chunk_indices,
+            chunk_subset,
+            &DecodeOptions::default(),
+        )
+        .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -625,26 +811,43 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Panics
     /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
+    pub async fn async_retrieve_chunk_subset_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+        options: &DecodeOptions,
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        // validate_element_size::<T>(self.data_type())?; // in async_retrieve_chunk_subset_elements
+        let elements = self
+            .async_retrieve_chunk_subset_elements_opt(chunk_indices, chunk_subset, options)
+            .await?;
+        elements_to_ndarray(chunk_subset.shape(), elements)
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an [`ndarray::ArrayD`] (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        // validate_element_size::<T>(self.data_type())?; // in async_retrieve_chunk_subset_elements
-        let elements = self
-            .async_retrieve_chunk_subset_elements(chunk_indices, chunk_subset)
-            .await?;
-        elements_to_ndarray(chunk_subset.shape(), elements)
+        self.async_retrieve_chunk_subset_ndarray_opt(
+            chunk_indices,
+            chunk_subset,
+            &DecodeOptions::default(),
+        )
+        .await
     }
 
-    /// Initialises a partial decoder for the chunk at `chunk_indices` with optional parallelism.
+    /// Initialises a partial decoder for the chunk at `chunk_indices`.
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
     pub async fn async_partial_decoder_opt<'a>(
         &'a self,
         chunk_indices: &[u64],
-        parallel: bool,
+        options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -657,11 +860,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         Ok(self
             .codecs()
-            .async_partial_decoder_opt(input_handle, &chunk_representation, parallel)
+            .async_partial_decoder_opt(input_handle, &chunk_representation, options)
             .await?)
     }
 
-    /// Initialises a partial decoder for the chunk at `chunk_indices`.
+    /// Initialises a partial decoder for the chunk at `chunk_indices` (default options).
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
@@ -669,17 +872,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         &'a self,
         chunk_indices: &[u64],
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
-        self.async_partial_decoder_opt(chunk_indices, false).await
-    }
-
-    /// Initialises a partial decoder for the chunk at `chunk_indices` using multithreading if applicable.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
-    pub async fn async_par_partial_decoder<'a>(
-        &'a self,
-        chunk_indices: &[u64],
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
-        self.async_partial_decoder_opt(chunk_indices, true).await
+        self.async_partial_decoder_opt(chunk_indices, &PartialDecoderOptions::default())
+            .await
     }
 }

@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add store lock tests
  - Added `contiguous_elements` method to `ContiguousIndicesIterator` and `ContiguousLinearisedIndicesIterator`
  - Added `ChunkShape::num_elements`
+ - Added `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options`
+ - Added new `Array::opt` methods which can use new encode/decode options
+   - **Breaking** Existing `Array` `_opt` use new encode/decode options insted of `parallel: bool`
 
 ### Changed
  - Dependency bumps
@@ -32,7 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `array_subset_iterators.rs`
  - **Major breaking**: storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait method now take `self: Arc<Self>`
  - Removed lifetimes from `{Async}{Readable,Writable,ReadableWritable,Listable,ReadableListable}Storage`
- - **Breaking**: `Group` and `Array` methods generic on storage now require the storage with a `'static` lifetime
+ - **Breaking**: `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime
+ - **Breaking**: remove `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs`
+ - **Breaking**: added `recommended_concurrency` to codec trait methods to facilitate improved parallelisation
+ - **Major breaking**: refactor codec traits:
+   - **Breaking**: remove `par_` variants,
+   - **Breaking**: `_opt` variants use new `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options` instead of `parallel: bool`
+   - variants without prefix/suffix are no longer serial variants but parallel
+     - TODO: Remove these?
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`

@@ -75,7 +75,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("store_chunk [0, 0] and [0, 1]:\n{data_all:+4.1}\n");
 
     // Store multiple chunks
-    array.store_chunks_elements_opt::<f32>(
+    array.store_chunks_elements::<f32>(
         &ArraySubset::new_with_ranges(&[1..2, 0..2]),
         vec![
             //
@@ -83,7 +83,6 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
             //
             1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1,
         ],
-        true,
     )?;
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
     println!("store_chunks [1..2, 0..2]:\n{data_all:+4.1}\n");

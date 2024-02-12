@@ -2,7 +2,9 @@ use zfp_sys::zfp_type;
 
 use crate::{
     array::{
-        codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError},
+        codec::{
+            ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, PartialDecodeOptions,
+        },
         ChunkRepresentation,
     },
     array_subset::ArraySubset,
@@ -51,9 +53,9 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(parallel)?;
+        let encoded_value = self.input_handle.decode_opt(options)?;
         let mut out = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         match encoded_value {
@@ -63,7 +65,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
                     self.zfp_type,
                     encoded_value,
                     &self.decoded_representation,
-                    parallel,
+                    false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
                     let byte_ranges = unsafe {
@@ -132,9 +134,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(parallel).await?;
+        let encoded_value = self.input_handle.decode_opt(options).await?;
         let chunk_shape = self.decoded_representation.shape_u64();
         let mut out = Vec::with_capacity(decoded_regions.len());
         match encoded_value {
@@ -144,7 +146,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
                     self.zfp_type,
                     encoded_value,
                     &self.decoded_representation,
-                    parallel,
+                    false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
                     let byte_ranges = unsafe {

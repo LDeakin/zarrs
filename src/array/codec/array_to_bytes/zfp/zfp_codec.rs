@@ -1,13 +1,17 @@
 use zfp_sys::{
-    zfp_compress, zfp_exec_policy_zfp_exec_omp, zfp_stream_maximum_size, zfp_stream_rewind,
-    zfp_stream_set_bit_stream, zfp_stream_set_execution,
+    zfp_compress,
+    zfp_stream_maximum_size,
+    zfp_stream_rewind,
+    zfp_stream_set_bit_stream,
+    // zfp_exec_policy_zfp_exec_omp, zfp_stream_set_execution
 };
 
 use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
+            PartialDecoderOptions, RecommendedConcurrency,
         },
         BytesRepresentation, ChunkRepresentation, DataType,
     },
@@ -123,11 +127,19 @@ impl CodecTraits for ZfpCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for ZfpCodec {
+    fn recommended_concurrency(
+        &self,
+        _decoded_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, CodecError> {
+        // TODO: zfp supports multi thread, when is it optimal to kick in?
+        Ok(RecommendedConcurrency::one())
+    }
+
     fn encode_opt(
         &self,
         mut decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        _options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
         else {
@@ -161,12 +173,13 @@ impl ArrayCodecTraits for ZfpCodec {
             zfp_stream_rewind(zfp.as_zfp_stream()); // needed?
         }
 
-        if parallel {
-            // Number of threads is set automatically
-            unsafe {
-                zfp_stream_set_execution(zfp.as_zfp_stream(), zfp_exec_policy_zfp_exec_omp);
-            }
-        }
+        // FIXME
+        // if parallel {
+        //     // Number of threads is set automatically
+        //     unsafe {
+        //         zfp_stream_set_execution(zfp.as_zfp_stream(), zfp_exec_policy_zfp_exec_omp);
+        //     }
+        // }
 
         // Compress array
         let size = unsafe { zfp_compress(zfp.as_zfp_stream(), field.as_zfp_field()) };
@@ -182,7 +195,7 @@ impl ArrayCodecTraits for ZfpCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        parallel: bool,
+        _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
         else {
@@ -195,7 +208,7 @@ impl ArrayCodecTraits for ZfpCodec {
             zfp_type,
             encoded_value,
             decoded_representation,
-            parallel,
+            false, // FIXME
         )
     }
 }
@@ -206,7 +219,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
             input_handle,
@@ -220,7 +233,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _parallel: bool,
+        _options: &PartialDecoderOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
             input_handle,

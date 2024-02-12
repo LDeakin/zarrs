@@ -1,6 +1,6 @@
 use crate::byte_range::{ByteLength, ByteOffset, ByteRange};
 
-use super::{BytesPartialDecoderTraits, CodecError};
+use super::{BytesPartialDecoderTraits, CodecError, PartialDecodeOptions};
 
 #[cfg(feature = "async")]
 use super::AsyncBytesPartialDecoderTraits;
@@ -33,7 +33,7 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
     fn partial_decode_opt(
         &self,
         byte_ranges: &[ByteRange],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let byte_ranges: Vec<ByteRange> = byte_ranges
             .iter()
@@ -53,7 +53,7 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
                 ),
             })
             .collect();
-        self.inner.partial_decode_opt(&byte_ranges, parallel)
+        self.inner.partial_decode_opt(&byte_ranges, options)
     }
 }
 
@@ -89,7 +89,7 @@ impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> 
     async fn partial_decode_opt(
         &self,
         byte_ranges: &[ByteRange],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let byte_ranges: Vec<ByteRange> = byte_ranges
             .iter()
@@ -109,6 +109,6 @@ impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> 
                 ),
             })
             .collect();
-        self.inner.partial_decode_opt(&byte_ranges, parallel).await
+        self.inner.partial_decode_opt(&byte_ranges, options).await
     }
 }

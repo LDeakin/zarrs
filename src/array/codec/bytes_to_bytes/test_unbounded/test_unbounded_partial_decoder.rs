@@ -1,5 +1,5 @@
 use crate::{
-    array::codec::{BytesPartialDecoderTraits, CodecError},
+    array::codec::{BytesPartialDecoderTraits, CodecError, PartialDecodeOptions},
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
@@ -22,9 +22,9 @@ impl BytesPartialDecoderTraits for TestUnboundedPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ByteRange],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(parallel)?;
+        let encoded_value = self.input_handle.decode_opt(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
@@ -56,9 +56,9 @@ impl AsyncBytesPartialDecoderTraits for AsyncTestUnboundedPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ByteRange],
-        parallel: bool,
+        options: &PartialDecodeOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(parallel).await?;
+        let encoded_value = self.input_handle.decode_opt(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
