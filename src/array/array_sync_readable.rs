@@ -669,24 +669,31 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             ));
         }
 
-        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-        let storage_transformer = self
-            .storage_transformers()
-            .create_readable_transformer(storage_handle);
-        let input_handle = Box::new(StoragePartialDecoder::new(
-            storage_transformer,
-            data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
-        ));
+        let decoded_bytes = if chunk_subset.start().iter().all(|&o| o == 0)
+            && chunk_subset.shape() == chunk_representation.shape_u64()
+        {
+            // Fast path if `chunk_subset` encompasses the whole chunk
+            self.retrieve_chunk(chunk_indices)?
+        } else {
+            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+            let storage_transformer = self
+                .storage_transformers()
+                .create_readable_transformer(storage_handle);
+            let input_handle = Box::new(StoragePartialDecoder::new(
+                storage_transformer,
+                data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
+            ));
 
-        let decoded_bytes = self
-            .codecs()
-            .partial_decoder_opt(input_handle, &chunk_representation, options)?
-            .partial_decode_opt(&[chunk_subset.clone()], options)?;
+            self.codecs()
+                .partial_decoder_opt(input_handle, &chunk_representation, options)?
+                .partial_decode_opt(&[chunk_subset.clone()], options)?
+                .concat()
+        };
 
-        let total_size = decoded_bytes.iter().map(Vec::len).sum::<usize>();
+        let total_size = decoded_bytes.len();
         let expected_size = chunk_subset.num_elements_usize() * self.data_type().size();
         if total_size == chunk_subset.num_elements_usize() * self.data_type().size() {
-            Ok(decoded_bytes.concat())
+            Ok(decoded_bytes)
         } else {
             Err(ArrayError::UnexpectedChunkDecodedSize(
                 total_size,

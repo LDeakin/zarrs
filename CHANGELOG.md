@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
      - `Indices`, `LinearisedIndices`, `ContiguousIndices`, `ContiguousLinearisedIndices`, `Chunks`
    - `Indices` and `Chunks` implement `IntoParallelIter`
    - **Breaking**: array subset iterators are moved into public `array_subset::iterators` and no longer in the `array_subset` namespace
+ - Add a fast path to `Array::retrieve_chunk_subset{_opt}` if the entire chunk is requested
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
