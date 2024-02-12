@@ -1,38 +1,72 @@
+//! Array subset iterators.
+
 mod chunks_iterator;
 mod contiguous_indices_iterator;
 mod contiguous_linearised_indices_iterator;
 mod indices_iterator;
 mod linearised_indices_iterator;
 
-pub use chunks_iterator::ChunksIterator;
-pub use contiguous_indices_iterator::ContiguousIndicesIterator;
-pub use contiguous_linearised_indices_iterator::ContiguousLinearisedIndicesIterator;
-pub use indices_iterator::IndicesIterator;
-pub use linearised_indices_iterator::LinearisedIndicesIterator;
+pub use chunks_iterator::{Chunks, ChunksIterator};
+pub use contiguous_indices_iterator::{ContiguousIndices, ContiguousIndicesIterator};
+pub use contiguous_linearised_indices_iterator::{
+    ContiguousLinearisedIndices, ContiguousLinearisedIndicesIterator,
+};
+pub use indices_iterator::{Indices, IndicesIterator, ParIndicesIterator};
+pub use linearised_indices_iterator::{LinearisedIndices, LinearisedIndicesIterator};
 
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroU64;
+
+    use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
     use crate::array_subset::ArraySubset;
 
     #[test]
     fn array_subset_iter_indices() {
         let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
-        let mut iter = subset.iter_indices();
+        let indices = subset.indices();
+        let mut iter = indices.into_iter();
         assert_eq!(iter.size_hint(), (4, Some(4)));
         assert_eq!(iter.next(), Some(vec![1, 1]));
+        assert_eq!(iter.next_back(), Some(vec![2, 2]));
         assert_eq!(iter.next(), Some(vec![1, 2]));
         assert_eq!(iter.next(), Some(vec![2, 1]));
-        assert_eq!(iter.next(), Some(vec![2, 2]));
         assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn array_subset_iter_indices2() {
+        let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
+        let indices = subset.indices();
+        let mut iter = indices.into_iter();
+        assert_eq!(iter.size_hint(), (4, Some(4)));
+        assert_eq!(iter.next_back(), Some(vec![2, 2]));
+        assert_eq!(iter.next_back(), Some(vec![2, 1]));
+        assert_eq!(iter.next_back(), Some(vec![1, 2]));
+        assert_eq!(iter.next_back(), Some(vec![1, 1]));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn array_subset_par_iter_indices() {
+        use rayon::prelude::*;
+        let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
+        let indices = subset.indices().into_par_iter().collect::<Vec<_>>();
+        assert_eq!(
+            indices,
+            vec![vec![1, 1], vec![1, 2], vec![2, 1], vec![2, 2]]
+        );
     }
 
     #[test]
     fn array_subset_iter_linearised_indices() {
         let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
-        assert!(subset.iter_linearised_indices(&[4, 4, 4]).is_err());
-        let mut iter = subset.iter_linearised_indices(&[4, 4]).unwrap();
+        assert!(subset.linearised_indices(&[4, 4, 4]).is_err());
+        let indices = subset.linearised_indices(&[4, 4]).unwrap();
+        let mut iter = indices.into_iter();
         //  0  1  2  3
         //  4  5  6  7
         //  8  9 10 11
@@ -48,7 +82,8 @@ mod tests {
     #[test]
     fn array_subset_iter_contiguous_indices1() {
         let subset = ArraySubset::new_with_shape(vec![2, 2]);
-        let mut iter = subset.iter_contiguous_indices(&[2, 2]).unwrap();
+        let indices = subset.contiguous_indices(&[2, 2]).unwrap();
+        let mut iter = indices.into_iter();
         assert_eq!(iter.size_hint(), (1, Some(1)));
         assert_eq!(iter.next(), Some((vec![0, 0], 4)));
         assert_eq!(iter.next(), None);
@@ -57,7 +92,8 @@ mod tests {
     #[test]
     fn array_subset_iter_contiguous_indices2() {
         let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
-        let mut iter = subset.iter_contiguous_indices(&[4, 4]).unwrap();
+        let indices = subset.contiguous_indices(&[4, 4]).unwrap();
+        let mut iter = indices.into_iter();
         assert_eq!(iter.size_hint(), (2, Some(2)));
         assert_eq!(iter.next(), Some((vec![1, 1], 2)));
         assert_eq!(iter.next(), Some((vec![2, 1], 2)));
@@ -67,7 +103,8 @@ mod tests {
     #[test]
     fn array_subset_iter_contiguous_indices3() {
         let subset = ArraySubset::new_with_ranges(&[1..3, 0..1, 0..2, 0..2]);
-        let mut iter = subset.iter_contiguous_indices(&[3, 1, 2, 2]).unwrap();
+        let indices = subset.contiguous_indices(&[3, 1, 2, 2]).unwrap();
+        let mut iter = indices.into_iter();
         assert_eq!(iter.size_hint(), (1, Some(1)));
         assert_eq!(iter.next(), Some((vec![1, 0, 0, 0], 8)));
         assert_eq!(iter.next(), None);
@@ -76,7 +113,8 @@ mod tests {
     #[test]
     fn array_subset_iter_continuous_linearised_indices() {
         let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
-        let mut iter = subset.iter_contiguous_linearised_indices(&[4, 4]).unwrap();
+        let indices = subset.contiguous_linearised_indices(&[4, 4]).unwrap();
+        let mut iter = indices.into_iter();
         //  0  1  2  3
         //  4  5  6  7
         //  8  9 10 11
@@ -92,9 +130,10 @@ mod tests {
     fn array_subset_iter_chunks1() {
         let subset = ArraySubset::new_with_ranges(&[1..5, 1..5]);
         let chunk_shape_invalid = [NonZeroU64::new(2).unwrap()];
-        assert!(subset.iter_chunks(&chunk_shape_invalid).is_err());
+        assert!(subset.chunks(&chunk_shape_invalid).is_err());
         let chunk_shape = [NonZeroU64::new(2).unwrap(), NonZeroU64::new(2).unwrap()];
-        let mut iter = subset.iter_chunks(&chunk_shape).unwrap();
+        let chunks = subset.chunks(&chunk_shape).unwrap();
+        let mut iter = chunks.into_iter();
         assert_eq!(iter.size_hint(), (9, Some(9)));
         assert_eq!(iter.next(), Some((vec![0, 0], ArraySubset::new_with_ranges(&[0..2, 0..2]))));
         assert_eq!(iter.next(), Some((vec![0, 1], ArraySubset::new_with_ranges(&[0..2, 2..4]))));
@@ -113,12 +152,28 @@ mod tests {
     fn array_subset_iter_chunks2() {
         let subset = ArraySubset::new_with_ranges(&[2..5, 2..6]);
         let chunk_shape = [NonZeroU64::new(2).unwrap(), NonZeroU64::new(3).unwrap()];
-        let mut iter = subset.iter_chunks(&chunk_shape).unwrap();
+        let chunks = subset.chunks(&chunk_shape).unwrap();
+        let mut iter = chunks.into_iter();
         assert_eq!(iter.size_hint(), (4, Some(4)));
         assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..3]))));
         assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 3..6]))));
         assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..3]))));
         assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 3..6]))));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn array_subset_par_iter_chunks() {
+        let subset = ArraySubset::new_with_ranges(&[2..5, 2..6]);
+        let chunk_shape = [NonZeroU64::new(2).unwrap(), NonZeroU64::new(3).unwrap()];
+        let chunks = subset.chunks(&chunk_shape).unwrap();
+        let chunks = chunks.into_par_iter().collect::<Vec<_>>();
+        assert_eq!(chunks, vec![
+            (vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..3])),
+            (vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 3..6])),
+            (vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..3])),
+            (vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 3..6])),
+        ]);
     }
 }

@@ -7,7 +7,7 @@ use crate::{
 
 use super::{
     codec::{DecodeOptions, EncodeOptions},
-    unravel_index, Array, ArrayError,
+    Array, ArrayError,
 };
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage> {
@@ -122,23 +122,13 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
 
                 Ok(())
             };
-            if encode_options.is_parallel() {
-                (0..chunks.shape().iter().product())
-                    .into_par_iter()
-                    .map(|chunk_index| {
-                        std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
-                            .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                            .collect::<Vec<_>>()
-                    })
-                    // chunks
-                    //     .iter_indices()
-                    //     .par_bridge()
-                    .try_for_each(store_chunk)?;
-            } else {
-                for chunk_indices in chunks.iter_indices() {
-                    store_chunk(chunk_indices)?;
-                }
-            }
+            let indices = chunks.indices();
+            rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                encode_options.concurrent_limit().get(),
+                indices.into_par_iter(),
+                try_for_each,
+                store_chunk
+            )?;
         }
         Ok(())
     }
@@ -301,11 +291,12 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             // Update the intersecting subset of the chunk
             let element_size = self.data_type().size() as u64;
             let mut offset = 0;
-            for (chunk_element_index, num_elements) in
-                unsafe { chunk_subset.iter_contiguous_linearised_indices_unchecked(&chunk_shape) }
-            {
+            let contiguous_iterator =
+                unsafe { chunk_subset.contiguous_linearised_indices_unchecked(&chunk_shape) };
+            let length =
+                usize::try_from(contiguous_iterator.contiguous_elements() * element_size).unwrap();
+            for (chunk_element_index, _num_elements) in &contiguous_iterator {
                 let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
-                let length = usize::try_from(num_elements * element_size).unwrap();
                 debug_assert!(chunk_offset + length <= chunk_bytes.len());
                 debug_assert!(offset + length <= chunk_subset_bytes.len());
                 chunk_bytes[chunk_offset..chunk_offset + length]

@@ -13,7 +13,7 @@ use super::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, DecodeOptions,
         PartialDecoderOptions, StoragePartialDecoder,
     },
-    transmute_from_bytes_vec, unravel_index,
+    transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
     validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata,
 };
@@ -307,19 +307,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 };
                 if options.is_parallel() {
                     let output = UnsafeCellSlice::new(output_slice);
-                    (0..chunks.shape().iter().product())
+                    chunks
+                        .indices()
                         .into_par_iter()
-                        .map(|chunk_index| {
-                            std::iter::zip(
-                                unravel_index(chunk_index, chunks.shape()),
-                                chunks.start(),
-                            )
-                            .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                            .collect::<Vec<_>>()
-                        })
-                        // chunks
-                        // .iter_indices()
-                        // .par_bridge()
                         .try_for_each(|chunk_indices| {
                             self._decode_chunk_into_array_subset(
                                 &chunk_indices,
@@ -329,7 +319,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                             )
                         })?;
                 } else {
-                    for chunk_indices in chunks.iter_indices() {
+                    for chunk_indices in &chunks.indices() {
                         self._decode_chunk_into_array_subset(
                             &chunk_indices,
                             &array_subset,
@@ -449,12 +439,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let chunk_subset_in_array_subset =
             unsafe { overlap.relative_to_unchecked(array_subset.start()) };
         let mut decoded_offset = 0;
-        for (array_subset_element_index, num_elements) in unsafe {
+        let contiguous_indices = unsafe {
             chunk_subset_in_array_subset
-                .iter_contiguous_linearised_indices_unchecked(array_subset.shape())
-        } {
+                .contiguous_linearised_indices_unchecked(array_subset.shape())
+        };
+        let length =
+            usize::try_from(contiguous_indices.contiguous_elements() * element_size).unwrap();
+        for (array_subset_element_index, _num_elements) in &contiguous_indices {
             let output_offset = usize::try_from(array_subset_element_index * element_size).unwrap();
-            let length = usize::try_from(num_elements * element_size).unwrap();
             debug_assert!((output_offset + length) <= output.len());
             debug_assert!((decoded_offset + length) <= decoded_bytes.len());
             output[output_offset..output_offset + length]
@@ -547,16 +539,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     // FIXME: Constrain concurrency here based on parallelism internally vs externally
 
                     let output = UnsafeCellSlice::new(output_slice);
-                    (0..chunks.shape().iter().product())
+                    chunks
+                        .indices()
                         .into_par_iter()
-                        .map(|chunk_index| {
-                            std::iter::zip(
-                                unravel_index(chunk_index, chunks.shape()),
-                                chunks.start(),
-                            )
-                            .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                            .collect::<Vec<_>>()
-                        })
                         .try_for_each(|chunk_indices| {
                             self._decode_chunk_into_array_subset(
                                 &chunk_indices,
@@ -566,7 +551,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                             )
                         })?;
                 } else {
-                    for chunk_indices in chunks.iter_indices() {
+                    for chunk_indices in &chunks.indices() {
                         self._decode_chunk_into_array_subset(
                             &chunk_indices,
                             array_subset,

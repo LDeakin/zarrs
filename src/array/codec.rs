@@ -1118,61 +1118,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_array_subset_iterator1() {
-        let array_shape = vec![2, 2];
-        let array_subset = ArraySubset::new_with_shape(vec![2, 1]);
-        let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
-
-        assert_eq!(iter.next().unwrap(), (vec![0, 0], 1));
-        assert_eq!(iter.next().unwrap(), (vec![1, 0], 1));
-        assert!(iter.next().is_none());
-    }
-
-    #[test]
-    fn test_array_subset_iterator2() {
-        let array_shape = vec![2, 2];
-        let array_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
-        let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
-
-        assert_eq!(iter.next().unwrap(), (vec![1, 0], 2));
-        assert!(iter.next().is_none());
-    }
-
-    #[test]
-    fn test_array_subset_iterator3() {
-        let array_shape = vec![2, 2];
-        let array_subset = ArraySubset::new_with_shape(vec![2, 2]);
-        let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
-
-        assert_eq!(iter.next().unwrap(), (vec![0, 0], 4));
-        assert!(iter.next().is_none());
-    }
-
-    #[test]
-    fn test_array_subset_iterator4() {
-        let array_shape = vec![2, 2, 2, 3];
-        let array_subset = ArraySubset::new_with_shape(vec![2, 1, 2, 3]);
-        let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
-
-        assert_eq!(iter.next().unwrap(), (vec![0, 0, 0, 0], 6));
-        assert_eq!(iter.next().unwrap(), (vec![1, 0, 0, 0], 6));
-        assert!(iter.next().is_none());
-    }
-
-    #[test]
-    fn test_array_subset_iterator5() {
-        let array_shape = vec![2, 2, 3];
-        let array_subset = ArraySubset::new_with_ranges(&[0..2, 0..2, 1..3]);
-        let mut iter = array_subset.iter_contiguous_indices(&array_shape).unwrap();
-
-        assert_eq!(iter.next().unwrap(), (vec![0, 0, 1], 2));
-        assert_eq!(iter.next().unwrap(), (vec![0, 1, 1], 2));
-        assert_eq!(iter.next().unwrap(), (vec![1, 0, 1], 2));
-        assert_eq!(iter.next().unwrap(), (vec![1, 1, 1], 2));
-        assert!(iter.next().is_none());
-    }
-
-    #[test]
     fn test_extract_byte_ranges_read() {
         let data: Vec<u8> = (0..10).collect();
         let size = data.len() as u64;

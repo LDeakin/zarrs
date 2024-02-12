@@ -200,13 +200,13 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
 
             let element_size = self.data_type().size();
 
-            let chunks_to_update = chunks.iter_indices().collect::<Vec<_>>();
-            let mut futures = chunks_to_update
-                .iter()
+            let mut futures = chunks
+                .indices()
+                .into_iter()
                 .map(|chunk_indices| {
                     let chunk_subset_in_array = unsafe {
                         self.chunk_grid()
-                            .subset_unchecked(chunk_indices, self.shape())
+                            .subset_unchecked(&chunk_indices, self.shape())
                             .unwrap()
                     };
                     let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
@@ -226,7 +226,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                         chunk_subset_in_array_subset.num_elements()
                     );
 
-                    self.async_store_chunk_opt(chunk_indices, chunk_bytes, options)
+                    async move {
+                        self.async_store_chunk_opt(&chunk_indices, chunk_bytes, options)
+                            .await
+                    }
                 })
                 .collect::<FuturesUnordered<_>>();
             while let Some(item) = futures.next().await {
@@ -335,16 +338,20 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_async_writable_transformer(storage_handle);
-        let chunks = chunks.iter_indices().collect::<Vec<_>>();
         let mut futures = chunks
-            .iter()
+            .indices()
+            .into_iter()
             .map(|chunk_indices| {
-                crate::storage::async_erase_chunk(
-                    &*storage_transformer,
-                    self.path(),
-                    chunk_indices,
-                    self.chunk_key_encoding(),
-                )
+                let storage_transformer = storage_transformer.clone();
+                async move {
+                    crate::storage::async_erase_chunk(
+                        &*storage_transformer,
+                        self.path(),
+                        &chunk_indices,
+                        self.chunk_key_encoding(),
+                    )
+                    .await
+                }
             })
             .collect::<FuturesUnordered<_>>();
         while let Some(item) = futures.next().await {

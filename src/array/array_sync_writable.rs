@@ -9,7 +9,7 @@ use crate::{
 
 use super::{
     codec::{ArrayCodecTraits, EncodeOptions},
-    unravel_index, Array, ArrayError,
+    Array, ArrayError,
 };
 
 impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
@@ -210,16 +210,9 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 Ok(())
             };
             if options.is_parallel() {
-                (0..chunks.shape().iter().product())
-                    .into_par_iter()
-                    .map(|chunk_index| {
-                        std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
-                            .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                            .collect::<Vec<_>>()
-                    })
-                    .try_for_each(store_chunk)?;
+                chunks.indices().into_par_iter().try_for_each(store_chunk)?;
             } else {
-                for chunk_indices in chunks.iter_indices() {
+                for chunk_indices in &chunks.indices() {
                     store_chunk(chunk_indices)?;
                 }
             }
@@ -323,16 +316,9 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
-        (0..chunks.shape().iter().product())
-            .into_par_iter()
-            .map(|chunk_index| {
-                std::iter::zip(unravel_index(chunk_index, chunks.shape()), chunks.start())
-                    .map(|(chunk_indices, chunks_start)| chunk_indices + chunks_start)
-                    .collect::<Vec<_>>()
-            })
-            // chunks
-            // .iter_indices()
-            // .par_bridge()
+        chunks
+            .indices()
+            .into_par_iter() // FIXME
             .try_for_each(|chunk_indices| {
                 crate::storage::erase_chunk(
                     &*storage_transformer,

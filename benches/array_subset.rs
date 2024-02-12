@@ -14,7 +14,7 @@ fn array_subset_indices_iterator(c: &mut Criterion) {
         group.throughput(Throughput::Elements(array_subset.num_elements()));
         group.bench_function(BenchmarkId::new("size", array_subset_size), |b| {
             b.iter(|| {
-                array_subset.iter_indices().for_each(|indices| {
+                array_subset.indices().into_iter().for_each(|indices| {
                     black_box(indices.first().unwrap());
                 })
             });

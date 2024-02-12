@@ -3,19 +3,18 @@
 //! An [`ArraySubset`] represents a subset of an array or chunk.
 //!
 //! Many [`Array`](crate::array::Array) store and retrieve methods have an [`ArraySubset`] parameter.
-//! This module includes various iterators supporting iteration over the indices of an [`ArraySubset`] with respect to an array (or chunk).
+//! This module includes various types of [`iterators`] over the elements represented by an [`ArraySubset`].
 //!
 //! This module also provides convenience functions for:
 //!  - computing the byte ranges of array subsets within an array, and
 //!  - extracting the bytes within subsets of an array.
 
-mod array_subset_iterators;
+pub mod iterators;
 
 use std::{num::NonZeroU64, ops::Range};
 
-pub use array_subset_iterators::{
-    ChunksIterator, ContiguousIndicesIterator, ContiguousLinearisedIndicesIterator,
-    IndicesIterator, LinearisedIndicesIterator,
+use iterators::{
+    Chunks, ContiguousIndices, ContiguousLinearisedIndices, Indices, LinearisedIndices,
 };
 
 use derive_more::{Display, From};
@@ -263,7 +262,7 @@ impl ArraySubset {
     ) -> Result<Vec<ByteRange>, IncompatibleArraySubsetAndShapeError> {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
         for (array_index, contiguous_elements) in
-            self.iter_contiguous_linearised_indices(array_shape)?
+            &self.contiguous_linearised_indices(array_shape)?
         {
             let byte_index = array_index * element_size as u64;
             let byte_length = contiguous_elements * element_size as u64;
@@ -284,7 +283,7 @@ impl ArraySubset {
     ) -> Vec<ByteRange> {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
         for (array_index, contiguous_elements) in
-            self.iter_contiguous_linearised_indices_unchecked(array_shape)
+            &self.contiguous_linearised_indices_unchecked(array_shape)
         {
             let byte_index = array_index * element_size as u64;
             let byte_length = contiguous_elements * element_size as u64;
@@ -356,7 +355,7 @@ impl ArraySubset {
         };
         let mut subset_offset = 0;
         for (array_index, contiguous_elements) in
-            self.iter_contiguous_linearised_indices_unchecked(array_shape)
+            &self.contiguous_linearised_indices_unchecked(array_shape)
         {
             let byte_offset = usize::try_from(array_index * element_size).unwrap();
             let byte_length = usize::try_from(contiguous_elements * element_size).unwrap();
@@ -426,7 +425,7 @@ impl ArraySubset {
         };
         let mut subset_offset = 0;
         for (array_index, contiguous_elements) in
-            self.iter_contiguous_linearised_indices_unchecked(array_shape)
+            &self.contiguous_linearised_indices_unchecked(array_shape)
         {
             let element_offset = usize::try_from(array_index).unwrap();
             let element_length = usize::try_from(contiguous_elements).unwrap();
@@ -477,7 +476,7 @@ impl ArraySubset {
         } else {
             let mut offset = 0;
             for (array_index, contiguous_elements) in
-                self.iter_contiguous_linearised_indices(array_shape)?
+                &self.contiguous_linearised_indices(array_shape)?
             {
                 let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
                 let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
@@ -520,7 +519,7 @@ impl ArraySubset {
         );
         let mut offset = 0;
         for (array_index, contiguous_elements) in
-            self.iter_contiguous_linearised_indices_unchecked(array_shape)
+            &self.contiguous_linearised_indices_unchecked(array_shape)
         {
             let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
             let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
@@ -534,8 +533,8 @@ impl ArraySubset {
 
     /// Returns an iterator over the indices of elements within the subset.
     #[must_use]
-    pub fn iter_indices(&self) -> IndicesIterator {
-        IndicesIterator::new(self.clone())
+    pub fn indices(&self) -> Indices {
+        Indices::new(self.clone())
     }
 
     /// Returns an iterator over the linearised indices of elements within the subset.
@@ -543,11 +542,11 @@ impl ArraySubset {
     /// # Errors
     ///
     /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
-    pub fn iter_linearised_indices<'a>(
+    pub fn linearised_indices(
         &self,
-        array_shape: &'a [u64],
-    ) -> Result<LinearisedIndicesIterator<'a>, IncompatibleArraySubsetAndShapeError> {
-        LinearisedIndicesIterator::new(self.clone(), array_shape)
+        array_shape: &[u64],
+    ) -> Result<LinearisedIndices, IncompatibleArraySubsetAndShapeError> {
+        LinearisedIndices::new(self.clone(), array_shape.to_vec())
     }
 
     /// Returns an iterator over the indices of elements within the subset.
@@ -555,11 +554,8 @@ impl ArraySubset {
     /// # Safety
     /// `array_shape` must match the dimensionality and encapsulate this array subset.
     #[must_use]
-    pub unsafe fn iter_linearised_indices_unchecked<'a>(
-        &'a self,
-        array_shape: &'a [u64],
-    ) -> LinearisedIndicesIterator<'a> {
-        LinearisedIndicesIterator::new_unchecked(self.clone(), array_shape)
+    pub unsafe fn linearised_indices_unchecked(&self, array_shape: &[u64]) -> LinearisedIndices {
+        LinearisedIndices::new_unchecked(self.clone(), array_shape.to_vec())
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
@@ -567,11 +563,11 @@ impl ArraySubset {
     /// # Errors
     ///
     /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
-    pub fn iter_contiguous_indices<'a>(
-        &'a self,
-        array_shape: &'a [u64],
-    ) -> Result<ContiguousIndicesIterator, IncompatibleArraySubsetAndShapeError> {
-        ContiguousIndicesIterator::new(self, array_shape)
+    pub fn contiguous_indices(
+        &self,
+        array_shape: &[u64],
+    ) -> Result<ContiguousIndices, IncompatibleArraySubsetAndShapeError> {
+        ContiguousIndices::new(self, array_shape)
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
@@ -579,11 +575,8 @@ impl ArraySubset {
     /// # Safety
     /// The length of `array_shape` must match the array subset dimensionality.
     #[must_use]
-    pub unsafe fn iter_contiguous_indices_unchecked<'a>(
-        &'a self,
-        array_shape: &'a [u64],
-    ) -> ContiguousIndicesIterator {
-        ContiguousIndicesIterator::new_unchecked(self, array_shape)
+    pub unsafe fn contiguous_indices_unchecked(&self, array_shape: &[u64]) -> ContiguousIndices {
+        ContiguousIndices::new_unchecked(self, array_shape)
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
@@ -591,11 +584,11 @@ impl ArraySubset {
     /// # Errors
     ///
     /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
-    pub fn iter_contiguous_linearised_indices<'a>(
-        &'a self,
-        array_shape: &'a [u64],
-    ) -> Result<ContiguousLinearisedIndicesIterator, IncompatibleArraySubsetAndShapeError> {
-        ContiguousLinearisedIndicesIterator::new(self, array_shape)
+    pub fn contiguous_linearised_indices(
+        &self,
+        array_shape: &[u64],
+    ) -> Result<ContiguousLinearisedIndices, IncompatibleArraySubsetAndShapeError> {
+        ContiguousLinearisedIndices::new(self, array_shape.to_vec())
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
@@ -603,29 +596,28 @@ impl ArraySubset {
     /// # Safety
     /// The length of `array_shape` must match the array subset dimensionality.
     #[must_use]
-    pub unsafe fn iter_contiguous_linearised_indices_unchecked<'a>(
-        &'a self,
-        array_shape: &'a [u64],
-    ) -> ContiguousLinearisedIndicesIterator {
-        ContiguousLinearisedIndicesIterator::new_unchecked(self, array_shape)
+    pub unsafe fn contiguous_linearised_indices_unchecked(
+        &self,
+        array_shape: &[u64],
+    ) -> ContiguousLinearisedIndices {
+        ContiguousLinearisedIndices::new_unchecked(self, array_shape.to_vec())
     }
 
-    /// Returns an iterator over chunks with shape `chunk_shape` in the array subset.
+    /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
     ///
     /// All chunks overlapping the array subset are returned, and they all have the same shape `chunk_shape`.
     /// Thus, the subsets of the chunks may extend out over the subset.
     ///
     /// # Errors
-    ///
     /// Returns an error if `chunk_shape` does not match the array subset dimensionality.
-    pub fn iter_chunks<'a>(
-        &'a self,
-        chunk_shape: &'a [NonZeroU64],
-    ) -> Result<ChunksIterator, IncompatibleDimensionalityError> {
-        ChunksIterator::new(self, chunk_shape)
+    pub fn chunks(
+        &self,
+        chunk_shape: &[NonZeroU64],
+    ) -> Result<Chunks, IncompatibleDimensionalityError> {
+        Chunks::new(self, chunk_shape)
     }
 
-    /// Returns an iterator over chunks with shape `chunk_shape` in the array subset.
+    /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
     ///
     /// All chunks overlapping the array subset are returned, and they all have the same shape `chunk_shape`.
     /// Thus, the subsets of the chunks may extend out over the subset.
@@ -633,11 +625,8 @@ impl ArraySubset {
     /// # Safety
     /// The length of `chunk_shape` must match the array subset dimensionality.
     #[must_use]
-    pub unsafe fn iter_chunks_unchecked<'a>(
-        &'a self,
-        chunk_shape: &'a [NonZeroU64],
-    ) -> ChunksIterator {
-        ChunksIterator::new_unchecked(self, chunk_shape)
+    pub unsafe fn chunks_unchecked(&self, chunk_shape: &[NonZeroU64]) -> Chunks {
+        Chunks::new_unchecked(self, chunk_shape)
     }
 
     /// Return the overlapping subset between this array subset and `subset_other`.
@@ -792,7 +781,9 @@ mod tests {
         let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);
         assert!(array_subset0.overlap(&array_subset2).is_err());
         assert_eq!(
-            unsafe { array_subset2.iter_linearised_indices_unchecked(&[6, 7, 1]) }.next(),
+            unsafe { array_subset2.linearised_indices_unchecked(&[6, 7, 1]) }
+                .into_iter()
+                .next(),
             Some(4 * 1 + 3 * 7 * 1)
         )
     }

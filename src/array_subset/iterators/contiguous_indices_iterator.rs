@@ -12,12 +12,29 @@ use super::IndicesIterator;
 /// Iterates over contiguous element indices in an array subset.
 ///
 /// The iterator item is a tuple: (indices, # contiguous elements).
-pub struct ContiguousIndicesIterator {
-    inner: IndicesIterator,
+///
+/// Iterates over the last dimension fastest (i.e. C-contiguous order).
+/// For example, consider a 4x3 array with element indices
+/// ```text
+/// (0, 0)  (0, 1)  (0, 2)
+/// (1, 0)  (1, 1)  (1, 2)
+/// (2, 0)  (2, 1)  (2, 2)
+/// (3, 0)  (3, 1)  (3, 2)
+/// ```
+/// An iterator with an array subset covering the entire array will produce
+/// ```rust,ignore
+/// [((0, 0), 9)]
+/// ```
+/// An iterator with an array subset corresponding to the lower right 2x2 region will produce
+/// ```rust,ignore
+/// [((2, 1), 2), ((3, 1), 2)]
+/// ```
+pub struct ContiguousIndices {
+    subset_contiguous_start: ArraySubset,
     contiguous_elements: u64,
 }
 
-impl ContiguousIndicesIterator {
+impl ContiguousIndices {
     /// Create a new contiguous indices iterator.
     ///
     /// # Errors
@@ -71,9 +88,9 @@ impl ContiguousIndicesIterator {
         let shape_out: Vec<u64> = unsafe { core::mem::transmute(shape_out) };
         let subset_contiguous_start =
             ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out);
-        let inner = subset_contiguous_start.iter_indices();
+        // let inner = subset_contiguous_start.iter_indices();
         Self {
-            inner,
+            subset_contiguous_start,
             contiguous_elements,
         }
     }
@@ -83,9 +100,35 @@ impl ContiguousIndicesIterator {
     pub fn contiguous_elements(&self) -> u64 {
         self.contiguous_elements
     }
+
+    /// Create a new serial iterator.
+    #[must_use]
+    pub fn iter(&self) -> ContiguousIndicesIterator<'_> {
+        <&Self as IntoIterator>::into_iter(self)
+    }
 }
 
-impl Iterator for ContiguousIndicesIterator {
+impl<'a> IntoIterator for &'a ContiguousIndices {
+    type Item = (ArrayIndices, u64);
+    type IntoIter = ContiguousIndicesIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ContiguousIndicesIterator {
+            inner: IndicesIterator::new(&self.subset_contiguous_start),
+            contiguous_elements: self.contiguous_elements,
+        }
+    }
+}
+
+/// Serial contiguous indices iterator.
+///
+/// See [`ContiguousIndices`].
+pub struct ContiguousIndicesIterator<'a> {
+    inner: IndicesIterator<'a>,
+    contiguous_elements: u64,
+}
+
+impl Iterator for ContiguousIndicesIterator<'_> {
     type Item = (ArrayIndices, u64);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -99,6 +142,14 @@ impl Iterator for ContiguousIndicesIterator {
     }
 }
 
-impl ExactSizeIterator for ContiguousIndicesIterator {}
+impl DoubleEndedIterator for ContiguousIndicesIterator<'_> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner
+            .next_back()
+            .map(|indices| (indices, self.contiguous_elements))
+    }
+}
 
-impl FusedIterator for ContiguousIndicesIterator {}
+impl ExactSizeIterator for ContiguousIndicesIterator<'_> {}
+
+impl FusedIterator for ContiguousIndicesIterator<'_> {}
