@@ -1,4 +1,21 @@
 //! Array subset iterators.
+//!
+//! The iterators are:
+//!  - [`Indices`]: iterate over the multidimensional indices of the elements in the subset.
+//!  - [`LinearisedIndices`]: iterate over linearised indices of the elements in the subset.
+//!  - [`ContiguousIndices`]: iterate over contiguous sets of elements in the subset with the start a multidimensional index.
+//!  - [`ContiguousLinearisedIndices`]: iterate over contiguous sets of elements in the subset with the start a linearised index.
+//!  - [`Chunks`]: iterate over regular sized chunks in the array subset.
+//!
+//! These can be created with the appropriate [`ArraySubset`](super::ArraySubset) methods including
+//! [`indices`](super::ArraySubset::indices),
+//! [`linearised_indices`](super::ArraySubset::linearised_indices),
+//! [`contiguous_indices`](super::ArraySubset::contiguous_indices),
+//! [`contiguous_linearised_indices`](super::ArraySubset::contiguous_linearised_indices), and
+//! [`chunks`](super::ArraySubset::chunks).
+//!
+//! All iterators support [`into_iter()`](IntoIterator::into_iter) ([`IntoIterator`]).
+//! The [`Indices`] and [`Chunks`] iterators also support [`rayon`]'s [`into_par_iter()`](rayon::iter::IntoParallelIterator::into_par_iter) ([`IntoParallelIterator`](rayon::iter::IntoParallelIterator)).
 
 mod chunks_iterator;
 mod contiguous_indices_iterator;
