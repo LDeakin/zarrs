@@ -125,7 +125,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
-        _options: &PartialDecodeOptions,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let Some(shard_index) = &self.shard_index else {
             return Ok(array_subsets
@@ -187,17 +187,18 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         fill_value.repeat(array_subset_in_chunk_subset.num_elements_usize())
                     } else {
                         // The chunk must be decoded
-                        let partial_decoder = self.inner_codecs.partial_decoder(
+                        let partial_decoder = self.inner_codecs.partial_decoder_opt(
                             Box::new(ByteIntervalPartialDecoder::new(
                                 &*self.input_handle,
                                 offset,
                                 size,
                             )),
                             &chunk_representation,
+                            options, // FIXME: Adjust options for partial decoding
                         )?;
                         // NOTE: Intentionally using single threaded decode, since parallelisation is in the loop
                         partial_decoder
-                            .partial_decode(&[array_subset_in_chunk_subset])?
+                            .partial_decode_opt(&[array_subset_in_chunk_subset], options)? // FIXME: Adjust options for partial decoding
                             .remove(0)
                     };
 
@@ -429,7 +430,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
-        _options: &PartialDecodeOptions,
+        options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let Some(shard_index) = &self.shard_index else {
             return Ok(array_subsets
@@ -502,13 +503,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                         };
                         let partial_decoder = self
                             .inner_codecs
-                            .async_partial_decoder(
+                            .async_partial_decoder_opt(
                                 Box::new(AsyncByteIntervalPartialDecoder::new(
                                     &*self.input_handle,
                                     u64::try_from(*offset).unwrap(),
                                     u64::try_from(*size).unwrap(),
                                 )),
                                 &chunk_representation,
+                                options, // FIXME: Adjust options for partial decoding
                             )
                             .await?;
                         let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
@@ -521,9 +523,10 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                         //     .await?
                         //     .remove(0);
                         let decoded_chunk = partial_decoder
-                            .partial_decode(&[ArraySubset::new_with_shape(
-                                chunk_subset.shape().to_vec(),
-                            )])
+                            .partial_decode_opt(
+                                &[ArraySubset::new_with_shape(chunk_subset.shape().to_vec())],
+                                options,
+                            ) // FIXME: Adjust options for partial decoding
                             .await?
                             .remove(0);
                         let decoded_chunk = array_subset_in_chunk_subset

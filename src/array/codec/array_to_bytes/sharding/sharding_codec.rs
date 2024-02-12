@@ -532,6 +532,7 @@ impl ShardingCodec {
     // }
 
     /// Preallocate shard, encode and write chunks (in parallel), then truncate shard
+    #[allow(clippy::too_many_lines)]
     fn encode_bounded(
         &self,
         decoded_value: &[u8],
@@ -598,7 +599,8 @@ impl ShardingCodec {
                     };
                     if !chunk_representation.fill_value().equals_all(&bytes) {
                         let chunk_encoded =
-                            self.inner_codecs.encode(bytes, chunk_representation)?;
+                            self.inner_codecs
+                                .encode_opt(bytes, chunk_representation, options)?; // FIXME: Adjust options for inner codec decoding
 
                         let chunk_offset = encoded_shard_offset
                             .fetch_add(chunk_encoded.len(), std::sync::atomic::Ordering::Relaxed);
@@ -662,6 +664,7 @@ impl ShardingCodec {
     /// Encode inner chunks (in parallel), then allocate shard, then write to shard (in parallel)
     // TODO: Collecting chunks then allocating shard can use a lot of memory, have a low memory variant
     // TODO: Also benchmark performance with just performing an alloc like 1x decoded size and writing directly into it, growing if needed
+    #[allow(clippy::too_many_lines)]
     fn encode_unbounded(
         &self,
         decoded_value: &[u8],
@@ -706,7 +709,9 @@ impl ShardingCodec {
                     if chunk_representation.fill_value().equals_all(&bytes) {
                         None
                     } else {
-                        let encoded_chunk = self.inner_codecs.encode(bytes, chunk_representation);
+                        let encoded_chunk =
+                            self.inner_codecs
+                                .encode_opt(bytes, chunk_representation, options); // FIXME: Adjust options for inner chunk encoding
                         match encoded_chunk {
                             Ok(encoded_chunk) => Some(Ok((chunk_index, encoded_chunk))),
                             Err(err) => Some(Err(err)),
@@ -1436,9 +1441,11 @@ impl ShardingCodec {
                         let size: usize = size.try_into().unwrap(); // safe
                         let encoded_chunk_slice = encoded_shard[offset..offset + size].to_vec();
                         // NOTE: Intentionally using single threaded decode, since parallelisation is in the loop
-                        let decoded = self
-                            .inner_codecs
-                            .decode(encoded_chunk_slice, &chunk_representation)?;
+                        let decoded = self.inner_codecs.decode_opt(
+                            encoded_chunk_slice,
+                            &chunk_representation,
+                            options,
+                        )?; // FIXME: Adjust options for inner chunk decoding
                         copy_to_subset(&decoded);
                     };
 
@@ -1465,8 +1472,11 @@ impl ShardingCodec {
                     let offset: usize = offset.try_into().unwrap(); // safe
                     let size: usize = size.try_into().unwrap(); // safe
                     let encoded_chunk_slice = encoded_shard[offset..offset + size].to_vec();
-                    self.inner_codecs
-                        .decode(encoded_chunk_slice, &chunk_representation)?
+                    self.inner_codecs.decode_opt(
+                        encoded_chunk_slice,
+                        &chunk_representation,
+                        options,
+                    )? // FIXME: Adjust options for inner chunk encoding
                 };
 
                 // Copy to subset of shard

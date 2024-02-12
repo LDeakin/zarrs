@@ -571,11 +571,15 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                     self.chunk_array_representation(&chunk_indices)?;
                                 let partial_decoder = self
                                     .codecs()
-                                    .async_partial_decoder(input_handle, &chunk_representation)
+                                    .async_partial_decoder_opt(
+                                        input_handle,
+                                        &chunk_representation,
+                                        options, // FIXME: Adjust internal decode options
+                                    )
                                     .await?;
 
                                 partial_decoder
-                                    .partial_decode_opt(&[array_subset_in_chunk_subset], options)
+                                    .partial_decode_opt(&[array_subset_in_chunk_subset], options) // FIXME: Adjust internal decode options
                                     .await?
                                     .remove(0)
                             };
