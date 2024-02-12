@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use crate::{
     array_subset::ArraySubset,
@@ -13,6 +14,7 @@ use super::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, DecodeOptions,
         PartialDecoderOptions, StoragePartialDecoder,
     },
+    concurrency::calc_concurrent_limits,
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
     validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata,
@@ -305,28 +307,23 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 let output_slice = unsafe {
                     std::slice::from_raw_parts_mut(output.as_mut_ptr().cast::<u8>(), size_output)
                 };
-                if options.is_parallel() {
+                {
                     let output = UnsafeCellSlice::new(output_slice);
-                    chunks
-                        .indices()
-                        .into_par_iter()
-                        .try_for_each(|chunk_indices| {
+                    // FIXME: constrain concurrency based on codec
+                    let indices = chunks.indices();
+                    rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                        options.concurrent_limit().get(),
+                        indices.into_par_iter(),
+                        try_for_each,
+                        |chunk_indices| {
                             self._decode_chunk_into_array_subset(
                                 &chunk_indices,
                                 &array_subset,
                                 unsafe { output.get() },
                                 options,
                             )
-                        })?;
-                } else {
-                    for chunk_indices in &chunks.indices() {
-                        self._decode_chunk_into_array_subset(
-                            &chunk_indices,
-                            &array_subset,
-                            output_slice,
-                            options,
-                        )?;
-                    }
+                        }
+                    )?;
                 }
                 #[allow(clippy::transmute_undefined_repr)]
                 let output: Vec<u8> = unsafe { core::mem::transmute(output) };
@@ -535,30 +532,38 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 let output_slice = unsafe {
                     std::slice::from_raw_parts_mut(output.as_mut_ptr().cast::<u8>(), size_output)
                 };
-                if options.is_parallel() {
-                    // FIXME: Constrain concurrency here based on parallelism internally vs externally
 
+                // Calc self/internal concurrent limits
+                let chunk_representation =
+                    self.chunk_array_representation(&vec![0; self.chunk_grid().dimensionality()])?;
+                let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
+                    options.concurrent_limit(),
+                    options.concurrent_limit(),
+                    &self
+                        .codecs()
+                        .recommended_concurrency(&chunk_representation)?,
+                );
+                let mut codec_options = DecodeOptions::default();
+                codec_options.set_concurrent_limit(codec_concurrent_limit);
+                println!("self_concurrent_limit {self_concurrent_limit:?} codec_concurrent_limit {codec_concurrent_limit:?}"); // FIXME: log this
+
+                {
                     let output = UnsafeCellSlice::new(output_slice);
-                    chunks
-                        .indices()
-                        .into_par_iter()
-                        .try_for_each(|chunk_indices| {
+                    // FIXME: Constrain concurrency here based on parallelism internally vs externally
+                    let indices = chunks.indices();
+                    iter_concurrent_limit!(
+                        self_concurrent_limit.get(),
+                        indices.into_par_iter(),
+                        try_for_each,
+                        |chunk_indices| {
                             self._decode_chunk_into_array_subset(
                                 &chunk_indices,
                                 array_subset,
                                 unsafe { output.get() },
-                                options,
+                                &codec_options,
                             )
-                        })?;
-                } else {
-                    for chunk_indices in &chunks.indices() {
-                        self._decode_chunk_into_array_subset(
-                            &chunk_indices,
-                            array_subset,
-                            output_slice,
-                            options,
-                        )?;
-                    }
+                        }
+                    )?;
                 }
                 #[allow(clippy::transmute_undefined_repr)]
                 let output: Vec<u8> = unsafe { core::mem::transmute(output) };

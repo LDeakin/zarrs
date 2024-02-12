@@ -151,12 +151,13 @@ impl BytesToBytesCodecTraits for BloscCodec {
         decoded_value: Vec<u8>,
         _options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        // if options.is_parallel() {
-        //     let n_threads = std::thread::available_parallelism().unwrap().get();
-        //     self.do_encode(&decoded_value, n_threads)
-        // } else {
-        self.do_encode(&decoded_value, 1)
-        // }
+        // let n_threads = std::cmp::min(
+        //     options.concurrent_limit(),
+        //     std::thread::available_parallelism().unwrap(),
+        // )
+        // .get();
+        let n_threads = 1;
+        self.do_encode(&decoded_value, n_threads)
     }
 
     fn decode_opt(
@@ -165,12 +166,13 @@ impl BytesToBytesCodecTraits for BloscCodec {
         _decoded_representation: &BytesRepresentation,
         _options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        // if options.is_parallel() {
-        //     let n_threads = std::thread::available_parallelism().unwrap().get();
-        //     Self::do_decode(&encoded_value, n_threads)
-        // } else {
-        Self::do_decode(&encoded_value, 1)
-        // }
+        // let n_threads = std::cmp::min(
+        //     options.concurrent_limit(),
+        //     std::thread::available_parallelism().unwrap(),
+        // )
+        // .get();
+        let n_threads = 1;
+        Self::do_decode(&encoded_value, n_threads)
     }
 
     fn partial_decoder_opt<'a>(

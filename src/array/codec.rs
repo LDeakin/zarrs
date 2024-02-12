@@ -77,10 +77,12 @@ use crate::storage::AsyncReadableStorage;
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Read, Seek, SeekFrom},
-    num::NonZeroU64,
 };
 
-use super::{BytesRepresentation, ChunkRepresentation, DataType, MaybeBytes};
+use super::{
+    concurrency::RecommendedConcurrency, BytesRepresentation, ChunkRepresentation, DataType,
+    MaybeBytes,
+};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -95,53 +97,6 @@ pub enum Codec {
     ArrayToBytes(Box<dyn ArrayToBytesCodecTraits>),
     /// A bytes to bytes codec.
     BytesToBytes(Box<dyn BytesToBytesCodecTraits>),
-}
-
-/// The recommended concurrency of a codec includes the most efficient and maximum recommended concurrency.
-///
-/// Consider a chain that does slow decoding first on a single thread, but subsequent codecs can run on multiple threads.
-/// In this case, recommended concurrency is best expressed by two numbers:
-///    - the efficient concurrency, equal to the minimum of codecs
-///    - the maximum concurrency, equal to the maximum of codecs
-// TODO: Compression codec example in docs?
-#[derive(Debug, Copy, Clone)]
-pub struct RecommendedConcurrency {
-    efficient: NonZeroU64,
-    maximum: NonZeroU64,
-}
-
-impl RecommendedConcurrency {
-    /// Create a new recommended concurrency struct with an explicit efficient and maximum recommendation.
-    #[must_use]
-    pub fn new(efficient: NonZeroU64, maximum: NonZeroU64) -> Self {
-        Self { efficient, maximum }
-    }
-
-    /// Create a new recommended concurrency struct with an efficient and maximum recommendation of one.
-    #[must_use]
-    pub fn one() -> Self {
-        Self::new(unsafe { NonZeroU64::new_unchecked(1) }, unsafe {
-            NonZeroU64::new_unchecked(1)
-        })
-    }
-
-    /// Return the recommended efficient concurrency.
-    #[must_use]
-    pub fn efficient(&self) -> u64 {
-        self.efficient.get()
-    }
-
-    /// Return the recommended maximum concurrency.
-    #[must_use]
-    pub fn maximum(&self) -> u64 {
-        self.maximum.get()
-    }
-
-    /// Merge another concurrency, reducing the minimum concurrency or increasing the maximum concurrency to match `other`.
-    pub fn merge(&mut self, other: &RecommendedConcurrency) {
-        self.efficient = std::cmp::min(self.efficient, other.efficient);
-        self.maximum = std::cmp::max(self.maximum, other.maximum);
-    }
 }
 
 impl Codec {

@@ -1,6 +1,6 @@
 //! An array to bytes codec formed by joining an array to array sequence, array to bytes, and bytes to bytes sequence of codecs.
 
-use std::num::NonZeroU64;
+use std::num::NonZeroUsize;
 
 use crate::{
     array::{
@@ -386,10 +386,10 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
-        let mut recommended_concurrency =
-            RecommendedConcurrency::new(unsafe { NonZeroU64::new_unchecked(u64::MAX) }, unsafe {
-                NonZeroU64::new_unchecked(1)
-            });
+        let mut recommended_concurrency = RecommendedConcurrency::new(
+            unsafe { NonZeroUsize::new_unchecked(usize::MAX) },
+            unsafe { NonZeroUsize::new_unchecked(1) },
+        );
 
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;

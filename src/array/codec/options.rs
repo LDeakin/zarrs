@@ -2,6 +2,8 @@
 
 use std::num::NonZeroUsize;
 
+use crate::config::global_config;
+
 /// Encode options.
 pub struct EncodeOptions {
     concurrent_limit: NonZeroUsize,
@@ -10,7 +12,7 @@ pub struct EncodeOptions {
 impl Default for EncodeOptions {
     fn default() -> Self {
         Self {
-            concurrent_limit: std::thread::available_parallelism().unwrap(),
+            concurrent_limit: global_config().concurrent_limit(),
         }
     }
 }
@@ -26,12 +28,6 @@ impl EncodeOptions {
     pub fn set_concurrent_limit(&mut self, concurrent_limit: NonZeroUsize) {
         self.concurrent_limit = concurrent_limit;
     }
-
-    /// FIXME: Temporary, remove
-    #[must_use]
-    pub fn is_parallel(&self) -> bool {
-        self.concurrent_limit.get() > 1
-    }
 }
 
 /// Decode options.
@@ -42,7 +38,7 @@ pub struct DecodeOptions {
 impl Default for DecodeOptions {
     fn default() -> Self {
         Self {
-            concurrent_limit: std::thread::available_parallelism().unwrap(),
+            concurrent_limit: global_config().concurrent_limit(),
         }
     }
 }
@@ -57,12 +53,6 @@ impl DecodeOptions {
     /// Set the concurrent limit.
     pub fn set_concurrent_limit(&mut self, concurrent_limit: NonZeroUsize) {
         self.concurrent_limit = concurrent_limit;
-    }
-
-    /// FIXME: Temporary, remove
-    #[must_use]
-    pub fn is_parallel(&self) -> bool {
-        self.concurrent_limit.get() > 1
     }
 }
 

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use crate::{
     array_subset::ArraySubset,
@@ -209,13 +210,14 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
 
                 Ok(())
             };
-            if options.is_parallel() {
-                chunks.indices().into_par_iter().try_for_each(store_chunk)?;
-            } else {
-                for chunk_indices in &chunks.indices() {
-                    store_chunk(chunk_indices)?;
-                }
-            }
+            // FIXME: Constrain based on codec concurrency
+            let indices = chunks.indices();
+            iter_concurrent_limit!(
+                options.concurrent_limit().get(),
+                indices.into_par_iter(),
+                try_for_each,
+                store_chunk
+            )?;
         }
 
         Ok(())

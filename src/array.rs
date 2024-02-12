@@ -15,6 +15,7 @@ pub mod chunk_grid;
 pub mod chunk_key_encoding;
 mod chunk_shape;
 pub mod codec;
+pub mod concurrency;
 pub mod data_type;
 mod dimension_name;
 mod fill_value;
