@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `ArraySubset::iter_` methods no longer have an `iter_` prefix and return structures implementing `IntoIterator` including
      - `Indices`, `LinearisedIndices`, `ContiguousIndices`, `ContiguousLinearisedIndices`, `Chunks`
    - `Indices` and `Chunks` implement `IntoParIter`
+   - **Breaking**: array subset iterators are moved into public `array_subset::iterators` and no longer in the `array_subset` namespace
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`

@@ -9,7 +9,26 @@ use crate::{
 
 use super::IndicesIterator;
 
-/// TODO
+/// Iterates over contiguous element indices in an array subset.
+///
+/// The iterator item is a tuple: (indices, # contiguous elements).
+///
+/// Iterates over the last dimension fastest (i.e. C-contiguous order).
+/// For example, consider a 4x3 array with element indices
+/// ```text
+/// (0, 0)  (0, 1)  (0, 2)
+/// (1, 0)  (1, 1)  (1, 2)
+/// (2, 0)  (2, 1)  (2, 2)
+/// (3, 0)  (3, 1)  (3, 2)
+/// ```
+/// An iterator with an array subset covering the entire array will produce
+/// ```rust,ignore
+/// [((0, 0), 9)]
+/// ```
+/// An iterator with an array subset corresponding to the lower right 2x2 region will produce
+/// ```rust,ignore
+/// [((2, 1), 2), ((3, 1), 2)]
+/// ```
 pub struct ContiguousIndices {
     subset_contiguous_start: ArraySubset,
     contiguous_elements: u64,
@@ -101,9 +120,9 @@ impl<'a> IntoIterator for &'a ContiguousIndices {
     }
 }
 
-/// Iterates over contiguous element indices in an array subset.
+/// Serial contiguous indices iterator.
 ///
-/// The iterator item is a tuple: (indices, # contiguous elements).
+/// See [`ContiguousIndices`].
 pub struct ContiguousIndicesIterator<'a> {
     inner: IndicesIterator<'a>,
     contiguous_elements: u64,

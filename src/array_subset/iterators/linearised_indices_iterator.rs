@@ -79,7 +79,9 @@ impl<'a> IntoIterator for &'a LinearisedIndices {
     }
 }
 
-/// Iterates over linearised element indices of an array subset in an array.
+/// Parallel linearised indices iterator.
+///
+/// See [`LinearisedIndices`].
 pub struct LinearisedIndicesIterator<'a> {
     inner: IndicesIterator<'a>,
     array_shape: &'a [u64],

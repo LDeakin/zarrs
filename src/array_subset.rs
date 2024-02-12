@@ -3,20 +3,18 @@
 //! An [`ArraySubset`] represents a subset of an array or chunk.
 //!
 //! Many [`Array`](crate::array::Array) store and retrieve methods have an [`ArraySubset`] parameter.
-//! This module includes various iterators supporting iteration over the indices of an [`ArraySubset`] with respect to an array (or chunk).
+//! This module includes various types of [`iterators`] over the elements represented by an [`ArraySubset`].
 //!
 //! This module also provides convenience functions for:
 //!  - computing the byte ranges of array subsets within an array, and
 //!  - extracting the bytes within subsets of an array.
 
-mod array_subset_iterators;
+pub mod iterators;
 
 use std::{num::NonZeroU64, ops::Range};
 
-pub use array_subset_iterators::{
-    Chunks, ChunksIterator, ContiguousIndices, ContiguousIndicesIterator,
-    ContiguousLinearisedIndices, ContiguousLinearisedIndicesIterator, Indices, IndicesIterator,
-    LinearisedIndices, LinearisedIndicesIterator, ParIndicesIterator,
+use iterators::{
+    Chunks, ContiguousIndices, ContiguousLinearisedIndices, Indices, LinearisedIndices,
 };
 
 use derive_more::{Display, From};

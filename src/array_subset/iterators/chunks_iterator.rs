@@ -14,7 +14,30 @@ use super::{
     indices_iterator::ParIndicesIteratorProducer, Indices, IndicesIterator, ParIndicesIterator,
 };
 
-/// TODO
+/// Iterates over the regular sized chunks overlapping this array subset.
+///
+/// Iterates over the last dimension fastest (i.e. C-contiguous order).
+/// All chunks have the same size, and may extend over the bounds of the array subset.
+///
+/// The iterator item is a ([`ArrayIndices`], [`ArraySubset`]) tuple corresponding to the chunk indices and array subset.
+///
+/// For example, consider a 4x3 array with element indices
+/// ```text
+/// (0, 0)  (0, 1)  (0, 2)
+/// (1, 0)  (1, 1)  (1, 2)
+/// (2, 0)  (2, 1)  (2, 2)
+/// (3, 0)  (3, 1)  (3, 2)
+/// ```
+/// An 2x2 chunks iterator with an array subset covering the entire array will produce
+/// ```rust,ignore
+/// [
+///     ((0, 0), ArraySubset{offset: (0,0), shape: (2, 2)}),
+///     ((0, 1), ArraySubset{offset: (0,2), shape: (2, 2)}),
+///     ((1, 0), ArraySubset{offset: (2,0), shape: (2, 2)}),
+///     ((1, 1), ArraySubset{offset: (2,2), shape: (2, 2)}),
+/// ]
+/// ```
+///
 pub struct Chunks {
     indices: Indices,
     chunk_shape: Vec<u64>,
@@ -24,7 +47,6 @@ impl Chunks {
     /// Create a new chunks iterator.
     ///
     /// # Errors
-    ///
     /// Returns [`IncompatibleDimensionalityError`] if `chunk_shape` does not match the dimensionality of `subset`.
     pub fn new(
         subset: &ArraySubset,
@@ -43,7 +65,6 @@ impl Chunks {
     /// Create a new chunks iterator.
     ///
     /// # Safety
-    ///
     /// The dimensionality of `chunk_shape` must match the dimensionality of `subset`.
     #[must_use]
     pub unsafe fn new_unchecked(subset: &ArraySubset, chunk_shape: &[NonZeroU64]) -> Self {
@@ -94,10 +115,9 @@ impl<'a> IntoParallelIterator for &'a Chunks {
     }
 }
 
-/// Iterates over the regular sized chunks overlapping this array subset.
-/// All chunks have the same size, and may extend over the bounds of the array subset.
+/// Serial chunks iterator.
 ///
-/// The iterator item is a ([`ArrayIndices`], [`ArraySubset`]) tuple corresponding to the chunk indices and array subset.
+/// See [`Chunks`].
 pub struct ChunksIterator<'a> {
     inner: IndicesIterator<'a>,
     chunk_shape: &'a [u64],
@@ -141,9 +161,9 @@ impl ExactSizeIterator for ChunksIterator<'_> {}
 
 impl FusedIterator for ChunksIterator<'_> {}
 
-/// Parallel indices iterator.
+/// Parallel chunks iterator.
 ///
-/// See [`Indices`].
+/// See [`Chunks`].
 pub struct ParChunksIterator<'a> {
     inner: ParIndicesIterator<'a>,
     chunk_shape: &'a [u64],

@@ -1,3 +1,5 @@
+//! Array subset iterators.
+
 mod chunks_iterator;
 mod contiguous_indices_iterator;
 mod contiguous_linearised_indices_iterator;

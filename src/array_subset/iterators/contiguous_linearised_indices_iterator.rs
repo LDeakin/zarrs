@@ -7,7 +7,26 @@ use crate::{
 
 use super::{contiguous_indices_iterator::ContiguousIndices, ContiguousIndicesIterator};
 
-/// TODO
+/// Iterates over contiguous linearised element indices in an array subset.
+///
+/// The iterator item is a tuple: (linearised index, # contiguous elements).
+///
+/// Iterates over the last dimension fastest (i.e. C-contiguous order).
+/// For example, consider a 4x3 array with linearised element indices
+/// ```text
+/// 0   1   2
+/// 3   4   5
+/// 6   7   8
+/// 9  10  11
+/// ```
+/// An iterator with an array subset covering the entire array will produce
+/// ```rust,ignore
+/// [(0, 9)]
+/// ```
+/// An iterator with an array subset corresponding to the lower right 2x2 region will produce
+/// ```rust,ignore
+/// [(7, 2), (10, 2)]
+/// ```
 pub struct ContiguousLinearisedIndices {
     inner: ContiguousIndices,
     array_shape: Vec<u64>,
@@ -63,9 +82,9 @@ impl<'a> IntoIterator for &'a ContiguousLinearisedIndices {
     }
 }
 
-/// Iterates over contiguous linearised element indices in an array subset.
+/// Serial contiguous linearised indices iterator.
 ///
-/// The iterator item is a tuple: (linearised index, # contiguous elements).
+/// See [`ContiguousLinearisedIndices`].
 pub struct ContiguousLinearisedIndicesIterator<'a> {
     inner: ContiguousIndicesIterator<'a>,
     array_shape: &'a [u64],
