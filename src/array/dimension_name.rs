@@ -27,8 +27,14 @@ impl DimensionName {
 }
 
 impl From<&str> for DimensionName {
-    fn from(value: &str) -> Self {
-        Self(Some(value.into()))
+    fn from(name: &str) -> Self {
+        Self(Some(name.into()))
+    }
+}
+
+impl From<String> for DimensionName {
+    fn from(name: String) -> Self {
+        Self(Some(name))
     }
 }
 
