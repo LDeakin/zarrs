@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking** Existing `Array` `_opt` use new encode/decode options insted of `parallel: bool`
  - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
  - Add `ParIndicesIterator` and `ParChunksIterator`
+ - Implement `From<String>` for `DimensionName`
 
 ### Changed
  - Dependency bumps
@@ -51,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `Indices` and `Chunks` implement `IntoParallelIter`
    - **Breaking**: array subset iterators are moved into public `array_subset::iterators` and no longer in the `array_subset` namespace
  - Add a fast path to `Array::retrieve_chunk_subset{_opt}` if the entire chunk is requested
+ - `DimensionName::new()` now accepts anything implementing `Into<String>`
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
