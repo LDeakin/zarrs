@@ -48,7 +48,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(feature = "gzip")]
         Box::new(codec::GzipCodec::new(5)?),
     ])
-    .dimension_names(Some(vec!["y".into(), "x".into()]))
+    .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())
     .build(store.clone(), array_path)?;
 

@@ -44,7 +44,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         FillValue::from(ZARR_NAN_F32),
     )
     // .bytes_to_bytes_codecs(vec![]) // uncompressed
-    .dimension_names(Some(vec!["y".into(), "x".into()]))
+    .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())
     .build(store.clone(), array_path)?;
 

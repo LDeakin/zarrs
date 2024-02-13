@@ -39,7 +39,7 @@ use super::{
 ///     #[cfg(feature = "gzip")]
 ///     Box::new(zarrs::array::codec::GzipCodec::new(5)?),
 /// ])
-/// .dimension_names(Some(vec!["y".into(), "x".into()]))
+/// .dimension_names(["y", "x"].into())
 /// .build(store.clone(), "/group/array")?;
 /// array.store_metadata()?; // write metadata to the store
 ///
@@ -231,8 +231,21 @@ impl ArrayBuilder {
     /// Set the dimension names.
     ///
     /// If left unmodified, all dimension names are "unnamed".
-    pub fn dimension_names(&mut self, dimension_names: Option<Vec<DimensionName>>) -> &mut Self {
-        self.dimension_names = dimension_names;
+    pub fn dimension_names<I, D>(&mut self, dimension_names: Option<I>) -> &mut Self
+    where
+        I: IntoIterator<Item = D>,
+        D: Into<DimensionName>,
+    {
+        if let Some(dimension_names) = dimension_names {
+            self.dimension_names = Some(
+                dimension_names
+                    .into_iter()
+                    .map(Into::<DimensionName>::into)
+                    .collect(),
+            );
+        } else {
+            self.dimension_names = None;
+        }
         self
     }
 
@@ -332,7 +345,7 @@ mod tests {
         )));
         builder.fill_value(FillValue::from(0i8));
 
-        builder.dimension_names(Some(vec!["y".into(), "x".into()]));
+        builder.dimension_names(["y", "x"].into());
 
         let mut attributes = serde_json::Map::new();
         attributes.insert("key".to_string(), "value".into());
@@ -400,7 +413,7 @@ mod tests {
             vec![2, 2].try_into().unwrap(),
             FillValue::from(0i8),
         );
-        builder.dimension_names(Some(vec!["z".into(), "y".into(), "x".into()]));
+        builder.dimension_names(["z", "y", "x"].into());
         assert!(builder.build(storage.clone(), "/").is_err());
     }
 }
