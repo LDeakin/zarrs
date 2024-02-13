@@ -30,7 +30,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + 'static>(
         #[cfg(feature = "gzip")]
         Box::new(codec::GzipCodec::new(5)?),
     ])
-    .dimension_names(Some(vec!["y".into(), "x".into()]))
+    .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())
     .build(storage, ARRAY_PATH)?;
 

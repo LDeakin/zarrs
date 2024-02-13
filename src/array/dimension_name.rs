@@ -15,7 +15,7 @@ impl Default for DimensionName {
 impl DimensionName {
     /// Create a new dimension with `name`. Use [`default`](DimensionName::default) to create a dimension with no name.
     #[must_use]
-    pub fn new(name: &str) -> Self {
+    pub fn new<T: Into<String>>(name: T) -> Self {
         Self(Some(name.into()))
     }
 
@@ -27,8 +27,14 @@ impl DimensionName {
 }
 
 impl From<&str> for DimensionName {
-    fn from(value: &str) -> Self {
-        Self(Some(value.into()))
+    fn from(name: &str) -> Self {
+        Self::new(name)
+    }
+}
+
+impl From<String> for DimensionName {
+    fn from(name: String) -> Self {
+        Self::new(name)
     }
 }
 
