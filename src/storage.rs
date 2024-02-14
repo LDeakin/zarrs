@@ -44,14 +44,16 @@ pub use self::storage_async::{
     async_node_exists_listable, async_retrieve_chunk, async_retrieve_partial_values,
     async_store_chunk, async_store_set_partial_values, AsyncListableStorageTraits,
     AsyncReadableListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits,
+    AsyncReadableWritableListableStorageTraits, AsyncReadableWritableStorageTraits,
+    AsyncWritableStorageTraits,
 };
 
 pub use self::storage_sync::{
     create_array, create_group, discover_children, discover_nodes, erase_chunk, erase_node,
     get_child_nodes, node_exists, node_exists_listable, retrieve_chunk, retrieve_partial_values,
     store_chunk, store_set_partial_values, ListableStorageTraits, ReadableListableStorageTraits,
-    ReadableStorageTraits, ReadableWritableStorageTraits, WritableStorageTraits,
+    ReadableStorageTraits, ReadableWritableListableStorageTraits, ReadableWritableStorageTraits,
+    WritableStorageTraits,
 };
 pub use self::storage_transformer::StorageTransformerChain;
 
@@ -67,6 +69,9 @@ pub type WritableStorage = Arc<dyn WritableStorageTraits>;
 
 /// [`Arc`] wrapped readable and writable storage.
 pub type ReadableWritableStorage = Arc<dyn ReadableWritableStorageTraits>;
+
+/// [`Arc`] wrapped readable, writable, and listable storage.
+pub type ReadableWritableListableStorage = Arc<dyn ReadableWritableListableStorageTraits>;
 
 /// [`Arc`] wrapped listable storage.
 pub type ListableStorage = Arc<dyn ListableStorageTraits>;
@@ -89,6 +94,10 @@ pub type AsyncListableStorage = Arc<dyn AsyncListableStorageTraits>;
 #[cfg(feature = "async")]
 /// [`Arc`] wrapped asynchronous readable and listable storage.
 pub type AsyncReadableListableStorage = Arc<dyn AsyncReadableListableStorageTraits>;
+
+#[cfg(feature = "async")]
+/// [`Arc`] wrapped asynchronous readable, writable and listable storage.
+pub type AsyncReadableWritableListableStorage = Arc<dyn AsyncReadableWritableListableStorageTraits>;
 
 /// A [`StoreKey`] and [`ByteRange`].
 #[derive(Debug, Clone)]

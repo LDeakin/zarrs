@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
  - Add `ParIndicesIterator` and `ParChunksIterator`
  - Implement `From<String>` for `DimensionName`
+ - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
 
 ### Changed
  - Dependency bumps
@@ -59,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
- - Remove non-default store lock constructors
+ - **Breaking**: Remove non-default store lock constructors
+ - **Breaking**: Remove unused `storage::store::{Readable,Writable,ReadableWritable,Listable}Store`
 
 ## [0.11.6] - 2024-02-06
 

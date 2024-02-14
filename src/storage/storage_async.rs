@@ -284,6 +284,17 @@ impl<T> AsyncReadableListableStorageTraits for T where
 {
 }
 
+/// A supertrait of [`AsyncReadableWritableStorageTraits`] and [`AsyncListableStorageTraits`].
+pub trait AsyncReadableWritableListableStorageTraits:
+    AsyncReadableWritableStorageTraits + AsyncListableStorageTraits
+{
+}
+
+impl<T> AsyncReadableWritableListableStorageTraits for T where
+    T: AsyncReadableWritableStorageTraits + AsyncListableStorageTraits
+{
+}
+
 /// Asynchronously get the child nodes.
 ///
 /// # Errors
