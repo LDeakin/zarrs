@@ -15,6 +15,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // let store = Arc::new(store::FilesystemStore::new(
     //     "tests/data/array_write_read.zarr",
     // )?);
+    // let store: zarrs::storage::ReadableWritableListableStorage = Arc::new(store::MemoryStore::new());
     let store = Arc::new(store::MemoryStore::new());
 
     // Create a group

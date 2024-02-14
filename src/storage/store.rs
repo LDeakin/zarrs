@@ -24,20 +24,6 @@ pub use store_sync::opendal::OpendalStore;
 
 // pub use store_plugin::{StorePlugin, StorePluginCreateError}; // Currently disabled.
 
-use std::sync::Arc;
-
-/// An [`Arc`] wrapped readable store.
-pub type ReadableStore = Arc<dyn super::ReadableStorageTraits>;
-
-/// An [`Arc`] wrapped writable store.
-pub type WritableStore = Arc<dyn super::WritableStorageTraits>;
-
-/// An [`Arc`] wrapped readable and writable store.
-pub type ReadableWritableStore = Arc<dyn super::ReadableWritableStorageTraits>;
-
-/// An [`Arc`] wrapped listable store.
-pub type ListableStore = Arc<dyn super::ListableStorageTraits>;
-
 // /// A readable store plugin.
 // pub type ReadableStorePlugin = StorePlugin<ReadableStore>;
 // inventory::collect!(ReadableStorePlugin);

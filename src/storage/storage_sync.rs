@@ -260,6 +260,17 @@ pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorage
 
 impl<T> ReadableListableStorageTraits for T where T: ReadableStorageTraits + ListableStorageTraits {}
 
+/// A supertrait of [`ReadableWritableStorageTraits`] and [`ListableStorageTraits`].
+pub trait ReadableWritableListableStorageTraits:
+    ReadableWritableStorageTraits + ListableStorageTraits
+{
+}
+
+impl<T> ReadableWritableListableStorageTraits for T where
+    T: ReadableWritableStorageTraits + ListableStorageTraits
+{
+}
+
 /// Get the child nodes.
 ///
 /// # Errors
