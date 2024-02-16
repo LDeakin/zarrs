@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ParIndicesIterator` and `ParChunksIterator`
  - Implement `From<String>` for `DimensionName`
  - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
+ - Add `Array::retrieve_chunk_subset_into_array_subset`
+ - Add `array::UnsafeCellSlice::len()`
 
 ### Changed
  - Dependency bumps

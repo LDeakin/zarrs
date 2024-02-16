@@ -19,4 +19,8 @@ impl<'a, T: Copy> UnsafeCellSlice<'a, T> {
         let ptr = self.0[0].get();
         std::slice::from_raw_parts_mut(ptr, self.0.len())
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
