@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use zarrs::storage::ListableStorageTraits;
 
 fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use zarrs::{
@@ -8,10 +9,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         },
         array_subset::ArraySubset,
         node::Node,
-        storage::{
-            storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-            store,
-        },
+        storage::store,
     };
 
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -22,20 +20,18 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // let store = Arc::new(store::FilesystemStore::new(path.path())?);
     // let store = Arc::new(store::FilesystemStore::new("tests/data/sharded_array_write_read.zarr")?);
     let store = Arc::new(store::MemoryStore::new());
-    let log_writer = Arc::new(std::sync::Mutex::new(
-        // std::io::BufWriter::new(
-        std::io::stdout(),
-        //    )
-    ));
-    let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
-        chrono::Utc::now().format("[%T%.3f] ").to_string()
-    }));
-    let store_readable_listable = usage_log
-        .clone()
-        .create_readable_listable_transformer(store.clone());
-    let store = usage_log
-        .clone()
-        .create_readable_writable_transformer(store);
+
+    // let log_writer = Arc::new(std::sync::Mutex::new(
+    //     // std::io::BufWriter::new(
+    //     std::io::stdout(),
+    //     //    )
+    // ));
+    // let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+    //     chrono::Utc::now().format("[%T%.3f] ").to_string()
+    // }));
+    // let store = usage_log
+    //     .clone()
+    //     .create_readable_writable_transformer(store);
 
     // Create a group
     let group_path = "/group";
@@ -154,17 +150,13 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Show the hierarchy
-    let node = Node::new(&*store_readable_listable, "/").unwrap();
+    let node = Node::new(&*store, "/").unwrap();
     let tree = node.hierarchy_tree();
     println!("The zarr hierarchy tree is:\n{}", tree);
 
     println!(
         "The keys in the store are:\n[{}]",
-        store_readable_listable
-            .list()
-            .unwrap_or_default()
-            .iter()
-            .format(", ")
+        store.list().unwrap_or_default().iter().format(", ")
     );
 
     Ok(())

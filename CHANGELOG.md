@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `array_subset_iterators.rs`
  - **Major breaking**: storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait method now take `self: Arc<Self>`
  - Removed lifetimes from `{Async}{Readable,Writable,ReadableWritable,Listable,ReadableListable}Storage`
+ - **Breaking**: Add `create{_async}_readable_writable_listable_transformer` to `StorageTransformerExtension` trait
  - **Breaking**: `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime
  - **Breaking**: remove `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs`
  - **Breaking**: added `recommended_concurrency` to codec trait methods to facilitate improved parallelisation
