@@ -213,7 +213,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
             // FIXME: Constrain based on codec concurrency
             let indices = chunks.indices();
             iter_concurrent_limit!(
-                options.concurrent_limit().get(),
+                options.concurrent_limit(),
                 indices.into_par_iter(),
                 try_for_each,
                 store_chunk

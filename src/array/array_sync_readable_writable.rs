@@ -124,7 +124,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             };
             let indices = chunks.indices();
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                encode_options.concurrent_limit().get(),
+                encode_options.concurrent_limit(),
                 indices.into_par_iter(),
                 try_for_each,
                 store_chunk

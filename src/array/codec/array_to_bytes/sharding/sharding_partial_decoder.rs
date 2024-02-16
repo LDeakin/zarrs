@@ -168,7 +168,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             let chunks = unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
 
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                options.concurrent_limit().get(),
+                options.concurrent_limit(),
                 chunks.into_par_iter(),
                 try_for_each,
                 |(chunk_indices, chunk_subset)| {
@@ -551,7 +551,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
             if !results.is_empty() {
                 rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                    options.concurrent_limit().get(),
+                    options.concurrent_limit(),
                     results.into_par_iter(),
                     try_for_each,
                     |subset_and_decoded_chunk| {
@@ -600,7 +600,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
                 // Write filled chunks
                 rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                    options.concurrent_limit().get(),
+                    options.concurrent_limit(),
                     filled_chunks.into_par_iter(),
                     for_each,
                     |chunk_subset| {

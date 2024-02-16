@@ -4,7 +4,9 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use crate::{
+    array::concurrency::RecommendedConcurrency,
     array_subset::ArraySubset,
+    config::global_config,
     node::NodePath,
     storage::{data_key, meta_key, ReadableStorageTraits, StorageError, StorageHandle},
 };
@@ -312,7 +314,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     // FIXME: constrain concurrency based on codec
                     let indices = chunks.indices();
                     rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                        options.concurrent_limit().get(),
+                        options.concurrent_limit(),
                         indices.into_par_iter(),
                         try_for_each,
                         |chunk_indices| {
@@ -538,21 +540,23 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     self.chunk_array_representation(&vec![0; self.chunk_grid().dimensionality()])?;
                 let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
                     options.concurrent_limit(),
-                    options.concurrent_limit(),
+                    &RecommendedConcurrency::new_minimum(
+                        global_config().chunk_concurrent_minimum(),
+                    ),
                     &self
                         .codecs()
                         .recommended_concurrency(&chunk_representation)?,
                 );
                 let mut codec_options = DecodeOptions::default();
                 codec_options.set_concurrent_limit(codec_concurrent_limit);
-                println!("self_concurrent_limit {self_concurrent_limit:?} codec_concurrent_limit {codec_concurrent_limit:?}"); // FIXME: log this
+                // println!("self_concurrent_limit {self_concurrent_limit:?} codec_concurrent_limit {codec_concurrent_limit:?}"); // FIXME: log this
 
                 {
                     let output = UnsafeCellSlice::new(output_slice);
                     // FIXME: Constrain concurrency here based on parallelism internally vs externally
                     let indices = chunks.indices();
                     iter_concurrent_limit!(
-                        self_concurrent_limit.get(),
+                        self_concurrent_limit,
                         indices.into_par_iter(),
                         try_for_each,
                         |chunk_indices| {

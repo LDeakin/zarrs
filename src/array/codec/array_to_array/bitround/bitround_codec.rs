@@ -66,7 +66,7 @@ impl ArrayCodecTraits for BitroundCodec {
         _decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: bitround is well suited to multithread, when is it optimal to kick in?
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

@@ -145,7 +145,6 @@ mod tests {
         },
         array_subset::ArraySubset,
     };
-    use std::num::NonZeroUsize;
 
     use super::*;
 
@@ -251,8 +250,8 @@ mod tests {
                         let mut encode_options = EncodeOptions::default();
                         let mut decode_options = DecodeOptions::default();
                         if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            encode_options.set_concurrent_limit(1);
+                            decode_options.set_concurrent_limit(1);
                         }
                         codec_sharding_round_trip_impl(
                             &encode_options,
@@ -274,8 +273,6 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip2() {
-        use std::num::NonZeroUsize;
-
         use crate::array::codec::{Crc32cCodec, GzipCodec};
 
         for index_at_end in [true, false] {
@@ -285,8 +282,8 @@ mod tests {
                         let mut encode_options = EncodeOptions::default();
                         let mut decode_options = DecodeOptions::default();
                         if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            encode_options.set_concurrent_limit(1);
+                            decode_options.set_concurrent_limit(1);
                         }
                         codec_sharding_round_trip_impl(
                             &encode_options,
@@ -363,8 +360,8 @@ mod tests {
                         let mut encode_options = EncodeOptions::default();
                         let mut decode_options = DecodeOptions::default();
                         if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            encode_options.set_concurrent_limit(1);
+                            decode_options.set_concurrent_limit(1);
                         }
                         codec_sharding_async_round_trip_impl(
                             &encode_options,
@@ -447,8 +444,8 @@ mod tests {
                         let mut encode_options = EncodeOptions::default();
                         let mut decode_options = DecodeOptions::default();
                         if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            encode_options.set_concurrent_limit(1);
+                            decode_options.set_concurrent_limit(1);
                         }
                         codec_sharding_partial_decode(
                             &decode_options,
@@ -532,8 +529,8 @@ mod tests {
                         let mut encode_options = EncodeOptions::default();
                         let mut decode_options = DecodeOptions::default();
                         if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
+                            encode_options.set_concurrent_limit(1);
+                            decode_options.set_concurrent_limit(1);
                         }
                         codec_sharding_async_partial_decode(
                             &decode_options,

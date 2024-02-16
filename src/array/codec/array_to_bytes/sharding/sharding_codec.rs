@@ -112,7 +112,7 @@ impl ArrayCodecTraits for ShardingCodec {
             calculate_chunks_per_shard(decoded_representation.shape(), self.chunk_shape.as_slice())
                 .map_err(|e| CodecError::Other(e.to_string()))?;
         let num_elements = chunks_per_shard.num_elements_nonzero_usize();
-        Ok(RecommendedConcurrency::new(num_elements, num_elements))
+        Ok(RecommendedConcurrency::new_maximum(num_elements.into()))
     }
 
     fn encode_opt(
@@ -378,8 +378,7 @@ impl ShardingCodec {
         // Calc self/internal concurrent limits
         let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrent_limits(
             options.concurrent_limit(),
-            self.recommended_concurrency(shard_representation)?
-                .maximum(),
+            &self.recommended_concurrency(shard_representation)?,
             &self
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
@@ -402,7 +401,7 @@ impl ShardingCodec {
                 .map(|i| usize::try_from(i.get()).unwrap())
                 .product::<usize>();
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                shard_concurrent_limit.get(),
+                shard_concurrent_limit,
                 (0..n_chunks).into_par_iter(),
                 try_for_each,
                 |chunk_index| {
@@ -514,8 +513,7 @@ impl ShardingCodec {
         // Calc self/internal concurrent limits
         let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrent_limits(
             options.concurrent_limit(),
-            self.recommended_concurrency(shard_representation)?
-                .maximum(),
+            &self.recommended_concurrency(shard_representation)?,
             &self
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
@@ -526,7 +524,7 @@ impl ShardingCodec {
 
         let encoded_chunks: Vec<(usize, Vec<u8>)> =
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                shard_concurrent_limit.get(),
+                shard_concurrent_limit,
                 (0..n_chunks).into_par_iter(),
                 filter_map,
                 |chunk_index| {
@@ -579,7 +577,7 @@ impl ShardingCodec {
             let shard_slice = UnsafeCellSlice::new(shard_slice);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                options.concurrent_limit().get(),
+                options.concurrent_limit(),
                 encoded_chunks.into_par_iter(),
                 for_each,
                 |(chunk_index, chunk_encoded)| {
@@ -989,6 +987,7 @@ impl ShardingCodec {
         .await
     }
 
+    // FIXME: decode_into_array_subset
     #[allow(clippy::too_many_lines)]
     fn decode_chunks(
         &self,
@@ -1028,8 +1027,7 @@ impl ShardingCodec {
         // Calc self/internal concurrent limits
         let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrent_limits(
             options.concurrent_limit(),
-            self.recommended_concurrency(shard_representation)?
-                .maximum(),
+            &self.recommended_concurrency(shard_representation)?,
             &self
                 .inner_codecs
                 .recommended_concurrency(&chunk_representation)?,
@@ -1049,9 +1047,9 @@ impl ShardingCodec {
             .product::<usize>();
         let shard_slice = UnsafeCellSlice::new(shard_slice);
         let element_size = chunk_representation.element_size() as u64;
-        // FIXME limit concurrency
+
         rayon_iter_concurrent_limit::iter_concurrent_limit!(
-            shard_concurrent_limit.get(),
+            shard_concurrent_limit,
             (0..num_chunks).into_par_iter(),
             try_for_each,
             |chunk_index| {
@@ -1089,6 +1087,7 @@ impl ShardingCodec {
                     let size: usize = size.try_into().unwrap(); // safe
                     let encoded_chunk_slice = encoded_shard[offset..offset + size].to_vec();
                     // NOTE: Intentionally using single threaded decode, since parallelisation is in the loop
+                    // FIXME: decode_into_array_subset
                     let decoded = self.inner_codecs.decode_opt(
                         encoded_chunk_slice,
                         &chunk_representation,

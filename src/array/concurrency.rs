@@ -1,6 +1,17 @@
 //! Concurrency utilities for arrays and codecs.
 
-use std::num::NonZeroUsize;
+/// The preferred concurrency in a [`RecommendedConcurrency`].
+#[derive(Debug, Copy, Clone)]
+pub enum PreferredConcurrency {
+    /// Prefer the minimum concurrency.
+    ///
+    /// This is suggested in situations where memory scales with concurrency.
+    Minimum,
+    /// Prefer the maximum concurrency.
+    ///
+    /// This is suggested in situations where memory does not scale with concurrency (or does not scale much).
+    Maximum,
+}
 
 /// The recommended concurrency of a codec includes the most efficient and maximum recommended concurrency.
 ///
@@ -9,43 +20,61 @@ use std::num::NonZeroUsize;
 ///    - the efficient concurrency, equal to the minimum of codecs
 ///    - the maximum concurrency, equal to the maximum of codecs
 // TODO: Compression codec example in docs?
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct RecommendedConcurrency {
-    efficient: NonZeroUsize,
-    maximum: NonZeroUsize,
+    /// The range is just used for its constructor and start/end, no iteration
+    range: std::ops::Range<usize>,
+    preferred_concurrency: PreferredConcurrency,
 }
 
 impl RecommendedConcurrency {
-    /// Create a new recommended concurrency struct with an explicit efficient and maximum recommendation.
+    /// Create a new recommended concurrency struct with an explicit concurrency range and preferred concurrency.
     #[must_use]
-    pub fn new(efficient: NonZeroUsize, maximum: NonZeroUsize) -> Self {
-        Self { efficient, maximum }
+    pub fn new(range: std::ops::Range<usize>, preferred_concurrency: PreferredConcurrency) -> Self {
+        let range = std::cmp::max(1, range.start)..std::cmp::max(1, range.end);
+        Self {
+            range,
+            preferred_concurrency,
+        }
     }
 
-    /// Create a new recommended concurrency struct with an efficient and maximum recommendation of one.
+    /// Create a new recommended concurrency struct with a minimum concurrency and unbounded maximum concurrency, preferring minimum.
     #[must_use]
-    pub fn one() -> Self {
-        Self::new(unsafe { NonZeroUsize::new_unchecked(1) }, unsafe {
-            NonZeroUsize::new_unchecked(1)
-        })
+    pub fn new_minimum(minimum: usize) -> Self {
+        Self {
+            range: std::cmp::max(1, minimum)..usize::MAX,
+            preferred_concurrency: PreferredConcurrency::Minimum,
+        }
     }
 
-    /// Return the recommended efficient concurrency.
+    /// Create a new recommended concurrency struct with a maximum concurrency and a bounded maximum concurrency, preferring maximum.
     #[must_use]
-    pub fn efficient(&self) -> NonZeroUsize {
-        self.efficient
+    pub fn new_maximum(maximum: usize) -> Self {
+        Self {
+            range: 1..maximum,
+            preferred_concurrency: PreferredConcurrency::Maximum,
+        }
     }
 
-    /// Return the recommended maximum concurrency.
+    /// Return the minimum concurrency.
     #[must_use]
-    pub fn maximum(&self) -> NonZeroUsize {
-        self.maximum
+    pub fn min(&self) -> usize {
+        self.range.start
     }
 
-    /// Merge another concurrency, reducing the minimum concurrency or increasing the maximum concurrency to match `other`.
-    pub fn merge(&mut self, other: &RecommendedConcurrency) {
-        self.efficient = std::cmp::min(self.efficient, other.efficient);
-        self.maximum = std::cmp::max(self.maximum, other.maximum);
+    /// Return the maximum concurrency.
+    #[must_use]
+    pub fn max(&self) -> usize {
+        self.range.end
+    }
+
+    /// Return the preferred concurrency.
+    #[must_use]
+    pub fn preferred(&self) -> usize {
+        match self.preferred_concurrency {
+            PreferredConcurrency::Minimum => self.range.start,
+            PreferredConcurrency::Maximum => self.range.end,
+        }
     }
 }
 
@@ -56,39 +85,30 @@ impl RecommendedConcurrency {
 /// Return is (self, inner)
 #[must_use]
 pub fn calc_concurrent_limits(
-    concurrency_target: NonZeroUsize,
-    maximum_self_concurrent_limit: NonZeroUsize,
+    concurrency_target: usize,
+    recommended_concurrency_outer: &RecommendedConcurrency,
     recommended_concurrency_inner: &RecommendedConcurrency,
-) -> (NonZeroUsize, NonZeroUsize) {
-    let calc_concurrency = |target: NonZeroUsize, other: NonZeroUsize| {
-        std::cmp::min(
-            unsafe { NonZeroUsize::new_unchecked((target.get() + other.get() - 1) / other.get()) },
-            concurrency_target,
-        )
-    };
+) -> (usize, usize) {
+    let mut concurrency_inner = recommended_concurrency_inner.min();
+    let mut concurrency_outer = recommended_concurrency_outer.min();
 
-    // Try using efficient inner
-    let mut concurrency_limit_inner = std::cmp::min(
-        recommended_concurrency_inner.efficient(),
-        concurrency_target,
-    );
-    let mut concurrency_limit_self = std::cmp::min(
-        calc_concurrency(concurrency_target, concurrency_limit_inner),
-        maximum_self_concurrent_limit,
-    );
-
-    if (concurrency_limit_self.get() * concurrency_limit_inner.get()) < concurrency_target.get()
-        && concurrency_limit_inner < recommended_concurrency_inner.maximum()
-    {
-        concurrency_limit_inner =
-            std::cmp::min(recommended_concurrency_inner.maximum(), concurrency_target);
-        concurrency_limit_self = std::cmp::min(
-            calc_concurrency(concurrency_target, concurrency_limit_inner),
-            maximum_self_concurrent_limit,
+    if concurrency_inner * concurrency_outer < concurrency_target {
+        // Try increasing inner
+        concurrency_inner = std::cmp::min(
+            (concurrency_target + concurrency_outer - 1) / concurrency_outer,
+            recommended_concurrency_inner.max(),
         );
     }
 
-    (concurrency_limit_self, concurrency_limit_inner)
+    if concurrency_inner * concurrency_outer < concurrency_target {
+        // Try increasing outer
+        concurrency_outer = std::cmp::min(
+            (concurrency_target + concurrency_inner - 1) / concurrency_inner,
+            recommended_concurrency_outer.max(),
+        );
+    }
+
+    (concurrency_outer, concurrency_inner)
 }
 
 #[cfg(test)]
@@ -97,48 +117,34 @@ mod tests {
 
     #[test]
     fn concurrent_limits() {
-        let target = NonZeroUsize::new(32).unwrap();
-        let (self_limit, inner_limit) = calc_concurrent_limits(
-            target,
-            NonZeroUsize::new(32).unwrap(),
-            &RecommendedConcurrency::one(),
-        );
-        assert_eq!((self_limit.get(), inner_limit.get()), (32, 1));
-        let (self_limit, inner_limit) = calc_concurrent_limits(
-            target,
-            NonZeroUsize::new(24).unwrap(),
-            &RecommendedConcurrency::one(),
-        );
-        assert_eq!((self_limit.get(), inner_limit.get()), (24, 1));
+        let target = 32;
 
         let (self_limit, inner_limit) = calc_concurrent_limits(
             target,
-            NonZeroUsize::new(24).unwrap(),
-            &RecommendedConcurrency::new(
-                NonZeroUsize::new(4).unwrap(),
-                NonZeroUsize::new(8).unwrap(),
-            ),
+            &RecommendedConcurrency::new_minimum(24),
+            &RecommendedConcurrency::new_maximum(1),
         );
-        assert_eq!((self_limit.get(), inner_limit.get()), (8, 4));
+        assert_eq!((self_limit, inner_limit), (32, 1));
 
         let (self_limit, inner_limit) = calc_concurrent_limits(
             target,
-            NonZeroUsize::new(5).unwrap(),
-            &RecommendedConcurrency::new(
-                NonZeroUsize::new(7).unwrap(),
-                NonZeroUsize::new(12).unwrap(),
-            ),
+            &RecommendedConcurrency::new_minimum(24),
+            &RecommendedConcurrency::new(4..8, PreferredConcurrency::Minimum),
         );
-        assert_eq!((self_limit.get(), inner_limit.get()), (5, 7));
+        assert_eq!((self_limit, inner_limit), (24, 4));
 
         let (self_limit, inner_limit) = calc_concurrent_limits(
             target,
-            NonZeroUsize::new(2).unwrap(),
-            &RecommendedConcurrency::new(
-                NonZeroUsize::new(7).unwrap(),
-                NonZeroUsize::new(12).unwrap(),
-            ),
+            &RecommendedConcurrency::new_maximum(5),
+            &RecommendedConcurrency::new(7..12, PreferredConcurrency::Maximum),
         );
-        assert_eq!((self_limit.get(), inner_limit.get()), (2, 12));
+        assert_eq!((self_limit, inner_limit), (3, 12));
+
+        let (self_limit, inner_limit) = calc_concurrent_limits(
+            target,
+            &RecommendedConcurrency::new_maximum(2),
+            &RecommendedConcurrency::new(7..14, PreferredConcurrency::Maximum),
+        );
+        assert_eq!((self_limit, inner_limit), (2, 14));
     }
 }

@@ -1,18 +1,16 @@
 //! Options for codec encoding and decoding.
 
-use std::num::NonZeroUsize;
-
 use crate::config::global_config;
 
 /// Encode options.
 pub struct EncodeOptions {
-    concurrent_limit: NonZeroUsize,
+    concurrent_limit: usize,
 }
 
 impl Default for EncodeOptions {
     fn default() -> Self {
         Self {
-            concurrent_limit: global_config().concurrent_limit(),
+            concurrent_limit: global_config().codec_concurrent_limit(),
         }
     }
 }
@@ -20,25 +18,25 @@ impl Default for EncodeOptions {
 impl EncodeOptions {
     /// Return the concurrent limit.
     #[must_use]
-    pub fn concurrent_limit(&self) -> NonZeroUsize {
+    pub fn concurrent_limit(&self) -> usize {
         self.concurrent_limit
     }
 
     /// Set the concurrent limit.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: NonZeroUsize) {
+    pub fn set_concurrent_limit(&mut self, concurrent_limit: usize) {
         self.concurrent_limit = concurrent_limit;
     }
 }
 
 /// Decode options.
 pub struct DecodeOptions {
-    concurrent_limit: NonZeroUsize,
+    concurrent_limit: usize,
 }
 
 impl Default for DecodeOptions {
     fn default() -> Self {
         Self {
-            concurrent_limit: global_config().concurrent_limit(),
+            concurrent_limit: global_config().codec_concurrent_limit(),
         }
     }
 }
@@ -46,12 +44,12 @@ impl Default for DecodeOptions {
 impl DecodeOptions {
     /// Return the concurrent limit.
     #[must_use]
-    pub fn concurrent_limit(&self) -> NonZeroUsize {
+    pub fn concurrent_limit(&self) -> usize {
         self.concurrent_limit
     }
 
     /// Set the concurrent limit.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: NonZeroUsize) {
+    pub fn set_concurrent_limit(&mut self, concurrent_limit: usize) {
         self.concurrent_limit = concurrent_limit;
     }
 }

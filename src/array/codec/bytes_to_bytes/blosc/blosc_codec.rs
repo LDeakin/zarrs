@@ -143,7 +143,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         _decoded_representation: &BytesRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: Dependent on the block size, recommended concurrency could be > 1
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

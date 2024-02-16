@@ -69,7 +69,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         _decoded_representation: &BytesRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: zstd supports multithread, but at what point is it good to kick in?
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

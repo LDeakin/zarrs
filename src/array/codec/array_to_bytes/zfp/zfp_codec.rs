@@ -132,7 +132,7 @@ impl ArrayCodecTraits for ZfpCodec {
         _decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: zfp supports multi thread, when is it optimal to kick in?
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

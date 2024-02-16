@@ -71,7 +71,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &self,
         _decoded_representation: &BytesRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

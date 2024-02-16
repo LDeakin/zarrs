@@ -122,7 +122,7 @@ impl ArrayCodecTraits for BytesCodec {
         //         }
         //     }
         // }
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

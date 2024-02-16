@@ -1,7 +1,5 @@
 //! An array to bytes codec formed by joining an array to array sequence, array to bytes, and bytes to bytes sequence of codecs.
 
-use std::num::NonZeroUsize;
-
 use crate::{
     array::{
         codec::{
@@ -9,8 +7,8 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
             ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
             CodecError, CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
-            RecommendedConcurrency,
         },
+        concurrency::{PreferredConcurrency, RecommendedConcurrency},
         BytesRepresentation, ChunkRepresentation,
     },
     metadata::Metadata,
@@ -386,10 +384,8 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
-        let mut recommended_concurrency = RecommendedConcurrency::new(
-            unsafe { NonZeroUsize::new_unchecked(usize::MAX) },
-            unsafe { NonZeroUsize::new_unchecked(1) },
-        );
+        let mut concurrency_min = usize::MAX;
+        let mut concurrency_max = 0;
 
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -401,24 +397,33 @@ impl ArrayCodecTraits for CodecChain {
             self.bytes_to_bytes.iter().rev(),
             bytes_representations.iter().rev().skip(1),
         ) {
-            recommended_concurrency.merge(&codec.recommended_concurrency(bytes_representation)?);
+            let recommended_concurrency = &codec.recommended_concurrency(bytes_representation)?;
+            concurrency_min = std::cmp::min(concurrency_min, recommended_concurrency.min());
+            concurrency_max = std::cmp::max(concurrency_max, recommended_concurrency.max());
         }
 
-        recommended_concurrency.merge(
-            &self
-                .array_to_bytes
-                .recommended_concurrency(array_representations.last().unwrap())?,
-        );
+        let recommended_concurrency = &self
+            .array_to_bytes
+            .recommended_concurrency(array_representations.last().unwrap())?;
+        concurrency_min = std::cmp::min(concurrency_min, recommended_concurrency.min());
+        concurrency_max = std::cmp::max(concurrency_max, recommended_concurrency.max());
 
         // array->array
         for (codec, array_representation) in std::iter::zip(
             self.array_to_array.iter().rev(),
             array_representations.iter().rev().skip(1),
         ) {
-            recommended_concurrency.merge(&codec.recommended_concurrency(array_representation)?);
+            let recommended_concurrency = codec.recommended_concurrency(array_representation)?;
+            concurrency_min = std::cmp::min(concurrency_min, recommended_concurrency.min());
+            concurrency_max = std::cmp::max(concurrency_max, recommended_concurrency.max());
         }
 
         // FIXME: Check if maximum < efficient, if so set maximum to efficient
+        let recommended_concurrency = RecommendedConcurrency::new(
+            std::cmp::min(concurrency_min, concurrency_max)
+                ..std::cmp::max(concurrency_max, concurrency_max),
+            PreferredConcurrency::Maximum,
+        );
 
         Ok(recommended_concurrency)
     }

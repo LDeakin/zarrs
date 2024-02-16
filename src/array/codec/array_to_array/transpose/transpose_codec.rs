@@ -126,7 +126,7 @@ impl ArrayCodecTraits for TransposeCodec {
         _decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: This could be increased, need to implement `transpose_array` without ndarray
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

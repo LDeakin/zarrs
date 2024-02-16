@@ -93,7 +93,7 @@ impl ArrayCodecTraits for PcodecCodec {
         _decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // pcodec does not support parallel decode
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
     fn encode_opt(

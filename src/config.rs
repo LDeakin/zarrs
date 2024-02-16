@@ -1,43 +1,54 @@
 //! Zarrs global configuration options.
 
-use std::{
-    num::NonZeroUsize,
-    sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard},
-};
+use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 /// Global configuration options for the zarrs crate.
 ///
 /// Retrieve the global [`Config`] with [`global_config`] and modify it with [`global_config_mut`].
 ///
-/// ## Configuration Options
+/// # Miscellaneous Configuration Options
 ///
-/// ### Validate Checksums
+/// ## Validate Checksums
 ///  > default: [`true`]
 ///
 /// If enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
 /// Note that regardless of this configuration option, checksum codecs may skip validation when partial decoding.
 ///
-/// ### Default Concurrent Limit
+/// ## Concurrency Configuration Options
+/// ## Default Codec Concurrent Limit
 /// > default: [`std::thread::available_parallelism`]`()`
 ///
-/// The default concurrent limit for parallel operations, such as encoding and decoding.
+/// The default concurrent limit for codec encoding and decoding.
+/// Limiting concurrency can reduce memory usage and improve performance.
+/// The concurrent limit is disabled if set to zero.
+///
+/// Note that the default codec concurrent limit can be overridden for any encode/decode operation.
+///
+/// ## Default Chunk Concurrency Minimum
+/// > default: `4`
+///
+/// For array operations involving multiple chunks, this is the preferred minimum chunk concurrency.
+/// For example, `array_store_chunks` will concurrently encode and store four chunks at a time by default.
+/// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent limit set in the [`EncodeOptions`](crate::array::codec::EncodeOptions) or [`DecodeOptions`](crate::array::codec::DecodeOptions) parameter of an encode or decode method.
+
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
-    concurrent_limit: NonZeroUsize,
+    codec_concurrent_limit: usize,
+    chunk_concurrent_minimum: usize,
 }
 
 #[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
-        let concurrency_multiply = unsafe { NonZeroUsize::new_unchecked(1) };
+        let concurrency_multiply = 1;
         let concurrency_add = 0;
         Config {
             validate_checksums: true,
-            concurrent_limit: std::thread::available_parallelism()
-                .unwrap()
-                .saturating_mul(concurrency_multiply)
-                .saturating_add(concurrency_add),
+            codec_concurrent_limit: std::thread::available_parallelism().unwrap().get()
+                * concurrency_multiply
+                + concurrency_add,
+            chunk_concurrent_minimum: 4,
         }
     }
 }
@@ -54,15 +65,26 @@ impl Config {
         self.validate_checksums = validate_checksums;
     }
 
-    /// Get the [default concurrent limit](#default-concurrent-limit) configuration.
+    /// Get the [default codec concurrent limit](#default-codec-concurrent-limit) configuration.
     #[must_use]
-    pub fn concurrent_limit(&self) -> NonZeroUsize {
-        self.concurrent_limit
+    pub fn codec_concurrent_limit(&self) -> usize {
+        self.codec_concurrent_limit
     }
 
-    /// Set the [validate checksums](#validate-checksums) configuration.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: NonZeroUsize) {
-        self.concurrent_limit = concurrent_limit;
+    /// Set the [default codec concurrent limit](#default-codec-concurrent-limit) configuration.
+    pub fn set_codec_concurrent_limit(&mut self, concurrent_limit: usize) {
+        self.codec_concurrent_limit = concurrent_limit;
+    }
+
+    /// Get the [default chunk concurrent limit](#default-chunk-concurrent-minimum) configuration.
+    #[must_use]
+    pub fn chunk_concurrent_minimum(&self) -> usize {
+        self.chunk_concurrent_minimum
+    }
+
+    /// Set the [default chunk concurrent limit](#default-chunk-concurrent-minimum) configuration.
+    pub fn set_chunk_concurrent_minimum(&mut self, concurrent_minimum: usize) {
+        self.chunk_concurrent_minimum = concurrent_minimum;
     }
 }
 
