@@ -746,15 +746,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_partial_decoder_opt(input_handle, &chunk_representation, options)
             .await?
             .partial_decode_opt(&[chunk_subset.clone()], options)
-            .await?;
+            .await?
+            .pop()
+            .unwrap();
 
-        let total_size = decoded_bytes.iter().map(Vec::len).sum::<usize>();
         let expected_size = chunk_subset.num_elements_usize() * self.data_type().size();
-        if total_size == chunk_subset.num_elements_usize() * self.data_type().size() {
-            Ok(decoded_bytes.concat())
+        if decoded_bytes.len() == chunk_subset.num_elements_usize() * self.data_type().size() {
+            Ok(decoded_bytes)
         } else {
             Err(ArrayError::UnexpectedChunkDecodedSize(
-                total_size,
+                decoded_bytes.len(),
                 expected_size,
             ))
         }

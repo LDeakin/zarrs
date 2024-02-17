@@ -24,6 +24,7 @@ use thiserror::Error;
 use crate::{
     array::{ArrayIndices, ArrayShape},
     byte_range::ByteRange,
+    vec_spare_capacity_to_mut_slice,
 };
 
 /// An array subset.
@@ -346,13 +347,8 @@ impl ArraySubset {
             array_shape.iter().product::<u64>() * element_size
         );
         let num_bytes = usize::try_from(self.num_elements() * element_size).unwrap();
-        let mut bytes_subset = vec![core::mem::MaybeUninit::<u8>::uninit(); num_bytes];
-        let bytes_subset_slice = unsafe {
-            std::slice::from_raw_parts_mut(
-                bytes_subset.as_mut_ptr().cast::<u8>(),
-                bytes_subset.len(),
-            )
-        };
+        let mut bytes_subset: Vec<u8> = Vec::with_capacity(num_bytes);
+        let bytes_subset_slice = vec_spare_capacity_to_mut_slice(&mut bytes_subset);
         let mut subset_offset = 0;
         for (array_index, contiguous_elements) in
             &self.contiguous_linearised_indices_unchecked(array_shape)
@@ -365,10 +361,10 @@ impl ArraySubset {
                 .copy_from_slice(&bytes[byte_offset..byte_offset + byte_length]);
             subset_offset += byte_length;
         }
-        #[allow(clippy::transmute_undefined_repr)]
         unsafe {
-            core::mem::transmute(bytes_subset)
+            bytes_subset.set_len(num_bytes);
         }
+        bytes_subset
     }
 
     /// Return the elements in this array subset from an array with shape `array_shape`.

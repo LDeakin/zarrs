@@ -27,8 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ParIndicesIterator` and `ParChunksIterator`
  - Implement `From<String>` for `DimensionName`
  - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
- - Add `Array::retrieve_chunk_subset_into_array_subset`
- - Add `array::UnsafeCellSlice::len()`
+ - Add `ArrayCodecTraits::decode_into_array_view_opt` with default implementation
+   - TODO: Use in more methods 
+   - TODO: Same for async
+ - Add `ArrayPartialDecoderTraits::partial_decode_into_array_view_opt` with default implementation
+   - TODO: Same for async
+ - Add `array::ArrayView`
+ - Add `Array::retrieve_chunk{_subset}_into_array_view_opt` and `retrieve_array_subset_into_array_view`
+ - Add `array::unsafe_cell_slice::UnsafeCellSlice::len()`
 
 ### Changed
  - Dependency bumps
@@ -58,8 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add a fast path to `Array::retrieve_chunk_subset{_opt}` if the entire chunk is requested
  - `DimensionName::new()` generalised to accept a name implementing `Into<String>`
  - **Breaking**: `ArrayBuilder::dimension_names()` generalised to accept `Option<I>` where `I: IntoIterator<Item = D>` and `D: Into<DimensionName>`
-   - Can now write
-`builder.dimension_names(["y", "x"].into())` instead of `builder.dimension_names(vec!["y".into(), "x".into()].into())` 
+   - Can now write `builder.dimension_names(["y", "x"].into())` instead of `builder.dimension_names(vec!["y".into(), "x".into()].into())`
+- **Breaking**: Add `ArrayPartialDecoderTraits::element_size()`
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`

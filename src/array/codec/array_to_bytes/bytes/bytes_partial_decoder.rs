@@ -37,6 +37,10 @@ impl<'a> BytesPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
@@ -68,6 +72,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                         .repeat(array_subset.num_elements_usize())
                 },
                 |decoded| {
+                    // FIXME: Avoid this concat, prealloc and write to that
                     let mut bytes_subset = decoded.concat();
                     if let Some(endian) = &self.endian {
                         if !endian.is_native() {
@@ -146,6 +151,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
                         .repeat(array_subset.num_elements_usize())
                 },
                 |decoded| {
+                    // FIXME: Avoid this concat, prealloc and write to that
                     let mut bytes_subset = decoded.concat();
                     if let Some(endian) = &self.endian {
                         if !endian.is_native() {

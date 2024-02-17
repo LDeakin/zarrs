@@ -25,6 +25,7 @@ mod unsafe_cell_slice;
 
 use std::sync::Arc;
 
+use self::unsafe_cell_slice::UnsafeCellSlice;
 pub use self::{
     array_builder::ArrayBuilder,
     array_errors::{ArrayCreateError, ArrayError},
@@ -611,6 +612,46 @@ mod array_async_writable;
 
 #[cfg(feature = "async")]
 mod array_async_readable_writable;
+
+/// A view of a subset of an array.
+pub struct ArrayView<'a> {
+    bytes: UnsafeCellSlice<'a, u8>,
+    shape: &'a [u64],
+    subset: &'a ArraySubset,
+}
+
+impl<'a> ArrayView<'a> {
+    /// Create a new [`ArrayView`].
+    #[must_use]
+    pub fn new(bytes: &'a mut [u8], shape: &'a [u64], subset: &'a ArraySubset) -> Self {
+        Self {
+            bytes: UnsafeCellSlice::new(bytes),
+            shape,
+            subset,
+        }
+    }
+
+    /// Return a mutable reference to the underlying bytes of the array referenced by the array view.
+    ///
+    /// # Safety
+    /// It is the responsibility of the caller not to write to the same element from multiple threads.
+    #[doc(hidden)]
+    #[allow(clippy::mut_from_ref)]
+    #[must_use]
+    pub unsafe fn bytes_mut(&self) -> &mut [u8] {
+        self.bytes.get()
+    }
+
+    /// Return a new [`ArrayView`] referencing the same array as `self` but with a new subset.
+    #[must_use]
+    pub fn subset_view(&'a self, subset: &'a ArraySubset) -> ArrayView<'a> {
+        Self {
+            bytes: self.bytes,
+            shape: self.shape,
+            subset,
+        }
+    }
+}
 
 /// Transmute from `Vec<u8>` to `Vec<T>`.
 #[must_use]

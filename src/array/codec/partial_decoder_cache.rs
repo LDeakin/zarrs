@@ -150,6 +150,10 @@ impl<'a> ArrayPartialDecoderCache<'a> {
 }
 
 impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],

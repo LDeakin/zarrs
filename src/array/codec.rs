@@ -80,8 +80,8 @@ use std::{
 };
 
 use super::{
-    concurrency::RecommendedConcurrency, BytesRepresentation, ChunkRepresentation, DataType,
-    MaybeBytes,
+    concurrency::RecommendedConcurrency, ArrayView, BytesRepresentation, ChunkRepresentation,
+    DataType, MaybeBytes,
 };
 
 /// A codec plugin.
@@ -103,7 +103,6 @@ impl Codec {
     /// Create a codec from metadata.
     ///
     /// # Errors
-    ///
     /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered codec plugin.
     pub fn from_metadata(metadata: &Metadata) -> Result<Self, PluginCreateError> {
         for plugin in inventory::iter::<CodecPlugin> {
@@ -207,6 +206,22 @@ pub trait ArrayCodecTraits: CodecTraits {
         options: &EncodeOptions,
     ) -> Result<Vec<u8>, CodecError>;
 
+    /// Encode a chunk (default options).
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
+    fn encode(
+        &self,
+        decoded_value: Vec<u8>,
+        decoded_representation: &ChunkRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.encode_opt(
+            decoded_value,
+            decoded_representation,
+            &EncodeOptions::default(),
+        )
+    }
+
     #[cfg(feature = "async")]
     /// Asynchronously encode a chunk.
     ///
@@ -223,7 +238,7 @@ pub trait ArrayCodecTraits: CodecTraits {
         self.encode_opt(decoded_value, decoded_representation, options)
     }
 
-    /// Decode an array.
+    /// Decode a chunk.
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
@@ -234,8 +249,24 @@ pub trait ArrayCodecTraits: CodecTraits {
         options: &DecodeOptions,
     ) -> Result<Vec<u8>, CodecError>;
 
+    /// Decode a chunk (default options).
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
+    fn decode(
+        &self,
+        encoded_value: Vec<u8>,
+        decoded_representation: &ChunkRepresentation,
+    ) -> Result<Vec<u8>, CodecError> {
+        self.decode_opt(
+            encoded_value,
+            decoded_representation,
+            &DecodeOptions::default(),
+        )
+    }
+
     #[cfg(feature = "async")]
-    /// Asynchronously decode an array.
+    /// Asynchronously decode a chunk.
     ///
     /// The default implementation calls [`decode_opt`](ArrayCodecTraits::decode_opt).
     ///
@@ -250,36 +281,42 @@ pub trait ArrayCodecTraits: CodecTraits {
         self.decode_opt(encoded_value, decoded_representation, options)
     }
 
-    /// Encode an array (default options).
+    /// Decode into the subset of an array.
+    ///
+    /// The default implementation decodes the chunk as normal then copies it into the array subset.
+    /// Codecs can override this method to avoid allocations where possible.
     ///
     /// # Errors
-    /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
-    fn encode(
+    /// Returns an error if the internal call to [`decode_opt`](ArrayCodecTraits::decode_opt) fails.
+    fn decode_into_array_view_opt(
         &self,
-        decoded_value: Vec<u8>,
+        encoded_value: &[u8],
         decoded_representation: &ChunkRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.encode_opt(
-            decoded_value,
-            decoded_representation,
-            &EncodeOptions::default(),
-        )
-    }
-
-    /// Decode an array (default options).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    fn decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode_opt(
-            encoded_value,
-            decoded_representation,
-            &DecodeOptions::default(),
-        )
+        array_view: ArrayView,
+        options: &DecodeOptions,
+    ) -> Result<(), CodecError> {
+        let decoded_bytes =
+            self.decode_opt(encoded_value.to_vec(), decoded_representation, options)?;
+        let contiguous_indices = unsafe {
+            array_view
+                .subset
+                .contiguous_linearised_indices_unchecked(array_view.shape)
+        };
+        let element_size = decoded_representation.element_size() as u64;
+        let length =
+            usize::try_from(contiguous_indices.contiguous_elements() * element_size).unwrap();
+        let mut decoded_offset = 0;
+        // FIXME: Par iteration?
+        let output = unsafe { array_view.bytes_mut() };
+        for (array_subset_element_index, _num_elements) in &contiguous_indices {
+            let output_offset = usize::try_from(array_subset_element_index * element_size).unwrap();
+            debug_assert!((output_offset + length) <= output.len());
+            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
+            output[output_offset..output_offset + length]
+                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
+            decoded_offset += length;
+        }
+        Ok(())
     }
 }
 
@@ -389,7 +426,10 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
 
 /// Partial array decoder traits.
 pub trait ArrayPartialDecoderTraits: Send + Sync {
-    /// Partially decode an array.
+    /// Return the element size of the partial decoder.
+    fn element_size(&self) -> usize;
+
+    /// Partially decode a chunk.
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///
@@ -401,15 +441,51 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError>;
 
-    /// Partially decode an array (default options).
+    /// Partially decode a chunk (default options).
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///
     /// # Errors
-    ///
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
     fn partial_decode(&self, array_subsets: &[ArraySubset]) -> Result<Vec<Vec<u8>>, CodecError> {
         self.partial_decode_opt(array_subsets, &PartialDecodeOptions::default())
+    }
+
+    /// Partially decode a subset of an array into an array view.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails, array subset is invalid, or the array subset shape does not match array view subset shape.
+    // TODO: Override this for CodecChain/Sharding
+    fn partial_decode_into_array_view_opt(
+        &self,
+        array_subset: &ArraySubset,
+        array_view: ArrayView,
+        options: &PartialDecodeOptions,
+    ) -> Result<(), CodecError> {
+        let decoded_bytes = self
+            .partial_decode_opt(&[array_subset.clone()], options)?
+            .pop()
+            .unwrap();
+        let contiguous_indices = unsafe {
+            array_view
+                .subset
+                .contiguous_linearised_indices_unchecked(array_view.shape)
+        };
+        let element_size = self.element_size() as u64;
+        let length =
+            usize::try_from(contiguous_indices.contiguous_elements() * element_size).unwrap();
+        let mut decoded_offset = 0;
+        // FIXME: Par iteration?
+        let output = unsafe { array_view.bytes_mut() };
+        for (array_subset_element_index, _num_elements) in &contiguous_indices {
+            let output_offset = usize::try_from(array_subset_element_index * element_size).unwrap();
+            debug_assert!((output_offset + length) <= output.len());
+            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
+            output[output_offset..output_offset + length]
+                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
+            decoded_offset += length;
+        }
+        Ok(())
     }
 }
 
@@ -417,7 +493,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
 /// Asynchronous partial array decoder traits.
 #[async_trait::async_trait]
 pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
-    /// Partially decode an array.
+    /// Partially decode a chunk.
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///
@@ -429,7 +505,7 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
         options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError>;
 
-    /// Partially decode an array (default options).
+    /// Partially decode a chunk (default options).
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
     ///

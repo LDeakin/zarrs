@@ -105,6 +105,10 @@ fn do_partial_decode(
 }
 
 impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],

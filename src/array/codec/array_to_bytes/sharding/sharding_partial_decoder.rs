@@ -122,6 +122,10 @@ impl<'a> ShardingPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],

@@ -51,6 +51,10 @@ impl<'a> BitroundPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.data_type.size()
+    }
+
     fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],

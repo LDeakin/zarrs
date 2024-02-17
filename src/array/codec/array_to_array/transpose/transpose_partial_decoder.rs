@@ -30,6 +30,10 @@ impl<'a> TransposePartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],

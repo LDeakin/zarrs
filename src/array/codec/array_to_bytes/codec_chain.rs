@@ -9,7 +9,7 @@ use crate::{
             CodecError, CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
         },
         concurrency::{PreferredConcurrency, RecommendedConcurrency},
-        BytesRepresentation, ChunkRepresentation,
+        ArrayView, BytesRepresentation, ChunkRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -30,7 +30,6 @@ pub struct CodecChain {
     array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>>,
     array_to_bytes: Box<dyn ArrayToBytesCodecTraits>,
     bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>>,
-    // decoded_representations_array: Vec<ArrayRepresentation>,
     cache_index: Option<usize>, // for partial decoders
 }
 
@@ -41,7 +40,6 @@ impl CodecChain {
         array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>>,
         array_to_bytes: Box<dyn ArrayToBytesCodecTraits>,
         bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>>,
-        // decoded_representations_array: Vec<ArrayRepresentation>,
     ) -> Self {
         let mut cache_index_must = None;
         let mut cache_index_should = None;
@@ -97,7 +95,6 @@ impl CodecChain {
     /// Create a new codec chain from a list of metadata.
     ///
     /// # Errors
-    ///
     /// Returns a [`PluginCreateError`] if:
     ///  - a codec could not be created,
     ///  - no array to bytes codec is supplied, or
@@ -202,10 +199,10 @@ impl CodecChain {
 }
 
 impl CodecTraits for CodecChain {
+    /// Returns [`None`] since a codec chain does not have standard codec metadata.
+    ///
+    /// Note that usage of the codec chain is explicit in [`Array`](crate::array::Array) and [`CodecChain::create_metadatas()`] will call [`CodecTraits::create_metadata()`] from for each codec.
     fn create_metadata(&self) -> Option<Metadata> {
-        // A codec chain cannot does not have standard metadata.
-        // However, usage of the codec chain is explicit in [Array] and it will call create_configurations()
-        // from CodecChain::create_metadatas().
         None
     }
 
@@ -604,6 +601,98 @@ impl ArrayCodecTraits for CodecChain {
         }
 
         Ok(encoded_value)
+    }
+
+    fn decode_into_array_view_opt(
+        &self,
+        encoded_value: &[u8],
+        decoded_representation: &ChunkRepresentation,
+        array_view: ArrayView,
+        options: &DecodeOptions,
+    ) -> Result<(), CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
+            // Shortcut path if no bytes to bytes or array to array codecs
+            // TODO: This shouldn't be necessary with appropriate optimisations detailed in below FIXME
+            return self.array_to_bytes.decode_into_array_view_opt(
+                encoded_value,
+                array_representations.last().unwrap(),
+                array_view,
+                options,
+            );
+        }
+
+        // Default path
+        let mut encoded_value = encoded_value.to_vec();
+
+        // bytes->bytes
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            encoded_value = codec.decode_opt(encoded_value, bytes_representation, options)?;
+        }
+
+        if self.array_to_array.is_empty() {
+            // bytes->array
+            self.array_to_bytes.decode_into_array_view_opt(
+                &encoded_value,
+                array_representations.last().unwrap(),
+                array_view,
+                options,
+            )
+        } else {
+            // bytes->array
+            encoded_value = self.array_to_bytes.decode_opt(
+                encoded_value,
+                array_representations.last().unwrap(),
+                options,
+            )?;
+
+            // array->array
+            for (codec, array_representation) in std::iter::zip(
+                self.array_to_array.iter().rev(),
+                array_representations.iter().rev().skip(1),
+            ) {
+                encoded_value = codec.decode_opt(encoded_value, array_representation, options)?;
+            }
+
+            if encoded_value.len() as u64 != decoded_representation.size() {
+                return Err(CodecError::UnexpectedChunkDecodedSize(
+                    encoded_value.len(),
+                    decoded_representation.size(),
+                ));
+            }
+
+            // FIXME: the last array to array can decode into array_view
+            //        Could also identify which filters are passthrough (e.g. bytes if endianness is native/none, transpose in C order, etc.)
+            let decoded_value = encoded_value;
+            let contiguous_indices = unsafe {
+                array_view
+                    .subset
+                    .contiguous_linearised_indices_unchecked(array_view.shape)
+            };
+            let element_size = decoded_representation.element_size() as u64;
+            let length =
+                usize::try_from(contiguous_indices.contiguous_elements() * element_size).unwrap();
+            let mut decoded_offset = 0;
+            // FIXME: Par iteration?
+            let output = unsafe { array_view.bytes_mut() };
+            for (array_subset_element_index, _num_elements) in &contiguous_indices {
+                let output_offset =
+                    usize::try_from(array_subset_element_index * element_size).unwrap();
+                debug_assert!((output_offset + length) <= output.len());
+                debug_assert!((decoded_offset + length) <= decoded_value.len());
+                output[output_offset..output_offset + length]
+                    .copy_from_slice(&decoded_value[decoded_offset..decoded_offset + length]);
+                decoded_offset += length;
+            }
+            Ok(())
+        }
     }
 }
 
