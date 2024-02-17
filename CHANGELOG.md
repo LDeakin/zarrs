@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add store lock tests
  - Added `contiguous_elements` method to `ContiguousIndicesIterator` and `ContiguousLinearisedIndicesIterator`
  - Added `ChunkShape::num_elements`
- - Added `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options`
+ - Added `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options{Builder}`
  - Added new `Array::opt` methods which can use new encode/decode options
    - **Breaking** Existing `Array` `_opt` use new encode/decode options insted of `parallel: bool`
  - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`

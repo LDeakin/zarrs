@@ -13,8 +13,8 @@ use crate::{
 
 use super::{
     codec::{
-        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, DecodeOptions,
-        PartialDecoderOptions, StoragePartialDecoder,
+        options::DecodeOptionsBuilder, ArrayCodecTraits, ArrayPartialDecoderTraits,
+        ArrayToBytesCodecTraits, DecodeOptions, PartialDecoderOptions, StoragePartialDecoder,
     },
     concurrency::calc_concurrent_limits,
     transmute_from_bytes_vec,
@@ -587,8 +587,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         .codecs()
                         .recommended_concurrency(&chunk_representation)?,
                 );
-                let mut codec_options = DecodeOptions::default();
-                codec_options.set_concurrent_limit(codec_concurrent_limit);
+                let codec_options = DecodeOptionsBuilder::new()
+                    .concurrent_limit(codec_concurrent_limit)
+                    .build();
                 // println!("retrieve_array_subset_opt self_concurrent_limit {self_concurrent_limit:?} codec_concurrent_limit {codec_concurrent_limit:?}"); // FIXME: log this
 
                 {
@@ -709,8 +710,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         .codecs()
                         .recommended_concurrency(&chunk_representation)?,
                 );
-                let mut codec_options = DecodeOptions::default();
-                codec_options.set_concurrent_limit(codec_concurrent_limit);
+                let codec_options = DecodeOptionsBuilder::new()
+                    .concurrent_limit(codec_concurrent_limit)
+                    .build();
                 // println!("self_concurrent_limit {self_concurrent_limit:?} codec_concurrent_limit {codec_concurrent_limit:?}"); // FIXME: log this
 
                 {

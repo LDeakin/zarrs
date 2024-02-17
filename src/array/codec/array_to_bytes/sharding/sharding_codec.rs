@@ -4,6 +4,7 @@ use crate::{
     array::{
         chunk_shape_to_array_shape,
         codec::{
+            options::{DecodeOptionsBuilder, EncodeOptionsBuilder},
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderTraits, CodecChain, CodecError, CodecTraits, DecodeOptions,
             EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
@@ -279,8 +280,9 @@ impl ArrayCodecTraits for ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(&chunk_representation)?,
         );
-        let mut options_inner = DecodeOptions::default();
-        options_inner.set_concurrent_limit(concurrency_limit_inner_chunks);
+        let options_inner = DecodeOptionsBuilder::new()
+            .concurrent_limit(concurrency_limit_inner_chunks)
+            .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
 
         let chunks_per_shard =
@@ -514,8 +516,9 @@ impl ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
-        let mut options_inner = EncodeOptions::default();
-        options_inner.set_concurrent_limit(concurrency_limit_inner_chunks);
+        let options_inner = EncodeOptionsBuilder::new()
+            .concurrent_limit(concurrency_limit_inner_chunks)
+            .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
 
         // Encode the shards and update the shard index
@@ -652,8 +655,9 @@ impl ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
-        let mut options_inner = EncodeOptions::default();
-        options_inner.set_concurrent_limit(concurrency_limit_inner_chunks);
+        let options_inner = EncodeOptionsBuilder::new()
+            .concurrent_limit(concurrency_limit_inner_chunks)
+            .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
 
         let encoded_chunks: Vec<(usize, Vec<u8>)> =

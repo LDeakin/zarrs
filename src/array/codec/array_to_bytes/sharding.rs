@@ -140,13 +140,23 @@ async fn async_decode_shard_index(
 mod tests {
     use crate::{
         array::codec::{
-            bytes_to_bytes::test_unbounded::TestUnboundedCodec, ArrayCodecTraits,
-            BytesToBytesCodecTraits, EncodeOptions, PartialDecodeOptions,
+            bytes_to_bytes::test_unbounded::TestUnboundedCodec,
+            options::{DecodeOptionsBuilder, EncodeOptionsBuilder},
+            ArrayCodecTraits, BytesToBytesCodecTraits, EncodeOptions, PartialDecodeOptions,
         },
         array_subset::ArraySubset,
+        config::global_config,
     };
 
     use super::*;
+
+    fn get_concurrent_limit(parallel: bool) -> usize {
+        if parallel {
+            global_config().codec_concurrent_limit()
+        } else {
+            1
+        }
+    }
 
     const JSON_VALID2: &str = r#"{
     "chunk_shape": [1, 2, 2],
@@ -247,15 +257,14 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(1);
-                            decode_options.set_concurrent_limit(1);
-                        }
+                        let concurrent_limit = get_concurrent_limit(parallel);
+                        let encode_options =
+                            EncodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
+                        let decode_options =
+                            DecodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
                         codec_sharding_round_trip_impl(
-                            &encode_options,
-                            &decode_options,
+                            &encode_options.build(),
+                            &decode_options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -279,15 +288,14 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(1);
-                            decode_options.set_concurrent_limit(1);
-                        }
+                        let concurrent_limit = get_concurrent_limit(parallel);
+                        let encode_options =
+                            EncodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
+                        let decode_options =
+                            DecodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
                         codec_sharding_round_trip_impl(
-                            &encode_options,
-                            &decode_options,
+                            &encode_options.build(),
+                            &decode_options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -357,15 +365,14 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(1);
-                            decode_options.set_concurrent_limit(1);
-                        }
+                        let concurrent_limit = get_concurrent_limit(parallel);
+                        let encode_options =
+                            EncodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
+                        let decode_options =
+                            DecodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
                         codec_sharding_async_round_trip_impl(
-                            &encode_options,
-                            &decode_options,
+                            &encode_options.build(),
+                            &decode_options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -442,14 +449,11 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(1);
-                            decode_options.set_concurrent_limit(1);
-                        }
+                        let concurrent_limit = get_concurrent_limit(parallel);
+                        let decode_options =
+                            DecodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
                         codec_sharding_partial_decode(
-                            &decode_options,
+                            &decode_options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -528,14 +532,11 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(1);
-                            decode_options.set_concurrent_limit(1);
-                        }
+                        let concurrent_limit = get_concurrent_limit(parallel);
+                        let decode_options =
+                            DecodeOptionsBuilder::new().concurrent_limit(concurrent_limit);
                         codec_sharding_async_partial_decode(
-                            &decode_options,
+                            &decode_options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
