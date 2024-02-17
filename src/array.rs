@@ -796,6 +796,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_subset_round_trip() {
         let store = Arc::new(MemoryStore::default());
         let array_path = "/array";

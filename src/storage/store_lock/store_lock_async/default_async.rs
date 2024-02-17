@@ -52,6 +52,7 @@ mod tests {
     use super::*;
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[cfg_attr(miri, ignore)]
     async fn store_default_lock_async() {
         let store = Arc::new(AsyncObjectStore::new_with_locks(
             object_store::memory::InMemory::default(),

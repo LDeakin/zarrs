@@ -68,6 +68,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_subset_par_iter_indices() {
         use rayon::prelude::*;
         let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
@@ -180,6 +181,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     #[rustfmt::skip]
     fn array_subset_par_iter_chunks() {
         let subset = ArraySubset::new_with_ranges(&[2..5, 2..6]);

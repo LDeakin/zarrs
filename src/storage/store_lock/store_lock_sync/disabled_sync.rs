@@ -47,6 +47,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn store_disable_lock_sync() {
         let store = MemoryStore::new_with_locks(Arc::new(DisabledStoreLocks::default()));
         let key = StoreKey::new("key").unwrap();

@@ -332,6 +332,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_pcodec_partial_decode() {
         let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
         let chunk_representation = ChunkRepresentation::new(
@@ -366,6 +367,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn codec_pcodec_async_partial_decode() {
         let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
         let chunk_representation = ChunkRepresentation::new(

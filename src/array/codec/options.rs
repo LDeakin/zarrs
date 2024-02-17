@@ -23,36 +23,14 @@ impl EncodeOptions {
     }
 
     /// Set the concurrent limit.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: usize) {
+    pub fn set_concurrent_limit(&mut self, concurrent_limit: usize) -> &mut Self {
         self.concurrent_limit = concurrent_limit;
+        self
     }
 }
 
 /// Decode options.
-pub struct DecodeOptions {
-    concurrent_limit: usize,
-}
-
-impl Default for DecodeOptions {
-    fn default() -> Self {
-        Self {
-            concurrent_limit: global_config().codec_concurrent_limit(),
-        }
-    }
-}
-
-impl DecodeOptions {
-    /// Return the concurrent limit.
-    #[must_use]
-    pub fn concurrent_limit(&self) -> usize {
-        self.concurrent_limit
-    }
-
-    /// Set the concurrent limit.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: usize) {
-        self.concurrent_limit = concurrent_limit;
-    }
-}
+pub type DecodeOptions = EncodeOptions;
 
 /// Partial decoder options.
 pub type PartialDecoderOptions = DecodeOptions;

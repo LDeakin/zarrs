@@ -436,6 +436,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_partial_decode_all() {
         for index_at_end in [true, false] {
             for all_fill_value in [true, false] {
@@ -521,6 +522,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn codec_sharding_async_partial_decode_all() {
         for index_at_end in [true, false] {
             for all_fill_value in [true, false] {
@@ -548,6 +550,7 @@ mod tests {
     #[cfg(feature = "gzip")]
     #[cfg(feature = "crc32c")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_partial_decode2() {
         use crate::array::codec::ArrayCodecTraits;
 
@@ -586,6 +589,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_partial_decode3() {
         let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
         let chunk_representation =
