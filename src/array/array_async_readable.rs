@@ -315,32 +315,32 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 let size_output =
                     usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
                         .unwrap();
-                let mut output = vec![core::mem::MaybeUninit::<u8>::uninit(); size_output];
-                let output_slice = unsafe {
-                    std::slice::from_raw_parts_mut(output.as_mut_ptr().cast::<u8>(), size_output)
-                };
-                let output_slice = UnsafeCellSlice::new(output_slice);
-                let mut futures = chunks
-                    .indices()
-                    .into_iter()
-                    .map(|chunk_indices| {
-                        let array_subset = array_subset.clone();
-                        async move {
-                            self._async_decode_chunk_into_array_subset(
-                                &chunk_indices,
-                                &array_subset,
-                                unsafe { output_slice.get() },
-                                options,
-                            )
-                            .await
-                        }
-                    })
-                    .collect::<FuturesUnordered<_>>();
-                while let Some(item) = futures.next().await {
-                    item?;
+                let mut output = Vec::with_capacity(size_output);
+                {
+                    let output_slice = UnsafeCellSlice::new(unsafe {
+                        crate::vec_spare_capacity_to_mut_slice(&mut output)
+                    });
+                    let mut futures = chunks
+                        .indices()
+                        .into_iter()
+                        .map(|chunk_indices| {
+                            let array_subset = array_subset.clone();
+                            async move {
+                                self._async_decode_chunk_into_array_subset(
+                                    &chunk_indices,
+                                    &array_subset,
+                                    unsafe { output_slice.get() },
+                                    options,
+                                )
+                                .await
+                            }
+                        })
+                        .collect::<FuturesUnordered<_>>();
+                    while let Some(item) = futures.next().await {
+                        item?;
+                    }
                 }
-                #[allow(clippy::transmute_undefined_repr)]
-                let output: Vec<u8> = unsafe { core::mem::transmute(output) };
+                unsafe { output.set_len(size_output) };
                 Ok(output)
             }
         }
@@ -507,13 +507,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                         array_subset.num_elements() * self.data_type().size() as u64,
                     )
                     .unwrap();
-                    let mut output = vec![core::mem::MaybeUninit::<u8>::uninit(); size_output];
-                    let output_slice = unsafe {
-                        std::slice::from_raw_parts_mut(
-                            output.as_mut_ptr().cast::<u8>(),
-                            size_output,
-                        )
-                    };
+                    let mut output = Vec::with_capacity(size_output);
+                    let output_slice =
+                        unsafe { crate::vec_spare_capacity_to_mut_slice(&mut output) };
                     self._async_decode_chunk_into_array_subset(
                         chunk_indices,
                         array_subset,
@@ -521,8 +517,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                         options,
                     )
                     .await?;
-                    #[allow(clippy::transmute_undefined_repr)]
-                    let output: Vec<u8> = unsafe { core::mem::transmute(output) };
+                    unsafe { output.set_len(size_output) };
                     Ok(output)
                 }
             }
@@ -534,99 +529,113 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
                 // let mut output = vec![0; size_output];
                 // let output_slice = output.as_mut_slice();
-                let mut output = vec![core::mem::MaybeUninit::<u8>::uninit(); size_output];
-                let output_slice = unsafe {
-                    std::slice::from_raw_parts_mut(output.as_mut_ptr().cast::<u8>(), size_output)
-                };
-                let output_slice = UnsafeCellSlice::new(output_slice);
-                let mut futures = chunks
-                    .indices()
-                    .into_iter()
-                    .map(|chunk_indices| {
-                        async move {
-                            // Get the subset of the array corresponding to the chunk
-                            let chunk_subset_in_array = unsafe {
-                                self.chunk_grid()
-                                    .subset_unchecked(&chunk_indices, self.shape())
-                            };
-                            let Some(chunk_subset_in_array) = chunk_subset_in_array else {
-                                return Err(ArrayError::InvalidArraySubset(
-                                    array_subset.clone(),
-                                    self.shape().to_vec(),
+                let mut output = Vec::with_capacity(size_output);
+                {
+                    let output_slice = UnsafeCellSlice::new(unsafe {
+                        crate::vec_spare_capacity_to_mut_slice(&mut output)
+                    });
+                    let mut futures = chunks
+                        .indices()
+                        .into_iter()
+                        .map(|chunk_indices| {
+                            async move {
+                                // Get the subset of the array corresponding to the chunk
+                                let chunk_subset_in_array = unsafe {
+                                    self.chunk_grid()
+                                        .subset_unchecked(&chunk_indices, self.shape())
+                                };
+                                let Some(chunk_subset_in_array) = chunk_subset_in_array else {
+                                    return Err(ArrayError::InvalidArraySubset(
+                                        array_subset.clone(),
+                                        self.shape().to_vec(),
+                                    ));
+                                };
+
+                                // Decode the subset of the chunk which intersects array_subset
+                                let overlap = unsafe {
+                                    array_subset.overlap_unchecked(&chunk_subset_in_array)
+                                };
+                                let array_subset_in_chunk_subset = unsafe {
+                                    overlap.relative_to_unchecked(chunk_subset_in_array.start())
+                                };
+
+                                let storage_handle =
+                                    Arc::new(StorageHandle::new(self.storage.clone()));
+                                let storage_transformer = self
+                                    .storage_transformers()
+                                    .create_async_readable_transformer(storage_handle);
+                                let input_handle = Box::new(AsyncStoragePartialDecoder::new(
+                                    storage_transformer,
+                                    data_key(
+                                        self.path(),
+                                        &chunk_indices,
+                                        self.chunk_key_encoding(),
+                                    ),
                                 ));
-                            };
 
-                            // Decode the subset of the chunk which intersects array_subset
-                            let overlap =
-                                unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                            let array_subset_in_chunk_subset = unsafe {
-                                overlap.relative_to_unchecked(chunk_subset_in_array.start())
-                            };
+                                let decoded_bytes = {
+                                    let chunk_representation =
+                                        self.chunk_array_representation(&chunk_indices)?;
+                                    let partial_decoder = self
+                                        .codecs()
+                                        .async_partial_decoder_opt(
+                                            input_handle,
+                                            &chunk_representation,
+                                            options, // FIXME: Adjust internal decode options
+                                        )
+                                        .await?;
 
-                            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-                            let storage_transformer = self
-                                .storage_transformers()
-                                .create_async_readable_transformer(storage_handle);
-                            let input_handle = Box::new(AsyncStoragePartialDecoder::new(
-                                storage_transformer,
-                                data_key(self.path(), &chunk_indices, self.chunk_key_encoding()),
-                            ));
+                                    partial_decoder
+                                        .partial_decode_opt(
+                                            &[array_subset_in_chunk_subset],
+                                            options,
+                                        ) // FIXME: Adjust internal decode options
+                                        .await?
+                                        .remove(0)
+                                };
 
-                            let decoded_bytes = {
-                                let chunk_representation =
-                                    self.chunk_array_representation(&chunk_indices)?;
-                                let partial_decoder = self
-                                    .codecs()
-                                    .async_partial_decoder_opt(
-                                        input_handle,
-                                        &chunk_representation,
-                                        options, // FIXME: Adjust internal decode options
-                                    )
-                                    .await?;
-
-                                partial_decoder
-                                    .partial_decode_opt(&[array_subset_in_chunk_subset], options) // FIXME: Adjust internal decode options
-                                    .await?
-                                    .remove(0)
-                            };
-
-                            // Copy decoded bytes to the output
-                            let element_size = self.data_type().size() as u64;
-                            let chunk_subset_in_array_subset =
-                                unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                            let mut decoded_offset = 0;
-                            let contiguous_indices = unsafe {
-                                chunk_subset_in_array_subset
-                                    .contiguous_linearised_indices_unchecked(array_subset.shape())
-                            };
-                            let length = usize::try_from(
-                                contiguous_indices.contiguous_elements() * element_size,
-                            )
-                            .unwrap();
-                            for (array_subset_element_index, _num_elements) in &contiguous_indices {
-                                let output_offset =
-                                    usize::try_from(array_subset_element_index * element_size)
-                                        .unwrap();
-                                debug_assert!((output_offset + length) <= size_output);
-                                debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-                                unsafe {
-                                    let output_slice = output_slice.get();
-                                    output_slice[output_offset..output_offset + length]
-                                        .copy_from_slice(
-                                            &decoded_bytes[decoded_offset..decoded_offset + length],
-                                        );
+                                // Copy decoded bytes to the output
+                                let element_size = self.data_type().size() as u64;
+                                let chunk_subset_in_array_subset =
+                                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                                let mut decoded_offset = 0;
+                                let contiguous_indices = unsafe {
+                                    chunk_subset_in_array_subset
+                                        .contiguous_linearised_indices_unchecked(
+                                            array_subset.shape(),
+                                        )
+                                };
+                                let length = usize::try_from(
+                                    contiguous_indices.contiguous_elements() * element_size,
+                                )
+                                .unwrap();
+                                for (array_subset_element_index, _num_elements) in
+                                    &contiguous_indices
+                                {
+                                    let output_offset =
+                                        usize::try_from(array_subset_element_index * element_size)
+                                            .unwrap();
+                                    debug_assert!((output_offset + length) <= size_output);
+                                    debug_assert!((decoded_offset + length) <= decoded_bytes.len());
+                                    unsafe {
+                                        let output_slice = output_slice.get();
+                                        output_slice[output_offset..output_offset + length]
+                                            .copy_from_slice(
+                                                &decoded_bytes
+                                                    [decoded_offset..decoded_offset + length],
+                                            );
+                                    }
+                                    decoded_offset += length;
                                 }
-                                decoded_offset += length;
+                                Ok(())
                             }
-                            Ok(())
-                        }
-                    })
-                    .collect::<FuturesUnordered<_>>();
-                while let Some(item) = futures.next().await {
-                    item?;
+                        })
+                        .collect::<FuturesUnordered<_>>();
+                    while let Some(item) = futures.next().await {
+                        item?;
+                    }
                 }
-                #[allow(clippy::transmute_undefined_repr)]
-                let output: Vec<u8> = unsafe { core::mem::transmute(output) };
+                unsafe { output.set_len(size_output) };
                 Ok(output)
             }
         }

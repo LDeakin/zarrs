@@ -65,7 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `DimensionName::new()` generalised to accept a name implementing `Into<String>`
  - **Breaking**: `ArrayBuilder::dimension_names()` generalised to accept `Option<I>` where `I: IntoIterator<Item = D>` and `D: Into<DimensionName>`
    - Can now write `builder.dimension_names(["y", "x"].into())` instead of `builder.dimension_names(vec!["y".into(), "x".into()].into())`
-- **Breaking**: Add `ArrayPartialDecoderTraits::element_size()`
+ - **Breaking**: Add `ArrayPartialDecoderTraits::element_size()`
+ - Cleanup uninitialised `Vec` handling
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`

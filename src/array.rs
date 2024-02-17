@@ -671,15 +671,16 @@ pub fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
 #[must_use]
 pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {
     let len = shape.len();
-    let mut indices = vec![core::mem::MaybeUninit::uninit(); len];
-    for (indices_i, &dim) in std::iter::zip(indices.iter_mut().rev(), shape.iter().rev()) {
+    let mut indices: ArrayIndices = Vec::with_capacity(len);
+    for (indices_i, &dim) in std::iter::zip(
+        indices.spare_capacity_mut().iter_mut().rev(),
+        shape.iter().rev(),
+    ) {
         indices_i.write(index % dim);
         index /= dim;
     }
-    #[allow(clippy::transmute_undefined_repr)]
-    unsafe {
-        core::mem::transmute(indices)
-    }
+    unsafe { indices.set_len(len) };
+    indices
 }
 
 /// Ravel ND indices to a linearised index.

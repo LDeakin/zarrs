@@ -69,12 +69,12 @@ impl ContiguousIndices {
 
         let mut contiguous = true;
         let mut contiguous_elements = 1;
-        let mut shape_out = vec![core::mem::MaybeUninit::uninit(); array_shape.len()];
+        let mut shape_out: Vec<u64> = Vec::with_capacity(array_shape.len());
         for (&subset_start, &subset_size, &array_size, shape_out_i) in izip!(
             subset.start().iter().rev(),
             subset.shape().iter().rev(),
             array_shape.iter().rev(),
-            shape_out.iter_mut().rev(),
+            shape_out.spare_capacity_mut().iter_mut().rev(),
         ) {
             if contiguous {
                 contiguous_elements *= subset_size;
@@ -84,8 +84,7 @@ impl ContiguousIndices {
                 shape_out_i.write(subset_size);
             }
         }
-        #[allow(clippy::transmute_undefined_repr)]
-        let shape_out: Vec<u64> = unsafe { core::mem::transmute(shape_out) };
+        unsafe { shape_out.set_len(array_shape.len()) };
         let subset_contiguous_start =
             ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out);
         // let inner = subset_contiguous_start.iter_indices();

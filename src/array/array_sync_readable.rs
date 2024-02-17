@@ -409,12 +409,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
                 // let mut output = vec![0; size_output];
                 // let output_slice = output.as_mut_slice();
-                let mut output = vec![core::mem::MaybeUninit::<u8>::uninit(); size_output];
-                let output_slice = unsafe {
-                    std::slice::from_raw_parts_mut(output.as_mut_ptr().cast::<u8>(), size_output)
-                };
+                let mut output = Vec::with_capacity(size_output);
                 {
-                    let output = UnsafeCellSlice::new(output_slice);
+                    let output_slice = UnsafeCellSlice::new(unsafe {
+                        crate::vec_spare_capacity_to_mut_slice(&mut output)
+                    });
                     // FIXME: constrain concurrency based on codec
                     let indices = chunks.indices();
                     rayon_iter_concurrent_limit::iter_concurrent_limit!(
@@ -425,7 +424,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                             self.retrieve_chunk_into_array_view_opt(
                                 &chunk_indices,
                                 ArrayView::new(
-                                    unsafe { output.get() },
+                                    unsafe { output_slice.get() },
                                     array_subset.shape(),
                                     &array_subset,
                                 ),
@@ -434,8 +433,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         }
                     )?;
                 }
-                #[allow(clippy::transmute_undefined_repr)]
-                let output: Vec<u8> = unsafe { core::mem::transmute(output) };
+                unsafe { output.set_len(size_output) };
                 Ok(output)
             }
         }
@@ -625,9 +623,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         }
                     )?;
                 }
-                unsafe {
-                    output.set_len(size_output);
-                }
+                unsafe { output.set_len(size_output) };
                 Ok(output)
             }
         }

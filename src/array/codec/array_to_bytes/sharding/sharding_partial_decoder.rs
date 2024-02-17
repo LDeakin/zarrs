@@ -467,14 +467,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         // FIXME: Could go parallel here
         for array_subset in array_subsets {
             // shard (subset)
-            let mut shard = vec![
-                std::mem::MaybeUninit::<u8>::uninit();
-                array_subset.num_elements_usize() * element_size
-            ];
-            let shard_slice = unsafe {
-                std::slice::from_raw_parts_mut(shard.as_mut_ptr().cast::<u8>(), shard.len())
-            };
-            let shard_slice = UnsafeCellSlice::new(shard_slice);
+            let shard_size = array_subset.num_elements_usize() * element_size;
+            let mut shard = Vec::with_capacity(shard_size);
+            let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
 
             // Find filled / non filled chunks
             let chunk_info =
@@ -631,10 +626,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                     }
                 );
             };
-
-            #[allow(clippy::transmute_undefined_repr)]
-            let shard = unsafe { core::mem::transmute(shard) };
-
+            unsafe { shard.set_len(shard_size) };
             out.push(shard);
         }
         Ok(out)
