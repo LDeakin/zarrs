@@ -10,6 +10,7 @@ mod array_builder;
 mod array_errors;
 mod array_metadata;
 mod array_representation;
+mod array_view;
 mod bytes_representation;
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
@@ -25,12 +26,12 @@ mod unsafe_cell_slice;
 
 use std::sync::Arc;
 
-use self::unsafe_cell_slice::UnsafeCellSlice;
 pub use self::{
     array_builder::ArrayBuilder,
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata::{ArrayMetadata, ArrayMetadataV3},
     array_representation::{ArrayRepresentation, ChunkRepresentation},
+    array_view::{ArrayView, ArrayViewCreateError},
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
     chunk_key_encoding::ChunkKeyEncoding,
@@ -465,11 +466,16 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if a chunk in `chunks` is incompatible with the chunk grid.
     #[allow(clippy::similar_names)]
     pub fn chunks_subset(&self, chunks: &ArraySubset) -> Result<ArraySubset, ArrayError> {
-        let chunk0 = self.chunk_subset(chunks.start())?;
-        let chunk1 = self.chunk_subset(&chunks.end_inc())?;
-        let start = chunk0.start();
-        let end = chunk1.end_exc();
-        Ok(unsafe { ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end) })
+        match chunks.end_inc() {
+            Some(end) => {
+                let chunk0 = self.chunk_subset(chunks.start())?;
+                let chunk1 = self.chunk_subset(&end)?;
+                let start = chunk0.start();
+                let end = chunk1.end_exc();
+                Ok(unsafe { ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end) })
+            }
+            None => Ok(ArraySubset::new_empty(chunks.dimensionality())),
+        }
     }
 
     /// Return the array subset of `chunks` bounded by the array shape.
@@ -517,24 +523,30 @@ impl<TStorage: ?Sized> Array<TStorage> {
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Option<ArraySubset>, IncompatibleDimensionalityError> {
-        // Find the chunks intersecting this array subset
-        let chunks_start = self
-            .chunk_grid()
-            .chunk_indices(array_subset.start(), self.shape())?;
-        let chunks_end = self
-            .chunk_grid()
-            .chunk_indices(&array_subset.end_inc(), self.shape())?;
-        let chunks_end = chunks_end.map_or_else(|| self.chunk_grid_shape(), Some);
+        match array_subset.end_inc() {
+            Some(end) => {
+                let chunks_start = self
+                    .chunk_grid()
+                    .chunk_indices(array_subset.start(), self.shape())?;
+                let chunks_end = self
+                    .chunk_grid()
+                    .chunk_indices(&end, self.shape())?
+                    .map_or_else(|| self.chunk_grid_shape(), Some);
 
-        Ok(
-            if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
-                Some(unsafe {
-                    ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
-                })
-            } else {
-                None
-            },
-        )
+                Ok(
+                    if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
+                        Some(unsafe {
+                            ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
+                        })
+                    } else {
+                        None
+                    },
+                )
+            }
+            None => Ok(Some(ArraySubset::new_empty(
+                self.chunk_grid().dimensionality(),
+            ))),
+        }
     }
 }
 
@@ -612,46 +624,6 @@ mod array_async_writable;
 
 #[cfg(feature = "async")]
 mod array_async_readable_writable;
-
-/// A view of a subset of an array.
-pub struct ArrayView<'a> {
-    bytes: UnsafeCellSlice<'a, u8>,
-    shape: &'a [u64],
-    subset: &'a ArraySubset,
-}
-
-impl<'a> ArrayView<'a> {
-    /// Create a new [`ArrayView`].
-    #[must_use]
-    pub fn new(bytes: &'a mut [u8], shape: &'a [u64], subset: &'a ArraySubset) -> Self {
-        Self {
-            bytes: UnsafeCellSlice::new(bytes),
-            shape,
-            subset,
-        }
-    }
-
-    /// Return a mutable reference to the underlying bytes of the array referenced by the array view.
-    ///
-    /// # Safety
-    /// It is the responsibility of the caller not to write to the same element from multiple threads.
-    #[doc(hidden)]
-    #[allow(clippy::mut_from_ref)]
-    #[must_use]
-    pub unsafe fn bytes_mut(&self) -> &mut [u8] {
-        self.bytes.get()
-    }
-
-    /// Return a new [`ArrayView`] referencing the same array as `self` but with a new subset.
-    #[must_use]
-    pub fn subset_view(&'a self, subset: &'a ArraySubset) -> ArrayView<'a> {
-        Self {
-            bytes: self.bytes,
-            shape: self.shape,
-            subset,
-        }
-    }
-}
 
 /// Transmute from `Vec<u8>` to `Vec<T>`.
 #[must_use]
@@ -738,6 +710,8 @@ mod tests {
             store_lock::{DefaultStoreLocks, StoreLocks},
         },
     };
+
+    use self::codec::{array_to_bytes::sharding::ShardingCodecBuilder, GzipCodec};
 
     use super::*;
 
@@ -900,4 +874,195 @@ mod tests {
     //         false,
     //     );
     // }
+
+    #[cfg(feature = "ndarray")]
+    #[rustfmt::skip]
+    fn array_api_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(array.data_type(), &DataType::UInt8);
+        assert_eq!(array.fill_value().as_ne_bytes(), &[0u8]);
+        assert_eq!(array.shape(), &[4, 4]);
+        assert_eq!(array.chunk_shape(&[0, 0]).unwrap(), [2, 2].try_into().unwrap());
+        assert_eq!(array.chunk_grid_shape().unwrap(), &[2, 2]);
+
+        // 1  2 | 3  4 
+        // 5  6 | 7  8
+        // -----|-----
+        // 9 10 | 0  0
+        // 0  0 | 0  0
+        array.store_chunk(&[0, 0], vec![1, 2, 0, 0])?;
+        array.store_chunk(&[0, 1], vec![3, 4, 7, 8])?;
+        array.store_array_subset(&ArraySubset::new_with_ranges(&[1..3, 0..2]), vec![5, 6, 9, 10])?;
+
+        assert!(array.retrieve_chunk(&[0, 0, 0]).is_err());
+        assert_eq!(array.retrieve_chunk(&[0, 0])?, [1, 2, 5, 6]);
+        assert_eq!(array.retrieve_chunk(&[0, 1])?, [3, 4, 7, 8]);
+        assert_eq!(array.retrieve_chunk(&[1, 0])?, [9, 10, 0, 0]);
+        assert_eq!(array.retrieve_chunk(&[1, 1])?, [0, 0, 0, 0]);
+
+        assert!(array.retrieve_chunk_if_exists(&[0, 0, 0]).is_err());
+        assert_eq!(array.retrieve_chunk_if_exists(&[0, 0])?, Some(vec![1, 2, 5, 6]));
+        assert_eq!(array.retrieve_chunk_if_exists(&[0, 1])?, Some(vec![3, 4, 7, 8]));
+        assert_eq!(array.retrieve_chunk_if_exists(&[1, 0])?, Some(vec![9, 10, 0, 0]));
+        assert_eq!(array.retrieve_chunk_if_exists(&[1, 1])?, None);
+
+        assert!(array.retrieve_chunk_ndarray::<u16>(&[0, 0]).is_err());
+        assert_eq!(array.retrieve_chunk_ndarray::<u8>(&[0, 0])?, ndarray::array![[1, 2], [5, 6]].into_dyn());
+        assert_eq!(array.retrieve_chunk_ndarray::<u8>(&[0, 1])?, ndarray::array![[3, 4], [7, 8]].into_dyn());
+        assert_eq!(array.retrieve_chunk_ndarray::<u8>(&[1, 0])?, ndarray::array![[9, 10], [0, 0]].into_dyn());
+        assert_eq!(array.retrieve_chunk_ndarray::<u8>(&[1, 1])?, ndarray::array![[0, 0], [0, 0]].into_dyn());
+
+        assert_eq!(array.retrieve_chunk_ndarray_if_exists::<u8>(&[0, 0])?, Some(ndarray::array![[1, 2], [5, 6]].into_dyn()));
+        assert_eq!(array.retrieve_chunk_ndarray_if_exists::<u8>(&[0, 1])?, Some(ndarray::array![[3, 4], [7, 8]].into_dyn()));
+        assert_eq!(array.retrieve_chunk_ndarray_if_exists::<u8>(&[1, 0])?, Some(ndarray::array![[9, 10], [0, 0]].into_dyn()));
+        assert_eq!(array.retrieve_chunk_ndarray_if_exists::<u8>(&[1, 1])?, None);
+
+        assert!(array.retrieve_chunk_subset(&[0, 0], &ArraySubset::new_with_ranges(&[0..2])).is_err());
+        assert!(array.retrieve_chunk_subset(&[0, 0], &ArraySubset::new_with_ranges(&[0..3, 0..3])).is_err());
+        assert_eq!(array.retrieve_chunk_subset(&[0, 0], &ArraySubset::new_with_ranges(&[0..2, 0..2]))?, [1, 2, 5, 6]);
+        assert_eq!(array.retrieve_chunk_subset(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]))?, [1, 2]);
+        assert_eq!(array.retrieve_chunk_subset(&[0, 0], &ArraySubset::new_with_ranges(&[0..2, 1..2]))?, [2, 6]);
+
+        assert!(array.retrieve_chunk_subset_ndarray::<u8>(&[0, 0], &ArraySubset::new_with_ranges(&[0..3, 0..3])).is_err());
+        assert!(array.retrieve_chunk_subset_ndarray::<u16>(&[0, 0], &ArraySubset::new_with_ranges(&[0..2, 0..2])).is_err());
+        assert_eq!(array.retrieve_chunk_subset_ndarray::<u8>(&[0, 0], &ArraySubset::new_with_ranges(&[0..2, 0..2]))?, ndarray::array![[1, 2], [5, 6]].into_dyn());
+        assert_eq!(array.retrieve_chunk_subset_ndarray::<u8>(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]))?, ndarray::array![[1, 2]].into_dyn());
+        assert_eq!(array.retrieve_chunk_subset_ndarray::<u8>(&[0, 0], &ArraySubset::new_with_ranges(&[0..2, 1..2]))?, ndarray::array![[2], [6]].into_dyn());
+
+        assert!(array.retrieve_chunks(&ArraySubset::new_with_ranges(&[0..2])).is_err());
+        assert_eq!(array.retrieve_chunks(&ArraySubset::new_with_ranges(&[0..0, 0..0]))?, Vec::<u8>::new());
+        assert_eq!(array.retrieve_chunks(&ArraySubset::new_with_ranges(&[0..1, 0..1]))?, [1, 2, 5, 6]);
+        assert_eq!(array.retrieve_chunks(&ArraySubset::new_with_ranges(&[0..2, 0..2]))?, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(array.retrieve_chunks(&ArraySubset::new_with_ranges(&[0..2, 1..2]))?, [3, 4, 7, 8, 0, 0, 0, 0]);
+        assert_eq!(array.retrieve_chunks(&ArraySubset::new_with_ranges(&[0..1, 1..3]))?, [3, 4, 0, 0, 7, 8, 0, 0]);
+
+        assert!(array.retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..2])).is_err());
+        assert!(array.retrieve_chunks_ndarray::<u16>(&ArraySubset::new_with_ranges(&[0..2, 0..2])).is_err());
+        assert_eq!(array.retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..2, 0..2]))?, ndarray::array![[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 0, 0], [0, 0, 0, 0]].into_dyn());
+        assert_eq!(array.retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..2, 1..2]))?, ndarray::array![[3, 4], [7, 8], [0, 0], [0, 0]].into_dyn());
+        assert_eq!(array.retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..1, 1..3]))?, ndarray::array![[3, 4, 0, 0], [7, 8, 0, 0]].into_dyn());
+
+        assert!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..4])).is_err());
+        assert_eq!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..0, 0..0]))?, Vec::<u8>::new());
+        assert_eq!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..0, 0..0]))?, [] as [u8; 0]);
+        assert_eq!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..2, 0..2]))?, [1, 2, 5, 6]);
+        assert_eq!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..4, 0..4]))?, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[1..3, 1..3]))?, [6, 7, 10 ,0]);
+        assert_eq!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[5..7, 5..6]))?, [0, 0]); // OOB -> fill value
+        assert_eq!(array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..5, 0..5]))?, [1, 2, 3, 4, 0, 5, 6, 7, 8, 0, 9, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // OOB -> fill value
+
+        assert!(array.retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..4])).is_err());
+        assert!(array.retrieve_array_subset_ndarray::<u16>(&ArraySubset::new_with_ranges(&[0..4, 0..4])).is_err());
+        assert_eq!(array.retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..0, 0..0]))?, ndarray::Array2::<u8>::zeros((0, 0)).into_dyn());
+        assert_eq!(array.retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..4, 0..4]))?, ndarray::array![[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 0, 0], [0, 0, 0, 0]].into_dyn());
+        assert_eq!(array.retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[1..3, 1..3]))?, ndarray::array![[6, 7], [10 ,0]].into_dyn());
+        assert_eq!(array.retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[5..7, 5..6]))?, ndarray::array![[0], [0]].into_dyn()); // OOB -> fill value
+        assert_eq!(array.retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..5, 0..5]))?, ndarray::array![[1, 2, 3, 4, 0], [5, 6, 7, 8, 0], [9, 10, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]].into_dyn()); // OOB -> fill value
+
+        {
+            // Invalid array view dimensionality
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            assert!(array.retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).is_err());
+        }
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            array.retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view)?;
+            assert_eq!(data, [0, 0, 1, 2, 0, 0]);
+        }
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[0..2, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            array.retrieve_chunk_into_array_view(&[0, 0], &array_view)?;
+            assert_eq!(data, [1, 2, 5, 6, 0, 0]);
+        }
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            array.retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..3, 1..3]), &array_view)?;
+            assert_eq!(data, [0, 0, 6, 7, 10, 0]);
+        }
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0];
+            let shape = &[4, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..4, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            array.retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..4, 0..2]), &array_view)?;
+            assert_eq!(data, [0, 0, 5, 6, 9, 10, 0, 0]);
+        }
+
+        assert!(array.partial_decoder(&[0]).is_err());
+        assert!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1])]).is_err());
+        assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[])?, Vec::<Vec<u8>>::new());
+        assert_eq!(array.partial_decoder(&[5, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])])?, [vec![0, 0]]); // OOB -> fill value
+        assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])])?, [vec![1, 2], vec![2, 6]]);
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            assert!(array.partial_decoder(&[0, 0])?.partial_decode_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).is_ok());
+            assert_eq!(data, [0, 0, 1, 2, 0, 0]);
+        }
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            assert!(array.partial_decoder(&[0, 0])?.partial_decode_into_array_view(&ArraySubset::new_with_ranges(&[0..2, 0..2]), &array_view).is_err());
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "ndarray")]
+    #[test]
+    fn array_api_sync_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
+        let store = Arc::new(MemoryStore::default());
+        let array_path = "/array";
+        let array = ArrayBuilder::new(
+            vec![4, 4], // array shape
+            DataType::UInt8,
+            vec![2, 2].try_into().unwrap(), // regular chunk shape
+            FillValue::from(0u8),
+        )
+        .bytes_to_bytes_codecs(vec![])
+        // .storage_transformers(vec![].into())
+        .build(store, array_path)
+        .unwrap();
+        array_api_sync_read(array)
+    }
+
+    #[cfg(feature = "ndarray")]
+    #[test]
+    fn array_api_sync_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
+        let store = Arc::new(MemoryStore::default());
+        let array_path = "/array";
+        let array = ArrayBuilder::new(
+            vec![4, 4], // array shape
+            DataType::UInt8,
+            vec![2, 2].try_into().unwrap(), // regular chunk shape
+            FillValue::from(0u8),
+        )
+        .array_to_bytes_codec(Box::new(
+            ShardingCodecBuilder::new(vec![1, 1].try_into().unwrap())
+                .bytes_to_bytes_codecs(vec![
+                    #[cfg(feature = "gzip")]
+                    Box::new(GzipCodec::new(5)?),
+                ])
+                .build(),
+        ))
+        // .storage_transformers(vec![].into())
+        .build(store, array_path)
+        .unwrap();
+        array_api_sync_read(array)
+    }
 }

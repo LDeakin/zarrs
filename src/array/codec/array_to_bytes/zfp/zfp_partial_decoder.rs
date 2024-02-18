@@ -59,6 +59,15 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
         decoded_regions: &[ArraySubset],
         options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         let encoded_value = self.input_handle.decode_opt(options)?;
         let mut out = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();

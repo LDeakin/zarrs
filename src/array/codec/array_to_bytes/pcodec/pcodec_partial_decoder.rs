@@ -148,6 +148,15 @@ impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
         decoded_regions: &[ArraySubset],
         options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         let decoded = self.input_handle.decode_opt(options).await?;
         do_partial_decode(decoded, decoded_regions, &self.decoded_representation)
     }

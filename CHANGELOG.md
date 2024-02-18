@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `array::ArrayView`
  - Add `Array::retrieve_chunk{_subset}_into_array_view_opt` and `retrieve_array_subset_into_array_view`
  - Add `array::unsafe_cell_slice::UnsafeCellSlice::len()`
+ - Add `{Array,Chunk}Representation::dimensionality()`
+ - Add `ArraySubset::new_empty()` and `ArraySubset::is_empty()`
+ - Add missing `IncompatibleArraySubsetAndShapeError::new()`
+ - Add more array tests
 
 ### Changed
  - Dependency bumps
@@ -72,6 +76,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
  - **Breaking**: Remove non-default store lock constructors
  - **Breaking**: Remove unused `storage::store::{Readable,Writable,ReadableWritable,Listable}Store`
+
+### Fixed
+ - `Array::retrieve_array_subset` and variants now correctly return the fill value if the array subset does not intersect any chunks
+ - **Breaking**: `ArraySubset::end_inc` now returns an `Option`, which is `None` for an empty array subset
+ - Add missing input validation to some `partial_decode` methods
 
 ## [0.11.6] - 2024-02-06
 

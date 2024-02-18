@@ -59,6 +59,15 @@ pub enum ArrayStoreBytesError {
 }
 
 impl ArraySubset {
+    /// Create a new empty array subset.
+    #[must_use]
+    pub fn new_empty(dimensionality: usize) -> Self {
+        Self {
+            start: vec![0; dimensionality],
+            shape: vec![0; dimensionality],
+        }
+    }
+
     /// Create a new array subset from a `ranges`.
     #[must_use]
     pub fn new_with_ranges(ranges: &[Range<u64>]) -> Self {
@@ -212,17 +221,32 @@ impl ArraySubset {
         &self.shape
     }
 
+    /// Returns if the array subset is empty (i.e. has a zero element in its shape).
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.shape.iter().any(|i| i == &0)
+    }
+
     /// Return the dimensionality of the array subset.
     #[must_use]
     pub fn dimensionality(&self) -> usize {
         self.start.len()
     }
+
     /// Return the end (inclusive) of the array subset.
+    ///
+    /// Returns [`None`] if the array subset is empty.
     #[must_use]
-    pub fn end_inc(&self) -> ArrayIndices {
-        std::iter::zip(&self.start, &self.shape)
-            .map(|(start, size)| start + size - 1)
-            .collect()
+    pub fn end_inc(&self) -> Option<ArrayIndices> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(
+                std::iter::zip(&self.start, &self.shape)
+                    .map(|(start, size)| start + size - 1)
+                    .collect(),
+            )
+        }
     }
 
     /// Return the end (exclusive) of the array subset.
@@ -720,6 +744,14 @@ impl IncompatibleDimensionalityError {
 #[derive(Clone, Debug, Error, From)]
 #[error("incompatible array subset {0} with array shape {1:?}")]
 pub struct IncompatibleArraySubsetAndShapeError(ArraySubset, ArrayShape);
+
+impl IncompatibleArraySubsetAndShapeError {
+    /// Create a new incompatible array subset and shape error.
+    #[must_use]
+    pub fn new(array_subset: ArraySubset, array_shape: ArrayShape) -> Self {
+        Self(array_subset, array_shape)
+    }
+}
 
 /// An incompatible start/end indices error.
 #[derive(Clone, Debug, Error, From)]

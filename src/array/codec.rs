@@ -292,15 +292,15 @@ pub trait ArrayCodecTraits: CodecTraits {
         &self,
         encoded_value: &[u8],
         decoded_representation: &ChunkRepresentation,
-        array_view: ArrayView,
+        array_view: &ArrayView,
         options: &DecodeOptions,
     ) -> Result<(), CodecError> {
         let decoded_bytes =
             self.decode_opt(encoded_value.to_vec(), decoded_representation, options)?;
         let contiguous_indices = unsafe {
             array_view
-                .subset
-                .contiguous_linearised_indices_unchecked(array_view.shape)
+                .subset()
+                .contiguous_linearised_indices_unchecked(array_view.array_shape())
         };
         let element_size = decoded_representation.element_size() as u64;
         let length =
@@ -459,17 +459,26 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     fn partial_decode_into_array_view_opt(
         &self,
         array_subset: &ArraySubset,
-        array_view: ArrayView,
+        array_view: &ArrayView,
         options: &PartialDecodeOptions,
     ) -> Result<(), CodecError> {
+        if array_subset.shape() != array_view.subset().shape() {
+            return Err(CodecError::InvalidArraySubsetError(
+                IncompatibleArraySubsetAndShapeError::new(
+                    array_subset.clone(),
+                    array_view.array_shape().to_vec(),
+                ),
+            ));
+        }
+
         let decoded_bytes = self
             .partial_decode_opt(&[array_subset.clone()], options)?
             .pop()
             .unwrap();
         let contiguous_indices = unsafe {
             array_view
-                .subset
-                .contiguous_linearised_indices_unchecked(array_view.shape)
+                .subset()
+                .contiguous_linearised_indices_unchecked(array_view.array_shape())
         };
         let element_size = self.element_size() as u64;
         let length =
@@ -486,6 +495,20 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
             decoded_offset += length;
         }
         Ok(())
+    }
+
+    /// Partially decode a subset of an array into an array view (default options).
+    #[allow(clippy::missing_errors_doc)]
+    fn partial_decode_into_array_view(
+        &self,
+        array_subset: &ArraySubset,
+        array_view: &ArrayView,
+    ) -> Result<(), CodecError> {
+        self.partial_decode_into_array_view_opt(
+            array_subset,
+            array_view,
+            &PartialDecodeOptions::default(),
+        )
     }
 }
 
@@ -985,6 +1008,9 @@ pub enum CodecError {
     /// An invalid array subset was requested.
     #[error(transparent)]
     InvalidArraySubsetError(#[from] IncompatibleArraySubsetAndShapeError),
+    /// An invalid array subset was requested with the wrong dimensionality.
+    #[error("the array subset {_0} has the wrong dimensionality, expected {_1}")]
+    InvalidArraySubsetDimensionalityError(ArraySubset, usize),
     /// The decoded size of a chunk did not match what was expected.
     #[error("the size of a decoded chunk is {_0}, expected {_1}")]
     UnexpectedChunkDecodedSize(usize, u64),

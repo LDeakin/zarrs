@@ -39,6 +39,15 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
         decoded_regions: &[ArraySubset],
         options: &PartialDecodeOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         // Get transposed array subsets
         let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
         for decoded_region in decoded_regions {

@@ -607,7 +607,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         encoded_value: &[u8],
         decoded_representation: &ChunkRepresentation,
-        array_view: ArrayView,
+        array_view: &ArrayView,
         options: &DecodeOptions,
     ) -> Result<(), CodecError> {
         let array_representations =
@@ -673,8 +673,8 @@ impl ArrayCodecTraits for CodecChain {
             let decoded_value = encoded_value;
             let contiguous_indices = unsafe {
                 array_view
-                    .subset
-                    .contiguous_linearised_indices_unchecked(array_view.shape)
+                    .subset()
+                    .contiguous_linearised_indices_unchecked(array_view.array_shape())
             };
             let element_size = decoded_representation.element_size() as u64;
             let length =

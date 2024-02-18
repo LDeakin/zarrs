@@ -164,11 +164,12 @@ impl ArrayCodecTraits for ShardingCodec {
         self.decode_into_array_view_opt(
             &encoded_value,
             decoded_representation,
-            ArrayView::new(
+            &ArrayView::new(
                 decoded_shard_slice,
                 &decoded_representation.shape_u64(),
-                &ArraySubset::new_with_shape(decoded_representation.shape_u64()),
-            ),
+                ArraySubset::new_with_shape(decoded_representation.shape_u64()),
+            )
+            .map_err(|err| CodecError::from(err.to_string()))?,
             options,
         )?;
         unsafe { decoded_shard.set_len(len) };
@@ -238,7 +239,7 @@ impl ArrayCodecTraits for ShardingCodec {
         &self,
         encoded_shard: &[u8],
         shard_representation: &ChunkRepresentation,
-        array_view: ArrayView,
+        array_view: &ArrayView,
         options: &DecodeOptions,
     ) -> Result<(), CodecError> {
         let chunks_per_shard =
@@ -297,48 +298,46 @@ impl ArrayCodecTraits for ShardingCodec {
             (0..num_chunks).into_par_iter(),
             try_for_each,
             |chunk_index| {
-                let chunk_subset = self.chunk_index_to_subset(
-                    chunk_index as u64,
-                    chunks_per_shard.as_slice(),
-                    Some(array_view.subset.start()),
-                );
+                let chunk_subset =
+                    self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                 let array_slice = unsafe { array_view.bytes_mut() };
-
-                let mut copy_to_subset = |decoded_chunk: &[u8]| {
-                    // Copy to subset of shard
-                    let mut data_idx = 0;
-                    let contiguous_iterator = unsafe {
-                        chunk_subset.contiguous_linearised_indices_unchecked(array_view.shape)
-                    };
-                    let length =
-                        usize::try_from(contiguous_iterator.contiguous_elements() * element_size)
-                            .unwrap();
-                    for (index, _) in &contiguous_iterator {
-                        let shard_offset = usize::try_from(index * element_size).unwrap();
-                        array_slice[shard_offset..shard_offset + length]
-                            .copy_from_slice(&decoded_chunk[data_idx..data_idx + length]);
-                        data_idx += length;
-                    }
-                };
 
                 // Read the offset/size
                 let offset = shard_index[chunk_index * 2];
                 let size = shard_index[chunk_index * 2 + 1];
                 if offset == u64::MAX && size == u64::MAX {
                     if let Some(fill_value_chunk) = &fill_value_chunk {
-                        copy_to_subset(fill_value_chunk.as_slice());
+                        let array_view_chunk = unsafe { array_view.subset_view(&chunk_subset) }
+                            .map_err(|err| CodecError::from(err.to_string()))?;
+                        let contiguous_iterator = unsafe {
+                            array_view_chunk
+                                .subset()
+                                .contiguous_linearised_indices_unchecked(array_view.array_shape())
+                        };
+                        let length = usize::try_from(
+                            contiguous_iterator.contiguous_elements() * element_size,
+                        )
+                        .unwrap();
+                        let mut data_idx = 0;
+                        for (index, _) in &contiguous_iterator {
+                            let shard_offset = usize::try_from(index * element_size).unwrap();
+                            array_slice[shard_offset..shard_offset + length]
+                                .copy_from_slice(&fill_value_chunk[data_idx..data_idx + length]);
+                            data_idx += length;
+                        }
                     } else {
                         unreachable!();
                     }
                 } else {
-                    let offset: usize = offset.try_into().unwrap(); // safe
-                    let size: usize = size.try_into().unwrap(); // safe
+                    let offset: usize = offset.try_into().unwrap();
+                    let size: usize = size.try_into().unwrap();
                     let encoded_chunk_slice = &encoded_shard[offset..offset + size];
-                    let array_view_chunk = array_view.subset_view(&chunk_subset);
+                    let array_view_chunk = unsafe { array_view.subset_view(&chunk_subset) }
+                        .map_err(|err| CodecError::from(err.to_string()))?;
                     self.inner_codecs.decode_into_array_view_opt(
                         encoded_chunk_slice,
                         &chunk_representation,
-                        array_view_chunk,
+                        &array_view_chunk,
                         &options_inner,
                     )?;
                 };
@@ -436,19 +435,12 @@ impl ShardingCodec {
         &self,
         chunk_index: u64,
         chunks_per_shard: &[NonZeroU64],
-        shard_offset: Option<&[u64]>,
     ) -> ArraySubset {
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard);
         let chunk_indices = unravel_index(chunk_index, chunks_per_shard.as_slice());
-        let chunk_start = if let Some(shard_offset) = shard_offset {
-            itertools::izip!(&chunk_indices, self.chunk_shape.as_slice(), shard_offset)
-                .map(|(i, c, o)| i * c.get() + o)
-                .collect()
-        } else {
-            std::iter::zip(&chunk_indices, self.chunk_shape.as_slice())
-                .map(|(i, c)| i * c.get())
-                .collect()
-        };
+        let chunk_start = std::iter::zip(&chunk_indices, self.chunk_shape.as_slice())
+            .map(|(i, c)| i * c.get())
+            .collect();
         let shape = chunk_shape_to_array_shape(self.chunk_shape.as_slice());
         unsafe { ArraySubset::new_with_start_shape_unchecked(chunk_start, shape) }
     }
@@ -534,11 +526,8 @@ impl ShardingCodec {
                 (0..n_chunks).into_par_iter(),
                 try_for_each,
                 |chunk_index| {
-                    let chunk_subset = self.chunk_index_to_subset(
-                        chunk_index as u64,
-                        chunks_per_shard.as_slice(),
-                        None,
-                    );
+                    let chunk_subset =
+                        self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                     let bytes = unsafe {
                         chunk_subset.extract_bytes_unchecked(
                             decoded_value,
@@ -659,11 +648,8 @@ impl ShardingCodec {
                 (0..n_chunks).into_par_iter(),
                 filter_map,
                 |chunk_index| {
-                    let chunk_subset = self.chunk_index_to_subset(
-                        chunk_index as u64,
-                        chunks_per_shard.as_slice(),
-                        None,
-                    );
+                    let chunk_subset =
+                        self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                     let bytes = unsafe {
                         chunk_subset.extract_bytes_unchecked(
                             decoded_value,
@@ -804,7 +790,7 @@ impl ShardingCodec {
                 .into_par_iter()
                 .filter_map(|chunk_index| {
                     let chunk_subset =
-                        self.chunk_index_to_subset(chunk_index, chunks_per_shard.as_slice(), None);
+                        self.chunk_index_to_subset(chunk_index, chunks_per_shard.as_slice());
                     let bytes = unsafe {
                         chunk_subset.extract_bytes_unchecked(
                             decoded_value,
@@ -926,7 +912,7 @@ impl ShardingCodec {
                 .product::<u64>())
                 .filter_map(|chunk_index| {
                     let chunk_subset =
-                        self.chunk_index_to_subset(chunk_index, chunks_per_shard.as_slice(), None);
+                        self.chunk_index_to_subset(chunk_index, chunks_per_shard.as_slice());
                     let bytes = unsafe {
                         chunk_subset.extract_bytes_unchecked(
                             decoded_value,
@@ -1142,7 +1128,7 @@ impl ShardingCodec {
         let chunk_info = (0..n_chunks)
             .map(|chunk_index| {
                 let chunk_subset =
-                    self.chunk_index_to_subset(chunk_index, chunks_per_shard.as_slice(), None); // TODO
+                    self.chunk_index_to_subset(chunk_index, chunks_per_shard.as_slice());
                 let chunk_index = usize::try_from(chunk_index).unwrap();
 
                 // Read the offset/size

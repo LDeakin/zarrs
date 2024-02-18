@@ -70,17 +70,26 @@ impl Chunks {
     pub unsafe fn new_unchecked(subset: &ArraySubset, chunk_shape: &[NonZeroU64]) -> Self {
         debug_assert_eq!(subset.dimensionality(), chunk_shape.len());
         let chunk_shape = chunk_shape_to_array_shape(chunk_shape);
-        let chunk_start: ArrayIndices = std::iter::zip(subset.start(), &chunk_shape)
-            .map(|(s, c)| s / c)
-            .collect();
-        let chunk_end_inc: ArrayIndices = std::iter::zip(subset.end_inc(), &chunk_shape)
-            .map(|(e, c)| e / c)
-            .collect();
-        let subset_chunks =
-            unsafe { ArraySubset::new_with_start_end_inc_unchecked(chunk_start, chunk_end_inc) };
-        Self {
-            indices: subset_chunks.indices(),
-            chunk_shape,
+        match subset.end_inc() {
+            Some(end) => {
+                let chunk_start: ArrayIndices = std::iter::zip(subset.start(), &chunk_shape)
+                    .map(|(s, c)| s / c)
+                    .collect();
+                let chunk_end_inc: ArrayIndices = std::iter::zip(end, &chunk_shape)
+                    .map(|(e, c)| e / c)
+                    .collect();
+                let subset_chunks = unsafe {
+                    ArraySubset::new_with_start_end_inc_unchecked(chunk_start, chunk_end_inc)
+                };
+                Self {
+                    indices: subset_chunks.indices(),
+                    chunk_shape,
+                }
+            }
+            None => Self {
+                indices: ArraySubset::new_empty(subset.dimensionality()).indices(),
+                chunk_shape,
+            },
         }
     }
 
