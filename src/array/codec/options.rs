@@ -5,13 +5,13 @@ use crate::config::global_config;
 /// Encode options.
 #[derive(Debug, Clone)]
 pub struct EncodeOptions {
-    concurrent_limit: usize,
+    concurrent_target: usize,
 }
 
 impl Default for EncodeOptions {
     fn default() -> Self {
         Self {
-            concurrent_limit: global_config().codec_concurrent_limit(),
+            concurrent_target: global_config().codec_concurrent_target(),
         }
     }
 }
@@ -23,22 +23,22 @@ impl EncodeOptions {
         EncodeOptionsBuilder::new()
     }
 
-    /// Return the concurrent limit.
+    /// Return the concurrent target.
     #[must_use]
-    pub fn concurrent_limit(&self) -> usize {
-        self.concurrent_limit
+    pub fn concurrent_target(&self) -> usize {
+        self.concurrent_target
     }
 
-    /// Set the concurrent limit.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: usize) {
-        self.concurrent_limit = concurrent_limit;
+    /// Set the concurrent target.
+    pub fn set_concurrent_target(&mut self, concurrent_target: usize) {
+        self.concurrent_target = concurrent_target;
     }
 }
 
 /// Builder for [`EncodeOptions`].
 #[derive(Debug, Clone)]
 pub struct EncodeOptionsBuilder {
-    concurrent_limit: usize,
+    concurrent_target: usize,
 }
 
 impl Default for EncodeOptionsBuilder {
@@ -52,7 +52,7 @@ impl EncodeOptionsBuilder {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            concurrent_limit: global_config().codec_concurrent_limit(),
+            concurrent_target: global_config().codec_concurrent_target(),
         }
     }
 
@@ -60,14 +60,14 @@ impl EncodeOptionsBuilder {
     #[must_use]
     pub fn build(&self) -> EncodeOptions {
         EncodeOptions {
-            concurrent_limit: self.concurrent_limit,
+            concurrent_target: self.concurrent_target,
         }
     }
 
-    /// Set the concurrent limit for parallel operations.
+    /// Set the concurrent target for parallel operations.
     #[must_use]
-    pub fn concurrent_limit(mut self, concurrent_limit: usize) -> Self {
-        self.concurrent_limit = concurrent_limit;
+    pub fn concurrent_target(mut self, concurrent_target: usize) -> Self {
+        self.concurrent_target = concurrent_target;
         self
     }
 }

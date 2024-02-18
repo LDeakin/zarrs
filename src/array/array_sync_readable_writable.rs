@@ -7,6 +7,7 @@ use crate::{
 
 use super::{
     codec::{DecodeOptions, EncodeOptions},
+    concurrency::concurrency_chunks_and_codec,
     Array, ArrayError,
 };
 
@@ -54,7 +55,6 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             ));
         };
         let num_chunks = chunks.num_elements_usize();
-        let element_size = self.data_type().size();
         if num_chunks == 1 {
             let chunk_indices = chunks.start();
             let chunk_subset_in_array = unsafe {
@@ -74,7 +74,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
                         &subset_bytes,
                         array_subset.shape(),
-                        element_size,
+                        self.data_type().size(),
                     )
                 };
 
@@ -91,6 +91,16 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 )?;
             }
         } else {
+            // Calculate chunk/codec concurrency
+            let chunk_representation =
+                self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+            let codec_concurrency = self.recommended_codec_concurrency(&chunk_representation)?;
+            let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                encode_options.concurrent_target(),
+                num_chunks,
+                &codec_concurrency,
+            );
+
             let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
                 let chunk_subset_in_array = unsafe {
                     self.chunk_grid()
@@ -104,7 +114,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
                         &subset_bytes,
                         array_subset.shape(),
-                        element_size,
+                        self.data_type().size(),
                     )
                 };
 
@@ -116,15 +126,16 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     &chunk_indices,
                     &array_subset_in_chunk_subset,
                     chunk_subset_bytes,
-                    encode_options,
-                    decode_options,
+                    &options,
+                    &options,
                 )?;
 
                 Ok(())
             };
+
             let indices = chunks.indices();
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                encode_options.concurrent_limit(),
+                chunk_concurrent_limit,
                 indices.into_par_iter(),
                 try_for_each,
                 store_chunk

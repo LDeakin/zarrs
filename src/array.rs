@@ -43,6 +43,7 @@ pub use self::{
     fill_value_metadata::FillValueMetadata,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
 };
+use self::{codec::ArrayCodecTraits, concurrency::RecommendedConcurrency};
 
 use serde::Serialize;
 use thiserror::Error;
@@ -551,6 +552,16 @@ impl<TStorage: ?Sized> Array<TStorage> {
             }
             None => Ok(Some(ArraySubset::new_empty(self.dimensionality()))),
         }
+    }
+
+    /// Calculate the recommended codec concurrency.
+    fn recommended_codec_concurrency(
+        &self,
+        chunk_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, ArrayError> {
+        Ok(self
+            .codecs()
+            .recommended_concurrency(chunk_representation)?)
     }
 }
 

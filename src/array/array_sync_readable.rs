@@ -4,20 +4,17 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use crate::{
-    array::concurrency::RecommendedConcurrency,
     array_subset::ArraySubset,
-    config::global_config,
     node::NodePath,
     storage::{data_key, meta_key, ReadableStorageTraits, StorageError, StorageHandle},
 };
 
 use super::{
     codec::{
-        options::DecodeOptionsBuilder, ArrayCodecTraits, ArrayPartialDecoderTraits,
-        ArrayToBytesCodecTraits, CodecError, DecodeOptions, PartialDecoderOptions,
-        StoragePartialDecoder,
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, CodecError,
+        DecodeOptions, PartialDecoderOptions, StoragePartialDecoder,
     },
-    concurrency::calc_concurrent_limits,
+    concurrency::concurrency_chunks_and_codec,
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
     validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayView,
@@ -437,7 +434,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let array_subset = self.chunks_subset(chunks)?;
 
         // Retrieve chunk bytes
-        let num_chunks = chunks.num_elements();
+        let num_chunks = chunks.num_elements_usize();
         match num_chunks {
             0 => Ok(vec![]),
             1 => {
@@ -450,21 +447,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
                         .unwrap();
 
-                // Calc self/internal concurrent limits
+                // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
-                let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
-                    options.concurrent_limit(),
-                    &RecommendedConcurrency::new_minimum(
-                        global_config().chunk_concurrent_minimum(),
-                    ),
-                    &self
-                        .codecs()
-                        .recommended_concurrency(&chunk_representation)?,
+                let codec_concurrency =
+                    self.recommended_codec_concurrency(&chunk_representation)?;
+                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                    options.concurrent_target(),
+                    num_chunks,
+                    &codec_concurrency,
                 );
-                let codec_options = DecodeOptionsBuilder::new()
-                    .concurrent_limit(codec_concurrent_limit)
-                    .build();
 
                 // let mut output = vec![0; size_output];
                 // let output_slice = output.as_mut_slice();
@@ -476,7 +468,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     let indices = chunks.indices();
                     let chunk0_subset = self.chunk_subset(chunks.start())?;
                     rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                        self_concurrent_limit,
+                        chunk_concurrent_limit,
                         indices.into_par_iter(),
                         try_for_each,
                         |chunk_indices| {
@@ -492,7 +484,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                     array_view_subset,
                                 )
                                 .map_err(|err| CodecError::from(err.to_string()))?,
-                                &codec_options,
+                                &options,
                             )
                         }
                     )?;
@@ -611,7 +603,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         };
 
         // Retrieve chunk bytes
-        let num_chunks = chunks.num_elements();
+        let num_chunks = chunks.num_elements_usize();
         match num_chunks {
             0 => Ok(self
                 .fill_value()
@@ -640,28 +632,22 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         .unwrap();
                 let mut output = Vec::with_capacity(size_output);
 
-                // Calc self/internal concurrent limits
+                // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
-                let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
-                    options.concurrent_limit(),
-                    &RecommendedConcurrency::new_minimum(
-                        global_config().chunk_concurrent_minimum(),
-                    ),
-                    &self
-                        .codecs()
-                        .recommended_concurrency(&chunk_representation)?,
+                let codec_concurrency =
+                    self.recommended_codec_concurrency(&chunk_representation)?;
+                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                    options.concurrent_target(),
+                    num_chunks,
+                    &codec_concurrency,
                 );
-                let codec_options = DecodeOptionsBuilder::new()
-                    .concurrent_limit(codec_concurrent_limit)
-                    .build();
-                // println!("retrieve_array_subset_opt self_concurrent_limit {self_concurrent_limit:?} codec_concurrent_limit {codec_concurrent_limit:?}"); // FIXME: log this
 
                 {
                     let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
                     let indices = chunks.indices();
                     iter_concurrent_limit!(
-                        self_concurrent_limit,
+                        chunk_concurrent_limit,
                         indices.into_par_iter(),
                         try_for_each,
                         |chunk_indices| {
@@ -686,7 +672,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 &chunk_indices,
                                 &chunk_subset,
                                 &array_view,
-                                &codec_options,
+                                &options,
                             )
                         }
                     )?;
@@ -728,7 +714,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         };
 
         // Retrieve chunk bytes
-        let num_chunks = chunks.num_elements();
+        let num_chunks = chunks.num_elements_usize();
         match num_chunks {
             0 => Ok(()),
             1 => {
@@ -763,27 +749,21 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 }
             }
             _ => {
-                // Calc self/internal concurrent limits
+                // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
-                let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
-                    options.concurrent_limit(),
-                    &RecommendedConcurrency::new_minimum(
-                        global_config().chunk_concurrent_minimum(),
-                    ),
-                    &self
-                        .codecs()
-                        .recommended_concurrency(&chunk_representation)?,
+                let codec_concurrency =
+                    self.recommended_codec_concurrency(&chunk_representation)?;
+                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                    options.concurrent_target(),
+                    num_chunks,
+                    &codec_concurrency,
                 );
-                let codec_options = DecodeOptionsBuilder::new()
-                    .concurrent_limit(codec_concurrent_limit)
-                    .build();
-                // println!("self_concurrent_limit {self_concurrent_limit:?} codec_concurrent_limit {codec_concurrent_limit:?}"); // FIXME: log this
 
                 {
                     let indices = chunks.indices();
                     iter_concurrent_limit!(
-                        self_concurrent_limit,
+                        chunk_concurrent_limit,
                         indices.into_par_iter(),
                         try_for_each,
                         |chunk_indices| {
@@ -803,7 +783,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 &chunk_subset,
                                 &unsafe { array_view.subset_view(&array_view_subset) }
                                     .map_err(|err| CodecError::from(err.to_string()))?,
-                                &codec_options,
+                                &options,
                             )
                         }
                     )?;

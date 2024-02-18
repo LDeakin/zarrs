@@ -9,7 +9,7 @@ use crate::{
             BytesPartialDecoderTraits, CodecChain, CodecError, CodecTraits, DecodeOptions,
             EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
         },
-        concurrency::calc_concurrent_limits,
+        concurrency::calc_concurrency_outer_inner,
         transmute_to_bytes_vec, unravel_index,
         unsafe_cell_slice::UnsafeCellSlice,
         ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
@@ -271,15 +271,15 @@ impl ArrayCodecTraits for ShardingCodec {
         };
 
         // Calc self/internal concurrent limits
-        let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrent_limits(
-            options.concurrent_limit(),
+        let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrency_outer_inner(
+            options.concurrent_target(),
             &self.recommended_concurrency(shard_representation)?,
             &self
                 .inner_codecs
                 .recommended_concurrency(&chunk_representation)?,
         );
-        let options_inner = DecodeOptionsBuilder::new()
-            .concurrent_limit(concurrency_limit_inner_chunks)
+        let options = DecodeOptionsBuilder::new()
+            .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
 
@@ -338,7 +338,7 @@ impl ArrayCodecTraits for ShardingCodec {
                         encoded_chunk_slice,
                         &chunk_representation,
                         &array_view_chunk,
-                        &options_inner,
+                        &options,
                     )?;
                 };
 
@@ -498,15 +498,15 @@ impl ShardingCodec {
         };
 
         // Calc self/internal concurrent limits
-        let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrent_limits(
-            options.concurrent_limit(),
+        let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrency_outer_inner(
+            options.concurrent_target(),
             &self.recommended_concurrency(shard_representation)?,
             &self
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
-        let options_inner = EncodeOptionsBuilder::new()
-            .concurrent_limit(concurrency_limit_inner_chunks)
+        let options = EncodeOptionsBuilder::new()
+            .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
 
@@ -536,11 +536,9 @@ impl ShardingCodec {
                         )
                     };
                     if !chunk_representation.fill_value().equals_all(&bytes) {
-                        let chunk_encoded = self.inner_codecs.encode_opt(
-                            bytes,
-                            chunk_representation,
-                            &options_inner,
-                        )?;
+                        let chunk_encoded =
+                            self.inner_codecs
+                                .encode_opt(bytes, chunk_representation, &options)?;
 
                         let chunk_offset = encoded_shard_offset
                             .fetch_add(chunk_encoded.len(), std::sync::atomic::Ordering::Relaxed);
@@ -579,7 +577,7 @@ impl ShardingCodec {
         let encoded_array_index = self.index_codecs.encode_opt(
             transmute_to_bytes_vec(shard_index),
             &index_decoded_representation,
-            options,
+            &options,
         )?;
         {
             let shard_slice = unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) };
@@ -630,15 +628,15 @@ impl ShardingCodec {
             .product::<usize>();
 
         // Calc self/internal concurrent limits
-        let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrent_limits(
-            options.concurrent_limit(),
+        let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrency_outer_inner(
+            options.concurrent_target(),
             &self.recommended_concurrency(shard_representation)?,
             &self
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
         let options_inner = EncodeOptionsBuilder::new()
-            .concurrent_limit(concurrency_limit_inner_chunks)
+            .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
 
@@ -695,7 +693,7 @@ impl ShardingCodec {
                 UnsafeCellSlice::new(unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) });
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                options.concurrent_limit(),
+                options.concurrent_target(),
                 encoded_chunks.into_par_iter(),
                 for_each,
                 |(chunk_index, chunk_encoded)| {

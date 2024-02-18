@@ -7,10 +7,12 @@ use crate::{
         chunk_grid::RegularChunkGrid,
         chunk_shape_to_array_shape,
         codec::{
-            ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
-            ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
-            PartialDecodeOptions, PartialDecoderOptions,
+            options::EncodeOptionsBuilder, ArrayCodecTraits, ArrayPartialDecoderTraits,
+            ArraySubset, ArrayToBytesCodecTraits, ByteIntervalPartialDecoder,
+            BytesPartialDecoderTraits, CodecChain, CodecError, PartialDecodeOptions,
+            PartialDecoderOptions,
         },
+        concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
         ravel_indices,
         unsafe_cell_slice::UnsafeCellSlice,
         ChunkRepresentation, ChunkShape,
@@ -126,6 +128,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         self.decoded_representation.element_size()
     }
 
+    #[allow(clippy::too_many_lines)]
     fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
@@ -166,9 +169,25 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         )
         .map_err(|e| CodecError::Other(e.to_string()))?;
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
+        let num_chunks = usize::try_from(chunks_per_shard.iter().product::<u64>()).unwrap();
 
         let element_size = self.decoded_representation.element_size() as u64;
         let fill_value = chunk_representation.fill_value().as_ne_bytes();
+
+        // Calculate inner chunk/codec concurrency
+        let (inner_chunk_concurrent_limit, concurrency_limit_codec) = calc_concurrency_outer_inner(
+            options.concurrent_target(),
+            &RecommendedConcurrency::new_maximum(std::cmp::min(
+                options.concurrent_target(),
+                num_chunks,
+            )),
+            &self
+                .inner_codecs
+                .recommended_concurrency(&chunk_representation)?,
+        );
+        let options = EncodeOptionsBuilder::new()
+            .concurrent_target(concurrency_limit_codec)
+            .build();
 
         let mut out = Vec::with_capacity(array_subsets.len());
         for array_subset in array_subsets {
@@ -181,7 +200,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             let chunks = unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
 
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                options.concurrent_limit(),
+                inner_chunk_concurrent_limit,
                 chunks.into_par_iter(),
                 try_for_each,
                 |(chunk_indices, chunk_subset)| {
@@ -202,7 +221,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         // The chunk is just the fill value
                         fill_value.repeat(array_subset_in_chunk_subset.num_elements_usize())
                     } else {
-                        // The chunk must be decoded
+                        // Partially decode the ubber chunk
                         let partial_decoder = self.inner_codecs.partial_decoder_opt(
                             Box::new(ByteIntervalPartialDecoder::new(
                                 &*self.input_handle,
@@ -210,11 +229,10 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                                 size,
                             )),
                             &chunk_representation,
-                            options, // FIXME: Adjust options for partial decoding
+                            &options,
                         )?;
-                        // NOTE: Intentionally using single threaded decode, since parallelisation is in the loop
                         partial_decoder
-                            .partial_decode_opt(&[array_subset_in_chunk_subset], options)? // FIXME: Adjust options for partial decoding
+                            .partial_decode_opt(&[array_subset_in_chunk_subset], &options)?
                             .remove(0)
                     };
 
@@ -559,7 +577,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
             if !results.is_empty() {
                 rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                    options.concurrent_limit(),
+                    options.concurrent_target(),
                     results.into_par_iter(),
                     try_for_each,
                     |subset_and_decoded_chunk| {
@@ -608,7 +626,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
 
                 // Write filled chunks
                 rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                    options.concurrent_limit(),
+                    options.concurrent_target(),
                     filled_chunks.into_par_iter(),
                     for_each,
                     |chunk_subset| {

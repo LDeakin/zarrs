@@ -8,7 +8,7 @@ use crate::{
             ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
             CodecError, CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
         },
-        concurrency::{PreferredConcurrency, RecommendedConcurrency},
+        concurrency::RecommendedConcurrency,
         ArrayView, BytesRepresentation, ChunkRepresentation,
     },
     metadata::Metadata,
@@ -415,11 +415,9 @@ impl ArrayCodecTraits for CodecChain {
             concurrency_max = std::cmp::max(concurrency_max, recommended_concurrency.max());
         }
 
-        // FIXME: Check if maximum < efficient, if so set maximum to efficient
         let recommended_concurrency = RecommendedConcurrency::new(
             std::cmp::min(concurrency_min, concurrency_max)
                 ..std::cmp::max(concurrency_max, concurrency_max),
-            PreferredConcurrency::Maximum,
         );
 
         Ok(recommended_concurrency)
