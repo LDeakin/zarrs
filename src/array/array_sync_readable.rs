@@ -450,6 +450,22 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
                         .unwrap();
 
+                // Calc self/internal concurrent limits
+                let chunk_representation =
+                    self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+                let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
+                    options.concurrent_limit(),
+                    &RecommendedConcurrency::new_minimum(
+                        global_config().chunk_concurrent_minimum(),
+                    ),
+                    &self
+                        .codecs()
+                        .recommended_concurrency(&chunk_representation)?,
+                );
+                let codec_options = DecodeOptionsBuilder::new()
+                    .concurrent_limit(codec_concurrent_limit)
+                    .build();
+
                 // let mut output = vec![0; size_output];
                 // let output_slice = output.as_mut_slice();
                 let mut output = Vec::with_capacity(size_output);
@@ -457,11 +473,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     let output_slice = UnsafeCellSlice::new(unsafe {
                         crate::vec_spare_capacity_to_mut_slice(&mut output)
                     });
-                    // FIXME: constrain concurrency based on codec
                     let indices = chunks.indices();
                     let chunk0_subset = self.chunk_subset(chunks.start())?;
                     rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                        1,
+                        self_concurrent_limit,
                         indices.into_par_iter(),
                         try_for_each,
                         |chunk_indices| {
@@ -477,7 +492,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                     array_view_subset,
                                 )
                                 .map_err(|err| CodecError::from(err.to_string()))?,
-                                options,
+                                &codec_options,
                             )
                         }
                     )?;

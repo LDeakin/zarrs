@@ -989,6 +989,22 @@ mod tests {
         {
             let mut data = vec![0, 0, 0, 0, 0, 0];
             let shape = &[3, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            array.retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..1,0..2]), &array_view)?;
+            assert_eq!(data, [0, 0, 1, 2, 0, 0]);
+        }
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3, 2];
+            let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
+            let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+            array.retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..2,0..2]), &array_view)?;
+            assert_eq!(data, [0, 0, 1, 2, 5, 6]);
+        }
+        {
+            let mut data = vec![0, 0, 0, 0, 0, 0];
+            let shape = &[3, 2];
             let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
             let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
             array.retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..3, 1..3]), &array_view)?;
