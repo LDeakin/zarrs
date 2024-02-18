@@ -293,7 +293,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         chunks: &ArraySubset,
         options: &DecodeOptions,
     ) -> Result<Vec<u8>, ArrayError> {
-        if chunks.dimensionality() != self.chunk_grid().dimensionality() {
+        if chunks.dimensionality() != self.dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 chunks.clone(),
                 self.shape().to_vec(),
@@ -476,7 +476,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         array_subset: &ArraySubset,
         options: &DecodeOptions,
     ) -> Result<Vec<u8>, ArrayError> {
-        if array_subset.dimensionality() != self.chunk_grid().dimensionality() {
+        if array_subset.dimensionality() != self.dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 array_subset.clone(),
                 self.shape().to_vec(),

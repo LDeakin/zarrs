@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ArraySubset::new_empty()` and `ArraySubset::is_empty()`
  - Add missing `IncompatibleArraySubsetAndShapeError::new()`
  - Add more array tests
+ - Add `Array::dimensionality()`
 
 ### Changed
  - Dependency bumps

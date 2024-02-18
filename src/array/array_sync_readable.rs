@@ -58,7 +58,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         options: &DecodeOptions,
     ) -> Result<Option<Vec<u8>>, ArrayError> {
-        if chunk_indices.len() != self.chunk_grid().dimensionality() {
+        if chunk_indices.len() != self.dimensionality() {
             return Err(ArrayError::InvalidChunkGridIndicesError(
                 chunk_indices.to_vec(),
             ));
@@ -427,7 +427,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         chunks: &ArraySubset,
         options: &DecodeOptions,
     ) -> Result<Vec<u8>, ArrayError> {
-        if chunks.dimensionality() != self.chunk_grid().dimensionality() {
+        if chunks.dimensionality() != self.dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 chunks.clone(),
                 self.shape().to_vec(),
@@ -579,7 +579,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         array_subset: &ArraySubset,
         options: &DecodeOptions,
     ) -> Result<Vec<u8>, ArrayError> {
-        if array_subset.dimensionality() != self.chunk_grid().dimensionality() {
+        if array_subset.dimensionality() != self.dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
                 array_subset.clone(),
                 self.shape().to_vec(),
@@ -627,7 +627,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
                 // Calc self/internal concurrent limits
                 let chunk_representation =
-                    self.chunk_array_representation(&vec![0; self.chunk_grid().dimensionality()])?;
+                    self.chunk_array_representation(&vec![0; self.dimensionality()])?;
                 let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
                     options.concurrent_limit(),
                     &RecommendedConcurrency::new_minimum(
@@ -750,7 +750,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             _ => {
                 // Calc self/internal concurrent limits
                 let chunk_representation =
-                    self.chunk_array_representation(&vec![0; self.chunk_grid().dimensionality()])?;
+                    self.chunk_array_representation(&vec![0; self.dimensionality()])?;
                 let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrent_limits(
                     options.concurrent_limit(),
                     &RecommendedConcurrency::new_minimum(

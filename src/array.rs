@@ -329,6 +329,12 @@ impl<TStorage: ?Sized> Array<TStorage> {
         &self.shape
     }
 
+    /// Get the array dimensionality.
+    #[must_use]
+    pub fn dimensionality(&self) -> usize {
+        self.shape.len()
+    }
+
     /// Get the codecs.
     #[must_use]
     pub const fn codecs(&self) -> &CodecChain {
@@ -543,9 +549,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
                     },
                 )
             }
-            None => Ok(Some(ArraySubset::new_empty(
-                self.chunk_grid().dimensionality(),
-            ))),
+            None => Ok(Some(ArraySubset::new_empty(self.dimensionality()))),
         }
     }
 }
