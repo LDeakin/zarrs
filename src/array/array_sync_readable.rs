@@ -501,7 +501,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunks_opt(chunks, &CodecOptions::default())
     }
 
-    /// Read and decode the chunks at `chunks` into a vector of its elements.
+    /// Read and decode the chunks at `chunks` into a vector of their elements.
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if any chunk indices in `chunks` are invalid or an error condition in [`Array::retrieve_chunks_opt`].
@@ -518,7 +518,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         Ok(transmute_from_bytes_vec::<T>(bytes))
     }
 
-    /// Read and decode the chunks at `chunks` into a vector of its elements with default options
+    /// Read and decode the chunks at `chunks` into a vector of their elements (default options).
     ///
     /// # Errors
     /// See [`Array::retrieve_chunks_elements_opt`].

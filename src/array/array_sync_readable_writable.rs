@@ -282,6 +282,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 unsafe { chunk_subset.contiguous_linearised_indices_unchecked(&chunk_shape) };
             let length =
                 usize::try_from(contiguous_iterator.contiguous_elements() * element_size).unwrap();
+            // FIXME: Par iter?
             for (chunk_element_index, _num_elements) in &contiguous_iterator {
                 let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
                 debug_assert!(chunk_offset + length <= chunk_bytes.len());

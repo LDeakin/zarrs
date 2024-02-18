@@ -21,8 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added `contiguous_elements` method to `ContiguousIndicesIterator` and `ContiguousLinearisedIndicesIterator`
  - Added `ChunkShape::num_elements`
  - Added `codec::CodecOptions{Builder}`
- - Added new `Array::opt` methods which can use new encode/decode options
-   - **Breaking** Existing `Array` `_opt` use new encode/decode options insted of `parallel: bool`
+ - **Breaking**: Added new `Array::opt` methods which can use `codec::CodecOptions` and existing methods use it instead of `parallel: bool`
  - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
  - Add `ParIndicesIterator` and `ParChunksIterator`
  - Implement `From<String>` for `DimensionName`

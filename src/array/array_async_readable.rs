@@ -278,7 +278,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes.
+    /// Read and decode the chunks at `chunks` into their bytes.
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if
@@ -346,14 +346,14 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes (default options).
+    /// Read and decode the chunks at `chunks` into their bytes (default options).
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
         self.async_retrieve_chunks_opt(chunks, &CodecOptions::default())
             .await
     }
 
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements.
+    /// Read and decode the chunks at `chunks` into a vector of their elements.
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if the size of `T` does not match the data type size or a [`Array::async_retrieve_chunks`] error condition is met.
@@ -367,7 +367,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         Ok(transmute_from_bytes_vec::<T>(bytes))
     }
 
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements (default options).
+    /// Read and decode the chunks at `chunks` into a vector of their elements (default options).
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if the size of `T` does not match the data type size or a [`Array::async_retrieve_chunks`] error condition is met.
@@ -380,7 +380,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`].
+    /// Read and decode the chunks at `chunks` into an [`ndarray::ArrayD`].
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if the size of `T` does not match the data type size or a [`Array::async_retrieve_chunks`] error condition is met.
@@ -398,7 +398,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] (default options).
+    /// Read and decode the chunks at `chunks` into an [`ndarray::ArrayD`] (default options).
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
         &self,
