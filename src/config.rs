@@ -30,7 +30,7 @@ use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 ///
 /// For array operations involving multiple chunks, this is the preferred minimum chunk concurrency.
 /// For example, `array_store_chunks` will concurrently encode and store four chunks at a time by default.
-/// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`EncodeOptions`](crate::array::codec::EncodeOptions) or [`DecodeOptions`](crate::array::codec::DecodeOptions) parameter of an encode or decode method.
+/// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`](crate::array::codec::CodecOptions) parameter of an encode or decode method.
 
 #[derive(Debug)]
 pub struct Config {

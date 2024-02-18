@@ -10,8 +10,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
-            PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
         BytesRepresentation, ChunkRepresentation, DataType,
     },
@@ -139,7 +139,7 @@ impl ArrayCodecTraits for ZfpCodec {
         &self,
         mut decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
         else {
@@ -195,7 +195,7 @@ impl ArrayCodecTraits for ZfpCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
         else {
@@ -219,7 +219,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
             input_handle,
@@ -233,7 +233,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
             input_handle,

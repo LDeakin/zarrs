@@ -4,9 +4,8 @@ use thiserror::Error;
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits, CodecError,
-            CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
-            RecommendedConcurrency,
+            options::CodecOptions, ArrayCodecTraits, ArrayPartialDecoderTraits,
+            ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
         ChunkRepresentation,
     },
@@ -77,7 +76,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             super::transpose_partial_decoder::TransposePartialDecoder::new(
@@ -93,7 +92,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             super::transpose_partial_decoder::AsyncTransposePartialDecoder::new(
@@ -133,7 +132,7 @@ impl ArrayCodecTraits for TransposeCodec {
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -162,7 +161,7 @@ impl ArrayCodecTraits for TransposeCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let order_decode =
             calculate_order_decode(&self.order, decoded_representation.shape().len());

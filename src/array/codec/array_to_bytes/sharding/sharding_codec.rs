@@ -4,10 +4,9 @@ use crate::{
     array::{
         chunk_shape_to_array_shape,
         codec::{
-            options::{DecodeOptionsBuilder, EncodeOptionsBuilder},
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecChain, CodecError, CodecTraits, DecodeOptions,
-            EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, CodecChain, CodecError, CodecOptions, CodecOptionsBuilder,
+            CodecTraits, RecommendedConcurrency,
         },
         concurrency::calc_concurrency_outer_inner,
         transmute_to_bytes_vec, unravel_index,
@@ -120,7 +119,7 @@ impl ArrayCodecTraits for ShardingCodec {
         &self,
         decoded_value: Vec<u8>,
         shard_rep: &ChunkRepresentation,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != shard_rep.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -152,7 +151,7 @@ impl ArrayCodecTraits for ShardingCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         // Allocate an array for the output
         let len = decoded_representation.size_usize();
@@ -181,7 +180,7 @@ impl ArrayCodecTraits for ShardingCodec {
         &self,
         decoded_value: Vec<u8>,
         shard_rep: &ChunkRepresentation,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != shard_rep.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -216,7 +215,7 @@ impl ArrayCodecTraits for ShardingCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let chunks_per_shard =
             calculate_chunks_per_shard(decoded_representation.shape(), self.chunk_shape.as_slice())
@@ -240,7 +239,7 @@ impl ArrayCodecTraits for ShardingCodec {
         encoded_shard: &[u8],
         shard_representation: &ChunkRepresentation,
         array_view: &ArrayView,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), CodecError> {
         let chunks_per_shard =
             calculate_chunks_per_shard(shard_representation.shape(), self.chunk_shape.as_slice())
@@ -278,7 +277,7 @@ impl ArrayCodecTraits for ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(&chunk_representation)?,
         );
-        let options = DecodeOptionsBuilder::new()
+        let options = CodecOptionsBuilder::new()
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
@@ -355,7 +354,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        options: &PartialDecoderOptions,
+        options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             sharding_partial_decoder::ShardingPartialDecoder::new(
@@ -375,7 +374,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        options: &PartialDecoderOptions,
+        options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             sharding_partial_decoder::AsyncShardingPartialDecoder::new(
@@ -466,7 +465,7 @@ impl ShardingCodec {
         shard_representation: &ChunkRepresentation,
         chunk_representation: &ChunkRepresentation,
         chunk_size_bounded: u64,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         debug_assert_eq!(decoded_value.len() as u64, shard_representation.size()); // already validated in par_encode
 
@@ -505,7 +504,7 @@ impl ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
-        let options = EncodeOptionsBuilder::new()
+        let options = CodecOptionsBuilder::new()
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
@@ -606,7 +605,7 @@ impl ShardingCodec {
         decoded_value: &[u8],
         shard_representation: &ChunkRepresentation,
         chunk_representation: &ChunkRepresentation,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         debug_assert_eq!(decoded_value.len() as u64, shard_representation.size()); // already validated in par_encode
 
@@ -635,7 +634,7 @@ impl ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
-        let options_inner = EncodeOptionsBuilder::new()
+        let options_inner = CodecOptionsBuilder::new()
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
@@ -744,7 +743,7 @@ impl ShardingCodec {
         shard_representation: &ChunkRepresentation,
         chunk_representation: &ChunkRepresentation,
         chunk_size_bounded: u64,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         debug_assert_eq!(decoded_value.len() as u64, shard_representation.size()); // already validated in par_encode
 
@@ -886,7 +885,7 @@ impl ShardingCodec {
         decoded_value: &[u8],
         shard_representation: &ChunkRepresentation,
         chunk_representation: &ChunkRepresentation,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         debug_assert_eq!(decoded_value.len() as u64, shard_representation.size()); // already validated in par_encode
 
@@ -1014,7 +1013,7 @@ impl ShardingCodec {
         &self,
         encoded_shard: &[u8],
         chunks_per_shard: &[NonZeroU64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u64>, CodecError> {
         // Get index array representation and encoded size
         let index_array_representation = sharding_index_decoded_representation(chunks_per_shard);
@@ -1053,7 +1052,7 @@ impl ShardingCodec {
         &self,
         encoded_shard: &[u8],
         chunks_per_shard: &[NonZeroU64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u64>, CodecError> {
         // Get index array representation and encoded size
         let index_array_representation = sharding_index_decoded_representation(chunks_per_shard);
@@ -1095,7 +1094,7 @@ impl ShardingCodec {
         encoded_shard: &[u8],
         shard_index: &[u64],
         shard_representation: &ChunkRepresentation,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         // Allocate an array for the output
         let shard_size = shard_representation.size_usize();

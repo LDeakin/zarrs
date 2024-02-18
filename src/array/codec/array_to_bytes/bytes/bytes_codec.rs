@@ -4,8 +4,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
-            PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
         BytesRepresentation, ChunkRepresentation,
     },
@@ -129,7 +129,7 @@ impl ArrayCodecTraits for BytesCodec {
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(decoded_value, decoded_representation)
     }
@@ -138,7 +138,7 @@ impl ArrayCodecTraits for BytesCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(encoded_value, decoded_representation)
     }
@@ -150,7 +150,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bytes_partial_decoder::BytesPartialDecoder::new(
             input_handle,
@@ -164,7 +164,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             bytes_partial_decoder::AsyncBytesPartialDecoder::new(

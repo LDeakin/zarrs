@@ -2,7 +2,7 @@ use crate::{
     array::{
         codec::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
-            PartialDecodeOptions,
+            CodecOptions,
         },
         ChunkRepresentation, DataType,
     },
@@ -112,7 +112,7 @@ impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let decoded = self.input_handle.decode_opt(options)?;
         do_partial_decode(decoded, decoded_regions, &self.decoded_representation)
@@ -146,7 +146,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {

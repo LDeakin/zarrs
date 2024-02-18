@@ -3,8 +3,8 @@ use std::io::Read;
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
-            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
+            CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation,
     },
@@ -72,7 +72,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut encoder = bzip2::read::BzEncoder::new(decoded_value.as_slice(), self.compression);
         let mut out: Vec<u8> = Vec::new();
@@ -84,7 +84,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut decoder = bzip2::read::BzDecoder::new(encoded_value.as_slice());
         let mut out: Vec<u8> = Vec::new();
@@ -96,7 +96,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bz2_partial_decoder::Bz2PartialDecoder::new(
             input_handle,
@@ -108,7 +108,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bz2_partial_decoder::AsyncBz2PartialDecoder::new(
             input_handle,

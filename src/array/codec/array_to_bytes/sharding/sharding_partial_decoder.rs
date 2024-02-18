@@ -7,10 +7,9 @@ use crate::{
         chunk_grid::RegularChunkGrid,
         chunk_shape_to_array_shape,
         codec::{
-            options::EncodeOptionsBuilder, ArrayCodecTraits, ArrayPartialDecoderTraits,
-            ArraySubset, ArrayToBytesCodecTraits, ByteIntervalPartialDecoder,
-            BytesPartialDecoderTraits, CodecChain, CodecError, PartialDecodeOptions,
-            PartialDecoderOptions,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
+            ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
+            CodecOptions, CodecOptionsBuilder,
         },
         concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
         ravel_indices,
@@ -52,7 +51,7 @@ impl<'a> ShardingPartialDecoder<'a> {
         inner_codecs: &'a CodecChain,
         index_codecs: &'a CodecChain,
         index_location: ShardingIndexLocation,
-        options: &PartialDecoderOptions,
+        options: &CodecOptions,
     ) -> Result<Self, CodecError> {
         let shard_index = Self::decode_shard_index(
             &*input_handle,
@@ -78,7 +77,7 @@ impl<'a> ShardingPartialDecoder<'a> {
         index_location: ShardingIndexLocation,
         chunk_shape: &[NonZeroU64],
         decoded_representation: &ChunkRepresentation,
-        options: &PartialDecoderOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<u64>>, CodecError> {
         let shard_shape = decoded_representation.shape();
         let chunk_representation = unsafe {
@@ -132,7 +131,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         for array_subset in array_subsets {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
@@ -185,7 +184,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                 .inner_codecs
                 .recommended_concurrency(&chunk_representation)?,
         );
-        let options = EncodeOptionsBuilder::new()
+        let options = CodecOptionsBuilder::new()
             .concurrent_target(concurrency_limit_codec)
             .build();
 
@@ -385,7 +384,7 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
         inner_codecs: &'a CodecChain,
         index_codecs: &'a CodecChain,
         index_location: ShardingIndexLocation,
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<AsyncShardingPartialDecoder<'a>, CodecError> {
         let shard_index = Self::decode_shard_index(
             &*input_handle,
@@ -412,7 +411,7 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
         index_location: ShardingIndexLocation,
         chunk_shape: &[NonZeroU64],
         decoded_representation: &ChunkRepresentation,
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<u64>>, CodecError> {
         let shard_shape = decoded_representation.shape();
         let chunk_representation = unsafe {
@@ -468,7 +467,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let Some(shard_index) = &self.shard_index else {
             return Ok(array_subsets

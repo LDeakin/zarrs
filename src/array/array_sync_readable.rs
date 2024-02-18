@@ -11,8 +11,8 @@ use crate::{
 
 use super::{
     codec::{
-        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, CodecError,
-        DecodeOptions, PartialDecoderOptions, StoragePartialDecoder,
+        options::CodecOptions, ArrayCodecTraits, ArrayPartialDecoderTraits,
+        ArrayToBytesCodecTraits, CodecError, StoragePartialDecoder,
     },
     concurrency::concurrency_chunks_and_codec,
     transmute_from_bytes_vec,
@@ -53,7 +53,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunk_if_exists_opt(
         &self,
         chunk_indices: &[u64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<u8>>, ArrayError> {
         if chunk_indices.len() != self.dimensionality() {
             return Err(ArrayError::InvalidChunkGridIndicesError(
@@ -98,7 +98,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
     ) -> Result<Option<Vec<u8>>, ArrayError> {
-        self.retrieve_chunk_if_exists_opt(chunk_indices, &DecodeOptions::default())
+        self.retrieve_chunk_if_exists_opt(chunk_indices, &CodecOptions::default())
     }
 
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist.
@@ -114,7 +114,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunk_opt(
         &self,
         chunk_indices: &[u64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
         let chunk = self.retrieve_chunk_if_exists_opt(chunk_indices, options)?;
         if let Some(chunk) = chunk {
@@ -129,7 +129,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist (default options).
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
-        self.retrieve_chunk_opt(chunk_indices, &DecodeOptions::default())
+        self.retrieve_chunk_opt(chunk_indices, &CodecOptions::default())
     }
 
     /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists.
@@ -144,7 +144,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunk_elements_if_exists_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<T>>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
         let bytes = self.retrieve_chunk_if_exists_opt(chunk_indices, options)?;
@@ -157,7 +157,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
     ) -> Result<Option<Vec<T>>, ArrayError> {
-        self.retrieve_chunk_elements_if_exists_opt(chunk_indices, &DecodeOptions::default())
+        self.retrieve_chunk_elements_if_exists_opt(chunk_indices, &CodecOptions::default())
     }
 
     /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist.
@@ -172,7 +172,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunk_elements_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
         let bytes = self.retrieve_chunk_opt(chunk_indices, options)?;
@@ -185,7 +185,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
     ) -> Result<Vec<T>, ArrayError> {
-        self.retrieve_chunk_elements_opt(chunk_indices, &DecodeOptions::default())
+        self.retrieve_chunk_elements_opt(chunk_indices, &CodecOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -204,7 +204,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunk_ndarray_if_exists_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; // in retrieve_chunk_elements_if_exists
         let shape = self
@@ -226,7 +226,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
     ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
-        self.retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &DecodeOptions::default())
+        self.retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &CodecOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -245,7 +245,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunk_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; // in retrieve_chunk_elements
         let shape = self
@@ -265,7 +265,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.retrieve_chunk_ndarray_opt(chunk_indices, &DecodeOptions::default())
+        self.retrieve_chunk_ndarray_opt(chunk_indices, &CodecOptions::default())
     }
 
     /// Retrieve a chunk and output into an existing array.
@@ -280,7 +280,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         array_view: &ArrayView,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         let chunk_shape_u64 = chunk_representation.shape_u64();
@@ -344,11 +344,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         array_view: &ArrayView,
     ) -> Result<(), ArrayError> {
-        self.retrieve_chunk_into_array_view_opt(
-            chunk_indices,
-            array_view,
-            &DecodeOptions::default(),
-        )
+        self.retrieve_chunk_into_array_view_opt(chunk_indices, array_view, &CodecOptions::default())
     }
 
     /// Retrieve a subset of a chunk and output into an existing array.
@@ -364,7 +360,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         array_view: &ArrayView,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         if chunk_subset.shape() != array_view.subset().shape() {
             return Err(ArrayError::InvalidArraySubset(
@@ -405,7 +401,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             chunk_indices,
             chunk_subset,
             array_view,
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 
@@ -422,7 +418,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunks_opt(
         &self,
         chunks: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
         if chunks.dimensionality() != self.dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
@@ -502,7 +498,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     /// # Panics
     /// See [`Array::retrieve_chunks_opt`].
     pub fn retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
-        self.retrieve_chunks_opt(chunks, &DecodeOptions::default())
+        self.retrieve_chunks_opt(chunks, &CodecOptions::default())
     }
 
     /// Read and decode the chunks at `chunks` into a vector of its elements.
@@ -515,7 +511,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunks_elements_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
         let bytes = self.retrieve_chunks_opt(chunks, options)?;
@@ -532,7 +528,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
-        self.retrieve_chunks_elements_opt(chunks, &DecodeOptions::default())
+        self.retrieve_chunks_elements_opt(chunks, &CodecOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -546,7 +542,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_chunks_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; // in retrieve_chunks_elements_opt
         let array_subset = self.chunks_subset(chunks)?;
@@ -565,7 +561,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.retrieve_chunks_ndarray_opt(chunks, &DecodeOptions::default())
+        self.retrieve_chunks_ndarray_opt(chunks, &CodecOptions::default())
     }
 
     /// Read and decode the `array_subset` of array into its bytes.
@@ -584,7 +580,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_array_subset_opt(
         &self,
         array_subset: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
         if array_subset.dimensionality() != self.dimensionality() {
             return Err(ArrayError::InvalidArraySubset(
@@ -695,7 +691,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         array_subset: &ArraySubset,
         array_view: &ArrayView,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         if array_subset.shape() != array_view.subset().shape() {
             return Err(ArrayError::InvalidArraySubset(
@@ -803,7 +799,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_array_subset_into_array_view_opt(
             array_subset,
             array_view,
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 
@@ -814,7 +810,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     /// # Panics
     /// See [`Array::retrieve_array_subset_opt`].
     pub fn retrieve_array_subset(&self, array_subset: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
-        self.retrieve_array_subset_opt(array_subset, &DecodeOptions::default())
+        self.retrieve_array_subset_opt(array_subset, &CodecOptions::default())
     }
 
     /// Read and decode the `array_subset` of array into a vector of its elements.
@@ -829,7 +825,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_array_subset_elements_opt<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
         let bytes = self.retrieve_array_subset_opt(array_subset, options)?;
@@ -846,7 +842,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
-        self.retrieve_array_subset_elements_opt(array_subset, &DecodeOptions::default())
+        self.retrieve_array_subset_elements_opt(array_subset, &CodecOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -863,7 +859,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_array_subset_ndarray_opt<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; // in retrieve_array_subset_elements_opt
         let elements = self.retrieve_array_subset_elements_opt::<T>(array_subset, options)?;
@@ -881,7 +877,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.retrieve_array_subset_ndarray_opt(array_subset, &DecodeOptions::default())
+        self.retrieve_array_subset_ndarray_opt(array_subset, &CodecOptions::default())
     }
 
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes.
@@ -899,7 +895,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         if !chunk_subset.inbounds(&chunk_representation.shape_u64()) {
@@ -950,7 +946,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<u8>, ArrayError> {
-        self.retrieve_chunk_subset_opt(chunk_indices, chunk_subset, &DecodeOptions::default())
+        self.retrieve_chunk_subset_opt(chunk_indices, chunk_subset, &CodecOptions::default())
     }
 
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements.
@@ -965,7 +961,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
         let bytes = self.retrieve_chunk_subset_opt(chunk_indices, chunk_subset, options)?;
@@ -982,7 +978,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_subset_elements_opt(
             chunk_indices,
             chunk_subset,
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 
@@ -1002,7 +998,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; // in retrieve_chunk_subset_elements
         let elements =
@@ -1021,7 +1017,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_subset_ndarray_opt(
             chunk_indices,
             chunk_subset,
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 
@@ -1032,7 +1028,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn partial_decoder_opt<'a>(
         &'a self,
         chunk_indices: &[u64],
-        options: &PartialDecoderOptions,
+        options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -1056,6 +1052,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &'a self,
         chunk_indices: &[u64],
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
-        self.partial_decoder_opt(chunk_indices, &PartialDecoderOptions::default())
+        self.partial_decoder_opt(chunk_indices, &CodecOptions::default())
     }
 }

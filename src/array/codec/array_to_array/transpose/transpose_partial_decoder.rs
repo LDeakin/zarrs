@@ -1,6 +1,6 @@
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
-    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, PartialDecodeOptions},
+    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
     ChunkRepresentation,
 };
 
@@ -37,7 +37,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
@@ -112,7 +112,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         // Get transposed array subsets
         let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());

@@ -6,7 +6,7 @@ use crate::{
             partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache},
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
             ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
-            CodecError, CodecTraits, DecodeOptions, EncodeOptions, PartialDecoderOptions,
+            CodecError, CodecOptions, CodecTraits,
         },
         concurrency::RecommendedConcurrency,
         ArrayView, BytesRepresentation, ChunkRepresentation,
@@ -221,7 +221,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         &'a self,
         mut input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        options: &PartialDecoderOptions,
+        options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -284,7 +284,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         &'a self,
         mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        options: &PartialDecoderOptions,
+        options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -427,7 +427,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -466,7 +466,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         mut encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -511,7 +511,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -554,7 +554,7 @@ impl ArrayCodecTraits for CodecChain {
         &self,
         mut encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
@@ -606,7 +606,7 @@ impl ArrayCodecTraits for CodecChain {
         encoded_value: &[u8],
         decoded_representation: &ChunkRepresentation,
         array_view: &ArrayView,
-        options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;

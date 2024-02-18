@@ -5,8 +5,8 @@ use flate2::bufread::{GzDecoder, GzEncoder};
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
-            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
+            CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation,
     },
@@ -77,7 +77,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut encoder = GzEncoder::new(
             Cursor::new(decoded_value),
@@ -92,7 +92,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut decoder = GzDecoder::new(Cursor::new(encoded_value));
         let mut out: Vec<u8> = Vec::new();
@@ -104,7 +104,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(gzip_partial_decoder::GzipPartialDecoder::new(r)))
     }
@@ -114,7 +114,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             gzip_partial_decoder::AsyncGzipPartialDecoder::new(r),

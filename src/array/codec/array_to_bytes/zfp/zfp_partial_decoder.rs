@@ -2,9 +2,7 @@ use zfp_sys::zfp_type;
 
 use crate::{
     array::{
-        codec::{
-            ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, PartialDecodeOptions,
-        },
+        codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, CodecOptions},
         ChunkRepresentation,
     },
     array_subset::ArraySubset,
@@ -57,7 +55,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
@@ -147,7 +145,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let encoded_value = self.input_handle.decode_opt(options).await?;
         let chunk_shape = self.decoded_representation.shape_u64();

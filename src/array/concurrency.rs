@@ -15,7 +15,7 @@
 
 use crate::config::global_config;
 
-use super::codec::{options::EncodeOptionsBuilder, EncodeOptions};
+use super::codec::{options::CodecOptionsBuilder, CodecOptions};
 
 /// The recommended concurrency of a codec includes the most efficient and maximum recommended concurrency.
 ///
@@ -120,7 +120,7 @@ pub fn concurrency_chunks_and_codec(
     concurrency_target: usize,
     num_chunks: usize,
     codec_concurrency: &RecommendedConcurrency,
-) -> (usize, EncodeOptions) {
+) -> (usize, CodecOptions) {
     // core::cmp::minmax https://github.com/rust-lang/rust/issues/115939
     let min_concurrent_chunks =
         std::cmp::min(global_config().chunk_concurrent_minimum(), num_chunks);
@@ -131,7 +131,7 @@ pub fn concurrency_chunks_and_codec(
         &RecommendedConcurrency::new(min_concurrent_chunks..max_concurrent_chunks),
         codec_concurrency,
     );
-    let codec_options = EncodeOptionsBuilder::new()
+    let codec_options = CodecOptionsBuilder::new()
         .concurrent_target(codec_concurrent_limit)
         .build();
     (self_concurrent_limit, codec_options)

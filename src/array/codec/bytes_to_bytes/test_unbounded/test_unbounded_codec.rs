@@ -1,8 +1,8 @@
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
-            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
+            CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation,
     },
@@ -55,7 +55,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         Ok(decoded_value)
     }
@@ -64,7 +64,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         Ok(encoded_value)
     }
@@ -73,7 +73,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             test_unbounded_partial_decoder::TestUnboundedPartialDecoder::new(r),
@@ -85,7 +85,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             test_unbounded_partial_decoder::AsyncTestUnboundedPartialDecoder::new(r),

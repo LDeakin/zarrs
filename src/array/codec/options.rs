@@ -1,14 +1,14 @@
-//! Options for codec encoding and decoding.
+//! Codec options for encoding and decoding.
 
 use crate::config::global_config;
 
-/// Encode options.
+/// Codec options for encoding/decoding.
 #[derive(Debug, Clone)]
-pub struct EncodeOptions {
+pub struct CodecOptions {
     concurrent_target: usize,
 }
 
-impl Default for EncodeOptions {
+impl Default for CodecOptions {
     fn default() -> Self {
         Self {
             concurrent_target: global_config().codec_concurrent_target(),
@@ -16,11 +16,11 @@ impl Default for EncodeOptions {
     }
 }
 
-impl EncodeOptions {
+impl CodecOptions {
     /// Create a new encode options builder.
     #[must_use]
-    pub fn builder() -> EncodeOptionsBuilder {
-        EncodeOptionsBuilder::new()
+    pub fn builder() -> CodecOptionsBuilder {
+        CodecOptionsBuilder::new()
     }
 
     /// Return the concurrent target.
@@ -35,19 +35,19 @@ impl EncodeOptions {
     }
 }
 
-/// Builder for [`EncodeOptions`].
+/// Builder for [`CodecOptions`].
 #[derive(Debug, Clone)]
-pub struct EncodeOptionsBuilder {
+pub struct CodecOptionsBuilder {
     concurrent_target: usize,
 }
 
-impl Default for EncodeOptionsBuilder {
+impl Default for CodecOptionsBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl EncodeOptionsBuilder {
+impl CodecOptionsBuilder {
     /// Create a new encode options builder.
     #[must_use]
     pub fn new() -> Self {
@@ -58,8 +58,8 @@ impl EncodeOptionsBuilder {
 
     /// Build into encode options.
     #[must_use]
-    pub fn build(&self) -> EncodeOptions {
-        EncodeOptions {
+    pub fn build(&self) -> CodecOptions {
+        CodecOptions {
             concurrent_target: self.concurrent_target,
         }
     }
@@ -71,21 +71,3 @@ impl EncodeOptionsBuilder {
         self
     }
 }
-
-/// Decode options.
-pub type DecodeOptions = EncodeOptions;
-
-/// Decode options builder.
-pub type DecodeOptionsBuilder = EncodeOptionsBuilder;
-
-/// Partial decoder options.
-pub type PartialDecoderOptions = DecodeOptions;
-
-/// Partial decoder options builder.
-pub type PartialDecoderOptionsBuilder = EncodeOptionsBuilder;
-
-/// Partial decode options.
-pub type PartialDecodeOptions = DecodeOptions;
-
-/// Partial decode options builder.
-pub type PartialDecodeOptionsBuilder = EncodeOptionsBuilder;

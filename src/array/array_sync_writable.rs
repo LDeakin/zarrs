@@ -9,7 +9,7 @@ use crate::{
 };
 
 use super::{
-    codec::{ArrayCodecTraits, EncodeOptions},
+    codec::{options::CodecOptions, ArrayCodecTraits},
     concurrency::concurrency_chunks_and_codec,
     Array, ArrayError,
 };
@@ -41,7 +41,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_bytes: Vec<u8>,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
         let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
@@ -83,7 +83,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         chunk_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self.store_chunk_opt(chunk_indices, chunk_bytes, &EncodeOptions::default())
+        self.store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
     }
 
     /// Encode `chunk_elements` and store at `chunk_indices`.
@@ -98,7 +98,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_elements: Vec<T>,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
@@ -114,7 +114,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         chunk_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        self.store_chunk_elements_opt(chunk_indices, chunk_elements, &EncodeOptions::default())
+        self.store_chunk_elements_opt(chunk_indices, chunk_elements, &CodecOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -129,7 +129,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_array: &ndarray::ArrayViewD<T>,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_ndarray!(
             self,
@@ -146,7 +146,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         chunk_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
-        self.store_chunk_ndarray_opt(chunk_indices, chunk_array, &EncodeOptions::default())
+        self.store_chunk_ndarray_opt(chunk_indices, chunk_array, &CodecOptions::default())
     }
 
     /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset.
@@ -164,7 +164,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
         chunks_bytes: Vec<u8>,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let num_chunks = chunks.num_elements_usize();
         match num_chunks {
@@ -246,7 +246,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunks: &ArraySubset,
         chunks_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self.store_chunks_opt(chunks, chunks_bytes, &EncodeOptions::default())
+        self.store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
     }
 
     /// Variation of [`Array::store_chunks_opt`] for elements with a known type.
@@ -257,7 +257,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
@@ -273,7 +273,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunks: &ArraySubset,
         chunks_elements: Vec<T>,
     ) -> Result<(), ArrayError> {
-        self.store_chunks_elements_opt(chunks, chunks_elements, &EncodeOptions::default())
+        self.store_chunks_elements_opt(chunks, chunks_elements, &CodecOptions::default())
     }
 
     #[cfg(feature = "ndarray")]
@@ -285,7 +285,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,
-        options: &EncodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_ndarray!(
             self,
@@ -302,7 +302,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunks: &ArraySubset,
         chunks_array: &ndarray::ArrayViewD<'_, T>,
     ) -> Result<(), ArrayError> {
-        self.store_chunks_ndarray_opt(chunks, chunks_array, &EncodeOptions::default())
+        self.store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
     }
 
     /// Erase the chunk at `chunk_indices`.

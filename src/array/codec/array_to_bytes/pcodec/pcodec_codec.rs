@@ -4,8 +4,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
-            PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
         transmute_from_bytes_vec, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
         DataType,
@@ -100,7 +100,7 @@ impl ArrayCodecTraits for PcodecCodec {
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_encode {
@@ -143,7 +143,7 @@ impl ArrayCodecTraits for PcodecCodec {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_decode {
@@ -187,7 +187,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(pcodec_partial_decoder::PcodecPartialDecoder::new(
             input_handle,
@@ -200,7 +200,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             pcodec_partial_decoder::AsyncPCodecPartialDecoder::new(

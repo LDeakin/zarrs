@@ -27,7 +27,7 @@ use thiserror::Error;
 
 use crate::{
     array::{
-        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecPlugin, DecodeOptions},
+        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecPlugin},
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
     },
     metadata::Metadata,
@@ -108,7 +108,7 @@ fn decode_shard_index(
     encoded_shard_index: Vec<u8>,
     index_array_representation: &ChunkRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
-    options: &DecodeOptions,
+    options: &CodecOptions,
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
     let decoded_shard_index =
@@ -124,7 +124,7 @@ async fn async_decode_shard_index(
     encoded_shard_index: Vec<u8>,
     index_array_representation: &ChunkRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
-    options: &DecodeOptions,
+    options: &CodecOptions,
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
     let decoded_shard_index = index_codecs
@@ -140,9 +140,8 @@ async fn async_decode_shard_index(
 mod tests {
     use crate::{
         array::codec::{
-            bytes_to_bytes::test_unbounded::TestUnboundedCodec,
-            options::{DecodeOptionsBuilder, EncodeOptionsBuilder},
-            ArrayCodecTraits, BytesToBytesCodecTraits, EncodeOptions, PartialDecodeOptions,
+            bytes_to_bytes::test_unbounded::TestUnboundedCodec, ArrayCodecTraits,
+            BytesToBytesCodecTraits, CodecOptions, CodecOptionsBuilder,
         },
         array_subset::ArraySubset,
         config::global_config,
@@ -207,8 +206,7 @@ mod tests {
 }"#;
 
     fn codec_sharding_round_trip_impl(
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -240,10 +238,10 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode_opt(bytes.clone(), &chunk_representation, encode_options)
+            .encode_opt(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded = codec
-            .decode_opt(encoded.clone(), &chunk_representation, decode_options)
+            .decode_opt(encoded.clone(), &chunk_representation, options)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
@@ -258,13 +256,10 @@ mod tests {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
                         let concurrent_target = get_concurrent_target(parallel);
-                        let encode_options =
-                            EncodeOptionsBuilder::new().concurrent_target(concurrent_target);
-                        let decode_options =
-                            DecodeOptionsBuilder::new().concurrent_target(concurrent_target);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_round_trip_impl(
-                            &encode_options.build(),
-                            &decode_options.build(),
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -289,13 +284,10 @@ mod tests {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
                         let concurrent_target = get_concurrent_target(parallel);
-                        let encode_options =
-                            EncodeOptionsBuilder::new().concurrent_target(concurrent_target);
-                        let decode_options =
-                            DecodeOptionsBuilder::new().concurrent_target(concurrent_target);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_round_trip_impl(
-                            &encode_options.build(),
-                            &decode_options.build(),
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -312,8 +304,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     async fn codec_sharding_async_round_trip_impl(
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -345,11 +336,11 @@ mod tests {
             .build();
 
         let encoded = codec
-            .async_encode_opt(bytes.clone(), &chunk_representation, encode_options)
+            .async_encode_opt(bytes.clone(), &chunk_representation, options)
             .await
             .unwrap();
         let decoded = codec
-            .async_decode_opt(encoded.clone(), &chunk_representation, decode_options)
+            .async_decode_opt(encoded.clone(), &chunk_representation, options)
             .await
             .unwrap();
         assert_ne!(encoded, decoded);
@@ -366,13 +357,10 @@ mod tests {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
                         let concurrent_target = get_concurrent_target(parallel);
-                        let encode_options =
-                            EncodeOptionsBuilder::new().concurrent_target(concurrent_target);
-                        let decode_options =
-                            DecodeOptionsBuilder::new().concurrent_target(concurrent_target);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_async_round_trip_impl(
-                            &encode_options.build(),
-                            &decode_options.build(),
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -386,7 +374,7 @@ mod tests {
     }
 
     fn codec_sharding_partial_decode(
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -450,10 +438,10 @@ mod tests {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
                         let concurrent_target = get_concurrent_target(parallel);
-                        let decode_options =
-                            DecodeOptionsBuilder::new().concurrent_target(concurrent_target);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_partial_decode(
-                            &decode_options.build(),
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -466,7 +454,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     async fn codec_sharding_async_partial_decode(
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -533,10 +521,10 @@ mod tests {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
                         let concurrent_target = get_concurrent_target(parallel);
-                        let decode_options =
-                            DecodeOptionsBuilder::new().concurrent_target(concurrent_target);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_async_partial_decode(
-                            &decode_options.build(),
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,

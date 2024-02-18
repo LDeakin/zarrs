@@ -5,8 +5,8 @@ use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
-            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
+            CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation,
     },
@@ -149,7 +149,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         // let n_threads = std::cmp::min(
         //     options.concurrent_limit(),
@@ -164,7 +164,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         // let n_threads = std::cmp::min(
         //     options.concurrent_limit(),
@@ -179,7 +179,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: &PartialDecoderOptions,
+        _parallel: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(blosc_partial_decoder::BloscPartialDecoder::new(
             input_handle,
@@ -191,7 +191,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _parallel: &PartialDecoderOptions,
+        _parallel: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             blosc_partial_decoder::AsyncBloscPartialDecoder::new(input_handle),

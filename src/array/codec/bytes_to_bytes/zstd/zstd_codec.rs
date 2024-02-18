@@ -3,8 +3,8 @@ use zstd::zstd_safe;
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
-            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
+            CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation,
     },
@@ -75,7 +75,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
     fn encode_opt(
         &self,
         decoded_value: Vec<u8>,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut result = Vec::<u8>::new();
         let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
@@ -93,7 +93,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         zstd::decode_all(encoded_value.as_slice()).map_err(CodecError::IOError)
     }
@@ -102,7 +102,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zstd_partial_decoder::ZstdPartialDecoder::new(r)))
     }
@@ -112,7 +112,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             zstd_partial_decoder::AsyncZstdPartialDecoder::new(r),

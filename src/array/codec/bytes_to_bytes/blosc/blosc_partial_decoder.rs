@@ -1,7 +1,6 @@
 use crate::{
     array::codec::{
-        bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError,
-        PartialDecodeOptions,
+        bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError, CodecOptions,
     },
     byte_range::ByteRange,
 };
@@ -26,7 +25,7 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ByteRange],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let encoded_value = self.input_handle.decode_opt(options)?;
         let Some(encoded_value) = encoded_value else {
@@ -77,7 +76,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncBloscPartialDecoder<'_> {
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ByteRange],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let encoded_value = self.input_handle.decode_opt(options).await?;
         let Some(encoded_value) = encoded_value else {
