@@ -287,9 +287,7 @@ mod tests {
 
     use super::*;
 
-    // This test non-deterministically? fails with miri in rayon (crossbeam-epoch)
     #[test]
-    #[cfg_attr(miri, ignore)]
     fn transformers_multithreaded() {
         use rayon::prelude::*;
 

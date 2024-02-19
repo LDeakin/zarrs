@@ -792,7 +792,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(miri, ignore)]
     fn array_subset_round_trip() {
         let store = Arc::new(MemoryStore::default());
         let array_path = "/array";
@@ -888,7 +887,6 @@ mod tests {
 
     // // Due to the nature of this test, it can fail sometimes. It was used for development but is now disabled.
     // #[test]
-    // #[cfg_attr(miri, ignore)]
     // fn array_subset_locking_disabled() {
     //     array_subset_locking(
     //         Arc::new(crate::storage::store_lock::DisabledStoreLocks::default()),
