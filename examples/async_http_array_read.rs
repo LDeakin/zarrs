@@ -14,20 +14,26 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store
-    let store = Arc::new(store::AsyncObjectStore::new(
+    let mut store: AsyncReadableWritableListableStorage = Arc::new(store::AsyncObjectStore::new(
         object_store::http::HttpBuilder::new()
             .with_url(HTTP_URL)
             .build()?,
     ));
-    let log_writer = Arc::new(std::sync::Mutex::new(
-        // std::io::BufWriter::new(
-        std::io::stdout(),
-        //    )
-    ));
-    let usage_log = UsageLogStorageTransformer::new(log_writer, || {
-        chrono::Utc::now().format("[%T%.3f] ").to_string()
-    });
-    let store = usage_log.create_async_readable_transformer(store);
+    if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
+        if arg1 == "--usage-log" {
+            let log_writer = Arc::new(std::sync::Mutex::new(
+                // std::io::BufWriter::new(
+                std::io::stdout(),
+                //    )
+            ));
+            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+                chrono::Utc::now().format("[%T%.3f] ").to_string()
+            }));
+            store = usage_log
+                .clone()
+                .create_async_readable_writable_listable_transformer(store);
+        }
+    }
 
     // Init the existing array, reading metadata
     let array = Array::async_new(store, ARRAY_PATH).await?;

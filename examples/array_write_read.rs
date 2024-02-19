@@ -1,4 +1,8 @@
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use zarrs::storage::{
+    storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+    ReadableWritableListableStorage,
+};
 
 fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
@@ -11,12 +15,26 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a store
     // let path = tempfile::TempDir::new()?;
-    // let store = Arc::new(store::FilesystemStore::new(path.path())?);
-    // let store = Arc::new(store::FilesystemStore::new(
+    // let mut store: ReadableWritableListableStorage = Arc::new(store::FilesystemStore::new(path.path())?);
+    // let mut store: ReadableWritableListableStorage = Arc::new(store::FilesystemStore::new(
     //     "tests/data/array_write_read.zarr",
     // )?);
-    // let store: zarrs::storage::ReadableWritableListableStorage = Arc::new(store::MemoryStore::new());
-    let store = Arc::new(store::MemoryStore::new());
+    let mut store: ReadableWritableListableStorage = Arc::new(store::MemoryStore::new());
+    if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
+        if arg1 == "--usage-log" {
+            let log_writer = Arc::new(std::sync::Mutex::new(
+                // std::io::BufWriter::new(
+                std::io::stdout(),
+                //    )
+            ));
+            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+                chrono::Utc::now().format("[%T%.3f] ").to_string()
+            }));
+            store = usage_log
+                .clone()
+                .create_readable_writable_listable_transformer(store);
+        }
+    }
 
     // Create a group
     let group_path = "/group";

@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `{Array,Chunk}Representation::dimensionality()`
  - Add `ArraySubset::new_empty()` and `ArraySubset::is_empty()`
  - Add missing `IncompatibleArraySubsetAndShapeError::new()`
+ - Add `--usage-log` argument to examples to use `UsageLog` storage transformer
  - Add more tests for `Array`, codecs, store locks, and more
 
 ### Changed

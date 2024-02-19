@@ -1,3 +1,5 @@
+use zarrs::storage::ReadableStorage;
+
 fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
     use zarrs::{
@@ -14,16 +16,20 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store
-    let store = Arc::new(store::HTTPStore::new(HTTP_URL)?);
-    let log_writer = Arc::new(std::sync::Mutex::new(
-        // std::io::BufWriter::new(
-        std::io::stdout(),
-        //    )
-    ));
-    let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
-        chrono::Utc::now().format("[%T%.3f] ").to_string()
-    }));
-    let store = usage_log.create_readable_transformer(store);
+    let mut store: ReadableStorage = Arc::new(store::HTTPStore::new(HTTP_URL)?);
+    if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
+        if arg1 == "--usage-log" {
+            let log_writer = Arc::new(std::sync::Mutex::new(
+                // std::io::BufWriter::new(
+                std::io::stdout(),
+                //    )
+            ));
+            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+                chrono::Utc::now().format("[%T%.3f] ").to_string()
+            }));
+            store = usage_log.clone().create_readable_transformer(store);
+        }
+    }
 
     // Init the existing array, reading metadata
     let array = Array::new(store, ARRAY_PATH)?;

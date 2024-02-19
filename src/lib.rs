@@ -51,6 +51,9 @@
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example <EXAMPLE_NAME>`.
+//!
+//! Add `-- --usage-log` to see storage API calls during example execution.
+//!
 //! Some examples require non-default features, which can be enabled with `--features <FEATURES>`.
 //!
 //! #### Sync API
