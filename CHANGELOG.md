@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Highlights
+ - This release targeted:
+   - Improving performance and reducing memory usage
+   - Increasing test coverage (82% from 66% in v0.11.6)
+ - There are a number of breaking changes, the most impactful user facing changes are
+   - `Array` `par_` variants have been removed and the default variants are now parallel instead of serial
+   - `Array` `_opt` variants use new `CodecOptions` instead of `parallel: bool`
+   - `ArraySubset` `iter_` methods have had the `iter_` prefix removed. Returned iterators now implement `into_iter()` and some also implement `into_par_iter()`
+   - `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs` have been removed. New methods supporting `CodecOptions` offer far more concurrency control
+   - `DimensionName`s can now be created less verbosely. E.g. `array_builder.dimension_names(["y", "x"].into())`. Type inference will fail on old syntax like `.dimension_names(vec!["y".into(), "x".into()].into())`
+
 ### Added
 #### Arrays
  - Add `array::concurrency::RecommendedConcurrency`
@@ -30,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ParIndicesIterator` and `ParChunksIterator`
 
 #### Miscellaneous
+ - Add `Default Codec Concurrent Target` and `Default Chunk Concurrency Minimum` global configuration options to `Config`
  - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
  - Add `{Chunk,Array}Representation::shape_u64`
  - Implement `AsyncBytesPartialDecoderTraits` for `std::io::Cursor<{&[u8],Vec<u8>}>`
@@ -44,13 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add more tests for `Array`, codecs, store locks, and more
 
 ### Changed
- - **Major Breaking**: `Array` `_opt` methods now use `codec::CodecOptions` instead of `parallel: bool`
+ - **Major Breaking**: `Array` `_opt` methods now use a `codec::CodecOptions` parameter instead of `parallel: bool`
+   - **Change in behaviour**: default variants without `_opt` are no longer serial but parallel by default
  - **Major breaking**: refactor codec traits:
-   - **Breaking**: remove `par_` variants,
-   - **Breaking**: `_opt` variants use new `codec::CodecOptions` instead of `parallel: bool`
+   - **Breaking**: remove `par_` variants and many `_opt` variants in favor of a single method,
+   - **Breaking**: various methods now use an `codec::CodecOptions` parameter instead of `parallel: bool`
    - **Breaking**: add `{ArrayCodecTraits,BytesToBytesCodecTraits}::recommended_concurrency()`
    - **Breaking**: add `ArrayPartialDecoderTraits::element_size()`
-   - variants without prefix/suffix are no longer serial variants but parallel
+   - **Change in behaviour**: default variants without `_opt` are no longer serial but parallel by default
  - **Major breaking**: refactor storage:
    - Storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait method now take `self: Arc<Self>`
    - `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime

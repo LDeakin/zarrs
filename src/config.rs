@@ -6,15 +6,12 @@ use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 ///
 /// Retrieve the global [`Config`] with [`global_config`] and modify it with [`global_config_mut`].
 ///
-/// # Miscellaneous Configuration Options
-///
 /// ## Validate Checksums
 ///  > default: [`true`]
 ///
 /// If enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
 /// Note that regardless of this configuration option, checksum codecs may skip validation when partial decoding.
 ///
-/// ## Concurrency Configuration Options
 /// ## Default Codec Concurrent Target
 /// > default: [`std::thread::available_parallelism`]`()`
 ///
