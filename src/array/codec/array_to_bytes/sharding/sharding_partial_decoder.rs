@@ -469,6 +469,15 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in array_subsets {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         let Some(shard_index) = &self.shard_index else {
             return Ok(array_subsets
                 .iter()

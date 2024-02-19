@@ -9,6 +9,7 @@ use crate::{
 
 use super::{
     codec::{options::CodecOptions, ArrayCodecTraits},
+    concurrency::concurrency_chunks_and_codec,
     Array, ArrayError,
 };
 
@@ -194,41 +195,51 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                 ));
             }
 
+            // Calculate chunk/codec concurrency
+            let chunk_representation =
+                self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+            let codec_concurrency = self.recommended_codec_concurrency(&chunk_representation)?;
+            let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                options.concurrent_target(),
+                num_chunks,
+                &codec_concurrency,
+            );
+
             let element_size = self.data_type().size();
 
-            let mut futures = chunks
-                .indices()
-                .into_iter()
-                .map(|chunk_indices| {
-                    let chunk_subset_in_array = unsafe {
-                        self.chunk_grid()
-                            .subset_unchecked(&chunk_indices, self.shape())
-                            .unwrap()
-                    };
-                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                    let chunk_subset_in_array_subset =
-                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    #[allow(clippy::similar_names)]
-                    let chunk_bytes = unsafe {
-                        chunk_subset_in_array_subset.extract_bytes_unchecked(
-                            &chunks_bytes,
-                            array_subset.shape(),
-                            element_size,
-                        )
-                    };
+            let indices = chunks.indices();
+            let futures = indices.into_iter().map(|chunk_indices| {
+                let chunk_subset_in_array = unsafe {
+                    self.chunk_grid()
+                        .subset_unchecked(&chunk_indices, self.shape())
+                        .unwrap()
+                };
+                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
+                let chunk_subset_in_array_subset =
+                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                #[allow(clippy::similar_names)]
+                let chunk_bytes = unsafe {
+                    chunk_subset_in_array_subset.extract_bytes_unchecked(
+                        &chunks_bytes,
+                        array_subset.shape(),
+                        element_size,
+                    )
+                };
 
-                    debug_assert_eq!(
-                        chunk_subset_in_array.num_elements(),
-                        chunk_subset_in_array_subset.num_elements()
-                    );
+                debug_assert_eq!(
+                    chunk_subset_in_array.num_elements(),
+                    chunk_subset_in_array_subset.num_elements()
+                );
 
-                    async move {
-                        self.async_store_chunk_opt(&chunk_indices, chunk_bytes, options)
-                            .await
-                    }
-                })
-                .collect::<FuturesUnordered<_>>();
-            while let Some(item) = futures.next().await {
+                let options = options.clone();
+                async move {
+                    self.async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
+                        .await
+                }
+            });
+            let mut stream =
+                futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
+            while let Some(item) = stream.next().await {
                 item?;
             }
         }

@@ -27,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Implement `From<String>` for `DimensionName`
  - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
  - Add `ArrayCodecTraits::decode_into_array_view_opt` with default implementation
-   - TODO: Use in more methods 
    - TODO: Same for async
  - Add `ArrayPartialDecoderTraits::partial_decode_into_array_view_opt` with default implementation
    - TODO: Same for async

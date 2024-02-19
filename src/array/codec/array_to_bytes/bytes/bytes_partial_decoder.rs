@@ -124,6 +124,15 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
