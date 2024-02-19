@@ -40,6 +40,263 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         Self::new_with_metadata(storage, path, metadata)
     }
 
+    /// Read and decode the chunk at `chunk_indices` into its bytes if it exists (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_if_exists_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_if_exists(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<Vec<u8>>, ArrayError> {
+        self.async_retrieve_chunk_if_exists_opt(chunk_indices, &CodecOptions::default())
+            .await
+    }
+
+    /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_elements_if_exists_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_elements_if_exists<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<Vec<T>>, ArrayError> {
+        self.async_retrieve_chunk_elements_if_exists_opt(chunk_indices, &CodecOptions::default())
+            .await
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] if it exists (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_ndarray_if_exists_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_ndarray_if_exists<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
+        self.async_retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &CodecOptions::default())
+            .await
+    }
+
+    /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_chunk_opt(chunk_indices, &CodecOptions::default())
+            .await
+    }
+
+    /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_elements<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Vec<T>, ArrayError> {
+        self.async_retrieve_chunk_elements_opt(chunk_indices, &CodecOptions::default())
+            .await
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`]. It is filled with the fill value if it does not exist (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_ndarray_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        self.async_retrieve_chunk_ndarray_opt(chunk_indices, &CodecOptions::default())
+            .await
+    }
+
+    /// Retrieve a chunk and output into an existing array (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_into_array_view_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_into_array_view(
+        &self,
+        chunk_indices: &[u64],
+        array_view: &ArrayView<'_>,
+    ) -> Result<(), ArrayError> {
+        self.async_retrieve_chunk_into_array_view_opt(
+            chunk_indices,
+            array_view,
+            &CodecOptions::default(),
+        )
+        .await
+    }
+
+    /// Read and decode the chunks at `chunks` into their bytes (default options).
+    ///
+    /// See [`Array::async_retrieve_chunks_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_chunks_opt(chunks, &CodecOptions::default())
+            .await
+    }
+
+    /// Read and decode the chunks at `chunks` into a vector of their elements (default options).
+    ///
+    /// See [`Array::async_retrieve_chunks_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunks_elements<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunks: &ArraySubset,
+    ) -> Result<Vec<T>, ArrayError> {
+        self.async_retrieve_chunks_elements_opt(chunks, &CodecOptions::default())
+            .await
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the chunks at `chunks` into an [`ndarray::ArrayD`] (default options).
+    ///
+    /// See [`Array::async_retrieve_chunks_ndarray_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunks: &ArraySubset,
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        self.async_retrieve_chunks_ndarray_opt(chunks, &CodecOptions::default())
+            .await
+    }
+
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_subset_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_subset(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+    ) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_chunk_subset_opt(chunk_indices, chunk_subset, &CodecOptions::default())
+            .await
+    }
+
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_subset_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_subset_elements<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+    ) -> Result<Vec<T>, ArrayError> {
+        self.async_retrieve_chunk_subset_elements_opt(
+            chunk_indices,
+            chunk_subset,
+            &CodecOptions::default(),
+        )
+        .await
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an [`ndarray::ArrayD`] (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_subset_ndarray_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        self.async_retrieve_chunk_subset_ndarray_opt(
+            chunk_indices,
+            chunk_subset,
+            &CodecOptions::default(),
+        )
+        .await
+    }
+
+    /// Retrieve a subset of a chunk and output into an existing array (default options).
+    ///
+    /// See [`Array::async_retrieve_chunk_subset_into_array_view_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_chunk_subset_into_array_view(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+        array_view: &ArrayView<'_>,
+    ) -> Result<(), ArrayError> {
+        self.async_retrieve_chunk_subset_into_array_view_opt(
+            chunk_indices,
+            chunk_subset,
+            array_view,
+            &CodecOptions::default(),
+        )
+        .await
+    }
+
+    /// Read and decode the `array_subset` of array into its bytes (default options).
+    ///
+    /// See [`Array::async_retrieve_array_subset_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_array_subset(
+        &self,
+        array_subset: &ArraySubset,
+    ) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_array_subset_opt(array_subset, &CodecOptions::default())
+            .await
+    }
+
+    /// Read and decode the `array_subset` of array into a vector of its elements (default options).
+    ///
+    /// See [`Array::async_retrieve_array_subset_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_array_subset_elements<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        array_subset: &ArraySubset,
+    ) -> Result<Vec<T>, ArrayError> {
+        self.async_retrieve_array_subset_elements_opt(array_subset, &CodecOptions::default())
+            .await
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`] (default options).
+    ///
+    /// See [`Array::async_retrieve_array_subset_ndarray_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_retrieve_array_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        array_subset: &ArraySubset,
+    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
+        self.async_retrieve_array_subset_ndarray_opt(array_subset, &CodecOptions::default())
+            .await
+    }
+
+    /// Retrieve an array subset into an array view (default options).
+    ///
+    /// See [`Array::async_retrieve_array_subset_into_array_view_opt`].
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_retrieve_array_subset_into_array_view(
+        &self,
+        array_subset: &ArraySubset,
+        array_view: &ArrayView<'_>,
+    ) -> Result<(), ArrayError> {
+        self.async_retrieve_array_subset_into_array_view_opt(
+            array_subset,
+            array_view,
+            &CodecOptions::default(),
+        )
+        .await
+    }
+
+    /// Initialises a partial decoder for the chunk at `chunk_indices` (default options).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_partial_decoder<'a>(
+        &'a self,
+        chunk_indices: &[u64],
+    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
+        self.async_partial_decoder_opt(chunk_indices, &CodecOptions::default())
+            .await
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+    /// Advanced methods
+    /////////////////////////////////////////////////////////////////////////////
+
     /// Read and decode the chunk at `chunk_indices` into its bytes if it exists.
     ///
     /// # Errors
@@ -93,16 +350,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes if it exists (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_if_exists(
-        &self,
-        chunk_indices: &[u64],
-    ) -> Result<Option<Vec<u8>>, ArrayError> {
-        self.async_retrieve_chunk_if_exists_opt(chunk_indices, &CodecOptions::default())
-            .await
-    }
-
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist.
     ///
     /// # Errors
@@ -130,13 +377,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
-        self.async_retrieve_chunk_opt(chunk_indices, &CodecOptions::default())
-            .await
-    }
-
     /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists.
     ///
     /// # Errors
@@ -158,16 +398,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         Ok(bytes.map(|bytes| transmute_from_bytes_vec::<T>(bytes)))
     }
 
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_elements_if_exists<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-    ) -> Result<Option<Vec<T>>, ArrayError> {
-        self.async_retrieve_chunk_elements_if_exists_opt(chunk_indices, &CodecOptions::default())
-            .await
-    }
-
     /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist.
     ///
     /// # Errors
@@ -187,16 +417,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_chunk_opt(chunk_indices, options)
             .await?;
         Ok(transmute_from_bytes_vec::<T>(bytes))
-    }
-
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-    ) -> Result<Vec<T>, ArrayError> {
-        self.async_retrieve_chunk_elements_opt(chunk_indices, &CodecOptions::default())
-            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -233,17 +453,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] if it exists (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_ndarray_if_exists<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-    ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
-        self.async_retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &CodecOptions::default())
-            .await
-    }
-
-    #[cfg(feature = "ndarray")]
     /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`]. It is filled with the fill value if it does not exist.
     ///
     /// # Errors
@@ -270,17 +479,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_chunk_elements_opt(chunk_indices, options)
             .await?;
         elements_to_ndarray(&shape, elements)
-    }
-
-    #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`]. It is filled with the fill value if it does not exist (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.async_retrieve_chunk_ndarray_opt(chunk_indices, &CodecOptions::default())
-            .await
     }
 
     /// Retrieve a chunk and output into an existing array.
@@ -346,21 +544,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             }
             Ok(())
         }
-    }
-
-    /// Retrieve a chunk and output into an existing array (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_into_array_view(
-        &self,
-        chunk_indices: &[u64],
-        array_view: &ArrayView<'_>,
-    ) -> Result<(), ArrayError> {
-        self.async_retrieve_chunk_into_array_view_opt(
-            chunk_indices,
-            array_view,
-            &CodecOptions::default(),
-        )
-        .await
     }
 
     /// Read and decode the chunks at `chunks` into their bytes.
@@ -450,13 +633,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunks at `chunks` into their bytes (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
-        self.async_retrieve_chunks_opt(chunks, &CodecOptions::default())
-            .await
-    }
-
     /// Read and decode the chunks at `chunks` into a vector of their elements.
     ///
     /// # Errors
@@ -469,18 +645,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         validate_element_size::<T>(self.data_type())?;
         let bytes = self.async_retrieve_chunks_opt(chunks, options).await?;
         Ok(transmute_from_bytes_vec::<T>(bytes))
-    }
-
-    /// Read and decode the chunks at `chunks` into a vector of their elements (default options).
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if the size of `T` does not match the data type size or a [`Array::async_retrieve_chunks`] error condition is met.
-    pub async fn async_retrieve_chunks_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunks: &ArraySubset,
-    ) -> Result<Vec<T>, ArrayError> {
-        self.async_retrieve_chunks_elements_opt(chunks, &CodecOptions::default())
-            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -501,16 +665,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         elements_to_ndarray(array_subset.shape(), elements)
     }
 
-    #[cfg(feature = "ndarray")]
-    /// Read and decode the chunks at `chunks` into an [`ndarray::ArrayD`] (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunks: &ArraySubset,
-    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.async_retrieve_chunks_ndarray_opt(chunks, &CodecOptions::default())
-            .await
-    }
     /// Read and decode the `array_subset` of array into its bytes.
     ///
     /// Out-of-bounds elements will have the fill value.
@@ -632,16 +786,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the `array_subset` of array into its bytes (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_array_subset(
-        &self,
-        array_subset: &ArraySubset,
-    ) -> Result<Vec<u8>, ArrayError> {
-        self.async_retrieve_array_subset_opt(array_subset, &CodecOptions::default())
-            .await
-    }
-
     /// Read and decode the `array_subset` of array into a vector of its elements.
     ///
     /// # Errors
@@ -661,16 +805,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_array_subset_opt(array_subset, options)
             .await?;
         Ok(transmute_from_bytes_vec::<T>(bytes))
-    }
-
-    /// Read and decode the `array_subset` of array into a vector of its elements (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_array_subset_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        array_subset: &ArraySubset,
-    ) -> Result<Vec<T>, ArrayError> {
-        self.async_retrieve_array_subset_elements_opt(array_subset, &CodecOptions::default())
-            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -694,17 +828,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_array_subset_elements_opt(array_subset, options)
             .await?;
         elements_to_ndarray(array_subset.shape(), elements)
-    }
-
-    #[cfg(feature = "ndarray")]
-    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`] (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_array_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        array_subset: &ArraySubset,
-    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.async_retrieve_array_subset_ndarray_opt(array_subset, &CodecOptions::default())
-            .await
     }
 
     /// Retrieve an array subset into an array view.
@@ -820,21 +943,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Retrieve an array subset into an array view (default options).
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn async_retrieve_array_subset_into_array_view(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView<'_>,
-    ) -> Result<(), ArrayError> {
-        self.async_retrieve_array_subset_into_array_view_opt(
-            array_subset,
-            array_view,
-            &CodecOptions::default(),
-        )
-        .await
-    }
-
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes.
     ///
     /// # Errors
@@ -889,17 +997,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_subset(
-        &self,
-        chunk_indices: &[u64],
-        chunk_subset: &ArraySubset,
-    ) -> Result<Vec<u8>, ArrayError> {
-        self.async_retrieve_chunk_subset_opt(chunk_indices, chunk_subset, &CodecOptions::default())
-            .await
-    }
-
     /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements.
     ///
     /// # Errors
@@ -919,21 +1016,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_chunk_subset_opt(chunk_indices, chunk_subset, options)
             .await?;
         Ok(transmute_from_bytes_vec::<T>(bytes))
-    }
-
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_subset_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-        chunk_subset: &ArraySubset,
-    ) -> Result<Vec<T>, ArrayError> {
-        self.async_retrieve_chunk_subset_elements_opt(
-            chunk_indices,
-            chunk_subset,
-            &CodecOptions::default(),
-        )
-        .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -959,22 +1041,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_chunk_subset_elements_opt(chunk_indices, chunk_subset, options)
             .await?;
         elements_to_ndarray(chunk_subset.shape(), elements)
-    }
-
-    #[cfg(feature = "ndarray")]
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an [`ndarray::ArrayD`] (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-        chunk_subset: &ArraySubset,
-    ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.async_retrieve_chunk_subset_ndarray_opt(
-            chunk_indices,
-            chunk_subset,
-            &CodecOptions::default(),
-        )
-        .await
     }
 
     /// Retrieve a chunk and output into an existing array.
@@ -1022,23 +1088,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Retrieve a subset of a chunk and output into an existing array (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_subset_into_array_view(
-        &self,
-        chunk_indices: &[u64],
-        chunk_subset: &ArraySubset,
-        array_view: &ArrayView<'_>,
-    ) -> Result<(), ArrayError> {
-        self.async_retrieve_chunk_subset_into_array_view_opt(
-            chunk_indices,
-            chunk_subset,
-            array_view,
-            &CodecOptions::default(),
-        )
-        .await
-    }
-
     /// Initialises a partial decoder for the chunk at `chunk_indices`.
     ///
     /// # Errors
@@ -1061,15 +1110,5 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .codecs()
             .async_partial_decoder(input_handle, &chunk_representation, options)
             .await?)
-    }
-
-    /// Initialises a partial decoder for the chunk at `chunk_indices` (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_partial_decoder<'a>(
-        &'a self,
-        chunk_indices: &[u64],
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
-        self.async_partial_decoder_opt(chunk_indices, &CodecOptions::default())
-            .await
     }
 }

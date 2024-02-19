@@ -27,6 +27,144 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
+    /// Encode `chunk_bytes` and store at `chunk_indices` (default options).
+    ///
+    /// See [`Array::async_store_chunk_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_store_chunk(
+        &self,
+        chunk_indices: &[u64],
+        chunk_bytes: Vec<u8>,
+    ) -> Result<(), ArrayError> {
+        self.async_store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
+            .await
+    }
+
+    /// Encode `chunk_elements` and store at `chunk_indices` (default options).
+    ///
+    /// See [`Array::async_store_chunk_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_store_chunk_elements<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_elements: Vec<T>,
+    ) -> Result<(), ArrayError> {
+        self.async_store_chunk_elements_opt(chunk_indices, chunk_elements, &CodecOptions::default())
+            .await
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Encode `chunk_array` and store at `chunk_indices` (default options).
+    ///
+    /// See [`Array::async_store_chunk_ndarray_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_store_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_array: &ndarray::ArrayViewD<'_, T>,
+    ) -> Result<(), ArrayError> {
+        self.async_store_chunk_ndarray_opt(chunk_indices, chunk_array, &CodecOptions::default())
+            .await
+    }
+
+    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset (default options).
+    ///
+    /// See [`Array::async_store_chunks_opt`].
+    #[allow(clippy::similar_names)]
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_store_chunks(
+        &self,
+        chunks: &ArraySubset,
+        chunks_bytes: Vec<u8>,
+    ) -> Result<(), ArrayError> {
+        self.async_store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
+            .await
+    }
+
+    /// Variation of [`Array::async_store_chunks`] for elements with a known type (default options).
+    ///
+    /// See [`Array::async_store_chunks_elements_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_store_chunks_elements<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunks: &ArraySubset,
+        chunks_elements: Vec<T>,
+    ) -> Result<(), ArrayError> {
+        self.async_store_chunks_elements_opt(chunks, chunks_elements, &CodecOptions::default())
+            .await
+    }
+
+    #[cfg(feature = "ndarray")]
+    /// Variation of [`Array::async_store_chunks`] for an [`ndarray::ArrayViewD`] (default options).
+    ///
+    /// See [`Array::async_store_chunks_ndarray_opt`].
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    pub async fn async_store_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
+        &self,
+        chunks: &ArraySubset,
+        chunks_array: &ndarray::ArrayViewD<'_, T>,
+    ) -> Result<(), ArrayError> {
+        self.async_store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
+            .await
+    }
+
+    /// Erase the chunk at `chunk_indices`.
+    ///
+    /// Succeeds if the key does not exist.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_async_writable_transformer(storage_handle);
+        crate::storage::async_erase_chunk(
+            &*storage_transformer,
+            self.path(),
+            chunk_indices,
+            self.chunk_key_encoding(),
+        )
+        .await
+    }
+
+    /// Erase the chunks at the chunk indices enclosed by `chunks`.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    pub async fn async_erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_async_writable_transformer(storage_handle);
+        let erase_chunk = |chunk_indices: Vec<u64>| {
+            let storage_transformer = storage_transformer.clone();
+            async move {
+                crate::storage::async_erase_chunk(
+                    &*storage_transformer,
+                    self.path(),
+                    &chunk_indices,
+                    self.chunk_key_encoding(),
+                )
+                .await
+            }
+        };
+
+        let mut futures = chunks
+            .indices()
+            .into_iter()
+            .map(erase_chunk)
+            .collect::<FuturesUnordered<_>>();
+        while let Some(item) = futures.next().await {
+            item?;
+        }
+        Ok(())
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+    /// Advanced methods
+    /////////////////////////////////////////////////////////////////////////////
+
     /// Encode `chunk_bytes` and store at `chunk_indices`.
     ///
     /// A chunk composed entirely of the fill value will not be written to the store.
@@ -77,17 +215,6 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Encode `chunk_bytes` and store at `chunk_indices` (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_chunk(
-        &self,
-        chunk_indices: &[u64],
-        chunk_bytes: Vec<u8>,
-    ) -> Result<(), ArrayError> {
-        self.async_store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
-            .await
-    }
-
     /// Encode `chunk_elements` and store at `chunk_indices`.
     ///
     /// A chunk composed entirely of the fill value will not be written to the store.
@@ -107,17 +234,6 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             chunk_elements,
             async_store_chunk_opt(chunk_indices, chunk_elements, options)
         )
-    }
-
-    /// Encode `chunk_elements` and store at `chunk_indices` (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_chunk_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-        chunk_elements: Vec<T>,
-    ) -> Result<(), ArrayError> {
-        self.async_store_chunk_elements_opt(chunk_indices, chunk_elements, &CodecOptions::default())
-            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -141,18 +257,6 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         )
     }
 
-    #[cfg(feature = "ndarray")]
-    /// Encode `chunk_array` and store at `chunk_indices` (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunk_indices: &[u64],
-        chunk_array: &ndarray::ArrayViewD<'_, T>,
-    ) -> Result<(), ArrayError> {
-        self.async_store_chunk_ndarray_opt(chunk_indices, chunk_array, &CodecOptions::default())
-            .await
-    }
-
     /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset.
     ///
     /// A chunk composed entirely of the fill value will not be written to the store.
@@ -171,90 +275,75 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let num_chunks = chunks.num_elements_usize();
-        if num_chunks == 1 {
-            let chunk_indices = chunks.start();
-            self.async_store_chunk_opt(chunk_indices, chunks_bytes, options)
-                .await?;
-        } else {
-            let array_subset = self.chunks_subset(chunks)?;
-            let element_size = self.data_type().size();
-            let expected_size = element_size as u64 * array_subset.num_elements();
-            if chunks_bytes.len() as u64 != expected_size {
-                return Err(ArrayError::InvalidBytesInputSize(
-                    chunks_bytes.len(),
-                    expected_size,
-                ));
+        match num_chunks {
+            0 => {}
+            1 => {
+                let chunk_indices = chunks.start();
+                self.async_store_chunk_opt(chunk_indices, chunks_bytes, options)
+                    .await?;
             }
+            _ => {
+                let array_subset = self.chunks_subset(chunks)?;
+                let element_size = self.data_type().size();
+                let expected_size = element_size as u64 * array_subset.num_elements();
+                if chunks_bytes.len() as u64 != expected_size {
+                    return Err(ArrayError::InvalidBytesInputSize(
+                        chunks_bytes.len(),
+                        expected_size,
+                    ));
+                }
 
-            let expected_size = array_subset.num_elements() * self.data_type().size() as u64;
-            if chunks_bytes.len() as u64 != expected_size {
-                return Err(ArrayError::InvalidBytesInputSize(
-                    chunks_bytes.len(),
-                    expected_size,
-                ));
-            }
-
-            // Calculate chunk/codec concurrency
-            let chunk_representation =
-                self.chunk_array_representation(&vec![0; self.dimensionality()])?;
-            let codec_concurrency = self.recommended_codec_concurrency(&chunk_representation)?;
-            let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
-                options.concurrent_target(),
-                num_chunks,
-                &codec_concurrency,
-            );
-
-            let element_size = self.data_type().size();
-
-            let indices = chunks.indices();
-            let futures = indices.into_iter().map(|chunk_indices| {
-                let chunk_subset_in_array = unsafe {
-                    self.chunk_grid()
-                        .subset_unchecked(&chunk_indices, self.shape())
-                        .unwrap()
-                };
-                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                let chunk_subset_in_array_subset =
-                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                #[allow(clippy::similar_names)]
-                let chunk_bytes = unsafe {
-                    chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        &chunks_bytes,
-                        array_subset.shape(),
-                        element_size,
-                    )
-                };
-
-                debug_assert_eq!(
-                    chunk_subset_in_array.num_elements(),
-                    chunk_subset_in_array_subset.num_elements()
+                // Calculate chunk/codec concurrency
+                let chunk_representation =
+                    self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+                let codec_concurrency =
+                    self.recommended_codec_concurrency(&chunk_representation)?;
+                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                    options.concurrent_target(),
+                    num_chunks,
+                    &codec_concurrency,
                 );
 
-                let options = options.clone();
-                async move {
-                    self.async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
-                        .await
+                let store_chunk = |chunk_indices: Vec<u64>| {
+                    let chunk_subset_in_array = unsafe {
+                        self.chunk_grid()
+                            .subset_unchecked(&chunk_indices, self.shape())
+                            .unwrap() // FIXME: Unwrap
+                    };
+                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
+                    let chunk_subset_in_array_subset =
+                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                    #[allow(clippy::similar_names)]
+                    let chunk_bytes = unsafe {
+                        chunk_subset_in_array_subset.extract_bytes_unchecked(
+                            &chunks_bytes,
+                            array_subset.shape(),
+                            element_size,
+                        )
+                    };
+
+                    debug_assert_eq!(
+                        chunk_subset_in_array.num_elements(),
+                        chunk_subset_in_array_subset.num_elements()
+                    );
+
+                    let options = options.clone();
+                    async move {
+                        self.async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
+                            .await
+                    }
+                };
+                let indices = chunks.indices();
+                let futures = indices.into_iter().map(store_chunk);
+                let mut stream =
+                    futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
+                while let Some(item) = stream.next().await {
+                    item?;
                 }
-            });
-            let mut stream =
-                futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
-            while let Some(item) = stream.next().await {
-                item?;
             }
         }
-        Ok(())
-    }
 
-    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset (default options).
-    #[allow(clippy::similar_names)]
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_chunks(
-        &self,
-        chunks: &ArraySubset,
-        chunks_bytes: Vec<u8>,
-    ) -> Result<(), ArrayError> {
-        self.async_store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
-            .await
+        Ok(())
     }
 
     /// Variation of [`Array::async_store_chunks`] for elements with a known type.
@@ -274,17 +363,6 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         )
     }
 
-    /// Variation of [`Array::async_store_chunks`] for elements with a known type (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_chunks_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunks: &ArraySubset,
-        chunks_elements: Vec<T>,
-    ) -> Result<(), ArrayError> {
-        self.async_store_chunks_elements_opt(chunks, chunks_elements, &CodecOptions::default())
-            .await
-    }
-
     #[cfg(feature = "ndarray")]
     /// Variation of [`Array::async_store_chunks`] for an [`ndarray::ArrayViewD`].
     ///
@@ -301,68 +379,5 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             chunks_array,
             async_store_chunks_elements_opt(chunks, chunks_array, options)
         )
-    }
-
-    #[cfg(feature = "ndarray")]
-    /// Variation of [`Array::async_store_chunks`] for an [`ndarray::ArrayViewD`] (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
-        chunks: &ArraySubset,
-        chunks_array: &ndarray::ArrayViewD<'_, T>,
-    ) -> Result<(), ArrayError> {
-        self.async_store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
-            .await
-    }
-
-    /// Erase the chunk at `chunk_indices`.
-    ///
-    /// Succeeds if the key does not exist.
-    ///
-    /// # Errors
-    /// Returns a [`StorageError`] if there is an underlying store error.
-    pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-        let storage_transformer = self
-            .storage_transformers()
-            .create_async_writable_transformer(storage_handle);
-        crate::storage::async_erase_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
-        .await
-    }
-
-    /// Erase the chunks at the chunk indices enclosed by `chunks`.
-    ///
-    /// # Errors
-    /// Returns a [`StorageError`] if there is an underlying store error.
-    pub async fn async_erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-        let storage_transformer = self
-            .storage_transformers()
-            .create_async_writable_transformer(storage_handle);
-        let mut futures = chunks
-            .indices()
-            .into_iter()
-            .map(|chunk_indices| {
-                let storage_transformer = storage_transformer.clone();
-                async move {
-                    crate::storage::async_erase_chunk(
-                        &*storage_transformer,
-                        self.path(),
-                        &chunk_indices,
-                        self.chunk_key_encoding(),
-                    )
-                    .await
-                }
-            })
-            .collect::<FuturesUnordered<_>>();
-        while let Some(item) = futures.next().await {
-            item?;
-        }
-        Ok(())
     }
 }

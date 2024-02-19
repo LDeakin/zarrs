@@ -109,28 +109,36 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// ### Methods
 ///
 /// #### Sync API
-/// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage). In summary:
+/// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
+/// The core array methods are:
 ///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
 ///    - [`new`](Array::new)
+///    - [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists)
 ///    - [`retrieve_chunk`](Array::retrieve_chunk)
+///    - [`retrieve_chunk_into_array_view`](Array::retrieve_chunk_into_array_view)
 ///    - [`retrieve_chunks`](Array::retrieve_chunks)
+///    - [`retrieve_chunks_into_array_view`](Array::retrieve_chunks_into_array_view)
 ///    - [`retrieve_chunk_subset`](Array::retrieve_chunk_subset)
+///    - [`retrieve_chunk_subset_into_array_view`](Array::retrieve_chunk_subset_into_array_view)
 ///    - [`retrieve_array_subset`](Array::retrieve_array_subset)
-///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): write array data and metadata
+///    - [`retrieve_array_subset_into_array_view`](Array::retrieve_array_subset_into_array_view)
+///    - [`partial_decoder`](Array::partial_decoder)
+///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and store metadata
 ///    - [`store_metadata`](Array::store_metadata)
 ///    - [`store_chunk`](Array::store_chunk)
 ///    - [`store_chunks`](Array::store_chunks)
 ///    - [`erase_chunk`](Array::erase_chunk)
 ///    - [`erase_chunks`](Array::erase_chunks)
-///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): perform operations requiring both reading and writing
+///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading
 ///    - [`store_chunk_subset`](Array::store_chunk_subset)
 ///    - [`store_array_subset`](Array::store_array_subset)
 ///
-/// Most `retrieve` and `store` methods have multiple variants:
+/// All `retrieve` and `store` methods have multiple variants:
 ///   - Standard variants store or retrieve data represented as bytes.
 ///   - `_elements` suffix variants can store or retrieve chunks with a known type.
 ///   - `_ndarray` suffix variants can store or retrieve [`ndarray::Array`]s (requires `ndarray` feature).
-///   - Some variants support internal parallelisation, they have `par_` prefix and `_opt` suffix variants.
+///   - Retrieve and store methods have an `_opt` variant with an additional [`CodecOptions`](crate::array::codec::CodecOptions) argument for fine-grained concurrency control.
+///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
 ///
 /// #### Async API
 /// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
