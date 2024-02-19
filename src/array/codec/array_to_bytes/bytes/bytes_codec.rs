@@ -103,7 +103,6 @@ impl CodecTraits for BytesCodec {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for BytesCodec {
     fn recommended_concurrency(
         &self,

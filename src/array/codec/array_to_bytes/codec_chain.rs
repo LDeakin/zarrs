@@ -373,7 +373,6 @@ impl ArrayToBytesCodecTraits for CodecChain {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for CodecChain {
     fn recommended_concurrency(
         &self,
@@ -492,101 +491,6 @@ impl ArrayCodecTraits for CodecChain {
             array_representations.iter().rev().skip(1),
         ) {
             encoded_value = codec.decode(encoded_value, array_representation, options)?;
-        }
-
-        if encoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                encoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-
-        Ok(encoded_value)
-    }
-
-    #[cfg(feature = "async")]
-    async fn async_encode(
-        &self,
-        decoded_value: Vec<u8>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-
-        let mut decoded_representation = decoded_representation.clone();
-
-        let mut value = decoded_value;
-        // array->array
-        for codec in &self.array_to_array {
-            value = codec
-                .async_encode(value, &decoded_representation, options)
-                .await?;
-            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
-        }
-
-        // array->bytes
-        value = self
-            .array_to_bytes
-            .async_encode(value, &decoded_representation, options)
-            .await?;
-        let mut decoded_representation = self
-            .array_to_bytes
-            .compute_encoded_size(&decoded_representation)?;
-
-        // bytes->bytes
-        for codec in &self.bytes_to_bytes {
-            value = codec.async_encode(value, options).await?;
-            decoded_representation = codec.compute_encoded_size(&decoded_representation);
-        }
-
-        Ok(value)
-    }
-
-    #[cfg(feature = "async")]
-    async fn async_decode(
-        &self,
-        mut encoded_value: Vec<u8>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        let array_representations =
-            self.get_array_representations(decoded_representation.clone())?;
-        let bytes_representations =
-            self.get_bytes_representations(array_representations.last().unwrap())?;
-
-        // bytes->bytes
-        for (codec, bytes_representation) in std::iter::zip(
-            self.bytes_to_bytes.iter().rev(),
-            bytes_representations.iter().rev().skip(1),
-        ) {
-            encoded_value = codec
-                .async_decode(encoded_value, bytes_representation, options)
-                .await?;
-        }
-
-        // bytes->array
-        encoded_value = self
-            .array_to_bytes
-            .async_decode(
-                encoded_value,
-                array_representations.last().unwrap(),
-                options,
-            )
-            .await?;
-
-        // array->array
-        for (codec, array_representation) in std::iter::zip(
-            self.array_to_array.iter().rev(),
-            array_representations.iter().rev().skip(1),
-        ) {
-            encoded_value = codec
-                .async_decode(encoded_value, array_representation, options)
-                .await?;
         }
 
         if encoded_value.len() as u64 != decoded_representation.size() {

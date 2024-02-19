@@ -76,8 +76,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let chunk_decoded = self
                 .codecs()
-                .async_decode(chunk_encoded, &chunk_representation, options)
-                .await
+                .decode(chunk_encoded, &chunk_representation, options)
                 .map_err(ArrayError::CodecError)?;
             let chunk_decoded_size =
                 chunk_representation.num_elements_usize() * chunk_representation.data_type().size();

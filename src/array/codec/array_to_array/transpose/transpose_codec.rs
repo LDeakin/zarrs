@@ -118,7 +118,6 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for TransposeCodec {
     fn recommended_concurrency(
         &self,

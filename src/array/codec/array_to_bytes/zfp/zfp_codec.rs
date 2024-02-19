@@ -125,7 +125,6 @@ impl CodecTraits for ZfpCodec {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for ZfpCodec {
     fn recommended_concurrency(
         &self,

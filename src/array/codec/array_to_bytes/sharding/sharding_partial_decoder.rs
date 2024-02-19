@@ -30,9 +30,6 @@ use super::{
     sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
 };
 
-#[cfg(feature = "async")]
-use super::async_decode_shard_index;
-
 /// Partial decoder for the sharding codec.
 pub struct ShardingPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
@@ -446,15 +443,12 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
             .map(|mut v| v.remove(0));
 
         Ok(match encoded_shard_index {
-            Some(encoded_shard_index) => Some(
-                async_decode_shard_index(
-                    encoded_shard_index,
-                    &index_array_representation,
-                    index_codecs,
-                    options,
-                )
-                .await?,
-            ),
+            Some(encoded_shard_index) => Some(decode_shard_index(
+                encoded_shard_index,
+                &index_array_representation,
+                index_codecs,
+                options,
+            )?),
             None => None,
         })
     }

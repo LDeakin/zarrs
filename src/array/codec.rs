@@ -184,7 +184,6 @@ pub trait CodecTraits: Send + Sync {
 }
 
 /// Traits for both array to array and array to bytes codecs.
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayCodecTraits: CodecTraits {
     /// Return the recommended concurrency for the requested decoded representation.
     ///
@@ -206,22 +205,6 @@ pub trait ArrayCodecTraits: CodecTraits {
         options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError>;
 
-    #[cfg(feature = "async")]
-    /// Asynchronously encode a chunk.
-    ///
-    /// The default implementation calls [`encode`](ArrayCodecTraits::encode).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    async fn async_encode(
-        &self,
-        decoded_value: Vec<u8>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.encode(decoded_value, decoded_representation, options)
-    }
-
     /// Decode a chunk.
     ///
     /// # Errors
@@ -232,22 +215,6 @@ pub trait ArrayCodecTraits: CodecTraits {
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError>;
-
-    #[cfg(feature = "async")]
-    /// Asynchronously decode a chunk.
-    ///
-    /// The default implementation calls [`decode`](ArrayCodecTraits::decode).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    async fn async_decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode(encoded_value, decoded_representation, options)
-    }
 
     /// Decode into the subset of an array.
     ///
@@ -699,37 +666,6 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
-
-    #[cfg(feature = "async")]
-    /// Asynchronously encode chunk bytes.
-    ///
-    /// The default implementation calls [`encode`](BytesToBytesCodecTraits::encode).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    async fn async_encode(
-        &self,
-        decoded_value: Vec<u8>,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.encode(decoded_value, options)
-    }
-
-    #[cfg(feature = "async")]
-    /// Asynchronously decode chunk bytes.
-    ///
-    /// The default implementation calls [`decode`](BytesToBytesCodecTraits::decode).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    async fn async_decode(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &BytesRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode(encoded_value, decoded_representation, options)
-    }
 
     #[cfg(feature = "async")]
     /// Initialises an asynchronous partial decoder.

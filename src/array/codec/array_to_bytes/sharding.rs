@@ -119,23 +119,6 @@ fn decode_shard_index(
         .collect())
 }
 
-#[cfg(feature = "async")]
-async fn async_decode_shard_index(
-    encoded_shard_index: Vec<u8>,
-    index_array_representation: &ChunkRepresentation,
-    index_codecs: &dyn ArrayToBytesCodecTraits,
-    options: &CodecOptions,
-) -> Result<Vec<u64>, CodecError> {
-    // Decode the shard index
-    let decoded_shard_index = index_codecs
-        .async_decode(encoded_shard_index, index_array_representation, options)
-        .await?;
-    Ok(decoded_shard_index
-        .chunks_exact(core::mem::size_of::<u64>())
-        .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
-        .collect())
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -336,12 +319,10 @@ mod tests {
             .build();
 
         let encoded = codec
-            .async_encode(bytes.clone(), &chunk_representation, options)
-            .await
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded = codec
-            .async_decode(encoded.clone(), &chunk_representation, options)
-            .await
+            .decode(encoded.clone(), &chunk_representation, options)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);

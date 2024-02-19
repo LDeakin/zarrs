@@ -86,7 +86,6 @@ impl CodecTraits for PcodecCodec {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for PcodecCodec {
     fn recommended_concurrency(
         &self,

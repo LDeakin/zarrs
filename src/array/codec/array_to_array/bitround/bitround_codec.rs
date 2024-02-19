@@ -58,7 +58,6 @@ impl CodecTraits for BitroundCodec {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for BitroundCodec {
     fn recommended_concurrency(
         &self,
