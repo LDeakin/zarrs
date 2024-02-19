@@ -453,9 +453,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 // let output_slice = output.as_mut_slice();
                 let mut output = Vec::with_capacity(size_output);
                 {
-                    let output_slice = UnsafeCellSlice::new(unsafe {
-                        crate::vec_spare_capacity_to_mut_slice(&mut output)
-                    });
+                    let output_slice =
+                        UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
                     let indices = chunks.indices();
                     let chunk0_subset = self.chunk_subset(chunks.start())?;
                     rayon_iter_concurrent_limit::iter_concurrent_limit!(

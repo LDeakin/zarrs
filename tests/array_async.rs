@@ -13,6 +13,8 @@ use zarrs::storage::store::AsyncObjectStore;
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[rustfmt::skip]
 async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<(), Box<dyn std::error::Error>> {
+    use zarrs::array::ArrayView;
+
 
     assert_eq!(array.data_type(), &DataType::UInt8);
     assert_eq!(array.fill_value().as_ne_bytes(), &[0u8]);
@@ -94,83 +96,83 @@ async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<()
     assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[5..7, 5..6])).await?, ndarray::array![[0], [0]].into_dyn()); // OOB -> fill value
     assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..5, 0..5])).await?, ndarray::array![[1, 2, 3, 4, 0], [5, 6, 7, 8, 0], [9, 10, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]].into_dyn()); // OOB -> fill value
 
-    // {
-    //     // Invalid array view dimensionality
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     assert!(array.async_retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await.is_err());
-    // }
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     array.async_retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await?;
-    //     assert_eq!(data, [0, 0, 1, 2, 0, 0]);
-    // }
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[0..2, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     array.async_retrieve_chunk_into_array_view(&[0, 0], &array_view).await?;
-    //     assert_eq!(data, [1, 2, 5, 6, 0, 0]);
-    // }
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..1,0..2]), &array_view).await?;
-    //     assert_eq!(data, [0, 0, 1, 2, 0, 0]);
-    // }
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..2,0..2]), &array_view).await?;
-    //     assert_eq!(data, [0, 0, 1, 2, 5, 6]);
-    // }
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..3, 1..3]), &array_view).await?;
-    //     assert_eq!(data, [0, 0, 6, 7, 10, 0]);
-    // }
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0];
-    //     let shape = &[4, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..4, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..4, 0..2]), &array_view).await?;
-    //     assert_eq!(data, [0, 0, 5, 6, 9, 10, 0, 0]);
-    // }
+    {
+        // Invalid array view dimensionality
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        assert!(array.async_retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await.is_err());
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await?;
+        assert_eq!(data, [0, 0, 1, 2, 0, 0]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[0..2, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_chunk_into_array_view(&[0, 0], &array_view).await?;
+        assert_eq!(data, [1, 2, 5, 6, 0, 0]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..1,0..2]), &array_view).await?;
+        assert_eq!(data, [0, 0, 1, 2, 0, 0]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..2,0..2]), &array_view).await?;
+        assert_eq!(data, [0, 0, 1, 2, 5, 6]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..3, 1..3]), &array_view).await?;
+        assert_eq!(data, [0, 0, 6, 7, 10, 0]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0];
+        let shape = &[4, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..4, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..4, 0..2]), &array_view).await?;
+        assert_eq!(data, [0, 0, 5, 6, 9, 10, 0, 0]);
+    }
 
     assert!(array.async_partial_decoder(&[0]).await.is_err());
     assert!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1])]).await.is_err());
     assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[]).await?, Vec::<Vec<u8>>::new());
     assert_eq!(array.async_partial_decoder(&[5, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])]).await?, [vec![0, 0]]); // OOB -> fill value
     assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])]).await?, [vec![1, 2], vec![2, 6]]);
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     assert!(array.async_partial_decoder(&[0, 0]).await?.partial_decode_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await.is_ok());
-    //     assert_eq!(data, [0, 0, 1, 2, 0, 0]);
-    // }
-    // {
-    //     let mut data = vec![0, 0, 0, 0, 0, 0];
-    //     let shape = &[3, 2];
-    //     let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
-    //     let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-    //     assert!(array.async_partial_decoder(&[0, 0]).await?.partial_decode_into_array_view(&ArraySubset::new_with_ranges(&[0..2, 0..2]), &array_view).await.is_err());
-    // }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        assert!(array.async_partial_decoder(&[0, 0]).await?.partial_decode_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await.is_ok());
+        assert_eq!(data, [0, 0, 1, 2, 0, 0]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0];
+        let shape = &[3, 2];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        assert!(array.async_partial_decoder(&[0, 0]).await?.partial_decode_into_array_view(&ArraySubset::new_with_ranges(&[0..2, 0..2]), &array_view).await.is_err());
+    }
 
     Ok(())
 }

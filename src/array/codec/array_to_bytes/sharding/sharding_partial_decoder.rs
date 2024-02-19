@@ -463,6 +463,10 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     #[allow(clippy::too_many_lines)]
     async fn partial_decode_opt(
         &self,

@@ -180,6 +180,10 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],

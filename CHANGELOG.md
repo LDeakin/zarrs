@@ -31,7 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ArrayPartialDecoderTraits::partial_decode_into_array_view_opt` with default implementation
    - TODO: Same for async
  - Add `array::ArrayView`
- - Add `Array::retrieve_chunk{_subset}_into_array_view_opt` and `retrieve_array_subset_into_array_view`
+ - Add array `into_array_view` methods
+   - `Array::{async_}retrieve_chunk{_subset}_into_array_view{_opt}`
+   - `Array::{async_}retrieve_array_subset_into_array_view{_opt}`
+   - TODO: `Array::{async_}retrieve_array_chunks_into_array_view{_opt}`
  - Add `array::unsafe_cell_slice::UnsafeCellSlice::len()`
  - Add `{Array,Chunk}Representation::dimensionality()`
  - Add `ArraySubset::new_empty()` and `ArraySubset::is_empty()`

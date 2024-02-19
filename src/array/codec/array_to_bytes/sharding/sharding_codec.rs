@@ -511,8 +511,7 @@ impl ShardingCodec {
 
         // Encode the shards and update the shard index
         {
-            let shard_slice =
-                UnsafeCellSlice::new(unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) });
+            let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             let shard_shape = shard_representation.shape_u64();
             let n_chunks = chunks_per_shard
@@ -686,8 +685,7 @@ impl ShardingCodec {
 
         // Write shard and update shard index
         if !encoded_chunks.is_empty() {
-            let shard_slice =
-                UnsafeCellSlice::new(unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) });
+            let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
                 options.concurrent_target(),
@@ -772,8 +770,7 @@ impl ShardingCodec {
 
         // Encode the shards and update the shard index
         {
-            let shard_slice =
-                UnsafeCellSlice::new(unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) });
+            let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             let chunks_per_shard = &chunks_per_shard;
             let shard_shape = shard_representation.shape_u64();
@@ -952,8 +949,7 @@ impl ShardingCodec {
 
         // Write the encoded shards into the shard and update the shard index
         {
-            let shard_slice =
-                UnsafeCellSlice::new(unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) });
+            let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             encoded_chunks
                 .into_par_iter()
@@ -1097,8 +1093,7 @@ impl ShardingCodec {
         // Allocate an array for the output
         let shard_size = shard_representation.size_usize();
         let mut shard = Vec::with_capacity(shard_size);
-        let shard_slice =
-            UnsafeCellSlice::new(unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) });
+        let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
 
         let chunk_representation = unsafe {
             ChunkRepresentation::new_unchecked(
