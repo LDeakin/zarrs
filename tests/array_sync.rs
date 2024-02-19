@@ -199,6 +199,7 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
 
 #[cfg(feature = "ndarray")]
 #[test]
+#[cfg_attr(miri, ignore)]
 fn array_sync_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(MemoryStore::default());
     let array_path = "/array";
@@ -217,6 +218,7 @@ fn array_sync_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg(feature = "ndarray")]
 #[test]
+#[cfg_attr(miri, ignore)]
 fn array_sync_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(MemoryStore::default());
     let array_path = "/array";

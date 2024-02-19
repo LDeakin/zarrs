@@ -204,6 +204,7 @@ async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<()
 
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[tokio::test]
+#[cfg_attr(miri, ignore)]
 async fn array_async_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
     let array_path = "/array";
@@ -222,6 +223,7 @@ async fn array_async_read_uncompressed() -> Result<(), Box<dyn std::error::Error
 
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[tokio::test]
+#[cfg_attr(miri, ignore)]
 async fn array_async_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
     let array_path = "/array";
