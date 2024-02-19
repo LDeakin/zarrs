@@ -160,10 +160,7 @@ mod tests {
     use std::num::NonZeroU64;
 
     use crate::{
-        array::{
-            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
-            DataType,
-        },
+        array::codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
         array_subset::ArraySubset,
     };
 

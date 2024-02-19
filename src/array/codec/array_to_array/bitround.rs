@@ -172,7 +172,6 @@ mod tests {
                 ArrayCodecTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec,
                 CodecOptions,
             },
-            DataType,
         },
         array_subset::ArraySubset,
     };

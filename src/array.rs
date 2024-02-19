@@ -726,12 +726,9 @@ mod tests {
     use itertools::Itertools;
     use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-    use crate::{
-        array_subset::ArraySubset,
-        storage::{
-            store::MemoryStore,
-            store_lock::{DefaultStoreLocks, StoreLocks},
-        },
+    use crate::storage::{
+        store::MemoryStore,
+        store_lock::{DefaultStoreLocks, StoreLocks},
     };
 
     use super::*;

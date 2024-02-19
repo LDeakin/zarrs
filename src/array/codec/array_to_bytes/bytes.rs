@@ -123,7 +123,7 @@ mod tests {
     use crate::{
         array::{
             codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions, CodecTraits},
-            ChunkRepresentation, ChunkShape, DataType, FillValue,
+            ChunkRepresentation, ChunkShape, FillValue,
         },
         array_subset::ArraySubset,
     };

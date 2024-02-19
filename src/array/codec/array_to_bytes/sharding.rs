@@ -124,7 +124,7 @@ mod tests {
     use crate::{
         array::codec::{
             bytes_to_bytes::test_unbounded::TestUnboundedCodec, ArrayCodecTraits,
-            BytesToBytesCodecTraits, CodecOptions, CodecOptionsBuilder,
+            BytesToBytesCodecTraits, CodecOptionsBuilder,
         },
         array_subset::ArraySubset,
         config::global_config,

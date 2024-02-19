@@ -112,8 +112,6 @@ impl Bz2CompressionLevel {
 
 #[cfg(test)]
 mod tests {
-    use tests::{bz2_codec::Bz2Codec, bz2_configuration::Bz2CodecConfiguration};
-
     use crate::{
         array::{
             codec::{BytesToBytesCodecTraits, CodecOptions},

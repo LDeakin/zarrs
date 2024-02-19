@@ -415,8 +415,6 @@ impl core::fmt::Display for DataType {
 
 #[cfg(test)]
 mod tests {
-    use crate::array::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
-
     use super::*;
 
     #[test]
