@@ -102,22 +102,22 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Read the whole array
     let subset_all = ArraySubset::new_with_shape(array.shape().to_vec()); // the center 4x2 region
     let data_all = array.retrieve_array_subset_ndarray::<u16>(&subset_all)?;
-    println!("The whole array is:\n{:?}\n", data_all);
+    println!("The whole array is:\n{data_all}\n");
 
     // Read a shard back from the store
     let shard_indices = vec![1, 0];
     let data_shard = array.retrieve_chunk_ndarray::<u16>(&shard_indices)?;
-    println!("Shard [1,0] is:\n{data_shard:?}\n");
+    println!("Shard [1,0] is:\n{data_shard}\n");
 
     // Read an inner chunk from the store
     let subset_chunk_1_0 = ArraySubset::new_with_ranges(&[4..8, 0..4]);
     let data_chunk = array.retrieve_array_subset_ndarray::<u16>(&subset_chunk_1_0)?;
-    println!("Chunk [1,0] is:\n{data_chunk:?}\n");
+    println!("Chunk [1,0] is:\n{data_chunk}\n");
 
     // Read the central 4x2 subset of the array
     let subset_4x2 = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
     let data_4x2 = array.retrieve_array_subset_ndarray::<u16>(&subset_4x2)?;
-    println!("The middle 4x2 subset is:\n{:?}\n", data_4x2);
+    println!("The middle 4x2 subset is:\n{data_4x2}\n");
 
     // Decode inner chunks
     // In some cases, it might be preferable to decode inner chunks in a shard directly.
@@ -146,7 +146,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     for (inner_chunk_subset, decoded_inner_chunk) in
         std::iter::zip(inner_chunks_to_decode, decoded_inner_chunks)
     {
-        println!("{inner_chunk_subset:?}\n{decoded_inner_chunk:?}\n");
+        println!("{inner_chunk_subset}\n{decoded_inner_chunk}\n");
     }
 
     // Show the hierarchy

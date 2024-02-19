@@ -93,17 +93,17 @@ fn read_array_from_store<TStorage: ReadableStorageTraits + 'static>(
     // Read the whole array
     let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
-    println!("The whole array is:\n{:?}\n", data_all);
+    println!("The whole array is:\n{data_all}\n");
 
     // Read a chunk back from the store
     let chunk_indices = vec![1, 0];
     let data_chunk = array.retrieve_chunk_ndarray::<f32>(&chunk_indices)?;
-    println!("Chunk [1,0] is:\n{data_chunk:?}\n");
+    println!("Chunk [1,0] is:\n{data_chunk}\n");
 
     // Read the central 4x2 subset of the array
     let subset_4x2 = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
     let data_4x2 = array.retrieve_array_subset_ndarray::<f32>(&subset_4x2)?;
-    println!("The middle 4x2 subset is:\n{:?}\n", data_4x2);
+    println!("The middle 4x2 subset is:\n{data_4x2}\n");
 
     Ok(())
 }
@@ -167,7 +167,7 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     let zip_key = StoreKey::new("zarr_array.zip")?;
     println!(
-        "Create a ZipStorageAdapter for store at {:?} with {:?}",
+        "Create a ZipStorageAdapter for store at {:?} with {}",
         path.path(),
         zip_key
     );
