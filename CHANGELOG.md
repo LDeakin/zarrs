@@ -8,71 +8,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Added `{Chunk,Array}Representation::shape_u64`
- - Added `ChunkGridTraits::chunk_shape_u64` to `ChunkGridTraits`
-   - **Breaking** added `chunk_shape_u64_unchecked` to `ChunkGridTraits` which must be implemented by chunk grids
- - Added `Array::retrieve_chunk_if_exists` and variants (`async_`, `_elements`, `_ndarray`)
- - Implement `AsyncBytesPartialDecoderTraits` for `std::io::Cursor<{&[u8],Vec<u8>}>`
- - Added missing partial decoding tests for codecs
- - Implement `From<ChunkShape>` for `Vec<NonZeroU64>`
- - Add `TestUnbounded` codec for internal testing
- - Additional sharding tests
- - Add store lock tests
- - Added `contiguous_elements` method to `ContiguousIndicesIterator` and `ContiguousLinearisedIndicesIterator`
- - Added `ChunkShape::num_elements`
- - Added `codec::CodecOptions{Builder}`
- - **Breaking**: Added new `Array::opt` methods which can use `codec::CodecOptions` and existing methods use it instead of `parallel: bool`
- - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
- - Add `ParIndicesIterator` and `ParChunksIterator`
- - Implement `From<String>` for `DimensionName`
- - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
- - Add `ArrayCodecTraits::decode_into_array_view_opt` with default implementation
-   - TODO: Same for async
- - Add `ArrayPartialDecoderTraits::partial_decode_into_array_view_opt` with default implementation
-   - TODO: Same for async
+#### Arrays
+ - Add `array::concurrency::RecommendedConcurrency`
  - Add `array::ArrayView`
  - Add array `into_array_view` methods
    - `Array::{async_}retrieve_chunk{_subset}_into_array_view{_opt}`
+   - `Array::{async_}retrieve_chunks_into_array_view{_opt}`
    - `Array::{async_}retrieve_array_subset_into_array_view{_opt}`
-   - TODO: `Array::{async_}retrieve_array_chunks_into_array_view{_opt}`
+ - Add `Array::{async_}retrieve_chunk_if_exists{_elements,_ndarray}_{opt}`
+ - Add `_opt` variants to various array store/retrieve methods
+ - Add `Array::dimensionality()`
+#### Codecs
+ - Add `codec::CodecOptions{Builder}`
+ - Add `ArrayCodecTraits::decode_into_array_view` with default implementation
+ - Add `{Async}ArrayPartialDecoderTraits::partial_decode_into_array_view{_opt}` with default implementation
+ - Add `TestUnbounded` codec for internal testing
+
+#### Array Subset Iterators
+ - Add `Contiguous{Linearised}IndicesIterator::contiguous_elements()`
+ - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
+ - Add `ParIndicesIterator` and `ParChunksIterator`
+
+#### Miscellaneous
+ - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
+ - Add `{Chunk,Array}Representation::shape_u64`
+ - Implement `AsyncBytesPartialDecoderTraits` for `std::io::Cursor<{&[u8],Vec<u8>}>`
+ - Implement `From<ChunkShape>` for `Vec<NonZeroU64>`
+ - Add `ChunkShape::num_elements()`
+ - Implement `From<String>` for `DimensionName`
  - Add `array::unsafe_cell_slice::UnsafeCellSlice::len()`
  - Add `{Array,Chunk}Representation::dimensionality()`
  - Add `ArraySubset::new_empty()` and `ArraySubset::is_empty()`
  - Add missing `IncompatibleArraySubsetAndShapeError::new()`
- - Add more array tests
- - Add `Array::dimensionality()`
+ - Add more tests for `Array`, codecs, store locks, and more
 
 ### Changed
- - Dependency bumps
-   - `crc32` (private) to [0.6.5](https://github.com/zowens/crc32c/releases/tag/v0.6.5) to fix nightly build
-   - `opendal` (public) to [0.45](https://github.com/apache/opendal/releases/v0.45.0)
- - Minor docs fixes
- - **Breaking**: rename `IncompatibleArrayShapeError` to `IncompatibleArraySubsetAndShapeError`
- - **Breaking**: use `IncompatibleArraySubsetAndShapeError` in `ArrayStoreBytesError::InvalidArrayShape`
- - Increase coverage for:
-   - `array_subset_iterators.rs`
- - **Major breaking**: storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait method now take `self: Arc<Self>`
- - Removed lifetimes from `{Async}{Readable,Writable,ReadableWritable,Listable,ReadableListable}Storage`
- - **Breaking**: Add `create{_async}_readable_writable_listable_transformer` to `StorageTransformerExtension` trait
- - **Breaking**: `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime
- - **Breaking**: remove `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs`
- - **Breaking**: added `recommended_concurrency` to codec trait methods to facilitate improved parallelisation
+ - **Major Breaking**: `Array` `_opt` methods now use `codec::CodecOptions` instead of `parallel: bool`
  - **Major breaking**: refactor codec traits:
    - **Breaking**: remove `par_` variants,
-   - **Breaking**: `_opt` variants use new `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options` instead of `parallel: bool`
+   - **Breaking**: `_opt` variants use new `codec::CodecOptions` instead of `parallel: bool`
+   - **Breaking**: add `{ArrayCodecTraits,BytesToBytesCodecTraits}::recommended_concurrency()`
+   - **Breaking**: add `ArrayPartialDecoderTraits::element_size()`
    - variants without prefix/suffix are no longer serial variants but parallel
-     - TODO: Remove these?
+ - **Major breaking**: refactor storage:
+   - Storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait method now take `self: Arc<Self>`
+   - `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime
+   - Removed lifetimes from `{Async}{Readable,Writable,ReadableWritable,Listable,ReadableListable}Storage`
  - **Major breaking**: refactor array subset iterators:
    - `ArraySubset::iter_` methods no longer have an `iter_` prefix and return structures implementing `IntoIterator` including
      - `Indices`, `LinearisedIndices`, `ContiguousIndices`, `ContiguousLinearisedIndices`, `Chunks`
    - `Indices` and `Chunks` implement `IntoParallelIter`
-   - **Breaking**: array subset iterators are moved into public `array_subset::iterators` and no longer in the `array_subset` namespace
- - Add a fast path to `Array::retrieve_chunk_subset{_opt}` if the entire chunk is requested
- - `DimensionName::new()` generalised to accept a name implementing `Into<String>`
+   - array subset iterators are moved into public `array_subset::iterators` and no longer in the `array_subset` namespace
  - **Breaking**: `ArrayBuilder::dimension_names()` generalised to accept `Option<I>` where `I: IntoIterator<Item = D>` and `D: Into<DimensionName>`
    - Can now write `builder.dimension_names(["y", "x"].into())` instead of `builder.dimension_names(vec!["y".into(), "x".into()].into())`
- - **Breaking**: Add `ArrayPartialDecoderTraits::element_size()`
+ - **Breaking**: remove `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs`
+ - **Breaking**: Add `ChunkGridTraits::chunk_shape_u64{_unchecked}` to `ChunkGridTraits`
+ - **Breaking**: Add `create{_async}_readable_writable_listable_transformer` to `StorageTransformerExtension` trait
+ - **Breaking**: rename `IncompatibleArrayShapeError` to `IncompatibleArraySubsetAndShapeError`
+ - **Breaking**: use `IncompatibleArraySubsetAndShapeError` in `ArrayStoreBytesError::InvalidArrayShape`
+ - Add a fast path to `Array::retrieve_chunk_subset{_opt}` if the entire chunk is requested
+ - `DimensionName::new()` generalised to accept a name implementing `Into<String>`
  - Cleanup uninitialised `Vec` handling
+ - Dependency bumps
+   - `crc32` (private) to [0.6.5](https://github.com/zowens/crc32c/releases/tag/v0.6.5) to fix nightly build
+   - `opendal` (public) to [0.45](https://github.com/apache/opendal/releases/v0.45.0)
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
@@ -80,9 +79,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Remove unused `storage::store::{Readable,Writable,ReadableWritable,Listable}Store`
 
 ### Fixed
- - `Array::retrieve_array_subset` and variants now correctly return the fill value if the array subset does not intersect any chunks
  - **Breaking**: `ArraySubset::end_inc` now returns an `Option`, which is `None` for an empty array subset
+ - `Array::retrieve_array_subset` and variants now correctly return the fill value if the array subset references out-of-bounds elements
  - Add missing input validation to some `partial_decode` methods
+ - Minor docs fixes
 
 ## [0.11.6] - 2024-02-06
 
