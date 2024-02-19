@@ -55,7 +55,7 @@ pub struct PcodecCodecConfigurationV1 {
 
 impl Default for PcodecCodecConfigurationV1 {
     fn default() -> Self {
-        PcodecCodecConfigurationV1 {
+        Self {
             level: default_compression(),
             delta_encoding_order: None,
             int_mult_spec: default_mult_spec(),
@@ -69,11 +69,11 @@ fn default_compression() -> PcodecCompressionLevel {
     PcodecCompressionLevel::default()
 }
 
-fn default_mult_spec() -> bool {
+const fn default_mult_spec() -> bool {
     true
 }
 
-fn default_max_page_n() -> usize {
+const fn default_max_page_n() -> usize {
     // pco::constants::DEFAULT_MAX_PAGE_N
     1 << 18
 }

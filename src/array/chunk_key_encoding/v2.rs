@@ -24,7 +24,7 @@ fn is_name_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_chunk_key_encoding_v2(
+pub fn create_chunk_key_encoding_v2(
     metadata: &Metadata,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: V2ChunkKeyEncodingConfiguration =

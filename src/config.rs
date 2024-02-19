@@ -31,7 +31,6 @@ use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 /// For array operations involving multiple chunks, this is the preferred minimum chunk concurrency.
 /// For example, `array_store_chunks` will concurrently encode and store four chunks at a time by default.
 /// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`](crate::array::codec::CodecOptions) parameter of an encode or decode method.
-
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
@@ -44,7 +43,7 @@ impl Default for Config {
     fn default() -> Self {
         let concurrency_multiply = 1;
         let concurrency_add = 0;
-        Config {
+        Self {
             validate_checksums: true,
             codec_concurrent_target: std::thread::available_parallelism().unwrap().get()
                 * concurrency_multiply

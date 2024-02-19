@@ -51,7 +51,7 @@ impl ChunkShape {
 
 impl From<ChunkShape> for Vec<NonZeroU64> {
     fn from(val: ChunkShape) -> Self {
-        val.0.clone()
+        val.0
     }
 }
 

@@ -24,7 +24,7 @@ fn is_name_default(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_chunk_key_encoding_default(
+pub fn create_chunk_key_encoding_default(
     metadata: &Metadata,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: DefaultChunkKeyEncodingConfiguration =

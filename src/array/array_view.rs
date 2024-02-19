@@ -41,7 +41,7 @@ impl<'a> ArrayView<'a> {
             Err(IncompatibleDimensionalityError::new(subset.dimensionality(), shape.len()).into())
         } else if std::iter::zip(subset.end_exc(), shape).any(|(end, &shape)| end > shape) {
             Err(ArrayViewCreateError::ArraySubsetOutOfBounds(
-                subset.clone(),
+                subset,
                 shape.to_vec(),
             ))
         } else {

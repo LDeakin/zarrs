@@ -27,9 +27,7 @@ fn is_name_regular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_chunk_grid_regular(
-    metadata: &Metadata,
-) -> Result<ChunkGrid, PluginCreateError> {
+pub fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
