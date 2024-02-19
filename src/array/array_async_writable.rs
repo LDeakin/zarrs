@@ -63,7 +63,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                 .create_async_writable_transformer(storage_handle);
             let chunk_encoded: Vec<u8> = self
                 .codecs()
-                .async_encode_opt(chunk_bytes, &chunk_array_representation, options)
+                .async_encode(chunk_bytes, &chunk_array_representation, options)
                 .await
                 .map_err(ArrayError::CodecError)?;
             crate::storage::async_store_chunk(

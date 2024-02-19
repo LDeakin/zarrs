@@ -63,7 +63,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 .create_writable_transformer(storage_handle);
             let chunk_encoded: Vec<u8> = self
                 .codecs()
-                .encode_opt(chunk_bytes, &chunk_array_representation, options)
+                .encode(chunk_bytes, &chunk_array_representation, options)
                 .map_err(ArrayError::CodecError)?;
             crate::storage::store_chunk(
                 &*storage_transformer,

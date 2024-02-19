@@ -72,7 +72,7 @@ impl CodecTraits for TransposeCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for TransposeCodec {
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
@@ -88,7 +88,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
@@ -128,7 +128,7 @@ impl ArrayCodecTraits for TransposeCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
@@ -157,7 +157,7 @@ impl ArrayCodecTraits for TransposeCodec {
         })
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,

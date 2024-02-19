@@ -112,7 +112,7 @@ fn decode_shard_index(
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
     let decoded_shard_index =
-        index_codecs.decode_opt(encoded_shard_index, index_array_representation, options)?;
+        index_codecs.decode(encoded_shard_index, index_array_representation, options)?;
     Ok(decoded_shard_index
         .chunks_exact(core::mem::size_of::<u64>())
         .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
@@ -128,7 +128,7 @@ async fn async_decode_shard_index(
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
     let decoded_shard_index = index_codecs
-        .async_decode_opt(encoded_shard_index, index_array_representation, options)
+        .async_decode(encoded_shard_index, index_array_representation, options)
         .await?;
     Ok(decoded_shard_index
         .chunks_exact(core::mem::size_of::<u64>())
@@ -238,10 +238,10 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode_opt(bytes.clone(), &chunk_representation, options)
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded = codec
-            .decode_opt(encoded.clone(), &chunk_representation, options)
+            .decode(encoded.clone(), &chunk_representation, options)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
@@ -336,11 +336,11 @@ mod tests {
             .build();
 
         let encoded = codec
-            .async_encode_opt(bytes.clone(), &chunk_representation, options)
+            .async_encode(bytes.clone(), &chunk_representation, options)
             .await
             .unwrap();
         let decoded = codec
-            .async_decode_opt(encoded.clone(), &chunk_representation, options)
+            .async_decode(encoded.clone(), &chunk_representation, options)
             .await
             .unwrap();
         assert_ne!(encoded, decoded);
@@ -410,11 +410,13 @@ mod tests {
             .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
             .build();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes.clone(), &chunk_representation, options)
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder_opt(input_handle, &chunk_representation, options)
+            .partial_decoder(input_handle, &chunk_representation, options)
             .unwrap();
         let decoded_partial_chunk = partial_decoder
             .partial_decode_opt(&decoded_regions, options)
@@ -490,11 +492,13 @@ mod tests {
             .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
             .build();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes.clone(), &chunk_representation, options)
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .async_partial_decoder_opt(input_handle, &chunk_representation, options)
+            .async_partial_decoder(input_handle, &chunk_representation, options)
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
@@ -557,13 +561,21 @@ mod tests {
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..2, 0..2, 0..3])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .into_iter()
@@ -591,13 +603,21 @@ mod tests {
             serde_json::from_str(JSON_VALID3).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()

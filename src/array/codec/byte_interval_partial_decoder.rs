@@ -30,7 +30,7 @@ impl<'a> ByteIntervalPartialDecoder<'a> {
 }
 
 impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         byte_ranges: &[ByteRange],
         options: &CodecOptions,
@@ -53,7 +53,7 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
                 ),
             })
             .collect();
-        self.inner.partial_decode_opt(&byte_ranges, options)
+        self.inner.partial_decode(&byte_ranges, options)
     }
 }
 
@@ -86,7 +86,7 @@ impl<'a> AsyncByteIntervalPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         byte_ranges: &[ByteRange],
         options: &CodecOptions,
@@ -109,6 +109,6 @@ impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> 
                 ),
             })
             .collect();
-        self.inner.partial_decode_opt(&byte_ranges, options).await
+        self.inner.partial_decode(&byte_ranges, options).await
     }
 }

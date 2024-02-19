@@ -52,7 +52,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         decoded_value: Vec<u8>,
         _options: &CodecOptions,
@@ -60,7 +60,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         Ok(decoded_value)
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
@@ -69,7 +69,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         Ok(encoded_value)
     }
 
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
@@ -81,7 +81,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,

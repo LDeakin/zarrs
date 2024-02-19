@@ -42,7 +42,10 @@ pub(crate) fn create_codec_gzip(metadata: &Metadata) -> Result<Codec, PluginCrea
 #[cfg(test)]
 mod tests {
     use crate::{
-        array::{codec::BytesToBytesCodecTraits, BytesRepresentation},
+        array::{
+            codec::{BytesToBytesCodecTraits, CodecOptions},
+            BytesRepresentation,
+        },
         byte_range::ByteRange,
     };
 
@@ -82,8 +85,12 @@ mod tests {
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = GzipCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone()).unwrap();
-        let decoded = codec.decode(encoded, &bytes_representation).unwrap();
+        let encoded = codec
+            .encode(bytes.clone(), &CodecOptions::default())
+            .unwrap();
+        let decoded = codec
+            .decode(encoded, &bytes_representation, &CodecOptions::default())
+            .unwrap();
         assert_eq!(bytes, decoded);
     }
 
@@ -96,7 +103,7 @@ mod tests {
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = GzipCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes).unwrap();
+        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
             ByteRange::FromStart(10, Some(2)),
@@ -104,10 +111,14 @@ mod tests {
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &bytes_representation)
+            .partial_decoder(
+                input_handle,
+                &bytes_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap()
             .unwrap();
 
@@ -132,7 +143,7 @@ mod tests {
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = GzipCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes).unwrap();
+        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
             ByteRange::FromStart(10, Some(2)),
@@ -140,11 +151,15 @@ mod tests {
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .async_partial_decoder(input_handle, &bytes_representation)
+            .async_partial_decoder(
+                input_handle,
+                &bytes_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap()
             .unwrap();

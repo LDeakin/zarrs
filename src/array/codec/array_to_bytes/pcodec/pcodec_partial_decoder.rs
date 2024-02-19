@@ -114,7 +114,7 @@ impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let decoded = self.input_handle.decode_opt(options)?;
+        let decoded = self.input_handle.decode(options)?;
         do_partial_decode(decoded, decoded_regions, &self.decoded_representation)
     }
 }
@@ -157,7 +157,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
             }
         }
 
-        let decoded = self.input_handle.decode_opt(options).await?;
+        let decoded = self.input_handle.decode(options).await?;
         do_partial_decode(decoded, decoded_regions, &self.decoded_representation)
     }
 }

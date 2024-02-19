@@ -20,12 +20,12 @@ impl<'a> Bz2PartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for Bz2PartialDecoder<'_> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options)?;
+        let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
@@ -57,12 +57,12 @@ impl<'a> AsyncBz2PartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncBz2PartialDecoder<'_> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options).await?;
+        let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };

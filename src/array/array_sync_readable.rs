@@ -75,7 +75,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let chunk_decoded = self
                 .codecs()
-                .decode_opt(chunk_encoded, &chunk_representation, options)
+                .decode(chunk_encoded, &chunk_representation, options)
                 .map_err(ArrayError::CodecError)?;
             let chunk_decoded_size =
                 chunk_representation.num_elements_usize() * chunk_representation.data_type().size();
@@ -304,12 +304,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         .map_err(ArrayError::StorageError)?;
         if let Some(chunk_encoded) = chunk_encoded {
             self.codecs()
-                .decode_into_array_view_opt(
-                    &chunk_encoded,
-                    &chunk_representation,
-                    array_view,
-                    options,
-                )
+                .decode_into_array_view(&chunk_encoded, &chunk_representation, array_view, options)
                 .map_err(ArrayError::CodecError)
         } else {
             // fill array_view with fill value
@@ -383,7 +378,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             ));
 
             self.codecs()
-                .partial_decoder_opt(input_handle, &chunk_representation, options)?
+                .partial_decoder(input_handle, &chunk_representation, options)?
                 .partial_decode_into_array_view_opt(chunk_subset, array_view, options)
                 .map_err(ArrayError::CodecError)
         }
@@ -921,7 +916,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             ));
 
             self.codecs()
-                .partial_decoder_opt(input_handle, &chunk_representation, options)?
+                .partial_decoder(input_handle, &chunk_representation, options)?
                 .partial_decode_opt(&[chunk_subset.clone()], options)?
                 .pop()
                 .unwrap()
@@ -1041,13 +1036,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         Ok(self
             .codecs()
-            .partial_decoder_opt(input_handle, &chunk_representation, options)?)
+            .partial_decoder(input_handle, &chunk_representation, options)?)
     }
 
     /// Initialises a partial decoder for the chunk at `chunk_indices` (default options).
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub fn partial_decoder<'a>(
         &'a self,
         chunk_indices: &[u64],

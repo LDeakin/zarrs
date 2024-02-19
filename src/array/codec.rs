@@ -199,57 +199,30 @@ pub trait ArrayCodecTraits: CodecTraits {
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
-    fn encode_opt(
-        &self,
-        decoded_value: Vec<u8>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError>;
-
-    /// Encode a chunk (default options).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
     fn encode(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.encode_opt(
-            decoded_value,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-    }
+        options: &CodecOptions,
+    ) -> Result<Vec<u8>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Asynchronously encode a chunk.
     ///
-    /// The default implementation calls [`encode_opt`](ArrayCodecTraits::encode_opt).
+    /// The default implementation calls [`encode`](ArrayCodecTraits::encode).
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    async fn async_encode_opt(
+    async fn async_encode(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        self.encode_opt(decoded_value, decoded_representation, options)
+        self.encode(decoded_value, decoded_representation, options)
     }
 
     /// Decode a chunk.
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    fn decode_opt(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError>;
-
-    /// Decode a chunk (default options).
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
@@ -257,28 +230,23 @@ pub trait ArrayCodecTraits: CodecTraits {
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode_opt(
-            encoded_value,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-    }
+        options: &CodecOptions,
+    ) -> Result<Vec<u8>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Asynchronously decode a chunk.
     ///
-    /// The default implementation calls [`decode_opt`](ArrayCodecTraits::decode_opt).
+    /// The default implementation calls [`decode`](ArrayCodecTraits::decode).
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    async fn async_decode_opt(
+    async fn async_decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        self.decode_opt(encoded_value, decoded_representation, options)
+        self.decode(encoded_value, decoded_representation, options)
     }
 
     /// Decode into the subset of an array.
@@ -287,16 +255,15 @@ pub trait ArrayCodecTraits: CodecTraits {
     /// Codecs can override this method to avoid allocations where possible.
     ///
     /// # Errors
-    /// Returns an error if the internal call to [`decode_opt`](ArrayCodecTraits::decode_opt) fails.
-    fn decode_into_array_view_opt(
+    /// Returns an error if the internal call to [`decode`](ArrayCodecTraits::decode) fails.
+    fn decode_into_array_view(
         &self,
         encoded_value: &[u8],
         decoded_representation: &ChunkRepresentation,
         array_view: &ArrayView,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        let decoded_bytes =
-            self.decode_opt(encoded_value.to_vec(), decoded_representation, options)?;
+        let decoded_bytes = self.decode(encoded_value.to_vec(), decoded_representation, options)?;
         let contiguous_indices = unsafe {
             array_view
                 .subset()
@@ -328,7 +295,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
@@ -340,33 +307,10 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
-    fn decode_opt(&self, options: &CodecOptions) -> Result<MaybeBytes, CodecError> {
+    fn decode(&self, options: &CodecOptions) -> Result<MaybeBytes, CodecError> {
         Ok(self
-            .partial_decode_opt(&[ByteRange::FromStart(0, None)], options)?
+            .partial_decode(&[ByteRange::FromStart(0, None)], options)?
             .map(|mut v| v.remove(0)))
-    }
-
-    /// Partially decode bytes (default options).
-    ///
-    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
-    fn partial_decode(
-        &self,
-        byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        self.partial_decode_opt(byte_ranges, &CodecOptions::default())
-    }
-
-    /// Decode all bytes (default options).
-    ///
-    /// Returns [`None`] if decoding of the input handle returns [`None`].
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    fn decode(&self) -> Result<MaybeBytes, CodecError> {
-        self.decode_opt(&CodecOptions::default())
     }
 }
 
@@ -380,7 +324,7 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
@@ -392,35 +336,11 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
-    async fn decode_opt(&self, options: &CodecOptions) -> Result<MaybeBytes, CodecError> {
+    async fn decode(&self, options: &CodecOptions) -> Result<MaybeBytes, CodecError> {
         Ok(self
-            .partial_decode_opt(&[ByteRange::FromStart(0, None)], options)
+            .partial_decode(&[ByteRange::FromStart(0, None)], options)
             .await?
             .map(|mut v| v.remove(0)))
-    }
-
-    /// Partially decode bytes with defaullt options.
-    ///
-    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
-    async fn partial_decode(
-        &self,
-        byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        self.partial_decode_opt(byte_ranges, &CodecOptions::default())
-            .await
-    }
-
-    /// Decode all bytes (default options).
-    ///
-    /// Returns [`None`] if decoding of the input handle returns [`None`].
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    async fn decode(&self) -> Result<MaybeBytes, CodecError> {
-        self.decode_opt(&CodecOptions::default()).await
     }
 }
 
@@ -442,11 +362,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     ) -> Result<Vec<Vec<u8>>, CodecError>;
 
     /// Partially decode a chunk (default options).
-    ///
-    /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     fn partial_decode(&self, array_subsets: &[ArraySubset]) -> Result<Vec<Vec<u8>>, CodecError> {
         self.partial_decode_opt(array_subsets, &CodecOptions::default())
     }
@@ -525,12 +441,6 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     ) -> Result<Vec<Vec<u8>>, CodecError>;
 
     /// Partially decode a chunk (default options).
-    ///
-    /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
     async fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
@@ -554,7 +464,7 @@ impl StoragePartialDecoder {
 }
 
 impl BytesPartialDecoderTraits for StoragePartialDecoder {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _options: &CodecOptions,
@@ -583,7 +493,7 @@ impl AsyncStoragePartialDecoder {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _options: &CodecOptions,
@@ -617,28 +527,12 @@ pub trait ArrayToArrayCodecTraits:
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
-
-    /// Initialise a partial decoder (default options).
-    ///
-    /// # Errors
-    /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        self.partial_decoder_opt(
-            input_handle,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-    }
 
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
@@ -648,30 +542,12 @@ pub trait ArrayToArrayCodecTraits:
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
-
-    #[cfg(feature = "async")]
-    /// Initialise an asynchronous partial decoder (default options).
-    ///
-    /// # Errors
-    /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        self.async_partial_decoder_opt(
-            input_handle,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-        .await
-    }
 }
 
 dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
@@ -694,7 +570,7 @@ pub trait ArrayToBytesCodecTraits:
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
@@ -706,46 +582,12 @@ pub trait ArrayToBytesCodecTraits:
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
-
-    /// Initialise a partial decoder (default options).
-    ///
-    /// # Errors
-    /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        self.partial_decoder_opt(
-            input_handle,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-    }
-
-    #[cfg(feature = "async")]
-    /// Initialise an asynchronous partial decoder (default options).
-    ///
-    /// # Errors
-    /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        self.async_partial_decoder_opt(
-            input_handle,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-        .await
-    }
 }
 
 dyn_clone::clone_trait_object!(ArrayToBytesCodecTraits);
@@ -772,59 +614,21 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
-    fn encode_opt(
-        &self,
-        decoded_value: Vec<u8>,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError>;
-
-    /// Encode chunk bytes (default options).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    fn encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        self.encode_opt(decoded_value, &CodecOptions::default())
-    }
+    fn encode(&self, decoded_value: Vec<u8>, options: &CodecOptions)
+        -> Result<Vec<u8>, CodecError>;
 
     /// Decode chunk bytes.
     //
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    fn decode_opt(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &BytesRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError>;
-
-    /// Decode bytes (default options).
-    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
     fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &BytesRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode_opt(
-            encoded_value,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-    }
+        options: &CodecOptions,
+    ) -> Result<Vec<u8>, CodecError>;
 
     /// Initialises a partial decoder.
-    ///
-    /// # Errors
-    /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder_opt<'a>(
-        &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
-        decoded_representation: &BytesRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
-
-    /// Initialises a partial decoder (default options).
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
@@ -832,61 +636,28 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &BytesRepresentation,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
-        self.partial_decoder_opt(
-            input_handle,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-    }
+        options: &CodecOptions,
+    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Asynchronously encode chunk bytes.
     ///
-    /// The default implementation calls [`encode_opt`](BytesToBytesCodecTraits::encode_opt).
+    /// The default implementation calls [`encode`](BytesToBytesCodecTraits::encode).
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
-    async fn async_encode_opt(
+    async fn async_encode(
         &self,
         decoded_value: Vec<u8>,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        self.encode_opt(decoded_value, options)
-    }
-
-    #[cfg(feature = "async")]
-    /// Asynchronously encode chunk bytes (default options).
-    ///
-    /// The default implementation calls [`async_encode_opt`](BytesToBytesCodecTraits::async_encode_opt).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    async fn async_encode(&self, decoded_value: Vec<u8>) -> Result<Vec<u8>, CodecError> {
-        self.async_encode_opt(decoded_value, &CodecOptions::default())
-            .await
+        self.encode(decoded_value, options)
     }
 
     #[cfg(feature = "async")]
     /// Asynchronously decode chunk bytes.
     ///
-    /// The default implementation calls [`decode_opt`](BytesToBytesCodecTraits::decode_opt).
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails.
-    async fn async_decode_opt(
-        &self,
-        encoded_value: Vec<u8>,
-        decoded_representation: &BytesRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        self.decode_opt(encoded_value, decoded_representation, options)
-    }
-
-    #[cfg(feature = "async")]
-    /// Asynchronously decode chunk bytes.
-    ///
-    /// The default implementation calls [`decode_opt`](BytesToBytesCodecTraits::decode_opt).
+    /// The default implementation calls [`decode`](BytesToBytesCodecTraits::decode).
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
@@ -894,13 +665,9 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &BytesRepresentation,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        self.async_decode_opt(
-            encoded_value,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-        .await
+        self.decode(encoded_value, decoded_representation, options)
     }
 
     #[cfg(feature = "async")]
@@ -908,36 +675,18 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError>;
-
-    #[cfg(feature = "async")]
-    /// Initialises an asynchronous partial decoder (default options).
-    ///
-    /// # Errors
-    /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
-        decoded_representation: &BytesRepresentation,
-    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
-        self.async_partial_decoder_opt(
-            input_handle,
-            decoded_representation,
-            &CodecOptions::default(),
-        )
-        .await
-    }
 }
 
 dyn_clone::clone_trait_object!(BytesToBytesCodecTraits);
 
 impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
@@ -950,7 +699,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
 }
 
 impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
@@ -965,7 +714,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
@@ -980,7 +729,7 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,

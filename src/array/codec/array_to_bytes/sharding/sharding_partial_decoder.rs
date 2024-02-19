@@ -107,7 +107,7 @@ impl<'a> ShardingPartialDecoder<'a> {
         };
 
         let encoded_shard_index = input_handle
-            .partial_decode_opt(&[index_byte_range], options)?
+            .partial_decode(&[index_byte_range], options)?
             .map(|mut v| v.remove(0));
 
         Ok(match encoded_shard_index {
@@ -221,7 +221,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         fill_value.repeat(array_subset_in_chunk_subset.num_elements_usize())
                     } else {
                         // Partially decode the ubber chunk
-                        let partial_decoder = self.inner_codecs.partial_decoder_opt(
+                        let partial_decoder = self.inner_codecs.partial_decoder(
                             Box::new(ByteIntervalPartialDecoder::new(
                                 &*self.input_handle,
                                 offset,
@@ -441,7 +441,7 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
         };
 
         let encoded_shard_index = input_handle
-            .partial_decode_opt(&[index_byte_range], options)
+            .partial_decode(&[index_byte_range], options)
             .await?
             .map(|mut v| v.remove(0));
 
@@ -546,7 +546,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                         };
                         let partial_decoder = self
                             .inner_codecs
-                            .async_partial_decoder_opt(
+                            .async_partial_decoder(
                                 Box::new(AsyncByteIntervalPartialDecoder::new(
                                     &*self.input_handle,
                                     u64::try_from(*offset).unwrap(),

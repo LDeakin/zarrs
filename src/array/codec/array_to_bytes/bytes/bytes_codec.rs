@@ -125,7 +125,7 @@ impl ArrayCodecTraits for BytesCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
@@ -134,7 +134,7 @@ impl ArrayCodecTraits for BytesCodec {
         self.do_encode_or_decode(decoded_value, decoded_representation)
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
@@ -146,7 +146,7 @@ impl ArrayCodecTraits for BytesCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for BytesCodec {
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
@@ -160,7 +160,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,

@@ -6,7 +6,7 @@ use zarrs::array::{
     codec::{
         array_to_bytes::bytes::Endianness,
         bytes_to_bytes::blosc::{BloscCompressor, BloscShuffleMode},
-        ArrayCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits,
+        ArrayCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits, CodecOptions,
     },
     BytesRepresentation, ChunkRepresentation, DataType,
 };
@@ -36,7 +36,11 @@ fn codec_bytes(c: &mut Criterion) {
         group.throughput(Throughput::Bytes(size3));
         // encode and decode have the same implementation
         group.bench_function(BenchmarkId::new("encode_decode", size3), |b| {
-            b.iter(|| codec.encode(data.clone(), &rep).unwrap());
+            b.iter(|| {
+                codec
+                    .encode(data.clone(), &rep, &CodecOptions::default())
+                    .unwrap()
+            });
         });
     }
 }
@@ -60,13 +64,23 @@ fn codec_blosc(c: &mut Criterion) {
         let rep = BytesRepresentation::FixedSize(size3);
 
         let data_decoded: Vec<u8> = (0..size3).map(|i| i as u8).collect();
-        let data_encoded = codec.encode(data_decoded.clone()).unwrap();
+        let data_encoded = codec
+            .encode(data_decoded.clone(), &CodecOptions::default())
+            .unwrap();
         group.throughput(Throughput::Bytes(size3));
         group.bench_function(BenchmarkId::new("encode", size3), |b| {
-            b.iter(|| codec.encode(data_decoded.clone()).unwrap());
+            b.iter(|| {
+                codec
+                    .encode(data_decoded.clone(), &CodecOptions::default())
+                    .unwrap()
+            });
         });
         group.bench_function(BenchmarkId::new("decode", size3), |b| {
-            b.iter(|| codec.decode(data_encoded.clone(), &rep).unwrap());
+            b.iter(|| {
+                codec
+                    .decode(data_encoded.clone(), &rep, &CodecOptions::default())
+                    .unwrap()
+            });
         });
     }
 }

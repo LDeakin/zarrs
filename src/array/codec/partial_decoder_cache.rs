@@ -33,7 +33,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
         options: &CodecOptions,
     ) -> Result<Self, CodecError> {
         let cache = input_handle
-            .partial_decode_opt(&[ByteRange::FromStart(0, None)], options)?
+            .partial_decode(&[ByteRange::FromStart(0, None)], options)?
             .map(|mut bytes| bytes.remove(0));
         Ok(Self {
             cache,
@@ -51,7 +51,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
         options: &CodecOptions,
     ) -> Result<BytesPartialDecoderCache<'a>, CodecError> {
         let cache = input_handle
-            .partial_decode_opt(&[ByteRange::FromStart(0, None)], options)
+            .partial_decode(&[ByteRange::FromStart(0, None)], options)
             .await?
             .map(|mut bytes| bytes.remove(0));
         Ok(Self {
@@ -62,7 +62,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
 }
 
 impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _options: &CodecOptions,
@@ -80,12 +80,12 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        BytesPartialDecoderTraits::partial_decode_opt(self, decoded_regions, options)
+        BytesPartialDecoderTraits::partial_decode(self, decoded_regions, options)
     }
 }
 

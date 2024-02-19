@@ -107,6 +107,7 @@ mod tests {
         array::{
             codec::{
                 ArrayCodecTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec,
+                CodecOptions,
             },
             ChunkRepresentation, DataType, FillValue,
         },
@@ -131,8 +132,16 @@ mod tests {
         let configuration: TransposeCodecConfiguration = serde_json::from_str(json).unwrap();
         let codec = TransposeCodec::new_with_configuration(&configuration).unwrap();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
-        let decoded = codec.decode(encoded, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
+        let decoded = codec
+            .decode(encoded, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         assert_eq!(bytes, decoded);
 
         // let array = ndarray::ArrayViewD::from_shape(array_representation.shape(), &bytes).unwrap();
@@ -176,7 +185,13 @@ mod tests {
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded_regions = [
             ArraySubset::new_with_ranges(&[1..3, 1..4]),
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
@@ -184,12 +199,22 @@ mod tests {
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
             .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
@@ -215,7 +240,13 @@ mod tests {
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded_regions = [
             ArraySubset::new_with_ranges(&[1..3, 1..4]),
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
@@ -223,15 +254,23 @@ mod tests {
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
-            .async_partial_decoder(input_handle, &chunk_representation)
+            .async_partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let partial_decoder = codec
-            .async_partial_decoder(input_handle, &chunk_representation)
+            .async_partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk

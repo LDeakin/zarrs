@@ -59,7 +59,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         mut decoded_value: Vec<u8>,
         _options: &CodecOptions,
@@ -70,7 +70,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         Ok(decoded_value)
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         mut encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
@@ -93,7 +93,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         }
     }
 
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
@@ -105,7 +105,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,

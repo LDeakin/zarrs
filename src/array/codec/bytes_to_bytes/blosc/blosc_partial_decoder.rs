@@ -22,12 +22,12 @@ impl<'a> BloscPartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options)?;
+        let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
@@ -73,12 +73,12 @@ impl<'a> AsyncBloscPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncBloscPartialDecoder<'_> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options).await?;
+        let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };

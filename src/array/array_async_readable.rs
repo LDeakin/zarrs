@@ -76,7 +76,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let chunk_decoded = self
                 .codecs()
-                .async_decode_opt(chunk_encoded, &chunk_representation, options)
+                .async_decode(chunk_encoded, &chunk_representation, options)
                 .await
                 .map_err(ArrayError::CodecError)?;
             let chunk_decoded_size =
@@ -602,7 +602,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                     self.chunk_array_representation(&chunk_indices)?;
                                 let partial_decoder = self
                                     .codecs()
-                                    .async_partial_decoder_opt(
+                                    .async_partial_decoder(
                                         input_handle,
                                         &chunk_representation,
                                         &options,
@@ -769,7 +769,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
         let decoded_bytes = self
             .codecs()
-            .async_partial_decoder_opt(input_handle, &chunk_representation, options)
+            .async_partial_decoder(input_handle, &chunk_representation, options)
             .await?
             .partial_decode_opt(&[chunk_subset.clone()], options)
             .await?
@@ -895,14 +895,12 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         Ok(self
             .codecs()
-            .async_partial_decoder_opt(input_handle, &chunk_representation, options)
+            .async_partial_decoder(input_handle, &chunk_representation, options)
             .await?)
     }
 
     /// Initialises a partial decoder for the chunk at `chunk_indices` (default options).
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_partial_decoder<'a>(
         &'a self,
         chunk_indices: &[u64],

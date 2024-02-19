@@ -66,7 +66,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
             }
         }
 
-        let encoded_value = self.input_handle.decode_opt(options)?;
+        let encoded_value = self.input_handle.decode(options)?;
         let mut out = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         match encoded_value {
@@ -156,7 +156,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
             }
         }
 
-        let encoded_value = self.input_handle.decode_opt(options).await?;
+        let encoded_value = self.input_handle.decode(options).await?;
         let chunk_shape = self.decoded_representation.shape_u64();
         let mut out = Vec::with_capacity(decoded_regions.len());
         match encoded_value {

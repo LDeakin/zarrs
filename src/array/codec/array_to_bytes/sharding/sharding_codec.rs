@@ -115,7 +115,7 @@ impl ArrayCodecTraits for ShardingCodec {
         Ok(RecommendedConcurrency::new_maximum(num_elements.into()))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         decoded_value: Vec<u8>,
         shard_rep: &ChunkRepresentation,
@@ -147,7 +147,7 @@ impl ArrayCodecTraits for ShardingCodec {
         }
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
@@ -160,7 +160,7 @@ impl ArrayCodecTraits for ShardingCodec {
         // Decode the shard into the output
         let decoded_shard_slice =
             unsafe { crate::vec_spare_capacity_to_mut_slice(&mut decoded_shard) };
-        self.decode_into_array_view_opt(
+        self.decode_into_array_view(
             &encoded_value,
             decoded_representation,
             &ArrayView::new(
@@ -176,7 +176,7 @@ impl ArrayCodecTraits for ShardingCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_encode_opt(
+    async fn async_encode(
         &self,
         decoded_value: Vec<u8>,
         shard_rep: &ChunkRepresentation,
@@ -211,7 +211,7 @@ impl ArrayCodecTraits for ShardingCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_decode_opt(
+    async fn async_decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
@@ -234,7 +234,7 @@ impl ArrayCodecTraits for ShardingCodec {
         Ok(chunks)
     }
 
-    fn decode_into_array_view_opt(
+    fn decode_into_array_view(
         &self,
         encoded_shard: &[u8],
         shard_representation: &ChunkRepresentation,
@@ -333,7 +333,7 @@ impl ArrayCodecTraits for ShardingCodec {
                     let encoded_chunk_slice = &encoded_shard[offset..offset + size];
                     let array_view_chunk = unsafe { array_view.subset_view(&chunk_subset) }
                         .map_err(|err| CodecError::from(err.to_string()))?;
-                    self.inner_codecs.decode_into_array_view_opt(
+                    self.inner_codecs.decode_into_array_view(
                         encoded_chunk_slice,
                         &chunk_representation,
                         &array_view_chunk,
@@ -350,7 +350,7 @@ impl ArrayCodecTraits for ShardingCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for ShardingCodec {
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
@@ -370,7 +370,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
@@ -537,7 +537,7 @@ impl ShardingCodec {
                     if !chunk_representation.fill_value().equals_all(&bytes) {
                         let chunk_encoded =
                             self.inner_codecs
-                                .encode_opt(bytes, chunk_representation, &options)?;
+                                .encode(bytes, chunk_representation, &options)?;
 
                         let chunk_offset = encoded_shard_offset
                             .fetch_add(chunk_encoded.len(), std::sync::atomic::Ordering::Relaxed);
@@ -573,7 +573,7 @@ impl ShardingCodec {
             };
 
         // Encode and write array index
-        let encoded_array_index = self.index_codecs.encode_opt(
+        let encoded_array_index = self.index_codecs.encode(
             transmute_to_bytes_vec(shard_index),
             &index_decoded_representation,
             &options,
@@ -657,11 +657,9 @@ impl ShardingCodec {
                     if chunk_representation.fill_value().equals_all(&bytes) {
                         None
                     } else {
-                        let encoded_chunk = self.inner_codecs.encode_opt(
-                            bytes,
-                            chunk_representation,
-                            &options_inner,
-                        );
+                        let encoded_chunk =
+                            self.inner_codecs
+                                .encode(bytes, chunk_representation, &options_inner);
                         match encoded_chunk {
                             Ok(encoded_chunk) => Some(Ok((chunk_index, encoded_chunk))),
                             Err(err) => Some(Err(err)),
@@ -713,7 +711,7 @@ impl ShardingCodec {
         }
 
         // Write shard index
-        let encoded_array_index = self.index_codecs.encode_opt(
+        let encoded_array_index = self.index_codecs.encode(
             transmute_to_bytes_vec(shard_index),
             &index_decoded_representation,
             options,
@@ -801,7 +799,7 @@ impl ShardingCodec {
                         Some(async move {
                             let chunk_encoded = self
                                 .inner_codecs
-                                .async_encode_opt(bytes, chunk_representation, options)
+                                .async_encode(bytes, chunk_representation, options)
                                 .await?;
                             Ok::<_, CodecError>((chunk_index, chunk_encoded))
                         })
@@ -853,7 +851,7 @@ impl ShardingCodec {
         // Encode and write array index
         let encoded_array_index = self
             .index_codecs
-            .async_encode_opt(
+            .async_encode(
                 transmute_to_bytes_vec(shard_index),
                 &index_decoded_representation,
                 options,
@@ -926,7 +924,7 @@ impl ShardingCodec {
                 .map(|(chunk_index, bytes)| async move {
                     let encoded_chunk = self
                         .inner_codecs
-                        .async_encode_opt(bytes, chunk_representation, options)
+                        .async_encode(bytes, chunk_representation, options)
                         .await?;
                     Ok::<_, CodecError>((chunk_index, encoded_chunk))
                 }),
@@ -987,7 +985,7 @@ impl ShardingCodec {
         // Encode and write array index
         let encoded_array_index = self
             .index_codecs
-            .async_encode_opt(
+            .async_encode(
                 transmute_to_bytes_vec(shard_index),
                 &index_decoded_representation,
                 options,
@@ -1156,7 +1154,7 @@ impl ShardingCodec {
                     async move {
                         let encoded_chunk_slice = encoded_shard[*offset..*offset + *size].to_vec();
                         self.inner_codecs
-                            .async_decode_opt(encoded_chunk_slice, &chunk_representation, options) // FIXME
+                            .async_decode(encoded_chunk_slice, &chunk_representation, options) // FIXME
                             .await
                             .map(move |decoded_chunk| (chunk_subset, decoded_chunk))
                     }

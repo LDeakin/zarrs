@@ -135,7 +135,7 @@ impl ArrayCodecTraits for ZfpCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         mut decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
@@ -191,7 +191,7 @@ impl ArrayCodecTraits for ZfpCodec {
         }
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
@@ -215,7 +215,7 @@ impl ArrayCodecTraits for ZfpCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for ZfpCodec {
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
@@ -229,7 +229,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,

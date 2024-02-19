@@ -60,9 +60,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                 })?;
 
             // Decode
-            let decoded = self
-                .input_handle
-                .partial_decode_opt(&byte_ranges, options)?;
+            let decoded = self.input_handle.partial_decode(&byte_ranges, options)?;
 
             let bytes_subset = decoded.map_or_else(
                 || {
@@ -156,7 +154,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
             // Decode
             let decoded = self
                 .input_handle
-                .partial_decode_opt(&byte_ranges, options)
+                .partial_decode(&byte_ranges, options)
                 .await?;
 
             let bytes_subset = decoded.map_or_else(

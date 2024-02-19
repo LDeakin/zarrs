@@ -146,7 +146,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         decoded_value: Vec<u8>,
         _options: &CodecOptions,
@@ -160,7 +160,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         self.do_encode(&decoded_value, n_threads)
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
@@ -175,7 +175,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         Self::do_decode(&encoded_value, n_threads)
     }
 
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
@@ -187,7 +187,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,

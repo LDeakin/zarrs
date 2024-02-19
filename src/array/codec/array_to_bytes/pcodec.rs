@@ -194,7 +194,7 @@ mod tests {
 
     use crate::{
         array::{
-            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits},
+            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
             transmute_to_bytes_vec, ChunkRepresentation, ChunkShape, DataType, FillValue,
         },
         array_subset::ArraySubset,
@@ -227,8 +227,14 @@ mod tests {
             ChunkRepresentation::new(chunk_shape, data_type, fill_value).unwrap();
         let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation)?;
-        let decoded = codec.decode(encoded, &chunk_representation).unwrap();
+        let encoded = codec.encode(
+            bytes.clone(),
+            &chunk_representation,
+            &CodecOptions::default(),
+        )?;
+        let decoded = codec
+            .decode(encoded, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         assert_eq!(bytes, decoded);
         Ok(())
     }
@@ -346,13 +352,21 @@ mod tests {
 
         let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
 
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
@@ -381,15 +395,21 @@ mod tests {
 
         let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
 
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .async_partial_decoder(input_handle, &chunk_representation)
+            .async_partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap();
 

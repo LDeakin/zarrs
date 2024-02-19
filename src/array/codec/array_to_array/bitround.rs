@@ -170,6 +170,7 @@ mod tests {
             array_representation,
             codec::{
                 ArrayCodecTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec,
+                CodecOptions,
             },
             DataType,
         },
@@ -206,9 +207,19 @@ mod tests {
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &chunk_representation)
+            .decode(
+                encoded.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded);
         assert_eq!(decoded_elements, &[0.0f32, 1.25f32, -8.0f32, 98304.0f32]);
@@ -229,9 +240,19 @@ mod tests {
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &chunk_representation)
+            .decode(
+                encoded.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let decoded_elements = crate::array::transmute_from_bytes_vec::<u32>(decoded);
         for element in &decoded_elements {
@@ -255,7 +276,13 @@ mod tests {
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded_regions = [
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
@@ -263,12 +290,22 @@ mod tests {
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
             .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
@@ -293,7 +330,13 @@ mod tests {
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded_regions = [
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
@@ -301,15 +344,23 @@ mod tests {
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
-            .async_partial_decoder(input_handle, &chunk_representation)
+            .async_partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let partial_decoder = codec
-            .async_partial_decoder(input_handle, &chunk_representation)
+            .async_partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
