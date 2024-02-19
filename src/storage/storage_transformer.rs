@@ -18,13 +18,14 @@ use crate::{
 };
 
 use super::{
-    ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableStorage,
-    WritableStorage,
+    ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableListableStorage,
+    ReadableWritableStorage, WritableStorage,
 };
 
 #[cfg(feature = "async")]
 use super::{
-    AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage, AsyncWritableStorage,
+    AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage,
+    AsyncReadableWritableListableStorage, AsyncWritableStorage,
 };
 
 /// An [`Arc`] wrapped storage transformer.
@@ -79,6 +80,12 @@ pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
         storage: ReadableListableStorage,
     ) -> ReadableListableStorage;
 
+    /// Create a readable, writable, and listable transformer.
+    fn create_readable_writable_listable_transformer(
+        self: Arc<Self>,
+        storage: ReadableWritableListableStorage,
+    ) -> ReadableWritableListableStorage;
+
     #[cfg(feature = "async")]
     /// Create an asynchronous readable transformer.
     fn create_async_readable_transformer(
@@ -106,4 +113,11 @@ pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
         self: Arc<Self>,
         storage: AsyncReadableListableStorage,
     ) -> AsyncReadableListableStorage;
+
+    #[cfg(feature = "async")]
+    /// Create an asynchronous readable, writable, and listable transformer.
+    fn create_async_readable_writable_listable_transformer(
+        self: Arc<Self>,
+        storage: AsyncReadableWritableListableStorage,
+    ) -> AsyncReadableWritableListableStorage;
 }

@@ -6,8 +6,7 @@ use crate::{
 };
 
 use super::{
-    codec::{DecodeOptions, EncodeOptions},
-    Array, ArrayError,
+    codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
 };
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage> {
@@ -27,8 +26,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         &self,
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
         if array_subset.dimensionality() != self.shape().len() {
@@ -54,7 +52,6 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             ));
         };
         let num_chunks = chunks.num_elements_usize();
-        let element_size = self.data_type().size();
         if num_chunks == 1 {
             let chunk_indices = chunks.start();
             let chunk_subset_in_array = unsafe {
@@ -65,7 +62,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             if array_subset == &chunk_subset_in_array {
                 // A fast path if the array subset matches the chunk subset
                 // This skips the internal decoding occurring in store_chunk_subset
-                self.store_chunk_opt(chunk_indices, subset_bytes, encode_options)?;
+                self.store_chunk_opt(chunk_indices, subset_bytes, options)?;
             } else {
                 let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                 let chunk_subset_in_array_subset =
@@ -74,7 +71,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
                         &subset_bytes,
                         array_subset.shape(),
-                        element_size,
+                        self.data_type().size(),
                     )
                 };
 
@@ -86,11 +83,20 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     chunk_indices,
                     &array_subset_in_chunk_subset,
                     chunk_subset_bytes,
-                    encode_options,
-                    decode_options,
+                    options,
                 )?;
             }
         } else {
+            // Calculate chunk/codec concurrency
+            let chunk_representation =
+                self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+            let codec_concurrency = self.recommended_codec_concurrency(&chunk_representation)?;
+            let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                options.concurrent_target(),
+                num_chunks,
+                &codec_concurrency,
+            );
+
             let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
                 let chunk_subset_in_array = unsafe {
                     self.chunk_grid()
@@ -104,7 +110,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
                         &subset_bytes,
                         array_subset.shape(),
-                        element_size,
+                        self.data_type().size(),
                     )
                 };
 
@@ -116,15 +122,15 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     &chunk_indices,
                     &array_subset_in_chunk_subset,
                     chunk_subset_bytes,
-                    encode_options,
-                    decode_options,
+                    &options,
                 )?;
 
                 Ok(())
             };
+
             let indices = chunks.indices();
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                encode_options.concurrent_limit().get(),
+                chunk_concurrent_limit,
                 indices.into_par_iter(),
                 try_for_each,
                 store_chunk
@@ -142,12 +148,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self.store_array_subset_opt(
-            array_subset,
-            subset_bytes,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
-        )
+        self.store_array_subset_opt(array_subset, subset_bytes, &CodecOptions::default())
     }
 
     /// Encode `subset_elements` and store in `array_subset`.
@@ -162,18 +163,12 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
             subset_elements,
-            store_array_subset_opt(
-                array_subset,
-                subset_elements,
-                encode_options,
-                decode_options
-            )
+            store_array_subset_opt(array_subset, subset_elements, options)
         )
     }
 
@@ -187,8 +182,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         self.store_array_subset_elements_opt(
             array_subset,
             subset_elements,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 
@@ -202,8 +196,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let subset = ArraySubset::new_with_start_shape(
             subset_start.to_vec(),
@@ -212,7 +205,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         array_store_ndarray!(
             self,
             subset_array,
-            store_array_subset_elements_opt(&subset, subset_array, encode_options, decode_options)
+            store_array_subset_elements_opt(&subset, subset_array, options)
         )
     }
 
@@ -224,12 +217,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<T>,
     ) -> Result<(), ArrayError> {
-        self.store_array_subset_ndarray_opt(
-            subset_start,
-            subset_array,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
-        )
+        self.store_array_subset_ndarray_opt(subset_start, subset_array, &CodecOptions::default())
     }
 
     /// Encode `chunk_subset_bytes` and store in `chunk_subset` of the chunk at `chunk_indices`.
@@ -249,8 +237,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_bytes: Vec<u8>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_shape = self
             .chunk_grid()
@@ -278,7 +265,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
 
         if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
             // The subset spans the whole chunk, so store the bytes directly and skip decoding
-            self.store_chunk_opt(chunk_indices, chunk_subset_bytes, encode_options)
+            self.store_chunk_opt(chunk_indices, chunk_subset_bytes, options)
         } else {
             // Lock the chunk
             let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
@@ -286,7 +273,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             let _lock = mutex.lock();
 
             // Decode the entire chunk
-            let mut chunk_bytes = self.retrieve_chunk_opt(chunk_indices, decode_options)?;
+            let mut chunk_bytes = self.retrieve_chunk_opt(chunk_indices, options)?;
 
             // Update the intersecting subset of the chunk
             let element_size = self.data_type().size() as u64;
@@ -295,6 +282,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 unsafe { chunk_subset.contiguous_linearised_indices_unchecked(&chunk_shape) };
             let length =
                 usize::try_from(contiguous_iterator.contiguous_elements() * element_size).unwrap();
+            // FIXME: Par iter?
             for (chunk_element_index, _num_elements) in &contiguous_iterator {
                 let chunk_offset = usize::try_from(chunk_element_index * element_size).unwrap();
                 debug_assert!(chunk_offset + length <= chunk_bytes.len());
@@ -305,7 +293,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             }
 
             // Store the updated chunk
-            self.store_chunk_opt(chunk_indices, chunk_bytes, encode_options)
+            self.store_chunk_opt(chunk_indices, chunk_bytes, options)
         }
     }
 
@@ -321,8 +309,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             chunk_indices,
             chunk_subset,
             chunk_subset_bytes,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 
@@ -339,19 +326,12 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_elements: Vec<T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
             chunk_subset_elements,
-            store_chunk_subset_opt(
-                chunk_indices,
-                chunk_subset,
-                chunk_subset_elements,
-                encode_options,
-                decode_options
-            )
+            store_chunk_subset_opt(chunk_indices, chunk_subset, chunk_subset_elements, options)
         )
     }
 
@@ -367,8 +347,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             chunk_indices,
             chunk_subset,
             chunk_subset_elements,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 
@@ -385,8 +364,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
         chunk_subset_array: &ndarray::ArrayViewD<T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let subset = ArraySubset::new_with_start_shape(
             chunk_subset_start.to_vec(),
@@ -399,13 +377,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         array_store_ndarray!(
             self,
             chunk_subset_array,
-            store_chunk_subset_elements_opt(
-                chunk_indices,
-                &subset,
-                chunk_subset_array,
-                encode_options,
-                decode_options
-            )
+            store_chunk_subset_elements_opt(chunk_indices, &subset, chunk_subset_array, options)
         )
     }
 
@@ -422,8 +394,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             chunk_indices,
             chunk_subset_start,
             chunk_subset_array,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
     }
 }

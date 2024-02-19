@@ -27,7 +27,7 @@ use thiserror::Error;
 
 use crate::{
     array::{
-        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecPlugin, DecodeOptions},
+        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecPlugin},
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
     },
     metadata::Metadata,
@@ -108,28 +108,11 @@ fn decode_shard_index(
     encoded_shard_index: Vec<u8>,
     index_array_representation: &ChunkRepresentation,
     index_codecs: &dyn ArrayToBytesCodecTraits,
-    options: &DecodeOptions,
+    options: &CodecOptions,
 ) -> Result<Vec<u64>, CodecError> {
     // Decode the shard index
     let decoded_shard_index =
-        index_codecs.decode_opt(encoded_shard_index, index_array_representation, options)?;
-    Ok(decoded_shard_index
-        .chunks_exact(core::mem::size_of::<u64>())
-        .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
-        .collect())
-}
-
-#[cfg(feature = "async")]
-async fn async_decode_shard_index(
-    encoded_shard_index: Vec<u8>,
-    index_array_representation: &ChunkRepresentation,
-    index_codecs: &dyn ArrayToBytesCodecTraits,
-    options: &DecodeOptions,
-) -> Result<Vec<u64>, CodecError> {
-    // Decode the shard index
-    let decoded_shard_index = index_codecs
-        .async_decode_opt(encoded_shard_index, index_array_representation, options)
-        .await?;
+        index_codecs.decode(encoded_shard_index, index_array_representation, options)?;
     Ok(decoded_shard_index
         .chunks_exact(core::mem::size_of::<u64>())
         .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
@@ -141,13 +124,21 @@ mod tests {
     use crate::{
         array::codec::{
             bytes_to_bytes::test_unbounded::TestUnboundedCodec, ArrayCodecTraits,
-            BytesToBytesCodecTraits, EncodeOptions, PartialDecodeOptions,
+            BytesToBytesCodecTraits, CodecOptions, CodecOptionsBuilder,
         },
         array_subset::ArraySubset,
+        config::global_config,
     };
-    use std::num::NonZeroUsize;
 
     use super::*;
+
+    fn get_concurrent_target(parallel: bool) -> usize {
+        if parallel {
+            global_config().codec_concurrent_target()
+        } else {
+            1
+        }
+    }
 
     const JSON_VALID2: &str = r#"{
     "chunk_shape": [1, 2, 2],
@@ -198,8 +189,7 @@ mod tests {
 }"#;
 
     fn codec_sharding_round_trip_impl(
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -231,10 +221,10 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode_opt(bytes.clone(), &chunk_representation, encode_options)
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded = codec
-            .decode_opt(encoded.clone(), &chunk_representation, decode_options)
+            .decode(encoded.clone(), &chunk_representation, options)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
@@ -248,15 +238,11 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                        }
+                        let concurrent_target = get_concurrent_target(parallel);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_round_trip_impl(
-                            &encode_options,
-                            &decode_options,
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -274,23 +260,17 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)]
     fn codec_sharding_round_trip2() {
-        use std::num::NonZeroUsize;
-
         use crate::array::codec::{Crc32cCodec, GzipCodec};
 
         for index_at_end in [true, false] {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                        }
+                        let concurrent_target = get_concurrent_target(parallel);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_round_trip_impl(
-                            &encode_options,
-                            &decode_options,
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -307,8 +287,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     async fn codec_sharding_async_round_trip_impl(
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -340,12 +319,10 @@ mod tests {
             .build();
 
         let encoded = codec
-            .async_encode_opt(bytes.clone(), &chunk_representation, encode_options)
-            .await
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded = codec
-            .async_decode_opt(encoded.clone(), &chunk_representation, decode_options)
-            .await
+            .decode(encoded.clone(), &chunk_representation, options)
             .unwrap();
         assert_ne!(encoded, decoded);
         assert_eq!(bytes, decoded);
@@ -360,15 +337,11 @@ mod tests {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                        }
+                        let concurrent_target = get_concurrent_target(parallel);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_async_round_trip_impl(
-                            &encode_options,
-                            &decode_options,
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -382,7 +355,7 @@ mod tests {
     }
 
     fn codec_sharding_partial_decode(
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -418,11 +391,13 @@ mod tests {
             .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
             .build();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes.clone(), &chunk_representation, options)
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder_opt(input_handle, &chunk_representation, options)
+            .partial_decoder(input_handle, &chunk_representation, options)
             .unwrap();
         let decoded_partial_chunk = partial_decoder
             .partial_decode_opt(&decoded_regions, options)
@@ -439,19 +414,17 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_partial_decode_all() {
         for index_at_end in [true, false] {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                        }
+                        let concurrent_target = get_concurrent_target(parallel);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_partial_decode(
-                            &decode_options,
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -464,7 +437,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     async fn codec_sharding_async_partial_decode(
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
@@ -500,11 +473,13 @@ mod tests {
             .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
             .build();
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes.clone(), &chunk_representation, options)
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .async_partial_decoder_opt(input_handle, &chunk_representation, options)
+            .async_partial_decoder(input_handle, &chunk_representation, options)
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
@@ -524,19 +499,17 @@ mod tests {
 
     #[cfg(feature = "async")]
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn codec_sharding_async_partial_decode_all() {
         for index_at_end in [true, false] {
             for all_fill_value in [true, false] {
                 for unbounded in [true, false] {
                     for parallel in [true, false] {
-                        let mut encode_options = EncodeOptions::default();
-                        let mut decode_options = DecodeOptions::default();
-                        if !parallel {
-                            encode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                            decode_options.set_concurrent_limit(NonZeroUsize::new(1).unwrap());
-                        }
+                        let concurrent_target = get_concurrent_target(parallel);
+                        let options =
+                            CodecOptionsBuilder::new().concurrent_target(concurrent_target);
                         codec_sharding_async_partial_decode(
-                            &decode_options,
+                            &options.build(),
                             unbounded,
                             all_fill_value,
                             index_at_end,
@@ -551,6 +524,7 @@ mod tests {
     #[cfg(feature = "gzip")]
     #[cfg(feature = "crc32c")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_partial_decode2() {
         use crate::array::codec::ArrayCodecTraits;
 
@@ -568,13 +542,21 @@ mod tests {
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..2, 0..2, 0..3])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .into_iter()
@@ -589,6 +571,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_sharding_partial_decode3() {
         let chunk_shape: ChunkShape = vec![4, 4].try_into().unwrap();
         let chunk_representation =
@@ -601,13 +584,21 @@ mod tests {
             serde_json::from_str(JSON_VALID3).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()

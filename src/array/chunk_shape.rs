@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use std::num::{NonZeroU64, NonZeroUsize};
 
 use serde::{Deserialize, Serialize};
 
@@ -13,11 +13,39 @@ impl ChunkShape {
     /// Return the number of elements.
     ///
     /// Equal to the product of the components of its shape.
+    #[must_use]
     pub fn num_elements(&self) -> NonZeroU64 {
         unsafe {
             // Multiplying NonZeroU64 must result in NonZeroU64
             NonZeroU64::new_unchecked(self.0.iter().copied().map(NonZeroU64::get).product::<u64>())
         }
+    }
+
+    /// Return the number of elements as a nonzero usize.
+    ///
+    /// Equal to the product of the components of its shape.
+    ///
+    /// # Panics
+    /// Panics if the number of elements exceeds [`usize::MAX`].
+    #[must_use]
+    pub fn num_elements_nonzero_usize(&self) -> NonZeroUsize {
+        unsafe {
+            NonZeroUsize::new_unchecked(
+                usize::try_from(self.0.iter().copied().map(NonZeroU64::get).product::<u64>())
+                    .unwrap(),
+            )
+        }
+    }
+
+    /// Return the number of elements as a usize.
+    ///
+    /// Equal to the product of the components of its shape.
+    ///
+    /// # Panics
+    /// Panics if the number of elements exceeds [`usize::MAX`].
+    #[must_use]
+    pub fn num_elements_usize(&self) -> usize {
+        usize::try_from(self.0.iter().copied().map(NonZeroU64::get).product::<u64>()).unwrap()
     }
 }
 

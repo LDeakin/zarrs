@@ -1,6 +1,6 @@
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
-    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, PartialDecodeOptions},
+    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
     ChunkRepresentation,
 };
 
@@ -30,11 +30,24 @@ impl<'a> TransposePartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         // Get transposed array subsets
         let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
         for decoded_region in decoded_regions {
@@ -96,11 +109,24 @@ impl<'a> AsyncTransposePartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         // Get transposed array subsets
         let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
         for decoded_region in decoded_regions {

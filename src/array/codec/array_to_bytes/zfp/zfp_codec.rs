@@ -10,8 +10,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
-            PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
         BytesRepresentation, ChunkRepresentation, DataType,
     },
@@ -125,21 +125,20 @@ impl CodecTraits for ZfpCodec {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for ZfpCodec {
     fn recommended_concurrency(
         &self,
         _decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: zfp supports multi thread, when is it optimal to kick in?
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         mut decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
         else {
@@ -191,11 +190,11 @@ impl ArrayCodecTraits for ZfpCodec {
         }
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
         else {
@@ -215,11 +214,11 @@ impl ArrayCodecTraits for ZfpCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for ZfpCodec {
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
             input_handle,
@@ -229,11 +228,11 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
             input_handle,

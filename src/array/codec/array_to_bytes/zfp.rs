@@ -161,7 +161,7 @@ mod tests {
 
     use crate::{
         array::{
-            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits},
+            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
             DataType,
         },
         array_subset::ArraySubset,
@@ -190,9 +190,19 @@ mod tests {
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &chunk_representation)
+            .decode(
+                encoded.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
 
         let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded);
@@ -215,7 +225,13 @@ mod tests {
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded_regions = [
             ArraySubset::new_with_shape(vec![1, 2, 3]),
             ArraySubset::new_with_ranges(&[0..3, 1..3, 2..3]),
@@ -223,9 +239,15 @@ mod tests {
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &chunk_representation)
+            .partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        let decoded_partial_chunk = partial_decoder.partial_decode(&decoded_regions).unwrap();
+        let decoded_partial_chunk = partial_decoder
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .unwrap();
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
@@ -257,7 +279,13 @@ mod tests {
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes.clone(), &chunk_representation).unwrap();
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
         let decoded_regions = [
             ArraySubset::new_with_shape(vec![1, 2, 3]),
             ArraySubset::new_with_ranges(&[0..3, 1..3, 2..3]),
@@ -265,11 +293,15 @@ mod tests {
 
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .async_partial_decoder(input_handle, &chunk_representation)
+            .async_partial_decoder(
+                input_handle,
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap();
 

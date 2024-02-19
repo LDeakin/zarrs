@@ -24,6 +24,7 @@ use thiserror::Error;
 use crate::{
     array::{ArrayIndices, ArrayShape},
     byte_range::ByteRange,
+    vec_spare_capacity_to_mut_slice,
 };
 
 /// An array subset.
@@ -58,6 +59,15 @@ pub enum ArrayStoreBytesError {
 }
 
 impl ArraySubset {
+    /// Create a new empty array subset.
+    #[must_use]
+    pub fn new_empty(dimensionality: usize) -> Self {
+        Self {
+            start: vec![0; dimensionality],
+            shape: vec![0; dimensionality],
+        }
+    }
+
     /// Create a new array subset from a `ranges`.
     #[must_use]
     pub fn new_with_ranges(ranges: &[Range<u64>]) -> Self {
@@ -211,17 +221,32 @@ impl ArraySubset {
         &self.shape
     }
 
+    /// Returns if the array subset is empty (i.e. has a zero element in its shape).
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.shape.iter().any(|i| i == &0)
+    }
+
     /// Return the dimensionality of the array subset.
     #[must_use]
     pub fn dimensionality(&self) -> usize {
         self.start.len()
     }
+
     /// Return the end (inclusive) of the array subset.
+    ///
+    /// Returns [`None`] if the array subset is empty.
     #[must_use]
-    pub fn end_inc(&self) -> ArrayIndices {
-        std::iter::zip(&self.start, &self.shape)
-            .map(|(start, size)| start + size - 1)
-            .collect()
+    pub fn end_inc(&self) -> Option<ArrayIndices> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(
+                std::iter::zip(&self.start, &self.shape)
+                    .map(|(start, size)| start + size - 1)
+                    .collect(),
+            )
+        }
     }
 
     /// Return the end (exclusive) of the array subset.
@@ -346,13 +371,8 @@ impl ArraySubset {
             array_shape.iter().product::<u64>() * element_size
         );
         let num_bytes = usize::try_from(self.num_elements() * element_size).unwrap();
-        let mut bytes_subset = vec![core::mem::MaybeUninit::<u8>::uninit(); num_bytes];
-        let bytes_subset_slice = unsafe {
-            std::slice::from_raw_parts_mut(
-                bytes_subset.as_mut_ptr().cast::<u8>(),
-                bytes_subset.len(),
-            )
-        };
+        let mut bytes_subset: Vec<u8> = Vec::with_capacity(num_bytes);
+        let bytes_subset_slice = vec_spare_capacity_to_mut_slice(&mut bytes_subset);
         let mut subset_offset = 0;
         for (array_index, contiguous_elements) in
             &self.contiguous_linearised_indices_unchecked(array_shape)
@@ -365,10 +385,8 @@ impl ArraySubset {
                 .copy_from_slice(&bytes[byte_offset..byte_offset + byte_length]);
             subset_offset += byte_length;
         }
-        #[allow(clippy::transmute_undefined_repr)]
-        unsafe {
-            core::mem::transmute(bytes_subset)
-        }
+        unsafe { bytes_subset.set_len(num_bytes) };
+        bytes_subset
     }
 
     /// Return the elements in this array subset from an array with shape `array_shape`.
@@ -416,13 +434,8 @@ impl ArraySubset {
     ) -> Vec<T> {
         debug_assert_eq!(elements.len() as u64, array_shape.iter().product::<u64>());
         let num_elements = usize::try_from(self.num_elements()).unwrap();
-        let mut bytes_subset = vec![core::mem::MaybeUninit::<T>::uninit(); num_elements];
-        let bytes_subset_slice = unsafe {
-            std::slice::from_raw_parts_mut(
-                bytes_subset.as_mut_ptr().cast::<T>(),
-                bytes_subset.len(),
-            )
-        };
+        let mut bytes_subset = Vec::with_capacity(num_elements);
+        let bytes_subset_slice = crate::vec_spare_capacity_to_mut_slice(&mut bytes_subset);
         let mut subset_offset = 0;
         for (array_index, contiguous_elements) in
             &self.contiguous_linearised_indices_unchecked(array_shape)
@@ -435,10 +448,8 @@ impl ArraySubset {
                 .copy_from_slice(&elements[element_offset..element_offset + element_length]);
             subset_offset += element_length;
         }
-        #[allow(clippy::transmute_undefined_repr)]
-        unsafe {
-            core::mem::transmute(bytes_subset)
-        }
+        unsafe { bytes_subset.set_len(num_elements) };
+        bytes_subset
     }
 
     /// Store `bytes_subset` corresponding to the bytes of an array (`array_bytes`) with shape `array_shape` and `element_size`.
@@ -733,6 +744,14 @@ impl IncompatibleDimensionalityError {
 #[derive(Clone, Debug, Error, From)]
 #[error("incompatible array subset {0} with array shape {1:?}")]
 pub struct IncompatibleArraySubsetAndShapeError(ArraySubset, ArrayShape);
+
+impl IncompatibleArraySubsetAndShapeError {
+    /// Create a new incompatible array subset and shape error.
+    #[must_use]
+    pub fn new(array_subset: ArraySubset, array_shape: ArrayShape) -> Self {
+        Self(array_subset, array_shape)
+    }
+}
 
 /// An incompatible start/end indices error.
 #[derive(Clone, Debug, Error, From)]

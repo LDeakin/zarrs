@@ -1,73 +1,73 @@
-//! Options for codec encoding and decoding.
+//! Codec options for encoding and decoding.
 
-use std::num::NonZeroUsize;
+use crate::config::global_config;
 
-/// Encode options.
-pub struct EncodeOptions {
-    concurrent_limit: NonZeroUsize,
+/// Codec options for encoding/decoding.
+#[derive(Debug, Clone)]
+pub struct CodecOptions {
+    concurrent_target: usize,
 }
 
-impl Default for EncodeOptions {
+impl Default for CodecOptions {
     fn default() -> Self {
         Self {
-            concurrent_limit: std::thread::available_parallelism().unwrap(),
+            concurrent_target: global_config().codec_concurrent_target(),
         }
     }
 }
 
-impl EncodeOptions {
-    /// Return the concurrent limit.
+impl CodecOptions {
+    /// Create a new encode options builder.
     #[must_use]
-    pub fn concurrent_limit(&self) -> NonZeroUsize {
-        self.concurrent_limit
+    pub fn builder() -> CodecOptionsBuilder {
+        CodecOptionsBuilder::new()
     }
 
-    /// Set the concurrent limit.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: NonZeroUsize) {
-        self.concurrent_limit = concurrent_limit;
+    /// Return the concurrent target.
+    #[must_use]
+    pub fn concurrent_target(&self) -> usize {
+        self.concurrent_target
     }
 
-    /// FIXME: Temporary, remove
-    #[must_use]
-    pub fn is_parallel(&self) -> bool {
-        self.concurrent_limit.get() > 1
+    /// Set the concurrent target.
+    pub fn set_concurrent_target(&mut self, concurrent_target: usize) {
+        self.concurrent_target = concurrent_target;
     }
 }
 
-/// Decode options.
-pub struct DecodeOptions {
-    concurrent_limit: NonZeroUsize,
+/// Builder for [`CodecOptions`].
+#[derive(Debug, Clone)]
+pub struct CodecOptionsBuilder {
+    concurrent_target: usize,
 }
 
-impl Default for DecodeOptions {
+impl Default for CodecOptionsBuilder {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CodecOptionsBuilder {
+    /// Create a new encode options builder.
+    #[must_use]
+    pub fn new() -> Self {
         Self {
-            concurrent_limit: std::thread::available_parallelism().unwrap(),
+            concurrent_target: global_config().codec_concurrent_target(),
         }
     }
-}
 
-impl DecodeOptions {
-    /// Return the concurrent limit.
+    /// Build into encode options.
     #[must_use]
-    pub fn concurrent_limit(&self) -> NonZeroUsize {
-        self.concurrent_limit
+    pub fn build(&self) -> CodecOptions {
+        CodecOptions {
+            concurrent_target: self.concurrent_target,
+        }
     }
 
-    /// Set the concurrent limit.
-    pub fn set_concurrent_limit(&mut self, concurrent_limit: NonZeroUsize) {
-        self.concurrent_limit = concurrent_limit;
-    }
-
-    /// FIXME: Temporary, remove
+    /// Set the concurrent target for parallel operations.
     #[must_use]
-    pub fn is_parallel(&self) -> bool {
-        self.concurrent_limit.get() > 1
+    pub fn concurrent_target(mut self, concurrent_target: usize) -> Self {
+        self.concurrent_target = concurrent_target;
+        self
     }
 }
-
-/// Partial decoder options.
-pub type PartialDecoderOptions = DecodeOptions;
-
-/// Partial decode options.
-pub type PartialDecodeOptions = DecodeOptions;

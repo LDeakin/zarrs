@@ -1,5 +1,5 @@
 use crate::{
-    array::codec::{BytesPartialDecoderTraits, CodecError, PartialDecodeOptions},
+    array::codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
     byte_range::ByteRange,
 };
 
@@ -21,14 +21,12 @@ impl<'a> Crc32cPartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let bytes = self
-            .input_handle
-            .partial_decode_opt(decoded_regions, options)?;
+        let bytes = self.input_handle.partial_decode(decoded_regions, options)?;
         let Some(mut bytes) = bytes else {
             return Ok(None);
         };
@@ -70,14 +68,14 @@ impl<'a> AsyncCrc32cPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         let bytes = self
             .input_handle
-            .partial_decode_opt(decoded_regions, options)
+            .partial_decode(decoded_regions, options)
             .await?;
         let Some(mut bytes) = bytes else {
             return Ok(None);

@@ -4,8 +4,8 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecTraits, DecodeOptions, EncodeOptions,
-            PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
         BytesRepresentation, ChunkRepresentation,
     },
@@ -103,7 +103,6 @@ impl CodecTraits for BytesCodec {
     }
 }
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayCodecTraits for BytesCodec {
     fn recommended_concurrency(
         &self,
@@ -122,23 +121,23 @@ impl ArrayCodecTraits for BytesCodec {
         //         }
         //     }
         // }
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(decoded_value, decoded_representation)
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         self.do_encode_or_decode(encoded_value, decoded_representation)
     }
@@ -146,11 +145,11 @@ impl ArrayCodecTraits for BytesCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for BytesCodec {
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(bytes_partial_decoder::BytesPartialDecoder::new(
             input_handle,
@@ -160,11 +159,11 @@ impl ArrayToBytesCodecTraits for BytesCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             bytes_partial_decoder::AsyncBytesPartialDecoder::new(

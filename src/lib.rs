@@ -136,3 +136,14 @@ pub use object_store;
 #[cfg(feature = "opendal")]
 /// Re-export [`opendal`].
 pub use opendal;
+
+/// Get a mutable slice of the spare capacity in a vector.
+unsafe fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {
+    let spare_capacity = vec.spare_capacity_mut();
+    unsafe {
+        std::slice::from_raw_parts_mut(
+            spare_capacity.as_mut_ptr().cast::<T>(),
+            spare_capacity.len(),
+        )
+    }
+}

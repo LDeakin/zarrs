@@ -2,7 +2,7 @@ use crate::{
     array::{
         codec::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
-            PartialDecodeOptions,
+            CodecOptions,
         },
         ChunkRepresentation,
     },
@@ -37,10 +37,14 @@ impl<'a> BytesPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
@@ -56,9 +60,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                 })?;
 
             // Decode
-            let decoded = self
-                .input_handle
-                .partial_decode_opt(&byte_ranges, options)?;
+            let decoded = self.input_handle.partial_decode(&byte_ranges, options)?;
 
             let bytes_subset = decoded.map_or_else(
                 || {
@@ -68,6 +70,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                         .repeat(array_subset.num_elements_usize())
                 },
                 |decoded| {
+                    // FIXME: Avoid this concat, prealloc and write to that
                     let mut bytes_subset = decoded.concat();
                     if let Some(endian) = &self.endian {
                         if !endian.is_native() {
@@ -114,14 +117,34 @@ impl<'a> AsyncBytesPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+
             // Get byte ranges
             let byte_ranges = array_subset
                 .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
@@ -135,7 +158,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
             // Decode
             let decoded = self
                 .input_handle
-                .partial_decode_opt(&byte_ranges, options)
+                .partial_decode(&byte_ranges, options)
                 .await?;
 
             let bytes_subset = decoded.map_or_else(
@@ -146,6 +169,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
                         .repeat(array_subset.num_elements_usize())
                 },
                 |decoded| {
+                    // FIXME: Avoid this concat, prealloc and write to that
                     let mut bytes_subset = decoded.concat();
                     if let Some(endian) = &self.endian {
                         if !endian.is_native() {

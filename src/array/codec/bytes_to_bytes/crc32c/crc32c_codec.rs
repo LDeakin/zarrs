@@ -1,8 +1,8 @@
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
-            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
+            CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation,
     },
@@ -56,13 +56,13 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         &self,
         _decoded_representation: &BytesRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         mut decoded_value: Vec<u8>,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let checksum = crc32c::crc32c(&decoded_value).to_le_bytes();
         decoded_value.reserve_exact(checksum.len());
@@ -70,11 +70,11 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         Ok(decoded_value)
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         mut encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if encoded_value.len() >= CHECKSUM_SIZE {
             if crate::config::global_config().validate_checksums() {
@@ -93,11 +93,11 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         }
     }
 
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
             input_handle,
@@ -105,11 +105,11 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             crc32c_partial_decoder::AsyncCrc32cPartialDecoder::new(input_handle),

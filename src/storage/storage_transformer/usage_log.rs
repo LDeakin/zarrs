@@ -13,9 +13,10 @@ use crate::{
     metadata::Metadata,
     storage::{
         store_lock::StoreKeyMutex, ListableStorage, ListableStorageTraits, ReadableListableStorage,
-        ReadableStorage, ReadableStorageTraits, ReadableWritableStorage,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
+        ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
+        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
+        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        WritableStorage, WritableStorageTraits,
     },
 };
 
@@ -23,7 +24,8 @@ use crate::{
 use crate::storage::{
     store_lock::AsyncStoreKeyMutex, AsyncListableStorage, AsyncListableStorageTraits,
     AsyncReadableListableStorage, AsyncReadableStorage, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorage, AsyncWritableStorageTraits,
+    AsyncReadableWritableListableStorage, AsyncReadableWritableStorageTraits, AsyncWritableStorage,
+    AsyncWritableStorageTraits,
 };
 
 use super::StorageTransformerExtension;
@@ -127,8 +129,14 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
         self.create_transformer(storage)
     }
 
+    fn create_readable_writable_listable_transformer(
+        self: Arc<Self>,
+        storage: ReadableWritableListableStorage,
+    ) -> ReadableWritableListableStorage {
+        self.create_transformer(storage)
+    }
+
     #[cfg(feature = "async")]
-    /// Create an asynchronous readable transformer.
     fn create_async_readable_transformer(
         self: Arc<Self>,
         storage: AsyncReadableStorage,
@@ -137,7 +145,6 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
     }
 
     #[cfg(feature = "async")]
-    /// Create an asynchronous writable transformer.
     fn create_async_writable_transformer(
         self: Arc<Self>,
         storage: AsyncWritableStorage,
@@ -146,7 +153,6 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
     }
 
     #[cfg(feature = "async")]
-    /// Create an asynchronous listable transformer.
     fn create_async_listable_transformer(
         self: Arc<Self>,
         storage: AsyncListableStorage,
@@ -155,11 +161,18 @@ impl StorageTransformerExtension for UsageLogStorageTransformer {
     }
 
     #[cfg(feature = "async")]
-    /// Create an asynchronous readable and listable transformer.
     fn create_async_readable_listable_transformer(
         self: Arc<Self>,
         storage: AsyncReadableListableStorage,
     ) -> AsyncReadableListableStorage {
+        self.create_transformer(storage)
+    }
+
+    #[cfg(feature = "async")]
+    fn create_async_readable_writable_listable_transformer(
+        self: Arc<Self>,
+        storage: AsyncReadableWritableListableStorage,
+    ) -> AsyncReadableWritableListableStorage {
         self.create_transformer(storage)
     }
 }

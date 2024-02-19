@@ -38,7 +38,7 @@ cargo bench -- --baseline baseline
 
 Install `cargo-llvm-cov`
 ```bash
-cargo +stable install cargo-llvm-cov --locked
+cargo +nightly install cargo-llvm-cov --locked
 ```
 
 Generate a HTML report

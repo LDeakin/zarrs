@@ -2,9 +2,7 @@ use zfp_sys::zfp_type;
 
 use crate::{
     array::{
-        codec::{
-            ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, PartialDecodeOptions,
-        },
+        codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, CodecOptions},
         ChunkRepresentation,
     },
     array_subset::ArraySubset,
@@ -50,12 +48,25 @@ impl<'a> ZfpPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options)?;
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
+        let encoded_value = self.input_handle.decode(options)?;
         let mut out = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         match encoded_value {
@@ -131,12 +142,25 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options).await?;
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
+        let encoded_value = self.input_handle.decode(options).await?;
         let chunk_shape = self.decoded_representation.shape_u64();
         let mut out = Vec::with_capacity(decoded_regions.len());
         match encoded_value {

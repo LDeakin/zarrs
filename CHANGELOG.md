@@ -20,13 +20,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add store lock tests
  - Added `contiguous_elements` method to `ContiguousIndicesIterator` and `ContiguousLinearisedIndicesIterator`
  - Added `ChunkShape::num_elements`
- - Added `codec::{Encode,Decode,PartialDecode,PartialDecoder}Options`
- - Added new `Array::opt` methods which can use new encode/decode options
-   - **Breaking** Existing `Array` `_opt` use new encode/decode options insted of `parallel: bool`
+ - Added `codec::CodecOptions{Builder}`
+ - **Breaking**: Added new `Array::opt` methods which can use `codec::CodecOptions` and existing methods use it instead of `parallel: bool`
  - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
  - Add `ParIndicesIterator` and `ParChunksIterator`
  - Implement `From<String>` for `DimensionName`
  - Add `{Async}ReadableWritableListableStorageTraits` and `{Async}ReadableWritableListableStorage`
+ - Add `ArrayCodecTraits::decode_into_array_view_opt` with default implementation
+   - TODO: Same for async
+ - Add `ArrayPartialDecoderTraits::partial_decode_into_array_view_opt` with default implementation
+   - TODO: Same for async
+ - Add `array::ArrayView`
+ - Add array `into_array_view` methods
+   - `Array::{async_}retrieve_chunk{_subset}_into_array_view{_opt}`
+   - `Array::{async_}retrieve_array_subset_into_array_view{_opt}`
+   - TODO: `Array::{async_}retrieve_array_chunks_into_array_view{_opt}`
+ - Add `array::unsafe_cell_slice::UnsafeCellSlice::len()`
+ - Add `{Array,Chunk}Representation::dimensionality()`
+ - Add `ArraySubset::new_empty()` and `ArraySubset::is_empty()`
+ - Add missing `IncompatibleArraySubsetAndShapeError::new()`
+ - Add more array tests
+ - Add `Array::dimensionality()`
 
 ### Changed
  - Dependency bumps
@@ -39,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `array_subset_iterators.rs`
  - **Major breaking**: storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait method now take `self: Arc<Self>`
  - Removed lifetimes from `{Async}{Readable,Writable,ReadableWritable,Listable,ReadableListable}Storage`
+ - **Breaking**: Add `create{_async}_readable_writable_listable_transformer` to `StorageTransformerExtension` trait
  - **Breaking**: `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime
  - **Breaking**: remove `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs`
  - **Breaking**: added `recommended_concurrency` to codec trait methods to facilitate improved parallelisation
@@ -55,13 +70,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add a fast path to `Array::retrieve_chunk_subset{_opt}` if the entire chunk is requested
  - `DimensionName::new()` generalised to accept a name implementing `Into<String>`
  - **Breaking**: `ArrayBuilder::dimension_names()` generalised to accept `Option<I>` where `I: IntoIterator<Item = D>` and `D: Into<DimensionName>`
-   - Can now write
-`builder.dimension_names(["y", "x"].into())` instead of `builder.dimension_names(vec!["y".into(), "x".into()].into())` 
+   - Can now write `builder.dimension_names(["y", "x"].into())` instead of `builder.dimension_names(vec!["y".into(), "x".into()].into())`
+ - **Breaking**: Add `ArrayPartialDecoderTraits::element_size()`
+ - Cleanup uninitialised `Vec` handling
 
 ### Removed
  - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
  - **Breaking**: Remove non-default store lock constructors
  - **Breaking**: Remove unused `storage::store::{Readable,Writable,ReadableWritable,Listable}Store`
+
+### Fixed
+ - `Array::retrieve_array_subset` and variants now correctly return the fill value if the array subset does not intersect any chunks
+ - **Breaking**: `ArraySubset::end_inc` now returns an `Option`, which is `None` for an empty array subset
+ - Add missing input validation to some `partial_decode` methods
 
 ## [0.11.6] - 2024-02-06
 

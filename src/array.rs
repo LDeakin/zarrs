@@ -10,11 +10,13 @@ mod array_builder;
 mod array_errors;
 mod array_metadata;
 mod array_representation;
+mod array_view;
 mod bytes_representation;
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
 mod chunk_shape;
 pub mod codec;
+pub mod concurrency;
 pub mod data_type;
 mod dimension_name;
 mod fill_value;
@@ -29,6 +31,7 @@ pub use self::{
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata::{ArrayMetadata, ArrayMetadataV3},
     array_representation::{ArrayRepresentation, ChunkRepresentation},
+    array_view::{ArrayView, ArrayViewCreateError},
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
     chunk_key_encoding::ChunkKeyEncoding,
@@ -40,6 +43,7 @@ pub use self::{
     fill_value_metadata::FillValueMetadata,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
 };
+use self::{codec::ArrayCodecTraits, concurrency::RecommendedConcurrency};
 
 use serde::Serialize;
 use thiserror::Error;
@@ -326,6 +330,12 @@ impl<TStorage: ?Sized> Array<TStorage> {
         &self.shape
     }
 
+    /// Get the array dimensionality.
+    #[must_use]
+    pub fn dimensionality(&self) -> usize {
+        self.shape.len()
+    }
+
     /// Get the codecs.
     #[must_use]
     pub const fn codecs(&self) -> &CodecChain {
@@ -463,11 +473,16 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if a chunk in `chunks` is incompatible with the chunk grid.
     #[allow(clippy::similar_names)]
     pub fn chunks_subset(&self, chunks: &ArraySubset) -> Result<ArraySubset, ArrayError> {
-        let chunk0 = self.chunk_subset(chunks.start())?;
-        let chunk1 = self.chunk_subset(&chunks.end_inc())?;
-        let start = chunk0.start();
-        let end = chunk1.end_exc();
-        Ok(unsafe { ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end) })
+        match chunks.end_inc() {
+            Some(end) => {
+                let chunk0 = self.chunk_subset(chunks.start())?;
+                let chunk1 = self.chunk_subset(&end)?;
+                let start = chunk0.start();
+                let end = chunk1.end_exc();
+                Ok(unsafe { ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end) })
+            }
+            None => Ok(ArraySubset::new_empty(chunks.dimensionality())),
+        }
     }
 
     /// Return the array subset of `chunks` bounded by the array shape.
@@ -515,24 +530,38 @@ impl<TStorage: ?Sized> Array<TStorage> {
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Option<ArraySubset>, IncompatibleDimensionalityError> {
-        // Find the chunks intersecting this array subset
-        let chunks_start = self
-            .chunk_grid()
-            .chunk_indices(array_subset.start(), self.shape())?;
-        let chunks_end = self
-            .chunk_grid()
-            .chunk_indices(&array_subset.end_inc(), self.shape())?;
-        let chunks_end = chunks_end.map_or_else(|| self.chunk_grid_shape(), Some);
+        match array_subset.end_inc() {
+            Some(end) => {
+                let chunks_start = self
+                    .chunk_grid()
+                    .chunk_indices(array_subset.start(), self.shape())?;
+                let chunks_end = self
+                    .chunk_grid()
+                    .chunk_indices(&end, self.shape())?
+                    .map_or_else(|| self.chunk_grid_shape(), Some);
 
-        Ok(
-            if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
-                Some(unsafe {
-                    ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
-                })
-            } else {
-                None
-            },
-        )
+                Ok(
+                    if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
+                        Some(unsafe {
+                            ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
+                        })
+                    } else {
+                        None
+                    },
+                )
+            }
+            None => Ok(Some(ArraySubset::new_empty(self.dimensionality()))),
+        }
+    }
+
+    /// Calculate the recommended codec concurrency.
+    fn recommended_codec_concurrency(
+        &self,
+        chunk_representation: &ChunkRepresentation,
+    ) -> Result<RecommendedConcurrency, ArrayError> {
+        Ok(self
+            .codecs()
+            .recommended_concurrency(chunk_representation)?)
     }
 }
 
@@ -629,15 +658,16 @@ pub fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
 #[must_use]
 pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {
     let len = shape.len();
-    let mut indices = vec![core::mem::MaybeUninit::uninit(); len];
-    for (indices_i, &dim) in std::iter::zip(indices.iter_mut().rev(), shape.iter().rev()) {
+    let mut indices: ArrayIndices = Vec::with_capacity(len);
+    for (indices_i, &dim) in std::iter::zip(
+        indices.spare_capacity_mut().iter_mut().rev(),
+        shape.iter().rev(),
+    ) {
         indices_i.write(index % dim);
         index /= dim;
     }
-    #[allow(clippy::transmute_undefined_repr)]
-    unsafe {
-        core::mem::transmute(indices)
-    }
+    unsafe { indices.set_len(len) };
+    indices
 }
 
 /// Ravel ND indices to a linearised index.
@@ -754,6 +784,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_subset_round_trip() {
         let store = Arc::new(MemoryStore::default());
         let array_path = "/array";

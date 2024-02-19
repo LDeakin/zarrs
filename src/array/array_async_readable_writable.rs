@@ -1,4 +1,4 @@
-use futures::{stream::FuturesUnordered, StreamExt};
+use futures::StreamExt;
 
 use crate::{
     array_subset::ArraySubset,
@@ -6,8 +6,7 @@ use crate::{
 };
 
 use super::{
-    codec::{DecodeOptions, EncodeOptions},
-    Array, ArrayError,
+    codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
 };
 
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TStorage> {
@@ -27,8 +26,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
         if array_subset.dimensionality() != self.shape().len() {
@@ -65,7 +63,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             if array_subset == &chunk_subset_in_array {
                 // A fast path if the array subset matches the chunk subset
                 // This skips the internal decoding occurring in store_chunk_subset
-                self.async_store_chunk_opt(chunk_indices, subset_bytes, encode_options)
+                self.async_store_chunk_opt(chunk_indices, subset_bytes, options)
                     .await?;
             } else {
                 let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
@@ -86,59 +84,63 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                     chunk_indices,
                     &array_subset_in_chunk_subset,
                     chunk_subset_bytes,
-                    encode_options,
-                    decode_options,
+                    options,
                 )
                 .await?;
             }
         } else {
-            let chunks_to_update = chunks
-                .indices()
-                .into_iter()
-                .map(|chunk_indices| {
-                    let chunk_subset_in_array = unsafe {
-                        self.chunk_grid()
-                            .subset_unchecked(&chunk_indices, self.shape())
-                            .unwrap()
-                    };
-                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                    let chunk_subset_in_array_subset =
-                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    let array_subset_in_chunk_subset =
-                        unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
-                    (
-                        chunk_indices,
-                        chunk_subset_in_array_subset,
-                        array_subset_in_chunk_subset,
-                    )
-                })
-                .collect::<Vec<_>>();
-            let mut futures = chunks_to_update
-                .iter()
-                .map(
-                    |(
-                        chunk_indices,
-                        chunk_subset_in_array_subset,
-                        array_subset_in_chunk_subset,
-                    )| {
-                        let chunk_subset_bytes = unsafe {
-                            chunk_subset_in_array_subset.extract_bytes_unchecked(
-                                &subset_bytes,
-                                array_subset.shape(),
-                                element_size,
-                            )
-                        };
-                        self.async_store_chunk_subset_opt(
-                            chunk_indices,
-                            array_subset_in_chunk_subset,
-                            chunk_subset_bytes,
-                            encode_options,
-                            decode_options,
-                        )
-                    },
+            // Calculate chunk/codec concurrency
+            let chunk_representation =
+                self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+            let codec_concurrency = self.recommended_codec_concurrency(&chunk_representation)?;
+            let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                options.concurrent_target(),
+                num_chunks,
+                &codec_concurrency,
+            );
+
+            let indices = chunks.indices();
+            let chunks_to_update = indices.into_iter().map(|chunk_indices| {
+                let chunk_subset_in_array = unsafe {
+                    self.chunk_grid()
+                        .subset_unchecked(&chunk_indices, self.shape())
+                        .unwrap()
+                };
+                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
+                let chunk_subset_in_array_subset =
+                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                let array_subset_in_chunk_subset =
+                    unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
+                (
+                    chunk_indices,
+                    chunk_subset_in_array_subset,
+                    array_subset_in_chunk_subset,
                 )
-                .collect::<FuturesUnordered<_>>();
-            while let Some(item) = futures.next().await {
+            });
+            let futures = chunks_to_update.into_iter().map(
+                |(chunk_indices, chunk_subset_in_array_subset, array_subset_in_chunk_subset)| {
+                    let chunk_subset_bytes = unsafe {
+                        chunk_subset_in_array_subset.extract_bytes_unchecked(
+                            &subset_bytes,
+                            array_subset.shape(),
+                            element_size,
+                        )
+                    };
+                    let options = options.clone();
+                    async move {
+                        self.async_store_chunk_subset_opt(
+                            &chunk_indices,
+                            &array_subset_in_chunk_subset,
+                            chunk_subset_bytes,
+                            &options,
+                        )
+                        .await
+                    }
+                },
+            );
+            let mut stream =
+                futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
+            while let Some(item) = stream.next().await {
                 item?;
             }
         }
@@ -152,13 +154,8 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         array_subset: &ArraySubset,
         subset_bytes: Vec<u8>,
     ) -> Result<(), ArrayError> {
-        self.async_store_array_subset_opt(
-            array_subset,
-            subset_bytes,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
-        )
-        .await
+        self.async_store_array_subset_opt(array_subset, subset_bytes, &CodecOptions::default())
+            .await
     }
 
     /// Encode `subset_elements` and store in `array_subset`.
@@ -173,18 +170,12 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         array_subset: &ArraySubset,
         subset_elements: Vec<T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_async_store_elements!(
             self,
             subset_elements,
-            async_store_array_subset_opt(
-                array_subset,
-                subset_elements,
-                encode_options,
-                decode_options
-            )
+            async_store_array_subset_opt(array_subset, subset_elements, options)
         )
     }
 
@@ -198,8 +189,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         self.async_store_array_subset_elements_opt(
             array_subset,
             subset_elements,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
         .await
     }
@@ -214,8 +204,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         subset_start: &[u64],
         subset_array: &ndarray::ArrayViewD<'_, T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let subset = ArraySubset::new_with_start_shape(
             subset_start.to_vec(),
@@ -224,12 +213,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         array_async_store_ndarray!(
             self,
             subset_array,
-            async_store_array_subset_elements_opt(
-                &subset,
-                subset_array,
-                encode_options,
-                decode_options
-            )
+            async_store_array_subset_elements_opt(&subset, subset_array, options)
         )
     }
 
@@ -244,8 +228,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         self.async_store_array_subset_ndarray_opt(
             subset_start,
             subset_array,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
         .await
     }
@@ -267,8 +250,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_bytes: Vec<u8>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
         if let Some(chunk_shape) = self
@@ -295,7 +277,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
 
             if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
                 // The subset spans the whole chunk, so store the bytes directly and skip decoding
-                self.async_store_chunk_opt(chunk_indices, chunk_subset_bytes, encode_options)
+                self.async_store_chunk_opt(chunk_indices, chunk_subset_bytes, options)
                     .await
             } else {
                 // Lock the chunk
@@ -305,7 +287,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
 
                 // Decode the entire chunk
                 let mut chunk_bytes = self
-                    .async_retrieve_chunk_opt(chunk_indices, decode_options)
+                    .async_retrieve_chunk_opt(chunk_indices, options)
                     .await?;
 
                 // Update the intersecting subset of the chunk
@@ -326,7 +308,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 }
 
                 // Store the updated chunk
-                self.async_store_chunk_opt(chunk_indices, chunk_bytes, encode_options)
+                self.async_store_chunk_opt(chunk_indices, chunk_bytes, options)
                     .await
             }
         } else {
@@ -348,8 +330,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             chunk_indices,
             chunk_subset,
             chunk_subset_bytes,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
         .await
     }
@@ -367,8 +348,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_elements: Vec<T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_async_store_elements!(
             self,
@@ -377,8 +357,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 chunk_indices,
                 chunk_subset,
                 chunk_subset_elements,
-                encode_options,
-                decode_options
+                options
             )
         )
     }
@@ -395,8 +374,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             chunk_indices,
             chunk_subset,
             chunk_subset_elements,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
         .await
     }
@@ -414,8 +392,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
         chunk_subset_array: &ndarray::ArrayViewD<'_, T>,
-        encode_options: &EncodeOptions,
-        decode_options: &DecodeOptions,
+        options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let subset = ArraySubset::new_with_start_shape(
             chunk_subset_start.to_vec(),
@@ -432,8 +409,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 chunk_indices,
                 &subset,
                 chunk_subset_array,
-                encode_options,
-                decode_options
+                options
             )
         )
     }
@@ -451,8 +427,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             chunk_indices,
             chunk_subset_start,
             chunk_subset_array,
-            &EncodeOptions::default(),
-            &DecodeOptions::default(),
+            &CodecOptions::default(),
         )
         .await
     }

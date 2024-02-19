@@ -46,7 +46,7 @@ const CHECKSUM_SIZE: usize = core::mem::size_of::<u32>();
 mod tests {
     use crate::{
         array::{
-            codec::{BytesToBytesCodecTraits, CodecTraits},
+            codec::{BytesToBytesCodecTraits, CodecOptions, CodecTraits},
             BytesRepresentation,
         },
         byte_range::ByteRange,
@@ -76,9 +76,15 @@ mod tests {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes.clone()).unwrap();
+        let encoded = codec
+            .encode(bytes.clone(), &CodecOptions::default())
+            .unwrap();
         let decoded = codec
-            .decode(encoded.clone(), &bytes_representation)
+            .decode(
+                encoded.clone(),
+                &bytes_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         assert_eq!(bytes, decoded);
 
@@ -100,14 +106,18 @@ mod tests {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes).unwrap();
+        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
         let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .partial_decoder(input_handle, &bytes_representation)
+            .partial_decoder(
+                input_handle,
+                &bytes_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap()
             .unwrap();
         let answer: &[Vec<u8>] = &[vec![3, 4]];
@@ -124,15 +134,19 @@ mod tests {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes).unwrap();
+        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
         let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
-            .async_partial_decoder(input_handle, &bytes_representation)
+            .async_partial_decoder(
+                input_handle,
+                &bytes_representation,
+                &CodecOptions::default(),
+            )
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions)
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap()
             .unwrap();

@@ -76,6 +76,12 @@ where
         &self.array_shape
     }
 
+    /// Return the dimensionality of the array.
+    #[must_use]
+    pub fn dimensionality(&self) -> usize {
+        self.array_shape.len()
+    }
+
     /// Return the shape as an [`ArrayShape`] ([`Vec<u64>`]).
     #[must_use]
     pub fn shape_u64(&self) -> ArrayShape {

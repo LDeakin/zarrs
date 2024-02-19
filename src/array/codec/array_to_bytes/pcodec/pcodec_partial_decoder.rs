@@ -2,7 +2,7 @@ use crate::{
     array::{
         codec::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
-            PartialDecodeOptions,
+            CodecOptions,
         },
         ChunkRepresentation, DataType,
     },
@@ -105,12 +105,16 @@ fn do_partial_decode(
 }
 
 impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let decoded = self.input_handle.decode_opt(options)?;
+        let decoded = self.input_handle.decode(options)?;
         do_partial_decode(decoded, decoded_regions, &self.decoded_representation)
     }
 }
@@ -139,12 +143,25 @@ impl<'a> AsyncPCodecPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let decoded = self.input_handle.decode_opt(options).await?;
+        for array_subset in decoded_regions {
+            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
+                return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                    array_subset.clone(),
+                    self.decoded_representation.dimensionality(),
+                ));
+            }
+        }
+
+        let decoded = self.input_handle.decode(options).await?;
         do_partial_decode(decoded, decoded_regions, &self.decoded_representation)
     }
 }

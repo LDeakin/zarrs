@@ -3,8 +3,8 @@ use zstd::zstd_safe;
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecTraits,
-            DecodeOptions, EncodeOptions, PartialDecoderOptions, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
+            CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation,
     },
@@ -69,13 +69,13 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         _decoded_representation: &BytesRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: zstd supports multithread, but at what point is it good to kick in?
-        Ok(RecommendedConcurrency::one())
+        Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode_opt(
+    fn encode(
         &self,
         decoded_value: Vec<u8>,
-        _options: &EncodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         let mut result = Vec::<u8>::new();
         let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
@@ -89,30 +89,30 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         Ok(result)
     }
 
-    fn decode_opt(
+    fn decode(
         &self,
         encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &DecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         zstd::decode_all(encoded_value.as_slice()).map_err(CodecError::IOError)
     }
 
-    fn partial_decoder_opt<'a>(
+    fn partial_decoder<'a>(
         &self,
         r: Box<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(zstd_partial_decoder::ZstdPartialDecoder::new(r)))
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder_opt<'a>(
+    async fn async_partial_decoder<'a>(
         &'a self,
         r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
-        _options: &PartialDecoderOptions,
+        _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
             zstd_partial_decoder::AsyncZstdPartialDecoder::new(r),

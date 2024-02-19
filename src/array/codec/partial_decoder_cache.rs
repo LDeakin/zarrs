@@ -11,8 +11,7 @@ use crate::{
 };
 
 use super::{
-    ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
-    PartialDecodeOptions,
+    ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError, CodecOptions,
 };
 
 #[cfg(feature = "async")]
@@ -31,10 +30,10 @@ impl<'a> BytesPartialDecoderCache<'a> {
     /// Returns a [`CodecError`] if caching fails.
     pub fn new(
         input_handle: &dyn BytesPartialDecoderTraits,
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Self, CodecError> {
         let cache = input_handle
-            .partial_decode_opt(&[ByteRange::FromStart(0, None)], options)?
+            .partial_decode(&[ByteRange::FromStart(0, None)], options)?
             .map(|mut bytes| bytes.remove(0));
         Ok(Self {
             cache,
@@ -49,10 +48,10 @@ impl<'a> BytesPartialDecoderCache<'a> {
     /// Returns a [`CodecError`] if caching fails.
     pub async fn async_new(
         input_handle: &dyn AsyncBytesPartialDecoderTraits,
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<BytesPartialDecoderCache<'a>, CodecError> {
         let cache = input_handle
-            .partial_decode_opt(&[ByteRange::FromStart(0, None)], options)
+            .partial_decode(&[ByteRange::FromStart(0, None)], options)
             .await?
             .map(|mut bytes| bytes.remove(0));
         Ok(Self {
@@ -63,10 +62,10 @@ impl<'a> BytesPartialDecoderCache<'a> {
 }
 
 impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
-        _options: &PartialDecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
         Ok(match &self.cache {
             Some(bytes) => Some(
@@ -81,12 +80,12 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        BytesPartialDecoderTraits::partial_decode_opt(self, decoded_regions, options)
+        BytesPartialDecoderTraits::partial_decode(self, decoded_regions, options)
     }
 }
 
@@ -105,7 +104,7 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     pub fn new(
         input_handle: &dyn ArrayPartialDecoderTraits,
         decoded_representation: ChunkRepresentation,
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Self, CodecError> {
         let cache = input_handle
             .partial_decode_opt(
@@ -130,7 +129,7 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     pub async fn async_new(
         input_handle: &dyn AsyncArrayPartialDecoderTraits,
         decoded_representation: ChunkRepresentation,
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<ArrayPartialDecoderCache<'a>, CodecError> {
         let cache = input_handle
             .partial_decode_opt(
@@ -150,10 +149,14 @@ impl<'a> ArrayPartialDecoderCache<'a> {
 }
 
 impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        _options: &PartialDecodeOptions,
+        _options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut out: Vec<Vec<u8>> = Vec::with_capacity(decoded_regions.len());
         let array_shape = self.decoded_representation.shape_u64();
@@ -177,10 +180,14 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+    fn element_size(&self) -> usize {
+        self.decoded_representation.element_size()
+    }
+
     async fn partial_decode_opt(
         &self,
         decoded_regions: &[ArraySubset],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         ArrayPartialDecoderTraits::partial_decode_opt(self, decoded_regions, options)
     }

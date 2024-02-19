@@ -3,7 +3,7 @@ use std::io::{Cursor, Read};
 use flate2::bufread::GzDecoder;
 
 use crate::{
-    array::codec::{BytesPartialDecoderTraits, CodecError, PartialDecodeOptions},
+    array::codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
@@ -23,12 +23,12 @@ impl<'a> GzipPartialDecoder<'a> {
 }
 
 impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options)?;
+        let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
@@ -61,12 +61,12 @@ impl<'a> AsyncGzipPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncBytesPartialDecoderTraits for AsyncGzipPartialDecoder<'_> {
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
-        options: &PartialDecodeOptions,
+        options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
-        let encoded_value = self.input_handle.decode_opt(options).await?;
+        let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
