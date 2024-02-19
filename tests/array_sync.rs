@@ -104,6 +104,7 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
         array.retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view)?;
         assert_eq!(data, [0, 0, 1, 2, 0, 0]);
     }
+
     {
         let mut data = vec![0, 0, 0, 0, 0, 0];
         let shape = &[3, 2];
@@ -112,6 +113,33 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
         array.retrieve_chunk_into_array_view(&[0, 0], &array_view)?;
         assert_eq!(data, [1, 2, 5, 6, 0, 0]);
     }
+
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let shape = &[4, 4];
+        let array_view_subset = ArraySubset::new_with_ranges(&[0..4, 0..4]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..2, 0..2]), &array_view)?;
+        assert_eq!(data, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let shape = &[3, 4];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..4]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view)?;
+        assert_eq!(data, [0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    }
+    {
+        // Test OOB
+        let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let shape = &[3, 4];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..4]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 1..3]), &array_view)?;
+        assert_eq!(data, [0, 0, 0, 0, 3, 4, 0, 0, 7, 8, 0, 0]);
+    }
+
     {
         let mut data = vec![0, 0, 0, 0, 0, 0];
         let shape = &[3, 2];

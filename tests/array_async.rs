@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use zarrs::array::codec::{array_to_bytes::sharding::ShardingCodecBuilder, GzipCodec};
-use zarrs::array::{Array, ArrayBuilder, DataType, FillValue};
+use zarrs::array::{Array, ArrayBuilder, ArrayView, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 
 #[cfg(feature = "object_store")]
@@ -13,9 +13,6 @@ use zarrs::storage::store::AsyncObjectStore;
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[rustfmt::skip]
 async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<(), Box<dyn std::error::Error>> {
-    use zarrs::array::ArrayView;
-
-
     assert_eq!(array.data_type(), &DataType::UInt8);
     assert_eq!(array.fill_value().as_ne_bytes(), &[0u8]);
     assert_eq!(array.shape(), &[4, 4]);
@@ -112,6 +109,7 @@ async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<()
         array.async_retrieve_chunk_subset_into_array_view(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await?;
         assert_eq!(data, [0, 0, 1, 2, 0, 0]);
     }
+
     {
         let mut data = vec![0, 0, 0, 0, 0, 0];
         let shape = &[3, 2];
@@ -120,6 +118,33 @@ async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<()
         array.async_retrieve_chunk_into_array_view(&[0, 0], &array_view).await?;
         assert_eq!(data, [1, 2, 5, 6, 0, 0]);
     }
+
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let shape = &[4, 4];
+        let array_view_subset = ArraySubset::new_with_ranges(&[0..4, 0..4]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..2, 0..2]), &array_view).await?;
+        assert_eq!(data, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
+    }
+    {
+        let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let shape = &[3, 4];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..4]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await?;
+        assert_eq!(data, [0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    }
+    {
+        // Test OOB
+        let mut data = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let shape = &[3, 4];
+        let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..4]);
+        let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
+        array.async_retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 1..3]), &array_view).await?;
+        assert_eq!(data, [0, 0, 0, 0, 3, 4, 0, 0, 7, 8, 0, 0]);
+    }
+
     {
         let mut data = vec![0, 0, 0, 0, 0, 0];
         let shape = &[3, 2];
@@ -195,7 +220,7 @@ async fn array_async_read_uncompressed() -> Result<(), Box<dyn std::error::Error
     array_async_read(array).await
 }
 
-// #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
+#[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[tokio::test]
 async fn array_async_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
