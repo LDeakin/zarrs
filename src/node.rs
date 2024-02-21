@@ -143,7 +143,7 @@ impl Node {
 
     /// Returns a reference to the path of the node.
     #[must_use] 
-    pub fn get_path(&self) -> &NodePath {
+    pub fn path(&self) -> &NodePath {
         &self.path
     }
 
