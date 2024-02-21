@@ -141,34 +141,22 @@ impl Node {
         unsafe { NodeName::new_unchecked(name) }
     }
 
-    /// Returns the path of the node.
+    /// Returns a reference to the path of the node.
     #[must_use] 
-    pub fn path(&self) -> &NodePath {
+    pub fn get_path(&self) -> &NodePath {
         &self.path
     }
 
-    /// Returns the metadata of the node.
+    /// Returns a reference to the metadata of the node.
     #[must_use]
     pub fn metadata(&self) -> &NodeMetadata {
         &self.metadata
     }
 
-    /// Returns a copy of the metadata of the node.
-    #[must_use]
-    pub fn get_metadata(&self) -> NodeMetadata {
-        self.metadata.clone()
-    }
-
-    /// Returns the children of the node.
+    /// Returns a reference to the metadata of the node.
     #[must_use]
     pub fn children(&self) -> &Vec<Node> {
         &self.children
-    }
-
-    /// Returns a copy of the children of the node.
-    #[must_use]
-    pub fn get_children(&self) -> Vec<Node> {
-        self.children.clone()
     }
 
     /// Return a tree representation of a hierarchy as a string.
