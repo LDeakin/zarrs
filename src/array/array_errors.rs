@@ -103,4 +103,7 @@ pub enum ArrayError {
     /// Incompatible element size.
     #[error("got element size {_0}, expected {_1}")]
     IncompatibleElementSize(usize, usize),
+    /// Invalid data shape.
+    #[error("data has shape {_0:?}, expected {_1:?}")]
+    InvalidDataShape(Vec<usize>, Vec<usize>),
 }

@@ -221,6 +221,18 @@ impl ArraySubset {
         &self.shape
     }
 
+    /// Return the shape of the array subset.
+    ///
+    /// # Panics
+    /// Panics if a dimension exceeds [`usize::MAX`].
+    #[must_use]
+    pub fn shape_usize(&self) -> Vec<usize> {
+        self.shape
+            .iter()
+            .map(|d| usize::try_from(*d).unwrap())
+            .collect()
+    }
+
     /// Returns if the array subset is empty (i.e. has a zero element in its shape).
     #[must_use]
     pub fn is_empty(&self) -> bool {

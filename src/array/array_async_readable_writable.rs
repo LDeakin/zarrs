@@ -53,11 +53,15 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     ///
     /// See [`Array::async_store_chunk_subset_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_chunk_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
+    pub async fn async_store_chunk_subset_ndarray<
+        T: bytemuck::Pod + Send + Sync,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
-        chunk_subset_array: &ndarray::ArrayViewD<'_, T>,
+        chunk_subset_array: TArray,
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_subset_ndarray_opt(
             chunk_indices,
@@ -103,10 +107,14 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     ///
     /// See [`Array::async_store_array_subset_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub async fn async_store_array_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
+    pub async fn async_store_array_subset_ndarray<
+        T: bytemuck::Pod + Send + Sync,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         subset_start: &[u64],
-        subset_array: &ndarray::ArrayViewD<'_, T>,
+        subset_array: TArray,
     ) -> Result<(), ArrayError> {
         self.async_store_array_subset_ndarray_opt(
             subset_start,
@@ -276,12 +284,17 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_array_subset_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
+    pub async fn async_store_array_subset_ndarray_opt<
+        T: bytemuck::Pod + Send + Sync,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         subset_start: &[u64],
-        subset_array: &ndarray::ArrayViewD<'_, T>,
+        subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        let subset_array: ndarray::Array<T, D> = subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             subset_start.to_vec(),
             subset_array.shape().iter().map(|u| *u as u64).collect(),
@@ -406,13 +419,18 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_chunk_subset_elements`](Array::store_chunk_subset_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub async fn async_store_chunk_subset_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
+    pub async fn async_store_chunk_subset_ndarray_opt<
+        T: bytemuck::Pod + Send + Sync,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
-        chunk_subset_array: &ndarray::ArrayViewD<'_, T>,
+        chunk_subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        let chunk_subset_array: ndarray::Array<T, D> = chunk_subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             chunk_subset_start.to_vec(),
             chunk_subset_array

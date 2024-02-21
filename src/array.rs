@@ -455,6 +455,21 @@ impl<TStorage: ?Sized> Array<TStorage> {
             .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))
     }
 
+    /// Return the shape of the chunk at `chunk_indices`.
+    ///
+    /// # Errors
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
+    ///
+    /// # Panics
+    /// Panics if any component of the chunk shape exceeds [`usize::MAX`].
+    pub fn chunk_shape_usize(&self, chunk_indices: &[u64]) -> Result<Vec<usize>, ArrayError> {
+        Ok(self
+            .chunk_shape(chunk_indices)?
+            .iter()
+            .map(|d| usize::try_from(d.get()).unwrap())
+            .collect())
+    }
+
     /// Return the array subset of the chunk at `chunk_indices`.
     ///
     /// # Errors
@@ -596,8 +611,13 @@ macro_rules! array_store_ndarray {
                 std::mem::size_of::<T>(),
             ))
         } else {
-            let $array = $array.as_standard_layout().into_owned().into_raw_vec();
-            $self.$func($($arg)*)
+            if $array.is_standard_layout() {
+                let $array = $array.into_raw_vec();
+                $self.$func($($arg)*)
+            } else {
+                let $array = $array.as_standard_layout().into_owned().into_raw_vec();
+                $self.$func($($arg)*)
+            }
         }
     };
 }
@@ -627,8 +647,13 @@ macro_rules! array_async_store_ndarray {
                 std::mem::size_of::<T>(),
             ))
         } else {
-            let $array = $array.as_standard_layout().into_owned().into_raw_vec();
-            $self.$func($($arg)*).await
+            if $array.is_standard_layout() {
+                let $array = $array.into_raw_vec();
+                $self.$func($($arg)*).await
+            } else {
+                let $array = $array.as_standard_layout().into_owned().into_raw_vec();
+                $self.$func($($arg)*).await
+            }
         }
     };
 }

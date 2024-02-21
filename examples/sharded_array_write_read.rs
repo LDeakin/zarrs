@@ -97,7 +97,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
                         + ij[1] as u64) as u16
                 },
             );
-            array.store_chunk_ndarray(&chunk_indices, &chunk_array.view())
+            array.store_chunk_ndarray(&chunk_indices, chunk_array)
         } else {
             Err(zarrs::array::ArrayError::InvalidChunkGridIndicesError(
                 chunk_indices.to_vec(),

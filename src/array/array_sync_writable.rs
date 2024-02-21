@@ -56,10 +56,14 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///
     /// See [`Array::store_chunk_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn store_chunk_ndarray<T: bytemuck::Pod>(
+    pub fn store_chunk_ndarray<
+        T: bytemuck::Pod,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         chunk_indices: &[u64],
-        chunk_array: &ndarray::ArrayViewD<T>,
+        chunk_array: TArray,
     ) -> Result<(), ArrayError> {
         self.store_chunk_ndarray_opt(chunk_indices, chunk_array, &CodecOptions::default())
     }
@@ -94,10 +98,14 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///
     /// See [`Array::store_chunks_ndarray_opt`].
     #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    pub fn store_chunks_ndarray<T: bytemuck::Pod>(
+    pub fn store_chunks_ndarray<
+        T: bytemuck::Pod,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         chunks: &ArraySubset,
-        chunks_array: &ndarray::ArrayViewD<'_, T>,
+        chunks_array: TArray,
     ) -> Result<(), ArrayError> {
         self.store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
     }
@@ -224,17 +232,30 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the size of `T` does not match the size of the data type,
     ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_panics_doc)]
-    pub fn store_chunk_ndarray_opt<T: bytemuck::Pod>(
+    pub fn store_chunk_ndarray_opt<
+        T: bytemuck::Pod,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         chunk_indices: &[u64],
-        chunk_array: &ndarray::ArrayViewD<T>,
+        chunk_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_store_ndarray!(
-            self,
-            chunk_array,
-            store_chunk_elements_opt(chunk_indices, chunk_array, options)
-        )
+        let chunk_array: ndarray::Array<T, D> = chunk_array.into();
+        let chunk_shape = self.chunk_shape_usize(chunk_indices)?;
+        if chunk_array.shape() == chunk_shape {
+            array_store_ndarray!(
+                self,
+                chunk_array,
+                store_chunk_elements_opt(chunk_indices, chunk_array, options)
+            )
+        } else {
+            Err(ArrayError::InvalidDataShape(
+                chunk_array.shape().to_vec(),
+                chunk_shape,
+            ))
+        }
     }
 
     /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset.
@@ -345,16 +366,30 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Errors
     /// In addition to [`Array::store_chunks_opt`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
-    pub fn store_chunks_ndarray_opt<T: bytemuck::Pod>(
+    pub fn store_chunks_ndarray_opt<
+        T: bytemuck::Pod,
+        TArray: Into<ndarray::Array<T, D>>,
+        D: ndarray::Dimension,
+    >(
         &self,
         chunks: &ArraySubset,
-        chunks_array: &ndarray::ArrayViewD<'_, T>,
+        chunks_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_store_ndarray!(
-            self,
-            chunks_array,
-            store_chunks_elements_opt(chunks, chunks_array, options)
-        )
+        let chunks_array: ndarray::Array<T, D> = chunks_array.into();
+        let chunks_subset = self.chunks_subset(chunks)?;
+        let chunks_shape = chunks_subset.shape_usize();
+        if chunks_array.shape() == chunks_shape {
+            array_store_ndarray!(
+                self,
+                chunks_array,
+                store_chunks_elements_opt(chunks, chunks_array, options)
+            )
+        } else {
+            Err(ArrayError::InvalidDataShape(
+                chunks_array.shape().to_vec(),
+                chunks_shape,
+            ))
+        }
     }
 }

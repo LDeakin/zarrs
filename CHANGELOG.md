@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `ArraySubset` `iter_` methods have had the `iter_` prefix removed. Returned iterators now implement `into_iter()` and some also implement `into_par_iter()`
    - `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs` have been removed. New methods supporting `CodecOptions` offer far more concurrency control
    - `DimensionName`s can now be created less verbosely. E.g. `array_builder.dimension_names(["y", "x"].into())`. Type inference will fail on old syntax like `.dimension_names(vec!["y".into(), "x".into()].into())`
+   - `Array` store `_ndarray` variants now take any type implementing `Into<ndarray::Array<T, D>>` instead of `&ndarray::ArrayViewD<T>`.
 
 ### Added
 #### Arrays
@@ -29,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `Array::{async_}retrieve_chunk_if_exists{_elements,_ndarray}_{opt}`
  - Add `_opt` variants to various array store/retrieve methods
  - Add `Array::dimensionality()`
+ - Add `Array::chunk_shape_usize()`
+
 #### Codecs
  - Add `codec::CodecOptions{Builder}`
  - Add `ArrayCodecTraits::decode_into_array_view` with default implementation
@@ -54,32 +57,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add missing `IncompatibleArraySubsetAndShapeError::new()`
  - Add `--usage-log` argument to examples to use `UsageLog` storage transformer
  - Add more tests for `Array`, codecs, store locks, and more
+ - Add `array_write_read_ndarray` example
 
 ### Changed
- - **Major Breaking**: `Array` `_opt` methods now use a `codec::CodecOptions` parameter instead of `parallel: bool`
-   - **Change in behaviour**: default variants without `_opt` are no longer serial but parallel by default
- - **Major breaking**: refactor codec traits:
-   - **Breaking**: remove `par_` variants and many `_opt` variants in favor of a single method,
-   - **Breaking**: various methods now use an `codec::CodecOptions` parameter instead of `parallel: bool`
-   - **Breaking**: add `{ArrayCodecTraits,BytesToBytesCodecTraits}::recommended_concurrency()`
-   - **Breaking**: add `ArrayPartialDecoderTraits::element_size()`
-   - **Change in behaviour**: default variants without `_opt` are no longer serial but parallel by default
- - **Major breaking**: refactor storage:
-   - Storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait method now take `self: Arc<Self>`
-   - `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime
-   - Removed lifetimes from `{Async}{Readable,Writable,ReadableWritable,Listable,ReadableListable}Storage`
- - **Major breaking**: refactor array subset iterators:
-   - `ArraySubset::iter_` methods no longer have an `iter_` prefix and return structures implementing `IntoIterator` including
-     - `Indices`, `LinearisedIndices`, `ContiguousIndices`, `ContiguousLinearisedIndices`, `Chunks`
-   - `Indices` and `Chunks` implement `IntoParallelIter`
-   - array subset iterators are moved into public `array_subset::iterators` and no longer in the `array_subset` namespace
+#### Arrays
+ - **Breaking**: `Array` `_opt` methods now use a `codec::CodecOptions` parameter instead of `parallel: bool`
+ - **Behaviour change**: default variants without `_opt` are no longer serial but parallel by default
+ - **Breaking**: `Array` store `_ndarray` variants now take any type implementing `Into<ndarray::Array<T, D>>` instead of `&ndarray::ArrayViewD<T>`
+   - This is to reflect that these methods consume the underlying `Vec` in the ndarray
+   - It also removes the constraint that arrays have a dynamic dimension
+
+#### Codecs
+ - **Breaking**: remove `par_` variants and many `_opt` variants in favor of a single method with a `codec::CodecOptions` parameter
+   - `partial_decode` and `partial_decode_opt` remain
+   - **Behaviour change**: `partial_decode` is no longer serial but parallel by default
+ - **Breaking**: add `{ArrayCodecTraits,BytesToBytesCodecTraits}::recommended_concurrency()`
+ - **Breaking**: add `ArrayPartialDecoderTraits::element_size()`
+
+#### Array Subset Iterators
+ - **Breaking**: `ArraySubset::iter_` methods no longer have an `iter_` prefix and return structures implementing `IntoIterator` including
+   - `Indices`, `LinearisedIndices`, `ContiguousIndices`, `ContiguousLinearisedIndices`, `Chunks`
+   - `Indices` and `Chunks` also implement `IntoParallelIter`
+ - Array subset iterators are moved into public `array_subset::iterators` and no longer in the `array_subset` namespace
+
+### Storage
+ - **Breaking**: Storage transformers must be `Arc` wrapped as `StorageTransformerExtension` trait methods now take `self: Arc<Self>`
+ - **Breaking**: `Group` and `Array` methods generic on storage now require the storage have a `'static` lifetime
+ - Removed lifetimes from `{Async}{Readable,Writable,ReadableWritable,Listable,ReadableListable}Storage`
+
+#### Miscellaneous
  - **Breaking**: `ArrayBuilder::dimension_names()` generalised to accept `Option<I>` where `I: IntoIterator<Item = D>` and `D: Into<DimensionName>`
    - Can now write `builder.dimension_names(["y", "x"].into())` instead of `builder.dimension_names(vec!["y".into(), "x".into()].into())`
- - **Breaking**: remove `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs`
+ - **Breaking**: Remove `Array::{set_}parallel_codecs` and `ArrayBuilder::parallel_codecs`
  - **Breaking**: Add `ChunkGridTraits::chunk_shape_u64{_unchecked}` to `ChunkGridTraits`
  - **Breaking**: Add `create{_async}_readable_writable_listable_transformer` to `StorageTransformerExtension` trait
- - **Breaking**: rename `IncompatibleArrayShapeError` to `IncompatibleArraySubsetAndShapeError`
- - **Breaking**: use `IncompatibleArraySubsetAndShapeError` in `ArrayStoreBytesError::InvalidArrayShape`
+ - **Breaking**: Rename `IncompatibleArrayShapeError` to `IncompatibleArraySubsetAndShapeError`
+ - **Breaking**: Use `IncompatibleArraySubsetAndShapeError` in `ArrayStoreBytesError::InvalidArrayShape`
+ - **Breaking**: Add `ArrayError::InvalidDataShape`
  - Add a fast path to `Array::retrieve_chunk_subset{_opt}` if the entire chunk is requested
  - `DimensionName::new()` generalised to accept a name implementing `Into<String>`
  - Cleanup uninitialised `Vec` handling
@@ -88,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `opendal` (public) to [0.45](https://github.com/apache/opendal/releases/v0.45.0)
 
 ### Removed
- - **Breaking**: remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
+ - **Breaking**: Remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
  - **Breaking**: Remove non-default store lock constructors
  - **Breaking**: Remove unused `storage::store::{Readable,Writable,ReadableWritable,Listable}Store`
 
@@ -96,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `ArraySubset::end_inc` now returns an `Option`, which is `None` for an empty array subset
  - `Array::retrieve_array_subset` and variants now correctly return the fill value if the array subset references out-of-bounds elements
  - Add missing input validation to some `partial_decode` methods
+ - Validate `ndarray` array shape in `{async_}store_{chunk,chunks}_ndarray{_opt}`
  - Minor docs fixes
 
 ## [0.11.6] - 2024-02-06

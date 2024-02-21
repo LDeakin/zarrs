@@ -87,8 +87,14 @@ fn transpose_array(
 
     // Transpose the data
     let array_transposed = array.to_owned().permuted_axes(transpose_order);
-    let array_transposed = array_transposed.as_standard_layout();
-    Ok(array_transposed.into_owned().into_raw_vec())
+    if array_transposed.is_standard_layout() {
+        Ok(array_transposed.into_raw_vec())
+    } else {
+        Ok(array_transposed
+            .as_standard_layout()
+            .into_owned()
+            .into_raw_vec())
+    }
 }
 
 fn permute<T: Copy>(v: &[T], order: &TransposeOrder) -> Vec<T> {
