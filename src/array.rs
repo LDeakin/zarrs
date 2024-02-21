@@ -733,7 +733,11 @@ fn validate_element_size<T>(data_type: &DataType) -> Result<(), ArrayError> {
 }
 
 #[cfg(feature = "ndarray")]
-fn elements_to_ndarray<T>(
+/// Convert a vector of elements to an [`ndarray::ArrayD`].
+///
+/// # Errors
+/// Returns an error if the length of `elements` is not equal to the product of the components in `shape`.
+pub fn elements_to_ndarray<T>(
     shape: &[u64],
     elements: Vec<T>,
 ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -744,6 +748,23 @@ fn elements_to_ndarray<T>(
             shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
         ))
     })
+}
+
+#[cfg(feature = "ndarray")]
+/// Convert a vector of bytes to an [`ndarray::ArrayD`].
+///
+/// # Errors
+/// Returns an error if the length of `bytes` is not equal to the product of the components in `shape` and the size of `T`.
+pub fn bytes_to_ndarray<T: bytemuck::Pod>(
+    shape: &[u64],
+    bytes: Vec<u8>,
+) -> Result<ndarray::ArrayD<T>, ArrayError> {
+    let expected_len = shape.iter().product::<u64>() * core::mem::size_of::<T>() as u64;
+    if bytes.len() as u64 != expected_len {
+        return Err(ArrayError::InvalidBytesInputSize(bytes.len(), expected_len));
+    }
+    let elements = transmute_from_bytes_vec::<T>(bytes);
+    elements_to_ndarray(shape, elements)
 }
 
 #[cfg(test)]

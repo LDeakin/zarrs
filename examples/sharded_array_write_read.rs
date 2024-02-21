@@ -1,7 +1,10 @@
 use itertools::Itertools;
-use zarrs::storage::{
-    storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-    ReadableWritableListableStorage,
+use zarrs::{
+    array::bytes_to_ndarray,
+    storage::{
+        storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+        ReadableWritableListableStorage,
+    },
 };
 
 fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
@@ -133,24 +136,14 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         ArraySubset::new_with_start_shape(vec![0, 0], inner_chunk_shape.clone())?,
         ArraySubset::new_with_start_shape(vec![0, 4], inner_chunk_shape.clone())?,
     ];
-    let decoded_inner_chunks = partial_decoder.partial_decode(&inner_chunks_to_decode)?;
-    let decoded_inner_chunks = decoded_inner_chunks
+    let decoded_inner_chunks_bytes = partial_decoder.partial_decode(&inner_chunks_to_decode)?;
+    let decoded_inner_chunks_ndarray = decoded_inner_chunks_bytes
         .into_iter()
-        .map(|bytes| {
-            let elements = zarrs::array::transmute_from_bytes_vec(bytes);
-            ndarray::ArrayD::<u16>::from_shape_vec(
-                inner_chunk_shape
-                    .iter()
-                    .map(|&u| u as usize)
-                    .collect::<Vec<_>>(),
-                elements,
-            )
-            .unwrap()
-        })
-        .collect::<Vec<_>>();
+        .map(|bytes| bytes_to_ndarray::<u16>(&inner_chunk_shape, bytes))
+        .collect::<Result<Vec<_>, _>>()?;
     println!("Decoded inner chunks:");
     for (inner_chunk_subset, decoded_inner_chunk) in
-        std::iter::zip(inner_chunks_to_decode, decoded_inner_chunks)
+        std::iter::zip(inner_chunks_to_decode, decoded_inner_chunks_ndarray)
     {
         println!("{inner_chunk_subset}\n{decoded_inner_chunk}\n");
     }
