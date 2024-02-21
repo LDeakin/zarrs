@@ -316,29 +316,40 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// Return the element size of the partial decoder.
     fn element_size(&self) -> usize;
 
-    /// Partially decode a chunk.
+    /// Partially decode a chunk using default decoding options.
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
+    /// Use [`partial_decode_opt`](ArrayPartialDecoderTraits::partial_decode_opt) to control decoding options.
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    fn partial_decode(&self, array_subsets: &[ArraySubset]) -> Result<Vec<Vec<u8>>, CodecError> {
+        self.partial_decode_opt(array_subsets, &CodecOptions::default())
+    }
+
+    /// Explicit options version of [`partial_decode`](ArrayPartialDecoderTraits::partial_decode).
+    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<Vec<u8>>, CodecError>;
 
-    /// Partially decode a chunk (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
-    fn partial_decode(&self, array_subsets: &[ArraySubset]) -> Result<Vec<Vec<u8>>, CodecError> {
-        self.partial_decode_opt(array_subsets, &CodecOptions::default())
-    }
-
-    /// Partially decode a subset of an array into an array view.
+    /// Partially decode a subset of an array into an array view using default decoding options.
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails, array subset is invalid, or the array subset shape does not match array view subset shape.
-    // TODO: Override this for CodecChain/Sharding
+    fn partial_decode_into_array_view(
+        &self,
+        array_subset: &ArraySubset,
+        array_view: &ArrayView,
+    ) -> Result<(), CodecError> {
+        self.partial_decode_into_array_view_opt(array_subset, array_view, &CodecOptions::default())
+    }
+
+    // TODO: Override partial_decode_into_array_view_opt for CodecChain/Sharding
+    /// Explicit options version of [`partial_decode_into_array_view`](ArrayPartialDecoderTraits::partial_decode_into_array_view).
+    #[allow(clippy::missing_errors_doc)]
     fn partial_decode_into_array_view_opt(
         &self,
         array_subset: &ArraySubset,
@@ -378,16 +389,6 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
             decoded_offset += length;
         }
         Ok(())
-    }
-
-    /// Partially decode a subset of an array into an array view (default options).
-    #[allow(clippy::missing_errors_doc)]
-    fn partial_decode_into_array_view(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView,
-    ) -> Result<(), CodecError> {
-        self.partial_decode_into_array_view_opt(array_subset, array_view, &CodecOptions::default())
     }
 }
 
