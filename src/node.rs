@@ -142,7 +142,7 @@ impl Node {
     }
 
     /// Returns a reference to the path of the node.
-    #[must_use] 
+    #[must_use]
     pub fn path(&self) -> &NodePath {
         &self.path
     }
@@ -153,9 +153,9 @@ impl Node {
         &self.metadata
     }
 
-    /// Returns a reference to the metadata of the node.
+    /// Returns a reference to the children of the node.
     #[must_use]
-    pub fn children(&self) -> &Vec<Node> {
+    pub fn children(&self) -> &[Node] {
         &self.children
     }
 
