@@ -40,10 +40,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         Self::new_with_metadata(storage, path, metadata)
     }
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes if it exists (default options).
+    /// Read and decode the chunk at `chunk_indices` into its bytes if it exists with default codec options.
     ///
-    /// See [`Array::retrieve_chunk_if_exists_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - `chunk_indices` are invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
     pub fn retrieve_chunk_if_exists(
         &self,
         chunk_indices: &[u64],
@@ -51,10 +57,15 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_if_exists_opt(chunk_indices, &CodecOptions::default())
     }
 
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists (default options).
+    /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists with default codec options.
     ///
-    /// See [`Array::retrieve_chunk_elements_if_exists_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the size of `T` does not match the data type size,
+    ///  - the decoded bytes cannot be transmuted,
+    ///  - `chunk_indices` are invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
     pub fn retrieve_chunk_elements_if_exists<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -63,10 +74,18 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] if it exists (default options).
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] if it exists.
     ///
-    /// See [`Array::retrieve_chunk_ndarray_if_exists_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the size of `T` does not match the data type size,
+    ///  - the decoded bytes cannot be transmuted,
+    ///  - the chunk indices are invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Will panic if a chunk dimension is larger than `usize::MAX`.
     pub fn retrieve_chunk_ndarray_if_exists<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -74,18 +93,29 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &CodecOptions::default())
     }
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist (default options).
+    /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist with default codec options.
     ///
-    /// See [`Array::async_retrieve_chunk_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - `chunk_indices` are invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
     pub fn retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
         self.retrieve_chunk_opt(chunk_indices, &CodecOptions::default())
     }
 
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist (default options).
+    /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist.
     ///
-    /// See [`Array::retrieve_chunk_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the size of `T` does not match the data type size,
+    ///  - the decoded bytes cannot be transmuted,
+    ///  - `chunk_indices` are invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
     pub fn retrieve_chunk_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -94,10 +124,18 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`]. It is filled with the fill value if it does not exist (default options).
+    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`]. It is filled with the fill value if it does not exist.
     ///
-    /// See [`Array::retrieve_chunk_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the size of `T` does not match the data type size,
+    ///  - the decoded bytes cannot be transmuted,
+    ///  - the chunk indices are invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Will panic if a chunk dimension is larger than `usize::MAX`.
     pub fn retrieve_chunk_ndarray<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -105,10 +143,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_ndarray_opt(chunk_indices, &CodecOptions::default())
     }
 
-    /// Retrieve a chunk and output into an existing array (default options).
+    /// Retrieve a chunk and output into an existing array.
     ///
-    /// See [`Array::retrieve_chunk_into_array_view_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// See [`Array::retrieve_chunk`].
+    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as the chunk at `chunk_indices`.
+    ///
+    /// # Panics
+    /// Panics if an offset is larger than `usize::MAX`.
     pub fn retrieve_chunk_into_array_view(
         &self,
         chunk_indices: &[u64],
@@ -117,18 +159,27 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_into_array_view_opt(chunk_indices, array_view, &CodecOptions::default())
     }
 
-    /// Read and decode the chunks at `chunks` into their bytes (default options).
+    /// Read and decode the chunks at `chunks` into their bytes.
     ///
-    /// See [`Array::retrieve_chunks_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - any chunk indices in `chunks` are invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Panics if the number of array elements in the chunk exceeds `usize::MAX`.
     pub fn retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
         self.retrieve_chunks_opt(chunks, &CodecOptions::default())
     }
 
-    /// Read and decode the chunks at `chunks` into a vector of their elements (default options).
+    /// Read and decode the chunks at `chunks` into a vector of their elements.
     ///
-    /// See [`Array::retrieve_chunks_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if any chunk indices in `chunks` are invalid or an error condition in [`Array::retrieve_chunks_opt`].
+    ///
+    /// # Panics
+    /// Panics if the number of array elements in the chunks exceeds `usize::MAX`.
     pub fn retrieve_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
@@ -137,10 +188,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunks at `chunks` into an [`ndarray::ArrayD`] (default options).
+    /// Read and decode the chunks at `chunks` into an [`ndarray::ArrayD`].
     ///
-    /// See [`Array::retrieve_chunks_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if any chunk indices in `chunks` are invalid or an error condition in [`Array::retrieve_chunks_elements_opt`].
+    ///
+    /// # Panics
+    /// Panics if the number of array elements in the chunks exceeds `usize::MAX`.
     pub fn retrieve_chunks_ndarray<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
@@ -148,10 +202,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunks_ndarray_opt(chunks, &CodecOptions::default())
     }
 
-    /// Retrieve chunks and output into an existing array (default options).
+    /// Retrieve chunks into an array view.
     ///
-    /// See [`Array::retrieve_chunks_into_array_view_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// See [`Array::retrieve_chunks_opt`].
+    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as `array_subset`.
+    ///
+    /// # Panics
+    /// Panics if an offset is larger than `usize::MAX`.
     pub fn retrieve_chunks_into_array_view(
         &self,
         chunks: &ArraySubset,
@@ -160,10 +218,17 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunks_into_array_view_opt(chunks, array_view, &CodecOptions::default())
     }
 
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes (default options).
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes.
     ///
-    /// See [`Array::retrieve_chunk_subset_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the chunk indices are invalid,
+    ///  - the chunk subset is invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
     pub fn retrieve_chunk_subset(
         &self,
         chunk_indices: &[u64],
@@ -172,10 +237,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_subset_opt(chunk_indices, chunk_subset, &CodecOptions::default())
     }
 
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements (default options).
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements.
     ///
-    /// See [`Array::retrieve_chunk_subset_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the chunk indices are invalid,
+    ///  - the chunk subset is invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
     pub fn retrieve_chunk_subset_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -189,10 +258,17 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an [`ndarray::ArrayD`] (default options).
+    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an [`ndarray::ArrayD`].
     ///
-    /// See [`Array::retrieve_chunk_subset_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the chunk indices are invalid,
+    ///  - the chunk subset is invalid,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
     pub fn retrieve_chunk_subset_ndarray<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -205,10 +281,15 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         )
     }
 
-    /// Retrieve a subset of a chunk and output into an existing array (default options).
+    /// Retrieve a subset of a chunk and output into an existing array.
     ///
-    /// See [`Array::retrieve_chunk_subset_into_array_view_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// See [`Array::retrieve_chunk_subset`].
+    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as `chunk_subset`.
+    ///
+    /// # Panics
+    /// Panics if an offset is larger than `usize::MAX`.
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn retrieve_chunk_subset_into_array_view(
         &self,
         chunk_indices: &[u64],
@@ -225,16 +306,30 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
     /// Read and decode the `array_subset` of array into its bytes.
     ///
-    /// See [`Array::retrieve_array_subset_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Out-of-bounds elements will have the fill value.
+    /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the `array_subset` dimensionality does not match the chunk grid dimensionality,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Panics if attempting to reference a byte beyond `usize::MAX`.
     pub fn retrieve_array_subset(&self, array_subset: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
         self.retrieve_array_subset_opt(array_subset, &CodecOptions::default())
     }
 
-    /// Read and decode the `array_subset` of array into a vector of its elements (default options).
+    /// Read and decode the `array_subset` of array into a vector of its elements.
     ///
-    /// See [`Array::retrieve_array_subset_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - the size of `T` does not match the data type size,
+    ///  - the decoded bytes cannot be transmuted,
+    ///  - an array subset is invalid or out of bounds of the array,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
     pub fn retrieve_array_subset_elements<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
@@ -243,10 +338,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`] (default options).
+    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`].
     ///
-    /// See [`Array::retrieve_array_subset_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if:
+    ///  - an array subset is invalid or out of bounds of the array,
+    ///  - there is a codec decoding error, or
+    ///  - an underlying store error.
+    ///
+    /// # Panics
+    /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
     pub fn retrieve_array_subset_ndarray<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
@@ -254,10 +355,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_array_subset_ndarray_opt(array_subset, &CodecOptions::default())
     }
 
-    /// Retrieve an array subset into an array view (default options).
+    /// Retrieve an array subset into an array view.
     ///
-    /// See [`Array::retrieve_array_subset_into_array_view_opt`].
-    #[allow(clippy::missing_errors_doc)]
+    /// # Errors
+    /// See [`Array::retrieve_array_subset`].
+    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as `array_subset`.
+    ///
+    /// # Panics
+    /// Panics if an offset is larger than `usize::MAX`.
     pub fn retrieve_array_subset_into_array_view(
         &self,
         array_subset: &ArraySubset,
@@ -270,8 +375,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         )
     }
 
-    /// Initialises a partial decoder for the chunk at `chunk_indices` (default options).
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Initialises a partial decoder for the chunk at `chunk_indices`.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
     pub fn partial_decoder<'a>(
         &'a self,
         chunk_indices: &[u64],
@@ -280,19 +387,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     /////////////////////////////////////////////////////////////////////////////
-    /// Advanced methods
+    // Advanced methods
     /////////////////////////////////////////////////////////////////////////////
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes if it exists.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - `chunk_indices` are invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_if_exists_opt(
         &self,
         chunk_indices: &[u64],
@@ -335,16 +434,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - `chunk_indices` are invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Panics if the number of elements in the chunk exceeds `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunk`](Array::retrieve_chunk).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_opt(
         &self,
         chunk_indices: &[u64],
@@ -360,15 +451,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements if it exists.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the size of `T` does not match the data type size,
-    ///  - the decoded bytes cannot be transmuted,
-    ///  - `chunk_indices` are invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
+    /// Explicit options version of [`retrieve_chunk_elements_if_exists`](Array::retrieve_chunk_elements_if_exists).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_elements_if_exists_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -379,15 +463,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         Ok(bytes.map(|bytes| transmute_from_bytes_vec::<T>(bytes)))
     }
 
-    /// Read and decode the chunk at `chunk_indices` into a vector of its elements or the fill value if it does not exist.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the size of `T` does not match the data type size,
-    ///  - the decoded bytes cannot be transmuted,
-    ///  - `chunk_indices` are invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
+    /// Explicit options version of [`retrieve_chunk_elements`](Array::retrieve_chunk_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_elements_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -399,18 +476,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`] if it exists.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the size of `T` does not match the data type size,
-    ///  - the decoded bytes cannot be transmuted,
-    ///  - the chunk indices are invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Will panic if a chunk dimension is larger than `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunk_ndarray_if_exists`](Array::retrieve_chunk_ndarray_if_exists).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_ndarray_if_exists_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -430,18 +497,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunk at `chunk_indices` into an [`ndarray::ArrayD`]. It is filled with the fill value if it does not exist.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the size of `T` does not match the data type size,
-    ///  - the decoded bytes cannot be transmuted,
-    ///  - the chunk indices are invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Will panic if a chunk dimension is larger than `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunk_ndarray`](Array::retrieve_chunk_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -458,14 +515,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         )
     }
 
-    /// Retrieve a chunk and output into an existing array.
-    ///
-    /// # Errors
-    /// See [`Array::retrieve_chunk`].
-    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as the chunk at `chunk_indices`.
-    ///
-    /// # Panics
-    /// Panics if an offset is larger than `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunk_into_array_view`](Array::retrieve_chunk_into_array_view).
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn retrieve_chunk_into_array_view_opt(
         &self,
         chunk_indices: &[u64],
@@ -503,18 +554,17 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     .subset()
                     .contiguous_linearised_indices_unchecked(array_view.array_shape())
             };
-            let element_size = chunk_representation.element_size() as u64;
-            let length =
-                usize::try_from(contiguous_indices.contiguous_elements() * element_size).unwrap();
+            let element_size = chunk_representation.element_size();
+            let length = contiguous_indices.contiguous_elements_usize() * element_size;
             let fill = self
                 .fill_value()
                 .as_ne_bytes()
-                .repeat(usize::try_from(contiguous_indices.contiguous_elements()).unwrap());
+                .repeat(contiguous_indices.contiguous_elements_usize());
             // FIXME: Par iteration?
             let output = unsafe { array_view.bytes_mut() };
             for (array_subset_element_index, _num_elements) in &contiguous_indices {
                 let output_offset =
-                    usize::try_from(array_subset_element_index * element_size).unwrap();
+                    usize::try_from(array_subset_element_index).unwrap() * element_size;
                 debug_assert!((output_offset + length) <= output.len());
                 output[output_offset..output_offset + length].copy_from_slice(&fill);
             }
@@ -522,14 +572,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Retrieve a subset of a chunk and output into an existing array.
-    ///
-    /// # Errors
-    /// See [`Array::retrieve_chunk_subset`].
-    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as `chunk_subset`.
-    ///
-    /// # Panics
-    /// Panics if an offset is larger than `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunk_subset_into_array_view`](Array::retrieve_chunk_subset_into_array_view).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_subset_into_array_view_opt(
         &self,
         chunk_indices: &[u64],
@@ -564,16 +608,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunks at `chunks` into their bytes.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - any chunk indices in `chunks` are invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Panics if the number of array elements in the chunk exceeds `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunks`](Array::retrieve_chunks).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunks_opt(
         &self,
         chunks: &ArraySubset,
@@ -597,11 +633,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 self.retrieve_chunk_opt(chunk_indices, options)
             }
             _ => {
-                // Decode chunks and copy to output
-                let size_output =
-                    usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
-                        .unwrap();
-
                 // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
@@ -615,6 +646,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
                 // let mut output = vec![0; size_output];
                 // let output_slice = output.as_mut_slice();
+                let size_output = array_subset.num_elements_usize() * self.data_type().size();
                 let mut output = Vec::with_capacity(size_output);
                 {
                     let output_slice =
@@ -649,13 +681,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the chunks at `chunks` into a vector of their elements.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if any chunk indices in `chunks` are invalid or an error condition in [`Array::retrieve_chunks_opt`].
-    ///
-    /// # Panics
-    /// Panics if the number of array elements in the chunks exceeds `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunks_elements`](Array::retrieve_chunks_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunks_elements_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
@@ -667,13 +694,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the chunks at `chunks` into an [`ndarray::ArrayD`].
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if any chunk indices in `chunks` are invalid or an error condition in [`Array::retrieve_chunks_elements_opt`].
-    ///
-    /// # Panics
-    /// Panics if the number of array elements in the chunks exceeds `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunks_ndarray`](Array::retrieve_chunks_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunks_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
@@ -685,19 +707,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         elements_to_ndarray(array_subset.shape(), elements)
     }
 
-    /// Read and decode the `array_subset` of array into its bytes.
-    ///
-    /// Out-of-bounds elements will have the fill value.
-    /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the `array_subset` dimensionality does not match the chunk grid dimensionality,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Panics if attempting to reference a byte beyond `usize::MAX`.
+    /// Explicit options version of [`retrieve_array_subset`](Array::retrieve_array_subset).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_array_subset_opt(
         &self,
         array_subset: &ArraySubset,
@@ -744,9 +755,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             }
             _ => {
                 // Allocate the output
-                let size_output =
-                    usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
-                        .unwrap();
+                let size_output = array_subset.num_elements_usize() * self.data_type().size();
                 let mut output = Vec::with_capacity(size_output);
 
                 // Calculate chunk/codec concurrency
@@ -799,14 +808,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Retrieve chunks into an array view.
-    ///
-    /// # Errors
-    /// See [`Array::retrieve_chunks_opt`].
-    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as `array_subset`.
-    ///
-    /// # Panics
-    /// Panics if an offset is larger than `usize::MAX`.
+    /// Explicit options version of [`retrieve_chunks_into_array_view`](Array::retrieve_chunks_into_array_view).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunks_into_array_view_opt(
         &self,
         chunks: &ArraySubset,
@@ -821,10 +824,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             return Ok(());
         }
 
-        let chunk0_start = self.chunk_subset(chunks.start())?.start().to_vec();
-        let chunk1_end = self.chunk_subset(&chunks.end_inc().unwrap())?.end_exc();
-        let array_subset =
-            ArraySubset::new_with_start_end_exc(chunk0_start.clone(), chunk1_end).unwrap();
+        let array_subset = self.chunks_subset(chunks)?;
         if array_subset.shape() != array_view.subset().shape() {
             return Err(ArrayError::InvalidArraySubset(
                 array_subset.clone(),
@@ -853,9 +853,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     indices.into_par_iter(),
                     try_for_each,
                     |chunk_indices| {
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap();
+                        let chunk_subset = self.chunk_subset(&chunk_indices)?;
                         let array_view_subset =
-                            unsafe { chunk_subset.relative_to_unchecked(&chunk0_start) };
+                            unsafe { chunk_subset.relative_to_unchecked(array_subset.start()) };
                         self.retrieve_chunk_into_array_view_opt(
                             &chunk_indices,
                             &unsafe { array_view.subset_view(&array_view_subset) }
@@ -869,14 +869,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Retrieve an array subset into an array view.
-    ///
-    /// # Errors
-    /// See [`Array::retrieve_array_subset`].
-    /// Can also error if the [`ArraySubset`] in `array_view` does not have the same shape as `array_subset`.
-    ///
-    /// # Panics
-    /// Panics if an offset is larger than `usize::MAX`.
+    /// Explicit options version of [`retrieve_array_subset_into_array_view`](Array::retrieve_array_subset_into_array_view).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_array_subset_into_array_view_opt(
         &self,
         array_subset: &ArraySubset,
@@ -905,7 +899,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             0 => Ok(()),
             1 => {
                 let chunk_indices = chunks.start();
-                let chunk_subset = self.chunk_subset(chunk_indices).unwrap();
+                let chunk_subset = self.chunk_subset(chunk_indices)?;
                 if &chunk_subset == array_subset {
                     // Single chunk fast path if the array subset domain matches the chunk domain
                     let array_view_subset =
@@ -953,7 +947,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         indices.into_par_iter(),
                         try_for_each,
                         |chunk_indices| {
-                            let chunk_subset = self.chunk_subset(&chunk_indices).unwrap();
+                            let chunk_subset = self.chunk_subset(&chunk_indices)?;
                             let chunk_subset_in_array_subset =
                                 unsafe { chunk_subset.overlap_unchecked(array_subset) };
                             let chunk_subset = unsafe {
@@ -979,15 +973,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the `array_subset` of array into a vector of its elements.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the size of `T` does not match the data type size,
-    ///  - the decoded bytes cannot be transmuted,
-    ///  - an array subset is invalid or out of bounds of the array,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
+    /// Explicit options version of [`retrieve_array_subset_elements`](Array::retrieve_array_subset_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_array_subset_elements_opt<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
@@ -999,16 +986,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the `array_subset` of array into an [`ndarray::ArrayD`].
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - an array subset is invalid or out of bounds of the array,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Will panic if any dimension in `chunk_subset` is `usize::MAX` or larger.
+    /// Explicit options version of [`retrieve_array_subset_ndarray`](Array::retrieve_array_subset_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_array_subset_ndarray_opt<T: bytemuck::Pod>(
         &self,
         array_subset: &ArraySubset,
@@ -1019,17 +998,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         elements_to_ndarray(array_subset.shape(), elements)
     }
 
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its bytes.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the chunk indices are invalid,
-    ///  - the chunk subset is invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
+    /// Explicit options version of [`retrieve_chunk_subset`](Array::retrieve_chunk_subset).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_subset_opt(
         &self,
         chunk_indices: &[u64],
@@ -1059,11 +1029,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
             ));
 
-            self.codecs()
-                .partial_decoder(input_handle, &chunk_representation, options)?
-                .partial_decode_opt(&[chunk_subset.clone()], options)?
-                .pop()
-                .unwrap()
+            unsafe {
+                self.codecs()
+                    .partial_decoder(input_handle, &chunk_representation, options)?
+                    .partial_decode_opt(&[chunk_subset.clone()], options)?
+                    .pop()
+                    .unwrap_unchecked()
+            }
         };
 
         let total_size = decoded_bytes.len();
@@ -1078,14 +1050,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into its elements.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the chunk indices are invalid,
-    ///  - the chunk subset is invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
+    /// Explicit options version of [`retrieve_chunk_subset_elements`](Array::retrieve_chunk_subset_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_subset_elements_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -1098,17 +1064,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Read and decode the `chunk_subset` of the chunk at `chunk_indices` into an [`ndarray::ArrayD`].
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if:
-    ///  - the chunk indices are invalid,
-    ///  - the chunk subset is invalid,
-    ///  - there is a codec decoding error, or
-    ///  - an underlying store error.
-    ///
-    /// # Panics
-    /// Will panic if the number of elements in `chunk_subset` is `usize::MAX` or larger.
+    /// Explicit options version of [`retrieve_chunk_subset_ndarray`](Array::retrieve_chunk_subset_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_subset_ndarray_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -1121,10 +1078,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         elements_to_ndarray(chunk_subset.shape(), elements)
     }
 
-    /// Initialises a partial decoder for the chunk at `chunk_indices`.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
+    /// Explicit options version of [`partial_decoder`](Array::partial_decoder).
+    #[allow(clippy::missing_errors_doc)]
     pub fn partial_decoder_opt<'a>(
         &'a self,
         chunk_indices: &[u64],

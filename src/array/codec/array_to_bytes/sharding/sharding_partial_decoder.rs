@@ -167,7 +167,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
         let num_chunks = usize::try_from(chunks_per_shard.iter().product::<u64>()).unwrap();
 
-        let element_size = self.decoded_representation.element_size() as u64;
+        let element_size = self.decoded_representation.element_size();
         let fill_value = chunk_representation.fill_value().as_ne_bytes();
 
         // Calculate inner chunk/codec concurrency
@@ -187,8 +187,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
 
         let mut out = Vec::with_capacity(array_subsets.len());
         for array_subset in array_subsets {
-            let array_subset_size =
-                usize::try_from(array_subset.num_elements() * element_size).unwrap();
+            let array_subset_size = array_subset.num_elements_usize() * element_size;
             let mut out_array_subset = vec![0; array_subset_size];
             let out_array_subset_slice = UnsafeCellSlice::new(out_array_subset.as_mut_slice());
 
@@ -240,12 +239,10 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         chunk_subset_in_array_subset
                             .contiguous_linearised_indices_unchecked(array_subset.shape())
                     };
-                    let length =
-                        usize::try_from(contiguous_iterator.contiguous_elements() * element_size)
-                            .unwrap();
+                    let length = contiguous_iterator.contiguous_elements_usize() * element_size;
                     for (array_subset_element_index, _num_elements) in &contiguous_iterator {
                         let output_offset =
-                            usize::try_from(array_subset_element_index * element_size).unwrap();
+                            usize::try_from(array_subset_element_index).unwrap() * element_size;
                         out_array_subset_slice[output_offset..output_offset + length]
                             .copy_from_slice(
                                 &decoded_bytes[decoded_offset..decoded_offset + length],

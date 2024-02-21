@@ -100,6 +100,15 @@ impl ContiguousIndices {
         self.contiguous_elements
     }
 
+    /// Return the number of contiguous elements (fixed on each iteration).
+    ///
+    /// # Panics
+    /// Panics if the number of contiguous elements exceeds [`usize::MAX`].
+    #[must_use]
+    pub fn contiguous_elements_usize(&self) -> usize {
+        usize::try_from(self.contiguous_elements).unwrap()
+    }
+
     /// Create a new serial iterator.
     #[must_use]
     pub fn iter(&self) -> ContiguousIndicesIterator<'_> {

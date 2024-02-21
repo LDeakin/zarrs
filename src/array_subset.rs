@@ -298,12 +298,11 @@ impl ArraySubset {
         element_size: usize,
     ) -> Result<Vec<ByteRange>, IncompatibleArraySubsetAndShapeError> {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
-        for (array_index, contiguous_elements) in
-            &self.contiguous_linearised_indices(array_shape)?
-        {
+        let contiguous_indices = self.contiguous_linearised_indices(array_shape)?;
+        let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
+        for (array_index, _contiguous_elements) in &contiguous_indices {
             let byte_index = array_index * element_size as u64;
-            let byte_length = contiguous_elements * element_size as u64;
-            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length)));
+            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length as u64)));
         }
         Ok(byte_ranges)
     }
@@ -319,12 +318,11 @@ impl ArraySubset {
         element_size: usize,
     ) -> Vec<ByteRange> {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
-        for (array_index, contiguous_elements) in
-            &self.contiguous_linearised_indices_unchecked(array_shape)
-        {
+        let contiguous_indices = self.contiguous_linearised_indices_unchecked(array_shape);
+        let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
+        for (array_index, _contiguous_elements) in &contiguous_indices {
             let byte_index = array_index * element_size as u64;
-            let byte_length = contiguous_elements * element_size as u64;
-            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length)));
+            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length as u64)));
         }
         byte_ranges
     }
@@ -377,20 +375,18 @@ impl ArraySubset {
         array_shape: &[u64],
         element_size: usize,
     ) -> Vec<u8> {
-        let element_size = element_size as u64;
         debug_assert_eq!(
             bytes.len() as u64,
-            array_shape.iter().product::<u64>() * element_size
+            array_shape.iter().product::<u64>() * element_size as u64
         );
-        let num_bytes = usize::try_from(self.num_elements() * element_size).unwrap();
+        let num_bytes = self.num_elements_usize() * element_size;
         let mut bytes_subset: Vec<u8> = Vec::with_capacity(num_bytes);
         let bytes_subset_slice = vec_spare_capacity_to_mut_slice(&mut bytes_subset);
         let mut subset_offset = 0;
-        for (array_index, contiguous_elements) in
-            &self.contiguous_linearised_indices_unchecked(array_shape)
-        {
-            let byte_offset = usize::try_from(array_index * element_size).unwrap();
-            let byte_length = usize::try_from(contiguous_elements * element_size).unwrap();
+        let contiguous_indices = self.contiguous_linearised_indices_unchecked(array_shape);
+        let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
+        for (array_index, _contiguous_elements) in &contiguous_indices {
+            let byte_offset = usize::try_from(array_index).unwrap() * element_size;
             debug_assert!(byte_offset + byte_length <= bytes.len());
             debug_assert!(subset_offset + byte_length <= num_bytes);
             bytes_subset_slice[subset_offset..subset_offset + byte_length]
@@ -498,11 +494,10 @@ impl ArraySubset {
             ))
         } else {
             let mut offset = 0;
-            for (array_index, contiguous_elements) in
-                &self.contiguous_linearised_indices(array_shape)?
-            {
-                let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
-                let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
+            let contiguous_indices = self.contiguous_linearised_indices(array_shape)?;
+            let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
+            for (array_index, _contiguous_elements) in &contiguous_indices {
+                let byte_index = usize::try_from(array_index).unwrap() * element_size;
                 debug_assert!(byte_index + byte_length <= bytes_array.len());
                 debug_assert!(offset + byte_length <= bytes_subset.len());
                 bytes_array[byte_index..byte_index + byte_length]
@@ -531,21 +526,16 @@ impl ArraySubset {
         array_shape: &[u64],
         element_size: usize,
     ) {
-        let element_size_u64 = element_size as u64;
-        debug_assert_eq!(
-            bytes_subset.len() as u64,
-            self.num_elements() * element_size_u64
-        );
+        debug_assert_eq!(bytes_subset.len(), self.num_elements_usize() * element_size);
         debug_assert_eq!(
             bytes_array.len() as u64,
-            array_shape.iter().product::<u64>() * element_size_u64
+            array_shape.iter().product::<u64>() * element_size as u64
         );
         let mut offset = 0;
-        for (array_index, contiguous_elements) in
-            &self.contiguous_linearised_indices_unchecked(array_shape)
-        {
-            let byte_index = usize::try_from(array_index * element_size_u64).unwrap();
-            let byte_length = usize::try_from(contiguous_elements * element_size_u64).unwrap();
+        let contiguous_indices = self.contiguous_linearised_indices_unchecked(array_shape);
+        let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
+        for (array_index, _contiguous_elements) in &contiguous_indices {
+            let byte_index = usize::try_from(array_index).unwrap() * element_size;
             debug_assert!(byte_index + byte_length <= bytes_array.len());
             debug_assert!(offset + byte_length <= bytes_subset.len());
             bytes_array[byte_index..byte_index + byte_length]

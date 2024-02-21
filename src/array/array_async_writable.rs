@@ -14,10 +14,8 @@ use super::{
 };
 
 impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
-    /// Store metadata.
-    ///
-    /// # Errors
-    /// Returns [`StorageError`] if there is an underlying store error.
+    /// Async variant of [`store_metadata`](Array::store_metadata).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_metadata(&self) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -27,10 +25,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
-    /// Encode `chunk_bytes` and store at `chunk_indices` (default options).
-    ///
-    /// See [`Array::async_store_chunk_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Async variant of [`store_chunk`](Array::store_chunk).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk(
         &self,
         chunk_indices: &[u64],
@@ -40,10 +36,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
-    /// Encode `chunk_elements` and store at `chunk_indices` (default options).
-    ///
-    /// See [`Array::async_store_chunk_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Async variant of [`store_chunk_elements`](Array::store_chunk_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
@@ -54,10 +48,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Encode `chunk_array` and store at `chunk_indices` (default options).
-    ///
-    /// See [`Array::async_store_chunk_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Async variant of [`store_chunk_ndarray`](Array::store_chunk_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_ndarray<
         T: bytemuck::Pod + Send + Sync,
         TArray: Into<ndarray::Array<T, D>>,
@@ -71,11 +63,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
-    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset (default options).
-    ///
-    /// See [`Array::async_store_chunks_opt`].
+    /// Async variant of [`store_chunks`](Array::store_chunks).
+    #[allow(clippy::missing_errors_doc)]
     #[allow(clippy::similar_names)]
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
     pub async fn async_store_chunks(
         &self,
         chunks: &ArraySubset,
@@ -85,10 +75,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
-    /// Variation of [`Array::async_store_chunks`] for elements with a known type (default options).
-    ///
-    /// See [`Array::async_store_chunks_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Async variant of [`store_chunks_elements`](Array::store_chunks_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunks: &ArraySubset,
@@ -99,10 +87,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Variation of [`Array::async_store_chunks`] for an [`ndarray::ArrayViewD`] (default options).
-    ///
-    /// See [`Array::async_store_chunks_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Async variant of [`store_chunks_ndarray`](Array::store_chunks_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_ndarray<
         T: bytemuck::Pod + Send + Sync,
         TArray: Into<ndarray::Array<T, D>>,
@@ -116,12 +102,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
-    /// Erase the chunk at `chunk_indices`.
-    ///
-    /// Succeeds if the key does not exist.
-    ///
-    /// # Errors
-    /// Returns a [`StorageError`] if there is an underlying store error.
+    /// Async variant of [`erase_chunk`](Array::erase_chunk).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -136,10 +118,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         .await
     }
 
-    /// Erase the chunks at the chunk indices enclosed by `chunks`.
-    ///
-    /// # Errors
-    /// Returns a [`StorageError`] if there is an underlying store error.
+    /// Async variant of [`erase_chunks`](Array::erase_chunks).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -170,19 +150,11 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     }
 
     /////////////////////////////////////////////////////////////////////////////
-    /// Advanced methods
+    // Advanced methods
     /////////////////////////////////////////////////////////////////////////////
 
-    /// Encode `chunk_bytes` and store at `chunk_indices`.
-    ///
-    /// A chunk composed entirely of the fill value will not be written to the store.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - `chunk_indices` are invalid,
-    ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
-    ///  - there is a codec encoding error, or
-    ///  - an underlying store error.
+    /// Async variant of [`store_chunk_opt`](Array::store_chunk_opt).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_opt(
         &self,
         chunk_indices: &[u64],
@@ -223,14 +195,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Encode `chunk_elements` and store at `chunk_indices`.
-    ///
-    /// A chunk composed entirely of the fill value will not be written to the store.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the size of  `T` does not match the data type size, or
-    ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
+    /// Async variant of [`store_chunk_elements_opt`](Array::store_chunk_elements_opt).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_elements_opt<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
@@ -245,13 +211,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Encode `chunk_array` and store at `chunk_indices`.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the size of `T` does not match the size of the data type,
-    ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
-    #[allow(clippy::missing_panics_doc)]
+    /// Async variant of [`store_chunk_ndarray_opt`](Array::store_chunk_ndarray_opt).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_ndarray_opt<
         T: bytemuck::Pod + Send + Sync,
         TArray: Into<ndarray::Array<T, D>>,
@@ -278,17 +239,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset.
-    ///
-    /// A chunk composed entirely of the fill value will not be written to the store.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - `chunks` are invalid,
-    ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunks and the data type size in bytes),
-    ///  - there is a codec encoding error, or
-    ///  - an underlying store error.
-    #[allow(clippy::similar_names, clippy::missing_panics_doc)]
+    /// Async variant of [`store_chunks_opt`](Array::store_chunks_opt).
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+    #[allow(clippy::similar_names)]
     pub async fn async_store_chunks_opt(
         &self,
         chunks: &ArraySubset,
@@ -334,7 +287,6 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                     let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                     let chunk_subset_in_array_subset =
                         unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    #[allow(clippy::similar_names)]
                     let chunk_bytes = unsafe {
                         chunk_subset_in_array_subset.extract_bytes_unchecked(
                             &chunks_bytes,
@@ -367,10 +319,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         Ok(())
     }
 
-    /// Variation of [`Array::async_store_chunks`] for elements with a known type.
-    ///
-    /// # Errors
-    /// In addition to [`Array::async_store_chunks`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
+    /// Async variant of [`store_chunks_elements_opt`](Array::store_chunks_elements_opt).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_elements_opt<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunks: &ArraySubset,
@@ -385,10 +335,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Variation of [`Array::async_store_chunks`] for an [`ndarray::ArrayViewD`].
-    ///
-    /// # Errors
-    /// In addition to [`Array::async_store_chunks`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
+    /// Async variant of [`store_chunks_ndarray_opt`](Array::store_chunks_ndarray_opt).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_ndarray_opt<
         T: bytemuck::Pod + Send + Sync,
         TArray: Into<ndarray::Array<T, D>>,

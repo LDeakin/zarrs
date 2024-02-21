@@ -27,10 +27,17 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         crate::storage::create_array(&*storage_transformer, self.path(), &self.metadata())
     }
 
-    /// Encode `chunk_bytes` and store at `chunk_indices` (default options).
+    /// Encode `chunk_bytes` and store at `chunk_indices`.
     ///
-    /// See [`Array::store_chunk_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Use [`store_chunk_opt`](Array::store_chunk_opt) to control codec options.
+    /// A chunk composed entirely of the fill value will not be written to the store.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - `chunk_indices` are invalid,
+    ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
+    ///  - there is a codec encoding error, or
+    ///  - an underlying store error.
     pub fn store_chunk(
         &self,
         chunk_indices: &[u64],
@@ -39,10 +46,15 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         self.store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
     }
 
-    /// Encode `chunk_elements` and store at `chunk_indices` (default options).
+    /// Encode `chunk_elements` and store at `chunk_indices`.
     ///
-    /// See [`Array::store_chunk_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Use [`store_chunk_elements_opt`](Array::store_chunk_elements_opt) to control codec options.
+    /// A chunk composed entirely of the fill value will not be written to the store.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the size of  `T` does not match the data type size, or
+    ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
     pub fn store_chunk_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -52,10 +64,15 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Encode `chunk_array` and store at `chunk_indices` (default options).
+    /// Encode `chunk_array` and store at `chunk_indices`.
     ///
-    /// See [`Array::store_chunk_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// Use [`store_chunk_ndarray_opt`](Array::store_chunk_ndarray_opt) to control codec options.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the shape of the array does not match the shape of the chunk,
+    ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_chunk_ndarray<
         T: bytemuck::Pod,
         TArray: Into<ndarray::Array<T, D>>,
@@ -68,11 +85,19 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         self.store_chunk_ndarray_opt(chunk_indices, chunk_array, &CodecOptions::default())
     }
 
-    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset (default options).
+    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset.
     ///
-    /// See [`Array::store_chunks_opt`].
+    /// Use [`store_chunks_opt`](Array::store_chunks_opt) to control codec options.
+    /// A chunk composed entirely of the fill value will not be written to the store.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - `chunks` are invalid,
+    ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunks and the data type size in bytes),
+    ///  - there is a codec encoding error, or
+    ///  - an underlying store error.
     #[allow(clippy::similar_names)]
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_chunks(
         &self,
         chunks: &ArraySubset,
@@ -81,10 +106,13 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         self.store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
     }
 
-    /// Variation of [`Array::store_chunks_opt`] for elements with a known type (default options).
+    /// Encode `chunks_elements` and store at the chunks with indices represented by the `chunks` array subset.
     ///
-    /// See [`Array::store_chunks_elements_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the size of  `T` does not match the data type size, or
+    ///  - a [`store_chunks`](Array::store_chunks) error condition is met.
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
@@ -94,10 +122,13 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Variation of [`Array::store_chunks_opt`] for an [`ndarray::ArrayViewD`] (default options).
+    /// Encode `chunks_array` and store at the chunks with indices represented by the `chunks` array subset.
     ///
-    /// See [`Array::store_chunks_ndarray_opt`].
-    #[allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+    /// # Errors
+    /// Returns an [`ArrayError`] if
+    ///  - the shape of the array does not match the shape of the chunks,
+    ///  - a [`store_chunks_elements`](Array::store_chunks_elements) error condition is met.
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_chunks_ndarray<
         T: bytemuck::Pod,
         TArray: Into<ndarray::Array<T, D>>,
@@ -151,19 +182,11 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     }
 
     /////////////////////////////////////////////////////////////////////////////
-    /// Advanced methods
+    // Advanced methods
     /////////////////////////////////////////////////////////////////////////////
 
-    /// Encode `chunk_bytes` and store at `chunk_indices`.
-    ///
-    /// A chunk composed entirely of the fill value will not be written to the store.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - `chunk_indices` are invalid,
-    ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
-    ///  - there is a codec encoding error, or
-    ///  - an underlying store error.
+    /// Explicit options version of [`store_chunk`](Array::store_chunk).
+    #[allow(clippy::missing_errors_doc)]
     pub fn store_chunk_opt(
         &self,
         chunk_indices: &[u64],
@@ -203,14 +226,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Encode `chunk_elements` and store at `chunk_indices`.
-    ///
-    /// A chunk composed entirely of the fill value will not be written to the store.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the size of  `T` does not match the data type size, or
-    ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
+    /// Explicit options version of [`store_chunk_elements`](Array::store_chunk_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub fn store_chunk_elements_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
@@ -225,13 +242,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Encode `chunk_array` and store at `chunk_indices`.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - the size of `T` does not match the size of the data type,
-    ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
-    #[allow(clippy::missing_panics_doc)]
+    /// Explicit options version of [`store_chunk_ndarray`](Array::store_chunk_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub fn store_chunk_ndarray_opt<
         T: bytemuck::Pod,
         TArray: Into<ndarray::Array<T, D>>,
@@ -258,17 +270,9 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
-    /// Encode `chunks_bytes` and store at the chunks with indices represented by the `chunks` array subset.
-    ///
-    /// A chunk composed entirely of the fill value will not be written to the store.
-    ///
-    /// # Errors
-    /// Returns an [`ArrayError`] if
-    ///  - `chunks` are invalid,
-    ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunks and the data type size in bytes),
-    ///  - there is a codec encoding error, or
-    ///  - an underlying store error.
+    /// Explicit options version of [`store_chunks`](Array::store_chunks).
     #[allow(clippy::similar_names)]
+    #[allow(clippy::missing_errors_doc)]
     pub fn store_chunks_opt(
         &self,
         chunks: &ArraySubset,
@@ -344,10 +348,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         Ok(())
     }
 
-    /// Variation of [`Array::store_chunks_opt`] for elements with a known type.
-    ///
-    /// # Errors
-    /// In addition to [`Array::store_chunks_opt`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
+    /// Explicit options version of [`store_chunks_elements`](Array::store_chunks_elements).
+    #[allow(clippy::missing_errors_doc)]
     pub fn store_chunks_elements_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
@@ -362,10 +364,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     }
 
     #[cfg(feature = "ndarray")]
-    /// Variation of [`Array::store_chunks_opt`] for an [`ndarray::ArrayViewD`].
-    ///
-    /// # Errors
-    /// In addition to [`Array::store_chunks_opt`] errors, returns an [`ArrayError`] if the size of `T` does not match the data type size.
+    /// Explicit options version of [`store_chunks_ndarray`](Array::store_chunks_ndarray).
+    #[allow(clippy::missing_errors_doc)]
     pub fn store_chunks_ndarray_opt<
         T: bytemuck::Pod,
         TArray: Into<ndarray::Array<T, D>>,

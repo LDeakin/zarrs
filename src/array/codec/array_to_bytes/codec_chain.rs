@@ -576,15 +576,14 @@ impl ArrayCodecTraits for CodecChain {
                     .subset()
                     .contiguous_linearised_indices_unchecked(array_view.array_shape())
             };
-            let element_size = decoded_representation.element_size() as u64;
-            let length =
-                usize::try_from(contiguous_indices.contiguous_elements() * element_size).unwrap();
+            let element_size = decoded_representation.element_size();
+            let length = contiguous_indices.contiguous_elements_usize() * element_size;
             let mut decoded_offset = 0;
             // FIXME: Par iteration?
             let output = unsafe { array_view.bytes_mut() };
             for (array_subset_element_index, _num_elements) in &contiguous_indices {
                 let output_offset =
-                    usize::try_from(array_subset_element_index * element_size).unwrap();
+                    usize::try_from(array_subset_element_index).unwrap() * element_size;
                 debug_assert!((output_offset + length) <= output.len());
                 debug_assert!((decoded_offset + length) <= decoded_value.len());
                 output[output_offset..output_offset + length]

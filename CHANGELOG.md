@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `TestUnbounded` codec for internal testing
 
 #### Array Subset Iterators
- - Add `Contiguous{Linearised}IndicesIterator::contiguous_elements()`
+ - Add `Contiguous{Linearised}IndicesIterator::contiguous_elements{_usize}()`
  - Implement `DoubleEndedIterator` for `{Indices,LinearisedIndices,ContiguousIndices,ContiguousLinearisedIndicesIterator}Iterator`
  - Add `ParIndicesIterator` and `ParChunksIterator`
 
