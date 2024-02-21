@@ -31,7 +31,7 @@ use crate::storage::{
 /// A Zarr hierarchy node.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#hierarchy>.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
     /// Node path.
     path: NodePath,
@@ -139,6 +139,36 @@ impl Node {
     pub fn name(&self) -> NodeName {
         let name = self.path.as_str().split('/').last().unwrap_or_default();
         unsafe { NodeName::new_unchecked(name) }
+    }
+
+    /// Returns the path of the node.
+    #[must_use] 
+    pub fn path(&self) -> &NodePath {
+        &self.path
+    }
+
+    /// Returns the metadata of the node.
+    #[must_use]
+    pub fn metadata(&self) -> &NodeMetadata {
+        &self.metadata
+    }
+
+    /// Returns a copy of the metadata of the node.
+    #[must_use]
+    pub fn get_metadata(&self) -> NodeMetadata {
+        self.metadata.clone()
+    }
+
+    /// Returns the children of the node.
+    #[must_use]
+    pub fn children(&self) -> &Vec<Node> {
+        &self.children
+    }
+
+    /// Returns a copy of the children of the node.
+    #[must_use]
+    pub fn get_children(&self) -> Vec<Node> {
+        self.children.clone()
     }
 
     /// Return a tree representation of a hierarchy as a string.
