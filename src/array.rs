@@ -143,6 +143,16 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// #### Async API
 /// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
 ///
+/// <div class="warning">
+/// The async API is not as performant as sync API, mainly due to the decision to keep this crate runtime-agnostic.
+/// </div>
+///
+/// This crate does not spawn tasks internally.
+/// The implication is that methods like [`async_retrieve_array_subset`](Array::async_retrieve_array_subset) or [`async_retrieve_chunks`](Array::async_retrieve_chunks) do not parallelise over chunks and can be slow compared to the sync API (especially when they involve a large number of chunks).
+/// It is possible to achieve similar performance to the sync API, but it is involved.
+/// For example, instead of using [`async_retrieve_chunks`](Array::async_retrieve_chunks), multiple tasks executing [`async_retrieve_chunk_into_array_view`](Array::async_retrieve_chunk_into_array_view) could be spawned that output to a preallocated buffer.
+// TODO: Add example in zarrs_tools and reference here, or just refer to how it is done in async_retrieve_chunks internally
+///
 /// ### Parallel Writing
 ///
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
