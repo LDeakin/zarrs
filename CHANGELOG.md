@@ -111,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `Array::retrieve_array_subset` and variants now correctly return the fill value if the array subset references out-of-bounds elements
  - Add missing input validation to some `partial_decode` methods
  - Validate `ndarray` array shape in `{async_}store_{chunk,chunks}_ndarray{_opt}`
+ - Fixed transpose partial decoder and its test, elements were not being correctly transposed
  - Minor docs fixes
 
 ## [0.11.6] - 2024-02-06

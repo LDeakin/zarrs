@@ -57,28 +57,31 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
                 unsafe { ArraySubset::new_with_start_shape_unchecked(start, size) };
             decoded_regions_transposed.push(decoded_region_transpose);
         }
-        let mut encoded_value = self
+        let encoded_value = self
             .input_handle
             .partial_decode_opt(&decoded_regions_transposed, options)?;
 
         // Reverse the transpose on each subset
         let order_decode =
             calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-        for (subset, bytes) in std::iter::zip(decoded_regions, &mut encoded_value) {
-            transpose_array(
-                &order_decode,
-                subset.shape(),
-                self.decoded_representation.element_size(),
-                bytes.as_mut_slice(),
-            )
-            .map_err(|_| {
-                CodecError::UnexpectedChunkDecodedSize(
-                    bytes.len(),
-                    subset.num_elements() * self.decoded_representation.element_size() as u64,
+        let decoded_value = std::iter::zip(decoded_regions, encoded_value)
+            .map(|(subset, bytes)| {
+                let len = bytes.len();
+                transpose_array(
+                    &order_decode,
+                    &permute(subset.shape(), &self.order),
+                    self.decoded_representation.element_size(),
+                    bytes,
                 )
-            })?;
-        }
-        Ok(encoded_value)
+                .map_err(|_| {
+                    CodecError::UnexpectedChunkDecodedSize(
+                        len,
+                        subset.num_elements() * self.decoded_representation.element_size() as u64,
+                    )
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(decoded_value)
     }
 }
 
@@ -136,7 +139,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
                 unsafe { ArraySubset::new_with_start_shape_unchecked(start, size) };
             decoded_regions_transposed.push(decoded_region_transpose);
         }
-        let mut encoded_value = self
+        let encoded_value = self
             .input_handle
             .partial_decode_opt(&decoded_regions_transposed, options)
             .await?;
@@ -144,20 +147,23 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
         // Reverse the transpose on each subset
         let order_decode =
             calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-        for (subset, bytes) in std::iter::zip(decoded_regions, &mut encoded_value) {
-            transpose_array(
-                &order_decode,
-                subset.shape(),
-                self.decoded_representation.element_size(),
-                bytes.as_mut_slice(),
-            )
-            .map_err(|_| {
-                CodecError::UnexpectedChunkDecodedSize(
-                    bytes.len(),
-                    subset.num_elements() * self.decoded_representation.element_size() as u64,
+        let decoded_value = std::iter::zip(decoded_regions, encoded_value)
+            .map(|(subset, bytes)| {
+                let len = bytes.len();
+                transpose_array(
+                    &order_decode,
+                    &permute(subset.shape(), &self.order),
+                    self.decoded_representation.element_size(),
+                    bytes,
                 )
-            })?;
-        }
-        Ok(encoded_value)
+                .map_err(|_| {
+                    CodecError::UnexpectedChunkDecodedSize(
+                        len,
+                        subset.num_elements() * self.decoded_representation.element_size() as u64,
+                    )
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(decoded_value)
     }
 }

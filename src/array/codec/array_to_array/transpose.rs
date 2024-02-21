@@ -75,7 +75,7 @@ fn transpose_array(
     transpose_order: &[usize],
     untransposed_shape: &[u64],
     bytes_per_element: usize,
-    data: &[u8],
+    data: Vec<u8>,
 ) -> Result<Vec<u8>, ndarray::ShapeError> {
     // Create an array view of the data
     let mut shape_n = Vec::with_capacity(untransposed_shape.len() + 1);
@@ -83,10 +83,10 @@ fn transpose_array(
         shape_n.push(usize::try_from(*size).unwrap());
     }
     shape_n.push(bytes_per_element);
-    let array: ndarray::ArrayViewD<u8> = ndarray::ArrayView::from_shape(shape_n, data)?;
+    let array = ndarray::ArrayD::<u8>::from_shape_vec(shape_n, data)?;
 
     // Transpose the data
-    let array_transposed = array.to_owned().permuted_axes(transpose_order);
+    let array_transposed = array.permuted_axes(transpose_order);
     if array_transposed.is_standard_layout() {
         Ok(array_transposed.into_raw_vec())
     } else {
@@ -199,6 +199,7 @@ mod tests {
             )
             .unwrap();
         let decoded_regions = [
+            ArraySubset::new_with_ranges(&[0..4, 0..4]),
             ArraySubset::new_with_ranges(&[1..3, 1..4]),
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
         ];
@@ -226,8 +227,12 @@ mod tests {
             .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
             .collect::<Vec<_>>();
         let answer: &[Vec<f32>] = &[
-            vec![5.0, 9.0, 6.0, 10.0, 7.0, 11.0],
-            vec![8.0, 12.0, 9.0, 13.0],
+            vec![
+                0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0,
+                15.0,
+            ],
+            vec![5.0, 6.0, 7.0, 9.0, 10.0, 11.0],
+            vec![8.0, 9.0, 12.0, 13.0],
         ];
         assert_eq!(answer, decoded_partial_chunk);
     }
@@ -254,6 +259,7 @@ mod tests {
             )
             .unwrap();
         let decoded_regions = [
+            ArraySubset::new_with_ranges(&[0..4, 0..4]),
             ArraySubset::new_with_ranges(&[1..3, 1..4]),
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
         ];
@@ -284,8 +290,12 @@ mod tests {
             .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
             .collect::<Vec<_>>();
         let answer: &[Vec<f32>] = &[
-            vec![5.0, 9.0, 6.0, 10.0, 7.0, 11.0],
-            vec![8.0, 12.0, 9.0, 13.0],
+            vec![
+                0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0,
+                15.0,
+            ],
+            vec![5.0, 6.0, 7.0, 9.0, 10.0, 11.0],
+            vec![8.0, 9.0, 12.0, 13.0],
         ];
         assert_eq!(answer, decoded_partial_chunk);
     }
