@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `array::bytes_to_ndarray()` and make `array::elements_to_ndarray()` public
  - [#13](https://github.com/LDeakin/zarrs/pull/13) Add `node::Node::path()`, `metadata()`, and `children()` by [@lorenzocerrone]
  - [#13](https://github.com/LDeakin/zarrs/pull/13) Derive `Clone` for `node::Node` and `node::NodeMetadata` by [@lorenzocerrone]
+ - Add `bytemuck` feature to the `half` dependency (public)
 
 ### Changed
 #### Arrays
