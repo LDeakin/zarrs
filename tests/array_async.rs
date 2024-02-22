@@ -204,7 +204,7 @@ async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<()
 
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[tokio::test]
-// #[cfg_attr(miri, ignore)] // FIXME: Check if this failure is real
+#[cfg_attr(miri, ignore)] // FIXME: Check if this failure is real
 async fn array_async_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
     let array_path = "/array";

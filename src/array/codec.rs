@@ -269,6 +269,23 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
         options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError>;
 
+    /// Partially decode bytes and concatenate.
+    ///
+    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
+    fn partial_decode_concat(
+        &self,
+        decoded_regions: &[ByteRange],
+        options: &CodecOptions,
+    ) -> Result<Option<Vec<u8>>, CodecError> {
+        // FIXME: Remove default implementation in the next major release and implement for each codec to reduce internal allocations
+        Ok(self
+            .partial_decode(decoded_regions, options)?
+            .map(|vecs| vecs.concat()))
+    }
+
     /// Decode all bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
@@ -297,6 +314,24 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
     ) -> Result<Option<Vec<Vec<u8>>>, CodecError>;
+
+    /// Partially decode bytes and concatenate.
+    ///
+    /// Returns [`None`] if partial decoding of the input handle returns [`None`].
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
+    async fn partial_decode_concat(
+        &self,
+        decoded_regions: &[ByteRange],
+        options: &CodecOptions,
+    ) -> Result<Option<Vec<u8>>, CodecError> {
+        // FIXME: Remove default implementation in the next major release and implement for each codec to reduce internal allocations
+        Ok(self
+            .partial_decode(decoded_regions, options)
+            .await?
+            .map(|vecs| vecs.concat()))
+    }
 
     /// Decode all bytes.
     ///

@@ -152,8 +152,6 @@ fn validate_byte_ranges(
 ///
 /// # Errors
 /// Returns [`InvalidByteRangeError`] if any bytes are requested beyond the end of `bytes`.
-// TODO: Add a version of this function that preallocates output and concatenates byte ranges to return a single vec
-//       Use that in partial decoders that do .concat()
 pub fn extract_byte_ranges(
     bytes: &[u8],
     byte_ranges: &[ByteRange],

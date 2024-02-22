@@ -1,7 +1,9 @@
 ## TODO
-- Validate array subsets in all `partial_decode_opt` methods
+
 - Reduce code duplication in tests
 - Review documentation
 - Increase test coverage
-- URI support [see ZEP0008](https://github.com/zarr-developers/zeps/pull/48)
-- Add a performance comparison to other Zarr implementations
+- Variable sized data type support (waiting on ZEP)
+- URI support for stores [see ZEP0008](https://github.com/zarr-developers/zeps/pull/48)
+- Implement `{Async}BytesPartialDecoderTraits::partial_decode_concat()` for each bytes-to-bytes codec
+- **Breaking**: Remove default implementation for `{Async}BytesPartialDecoderTraits::partial_decode_concat()`

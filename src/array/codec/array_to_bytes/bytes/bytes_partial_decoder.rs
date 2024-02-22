@@ -60,31 +60,30 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                 })?;
 
             // Decode
-            let decoded = self.input_handle.partial_decode(&byte_ranges, options)?;
-
-            let bytes_subset = decoded.map_or_else(
-                || {
-                    self.decoded_representation
-                        .fill_value()
-                        .as_ne_bytes()
-                        .repeat(array_subset.num_elements_usize())
-                },
-                |decoded| {
-                    // FIXME: Avoid this concat, prealloc and write to that
-                    let mut bytes_subset = decoded.concat();
-                    if let Some(endian) = &self.endian {
-                        if !endian.is_native() {
-                            reverse_endianness(
-                                &mut bytes_subset,
-                                self.decoded_representation.data_type(),
-                            );
+            let decoded = self
+                .input_handle
+                .partial_decode_concat(&byte_ranges, options)?
+                .map_or_else(
+                    || {
+                        self.decoded_representation
+                            .fill_value()
+                            .as_ne_bytes()
+                            .repeat(array_subset.num_elements_usize())
+                    },
+                    |mut decoded| {
+                        if let Some(endian) = &self.endian {
+                            if !endian.is_native() {
+                                reverse_endianness(
+                                    &mut decoded,
+                                    self.decoded_representation.data_type(),
+                                );
+                            }
                         }
-                    }
-                    bytes_subset
-                },
-            );
+                        decoded
+                    },
+                );
 
-            bytes.push(bytes_subset);
+            bytes.push(decoded);
         }
         Ok(bytes)
     }
@@ -158,32 +157,29 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
             // Decode
             let decoded = self
                 .input_handle
-                .partial_decode(&byte_ranges, options)
-                .await?;
-
-            let bytes_subset = decoded.map_or_else(
-                || {
-                    self.decoded_representation
-                        .fill_value()
-                        .as_ne_bytes()
-                        .repeat(array_subset.num_elements_usize())
-                },
-                |decoded| {
-                    // FIXME: Avoid this concat, prealloc and write to that
-                    let mut bytes_subset = decoded.concat();
-                    if let Some(endian) = &self.endian {
-                        if !endian.is_native() {
-                            reverse_endianness(
-                                &mut bytes_subset,
-                                self.decoded_representation.data_type(),
-                            );
+                .partial_decode_concat(&byte_ranges, options)
+                .await?
+                .map_or_else(
+                    || {
+                        self.decoded_representation
+                            .fill_value()
+                            .as_ne_bytes()
+                            .repeat(array_subset.num_elements_usize())
+                    },
+                    |mut decoded| {
+                        if let Some(endian) = &self.endian {
+                            if !endian.is_native() {
+                                reverse_endianness(
+                                    &mut decoded,
+                                    self.decoded_representation.data_type(),
+                                );
+                            }
                         }
-                    }
-                    bytes_subset
-                },
-            );
+                        decoded
+                    },
+                );
 
-            bytes.push(bytes_subset);
+            bytes.push(decoded);
         }
         Ok(bytes)
     }
