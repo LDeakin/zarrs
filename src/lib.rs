@@ -71,7 +71,7 @@
 //!
 //! ## Zarrs Ecosystem
 //! - [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi): A subset of zarrs exposed as a C API.
-//! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data.
+//! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data. Includes `zarrs` benchmarks.
 //!
 //! ## Correctness Issues with Past Versions
 //! - Prior to zarrs [v0.11.5](https://github.com/LDeakin/zarrs/releases/tag/v0.11.5), arrays that used the `crc32c` codec have invalid chunk checksums
