@@ -104,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Dependency bumps
    - `crc32` (private) to [0.6.5](https://github.com/zowens/crc32c/releases/tag/v0.6.5) to fix nightly build
    - `opendal` (public) to [0.45](https://github.com/apache/opendal/releases/v0.45.0)
+ - Make `UnsafeCellSlice` public
 
 ### Removed
  - **Breaking**: Remove `InvalidArraySubsetError` and `ArrayExtractElementsError`
