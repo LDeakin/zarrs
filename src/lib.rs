@@ -41,8 +41,9 @@
 //!    - `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!
 //! The following features are disabled by default:
-//!  - `async`: an experimental asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [Group](group::Group).
-//!    - currently, this API is not as performant as the synchronous API
+//!  - `async`: an experimental asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [`Group`](group::Group).
+//!    - The async API is runtime-agnostic. This has some limitations that are detailed in the [`Array`](crate::array::Array) docs.
+//!    - The async API is not as performant as the sync API.
 //!  - Codecs
 //!    - `bitround`, `zfp`, `bz2`, `pcodec`.
 //!  - Stores
