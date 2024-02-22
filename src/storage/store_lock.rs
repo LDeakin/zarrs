@@ -1,4 +1,4 @@
-//! Locks used by stores to acquire exlusive access to resources.
+//! Locks used by stores to acquire exclusive access to resources.
 //!
 //! [`StoreLocks`] implements [`StoreLocksTraits`] to request a locking primitive for a [`StoreKey`](crate::storage::StoreKey).
 //! This is needed for some array operations, such as storing an array or chunk subset.

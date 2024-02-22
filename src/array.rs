@@ -146,7 +146,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
 ///
 /// <div class="warning">
-/// The async API is not as performant as sync API.
+/// The async API is not as performant as the sync API.
 /// </div>
 ///
 /// This crate is async runtime-agnostic and does not spawn tasks internally.
