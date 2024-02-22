@@ -54,8 +54,10 @@ pub use bytes_to_bytes::zstd::{ZstdCodec, ZstdCodecConfiguration, ZstdCodecConfi
 use itertools::Itertools;
 use thiserror::Error;
 
-mod partial_decoder_cache;
-pub use partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache};
+mod array_partial_decoder_cache;
+mod bytes_partial_decoder_cache;
+pub use array_partial_decoder_cache::ArrayPartialDecoderCache;
+pub use bytes_partial_decoder_cache::BytesPartialDecoderCache;
 
 mod byte_interval_partial_decoder;
 pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;

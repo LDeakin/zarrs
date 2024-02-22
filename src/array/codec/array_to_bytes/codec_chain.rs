@@ -3,10 +3,10 @@
 use crate::{
     array::{
         codec::{
-            partial_decoder_cache::{ArrayPartialDecoderCache, BytesPartialDecoderCache},
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
-            ArrayToBytesCodecTraits, BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec,
-            CodecError, CodecOptions, CodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
+            ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesPartialDecoderCache,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecOptions,
+            CodecTraits,
         },
         concurrency::RecommendedConcurrency,
         ArrayView, BytesRepresentation, ChunkRepresentation,
