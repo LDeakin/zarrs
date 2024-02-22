@@ -2,6 +2,9 @@
 
 use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+#[cfg(doc)]
+use crate::array::codec::CodecOptions;
+
 /// Global configuration options for the zarrs crate.
 ///
 /// Retrieve the global [`Config`] with [`global_config`] and modify it with [`global_config_mut`].
@@ -9,25 +12,29 @@ use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 /// ## Validate Checksums
 ///  > default: [`true`]
 ///
-/// If enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
+/// [`CodecOptions::validate_checksums()`] defaults to [`Config::validate_checksums()`].
+///
+/// If validate checksums is enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
 /// Note that regardless of this configuration option, checksum codecs may skip validation when partial decoding.
 ///
 /// ## Default Codec Concurrent Target
 /// > default: [`std::thread::available_parallelism`]`()`
+///
+/// [`CodecOptions::concurrent_target()`] defaults to [`Config::codec_concurrent_target()`].
 ///
 /// The default number of concurrent operations to target for codec encoding and decoding.
 /// Limiting concurrent operations is needed to reduce memory usage and improve performance.
 /// Concurrency is unconstrained if the concurrent target if set to zero.
 ///
 /// Note that the default codec concurrent target can be overridden for any encode/decode operation.
-/// This is performed automatically for many array operations (see the [default chunk concurrent target](#default-chunk-concurrent-minimum) option).
+/// This is performed automatically for many array operations (see the [chunk concurrent minimum](#chunk-concurrent-minimum) option).
 ///
-/// ## Default Chunk Concurrency Minimum
+/// ## Chunk Concurrent Minimum
 /// > default: `4`
 ///
 /// For array operations involving multiple chunks, this is the preferred minimum chunk concurrency.
-/// For example, `array_store_chunks` will concurrently encode and store four chunks at a time by default.
-/// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`](crate::array::codec::CodecOptions) parameter of an encode or decode method.
+/// For example, `array_store_chunks` will concurrently encode and store up to four chunks at a time by default.
+/// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`] parameter of an encode or decode method.
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
@@ -62,24 +69,24 @@ impl Config {
         self.validate_checksums = validate_checksums;
     }
 
-    /// Get the [default codec concurrent target](#default-codec-concurrent-target) configuration.
+    /// Get the [codec concurrent target](#codec-concurrent-target) configuration.
     #[must_use]
     pub fn codec_concurrent_target(&self) -> usize {
         self.codec_concurrent_target
     }
 
-    /// Set the [default codec concurrent target](#default-codec-concurrent-target) configuration.
+    /// Set the [codec concurrent target](#codec-concurrent-target) configuration.
     pub fn set_codec_concurrent_target(&mut self, concurrent_target: usize) {
         self.codec_concurrent_target = concurrent_target;
     }
 
-    /// Get the [default chunk concurrent target](#default-chunk-concurrent-minimum) configuration.
+    /// Get the [chunk concurrent minimum](#chunk-concurrent-minimum) configuration.
     #[must_use]
     pub fn chunk_concurrent_minimum(&self) -> usize {
         self.chunk_concurrent_minimum
     }
 
-    /// Set the [default chunk concurrent target](#default-chunk-concurrent-minimum) configuration.
+    /// Set the [chunk concurrent minimum](#chunk-concurrent-minimum) configuration.
     pub fn set_chunk_concurrent_minimum(&mut self, concurrent_minimum: usize) {
         self.chunk_concurrent_minimum = concurrent_minimum;
     }

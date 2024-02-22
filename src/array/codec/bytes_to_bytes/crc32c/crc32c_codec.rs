@@ -74,10 +74,10 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         &self,
         mut encoded_value: Vec<u8>,
         _decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
+        options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
         if encoded_value.len() >= CHECKSUM_SIZE {
-            if crate::config::global_config().validate_checksums() {
+            if options.validate_checksums() {
                 let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
                 let checksum = crc32c::crc32c(decoded_value).to_le_bytes();
                 if checksum != encoded_value[encoded_value.len() - CHECKSUM_SIZE..] {

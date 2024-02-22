@@ -15,7 +15,7 @@
 
 use crate::config::global_config;
 
-use super::codec::{options::CodecOptionsBuilder, CodecOptions};
+use super::codec::CodecOptions;
 
 /// The recommended concurrency of a codec includes the most efficient and maximum recommended concurrency.
 ///
@@ -119,19 +119,20 @@ pub fn calc_concurrency_outer_inner(
 pub fn concurrency_chunks_and_codec(
     concurrency_target: usize,
     num_chunks: usize,
+    codec_options: &CodecOptions,
     codec_concurrency: &RecommendedConcurrency,
 ) -> (usize, CodecOptions) {
     // core::cmp::minmax https://github.com/rust-lang/rust/issues/115939
-    let min_concurrent_chunks =
-        std::cmp::min(global_config().chunk_concurrent_minimum(), num_chunks);
-    let max_concurrent_chunks =
-        std::cmp::max(global_config().chunk_concurrent_minimum(), num_chunks);
+    let chunk_concurrent_minimum = global_config().chunk_concurrent_minimum();
+    let min_concurrent_chunks = std::cmp::min(chunk_concurrent_minimum, num_chunks);
+    let max_concurrent_chunks = std::cmp::max(chunk_concurrent_minimum, num_chunks);
     let (self_concurrent_limit, codec_concurrent_limit) = calc_concurrency_outer_inner(
         concurrency_target,
         &RecommendedConcurrency::new(min_concurrent_chunks..max_concurrent_chunks),
         codec_concurrency,
     );
-    let codec_options = CodecOptionsBuilder::new()
+    let codec_options = codec_options
+        .into_builder()
         .concurrent_target(codec_concurrent_limit)
         .build();
     (self_concurrent_limit, codec_options)

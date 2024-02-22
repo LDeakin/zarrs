@@ -9,7 +9,7 @@ use crate::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
             ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
-            CodecOptions, CodecOptionsBuilder,
+            CodecOptions,
         },
         concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
         ravel_indices,
@@ -181,7 +181,8 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                 .inner_codecs
                 .recommended_concurrency(&chunk_representation)?,
         );
-        let options = CodecOptionsBuilder::new()
+        let options = options
+            .into_builder()
             .concurrent_target(concurrency_limit_codec)
             .build();
 

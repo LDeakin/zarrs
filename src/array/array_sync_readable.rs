@@ -641,6 +641,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
                     options.concurrent_target(),
                     num_chunks,
+                    options,
                     &codec_concurrency,
                 );
 
@@ -766,6 +767,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
                     options.concurrent_target(),
                     num_chunks,
+                    options,
                     &codec_concurrency,
                 );
 
@@ -843,6 +845,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
                 options.concurrent_target(),
                 num_chunks,
+                options,
                 &codec_concurrency,
             );
 
@@ -937,6 +940,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
                     options.concurrent_target(),
                     num_chunks,
+                    options,
                     &codec_concurrency,
                 );
 

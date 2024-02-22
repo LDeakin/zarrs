@@ -5,8 +5,8 @@ use crate::{
         chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecChain, CodecError, CodecOptions, CodecOptionsBuilder,
-            CodecTraits, RecommendedConcurrency,
+            BytesPartialDecoderTraits, CodecChain, CodecError, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
         concurrency::calc_concurrency_outer_inner,
         transmute_to_bytes_vec, unravel_index,
@@ -214,7 +214,8 @@ impl ArrayCodecTraits for ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(&chunk_representation)?,
         );
-        let options = CodecOptionsBuilder::new()
+        let options = options
+            .into_builder()
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
@@ -441,7 +442,8 @@ impl ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
-        let options = CodecOptionsBuilder::new()
+        let options = options
+            .into_builder()
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
@@ -570,7 +572,8 @@ impl ShardingCodec {
                 .inner_codecs
                 .recommended_concurrency(chunk_representation)?,
         );
-        let options_inner = CodecOptionsBuilder::new()
+        let options_inner = options
+            .into_builder()
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
