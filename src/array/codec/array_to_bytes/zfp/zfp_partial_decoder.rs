@@ -6,7 +6,7 @@ use crate::{
         ChunkRepresentation,
     },
     array_subset::ArraySubset,
-    byte_range::extract_byte_ranges,
+    byte_range::extract_byte_ranges_concat,
 };
 
 #[cfg(feature = "async")]
@@ -85,8 +85,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
                             self.decoded_representation.element_size(),
                         )
                     };
-                    let bytes = extract_byte_ranges(&decoded_value, &byte_ranges)?;
-                    out.push(bytes.concat());
+                    out.push(extract_byte_ranges_concat(&decoded_value, &byte_ranges)?);
                 }
             }
             None => {
@@ -179,8 +178,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
                             self.decoded_representation.element_size(),
                         )
                     };
-                    let bytes = extract_byte_ranges(&decoded_value, &byte_ranges)?;
-                    out.push(bytes.concat());
+                    out.push(extract_byte_ranges_concat(&decoded_value, &byte_ranges)?);
                 }
             }
             None => {

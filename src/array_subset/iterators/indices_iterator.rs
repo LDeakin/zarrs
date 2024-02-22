@@ -143,7 +143,7 @@ impl Iterator for IndicesIterator<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let indices = std::iter::zip(
-            unravel_index(self.index_front, self.subset.shape()).iter(), // FIXME: iter variant
+            unravel_index(self.index_front, self.subset.shape()).iter(),
             self.subset.start(),
         )
         .map(|(index, start)| index + start)
@@ -167,7 +167,7 @@ impl DoubleEndedIterator for IndicesIterator<'_> {
         if self.index_back > self.index_front {
             self.index_back -= 1;
             let indices = std::iter::zip(
-                unravel_index(self.index_back, self.subset.shape()).iter(), // FIXME: iter variant
+                unravel_index(self.index_back, self.subset.shape()).iter(),
                 self.subset.start(),
             )
             .map(|(index, start)| index + start)

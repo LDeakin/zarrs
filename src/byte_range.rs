@@ -14,6 +14,8 @@ use std::ops::Range;
 
 use thiserror::Error;
 
+use crate::array::UnsafeCellSlice;
+
 /// A byte offset.
 pub type ByteOffset = u64;
 
@@ -180,6 +182,52 @@ pub unsafe fn extract_byte_ranges_unchecked(
             bytes[start..end].to_vec()
         });
     }
+    out
+}
+
+/// Extract byte ranges from bytes and concatenate.
+///
+/// # Errors
+/// Returns [`InvalidByteRangeError`] if any bytes are requested beyond the end of `bytes`.
+pub fn extract_byte_ranges_concat(
+    bytes: &[u8],
+    byte_ranges: &[ByteRange],
+) -> Result<Vec<u8>, InvalidByteRangeError> {
+    validate_byte_ranges(byte_ranges, bytes.len() as u64)?;
+    Ok(unsafe { extract_byte_ranges_concat_unchecked(bytes, byte_ranges) })
+}
+
+/// Extract byte ranges from bytes and concatenate.
+///
+/// # Safety
+/// All byte ranges in `byte_ranges` must specify a range within `bytes`.
+///
+/// # Panics
+/// Panics if attempting to reference a byte beyond `usize::MAX`.
+#[must_use]
+pub unsafe fn extract_byte_ranges_concat_unchecked(
+    bytes: &[u8],
+    byte_ranges: &[ByteRange],
+) -> Vec<u8> {
+    let out_size = usize::try_from(
+        byte_ranges
+            .iter()
+            .map(|byte_range| byte_range.length(bytes.len() as u64))
+            .sum::<u64>(),
+    )
+    .unwrap();
+    let mut out = Vec::with_capacity(out_size);
+    let out_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut out);
+    let out_slice = out_slice.get();
+    let mut offset: usize = 0;
+    for byte_range in byte_ranges {
+        let start = usize::try_from(byte_range.start(bytes.len() as u64)).unwrap();
+        let byte_range_len = usize::try_from(byte_range.length(bytes.len() as u64)).unwrap();
+        out_slice[offset..offset + byte_range_len]
+            .copy_from_slice(&bytes[start..start + byte_range_len]);
+        offset += byte_range_len;
+    }
+    out.set_len(out_size);
     out
 }
 

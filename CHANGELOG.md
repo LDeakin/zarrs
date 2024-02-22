@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `byte_range::extract_byte_ranges_concat{_unchecked}()`
+
 ## [0.12.0] - 2024-02-22
 
 ### Highlights
