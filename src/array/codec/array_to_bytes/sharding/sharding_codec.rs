@@ -284,6 +284,13 @@ impl ArrayCodecTraits for ShardingCodec {
         )?;
         Ok(())
     }
+
+    fn partial_decode_granularity(
+        &self,
+        _decoded_representation: &ChunkRepresentation,
+    ) -> ChunkShape {
+        self.chunk_shape.clone()
+    }
 }
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]

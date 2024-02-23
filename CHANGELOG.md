@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add `byte_range::extract_byte_ranges_concat()`
  - Add `{Async}BytesPartialDecoderTraits::partial_decode_concat()` with default implementation
+ - Add `ArrayCodecTraits::partial_decode_granularity()` with default implementation
 
 ## [0.12.0] - 2024-02-22
 

@@ -9,7 +9,7 @@ use crate::{
             CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayView, BytesRepresentation, ChunkRepresentation,
+        ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -591,6 +591,18 @@ impl ArrayCodecTraits for CodecChain {
                 decoded_offset += length;
             }
             Ok(())
+        }
+    }
+
+    fn partial_decode_granularity(
+        &self,
+        decoded_representation: &ChunkRepresentation,
+    ) -> ChunkShape {
+        if let Some(array_to_array) = self.array_to_array.first() {
+            array_to_array.partial_decode_granularity(decoded_representation)
+        } else {
+            self.array_to_bytes
+                .partial_decode_granularity(decoded_representation)
         }
     }
 }

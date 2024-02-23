@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use zarrs::array::codec::{array_to_bytes::sharding::ShardingCodecBuilder, GzipCodec};
-use zarrs::array::{Array, ArrayBuilder, ArrayView, DataType, FillValue};
+use zarrs::array::{Array, ArrayBuilder, ArrayCodecTraits, ArrayView, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 use zarrs::storage::store::MemoryStore;
 
@@ -212,6 +212,16 @@ fn array_sync_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
     // .storage_transformers(vec![].into())
     .build(store, array_path)
     .unwrap();
+
+    let chunk_representation =
+        array.chunk_array_representation(&vec![0; array.dimensionality()])?;
+    assert_eq!(
+        array
+            .codecs()
+            .partial_decode_granularity(&chunk_representation),
+        [2, 2].try_into().unwrap()
+    );
+
     array_sync_read(array)
 }
 
@@ -238,5 +248,15 @@ fn array_sync_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
     // .storage_transformers(vec![].into())
     .build(store, array_path)
     .unwrap();
+
+    let chunk_representation =
+        array.chunk_array_representation(&vec![0; array.dimensionality()])?;
+    assert_eq!(
+        array
+            .codecs()
+            .partial_decode_granularity(&chunk_representation),
+        [1, 1].try_into().unwrap()
+    );
+
     array_sync_read(array)
 }
