@@ -524,7 +524,7 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     }
 }
 
-/// A [`ReadableStorage`] partial decoder.
+/// A [`ReadableStorage`] store value partial decoder.
 pub struct StoragePartialDecoder {
     storage: ReadableStorage,
     key: StoreKey,
@@ -550,7 +550,7 @@ impl BytesPartialDecoderTraits for StoragePartialDecoder {
 }
 
 #[cfg(feature = "async")]
-/// A [`ReadableStorage`] partial decoder.
+/// An [`AsyncReadableStorage`] store value partial decoder.
 pub struct AsyncStoragePartialDecoder {
     storage: AsyncReadableStorage,
     key: StoreKey,

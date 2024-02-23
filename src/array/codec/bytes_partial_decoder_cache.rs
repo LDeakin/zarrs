@@ -12,7 +12,7 @@ use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};
 #[cfg(feature = "async")]
 use super::AsyncBytesPartialDecoderTraits;
 
-/// A bytes partial decoder cache.
+/// A cache for a [`BytesPartialDecoderTraits`] partial decoder.
 pub struct BytesPartialDecoderCache<'a> {
     cache: MaybeBytes,
     phantom: PhantomData<&'a ()>,

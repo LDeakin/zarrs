@@ -9,7 +9,7 @@ use super::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions};
 #[cfg(feature = "async")]
 use super::AsyncArrayPartialDecoderTraits;
 
-/// An array partial decoder cache.
+/// A cache for an [`ArrayPartialDecoderTraits`] partial decoder.
 pub struct ArrayPartialDecoderCache<'a> {
     decoded_representation: ChunkRepresentation,
     cache: Vec<u8>,

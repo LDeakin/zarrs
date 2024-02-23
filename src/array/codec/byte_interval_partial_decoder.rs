@@ -5,7 +5,7 @@ use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};
 #[cfg(feature = "async")]
 use super::AsyncBytesPartialDecoderTraits;
 
-/// A byte interval partial decoder.
+/// A partial decoder for a byte interval of a [`BytesPartialDecoderTraits`] partial decoder.
 ///
 /// Modifies byte range requests to a specific byte interval in an inner bytes partial decoder.
 pub struct ByteIntervalPartialDecoder<'a> {
@@ -58,7 +58,7 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
 }
 
 #[cfg(feature = "async")]
-/// An asynchronous byte interval partial decoder.
+/// A partial decoder for a byte interval of a [`AsyncBytesPartialDecoderTraits`] partial decoder.
 ///
 /// Modifies byte range requests to a specific byte interval in an inner bytes partial decoder.
 pub struct AsyncByteIntervalPartialDecoder<'a> {
