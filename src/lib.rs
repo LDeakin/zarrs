@@ -2,7 +2,7 @@
 //!
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
-//! **zarrs is experimental and in limited production use. Use at your own risk! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/doc/correctness_issues.md).**
+//! **zarrs is experimental and in limited production use. Use at your own risk! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).**
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //!
