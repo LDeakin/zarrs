@@ -9,7 +9,7 @@ use super::{ReadableStorageTraits, StoreKey};
 
 /// Provides a [`Read`] interface to a storage value.
 #[derive(Clone)]
-pub struct StorageValueIO<TStorage: ?Sized + ReadableStorageTraits> {
+pub struct StorageValueIO<TStorage: ?Sized> {
     storage: Arc<TStorage>,
     key: StoreKey,
     pos: u64,
@@ -29,7 +29,21 @@ impl<TStorage: ?Sized + ReadableStorageTraits> StorageValueIO<TStorage> {
     }
 }
 
-impl<TStorage: ?Sized + ReadableStorageTraits> Seek for StorageValueIO<TStorage> {
+// #[cfg(feature = "async")]
+// impl<TStorage: ?Sized + super::AsyncReadableStorageTraits> StorageValueIO<TStorage> {
+//     /// Create a new `StorageValueIO` for the `key` in `storage`.
+//     pub fn async_new(storage: Arc<TStorage>, key: StoreKey, size: u64) -> Self {
+//         debug_assert!(size > 0);
+//         Self {
+//             storage,
+//             key,
+//             pos: 0,
+//             size,
+//         }
+//     }
+// }
+
+impl<TStorage: ?Sized> Seek for StorageValueIO<TStorage> {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         use std::io::{Error, ErrorKind};
         self.pos = match pos {
@@ -72,3 +86,5 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Read for StorageValueIO<TStorage>
         }
     }
 }
+
+// TODO: AsyncRead

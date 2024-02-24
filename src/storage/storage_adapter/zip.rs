@@ -1,4 +1,4 @@
-//! A zip store.
+//! A zip storage adapter.
 
 use crate::{
     array::{codec::extract_byte_ranges_read, MaybeBytes},
@@ -18,7 +18,7 @@ use zip::{result::ZipError, ZipArchive};
 use std::{path::PathBuf, sync::Arc};
 
 /// A zip storage adapter.
-pub struct ZipStorageAdapter<TStorage: ?Sized + ReadableStorageTraits> {
+pub struct ZipStorageAdapter<TStorage: ?Sized> {
     size: u64,
     zip_archive: Mutex<ZipArchive<StorageValueIO<TStorage>>>,
     zip_path: PathBuf,

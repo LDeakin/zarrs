@@ -6,6 +6,6 @@
 | [`OpendalStore`](crate::storage::store::OpendalStore)                     |                                                        | &check;* | &check;* | &check;* | &check; |         | opendal      |
 | [`AsyncOpendalStore`](crate::storage::store::AsyncOpendalStore)           |                                                        | &check;* | &check;* | &check;* |         | &check; | opendal      |
 | [`AsyncObjectStore`](crate::storage::store::AsyncObjectStore)             |                                                        | &check;* | &check;* | &check;* |         | &check; | object_store |
-| [`ZipStorageAdapter`](crate::storage::storage_adapter::ZipStorageAdapter) |                                                        | &check;  | &check;  | &check;  | &check; |         | zip          |
+| [`ZipStorageAdapter`](crate::storage::storage_adapter::ZipStorageAdapter) |                                                        | &check;  |          | &check;  | &check; |         | zip          |
 
 \* Support depends on the [`opendal::BlockingOperator`]/[`Operator`](opendal::Operator) or [`object_store` store](https://docs.rs/object_store/latest/object_store/index.html#modules).

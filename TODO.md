@@ -7,3 +7,4 @@
 - URI support for stores [see ZEP0008](https://github.com/zarr-developers/zeps/pull/48)
 - Implement `{Async}BytesPartialDecoderTraits::partial_decode_concat()` for each bytes-to-bytes codec
 - **Breaking**: Remove default implementation for `{Async}BytesPartialDecoderTraits::partial_decode_concat()`
+- Async support for StorageValueIO for async zip store?
