@@ -1,4 +1,4 @@
-//! A HTTP store.
+//! A synchronous HTTP store.
 
 use crate::{
     array::MaybeBytes,
@@ -14,7 +14,7 @@ use reqwest::{
 use std::str::FromStr;
 use thiserror::Error;
 
-/// A HTTP store.
+/// A synchronous HTTP store.
 #[derive(Debug)]
 pub struct HTTPStore {
     base_url: Url,

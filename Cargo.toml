@@ -13,7 +13,7 @@ categories = ["encoding"]
 exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.sh", "TODO.md"]
 
 [features]
-default = ["transpose", "blosc", "gzip", "sharding", "crc32c", "zstd", "ndarray"]
+default = ["ndarray", "blosc", "crc32c", "gzip", "sharding", "transpose", "zstd"]
 bitround = [] # Enable the experimental bitround codec
 blosc = ["dep:blosc-sys"] # Enable the blosc codec
 bz2 = ["dep:bzip2"] # Enable the experimental bz2 codec

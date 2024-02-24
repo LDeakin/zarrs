@@ -1,4 +1,4 @@
-//! An in-memory store.
+//! A synchronous in-memory store.
 
 use parking_lot::RwLock;
 use std::sync::Mutex;
@@ -19,7 +19,7 @@ use std::{
     sync::Arc,
 };
 
-/// An in-memory store.
+/// A synchronous in-memory store.
 #[derive(Debug)]
 pub struct MemoryStore {
     data_map: Mutex<BTreeMap<StoreKey, Arc<RwLock<Vec<u8>>>>>,

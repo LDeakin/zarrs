@@ -47,7 +47,7 @@ use std::{
 //     FilesystemStore::new(path).map_err(|e| StorePluginCreateError::Other(e.to_string()))
 // }
 
-/// A file system store.
+/// A synchronous file system store.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
 #[derive(Debug)]

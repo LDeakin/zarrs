@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-/// An asynchronous store backed by a [`BlockingOperator`].
+/// An asynchronous store backed by an [`opendal::BlockingOperator`].
 pub struct OpendalStore {
     operator: BlockingOperator,
     locks: StoreLocks,
