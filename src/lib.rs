@@ -6,7 +6,10 @@
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //!
-//! The best docs to start with are [`array::Array`] and [`storage::store`].
+//! ## Getting Started
+//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
+//! - Read the [`array::Array`] and [`storage`] documentation.
+//! - Check out tools built upon `zarrs` or evaluate `zarrs` performance with the [zarrs_tools](https://github.com/LDeakin/zarrs_tools) crate.
 //!
 //! ## Implementation Status
 //! <details><summary>Zarr Enhancement Proposals (ZEPs)</summary>
@@ -39,11 +42,11 @@
 //! </details>
 //!
 //! ## Crate Features
-//! ### Default
+//! #### Default
 //!  - `ndarray`: [`ndarray`] utility functions for [`Array`](crate::array::Array).
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!
-//! ### Non-Default
+//! #### Non-Default
 //!  - `async`: an experimental asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [`Group`](group::Group).
 //!    - The async API is runtime-agnostic. This has some limitations that are detailed in the [`Array`](crate::array::Array) docs.
 //!    - The async API is not as performant as the sync API.
@@ -69,12 +72,12 @@
 //! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs),
 //! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read.rs).
 //!
-//! ## Zarrs Ecosystem
-//! - [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi): A subset of zarrs exposed as a C API.
+//! ## `zarrs` Ecosystem
 //! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data. Includes `zarrs` benchmarks.
+//! - [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi): A subset of zarrs exposed as a C API.
 //!
 //! ## Licence
-//! zarrs is licensed under either of
+//! `zarrs` is licensed under either of
 //!  - the Apache License, Version 2.0 [LICENSE-APACHE](./LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
 //!  - the MIT license [LICENSE-MIT](./LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 //!
