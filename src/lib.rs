@@ -49,7 +49,6 @@
 //!    - The async API is not as performant as the sync API.
 //!  - Codecs: `bitround`, `bz2`, `pcodec`, `zfp`, `zstd`.
 //!  - Stores: `http`, `object_store`, `opendal`, `zip`.
-//!  - Chunk grids: `rectangular`
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example <EXAMPLE_NAME>`.
