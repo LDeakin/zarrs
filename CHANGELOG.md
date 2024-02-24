@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2024-02-24
+
 ### Added
  - Add `byte_range::extract_byte_ranges_concat()`
  - Add `{Async}BytesPartialDecoderTraits::partial_decode_concat()` with default implementation
  - Add `ArrayCodecTraits::partial_decode_granularity()` with default implementation
+
+### Changed
+ - Cleanup "Implementation Status" and "Crate Features" in root documentation
+ - Minor changes to docs
 
 ## [0.12.0] - 2024-02-22
 
@@ -643,7 +649,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.1
 [0.12.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.0
 [0.11.6]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.6
 [0.11.5]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.5
@@ -668,4 +675,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.2.0
 
+[@LDeakin]: https://github.com/LDeakin
 [@lorenzocerrone]: https://github.com/lorenzocerrone
