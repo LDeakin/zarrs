@@ -142,12 +142,9 @@ impl Iterator for IndicesIterator<'_> {
     type Item = ArrayIndices;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let indices = std::iter::zip(
-            unravel_index(self.index_front, self.subset.shape()).iter(),
-            self.subset.start(),
-        )
-        .map(|(index, start)| index + start)
-        .collect::<Vec<_>>();
+        let mut indices = unravel_index(self.index_front, self.subset.shape());
+        std::iter::zip(indices.iter_mut(), self.subset.start())
+            .for_each(|(index, start)| *index += start);
 
         if self.index_front < self.index_back {
             self.index_front += 1;
@@ -166,12 +163,9 @@ impl DoubleEndedIterator for IndicesIterator<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.index_back > self.index_front {
             self.index_back -= 1;
-            let indices = std::iter::zip(
-                unravel_index(self.index_back, self.subset.shape()).iter(),
-                self.subset.start(),
-            )
-            .map(|(index, start)| index + start)
-            .collect::<Vec<_>>();
+            let mut indices = unravel_index(self.index_back, self.subset.shape());
+            std::iter::zip(indices.iter_mut(), self.subset.start())
+                .for_each(|(index, start)| *index += start);
             Some(indices)
         } else {
             None
