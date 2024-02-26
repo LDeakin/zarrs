@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2024-02-26
+
+### Added
+ - Added "Getting Started" in root documentation
+
 ### Changed
- - Disabled `blosc` codec partial decoding
+ - Disabled `blosc` codec partial decoding pending a faster implementation
 
 ### Fixed
  - Remove an unnecessary allocation in `IndicesIterator`
@@ -655,7 +660,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.2
 [0.12.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.1
 [0.12.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.0
 [0.11.6]: https://github.com/LDeakin/zarrs/releases/tag/v0.11.6
