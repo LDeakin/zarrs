@@ -132,7 +132,7 @@ impl CodecTraits for BloscCodec {
     }
 
     fn partial_decoder_decodes_all(&self) -> bool {
-        false
+        true
     }
 }
 

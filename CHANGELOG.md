@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - Disabled `blosc` codec partial decoding
+
 ## [0.12.1] - 2024-02-24
 
 ### Added

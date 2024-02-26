@@ -36,6 +36,7 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
             let nbytes = blosc_nbytes(&encoded_value);
             let typesize = blosc_typesize(&encoded_value);
             if let (Some(nbytes), Some(typesize)) = (nbytes, typesize) {
+                // FIXME: This needs coalescing to be efficient, for now CodecTraits::partial_decoder_decodes_all is set to true
                 let mut decoded_byte_ranges = Vec::with_capacity(decoded_regions.len());
                 for byte_range in decoded_regions {
                     let start = usize::try_from(byte_range.start(nbytes as u64)).unwrap();
