@@ -4,6 +4,7 @@
 
 use derive_more::From;
 use half::{bf16, f16};
+use serde::de::Error;
 use thiserror::Error;
 
 use crate::{
@@ -71,6 +72,13 @@ impl PartialEq for DataType {
 }
 
 impl Eq for DataType {}
+
+impl<'de> serde::Deserialize<'de> for DataType {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let metadata = Metadata::deserialize(d)?;
+        DataType::from_metadata(&metadata).map_err(|err| D::Error::custom(err.to_string()))
+    }
+}
 
 // /// A data type plugin.
 // pub type DataTypePlugin = Plugin<Box<dyn DataTypeExtension>>;
