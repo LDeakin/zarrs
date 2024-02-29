@@ -232,9 +232,9 @@ impl ArrayCodecTraits for ShardingCodec {
 
         rayon_iter_concurrent_limit::iter_concurrent_limit!(
             shard_concurrent_limit,
-            (0..num_chunks).into_par_iter(),
+            (0..num_chunks),
             try_for_each,
-            |chunk_index| {
+            |chunk_index: usize| {
                 let chunk_subset =
                     self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                 let array_slice = unsafe { array_view.bytes_mut() };
@@ -467,9 +467,9 @@ impl ShardingCodec {
                 .product::<usize>();
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
                 shard_concurrent_limit,
-                (0..n_chunks).into_par_iter(),
+                (0..n_chunks),
                 try_for_each,
-                |chunk_index| {
+                |chunk_index: usize| {
                     let chunk_subset =
                         self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                     let bytes = unsafe {
@@ -636,9 +636,9 @@ impl ShardingCodec {
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
                 options.concurrent_target(),
-                encoded_chunks.into_par_iter(),
+                encoded_chunks,
                 for_each,
-                |(chunk_index, chunk_encoded)| {
+                |(chunk_index, chunk_encoded): (usize, Vec<u8>)| {
                     let chunk_offset = encoded_shard_offset
                         .fetch_add(chunk_encoded.len(), std::sync::atomic::Ordering::Relaxed);
                     unsafe {

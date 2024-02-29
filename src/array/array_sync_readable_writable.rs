@@ -371,7 +371,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             let indices = chunks.indices();
             rayon_iter_concurrent_limit::iter_concurrent_limit!(
                 chunk_concurrent_limit,
-                indices.into_par_iter(),
+                indices,
                 try_for_each,
                 store_chunk
             )?;

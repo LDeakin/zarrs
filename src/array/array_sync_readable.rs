@@ -656,9 +656,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     let chunk0_subset = self.chunk_subset(chunks.start())?;
                     rayon_iter_concurrent_limit::iter_concurrent_limit!(
                         chunk_concurrent_limit,
-                        indices.into_par_iter(),
+                        indices,
                         try_for_each,
-                        |chunk_indices| {
+                        |chunk_indices: Vec<u64>| {
                             let chunk_subset = self.chunk_subset(&chunk_indices)?;
                             let array_view_subset = unsafe {
                                 chunk_subset.relative_to_unchecked(chunk0_subset.start())
@@ -799,7 +799,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     let indices = chunks.indices();
                     iter_concurrent_limit!(
                         chunk_concurrent_limit,
-                        indices.into_par_iter(),
+                        indices,
                         try_for_each,
                         retrieve_chunk
                     )?;
@@ -853,9 +853,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 let indices = chunks.indices();
                 iter_concurrent_limit!(
                     chunk_concurrent_limit,
-                    indices.into_par_iter(),
+                    indices,
                     try_for_each,
-                    |chunk_indices| {
+                    |chunk_indices: Vec<u64>| {
                         let chunk_subset = self.chunk_subset(&chunk_indices)?;
                         let array_view_subset =
                             unsafe { chunk_subset.relative_to_unchecked(array_subset.start()) };
@@ -948,9 +948,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     let indices = chunks.indices();
                     iter_concurrent_limit!(
                         chunk_concurrent_limit,
-                        indices.into_par_iter(),
+                        indices,
                         try_for_each,
-                        |chunk_indices| {
+                        |chunk_indices: Vec<u64>| {
                             let chunk_subset = self.chunk_subset(&chunk_indices)?;
                             let chunk_subset_in_array_subset =
                                 unsafe { chunk_subset.overlap_unchecked(array_subset) };

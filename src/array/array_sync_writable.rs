@@ -337,12 +337,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                     self.store_chunk_opt(&chunk_indices, chunk_bytes, &options)
                 };
                 let indices = chunks.indices();
-                iter_concurrent_limit!(
-                    chunk_concurrent_limit,
-                    indices.into_par_iter(),
-                    try_for_each,
-                    store_chunk
-                )?;
+                iter_concurrent_limit!(chunk_concurrent_limit, indices, try_for_each, store_chunk)?;
             }
         }
 
