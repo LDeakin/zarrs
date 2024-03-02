@@ -141,9 +141,19 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         self.store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
     }
 
-    /// Erase the chunk at `chunk_indices`.
+    /// Erase the metadata.
     ///
-    /// Succeeds if the chunk does not exist.
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    pub fn erase_metadata(&self) -> Result<(), StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_writable_transformer(storage_handle);
+        crate::storage::erase_metadata(&*storage_transformer, self.path())
+    }
+
+    /// Erase the chunk at `chunk_indices`.
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.

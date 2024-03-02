@@ -102,6 +102,16 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
+    /// Async variant of [`erase_metadata`](Array::erase_metadata).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_async_writable_transformer(storage_handle);
+        crate::storage::async_erase_metadata(&*storage_transformer, self.path()).await
+    }
+
     /// Async variant of [`erase_chunk`](Array::erase_chunk).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {

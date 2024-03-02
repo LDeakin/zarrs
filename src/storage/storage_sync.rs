@@ -365,6 +365,17 @@ pub fn erase_chunk(
     ))
 }
 
+/// Erase metadata.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn erase_metadata(
+    storage: &dyn WritableStorageTraits,
+    array_path: &NodePath,
+) -> Result<(), StorageError> {
+    storage.erase(&meta_key(array_path))
+}
+
 /// Retrieve byte ranges from a chunk.
 ///
 /// Returns [`None`] where keys are not found.

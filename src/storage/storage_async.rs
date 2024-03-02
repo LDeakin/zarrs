@@ -400,6 +400,17 @@ pub async fn async_retrieve_chunk(
         .await
 }
 
+/// Asynchronously erase metadata.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_erase_metadata(
+    storage: &dyn AsyncWritableStorageTraits,
+    array_path: &NodePath,
+) -> Result<(), StorageError> {
+    storage.erase(&meta_key(array_path)).await
+}
+
 /// Asynchronously erase a chunk.
 ///
 /// # Errors

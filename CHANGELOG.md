@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Implement `Deserialize` for `DataType`
    - A convenience for `zarrs` consumers. `ArrayMetadata` continues to use `Metadata` to parse unknown data types.
+ - Add `Array::{async_}erase_metadata()` and `storage::{async_}erase_metadata()`
 
 ### Fixed
  - Fixed various errors in storage docs
