@@ -143,6 +143,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
 
     /// Erase the metadata.
     ///
+    /// Succeeds if the metadata does not exist.
+    ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub fn erase_metadata(&self) -> Result<(), StorageError> {
@@ -154,6 +156,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     }
 
     /// Erase the chunk at `chunk_indices`.
+    ///
+    /// Succeeds if the chunk does not exist.
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.

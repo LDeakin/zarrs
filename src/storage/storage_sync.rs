@@ -350,6 +350,8 @@ pub fn retrieve_chunk(
 
 /// Erase a chunk.
 ///
+/// Succeeds if the chunk does not exist.
+///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn erase_chunk(
@@ -366,6 +368,8 @@ pub fn erase_chunk(
 }
 
 /// Erase metadata.
+///
+/// Succeeds if the metadata does not exist.
 ///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
@@ -426,6 +430,8 @@ pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, 
 }
 
 /// Erase a node (group or array) and all of its children.
+///
+/// Succeeds if the node does not exist.
 ///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
