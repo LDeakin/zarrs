@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Implement `Deserialize` for `DataType`
    - A convenience for `zarrs` consumers. `ArrayMetadata` continues to use `Metadata` to parse unknown data types.
 
+### Fixed
+ - Fixed various errors in storage docs
+
 ## [0.12.2] - 2024-02-26
 
 ### Added

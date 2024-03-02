@@ -19,8 +19,7 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// Returns [`None`] if the key is not found.
     ///
     /// # Errors
-    ///
-    /// Returns a [`StorageError`] if the store key does not exist or there is an error with the underlying store.
+    /// Returns a [`StorageError`] if there is an underlying storage error.
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError>;
 
     /// Retrieve partial bytes from a list of byte ranges for a store key.
@@ -28,7 +27,6 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// Returns [`None`] if the key is not found.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn get_partial_values_key(
         &self,
@@ -46,7 +44,6 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// A a list of values in the order of the `key_ranges`. It will be [`None`] for missing keys.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn get_partial_values(
         &self,
@@ -56,7 +53,6 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// Return the size in bytes of all keys under `prefix`.
     ///
     /// # Errors
-    ///
     /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
     fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError>;
 
@@ -65,14 +61,12 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// Returns [`None`] if the key is not found.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError>;
 
     /// Return the total size in bytes of the storage.
     ///
     /// # Errors
-    ///
     /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
     fn size(&self) -> Result<u64, StorageError> {
         self.size_prefix(&StorePrefix::root())
@@ -83,7 +77,6 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// Readable storage can use this function in the implementation of [`get_partial_values`](ReadableStorageTraits::get_partial_values) if that is optimal.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn get_partial_values_batched_by_key(
         &self,
@@ -132,21 +125,18 @@ pub trait ListableStorageTraits: Send + Sync {
     /// Retrieve all [`StoreKeys`] in the store.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying error with the store.
     fn list(&self) -> Result<StoreKeys, StorageError>;
 
     /// Retrieve all [`StoreKeys`] with a given [`StorePrefix`].
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if the prefix is not a directory or there is an underlying error with the store.
     fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError>;
 
     /// Retrieve all [`StoreKeys`] and [`StorePrefix`] which are direct children of [`StorePrefix`].
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if the prefix is not a directory or there is an underlying error with the store.
     ///
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError>;
@@ -202,14 +192,12 @@ pub trait WritableStorageTraits: Send + Sync {
     /// Store bytes at a [`StoreKey`].
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] on failure to store.
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError>;
 
     /// Store bytes according to a list of [`StoreKeyStartValue`].
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] on failure to store.
     fn set_partial_values(
         &self,
@@ -218,19 +206,13 @@ pub trait WritableStorageTraits: Send + Sync {
 
     /// Erase a [`StoreKey`].
     ///
-    /// Returns true if the key exists and was erased, or false if the key does not exist.
-    ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError>;
 
     /// Erase a list of [`StoreKey`].
     ///
-    /// Returns true if all keys existed and were erased, or false if any key does not exist.
-    ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
         keys.iter().try_for_each(|key| self.erase(key))?;
@@ -238,8 +220,6 @@ pub trait WritableStorageTraits: Send + Sync {
     }
 
     /// Erase all [`StoreKey`] under [`StorePrefix`].
-    ///
-    /// Returns true if the prefix and all its children were removed.
     ///
     /// # Errors
     /// Returns a [`StorageError`] is the prefix is not in the store, or the erase otherwise fails.
@@ -370,8 +350,6 @@ pub fn retrieve_chunk(
 
 /// Erase a chunk.
 ///
-/// Succeeds if the chunk does not exist.
-///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn erase_chunk(
@@ -437,8 +415,6 @@ pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, 
 }
 
 /// Erase a node (group or array) and all of its children.
-///
-/// Succeeds if the node does not exist.
 ///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
