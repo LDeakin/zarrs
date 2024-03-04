@@ -197,24 +197,38 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Group<TStorage> {
     /// Store metadata.
     ///
     /// # Errors
-    ///
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata(&self) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         crate::storage::create_group(&storage_handle, self.path(), &self.metadata())
     }
+
+    /// Erase the metadata.
+    ///
+    /// Succeeds if the metadata does not exist.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    pub fn erase_metadata(&self) -> Result<(), StorageError> {
+        let storage_handle = StorageHandle::new(self.storage.clone());
+        crate::storage::erase_metadata(&storage_handle, self.path())
+    }
 }
 
 #[cfg(feature = "async")]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
-    /// Store metadata.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`StorageError`] if there is an underlying store error.
+    /// Async variant of [`store_metadata`](Group::store_metadata).
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_metadata(&self) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         crate::storage::async_create_group(&storage_handle, self.path(), &self.metadata()).await
+    }
+
+    /// Async variant of [`erase_metadata`](Group::erase_metadata).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
+        let storage_handle = StorageHandle::new(self.storage.clone());
+        crate::storage::async_erase_metadata(&storage_handle, self.path()).await
     }
 }
 
