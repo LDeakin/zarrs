@@ -36,6 +36,7 @@ pub struct BloscCodecConfigurationV1 {
     pub blocksize: Option<usize>,
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn usize_is_zero(v: &usize) -> bool {
     v == &0
 }
