@@ -32,7 +32,7 @@ pub struct BloscCodec {
 impl BloscCodec {
     /// Create a new `blosc` codec.
     ///
-    /// The block size is chosen automatically if `blocksize` is none.
+    /// The block size is chosen automatically if `blocksize` is none or zero.
     /// `typesize` must be a positive integer if shuffling is enabled.
     ///
     /// # Errors

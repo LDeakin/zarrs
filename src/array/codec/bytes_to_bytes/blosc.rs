@@ -100,11 +100,12 @@ impl<'de> serde::Deserialize<'de> for BloscCompressionLevel {
 }
 
 /// The `blosc` shuffle mode.
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
 #[repr(u32)]
 pub enum BloscShuffleMode {
     /// No shuffling.
+    #[default]
     NoShuffle = BLOSC_NOSHUFFLE,
     /// Byte-wise shuffling.
     Shuffle = BLOSC_SHUFFLE,

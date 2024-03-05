@@ -21,11 +21,23 @@ pub struct BloscCodecConfigurationV1 {
     /// The compression level.
     pub clevel: BloscCompressionLevel,
     /// The shuffle mode.
+    ///
+    /// Defaults to noshuffle if unspecified.
+    #[serde(default)]
     pub shuffle: BloscShuffleMode,
     /// The type size in bytes.
+    ///
+    /// Required unless shuffle is "noshuffle", in which case the value is ignored.
+    // FIXME: Change to option on major release
+    #[serde(default, skip_serializing_if = "usize_is_zero")]
     pub typesize: usize,
-    /// The compression block size. Automatically determined if [`None`].
+    /// The compression block size. Automatically determined if [`None`] or 0.
+    // FIXME: Change to usize on major version change
     pub blocksize: Option<usize>,
+}
+
+fn usize_is_zero(v: &usize) -> bool {
+    v == &0
 }
 
 #[cfg(test)]
@@ -56,6 +68,47 @@ mod tests {
             "clevel": 4,
             "shuffle": "bitshuffle",
             "typesize": 4,
+            "blocksize": 0
+        }"#,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_blosc_invalid_no_typesize() {
+        serde_json::from_str::<BloscCodecConfiguration>(
+            r#"
+        {
+            "cname": "lz4",
+            "clevel": 4,
+            "shuffle": "bitshuffle",
+            "blocksize": 0
+        }"#,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_blosc_valid_no_shuffle() {
+        serde_json::from_str::<BloscCodecConfiguration>(
+            r#"
+        {
+            "cname": "lz4",
+            "clevel": 4,
+            "blocksize": 0
+        }"#,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_blosc_valid_no_typesize() {
+        serde_json::from_str::<BloscCodecConfiguration>(
+            r#"
+        {
+            "cname": "lz4",
+            "clevel": 4,
+            "shuffle": "shuffle",
             "blocksize": 0
         }"#,
         )
