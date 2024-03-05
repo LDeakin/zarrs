@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
  - Fixed various errors in storage docs
  - Blosc codec config allow deserialization with missing `typesize`/`shuffle`
+ - Blosc codec encoding with `typesize` of 0 with shuffling
 
 ## [0.12.2] - 2024-02-26
 

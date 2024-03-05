@@ -47,9 +47,11 @@ impl BloscCodec {
         shuffle_mode: BloscShuffleMode,
         typesize: Option<usize>,
     ) -> Result<Self, PluginCreateError> {
-        if shuffle_mode != BloscShuffleMode::NoShuffle && typesize.is_none() {
+        if shuffle_mode != BloscShuffleMode::NoShuffle
+            && (typesize.is_none() || typesize == Some(0))
+        {
             return Err(PluginCreateError::from(
-                "typesize is a positive integer required if shuffle mode is not none.",
+                "typesize is a positive integer required if shuffling is enabled.",
             ));
         }
 

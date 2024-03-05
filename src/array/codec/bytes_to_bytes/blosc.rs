@@ -168,7 +168,7 @@ fn blosc_compress_bytes(
         blosc_compress_ctx(
             c_int::from(clevel.0),
             shuffle_mode as c_int,
-            typesize,
+            std::cmp::max(1, typesize), // 0 is an error, even with noshuffle?
             src.len(),
             src.as_ptr().cast::<c_void>(),
             dest.as_mut_ptr().cast::<c_void>(),
@@ -333,15 +333,29 @@ mod tests {
     "blocksize": 0
 }"#;
 
-    #[test]
-    #[cfg_attr(miri, ignore)]
-    fn codec_blosc_round_trip1() {
+    const JSON_VALID3: &str = r#"
+{
+    "cname": "lz4",
+    "clevel": 4,
+    "shuffle": "noshuffle",
+    "blocksize": 0
+}"#;
+
+    const JSON_INVALID1: &str = r#"
+{
+    "cname": "lz4",
+    "clevel": 4,
+    "shuffle": "bitshuffle",
+    "typesize": 0,
+    "blocksize": 0
+}"#;
+
+    fn codec_blosc_round_trip(json: &str) {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
-        let codec_configuration: BloscCodecConfiguration =
-            serde_json::from_str(JSON_VALID1).unwrap();
+        let codec_configuration: BloscCodecConfiguration = serde_json::from_str(json).unwrap();
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
@@ -355,22 +369,27 @@ mod tests {
 
     #[test]
     #[cfg_attr(miri, ignore)]
+    fn codec_blosc_round_trip1() {
+        codec_blosc_round_trip(JSON_VALID1);
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_blosc_round_trip2() {
-        let elements: Vec<u16> = (0..32).collect();
-        let bytes = crate::array::transmute_to_bytes_vec(elements);
-        let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
+        codec_blosc_round_trip(JSON_VALID2);
+    }
 
-        let codec_configuration: BloscCodecConfiguration =
-            serde_json::from_str(JSON_VALID2).unwrap();
-        let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_blosc_round_trip3() {
+        codec_blosc_round_trip(JSON_VALID3);
+    }
 
-        let encoded = codec
-            .encode(bytes.clone(), &CodecOptions::default())
-            .unwrap();
-        let decoded = codec
-            .decode(encoded, &bytes_representation, &CodecOptions::default())
-            .unwrap();
-        assert_eq!(bytes, decoded);
+    #[test]
+    #[should_panic]
+    #[cfg_attr(miri, ignore)]
+    fn codec_blosc_invalid_typesize_with_shuffling() {
+        codec_blosc_round_trip(JSON_INVALID1);
     }
 
     #[test]
