@@ -300,12 +300,13 @@ impl<T> AsyncReadableWritableListableStorageTraits for T where
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 #[async_recursion]
-pub async fn async_get_child_nodes<
-    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
->(
+pub async fn async_get_child_nodes<TStorage>(
     storage: &TStorage,
     path: &NodePath,
-) -> Result<Vec<Node>, StorageError> {
+) -> Result<Vec<Node>, StorageError>
+where
+    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+{
     let prefixes = async_discover_children(storage, path).await?;
     let mut nodes: Vec<Node> = Vec::new();
     // FIXME: Asynchronously get metadata of all prefixes
