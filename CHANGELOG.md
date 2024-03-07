@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.3] - 2024-03-07
+
 ### Added
  - Implement `Deserialize` for `DataType`
    - A convenience for `zarrs` consumers. `ArrayMetadata` continues to use `Metadata` to parse unknown data types.
@@ -670,7 +672,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.2...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.3...HEAD
+[0.12.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.3
 [0.12.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.2
 [0.12.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.1
 [0.12.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.0
