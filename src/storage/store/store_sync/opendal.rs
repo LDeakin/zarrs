@@ -144,8 +144,11 @@ impl ReadableStorageTraits for OpendalStore {
 #[async_trait::async_trait]
 impl WritableStorageTraits for OpendalStore {
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        // FIXME: Can this copy be avoided?
-        let bytes = bytes::Bytes::copy_from_slice(value);
+        let bytes = unsafe {
+            // safety: bytes is never cloned and is consumed and dropped by opendal BlockingOperator::write.
+            let value = std::mem::transmute::<&[u8], &'static [u8]>(value);
+            bytes::Bytes::from_static(value)
+        };
         Ok(self.operator.write(key.as_str(), bytes)?)
     }
 
