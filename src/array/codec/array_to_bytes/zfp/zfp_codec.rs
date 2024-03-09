@@ -254,26 +254,27 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
             ));
         };
 
-        let field = unsafe {
+        let bufsize = unsafe {
             // safety: zfp_stream_maximum_size does not use the data in the field, so it can be empty
-            ZfpField::new_empty(
+            let field = ZfpField::new_empty(
                 zfp_type,
                 &decoded_representation
                     .shape()
                     .iter()
                     .map(|u| usize::try_from(u.get()).unwrap())
                     .collect::<Vec<usize>>(),
-            )
-        };
-        let Some(field) = field else {
-            return Err(CodecError::from("failed to create zfp field"));
+            );
+            let Some(field) = field else {
+                return Err(CodecError::from("failed to create zfp field"));
+            };
+
+            let Some(zfp) = ZfpStream::new(&self.mode, zfp_type) else {
+                return Err(CodecError::from("failed to create zfp stream"));
+            };
+
+            zfp_stream_maximum_size(zfp.as_zfp_stream(), field.as_zfp_field())
         };
 
-        let Some(zfp) = ZfpStream::new(&self.mode, zfp_type) else {
-            return Err(CodecError::from("failed to create zfp stream"));
-        };
-
-        let bufsize = unsafe { zfp_stream_maximum_size(zfp.as_zfp_stream(), field.as_zfp_field()) };
         match data_type {
             DataType::Int32
             | DataType::UInt32
