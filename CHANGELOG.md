@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.4] - 2024-03-09
+
 ### Fixed
  - Remove unnecessary copy in `OpendalStore::set`
  - Fixed `zfp` codec encode not truncating compressed data
@@ -677,7 +679,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.3...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.4...HEAD
+[0.12.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.4
 [0.12.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.3
 [0.12.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.2
 [0.12.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.1
