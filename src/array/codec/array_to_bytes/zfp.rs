@@ -276,6 +276,7 @@ mod tests {
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
+        let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
         let encoded = codec
             .encode(
                 bytes.clone(),
@@ -283,6 +284,7 @@ mod tests {
                 &CodecOptions::default(),
             )
             .unwrap();
+        assert!((encoded.len() as u64) <= max_encoded_size.size().unwrap());
         let decoded_regions = [
             ArraySubset::new_with_shape(vec![1, 2, 3]),
             ArraySubset::new_with_ranges(&[0..3, 1..3, 2..3]),

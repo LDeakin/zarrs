@@ -186,6 +186,7 @@ impl ArrayCodecTraits for ZfpCodec {
         if size == 0 {
             Err(CodecError::from("zfp compression failed"))
         } else {
+            encoded_value.truncate(size);
             Ok(encoded_value)
         }
     }
@@ -246,13 +247,40 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         let data_type = decoded_representation.data_type();
+        let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
+        else {
+            return Err(CodecError::from(
+                "data type {} is unsupported for zfp codec",
+            ));
+        };
+
+        let field = unsafe {
+            // safety: zfp_stream_maximum_size does not use the data in the field, so it can be empty
+            ZfpField::new_empty(
+                zfp_type,
+                &decoded_representation
+                    .shape()
+                    .iter()
+                    .map(|u| usize::try_from(u.get()).unwrap())
+                    .collect::<Vec<usize>>(),
+            )
+        };
+        let Some(field) = field else {
+            return Err(CodecError::from("failed to create zfp field"));
+        };
+
+        let Some(zfp) = ZfpStream::new(&self.mode, zfp_type) else {
+            return Err(CodecError::from("failed to create zfp stream"));
+        };
+
+        let bufsize = unsafe { zfp_stream_maximum_size(zfp.as_zfp_stream(), field.as_zfp_field()) };
         match data_type {
             DataType::Int32
             | DataType::UInt32
             | DataType::Int64
             | DataType::UInt64
             | DataType::Float32
-            | DataType::Float64 => Ok(BytesRepresentation::UnboundedSize), // FIXME: Fixed/bounded?
+            | DataType::Float64 => Ok(BytesRepresentation::BoundedSize(bufsize as u64)),
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 IDENTIFIER.to_string(),

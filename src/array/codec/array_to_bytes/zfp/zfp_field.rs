@@ -37,6 +37,24 @@ impl ZfpField {
         }
     }
 
+    pub unsafe fn new_empty(zfp_type_: zfp_type, shape: &[usize]) -> Option<Self> {
+        let pointer = core::ptr::null_mut::<u8>().cast::<std::ffi::c_void>();
+        match shape.len() {
+            1 => NonNull::new(unsafe { zfp_field_1d(pointer, zfp_type_, shape[0]) }).map(Self),
+            2 => NonNull::new(unsafe { zfp_field_2d(pointer, zfp_type_, shape[1], shape[0]) })
+                .map(Self),
+            3 => NonNull::new(unsafe {
+                zfp_field_3d(pointer, zfp_type_, shape[2], shape[1], shape[0])
+            })
+            .map(Self),
+            4 => NonNull::new(unsafe {
+                zfp_field_4d(pointer, zfp_type_, shape[3], shape[2], shape[1], shape[0])
+            })
+            .map(Self),
+            _ => None,
+        }
+    }
+
     pub fn new_1d(data: &mut [u8], zfp_type_: zfp_type, nx: usize) -> Option<Self> {
         if let Some(size) = zfp_type_to_size(zfp_type_) {
             if size * nx != data.len() {

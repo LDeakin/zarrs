@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Remove unnecessary copy in `OpendalStore::set`
+ - Fixed `zfp` codec encode not truncating compressed data
+ - `zfp` codec `compute_encoded_size()` now correctly outputs a bounded size instead of an unbounded size
 
 ## [0.12.3] - 2024-03-07
 
