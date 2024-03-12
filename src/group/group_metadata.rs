@@ -15,6 +15,13 @@ pub enum GroupMetadata {
     V3(GroupMetadataV3),
 }
 
+impl TryFrom<&str> for GroupMetadata {
+    type Error = serde_json::Error;
+    fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
+        serde_json::from_str::<GroupMetadata>(metadata_json)
+    }
+}
+
 /// Zarr group metadata (storage specification v3).
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group-metadata>.

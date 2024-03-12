@@ -20,6 +20,13 @@ pub enum ArrayMetadata {
     V3(ArrayMetadataV3),
 }
 
+impl TryFrom<&str> for ArrayMetadata {
+    type Error = serde_json::Error;
+    fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
+        serde_json::from_str::<ArrayMetadata>(metadata_json)
+    }
+}
+
 /// Zarr array metadata (storage specification v3).
 ///
 /// An example `JSON` document for a v3 array:

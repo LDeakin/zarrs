@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Implement `TryFrom<&str>` for `{Array,Group}Metadata`
+
 ## [0.12.4] - 2024-03-09
 
 ### Fixed
