@@ -93,26 +93,27 @@ pub const NATIVE_ENDIAN: Endianness = if cfg!(target_endian = "big") {
     Endianness::Little
 };
 
-fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
+/// Reverse the endianness of bytes for a given data type.
+pub fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
     match data_type {
         DataType::Bool | DataType::Int8 | DataType::UInt8 | DataType::RawBits(_) => {}
         DataType::Int16 | DataType::UInt16 | DataType::Float16 | DataType::BFloat16 => {
             let swap = |chunk: &mut [u8]| {
-                let bytes = u16::from_ne_bytes(chunk.try_into().unwrap());
+                let bytes = u16::from_ne_bytes(unsafe { chunk.try_into().unwrap_unchecked() });
                 chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
             };
             v.chunks_exact_mut(2).for_each(swap);
         }
         DataType::Int32 | DataType::UInt32 | DataType::Float32 | DataType::Complex64 => {
             let swap = |chunk: &mut [u8]| {
-                let bytes = u32::from_ne_bytes(chunk.try_into().unwrap());
+                let bytes = u32::from_ne_bytes(unsafe { chunk.try_into().unwrap_unchecked() });
                 chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
             };
             v.chunks_exact_mut(4).for_each(swap);
         }
         DataType::Int64 | DataType::UInt64 | DataType::Float64 | DataType::Complex128 => {
             let swap = |chunk: &mut [u8]| {
-                let bytes = u64::from_ne_bytes(chunk.try_into().unwrap());
+                let bytes = u64::from_ne_bytes(unsafe { chunk.try_into().unwrap_unchecked() });
                 chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
             };
             v.chunks_exact_mut(8).for_each(swap);
