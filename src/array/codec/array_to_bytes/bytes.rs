@@ -54,7 +54,9 @@ pub enum Endianness {
 }
 
 impl Endianness {
-    fn is_native(self) -> bool {
+    /// Return true if the endianness matches the endianness of the CPU.
+    #[must_use]
+    pub fn is_native(self) -> bool {
         self == NATIVE_ENDIAN
     }
 }
@@ -84,10 +86,12 @@ impl<'de> serde::Deserialize<'de> for Endianness {
     }
 }
 
-#[cfg(target_endian = "big")]
-const NATIVE_ENDIAN: Endianness = Endianness::Big;
-#[cfg(target_endian = "little")]
-const NATIVE_ENDIAN: Endianness = Endianness::Little;
+/// The endianness of the CPU.
+pub const NATIVE_ENDIAN: Endianness = if cfg!(target_endian = "big") {
+    Endianness::Big
+} else {
+    Endianness::Little
+};
 
 fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
     match data_type {

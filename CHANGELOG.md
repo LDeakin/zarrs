@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Implement `TryFrom<&str>` for `{Array,Group}Metadata`
 
+### Changed
+ - Make `array::codec::array_to_bytes::bytes::Endianness::{is_native(),NATIVE_ENDIAN}` public
+
 ## [0.12.4] - 2024-03-09
 
 ### Fixed
