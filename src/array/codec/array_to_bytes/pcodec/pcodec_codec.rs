@@ -147,7 +147,7 @@ impl ArrayCodecTraits for PcodecCodec {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_decode {
             ( $t:ty ) => {
-                pco::standalone::auto_decompress(encoded_value.as_slice())
+                pco::standalone::simple_decompress(encoded_value.as_slice())
                     .map(|bytes| transmute_to_bytes_vec::<$t>(bytes))
                     .map_err(|err| CodecError::Other(err.to_string()))
             };

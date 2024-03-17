@@ -51,9 +51,10 @@ fn do_partial_decode(
         Some(decoded_value) => {
             macro_rules! pcodec_partial_decode {
                 ( $t:ty ) => {
-                    let decoded_chunk = pco::standalone::auto_decompress(decoded_value.as_slice())
-                        .map(|bytes| crate::array::transmute_to_bytes_vec::<$t>(bytes))
-                        .map_err(|err| CodecError::Other(err.to_string()))?;
+                    let decoded_chunk =
+                        pco::standalone::simple_decompress(decoded_value.as_slice())
+                            .map(|bytes| crate::array::transmute_to_bytes_vec::<$t>(bytes))
+                            .map_err(|err| CodecError::Other(err.to_string()))?;
                     for array_subset in decoded_regions {
                         let bytes_subset = array_subset
                             .extract_bytes(
