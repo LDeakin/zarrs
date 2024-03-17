@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - **Breaking**: Bump MSRV to 1.73 (5 October, 2023)
+ - Bump `pco` (pcodec) to 0.2.1
 
 ## [0.12.5] - 2024-03-17
 
