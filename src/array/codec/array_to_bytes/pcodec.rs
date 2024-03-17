@@ -227,11 +227,13 @@ mod tests {
             ChunkRepresentation::new(chunk_shape, data_type, fill_value).unwrap();
         let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
 
+        let max_encoded_size = codec.compute_encoded_size(&chunk_representation)?;
         let encoded = codec.encode(
             bytes.clone(),
             &chunk_representation,
             &CodecOptions::default(),
         )?;
+        assert!((encoded.len() as u64) <= max_encoded_size.size().unwrap());
         let decoded = codec
             .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();

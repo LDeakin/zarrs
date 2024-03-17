@@ -1,4 +1,4 @@
-use pco::{ChunkConfig, FloatMultSpec, IntMultSpec, PagingSpec};
+use pco::{standalone::guarantee::file_size, ChunkConfig, FloatMultSpec, IntMultSpec, PagingSpec};
 
 use crate::{
     array::{
@@ -211,9 +211,28 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
 
     fn compute_encoded_size(
         &self,
-        _decoded_representation: &ChunkRepresentation,
+        decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
-        // FIXME: pcodec is likely bounded, but it doesn't have a nice API to figure out what the bounded size is
-        Ok(BytesRepresentation::UnboundedSize)
+        let data_type = decoded_representation.data_type();
+        let mut num_elements = decoded_representation.num_elements_usize();
+        if data_type == &DataType::Complex64 || data_type == &DataType::Complex128 {
+            num_elements *= 2;
+        }
+
+        let size = match data_type {
+            DataType::UInt32 | DataType::Int32 | DataType::Float32 | DataType::Complex64 => Ok(
+                file_size::<u32>(num_elements, &self.chunk_config.paging_spec)
+                    .map_err(|err| CodecError::from(err.to_string()))?,
+            ),
+            DataType::UInt64 | DataType::Int64 | DataType::Float64 | DataType::Complex128 => Ok(
+                file_size::<u64>(num_elements, &self.chunk_config.paging_spec)
+                    .map_err(|err| CodecError::from(err.to_string()))?,
+            ),
+            _ => Err(CodecError::UnsupportedDataType(
+                data_type.clone(),
+                IDENTIFIER.to_string(),
+            )),
+        }?;
+        Ok(BytesRepresentation::BoundedSize(size.try_into().unwrap()))
     }
 }
