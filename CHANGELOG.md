@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - **Breaking**: Bump MSRV to 1.73 (5 October, 2023)
+
 ## [0.12.5] - 2024-03-17
 
 ### Added
