@@ -67,8 +67,6 @@ jobs:
       - run: cargo +nightly install cargo-llvm-cov --locked
       - run: cargo +nightly llvm-cov --all-features --doctests --lcov --output-path lcov.info
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-        env:
-            CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v4
         with:
-            fail_ci_if_error: true
+            token: ${{ secrets.CODECOV_TOKEN }}
