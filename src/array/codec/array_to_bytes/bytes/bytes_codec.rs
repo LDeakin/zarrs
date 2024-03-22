@@ -115,8 +115,7 @@ impl ArrayCodecTraits for BytesCodec {
         //         let min_elements_per_thread = 32768; // 32^3
         //         unsafe {
         //             NonZeroU64::new_unchecked(
-        //                 (decoded_representation.num_elements() + min_elements_per_thread - 1)
-        //                     / min_elements_per_thread,
+        //                 decoded_representation.num_elements().div_ceil(min_elements_per_thread),
         //             )
         //         }
         //     }

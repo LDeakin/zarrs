@@ -98,7 +98,7 @@ pub fn calc_concurrency_outer_inner(
     if concurrency_inner * concurrency_outer < concurrency_target {
         // Try increasing inner
         concurrency_inner = std::cmp::min(
-            (concurrency_target + concurrency_outer - 1) / concurrency_outer,
+            concurrency_target.div_ceil(concurrency_outer),
             recommended_concurrency_inner.max(),
         );
     }
@@ -106,7 +106,7 @@ pub fn calc_concurrency_outer_inner(
     if concurrency_inner * concurrency_outer < concurrency_target {
         // Try increasing outer
         concurrency_outer = std::cmp::min(
-            (concurrency_target + concurrency_inner - 1) / concurrency_inner,
+            concurrency_target.div_ceil(concurrency_inner),
             recommended_concurrency_outer.max(),
         );
     }

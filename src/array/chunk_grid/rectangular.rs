@@ -191,7 +191,7 @@ impl ChunkGridTraits for RectangularChunkGrid {
             .map(|(array_shape, chunks)| match chunks {
                 RectangularChunkGridDimension::Fixed(s) => {
                     let s = s.get();
-                    Some((array_shape + s - 1) / s)
+                    Some(array_shape.div_ceil(s))
                 }
                 RectangularChunkGridDimension::Varying(s) => {
                     let last_default = OffsetSize {

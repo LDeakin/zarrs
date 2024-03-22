@@ -131,8 +131,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
                 const HEADER_TRAILER_OVERHEAD: u64 = 4 + 14 + 4;
                 const MIN_WINDOW_SIZE: u64 = 1000; // 1KB
                 const BLOCK_OVERHEAD: u64 = 3;
-                let blocks_overhead =
-                    BLOCK_OVERHEAD * ((size + MIN_WINDOW_SIZE - 1) / MIN_WINDOW_SIZE);
+                let blocks_overhead = BLOCK_OVERHEAD * size.div_ceil(MIN_WINDOW_SIZE);
                 BytesRepresentation::BoundedSize(size + HEADER_TRAILER_OVERHEAD + blocks_overhead)
             })
     }

@@ -140,7 +140,7 @@ impl ChunkGridTraits for RegularChunkGrid {
             std::iter::zip(array_shape, self.chunk_shape.as_slice())
                 .map(|(a, s)| {
                     let s = s.get();
-                    (a + s - 1) / s
+                    a.div_ceil(s)
                 })
                 .collect(),
         )

@@ -132,7 +132,7 @@ impl BytesToBytesCodecTraits for GzipCodec {
                 const HEADER_TRAILER_OVERHEAD: u64 = 10 + 8; // TODO: validate that extra headers are not populated
                 const BLOCK_SIZE: u64 = 32768;
                 const BLOCK_OVERHEAD: u64 = 5;
-                let blocks_overhead = BLOCK_OVERHEAD * ((size + BLOCK_SIZE - 1) / BLOCK_SIZE);
+                let blocks_overhead = BLOCK_OVERHEAD * size.div_ceil(BLOCK_SIZE);
                 BytesRepresentation::BoundedSize(size + HEADER_TRAILER_OVERHEAD + blocks_overhead)
             })
     }
