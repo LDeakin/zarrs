@@ -82,8 +82,8 @@ use std::{
 };
 
 use super::{
-    concurrency::RecommendedConcurrency, ArrayView, BytesRepresentation, ChunkRepresentation,
-    ChunkShape, DataType, MaybeBytes,
+    concurrency::RecommendedConcurrency, ArrayMetadataOptions, ArrayView, BytesRepresentation,
+    ChunkRepresentation, ChunkShape, DataType, MaybeBytes,
 };
 
 /// A codec plugin.
@@ -174,7 +174,14 @@ pub trait CodecTraits: Send + Sync {
     /// Create metadata.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn create_metadata(&self) -> Option<Metadata>;
+    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<Metadata>;
+
+    /// Create metadata with default options.
+    ///
+    /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
+    fn create_metadata(&self) -> Option<Metadata> {
+        self.create_metadata_opt(&ArrayMetadataOptions::default())
+    }
 
     /// Indicates if the input to a codecs partial decoder should be cached for optimal performance.
     /// If true, a cache may be inserted *before* it in a [`CodecChain`] partial decoder.

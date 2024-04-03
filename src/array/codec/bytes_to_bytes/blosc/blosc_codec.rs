@@ -8,7 +8,7 @@ use crate::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -123,7 +123,7 @@ impl BloscCodec {
 }
 
 impl CodecTraits for BloscCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         Some(
             Metadata::new_with_serializable_configuration(IDENTIFIER, &self.configuration).unwrap(),
         )

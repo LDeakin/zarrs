@@ -9,6 +9,7 @@
 mod array_builder;
 mod array_errors;
 mod array_metadata;
+mod array_metadata_options;
 mod array_representation;
 mod array_view;
 mod bytes_representation;
@@ -30,6 +31,7 @@ pub use self::{
     array_builder::ArrayBuilder,
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata::{ArrayMetadata, ArrayMetadataV3},
+    array_metadata_options::ArrayMetadataOptions,
     array_representation::{ArrayRepresentation, ChunkRepresentation},
     array_view::{ArrayView, ArrayViewCreateError},
     bytes_representation::BytesRepresentation,
@@ -408,7 +410,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Create [`ArrayMetadata`].
     #[must_use]
-    pub fn metadata(&self) -> ArrayMetadata {
+    pub fn metadata_opt(&self, options: &ArrayMetadataOptions) -> ArrayMetadata {
         let attributes = if self.include_zarrs_metadata {
             #[derive(Serialize)]
             struct ZarrsMetadata {
@@ -436,13 +438,19 @@ impl<TStorage: ?Sized> Array<TStorage> {
             self.chunk_grid().create_metadata(),
             self.chunk_key_encoding().create_metadata(),
             self.data_type().metadata_fill_value(self.fill_value()),
-            self.codecs().create_metadatas(),
+            self.codecs().create_metadatas_opt(options),
             attributes,
             self.storage_transformers().create_metadatas(),
             self.dimension_names().clone(),
             self.additional_fields().clone(),
         )
         .into()
+    }
+
+    /// Create [`ArrayMetadata`] with default options.
+    #[must_use]
+    pub fn metadata(&self) -> ArrayMetadata {
+        self.metadata_opt(&ArrayMetadataOptions::default())
     }
 
     /// Create an array builder matching the parameters of this array.

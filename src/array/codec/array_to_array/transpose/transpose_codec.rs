@@ -7,7 +7,7 @@ use crate::{
             options::CodecOptions, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
-        ChunkRepresentation,
+        ArrayMetadataOptions, ChunkRepresentation,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -54,7 +54,7 @@ impl TransposeCodec {
 }
 
 impl CodecTraits for TransposeCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let configuration = TransposeCodecConfigurationV1 {
             order: self.order.clone(),
         };

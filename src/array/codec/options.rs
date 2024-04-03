@@ -34,7 +34,7 @@ impl CodecOptions {
         }
     }
 
-    /// Return the valiidate checksums setting.
+    /// Return the validate checksums setting.
     #[must_use]
     pub fn validate_checksums(&self) -> bool {
         self.validate_checksums

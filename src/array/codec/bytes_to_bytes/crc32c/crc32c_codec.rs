@@ -4,7 +4,7 @@ use crate::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation,
     },
     metadata::Metadata,
 };
@@ -36,7 +36,7 @@ impl Crc32cCodec {
 }
 
 impl CodecTraits for Crc32cCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let configuration = Crc32cCodecConfigurationV1 {};
         Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }

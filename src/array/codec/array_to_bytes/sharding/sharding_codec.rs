@@ -11,7 +11,7 @@ use crate::{
         concurrency::calc_concurrency_outer_inner,
         transmute_to_bytes_vec, unravel_index,
         unsafe_cell_slice::UnsafeCellSlice,
-        ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
+        ArrayMetadataOptions, ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
     },
     array_subset::ArraySubset,
     metadata::Metadata,
@@ -80,7 +80,7 @@ impl ShardingCodec {
 }
 
 impl CodecTraits for ShardingCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let configuration = ShardingCodecConfigurationV1 {
             chunk_shape: self.chunk_shape.clone(),
             codecs: self.inner_codecs.create_metadatas(),

@@ -8,7 +8,7 @@ use crate::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation,
     },
     metadata::Metadata,
 };
@@ -49,7 +49,7 @@ impl GzipCodec {
 }
 
 impl CodecTraits for GzipCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let configuration = GzipCodecConfigurationV1 {
             level: self.compression_level,
         };

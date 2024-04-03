@@ -4,7 +4,7 @@ use crate::{
             options::CodecOptions, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
-        ChunkRepresentation, DataType,
+        ArrayMetadataOptions, ChunkRepresentation, DataType,
     },
     metadata::Metadata,
 };
@@ -12,7 +12,10 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
-use super::{bitround_partial_decoder, round_bytes, BitroundCodecConfiguration, IDENTIFIER};
+use super::{
+    bitround_partial_decoder, round_bytes, BitroundCodecConfiguration,
+    BitroundCodecConfigurationV1, IDENTIFIER,
+};
 
 /// A `bitround` codec implementation.
 #[derive(Clone, Debug, Default)]
@@ -40,13 +43,15 @@ impl BitroundCodec {
 }
 
 impl CodecTraits for BitroundCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
-        // FIXME: Output the metadata when the bitround codec is in the zarr specification and supported by multiple implementations.
-        // let configuration = BitroundCodecConfigurationV1 {
-        //     keepbits: self.keepbits,
-        // };
-        // Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
-        None
+    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<Metadata> {
+        if options.experimental_codec_store_metadata_if_encode_only() {
+            let configuration = BitroundCodecConfigurationV1 {
+                keepbits: self.keepbits,
+            };
+            Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        } else {
+            None
+        }
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

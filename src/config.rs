@@ -35,11 +35,20 @@ use crate::array::codec::CodecOptions;
 /// For array operations involving multiple chunks, this is the preferred minimum chunk concurrency.
 /// For example, `array_store_chunks` will concurrently encode and store up to four chunks at a time by default.
 /// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`] parameter of an encode or decode method.
+///
+/// ## Experimental Codec Store Metadata If Encode Only
+/// > default: [`false`]
+///
+/// Some codecs perform potentially irreversible transformations during encoding that decoders do not need to be aware of.
+/// If this option is `false`, experimental codecs with this behaviour will not write their metadata.
+/// This enables arrays to be consumed by other zarr3 implementations that do not support the experimental codec.
+/// Currently, this options only affects the `bitround` codec.
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
     codec_concurrent_target: usize,
     chunk_concurrent_minimum: usize,
+    experimental_codec_store_metadata_if_encode_only: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -53,6 +62,7 @@ impl Default for Config {
                 * concurrency_multiply
                 + concurrency_add,
             chunk_concurrent_minimum: 4,
+            experimental_codec_store_metadata_if_encode_only: false,
         }
     }
 }
@@ -89,6 +99,17 @@ impl Config {
     /// Set the [chunk concurrent minimum](#chunk-concurrent-minimum) configuration.
     pub fn set_chunk_concurrent_minimum(&mut self, concurrent_minimum: usize) {
         self.chunk_concurrent_minimum = concurrent_minimum;
+    }
+
+    /// Get the [experimental codec store metadata if encode only](#experimental-codec-store-metadata-if-encode-only) configuration.
+    #[must_use]
+    pub fn experimental_codec_store_metadata_if_encode_only(&self) -> bool {
+        self.experimental_codec_store_metadata_if_encode_only
+    }
+
+    /// Set the [experimental codec store metadata if encode only](#experimental-codec-store-metadata-if-encode-only) configuration.
+    pub fn set_experimental_codec_store_metadata_if_encode_only(&mut self, enabled: bool) {
+        self.experimental_codec_store_metadata_if_encode_only = enabled;
     }
 }
 

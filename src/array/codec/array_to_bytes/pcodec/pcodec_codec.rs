@@ -7,8 +7,8 @@ use crate::{
             BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
-        transmute_from_bytes_vec, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
-        DataType,
+        transmute_from_bytes_vec, transmute_to_bytes_vec, ArrayMetadataOptions,
+        BytesRepresentation, ChunkRepresentation, DataType,
     },
     metadata::Metadata,
 };
@@ -59,7 +59,7 @@ impl PcodecCodec {
 }
 
 impl CodecTraits for PcodecCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let PagingSpec::EqualPagesUpTo(max_page_n) = self.chunk_config.paging_spec else {
             unreachable!()
         };

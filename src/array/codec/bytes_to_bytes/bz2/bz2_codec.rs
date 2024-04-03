@@ -6,7 +6,7 @@ use crate::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation,
     },
     metadata::Metadata,
 };
@@ -43,7 +43,7 @@ impl Bz2Codec {
 }
 
 impl CodecTraits for Bz2Codec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let configuration = Bz2CodecConfigurationV1 {
             level: Bz2CompressionLevel(self.compression.level()),
         };

@@ -6,7 +6,7 @@ use crate::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation,
     },
     metadata::Metadata,
 };
@@ -45,7 +45,7 @@ impl ZstdCodec {
 }
 
 impl CodecTraits for ZstdCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let configuration = ZstdCodecConfigurationV1 {
             level: self.compression.into(),
             checksum: self.checksum,

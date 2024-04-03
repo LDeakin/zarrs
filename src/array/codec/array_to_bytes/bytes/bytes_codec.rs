@@ -7,7 +7,7 @@ use crate::{
             BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
-        BytesRepresentation, ChunkRepresentation,
+        ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation,
     },
     metadata::Metadata,
 };
@@ -87,7 +87,7 @@ impl BytesCodec {
 }
 
 impl CodecTraits for BytesCodec {
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
         let configuration = BytesCodecConfigurationV1 {
             endian: self.endian,
         };
