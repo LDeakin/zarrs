@@ -12,9 +12,25 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 
 **zarrs is experimental and in limited production use. Use at your own risk! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).**
 
-- [API documentation (`docs.rs`)](https://docs.rs/zarrs/latest/zarrs/)
-- [Changelog (`CHANGELOG.md`)](./CHANGELOG.md)
-- [Examples (`./examples`)](./examples)
+A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
+
+## Getting Started
+- View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
+- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] and [`storage`] are good places to start.
+- Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and performance benchmarks of `zarrs`.
+
+## Example
+```rust
+let store_path: PathBuf = "/path/to/store".into();
+let store: zarrs::storage::ReadableWritableListableStorage =
+    Arc::new(zarrs::storage::store::FilesystemStore::new(&store_path)?);
+
+let array_path: &str = "/group/array"; // /path/to/store/group/array
+let array = zarrs::array::Array::new(store, array_path)?;
+
+let chunk: ndarray::ArrayD<f32> = array.retrieve_chunk_ndarray(&[1, 0])?;
+println!("Chunk [1,0] is:\n{chunk}");
+```
 
 ## `zarrs` Ecosystem
 - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data. Includes `zarrs` benchmarks.

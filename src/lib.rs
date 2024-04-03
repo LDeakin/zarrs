@@ -8,8 +8,25 @@
 //!
 //! ## Getting Started
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
-//! - Read the [`array::Array`] and [`storage`] documentation.
-//! - Check out tools built upon `zarrs` or evaluate `zarrs` performance with the [zarrs_tools](https://github.com/LDeakin/zarrs_tools) crate.
+//! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] and [`storage`] are good places to start.
+//! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and performance benchmarks of `zarrs`.
+//!
+//! ## Example
+//! ```
+//! # use std::path::PathBuf;
+//! # use std::sync::Arc;
+//! let store_path: PathBuf = "/path/to/store".into();
+//! # let store_path: PathBuf = "tests/data/array_write_read.zarr".into();
+//! let store: zarrs::storage::ReadableWritableListableStorage =
+//!     Arc::new(zarrs::storage::store::FilesystemStore::new(&store_path)?);
+//!
+//! let array_path: &str = "/group/array"; // /path/to/store/group/array
+//! let array = zarrs::array::Array::new(store, array_path)?;
+//!
+//! let chunk: ndarray::ArrayD<f32> = array.retrieve_chunk_ndarray(&[1, 0])?;
+//! println!("Chunk [1,0] is:\n{chunk}");
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
 //!
 //! ## Implementation Status
 //! <details><summary>Zarr Enhancement Proposals (ZEPs)</summary>

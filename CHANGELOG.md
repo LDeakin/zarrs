@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add "experimental codec store metadata if encode only" option to global config
  - Add `ArrayMetadataOptions`
+ - Add small example to `README.md` and crate root documentation
 
 ### Changed
  - **Breaking**: Bump MSRV to 1.73 (5 October, 2023)
