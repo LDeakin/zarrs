@@ -18,7 +18,7 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 
 ## `zarrs` Ecosystem
 - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data. Includes `zarrs` benchmarks.
-- [zarrs-ffi](https://github.com/LDeakin/zarrs-ffi): A subset of zarrs exposed as a C API.
+- [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of zarrs exposed as a C API.
 
 ## Licence
 `zarrs` is licensed under either of
