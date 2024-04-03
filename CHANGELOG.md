@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump `pco` (pcodec) to 0.2.1
  - **Breaking**: Add `CodecTraits::create_metadata_opt()`
 
+### Fixed
+ - Fix implementation of `from_chunkgrid_regular_configuration` macro leading to recursion
+
 ## [0.12.5] - 2024-03-17
 
 ### Added

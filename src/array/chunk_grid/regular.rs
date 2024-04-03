@@ -51,14 +51,18 @@ macro_rules! from_chunkgrid_regular_configuration {
     ( $t:ty ) => {
         impl From<$t> for RegularChunkGridConfiguration {
             fn from(value: $t) -> Self {
-                value.into()
+                Self {
+                    chunk_shape: value.into(),
+                }
             }
         }
     };
     ( $t:ty, $g:ident ) => {
         impl<const $g: usize> From<$t> for RegularChunkGridConfiguration {
             fn from(value: $t) -> Self {
-                value.into()
+                Self {
+                    chunk_shape: value.into(),
+                }
             }
         }
     };
