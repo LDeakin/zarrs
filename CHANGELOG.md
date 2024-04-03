@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Bump MSRV to 1.73 (5 October, 2023)
  - Bump `pco` (pcodec) to 0.2.1
  - **Breaking**: Add `CodecTraits::create_metadata_opt()`
+ - **Breaking**: Rename `data_type::IncompatibleFillValueErrorMetadataError` to `IncompatibleFillValueMetadataError`
 
 ### Fixed
  - Fix implementation of `from_chunkgrid_regular_configuration` macro leading to recursion

@@ -87,7 +87,7 @@ impl<'de> serde::Deserialize<'de> for DataType {
 /// A fill value metadata incompatibility error.
 #[derive(Debug, Error)]
 #[error("incompatible fill value {1} for data type {0}")]
-pub struct IncompatibleFillValueErrorMetadataError(String, FillValueMetadata);
+pub struct IncompatibleFillValueMetadataError(String, FillValueMetadata);
 
 /// A fill value incompatibility error.
 #[derive(Debug, Error)]
@@ -120,11 +120,11 @@ pub trait DataTypeExtension: dyn_clone::DynClone + core::fmt::Debug + Send + Syn
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleFillValueErrorMetadataError`] if the fill value is incompatible with the data type.
+    /// Returns [`IncompatibleFillValueMetadataError`] if the fill value is incompatible with the data type.
     fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadata,
-    ) -> Result<FillValue, IncompatibleFillValueErrorMetadataError>;
+    ) -> Result<FillValue, IncompatibleFillValueMetadataError>;
 
     /// Return the fill value metadata.
     #[must_use]
@@ -245,13 +245,13 @@ impl DataType {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleFillValueErrorMetadataError`] if the fill value is incompatible with the data type.
+    /// Returns [`IncompatibleFillValueMetadataError`] if the fill value is incompatible with the data type.
     pub fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadata,
-    ) -> Result<FillValue, IncompatibleFillValueErrorMetadataError> {
+    ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
         use FillValue as FV;
-        let err = || IncompatibleFillValueErrorMetadataError(self.name(), fill_value.clone());
+        let err = || IncompatibleFillValueMetadataError(self.name(), fill_value.clone());
         match self {
             Self::Bool => Ok(FV::from(fill_value.try_as_bool().ok_or_else(err)?)),
             Self::Int8 => Ok(FV::from(fill_value.try_as_int::<i8>().ok_or_else(err)?)),
@@ -280,7 +280,7 @@ impl DataType {
                         return Ok(FillValue::new(bytes.clone()));
                     }
                 }
-                Err(IncompatibleFillValueErrorMetadataError(
+                Err(IncompatibleFillValueMetadataError(
                     self.name(),
                     fill_value.clone(),
                 ))
