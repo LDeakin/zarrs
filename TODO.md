@@ -1,5 +1,6 @@
 ## TODO
 
+- Add a simple API for transparently accessing inner chunks of a sharded zarr array. Cache the shard index for accessed chunks.
 - Reduce code duplication in tests
 - Review documentation
 - Increase test coverage
