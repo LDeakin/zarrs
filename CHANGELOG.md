@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add "experimental codec store metadata if encode only" option to global config
  - Add `ArrayMetadataOptions`
  - Add small example to `README.md` and crate root documentation
+ - Add `uint8`/`int8` support to the bitround codec
 
 ### Changed
  - **Breaking**: Bump MSRV to 1.73 (5 October, 2023)
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Fix implementation of `from_chunkgrid_regular_configuration` macro leading to recursion
+ - Fix arithmetic overflow possible with the bitround codec with integer data types
 
 ## [0.12.5] - 2024-03-17
 

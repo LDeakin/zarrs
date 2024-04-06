@@ -5,11 +5,7 @@
 //!
 //! This codec requires the `bitround` feature, which is disabled by default.
 //!
-//! The current implementation does not write its metadata to the array metadata, so the array can be imported by tools which do not presently support this codec.
-//! This functionality will be changed when the `bitround` codec is in the zarr specification and supported by multiple implementations.
-//!
 //! See [`BitroundCodecConfigurationV1`] for example `JSON` metadata.
-//!
 
 mod bitround_codec;
 mod bitround_configuration;
@@ -47,14 +43,24 @@ pub(crate) fn create_codec_bitround(metadata: &Metadata) -> Result<Codec, Plugin
     Ok(Codec::ArrayToArray(codec))
 }
 
+fn round_bits8(mut input: u8, keepbits: u32, maxbits: u32) -> u8 {
+    if keepbits < maxbits {
+        let maskbits = maxbits - keepbits;
+        let all_set = u8::MAX;
+        let mask = (all_set >> maskbits) << maskbits;
+        let half_quantum1 = (1 << (maskbits - 1)) - 1;
+        input = input.saturating_add(((input >> maskbits) & 1) + half_quantum1) & mask;
+    }
+    input
+}
+
 const fn round_bits16(mut input: u16, keepbits: u32, maxbits: u32) -> u16 {
     if keepbits < maxbits {
         let maskbits = maxbits - keepbits;
         let all_set = u16::MAX;
         let mask = (all_set >> maskbits) << maskbits;
         let half_quantum1 = (1 << (maskbits - 1)) - 1;
-        input += ((input >> maskbits) & 1) + half_quantum1;
-        input &= mask;
+        input = input.saturating_add(((input >> maskbits) & 1) + half_quantum1) & mask;
     }
     input
 }
@@ -65,8 +71,7 @@ const fn round_bits32(mut input: u32, keepbits: u32, maxbits: u32) -> u32 {
         let all_set = u32::MAX;
         let mask = (all_set >> maskbits) << maskbits;
         let half_quantum1 = (1 << (maskbits - 1)) - 1;
-        input += ((input >> maskbits) & 1) + half_quantum1;
-        input &= mask;
+        input = input.saturating_add(((input >> maskbits) & 1) + half_quantum1) & mask;
     }
     input
 }
@@ -77,14 +82,20 @@ const fn round_bits64(mut input: u64, keepbits: u32, maxbits: u32) -> u64 {
         let all_set = u64::MAX;
         let mask = (all_set >> maskbits) << maskbits;
         let half_quantum1 = (1 << (maskbits - 1)) - 1;
-        input += ((input >> maskbits) & 1) + half_quantum1;
-        input &= mask;
+        input = input.saturating_add(((input >> maskbits) & 1) + half_quantum1) & mask;
     }
     input
 }
 
 fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<(), CodecError> {
     match data_type {
+        DataType::UInt8 | DataType::Int8 => {
+            let round = |element: &mut u8| {
+                *element = round_bits8(*element, keepbits, 8 - element.leading_zeros());
+            };
+            bytes.iter_mut().for_each(round);
+            Ok(())
+        }
         DataType::Float16 | DataType::BFloat16 => {
             let round = |chunk: &mut [u8]| {
                 let element = u16::from_ne_bytes(chunk.try_into().unwrap());
@@ -233,7 +244,7 @@ mod tests {
             0u32.into(),
         )
         .unwrap();
-        let elements: Vec<u32> = vec![0, 1024, 1280, 1664, 1685, 123145182];
+        let elements: Vec<u32> = vec![0, 1024, 1280, 1664, 1685, 123145182, 4294967295];
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
@@ -257,7 +268,46 @@ mod tests {
         for element in &decoded_elements {
             println!("{element} -> {element:#b}");
         }
-        assert_eq!(decoded_elements, &[0, 1024, 1280, 1536, 1792, 117440512]);
+        assert_eq!(
+            decoded_elements,
+            &[0, 1024, 1280, 1536, 1792, 117440512, 3758096384]
+        );
+    }
+
+    #[test]
+    fn codec_bitround_uint8() {
+        const JSON: &'static str = r#"{ "keepbits": 3 }"#;
+        let chunk_representation = ChunkRepresentation::new(
+            vec![NonZeroU64::new(4).unwrap()],
+            DataType::UInt8,
+            0u8.into(),
+        )
+        .unwrap();
+        let elements: Vec<u32> = vec![0, 3, 7, 15, 17, 54, 89, 128, 255];
+        let bytes = crate::array::transmute_to_bytes_vec(elements);
+
+        let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
+        let decoded = codec
+            .decode(
+                encoded.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<u32>(decoded);
+        for element in &decoded_elements {
+            println!("{element} -> {element:#b}");
+        }
+        assert_eq!(decoded_elements, &[0, 3, 7, 16, 16, 56, 96, 128, 224]);
     }
 
     #[test]
