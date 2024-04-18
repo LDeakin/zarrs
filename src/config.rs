@@ -20,6 +20,8 @@ use crate::array::codec::CodecOptions;
 /// ## Store Empty Chunks
 ///  > default: [`false`]
 ///
+/// [`CodecOptions::store_empty_chunks()`] defaults to [`Config::store_empty_chunks()`].
+///
 /// If `false`, empty chunks (where all elements match the fill value) will not be stored.
 /// This incurs a computational overhead as each element must be tested for equality to the fill value before a chunk is encoded.
 /// If `true`, the aforementioned test is skipped and all chunks are stored.
