@@ -292,6 +292,8 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
     ///
+    /// Codecs can manually implement this method with a preallocated array to reduce internal allocations.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or a byte range is invalid.
     fn partial_decode_concat(
@@ -299,7 +301,6 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
     ) -> Result<Option<Vec<u8>>, CodecError> {
-        // FIXME: Remove default implementation in the next major release and implement for each codec to reduce internal allocations
         Ok(self
             .partial_decode(decoded_regions, options)?
             .map(|vecs| vecs.concat()))
