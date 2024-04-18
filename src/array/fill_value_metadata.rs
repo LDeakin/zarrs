@@ -255,7 +255,7 @@ impl FillValueMetadata {
         }
     }
 
-    /// Convert the fill value to a [`f16`].
+    /// Convert the fill value to a [`struct@f16`].
     #[must_use]
     pub fn try_as_float16(&self) -> Option<f16> {
         match self {
