@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - Add "experimental codec store metadata if encode only" option to global config
+ - Add "store empty chunks" option to global config and `CodecOptions`
  - Add `ArrayMetadataOptions`
  - Add small example to `README.md` and crate root documentation
  - Add `uint8`/`int8` support to the bitround codec

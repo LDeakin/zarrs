@@ -180,8 +180,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             ));
         }
 
-        let all_fill_value = self.fill_value().equals_all(&chunk_bytes);
-        if all_fill_value {
+        if !options.store_empty_chunks() && self.fill_value().equals_all(&chunk_bytes) {
             self.async_erase_chunk(chunk_indices).await?;
             Ok(())
         } else {

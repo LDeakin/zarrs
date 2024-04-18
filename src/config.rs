@@ -16,6 +16,13 @@ use crate::array::codec::CodecOptions;
 ///
 /// If validate checksums is enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
 /// Note that regardless of this configuration option, checksum codecs may skip validation when partial decoding.
+
+/// ## Store Empty Chunks
+///  > default: [`false`]
+///
+/// If `false`, empty chunks (where all elements match the fill value) will not be stored.
+/// This incurs a computational overhead as each element must be tested for equality to the fill value before a chunk is encoded.
+/// If `true`, the aforementioned test is skipped and all chunks are stored.
 ///
 /// ## Codec Concurrent Target
 /// > default: [`std::thread::available_parallelism`]`()`
@@ -46,6 +53,7 @@ use crate::array::codec::CodecOptions;
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
+    store_empty_chunks: bool,
     codec_concurrent_target: usize,
     chunk_concurrent_minimum: usize,
     experimental_codec_store_metadata_if_encode_only: bool,
@@ -58,6 +66,7 @@ impl Default for Config {
         let concurrency_add = 0;
         Self {
             validate_checksums: true,
+            store_empty_chunks: false,
             codec_concurrent_target: std::thread::available_parallelism().unwrap().get()
                 * concurrency_multiply
                 + concurrency_add,
@@ -77,6 +86,17 @@ impl Config {
     /// Set the [validate checksums](#validate-checksums) configuration.
     pub fn set_validate_checksums(&mut self, validate_checksums: bool) {
         self.validate_checksums = validate_checksums;
+    }
+
+    /// Get the [store empty chunks](#store-empty-chunks) configuration.
+    #[must_use]
+    pub fn store_empty_chunks(&self) -> bool {
+        self.store_empty_chunks
+    }
+
+    /// Set the [store empty chunks](#store-empty-chunks) configuration.
+    pub fn set_store_empty_chunks(&mut self, store_empty_chunks: bool) {
+        self.store_empty_chunks = store_empty_chunks;
     }
 
     /// Get the [codec concurrent target](#codec-concurrent-target) configuration.
