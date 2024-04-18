@@ -265,6 +265,11 @@ impl ArrayCodecTraits for ShardingCodec {
                     } else {
                         unreachable!();
                     }
+                } else if usize::try_from(offset + size).unwrap() > encoded_shard.len() {
+                    return Err(CodecError::Other(
+                        "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                            .to_string(),
+                    ));
                 } else {
                     let offset: usize = offset.try_into().unwrap();
                     let size: usize = size.try_into().unwrap();

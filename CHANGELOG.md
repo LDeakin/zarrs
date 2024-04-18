@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump `pco` (pcodec) to 0.2.1
  - **Breaking**: Add `CodecTraits::create_metadata_opt()`
  - **Breaking**: Rename `data_type::IncompatibleFillValueErrorMetadataError` to `IncompatibleFillValueMetadataError`
+ - Add a useful warning if the shard index references out-of-bounds bytes in a chunk encoded with the sharding codec
 
 ### Fixed
  - Fix implementation of `from_chunkgrid_regular_configuration` macro leading to recursion
