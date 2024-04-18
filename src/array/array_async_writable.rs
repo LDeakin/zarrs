@@ -52,7 +52,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_ndarray<
         T: bytemuck::Pod + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>>,
+        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,
@@ -91,7 +91,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_ndarray<
         T: bytemuck::Pod + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>>,
+        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,
@@ -224,7 +224,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_ndarray_opt<
         T: bytemuck::Pod + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>>,
+        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,
@@ -349,7 +349,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_ndarray_opt<
         T: bytemuck::Pod + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>>,
+        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,

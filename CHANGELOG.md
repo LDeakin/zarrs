@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Add `CodecTraits::create_metadata_opt()`
  - **Breaking**: Rename `data_type::IncompatibleFillValueErrorMetadataError` to `IncompatibleFillValueMetadataError`
  - Add a useful warning if the shard index references out-of-bounds bytes in a chunk encoded with the sharding codec
+ - **Breaking**: Require `ndarray::Array` parameters in various async array methods to implement `Send`
 
 ### Fixed
  - Fix implementation of `from_chunkgrid_regular_configuration` macro leading to recursion
