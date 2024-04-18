@@ -58,6 +58,18 @@ impl Indices {
         }
     }
 
+    /// Return the number of indices.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    /// Returns true if the number of indices is zero.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Create a new serial iterator.
     #[must_use]
     pub fn iter(&self) -> IndicesIterator<'_> {

@@ -57,6 +57,18 @@ impl ContiguousLinearisedIndices {
         Self { inner, array_shape }
     }
 
+    /// Return the number of starting indices (i.e. the length of the iterator).
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    /// Returns true if the number of starting indices is zero.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Return the number of contiguous elements (fixed on each iteration).
     #[must_use]
     pub fn contiguous_elements(&self) -> u64 {

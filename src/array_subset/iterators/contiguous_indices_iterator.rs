@@ -94,6 +94,18 @@ impl ContiguousIndices {
         }
     }
 
+    /// Return the number of starting indices (i.e. the length of the iterator).
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.subset_contiguous_start.num_elements_usize()
+    }
+
+    /// Returns true if the number of starting indices is zero.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Return the number of contiguous elements (fixed on each iteration).
     #[must_use]
     pub fn contiguous_elements(&self) -> u64 {

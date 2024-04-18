@@ -93,6 +93,18 @@ impl Chunks {
         }
     }
 
+    /// Return the number of chunks.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.indices.len()
+    }
+
+    /// Returns true if the number of chunks is zero.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Create a new serial iterator.
     #[must_use]
     pub fn iter(&self) -> ChunksIterator<'_> {

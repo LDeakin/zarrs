@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ArrayMetadataOptions`
  - Add small example to `README.md` and crate root documentation
  - Add `uint8`/`int8` support to the bitround codec
+ - Add `len()` and `is_empty()` methods to array subset iterator producers
 
 ### Changed
  - **Breaking**: Bump MSRV to 1.73 (5 October, 2023)
