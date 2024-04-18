@@ -829,7 +829,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let array_subset = self.chunks_subset(chunks)?;
         if array_subset.shape() != array_view.subset().shape() {
             return Err(ArrayError::InvalidArraySubset(
-                array_subset.clone(),
+                array_subset,
                 array_view.subset().shape().to_vec(),
             ));
         }
