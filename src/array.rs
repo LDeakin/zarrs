@@ -465,6 +465,17 @@ impl<TStorage: ?Sized> Array<TStorage> {
         unsafe { self.chunk_grid().grid_shape_unchecked(self.shape()) }
     }
 
+    /// Return the origin of the chunk at `chunk_indices`.
+    ///
+    /// # Errors
+    /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
+    pub fn chunk_origin(&self, chunk_indices: &[u64]) -> Result<ArrayIndices, ArrayError> {
+        self.chunk_grid()
+            .chunk_origin(chunk_indices, self.shape())
+            .map_err(|_| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))?
+            .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))
+    }
+
     /// Return the shape of the chunk at `chunk_indices`.
     ///
     /// # Errors
