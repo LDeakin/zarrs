@@ -215,7 +215,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         // The chunk is just the fill value
                         fill_value.repeat(array_subset_in_chunk_subset.num_elements_usize())
                     } else {
-                        // Partially decode the ubber chunk
+                        // Partially decode the inner chunk
                         let partial_decoder = self.inner_codecs.partial_decoder(
                             Box::new(ByteIntervalPartialDecoder::new(
                                 &*self.input_handle,
@@ -224,7 +224,15 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                             )),
                             &chunk_representation,
                             &options,
-                        )?;
+                        )
+                        .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
+                            CodecError::Other(
+                                "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                                    .to_string(),
+                            )
+                        } else {
+                            err
+                        })?;
                         partial_decoder
                             .partial_decode_opt(&[array_subset_in_chunk_subset], &options)?
                             .remove(0)
@@ -449,7 +457,15 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                                 &chunk_representation,
                                 options, // FIXME: Adjust options for partial decoding
                             )
-                            .await?;
+                            .await
+                            .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
+                                CodecError::Other(
+                                    "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                                        .to_string(),
+                                )
+                            } else {
+                                err
+                            })?;
                         let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
                         let array_subset_in_chunk_subset =
                             unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
