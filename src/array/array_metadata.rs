@@ -23,7 +23,7 @@ pub enum ArrayMetadata {
 impl TryFrom<&str> for ArrayMetadata {
     type Error = serde_json::Error;
     fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
-        serde_json::from_str::<ArrayMetadata>(metadata_json)
+        serde_json::from_str::<Self>(metadata_json)
     }
 }
 

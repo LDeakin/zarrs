@@ -155,7 +155,7 @@ impl Node {
 
     /// Returns a reference to the children of the node.
     #[must_use]
-    pub fn children(&self) -> &[Node] {
+    pub fn children(&self) -> &[Self] {
         &self.children
     }
 

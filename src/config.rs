@@ -16,7 +16,7 @@ use crate::array::codec::CodecOptions;
 ///
 /// If validate checksums is enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
 /// Note that regardless of this configuration option, checksum codecs may skip validation when partial decoding.
-
+///
 /// ## Store Empty Chunks
 ///  > default: [`false`]
 ///

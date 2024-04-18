@@ -76,7 +76,7 @@ impl Eq for DataType {}
 impl<'de> serde::Deserialize<'de> for DataType {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let metadata = Metadata::deserialize(d)?;
-        DataType::from_metadata(&metadata).map_err(|err| D::Error::custom(err.to_string()))
+        Self::from_metadata(&metadata).map_err(|err| D::Error::custom(err.to_string()))
     }
 }
 

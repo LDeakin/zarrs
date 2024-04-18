@@ -18,7 +18,7 @@ pub enum GroupMetadata {
 impl TryFrom<&str> for GroupMetadata {
     type Error = serde_json::Error;
     fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
-        serde_json::from_str::<GroupMetadata>(metadata_json)
+        serde_json::from_str::<Self>(metadata_json)
     }
 }
 
