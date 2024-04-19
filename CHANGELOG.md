@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `Array::chunk_origin()`
 
 ### Changed
- - **Breaking**: Bump MSRV to 1.73 (5 October, 2023)
+ - **Breaking**: Bump MSRV to 1.75 (28 December, 2023)
  - Bump `pco` (pcodec) to 0.2.1
  - **Breaking**: Add `CodecTraits::create_metadata_opt()`
  - **Breaking**: Rename `data_type::IncompatibleFillValueErrorMetadataError` to `IncompatibleFillValueMetadataError`
