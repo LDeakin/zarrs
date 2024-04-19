@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
  - Fix implementation of `from_chunkgrid_regular_configuration` macro leading to recursion
  - Fix arithmetic overflow possible with the bitround codec with integer data types
+ - Address `todo!()`s in `retrieve_chunks_into_array_view_opt` methods
 
 ## [0.12.5] - 2024-03-17
 

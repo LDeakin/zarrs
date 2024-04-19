@@ -819,7 +819,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         if chunks.dimensionality() != self.dimensionality() {
-            todo!();
+            return Err(ArrayError::InvalidArraySubset(
+                chunks.clone(),
+                self.chunk_grid_shape()
+                    .unwrap_or_else(|| vec![0u64; self.dimensionality()]),
+            ));
         }
         let num_chunks = chunks.num_elements_usize();
         if num_chunks == 0 {
