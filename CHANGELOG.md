@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2024-04-20
+
 ### Added
  - Add "experimental codec store metadata if encode only" option to global config
  - Add "store empty chunks" option to global config and `CodecOptions`
@@ -709,7 +711,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.12.5...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.0
 [0.12.5]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.5
 [0.12.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.4
 [0.12.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.3
