@@ -135,9 +135,20 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
     ) -> Result<ChunkRepresentation, CodecError> {
         let data_type = decoded_representation.data_type();
         match data_type {
-            DataType::Float16 | DataType::BFloat16 | DataType::Float32 | DataType::Float64 => {
-                Ok(decoded_representation.clone())
-            }
+            DataType::Float16
+            | DataType::BFloat16
+            | DataType::Float32
+            | DataType::Float64
+            | DataType::UInt8
+            | DataType::Int8
+            | DataType::UInt16
+            | DataType::Int16
+            | DataType::UInt32
+            | DataType::Int32
+            | DataType::UInt64
+            | DataType::Int64
+            | DataType::Complex64
+            | DataType::Complex128 => Ok(decoded_representation.clone()),
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 IDENTIFIER.to_string(),
