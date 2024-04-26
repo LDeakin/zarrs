@@ -199,6 +199,8 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_float<T: FloatCore>(&self) -> Option<T> {
         match self {
+            Self::Int(int) => num::traits::cast(*int),
+            Self::UInt(uint) => num::traits::cast(*uint),
             Self::Float(float) => {
                 use FillValueFloat as F;
                 match float {
@@ -259,6 +261,16 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_float16(&self) -> Option<f16> {
         match self {
+            Self::Int(int) =>
+            {
+                #[allow(clippy::cast_precision_loss)]
+                Some(f16::from_f64(*int as f64))
+            }
+            Self::UInt(uint) =>
+            {
+                #[allow(clippy::cast_precision_loss)]
+                Some(f16::from_f64(*uint as f64))
+            }
             Self::Float(float) => {
                 use FillValueFloat as F;
                 match float {
@@ -287,6 +299,16 @@ impl FillValueMetadata {
     #[must_use]
     pub fn try_as_bfloat16(&self) -> Option<bf16> {
         match self {
+            Self::Int(int) =>
+            {
+                #[allow(clippy::cast_precision_loss)]
+                Some(bf16::from_f64(*int as f64))
+            }
+            Self::UInt(uint) =>
+            {
+                #[allow(clippy::cast_precision_loss)]
+                Some(bf16::from_f64(*uint as f64))
+            }
             Self::Float(float) => {
                 use FillValueFloat as F;
                 match float {

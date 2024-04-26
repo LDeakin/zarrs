@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - Allow float fill values to be created from int fill value metadata
+
 ### Fixed
  - Fix `compute_encoded_size()` for `BitroundCodec` incorrectly indicating various data types were unsupported
 
