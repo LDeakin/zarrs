@@ -25,6 +25,9 @@ mod fill_value_metadata;
 mod nan_representations;
 mod unsafe_cell_slice;
 
+#[cfg(feature = "sharding")]
+mod array_sharded_ext;
+
 use std::sync::Arc;
 
 pub use self::{
@@ -47,6 +50,11 @@ pub use self::{
     fill_value_metadata::FillValueMetadata,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     unsafe_cell_slice::UnsafeCellSlice,
+};
+
+#[cfg(feature = "sharding")]
+pub use array_sharded_ext::{
+    ArrayShardedExt, ArrayShardedReadableExt, ArrayShardedReadableExtCache,
 };
 
 use serde::Serialize;
