@@ -9,8 +9,8 @@
 //!
 //! A regular chunk grid can be created [from a `Vec<usize>` chunk shape](./type.ChunkGrid.html#method.from).
 
-mod rectangular;
-mod regular;
+pub mod rectangular;
+pub mod regular;
 
 use std::num::NonZeroU64;
 

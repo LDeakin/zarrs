@@ -27,6 +27,10 @@ fn is_name_regular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
+/// Create a regular chunk grid from metadata.
+///
+/// # Errors
+/// Returns a [`PluginCreateError`] if the metadata is invalid for a regular chunk grid.
 pub fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata
         .to_configuration()

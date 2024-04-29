@@ -28,7 +28,11 @@ fn is_name_rectangular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub fn create_chunk_grid_rectangular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
+/// Create a rectangular chunk grid from metadata.
+///
+/// # Errors
+/// Returns a [`PluginCreateError`] if the metadata is invalid for a regular chunk grid.
+fn create_chunk_grid_rectangular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RectangularChunkGridConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
@@ -45,10 +49,13 @@ pub struct RectangularChunkGridConfiguration {
     pub chunk_shape: Vec<RectangularChunkGridDimensionConfiguration>,
 }
 
+/// A chunk element in the `chunk_shape` field of `rectangular` chunk grid netadata.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, From)]
 #[serde(untagged)]
 pub enum RectangularChunkGridDimensionConfiguration {
+    /// A fixed chunk size.
     Fixed(NonZeroU64),
+    /// A varying chunk size.
     Varying(ChunkShape),
 }
 
