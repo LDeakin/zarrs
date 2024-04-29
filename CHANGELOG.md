@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Fix `compute_encoded_size()` for `BitroundCodec` incorrectly indicating various data types were unsupported
+ - Fix a link in chunk grid docs
 
 ## [0.13.0] - 2024-04-20
 

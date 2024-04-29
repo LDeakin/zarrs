@@ -7,7 +7,7 @@
 //!
 //! Includes a [`RegularChunkGrid`] and [`RectangularChunkGrid`] implementation.
 //!
-//! A regular chunk grid can be created [from a `Vec<usize>` chunk shape](./type.ChunkGrid.html#method.from).
+//! A regular chunk grid can be created from a [`ChunkShape`] and similar. See its [`from`/`try_from` implementations](./struct.ChunkGrid.html#trait-implementations).
 
 pub mod rectangular;
 pub mod regular;
