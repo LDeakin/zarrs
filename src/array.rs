@@ -58,6 +58,7 @@ pub use self::{
 pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
+// TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use serde::Serialize;
 use thiserror::Error;
