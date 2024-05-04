@@ -1,11 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon_iter_concurrent_limit::iter_concurrent_limit;
+
 use super::{
-    codec::{CodecOptions, ShardingCodecConfiguration},
-    Array, ArrayError, ChunkGrid, ChunkShape,
+    codec::{CodecError, CodecOptions, ShardingCodecConfiguration},
+    concurrency::concurrency_chunks_and_codec,
+    Array, ArrayError, ArrayView, ChunkGrid, ChunkShape, UnsafeCellSlice,
 };
-use crate::array::codec::ArrayPartialDecoderTraits;
 use crate::storage::ReadableStorageTraits;
+use crate::{array::codec::ArrayPartialDecoderTraits, array_subset::ArraySubset};
 
 /// An [`Array`] extension trait to simplify working with arrays using the `sharding_indexed` codec.
 pub trait ArrayShardedExt {
@@ -133,34 +137,44 @@ impl<'a> ArrayShardedReadableExtCache<'a> {
 /// Sharding indexes are cached in a [`ArrayShardedReadableExtCache`] enabling faster retrieval in some cases.
 // TODO: Add more methods
 pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'static> {
-    /// Read and decode the inner chunk at `chunk_indices` into its bytes with default codec options.
+    /// Read and decode the inner chunk at `chunk_indices` into its bytes.
     ///
-    /// See [`Array::retrieve_chunk`].
+    /// See [`Array::retrieve_chunk_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunk<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
-        inner_chunk_indices: &[u64],
-    ) -> Result<Vec<u8>, ArrayError> {
-        self.retrieve_inner_chunk_opt(cache, inner_chunk_indices, &CodecOptions::default())
-    }
-
-    /// Read and decode the inner chunk at `chunk_indices` into its bytes with default codec options.
-    ///
-    /// See [`Array::retrieve_chunk`].
-    #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunk_opt<'a>(
+    fn retrieve_inner_chunk_sharded_opt<'a>(
         &'a self,
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError>;
+
+    /// Read and decode the `array_subset` of array into its bytes.
+    ///
+    /// See [`Array::retrieve_array_subset`].
+    #[allow(clippy::missing_errors_doc)]
+    fn retrieve_array_subset_sharded_opt<'a>(
+        &'a self,
+        cache: &ArrayShardedReadableExtCache<'a>,
+        array_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<Vec<u8>, ArrayError>;
+
+    /// Similar to [`Array::retrieve_array_subset_into_array_view`], except shard indexes are cached.
+    #[allow(clippy::missing_errors_doc)]
+    fn retrieve_shard_subset_into_array_view_opt<'a>(
+        &'a self,
+        cache: &ArrayShardedReadableExtCache<'a>,
+        shard_indices: &[u64],
+        shard_subset: &ArraySubset,
+        array_view: &ArrayView,
+        options: &CodecOptions,
+    ) -> Result<(), ArrayError>;
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt<TStorage>
     for Array<TStorage>
 {
-    fn retrieve_inner_chunk_opt<'a>(
+    fn retrieve_inner_chunk_sharded_opt<'a>(
         &'a self,
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunk_indices: &[u64],
@@ -193,6 +207,121 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                 .expect("partial_decode_opt called with one subset, returned without error"))
         } else {
             self.retrieve_chunk_opt(inner_chunk_indices, options)
+        }
+    }
+
+    fn retrieve_array_subset_sharded_opt<'a>(
+        &'a self,
+        cache: &ArrayShardedReadableExtCache<'a>,
+        array_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<Vec<u8>, ArrayError> {
+        if cache.array_is_sharded() {
+            if array_subset.dimensionality() != self.dimensionality() {
+                return Err(ArrayError::InvalidArraySubset(
+                    array_subset.clone(),
+                    self.shape().to_vec(),
+                ));
+            }
+
+            // Find the shards intersecting this array subset
+            let shards = self.chunks_in_array_subset(array_subset)?;
+            let Some(shards) = shards else {
+                return Err(ArrayError::InvalidArraySubset(
+                    array_subset.clone(),
+                    self.shape().to_vec(),
+                ));
+            };
+
+            // Retrieve chunk bytes
+            let num_shards = shards.num_elements_usize();
+            if num_shards == 0 {
+                Ok(self
+                    .fill_value()
+                    .as_ne_bytes()
+                    .repeat(array_subset.num_elements_usize()))
+            } else {
+                // Allocate the output
+                let size_output = array_subset.num_elements_usize() * self.data_type().size();
+                let mut output = Vec::with_capacity(size_output);
+
+                // Calculate chunk/codec concurrency
+                let chunk_representation =
+                    self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+                let codec_concurrency =
+                    self.recommended_codec_concurrency(&chunk_representation)?;
+                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                    options.concurrent_target(),
+                    num_shards,
+                    options,
+                    &codec_concurrency,
+                );
+
+                {
+                    let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                    let retrieve_chunk = |shard_indices: Vec<u64>| {
+                        let chunk_subset = self.chunk_subset(&shard_indices)?;
+                        let chunk_subset_in_array_subset =
+                            unsafe { chunk_subset.overlap_unchecked(array_subset) };
+                        let chunk_subset = unsafe {
+                            chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
+                        };
+                        let array_view_subset = unsafe {
+                            chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
+                        };
+                        let array_view = ArrayView::new(
+                            unsafe { output.get() },
+                            array_subset.shape(),
+                            array_view_subset,
+                        )
+                        .map_err(|err| CodecError::from(err.to_string()))?;
+                        self.retrieve_shard_subset_into_array_view_opt(
+                            cache,
+                            &shard_indices,
+                            &chunk_subset,
+                            &array_view,
+                            &options,
+                        )
+                    };
+                    let indices = shards.indices();
+                    iter_concurrent_limit!(
+                        chunk_concurrent_limit,
+                        indices,
+                        try_for_each,
+                        retrieve_chunk
+                    )?;
+                }
+                unsafe { output.set_len(size_output) };
+                Ok(output)
+            }
+        } else {
+            self.retrieve_array_subset_opt(array_subset, options)
+        }
+    }
+
+    fn retrieve_shard_subset_into_array_view_opt<'a>(
+        &'a self,
+        cache: &ArrayShardedReadableExtCache<'a>,
+        shard_indices: &[u64],
+        shard_subset: &ArraySubset,
+        array_view: &ArrayView,
+        options: &CodecOptions,
+    ) -> Result<(), ArrayError> {
+        if shard_subset.shape() != array_view.subset().shape() {
+            return Err(ArrayError::InvalidArraySubset(
+                shard_subset.clone(),
+                array_view.subset().shape().to_vec(),
+            ));
+        }
+
+        let chunk_representation = self.chunk_array_representation(shard_indices)?;
+        if shard_subset.shape() == chunk_representation.shape_u64() {
+            self.retrieve_chunk_into_array_view_opt(shard_indices, array_view, options)
+        } else {
+            cache
+                .retrieve(self, shard_indices)?
+                .partial_decode_into_array_view_opt(shard_subset, array_view, options)
+                .map_err(ArrayError::CodecError)
         }
     }
 }
@@ -250,9 +379,18 @@ mod tests {
 
         let cache = ArrayShardedReadableExtCache::new(&array);
         let compare = array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[4..6, 6..8]))?;
-        let test: Vec<u8> = array.retrieve_inner_chunk(&cache, &[2, 3])?;
+        let test: Vec<u8> =
+            array.retrieve_inner_chunk_sharded_opt(&cache, &[2, 3], &CodecOptions::default())?;
         assert_eq!(compare, test);
+
         assert_eq!(cache.len(), 1);
+
+        let subset = ArraySubset::new_with_ranges(&[3..7, 3..7]);
+        let compare2 = array.retrieve_array_subset(&subset)?;
+        let test2: Vec<u8> =
+            array.retrieve_array_subset_sharded_opt(&cache, &subset, &CodecOptions::default())?;
+        assert_eq!(compare2, test2);
+        assert_eq!(cache.len(), 4);
 
         Ok(())
     }
@@ -287,8 +425,15 @@ mod tests {
 
         let cache = ArrayShardedReadableExtCache::new(&array);
         let compare = array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[4..8, 4..8]))?;
-        let test: Vec<u8> = array.retrieve_inner_chunk(&cache, &[1, 1])?;
+        let test: Vec<u8> =
+            array.retrieve_inner_chunk_sharded_opt(&cache, &[1, 1], &CodecOptions::default())?;
         assert_eq!(compare, test);
+
+        let subset = ArraySubset::new_with_ranges(&[3..7, 3..7]);
+        let compare2 = array.retrieve_array_subset(&subset)?;
+        let test2: Vec<u8> =
+            array.retrieve_array_subset_sharded_opt(&cache, &subset, &CodecOptions::default())?;
+        assert_eq!(compare2, test2);
         assert!(cache.is_empty());
 
         Ok(())
