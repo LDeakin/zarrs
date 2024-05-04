@@ -118,15 +118,15 @@ impl<'a> ArrayShardedReadableExtCache<'a> {
     fn retrieve<TStorage: ?Sized + ReadableStorageTraits + 'static>(
         &self,
         array: &'a Array<TStorage>,
-        chunk_indices: &[u64],
+        shard_indices: &[u64],
     ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
         let mut cache = self.cache.lock();
-        if let Some(partial_decoder) = cache.get(chunk_indices) {
+        if let Some(partial_decoder) = cache.get(shard_indices) {
             Ok(partial_decoder.clone())
         } else {
             let partial_decoder: Arc<dyn ArrayPartialDecoderTraits> =
-                array.partial_decoder(chunk_indices)?.into();
-            cache.insert(chunk_indices.to_vec(), partial_decoder.clone());
+                array.partial_decoder(shard_indices)?.into();
+            cache.insert(shard_indices.to_vec(), partial_decoder.clone());
             Ok(partial_decoder)
         }
     }
@@ -142,7 +142,7 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ///
     /// See [`Array::retrieve_chunk_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunk_sharded_opt<'a>(
+    fn retrieve_inner_chunk_opt<'a>(
         &'a self,
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunk_indices: &[u64],
@@ -153,7 +153,7 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ///
     /// See [`Array::retrieve_chunks_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunks_sharded_opt<'a>(
+    fn retrieve_inner_chunks_opt<'a>(
         &'a self,
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunks: &ArraySubset,
@@ -171,7 +171,9 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
         options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError>;
 
-    /// Retrieve an array subset into an array view.
+    /// Retrieve a shard subset into an array view.
+    ///
+    /// For an unsharded array, retrieves
     ///
     /// See [`Array::retrieve_array_subset_into_array_view_opt`].
     #[allow(clippy::missing_errors_doc)]
@@ -188,7 +190,7 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
 impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt<TStorage>
     for Array<TStorage>
 {
-    fn retrieve_inner_chunk_sharded_opt<'a>(
+    fn retrieve_inner_chunk_opt<'a>(
         &'a self,
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunk_indices: &[u64],
@@ -224,7 +226,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         }
     }
 
-    fn retrieve_inner_chunks_sharded_opt<'a>(
+    fn retrieve_inner_chunks_opt<'a>(
         &'a self,
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunks: &ArraySubset,
@@ -429,7 +431,7 @@ mod tests {
         let cache = ArrayShardedReadableExtCache::new(&array);
         let compare = array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[4..6, 6..8]))?;
         let test: Vec<u8> =
-            array.retrieve_inner_chunk_sharded_opt(&cache, &[2, 3], &CodecOptions::default())?;
+            array.retrieve_inner_chunk_opt(&cache, &[2, 3], &CodecOptions::default())?;
         assert_eq!(compare, test);
 
         assert_eq!(cache.len(), 1);
@@ -444,11 +446,8 @@ mod tests {
         let subset = ArraySubset::new_with_ranges(&[2..6, 2..6]);
         let inner_chunks = ArraySubset::new_with_ranges(&[1..3, 1..3]);
         let compare = array.retrieve_array_subset(&subset)?;
-        let test: Vec<u8> = array.retrieve_inner_chunks_sharded_opt(
-            &cache,
-            &inner_chunks,
-            &CodecOptions::default(),
-        )?;
+        let test: Vec<u8> =
+            array.retrieve_inner_chunks_opt(&cache, &inner_chunks, &CodecOptions::default())?;
         assert_eq!(compare, test);
         assert_eq!(cache.len(), 4);
 
@@ -486,7 +485,7 @@ mod tests {
         let cache = ArrayShardedReadableExtCache::new(&array);
         let compare = array.retrieve_array_subset(&ArraySubset::new_with_ranges(&[4..8, 4..8]))?;
         let test: Vec<u8> =
-            array.retrieve_inner_chunk_sharded_opt(&cache, &[1, 1], &CodecOptions::default())?;
+            array.retrieve_inner_chunk_opt(&cache, &[1, 1], &CodecOptions::default())?;
         assert_eq!(compare, test);
 
         let subset = ArraySubset::new_with_ranges(&[3..7, 3..7]);
