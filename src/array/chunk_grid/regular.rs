@@ -300,6 +300,26 @@ mod tests {
                 .unwrap(),
             Some(ArraySubset::new_with_ranges(&[1..3, 2..4, 15..24]))
         );
+
+        assert!(chunk_grid
+            .chunks_subset(&ArraySubset::new_with_ranges(&[1..3]), &array_shape)
+            .is_err());
+
+        assert!(chunk_grid
+            .chunks_subset(
+                &ArraySubset::new_with_ranges(&[1..3, 1..2, 5..8]),
+                &vec![0; 1]
+            )
+            .is_err());
+
+        assert!(chunk_grid
+            .chunks_subset(
+                &ArraySubset::new_with_ranges(&[0..0, 0..0, 0..0]),
+                &array_shape
+            )
+            .unwrap()
+            .unwrap()
+            .is_empty());
     }
 
     #[test]

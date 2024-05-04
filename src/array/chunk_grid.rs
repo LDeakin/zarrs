@@ -275,24 +275,21 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
                 array_shape.len(),
                 self.dimensionality(),
             ))
-        } else {
-            match chunks.end_inc() {
-                Some(end) => {
-                    let start = chunks.start();
-                    let chunk0 = self.subset(start, array_shape)?;
-                    let chunk1 = self.subset(&end, array_shape)?;
-                    if let (Some(chunk0), Some(chunk1)) = (chunk0, chunk1) {
-                        let start = chunk0.start();
-                        let end = chunk1.end_exc();
-                        Ok(Some(unsafe {
-                            ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end)
-                        }))
-                    } else {
-                        Ok(None)
-                    }
-                }
-                None => Ok(Some(ArraySubset::new_empty(chunks.dimensionality()))),
+        } else if let Some(end) = chunks.end_inc() {
+            let start = chunks.start();
+            let chunk0 = self.subset(start, array_shape)?;
+            let chunk1 = self.subset(&end, array_shape)?;
+            if let (Some(chunk0), Some(chunk1)) = (chunk0, chunk1) {
+                let start = chunk0.start();
+                let end = chunk1.end_exc();
+                Ok(Some(unsafe {
+                    ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end)
+                }))
+            } else {
+                Ok(None)
             }
+        } else {
+            Ok(Some(ArraySubset::new_empty(chunks.dimensionality())))
         }
     }
 
