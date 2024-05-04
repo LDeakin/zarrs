@@ -254,6 +254,48 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         }
     }
 
+    /// Return the [`ArraySubset`] of the chunks in `chunks`.
+    ///
+    /// Returns [`None`] if the chunk subset cannot be determined.
+    ///
+    /// # Errors
+    /// Returns [`IncompatibleDimensionalityError`] if `chunks` or `array_shape` do not match the dimensionality of the chunk grid.
+    fn chunks_subset(
+        &self,
+        chunks: &ArraySubset,
+        array_shape: &[u64],
+    ) -> Result<Option<ArraySubset>, IncompatibleDimensionalityError> {
+        if chunks.dimensionality() != self.dimensionality() {
+            Err(IncompatibleDimensionalityError::new(
+                chunks.dimensionality(),
+                self.dimensionality(),
+            ))
+        } else if array_shape.len() != self.dimensionality() {
+            Err(IncompatibleDimensionalityError::new(
+                array_shape.len(),
+                self.dimensionality(),
+            ))
+        } else {
+            match chunks.end_inc() {
+                Some(end) => {
+                    let start = chunks.start();
+                    let chunk0 = self.subset(start, array_shape)?;
+                    let chunk1 = self.subset(&end, array_shape)?;
+                    if let (Some(chunk0), Some(chunk1)) = (chunk0, chunk1) {
+                        let start = chunk0.start();
+                        let end = chunk1.end_exc();
+                        Ok(Some(unsafe {
+                            ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end)
+                        }))
+                    } else {
+                        Ok(None)
+                    }
+                }
+                None => Ok(Some(ArraySubset::new_empty(chunks.dimensionality()))),
+            }
+        }
+    }
+
     /// The indices of a chunk which has the element at `array_indices`.
     ///
     /// Returns [`None`] if the chunk indices cannot be determined.
