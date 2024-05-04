@@ -350,6 +350,8 @@ impl ChunkGridTraits for RectangularChunkGrid {
 
 #[cfg(test)]
 mod tests {
+    use crate::array_subset::ArraySubset;
+
     use super::*;
 
     #[test]
@@ -375,6 +377,13 @@ mod tests {
                 .chunk_element_indices(&[17, 17], &array_shape)
                 .unwrap(),
             Some(vec![2, 7])
+        );
+
+        assert_eq!(
+            chunk_grid
+                .chunks_subset(&ArraySubset::new_with_ranges(&[1..5, 2..6]), &array_shape)
+                .unwrap(),
+            Some(ArraySubset::new_with_ranges(&[5..45, 20..60]))
         );
 
         // assert_eq!(
