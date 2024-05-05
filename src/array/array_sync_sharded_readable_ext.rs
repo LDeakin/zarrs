@@ -519,6 +519,22 @@ mod tests {
             assert_eq!(compare, test);
             assert_eq!(cache.len(), 1);
 
+            #[cfg(feature = "ndarray")]
+            {
+                let compare = array.retrieve_array_subset_ndarray::<u16>(
+                    &ArraySubset::new_with_ranges(&[4..6, 6..8]),
+                )?;
+                let test = array.retrieve_inner_chunk_ndarray_opt::<u16>(
+                    &cache,
+                    &[2, 3],
+                    &CodecOptions::default(),
+                )?;
+                assert_eq!(compare, test);
+            }
+
+            cache.clear();
+            assert_eq!(cache.len(), 0);
+
             let subset = ArraySubset::new_with_ranges(&[3..7, 3..7]);
             let compare = array.retrieve_array_subset_elements::<u16>(&subset)?;
             let test = array.retrieve_array_subset_elements_sharded_opt::<u16>(
@@ -527,10 +543,18 @@ mod tests {
                 &CodecOptions::default(),
             )?;
             assert_eq!(compare, test);
-            if sharded {
-                assert_eq!(cache.len(), 4);
-            } else {
-                assert!(cache.is_empty());
+            assert_eq!(cache.len(), 4);
+
+            #[cfg(feature = "ndarray")]
+            {
+                let subset = ArraySubset::new_with_ranges(&[3..7, 3..7]);
+                let compare = array.retrieve_array_subset_ndarray::<u16>(&subset)?;
+                let test = array.retrieve_array_subset_ndarray_sharded_opt::<u16>(
+                    &cache,
+                    &subset,
+                    &CodecOptions::default(),
+                )?;
+                assert_eq!(compare, test);
             }
 
             let subset = ArraySubset::new_with_ranges(&[2..6, 2..6]);
@@ -542,10 +566,20 @@ mod tests {
                 &CodecOptions::default(),
             )?;
             assert_eq!(compare, test);
-            if sharded {
+            assert_eq!(cache.len(), 4);
+
+            #[cfg(feature = "ndarray")]
+            {
+                let subset = ArraySubset::new_with_ranges(&[2..6, 2..6]);
+                let inner_chunks = ArraySubset::new_with_ranges(&[1..3, 1..3]);
+                let compare = array.retrieve_array_subset_ndarray::<u16>(&subset)?;
+                let test = array.retrieve_inner_chunks_ndarray_opt::<u16>(
+                    &cache,
+                    &inner_chunks,
+                    &CodecOptions::default(),
+                )?;
+                assert_eq!(compare, test);
                 assert_eq!(cache.len(), 4);
-            } else {
-                assert!(cache.is_empty());
             }
         } else {
             assert_eq!(array.inner_chunk_shape(), None);
