@@ -220,16 +220,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                 .ok_or_else(|| {
                     ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
                 })?;
-            let outer_chunks = self.chunks_in_array_subset(&array_subset)?.ok_or_else(|| {
+            let shards = self.chunks_in_array_subset(&array_subset)?.ok_or_else(|| {
                 ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
             })?;
-            if outer_chunks.num_elements() != 1 {
+            if shards.num_elements() != 1 {
                 // This should not happen, but it is checked just in case.
                 return Err(ArrayError::InvalidChunkGridIndicesError(
                     inner_chunk_indices.to_vec(),
                 ));
             }
-            let shard_indices = outer_chunks.start();
+            let shard_indices = shards.start();
             let shard_origin = self.chunk_origin(shard_indices)?;
             let shard_subset = array_subset.relative_to(&shard_origin)?;
 
@@ -261,13 +261,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        let shape = self.inner_chunk_shape().ok_or_else(|| {
-            ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
-        })?;
-        super::elements_to_ndarray(
-            &crate::array::chunk_shape_to_array_shape(&shape),
-            self.retrieve_inner_chunk_elements_opt::<T>(cache, inner_chunk_indices, options)?,
-        )
+        if let Some(inner_chunk_shape) = self.inner_chunk_shape() {
+            super::elements_to_ndarray(
+                &crate::array::chunk_shape_to_array_shape(&inner_chunk_shape),
+                self.retrieve_inner_chunk_elements_opt::<T>(cache, inner_chunk_indices, options)?,
+            )
+        } else {
+            self.retrieve_chunk_ndarray_opt(inner_chunk_indices, options)
+        }
     }
 
     fn retrieve_inner_chunks_opt<'a>(
@@ -276,26 +277,23 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
-        if inner_chunks.dimensionality() != self.dimensionality() {
-            return Err(ArrayError::InvalidArraySubset(
-                inner_chunks.clone(),
-                self.shape().to_vec(),
-            ));
+        if cache.array_is_sharded() {
+            let inner_chunk_grid = cache.inner_chunk_grid();
+            let array_subset = inner_chunk_grid
+                .chunks_subset(inner_chunks, self.shape())?
+                .ok_or_else(|| {
+                    ArrayError::InvalidArraySubset(
+                        inner_chunks.clone(),
+                        inner_chunk_grid
+                            .grid_shape(self.shape())
+                            .unwrap_or_default()
+                            .unwrap_or_default(),
+                    )
+                })?;
+            self.retrieve_array_subset_sharded_opt(cache, &array_subset, options)
+        } else {
+            self.retrieve_chunks_opt(inner_chunks, options)
         }
-
-        let chunk_grid = cache.inner_chunk_grid();
-        let array_subset = chunk_grid
-            .chunks_subset(inner_chunks, self.shape())?
-            .ok_or_else(|| {
-                ArrayError::InvalidArraySubset(
-                    inner_chunks.clone(),
-                    chunk_grid
-                        .grid_shape(self.shape())
-                        .unwrap_or_default()
-                        .unwrap_or_default(),
-                )
-            })?;
-        self.retrieve_array_subset_sharded_opt(cache, &array_subset, options)
     }
 
     fn retrieve_inner_chunks_elements_opt<'a, T: bytemuck::Pod>(
@@ -316,13 +314,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        let chunk_grid = cache.inner_chunk_grid();
-        let array_subset = chunk_grid
+        let inner_chunk_grid = cache.inner_chunk_grid();
+        let array_subset = inner_chunk_grid
             .chunks_subset(inner_chunks, self.shape())?
             .ok_or_else(|| {
                 ArrayError::InvalidArraySubset(
                     inner_chunks.clone(),
-                    chunk_grid
+                    inner_chunk_grid
                         .grid_shape(self.shape())
                         .unwrap_or_default()
                         .unwrap_or_default(),
@@ -340,13 +338,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
         if cache.array_is_sharded() {
-            if array_subset.dimensionality() != self.dimensionality() {
-                return Err(ArrayError::InvalidArraySubset(
-                    array_subset.clone(),
-                    self.shape().to_vec(),
-                ));
-            }
-
             // Find the shards intersecting this array subset
             let shards = self.chunks_in_array_subset(array_subset)?;
             let Some(shards) = shards else {
@@ -382,15 +373,15 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
 
                 {
                     let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let retrieve_chunk = |shard_indices: Vec<u64>| {
-                        let chunk_subset = self.chunk_subset(&shard_indices)?;
-                        let chunk_subset_in_array_subset =
-                            unsafe { chunk_subset.overlap_unchecked(array_subset) };
-                        let chunk_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
+                    let retrieve_shard = |shard_indices: Vec<u64>| {
+                        let shard_subset = self.chunk_subset(&shard_indices)?;
+                        let shard_subset_in_array_subset =
+                            unsafe { shard_subset.overlap_unchecked(array_subset) };
+                        let shard_subset = unsafe {
+                            shard_subset_in_array_subset.relative_to_unchecked(shard_subset.start())
                         };
                         let array_view_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
+                            shard_subset_in_array_subset.relative_to_unchecked(array_subset.start())
                         };
                         let array_view = ArrayView::new(
                             unsafe { output.get() },
@@ -401,7 +392,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                         self.retrieve_shard_subset_into_array_view_opt(
                             cache,
                             &shard_indices,
-                            &chunk_subset,
+                            &shard_subset,
                             &array_view,
                             &options,
                         )
@@ -411,7 +402,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                         chunk_concurrent_limit,
                         indices,
                         try_for_each,
-                        retrieve_chunk
+                        retrieve_shard
                     )?;
                 }
                 unsafe { output.set_len(size_output) };
@@ -453,22 +444,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         array_view: &ArrayView,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        if shard_subset.shape() != array_view.subset().shape() {
-            return Err(ArrayError::InvalidArraySubset(
-                shard_subset.clone(),
-                array_view.subset().shape().to_vec(),
-            ));
-        }
-
-        let chunk_representation = self.chunk_array_representation(shard_indices)?;
-        if shard_subset.shape() == chunk_representation.shape_u64() {
-            self.retrieve_chunk_into_array_view_opt(shard_indices, array_view, options)
-        } else {
-            cache
-                .retrieve(self, shard_indices)?
-                .partial_decode_into_array_view_opt(shard_subset, array_view, options)
-                .map_err(ArrayError::CodecError)
-        }
+        cache
+            .retrieve(self, shard_indices)?
+            .partial_decode_into_array_view_opt(shard_subset, array_view, options)
+            .map_err(ArrayError::CodecError)
     }
 }
 
