@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2024-05-06
+
 ### Added
  - Added the `array_sharded_ext::{ArrayShardedExt,ArrayShardedReadableExt}` extension traits for `Array` to simplify working with sharded arrays
    - Abstracts the chunk grid to an "inner chunk grid" to simplify inner chunk retrieval.
@@ -730,7 +732,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.1
 [0.13.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.0
 [0.12.5]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.5
 [0.12.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.4
