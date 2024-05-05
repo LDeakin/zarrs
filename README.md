@@ -16,7 +16,7 @@ A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANG
 
 ## Getting Started
 - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
-- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] and [`storage`] are good places to start.
+- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html) and [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html) are good places to start.
 - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and performance benchmarks of `zarrs`.
 
 ## Example
