@@ -56,7 +56,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check semver
         uses: obi1kenobi/cargo-semver-checks-action@v2
-
+  minimal-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt update && sudo apt install -y cmake clang-15
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-hack cargo-minimal-versions --locked
+      - run: cargo minimal-versions check --workspace --all-features --direct
   codecov:
     runs-on: ubuntu-latest
     steps:
