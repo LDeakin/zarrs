@@ -22,7 +22,7 @@ use crate::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{
-    zarr_data_type_to_zfp_data_type,
+    promote_before_zfp_encoding, zarr_to_zfp_data_type,
     zfp_bitstream::ZfpBitstream,
     zfp_configuration::{
         ZfpFixedAccuracyConfiguration, ZfpFixedPrecisionConfiguration, ZfpFixedRateConfiguration,
@@ -136,19 +136,15 @@ impl ArrayCodecTraits for ZfpCodec {
 
     fn encode(
         &self,
-        mut decoded_value: Vec<u8>,
+        decoded_value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
-        else {
-            return Err(CodecError::from(
-                "data type {} is unsupported for zfp codec",
-            ));
-        };
+        let mut decoded_value_promoted =
+            promote_before_zfp_encoding(decoded_value, decoded_representation)?;
+        let zfp_type = decoded_value_promoted.zfp_type();
         let Some(field) = ZfpField::new(
-            &mut decoded_value,
-            zfp_type,
+            &mut decoded_value_promoted,
             &decoded_representation
                 .shape()
                 .iter()
@@ -197,15 +193,8 @@ impl ArrayCodecTraits for ZfpCodec {
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
-        else {
-            return Err(CodecError::from(
-                "data type {} is unsupported for zfp codec",
-            ));
-        };
         zfp_decode(
             &self.mode,
-            zfp_type,
             encoded_value,
             decoded_representation,
             false, // FIXME
@@ -247,8 +236,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         let data_type = decoded_representation.data_type();
-        let Some(zfp_type) = zarr_data_type_to_zfp_data_type(decoded_representation.data_type())
-        else {
+        let Some(zfp_type) = zarr_to_zfp_data_type(decoded_representation.data_type()) else {
             return Err(CodecError::from(
                 "data type {} is unsupported for zfp codec",
             ));
