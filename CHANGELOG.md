@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Added the `array_sharded_ext::{ArrayShardedExt,ArrayShardedReadableExt}` array extension traits to simplify working with sharded arrays
    - Abstracts the chunk grid to an "inner chunk grid" to simplify inner chunk retrieval
    - Shard indexes are cached in a `ArrayShardedReadableExtCache`
+   - Sync API only, `AsyncArrayShardedReadableExt` and `AsyncArrayShardedReadableExtCache` are planned for a future release
  - Added `ChunkGridTraits::chunks_subset()` with default implementation
 
 ### Changed
