@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Allow float fill values to be created from int fill value metadata
  - Make `chunk_grid::{regular,rectangular}` public
+ - Support 8 and 16 bit integer data types with zfp codec by promoting to 32 bit
 
 ### Fixed
  - Fix `compute_encoded_size()` for `BitroundCodec` incorrectly indicating various data types were unsupported

@@ -1,11 +1,13 @@
 //! The `zfp` array to bytes codec.
 //!
 //! [zfp](https://zfp.io/) is a compressed number format for 1D to 4D arrays of 32/64-bit floating point or integer data.
+//! 8/16-bit integer types are supported through promotion to 32-bit in accordance with the [zfp utility functions](https://zfp.readthedocs.io/en/release1.0.1/low-level-api.html#utility-functions).
 //!
 //! This codec requires the `zfp` feature, which is disabled by default.
 //!
 //! See [`ZfpCodecConfigurationV1`] for example `JSON` metadata.
 
+mod zfp_array;
 mod zfp_bitstream;
 mod zfp_codec;
 mod zfp_configuration;
@@ -23,20 +25,21 @@ pub use zfp_configuration::{
 
 use zfp_sys::{
     zfp_decompress, zfp_exec_policy_zfp_exec_omp, zfp_stream_rewind, zfp_stream_set_bit_stream,
-    zfp_stream_set_execution, zfp_type, zfp_type_zfp_type_double, zfp_type_zfp_type_float,
-    zfp_type_zfp_type_int32, zfp_type_zfp_type_int64,
+    zfp_stream_set_execution,
 };
 
 use crate::{
     array::{
         codec::{Codec, CodecError, CodecPlugin},
-        ChunkRepresentation, DataType,
+        transmute_from_bytes_vec, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
     metadata::Metadata,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-use self::{zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream};
+use self::{
+    zfp_array::ZfpArray, zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream,
+};
 
 /// The identifier for the `zfp` codec.
 pub const IDENTIFIER: &str = "zfp";
@@ -99,27 +102,145 @@ pub struct ZfpExpertParams {
     pub minexp: i32,
 }
 
-const fn zarr_data_type_to_zfp_data_type(data_type: &DataType) -> Option<zfp_type> {
+const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type> {
     match data_type {
-        DataType::Int32 | DataType::UInt32 => Some(zfp_type_zfp_type_int32),
-        DataType::Int64 | DataType::UInt64 => Some(zfp_type_zfp_type_int64),
-        DataType::Float32 => Some(zfp_type_zfp_type_float),
-        DataType::Float64 => Some(zfp_type_zfp_type_double),
+        DataType::Int8
+        | DataType::UInt8
+        | DataType::Int16
+        | DataType::UInt16
+        | DataType::Int32
+        | DataType::UInt32 => Some(zfp_sys::zfp_type_zfp_type_int32),
+        DataType::Int64 | DataType::UInt64 => Some(zfp_sys::zfp_type_zfp_type_int64),
+        DataType::Float32 => Some(zfp_sys::zfp_type_zfp_type_float),
+        DataType::Float64 => Some(zfp_sys::zfp_type_zfp_type_double),
         _ => None,
+    }
+}
+
+fn promote_before_zfp_encoding(
+    decoded_value: Vec<u8>,
+    decoded_representation: &ChunkRepresentation,
+) -> Result<ZfpArray, CodecError> {
+    match decoded_representation.data_type() {
+        DataType::Int8 => {
+            let decoded_value = transmute_from_bytes_vec::<i8>(decoded_value);
+            let decoded_value_promoted =
+                decoded_value.iter().map(|i| i32::from(*i) << 23).collect();
+            Ok(ZfpArray::Int32(decoded_value_promoted))
+        }
+        DataType::UInt8 => {
+            let decoded_value = transmute_from_bytes_vec::<u8>(decoded_value);
+            let decoded_value_promoted = decoded_value
+                .iter()
+                .map(|i| (i32::from(*i) - 0x80) << 23)
+                .collect();
+            Ok(ZfpArray::Int32(decoded_value_promoted))
+        }
+        DataType::Int16 => {
+            let decoded_value = transmute_from_bytes_vec::<i16>(decoded_value);
+            let decoded_value_promoted =
+                decoded_value.iter().map(|i| i32::from(*i) << 15).collect();
+            Ok(ZfpArray::Int32(decoded_value_promoted))
+        }
+        DataType::UInt16 => {
+            let decoded_value = transmute_from_bytes_vec::<u16>(decoded_value);
+            let decoded_value_promoted = decoded_value
+                .iter()
+                .map(|i| (i32::from(*i) - 0x8000) << 15)
+                .collect();
+            Ok(ZfpArray::Int32(decoded_value_promoted))
+        }
+        DataType::Int32 | DataType::UInt32 => Ok(ZfpArray::Int32(transmute_from_bytes_vec::<i32>(
+            decoded_value,
+        ))),
+        DataType::Int64 | DataType::UInt64 => Ok(ZfpArray::Int64(transmute_from_bytes_vec::<i64>(
+            decoded_value,
+        ))),
+        DataType::Float32 => Ok(ZfpArray::Float(transmute_from_bytes_vec::<f32>(
+            decoded_value,
+        ))),
+        DataType::Float64 => Ok(ZfpArray::Double(transmute_from_bytes_vec::<f64>(
+            decoded_value,
+        ))),
+        _ => Err(CodecError::UnsupportedDataType(
+            decoded_representation.data_type().clone(),
+            IDENTIFIER.to_string(),
+        )),
+    }
+}
+
+fn init_zfp_decoding_output(
+    decoded_representation: &ChunkRepresentation,
+) -> Result<ZfpArray, CodecError> {
+    let num_elements = decoded_representation.num_elements_usize();
+    match decoded_representation.data_type() {
+        DataType::Int8
+        | DataType::UInt8
+        | DataType::Int16
+        | DataType::UInt16
+        | DataType::Int32
+        | DataType::UInt32 => Ok(ZfpArray::Int32(vec![0; num_elements])),
+        DataType::Int64 | DataType::UInt64 => Ok(ZfpArray::Int64(vec![0; num_elements])),
+        DataType::Float32 => Ok(ZfpArray::Float(vec![0.0; num_elements])),
+        DataType::Float64 => Ok(ZfpArray::Double(vec![0.0; num_elements])),
+        _ => Err(CodecError::UnsupportedDataType(
+            decoded_representation.data_type().clone(),
+            IDENTIFIER.to_string(),
+        )),
+    }
+}
+
+fn demote_after_zfp_decoding(
+    array: ZfpArray,
+    decoded_representation: &ChunkRepresentation,
+) -> Result<Vec<u8>, CodecError> {
+    #[allow(non_upper_case_globals)]
+    match (decoded_representation.data_type(), array) {
+        (DataType::Int32 | DataType::UInt32, ZfpArray::Int32(vec)) => {
+            Ok(transmute_to_bytes_vec(vec))
+        }
+        (DataType::Int64 | DataType::UInt64, ZfpArray::Int64(vec)) => {
+            Ok(transmute_to_bytes_vec(vec))
+        }
+        (DataType::Float32, ZfpArray::Float(vec)) => Ok(transmute_to_bytes_vec(vec)),
+        (DataType::Float64, ZfpArray::Double(vec)) => Ok(transmute_to_bytes_vec(vec)),
+        (DataType::Int8, ZfpArray::Int32(vec)) => Ok(transmute_to_bytes_vec(
+            vec.into_iter()
+                .map(|i| i8::try_from((i >> 23).clamp(-0x80, 0x7f)).unwrap())
+                .collect(),
+        )),
+        (DataType::UInt8, ZfpArray::Int32(vec)) => Ok(transmute_to_bytes_vec(
+            vec.into_iter()
+                .map(|i| u8::try_from(((i >> 23) + 0x80).clamp(0x00, 0xff)).unwrap())
+                .collect(),
+        )),
+        (DataType::Int16, ZfpArray::Int32(vec)) => Ok(transmute_to_bytes_vec(
+            vec.into_iter()
+                .map(|i| i16::try_from((i >> 15).clamp(-0x8000, 0x7fff)).unwrap())
+                .collect(),
+        )),
+        (DataType::UInt16, ZfpArray::Int32(vec)) => Ok(transmute_to_bytes_vec(
+            vec.into_iter()
+                .map(|i| u16::try_from(((i >> 15) + 0x8000).clamp(0x0000, 0xffff)).unwrap())
+                .collect(),
+        )),
+        _ => Err(CodecError::UnsupportedDataType(
+            decoded_representation.data_type().clone(),
+            IDENTIFIER.to_string(),
+        )),
     }
 }
 
 fn zfp_decode(
     zfp_mode: &ZfpMode,
-    zfp_type: zfp_type,
     mut encoded_value: Vec<u8>,
     decoded_representation: &ChunkRepresentation,
     parallel: bool,
 ) -> Result<Vec<u8>, CodecError> {
-    let mut decoded_value = vec![0u8; usize::try_from(decoded_representation.size()).unwrap()];
+    let mut array = init_zfp_decoding_output(decoded_representation)?;
+    let zfp_type = array.zfp_type();
     let Some(field) = ZfpField::new(
-        &mut decoded_value,
-        zfp_type,
+        &mut array,
         &decoded_representation
             .shape()
             .iter()
@@ -148,10 +269,11 @@ fn zfp_decode(
     }
 
     let ret = unsafe { zfp_decompress(zfp.as_zfp_stream(), field.as_zfp_field()) };
+    drop(field);
     if ret == 0 {
         Err(CodecError::from("zfp decompression failed"))
     } else {
-        Ok(decoded_value)
+        demote_after_zfp_decoding(array, decoded_representation)
     }
 }
 
@@ -166,10 +288,17 @@ mod tests {
 
     use super::*;
 
+    // const JSON_VALID: &'static str = r#"{
+    //     "mode": "fixedprecision",
+    //     "precision": 12
+    // }"#;
     const JSON_VALID: &'static str = r#"{
-        "mode": "fixedprecision",
-        "precision": 12
+        "mode": "reversible"
     }"#;
+    // const JSON_VALID: &'static str = r#"{
+    //     "mode": "fixedrate",
+    //     "rate": 2.5
+    // }"#;
 
     #[test]
     #[cfg_attr(miri, ignore)]
@@ -203,6 +332,41 @@ mod tests {
             .unwrap();
 
         let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded);
+        assert_eq!(elements, decoded_elements);
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_i16() {
+        let chunk_shape = vec![
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+        ];
+        let chunk_representation =
+            ChunkRepresentation::new(chunk_shape, DataType::Int16, 0i16.into()).unwrap();
+        let elements: Vec<i16> = (0..27).map(|i| i as i16).collect();
+        let bytes = crate::array::transmute_to_bytes_vec(elements.clone());
+
+        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
+        let codec = ZfpCodec::new_with_configuration(&configuration);
+
+        let encoded = codec
+            .encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
+        let decoded = codec
+            .decode(
+                encoded.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
+            .unwrap();
+
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<i16>(decoded);
         assert_eq!(elements, decoded_elements);
     }
 

@@ -1,5 +1,3 @@
-use zfp_sys::zfp_type;
-
 use crate::{
     array::{
         codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, CodecOptions},
@@ -12,14 +10,13 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-use super::{zarr_data_type_to_zfp_data_type, zfp_decode, ZfpMode};
+use super::{zarr_to_zfp_data_type, zfp_decode, ZfpMode};
 
 /// Partial decoder for the `zfp` codec.
 pub struct ZfpPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
-    zfp_type: zfp_type,
 }
 
 impl<'a> ZfpPartialDecoder<'a> {
@@ -29,21 +26,17 @@ impl<'a> ZfpPartialDecoder<'a> {
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
     ) -> Result<Self, CodecError> {
-        zarr_data_type_to_zfp_data_type(decoded_representation.data_type()).map_or_else(
-            || {
-                Err(CodecError::from(
-                    "data type {} is unsupported for zfp codec",
-                ))
-            },
-            |zfp_type| {
-                Ok(Self {
-                    input_handle,
-                    decoded_representation: decoded_representation.clone(),
-                    mode,
-                    zfp_type,
-                })
-            },
-        )
+        if zarr_to_zfp_data_type(decoded_representation.data_type()).is_some() {
+            Ok(Self {
+                input_handle,
+                decoded_representation: decoded_representation.clone(),
+                mode,
+            })
+        } else {
+            Err(CodecError::from(
+                "data type {} is unsupported for zfp codec",
+            ))
+        }
     }
 }
 
@@ -73,7 +66,6 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
             Some(encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
-                    self.zfp_type,
                     encoded_value,
                     &self.decoded_representation,
                     false, // FIXME
@@ -109,7 +101,6 @@ pub struct AsyncZfpPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
-    zfp_type: zfp_type,
 }
 
 #[cfg(feature = "async")]
@@ -120,21 +111,17 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
     ) -> Result<Self, CodecError> {
-        zarr_data_type_to_zfp_data_type(decoded_representation.data_type()).map_or_else(
-            || {
-                Err(CodecError::from(
-                    "data type {} is unsupported for zfp codec",
-                ))
-            },
-            |zfp_type| {
-                Ok(Self {
-                    input_handle,
-                    decoded_representation: decoded_representation.clone(),
-                    mode,
-                    zfp_type,
-                })
-            },
-        )
+        if zarr_to_zfp_data_type(decoded_representation.data_type()).is_some() {
+            Ok(Self {
+                input_handle,
+                decoded_representation: decoded_representation.clone(),
+                mode,
+            })
+        } else {
+            Err(CodecError::from(
+                "data type {} is unsupported for zfp codec",
+            ))
+        }
     }
 }
 
@@ -166,7 +153,6 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
             Some(encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
-                    self.zfp_type,
                     encoded_value,
                     &self.decoded_representation,
                     false, // FIXME
