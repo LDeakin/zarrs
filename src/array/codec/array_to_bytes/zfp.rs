@@ -279,6 +279,7 @@ fn zfp_decode(
 
 #[cfg(test)]
 mod tests {
+    use num::traits::AsPrimitive;
     use std::num::NonZeroU64;
 
     use crate::{
@@ -288,32 +289,40 @@ mod tests {
 
     use super::*;
 
-    // const JSON_VALID: &'static str = r#"{
-    //     "mode": "fixedprecision",
-    //     "precision": 12
-    // }"#;
-    const JSON_VALID: &'static str = r#"{
+    const JSON_REVERSIBLE: &'static str = r#"{
         "mode": "reversible"
     }"#;
-    // const JSON_VALID: &'static str = r#"{
-    //     "mode": "fixedrate",
-    //     "rate": 2.5
-    // }"#;
 
-    #[test]
-    #[cfg_attr(miri, ignore)]
-    fn codec_zfp_round_trip1() {
-        let chunk_shape = vec![
+    fn json_fixedrate(rate: f32) -> String {
+        format!(r#"{{ "mode": "fixedrate", "rate": {rate} }}"#)
+    }
+
+    fn json_fixedprecision(precision: u32) -> String {
+        format!(r#"{{ "mode": "fixedprecision", "precision": {precision} }}"#)
+    }
+
+    fn json_fixedaccuracy(tolerance: f32) -> String {
+        format!(r#"{{ "mode": "fixedaccuracy", "tolerance": {tolerance} }}"#)
+    }
+
+    fn chunk_shape() -> Vec<NonZeroU64> {
+        vec![
             NonZeroU64::new(3).unwrap(),
             NonZeroU64::new(3).unwrap(),
             NonZeroU64::new(3).unwrap(),
-        ];
-        let chunk_representation =
-            ChunkRepresentation::new(chunk_shape, DataType::Float32, 0.0f32.into()).unwrap();
-        let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
+        ]
+    }
+
+    fn codec_zfp_round_trip<T: core::fmt::Debug + std::cmp::PartialEq + bytemuck::Pod>(
+        chunk_representation: &ChunkRepresentation,
+        configuration: &str,
+    ) where
+        i32: num::traits::AsPrimitive<T>,
+    {
+        let elements: Vec<T> = (0..27).map(|i: i32| i.as_()).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements.clone());
 
-        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
+        let configuration: ZfpCodecConfiguration = serde_json::from_str(configuration).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
         let encoded = codec
@@ -331,43 +340,154 @@ mod tests {
             )
             .unwrap();
 
-        let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded);
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<T>(decoded);
         assert_eq!(elements, decoded_elements);
     }
 
     #[test]
     #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_i8() {
+        codec_zfp_round_trip::<i8>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Int8, 0i8.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<i8>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::Int8, 0i8.into()).unwrap(),
+        //     &json_fixedprecision(8),
+        // );
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_u8() {
+        codec_zfp_round_trip::<u8>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::UInt8, 0u8.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<u8>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::UInt8, 0u8.into()).unwrap(),
+        //     &json_fixedprecision(8),
+        // );
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_zfp_round_trip_i16() {
-        let chunk_shape = vec![
-            NonZeroU64::new(3).unwrap(),
-            NonZeroU64::new(3).unwrap(),
-            NonZeroU64::new(3).unwrap(),
-        ];
-        let chunk_representation =
-            ChunkRepresentation::new(chunk_shape, DataType::Int16, 0i16.into()).unwrap();
-        let elements: Vec<i16> = (0..27).map(|i| i as i16).collect();
-        let bytes = crate::array::transmute_to_bytes_vec(elements.clone());
+        codec_zfp_round_trip::<i16>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Int16, 0i16.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<i16>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::Int16, 0i16.into()).unwrap(),
+        //     &json_fixedprecision(16),
+        // );
+    }
 
-        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = ZfpCodec::new_with_configuration(&configuration);
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_u16() {
+        codec_zfp_round_trip::<u16>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::UInt16, 0u16.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<u16>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::UInt16, 0u16.into()).unwrap(),
+        //     &json_fixedprecision(16),
+        // );
+    }
 
-        let encoded = codec
-            .encode(
-                bytes.clone(),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
-            .unwrap();
-        let decoded = codec
-            .decode(
-                encoded.clone(),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
-            .unwrap();
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_i32() {
+        codec_zfp_round_trip::<i32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Int32, 0i32.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<i32>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::Int32, 0i32.into()).unwrap(),
+        //     &json_fixedprecision(32),
+        // );
+    }
 
-        let decoded_elements = crate::array::transmute_from_bytes_vec::<i16>(decoded);
-        assert_eq!(elements, decoded_elements);
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_u32() {
+        codec_zfp_round_trip::<u32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::UInt32, 0u32.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<u32>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::UInt32, 0u32.into()).unwrap(),
+        //     &json_fixedprecision(32),
+        // );
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_i64() {
+        codec_zfp_round_trip::<i64>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Int64, 0i64.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<i64>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::Int64, 0i64.into()).unwrap(),
+        //     &json_fixedprecision(64),
+        // );
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_u64() {
+        codec_zfp_round_trip::<u64>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::UInt64, 0u64.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        // codec_zfp_round_trip::<u64>(
+        //     &ChunkRepresentation::new(chunk_shape(), DataType::UInt64, 0u64.into()).unwrap(),
+        //     &json_fixedprecision(64),
+        // );
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_f32() {
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedrate(2.5),
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedaccuracy(1.0),
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedprecision(13),
+        );
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_f64() {
+        codec_zfp_round_trip::<f64>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float64, 0.0f64.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        codec_zfp_round_trip::<f64>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float64, 0.0f64.into()).unwrap(),
+            &json_fixedrate(2.5),
+        );
+        codec_zfp_round_trip::<f64>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float64, 0.0f64.into()).unwrap(),
+            &json_fixedaccuracy(1.0),
+        );
+        codec_zfp_round_trip::<f64>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float64, 0.0f64.into()).unwrap(),
+            &json_fixedprecision(16),
+        );
     }
 
     #[test]
@@ -383,7 +503,7 @@ mod tests {
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
+        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
         let encoded = codec
@@ -437,7 +557,7 @@ mod tests {
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
+        let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
