@@ -18,6 +18,17 @@ impl Default for PcodecCodecConfiguration {
 }
 
 /// Configuration parameters for the `pcodec` codec (version 1.0 draft).
+///
+/// Based upon [`pco::ChunkConfig`].
+///
+/// ### Example: encode with a compression level of 12 and otherwise default parameters
+/// ```rust
+/// # let JSON = r#"
+/// {
+///     "level": 12
+/// }
+/// # "#;
+/// # let configuration: zarrs::array::codec::PcodecCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Copy, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]

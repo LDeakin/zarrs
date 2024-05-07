@@ -1,4 +1,14 @@
 //! The `pcodec` array to bytes codec.
+//!
+//! [Pcodec](https://github.com/mwlon/pcodec) (or Pco, pronounced "pico") losslessly compresses and decompresses numerical sequences with high compression ratio and fast speed.
+//!
+//! <div class="warning">
+//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! </div>
+//!
+//! This codec requires the `pcodec` feature, which is disabled by default.
+//!
+//! See [`PcodecCodecConfigurationV1`] for example `JSON` metadata.
 
 mod pcodec_codec;
 mod pcodec_configuration;
@@ -17,7 +27,8 @@ use crate::{
 };
 
 /// The identifier for the `pcodec` codec.
-pub const IDENTIFIER: &str = "pcodec";
+// TODO: ZEP for pcodec when stabilised
+pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/pcodec";
 
 // Register the codec.
 inventory::submit! {
@@ -25,7 +36,7 @@ inventory::submit! {
 }
 
 fn is_name_pcodec(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(IDENTIFIER) || name == "pcodec"
 }
 
 pub(crate) fn create_codec_pcodec(metadata: &Metadata) -> Result<Codec, PluginCreateError> {

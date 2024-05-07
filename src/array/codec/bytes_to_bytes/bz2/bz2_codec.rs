@@ -27,15 +27,14 @@ pub struct Bz2Codec {
 
 impl Bz2Codec {
     /// Create a new `bz2` codec.
+    #[must_use]
     pub fn new(level: Bz2CompressionLevel) -> Self {
         let compression = bzip2::Compression::new(level.as_u32());
         Self { compression }
     }
 
     /// Create a new `bz2` codec from configuration.
-    ///
-    /// # Errors
-    /// Returns [`PluginCreateError`] if the configuration is not supported.
+    #[must_use]
     pub fn new_with_configuration(configuration: &Bz2CodecConfiguration) -> Self {
         let Bz2CodecConfiguration::V1(configuration) = configuration;
         Self::new(configuration.level)

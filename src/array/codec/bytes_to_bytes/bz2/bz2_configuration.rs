@@ -12,6 +12,15 @@ pub enum Bz2CodecConfiguration {
 }
 
 /// Configuration parameters for the `bz2` codec (version 1.0 draft).
+///
+/// ### Example: encode with a compression level of 9
+/// ```rust
+/// # let JSON = r#"
+/// {
+///     "level": 9
+/// }
+/// # "#;
+/// # let configuration: zarrs::array::codec::Bz2CodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]

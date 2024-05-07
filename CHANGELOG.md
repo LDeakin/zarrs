@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Make the `bz2` and `pcodec` codecs public
+ - The `"name"` of experimental codecs in array metadata now points to a URI to avoid potential future incompatibilities with other implementations
+ - Improve docs of several experimental codecs
 
 ## [0.13.1] - 2024-05-06
 

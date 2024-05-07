@@ -3,6 +3,10 @@
 //! Rounds the mantissa of floating point data types to the specified number of bits.
 //! Rounds integers to the specified number of bits from the most significant set bit.
 //!
+//! <div class="warning">
+//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! </div>
+//!
 //! This codec requires the `bitround` feature, which is disabled by default.
 //!
 //! See [`BitroundCodecConfigurationV1`] for example `JSON` metadata.
@@ -24,7 +28,8 @@ use crate::{
 };
 
 /// The identifier for the `bitround` codec.
-pub const IDENTIFIER: &str = "bitround";
+// TODO: ZEP for bitround
+pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_array/bitround";
 
 // Register the codec.
 inventory::submit! {
@@ -32,7 +37,7 @@ inventory::submit! {
 }
 
 fn is_name_bitround(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(IDENTIFIER) || name == "bitround"
 }
 
 pub(crate) fn create_codec_bitround(metadata: &Metadata) -> Result<Codec, PluginCreateError> {

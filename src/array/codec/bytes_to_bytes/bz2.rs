@@ -1,4 +1,12 @@
 //! The `bz2` (bzip2) bytes to bytes codec.
+//!
+//! <div class="warning">
+//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! </div>
+//!
+//! This codec requires the `bz2` feature, which is disabled by default.
+//!
+//! See [`Bz2CodecConfigurationV1`] for example `JSON` metadata.
 
 mod bz2_codec;
 mod bz2_configuration;
@@ -20,7 +28,8 @@ pub use self::{
 };
 
 /// The identifier for the `bz2` codec.
-pub const IDENTIFIER: &str = "bz2";
+// TODO: ZEP for bz2
+pub const IDENTIFIER: &str = "https://codec.zarrs.dev/bytes_to_bytes/bz2";
 
 // Register the codec.
 inventory::submit! {
@@ -28,7 +37,7 @@ inventory::submit! {
 }
 
 fn is_name_bz2(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(IDENTIFIER) || name == "bz2"
 }
 
 pub(crate) fn create_codec_bz2(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
@@ -51,7 +60,7 @@ impl From<&str> for Bz2Error {
 
 /// An integer from 0 to 9 controlling the compression level
 ///
-/// A level of 1 is the fastest compression method and produces the least compressions, while 9 is slowest and produces the most compression.
+/// A level of 1 is the fastest compression method and produces the least compression, while 9 is slowest and produces the most compression.
 /// Compression is turned off when the compression level is 0.
 #[derive(Serialize, Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Bz2CompressionLevel(u32);

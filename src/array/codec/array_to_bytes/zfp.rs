@@ -3,6 +3,10 @@
 //! [zfp](https://zfp.io/) is a compressed number format for 1D to 4D arrays of 32/64-bit floating point or integer data.
 //! 8/16-bit integer types are supported through promotion to 32-bit in accordance with the [zfp utility functions](https://zfp.readthedocs.io/en/release1.0.1/low-level-api.html#utility-functions).
 //!
+//! <div class="warning">
+//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! </div>
+//!
 //! This codec requires the `zfp` feature, which is disabled by default.
 //!
 //! See [`ZfpCodecConfigurationV1`] for example `JSON` metadata.
@@ -42,7 +46,8 @@ use self::{
 };
 
 /// The identifier for the `zfp` codec.
-pub const IDENTIFIER: &str = "zfp";
+// TODO: ZEP for zfp
+pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/zfp";
 
 // Register the codec.
 inventory::submit! {
@@ -50,7 +55,7 @@ inventory::submit! {
 }
 
 fn is_name_zfp(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(IDENTIFIER) || name == "zfp"
 }
 
 pub(crate) fn create_codec_zfp(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
