@@ -14,7 +14,10 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-use self::{bz2_codec::Bz2Codec, bz2_configuration::Bz2CodecConfiguration};
+pub use self::{
+    bz2_codec::Bz2Codec,
+    bz2_configuration::{Bz2CodecConfiguration, Bz2CodecConfigurationV1},
+};
 
 /// The identifier for the `bz2` codec.
 pub const IDENTIFIER: &str = "bz2";

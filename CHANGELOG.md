@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - Make the `bz2` and `pcodec` codecs public
+
 ## [0.13.1] - 2024-05-06
 
 ### Added

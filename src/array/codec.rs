@@ -28,20 +28,24 @@ pub use array_to_array::transpose::{
 };
 
 // Array to bytes
+pub use array_to_bytes::bytes::{BytesCodec, BytesCodecConfiguration, BytesCodecConfigurationV1};
+pub use array_to_bytes::codec_chain::CodecChain;
+#[cfg(feature = "pcodec")]
+pub use array_to_bytes::pcodec::{
+    PcodecCodec, PcodecCodecConfiguration, PcodecCodecConfigurationV1,
+};
 #[cfg(feature = "sharding")]
 pub use array_to_bytes::sharding::{
     ShardingCodec, ShardingCodecConfiguration, ShardingCodecConfigurationV1,
 };
 #[cfg(feature = "zfp")]
 pub use array_to_bytes::zfp::{ZfpCodec, ZfpCodecConfiguration, ZfpCodecConfigurationV1};
-pub use array_to_bytes::{
-    bytes::{BytesCodec, BytesCodecConfiguration, BytesCodecConfigurationV1},
-    codec_chain::CodecChain,
-};
 
 // Bytes to bytes
 #[cfg(feature = "blosc")]
 pub use bytes_to_bytes::blosc::{BloscCodec, BloscCodecConfiguration, BloscCodecConfigurationV1};
+#[cfg(feature = "bz2")]
+pub use bytes_to_bytes::bz2::{Bz2Codec, Bz2CodecConfiguration, Bz2CodecConfigurationV1};
 #[cfg(feature = "crc32c")]
 pub use bytes_to_bytes::crc32c::{
     Crc32cCodec, Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
