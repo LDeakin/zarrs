@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] - 2024-05-08
+
 ### Changed
  - Make the `bz2` and `pcodec` codecs public
  - The `"name"` of experimental codecs in array metadata now points to a URI to avoid potential future incompatibilities with other implementations
@@ -737,7 +739,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.2...HEAD
+[0.13.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.2
 [0.13.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.1
 [0.13.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.0
 [0.12.5]: https://github.com/LDeakin/zarrs/releases/tag/v0.12.5
