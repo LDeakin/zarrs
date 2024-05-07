@@ -2,7 +2,7 @@
 | -------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------- | ------------ | ------------- |
 | Array to Array | [transpose](crate::array::codec::array_to_array::transpose)       | [ZEP0001](https://zarr.dev/zeps/accepted/ZEP0001.html)              | Full support | **transpose** |
 |                | [bitround](crate::array::codec::array_to_array::bitround)         |                                                                     | Experimental | bitround      |
-| Array to Bytes | [bytes](crate::array::codec::array_to_bytes::bytes)               | [ZEP0001](https://zarr.dev/zeps/accepted/ZEP0001.html)              |              |               |
+| Array to Bytes | [bytes](crate::array::codec::array_to_bytes::bytes)               | [ZEP0001](https://zarr.dev/zeps/accepted/ZEP0001.html)              | Full support |               |
 |                | [sharding_indexed](crate::array::codec::array_to_bytes::sharding) | [ZEP0002](https://zarr.dev/zeps/accepted/ZEP0002.html)              | Full support | **sharding**  |
 |                | [zfp](crate::array::codec::array_to_bytes::zfp)                   |                                                                     | Experimental | zfp           |
 |                | [pcodec](crate::array::codec::array_to_bytes::pcodec)             |                                                                     | Experimental | pcodec        |
