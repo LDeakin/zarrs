@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [0.14.0] - 2024-05-16
+
+### Removed
  - **Breaking**: Remove `store_locks` module, `[Async]ReadableWritableStorageTraits::mutex()`, and `new_with_locks` constructors from stores
    - `DefaultStoreLocks` could result in a deadlock
    - It is now the responsibility of zarrs consumers to ensure that:
      - `Array::store_chunk_subset` is not called concurrently on the same chunk
-     - `Array::store_array_subset` is not called concurrently on regions sharing any chunks
-   - This may be revisited in a future release with an appropriate multi-chunk locking strategy
+     - `Array::store_array_subset` is not called concurrently on regions sharing chunks
+   - Chunk locking may be revisited in a future release
 
 ## [0.13.3] - 2024-05-16
 
@@ -751,7 +753,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.3...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.14.0
 [0.13.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.3
 [0.13.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.2
 [0.13.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.1

@@ -173,8 +173,8 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
 /// The [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
 /// It is the responsibility of zarrs consumers to ensure that:
-///   - [`Array::store_chunk_subset`] is not called concurrently on the same chunk
-///   - [`Array::store_array_subset`] is not called concurrently on regions sharing any chunks
+///   - [`Array::store_chunk_subset`] is not called concurrently on the same chunk, and
+///   - [`Array::store_array_subset`] is not called concurrently on regions sharing chunks.
 ///
 /// Partial writes to a chunk may be lost if these rules are not respected.
 ///
