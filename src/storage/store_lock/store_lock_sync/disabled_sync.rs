@@ -49,7 +49,7 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)]
     fn store_disable_lock_sync() {
-        let store = MemoryStore::new_with_locks(Arc::new(DisabledStoreLocks));
+        let store = MemoryStore::new_with_locks(Arc::new(DisabledStoreLocks::default()));
         let key = StoreKey::new("key").unwrap();
         let locks_held = AtomicUsize::new(0);
         assert!((0..20).into_par_iter().any(|_| {

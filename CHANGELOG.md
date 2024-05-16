@@ -7,15 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.13.3] - 2024-05-16
-
-### Fixed
- - Change the store lock used by stores to `DisabledStoreLocks` rather than `DefaultStoreLocks` if not set explicitly
-   - Fixes an occasional deadlock that needs further investigation
-   - This change only impacts consumers of zarrs that use `Array::{store_chunk_subset,store_array_subset}`.
-   - `new_with_locks` store constructors can be used to explicitly choose `DefaultStoreLocks`
-   - See the updated docs on [parallel writing](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html#parallel-writing)
-
 ## [0.13.2] - 2024-05-08
 
 ### Changed

@@ -7,7 +7,7 @@ use crate::{
     array::MaybeBytes,
     byte_range::ByteRange,
     storage::{
-        store_lock::{AsyncDisabledStoreLocks, AsyncStoreKeyMutex, AsyncStoreLocks},
+        store_lock::{AsyncDefaultStoreLocks, AsyncStoreKeyMutex, AsyncStoreLocks},
         AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
         AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
         StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -49,7 +49,7 @@ impl<T: object_store::ObjectStore> AsyncObjectStore<T> {
     /// Create a new [`AsyncObjectStore`].
     #[must_use]
     pub fn new(object_store: T) -> Self {
-        Self::new_with_locks(object_store, Arc::new(AsyncDisabledStoreLocks))
+        Self::new_with_locks(object_store, Arc::new(AsyncDefaultStoreLocks::default()))
     }
 
     /// Create a new [`AsyncObjectStore`] with non-default store locks.
