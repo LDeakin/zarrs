@@ -172,14 +172,27 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// ### Parallel Writing
 ///
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
+/// However, the [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
+/// This can result in data loss unless a chunk is locked until all of these steps have completed.
 ///
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
-/// Chunks are locked through this process (with [`StoreKeyMutex`](crate::storage::store_lock::StoreKeyMutex)es) otherwise element updates occuring in other threads could be lost.
-/// Chunk locking is not implemented for [`WritableStorageTraits`](crate::storage::WritableStorageTraits) methods, so it is recommended not to intermix these with [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) methods during parallel write operations.
+/// By default, a store uses [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks), which does not perform any locking.
+/// An alternative lock can be chosen by creating a store with a `new_with_locks` store constructor (if supported).
+/// Chunk locking is never applied for [`WritableStorageTraits`](crate::storage::WritableStorageTraits) methods, so it is recommended not to intermix these with [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) methods during parallel write operations.
+///
+/// #### Disabled Store Locking ([`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks))
+///
+/// A store with [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) can be used to eliminate locking overhead with the [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods.
+/// However, written data may be lost if a chunk is written by more than one thread.
+/// Thus, it is recommended to only use [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) if each chunk is exclusively written by a single thread during a parallel operation.
 ///
 /// #### Default Store Locking ([`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks))
 ///
-/// By default, stores use [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks) internally, but this can be changed with a `new_with_locks` store constructor if implemented.
+/// <div class="warning">
+/// Use with caution. A deadlock condition is possible with this lock which has yet to be resolved.
+/// </div>
+///
+/// The default store lock was changed from [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks) to [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) in zarrs 0.13.3.
+/// This lock will be renamed in a future release.
 ///
 /// With [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks), if data is written in overlapping array subsets with the [`store_chunk_subset`](Array::store_chunk_subset) or [`store_array_subset`](Array::store_array_subset) methods, the value of an element in overlapping regions depends on whichever operation wrote to its associated chunk last.
 /// Consider the case of parallel writing of the following subsets to a `1x6` array and a `1x3` chunk size (**do not do this, it is just an example**):
@@ -198,12 +211,6 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// ```
 ///
 /// Multiple [`Array`]s can safely point to the same array, provided that they use the same store and [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks).
-///
-/// #### Disabled Store Locking ([`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks))
-///
-/// A store with [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) can be used to eliminate locking overhead with the [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods.
-/// However, written data may be lost if a chunk is written by more than one thread.
-/// Thus, it is recommended to only use [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) if each chunk is exclusively written by a single thread during a parallel operation.
 ///
 /// #### Distributed Processes
 ///
@@ -975,7 +982,7 @@ mod tests {
     // #[test]
     // fn array_subset_locking_disabled() {
     //     array_subset_locking(
-    //         Arc::new(crate::storage::store_lock::DisabledStoreLocks::default()),
+    //         Arc::new(crate::storage::store_lock::DisabledStoreLocks),
     //         false,
     //     );
     // }

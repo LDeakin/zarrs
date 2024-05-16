@@ -6,7 +6,7 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
-        store_lock::{AsyncDefaultStoreLocks, AsyncStoreKeyMutex, AsyncStoreLocks},
+        store_lock::{AsyncDisabledStoreLocks, AsyncStoreKeyMutex, AsyncStoreLocks},
         AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
         AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
         StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -23,7 +23,7 @@ impl AsyncOpendalStore {
     /// Create a new [`AsyncOpendalStore`].
     #[must_use]
     pub fn new(operator: Operator) -> Self {
-        Self::new_with_locks(operator, Arc::new(AsyncDefaultStoreLocks::default()))
+        Self::new_with_locks(operator, Arc::new(AsyncDisabledStoreLocks))
     }
 
     /// Create a new [`AsyncOpendalStore`] with non-default store locks.

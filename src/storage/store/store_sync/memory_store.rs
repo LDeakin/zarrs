@@ -7,7 +7,7 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     storage::{
-        store_lock::{DefaultStoreLocks, StoreKeyMutex, StoreLocks},
+        store_lock::{DisabledStoreLocks, StoreKeyMutex, StoreLocks},
         store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
         ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
         StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
@@ -36,7 +36,7 @@ impl MemoryStore {
     /// Create a new memory store at a given `base_directory`.
     #[must_use]
     pub fn new() -> Self {
-        Self::new_with_locks(Arc::new(DefaultStoreLocks::default()))
+        Self::new_with_locks(Arc::new(DisabledStoreLocks))
     }
 
     /// Create a new memory store at a given `base_directory` with a non-default store lock.
