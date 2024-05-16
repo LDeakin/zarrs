@@ -172,43 +172,13 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// ### Parallel Writing
 ///
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
+/// The [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
+/// It is the responsibility of zarrs consumers to ensure that:
+///   - [`Array::store_chunk_subset`] is not called concurrently on the same chunk
+///   - [`Array::store_array_subset`] is not called concurrently on regions sharing any chunks
+/// Partial writes to a chunk may be lost if these rules are not respected.
 ///
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
-/// Chunks are locked through this process (with [`StoreKeyMutex`](crate::storage::store_lock::StoreKeyMutex)es) otherwise element updates occuring in other threads could be lost.
-/// Chunk locking is not implemented for [`WritableStorageTraits`](crate::storage::WritableStorageTraits) methods, so it is recommended not to intermix these with [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) methods during parallel write operations.
-///
-/// #### Default Store Locking ([`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks))
-///
-/// By default, stores use [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks) internally, but this can be changed with a `new_with_locks` store constructor if implemented.
-///
-/// With [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks), if data is written in overlapping array subsets with the [`store_chunk_subset`](Array::store_chunk_subset) or [`store_array_subset`](Array::store_array_subset) methods, the value of an element in overlapping regions depends on whichever operation wrote to its associated chunk last.
-/// Consider the case of parallel writing of the following subsets to a `1x6` array and a `1x3` chunk size (**do not do this, it is just an example**):
-/// ```text
-///    |subset0| < stores element values of 0
-/// [ A B C | D E F ] < fill value of 9
-///      |subset1| < stores element values of 1
-///      |ss2| < stores element values of 2
-/// ```
-/// Depending on the order in which the chunks were updated within each subset, the array elements could take on the following values:
-/// ```text
-/// [ A B C | D E F ]
-///   9 0 0   0 1 9
-///       1   1
-///       2
-/// ```
-///
-/// Multiple [`Array`]s can safely point to the same array, provided that they use the same store and [`DefaultStoreLocks`](crate::storage::store_lock::DefaultStoreLocks).
-///
-/// #### Disabled Store Locking ([`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks))
-///
-/// A store with [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) can be used to eliminate locking overhead with the [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods.
-/// However, written data may be lost if a chunk is written by more than one thread.
-/// Thus, it is recommended to only use [`DisabledStoreLocks`](crate::storage::store_lock::DisabledStoreLocks) if each chunk is exclusively written by a single thread during a parallel operation.
-///
-/// #### Distributed Processes
-///
-/// The synchronisation guarantees provided by an [`Array`] and its underlying store are not applicable in a distributed context (e.g. a distributed program on a cluster).
-/// In such cases, the recommendations outlined in [Disabled Store Locking](#disabled-store-locking-disabledstorelocks) should be followed to ensure written data is not lost.
+/// zarrs does not currently offer an API for locking chunks or regions.
 ///
 /// ### Best Practices
 ///

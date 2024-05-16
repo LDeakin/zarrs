@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use futures::{StreamExt, TryStreamExt};
 use object_store::path::Path;
 
@@ -7,7 +5,6 @@ use crate::{
     array::MaybeBytes,
     byte_range::ByteRange,
     storage::{
-        store_lock::{AsyncDefaultStoreLocks, AsyncStoreKeyMutex, AsyncStoreLocks},
         AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
         AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
         StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -42,24 +39,25 @@ fn handle_result<T>(result: Result<T, object_store::Error>) -> Result<Option<T>,
 /// An asynchronous store backed by an [`object_store::ObjectStore`].
 pub struct AsyncObjectStore<T: object_store::ObjectStore> {
     object_store: T,
-    locks: AsyncStoreLocks,
+    // locks: AsyncStoreLocks,
 }
 
 impl<T: object_store::ObjectStore> AsyncObjectStore<T> {
     /// Create a new [`AsyncObjectStore`].
     #[must_use]
     pub fn new(object_store: T) -> Self {
-        Self::new_with_locks(object_store, Arc::new(AsyncDefaultStoreLocks::default()))
+        Self { object_store }
+        // Self::new_with_locks(object_store, Arc::new(AsyncDefaultStoreLocks::default()))
     }
 
-    /// Create a new [`AsyncObjectStore`] with non-default store locks.
-    #[must_use]
-    pub fn new_with_locks(object_store: T, store_locks: AsyncStoreLocks) -> Self {
-        Self {
-            object_store,
-            locks: store_locks,
-        }
-    }
+    // /// Create a new [`AsyncObjectStore`] with non-default store locks.
+    // #[must_use]
+    // pub fn new_with_locks(object_store: T, store_locks: AsyncStoreLocks) -> Self {
+    //     Self {
+    //         object_store,
+    //         locks: store_locks,
+    //     }
+    // }
 }
 
 #[async_trait::async_trait]
@@ -188,9 +186,9 @@ impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectSto
 
 #[async_trait::async_trait]
 impl<T: object_store::ObjectStore> AsyncReadableWritableStorageTraits for AsyncObjectStore<T> {
-    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-        Ok(self.locks.mutex(key).await)
-    }
+    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
+    //     Ok(self.locks.mutex(key).await)
+    // }
 }
 
 #[async_trait::async_trait]

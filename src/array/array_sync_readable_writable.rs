@@ -1,9 +1,6 @@
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{
-    array_subset::ArraySubset,
-    storage::{data_key, ReadableWritableStorageTraits},
-};
+use crate::{array_subset::ArraySubset, storage::ReadableWritableStorageTraits};
 
 use super::{
     codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
@@ -191,9 +188,9 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             self.store_chunk_opt(chunk_indices, chunk_subset_bytes, options)
         } else {
             // Lock the chunk
-            let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
-            let mutex = self.storage.mutex(&key)?;
-            let _lock = mutex.lock();
+            // let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
+            // let mutex = self.storage.mutex(&key)?;
+            // let _lock = mutex.lock();
 
             // Decode the entire chunk
             let mut chunk_bytes = self.retrieve_chunk_opt(chunk_indices, options)?;

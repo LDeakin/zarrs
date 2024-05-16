@@ -1,4 +1,4 @@
-use std::{future::IntoFuture, sync::Arc};
+use std::future::IntoFuture;
 
 use opendal::Operator;
 
@@ -6,7 +6,6 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
-        store_lock::{AsyncDefaultStoreLocks, AsyncStoreKeyMutex, AsyncStoreLocks},
         AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
         AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
         StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -16,24 +15,25 @@ use crate::{
 /// An asynchronous store backed by an [`opendal::Operator`].
 pub struct AsyncOpendalStore {
     operator: Operator,
-    locks: AsyncStoreLocks,
+    // locks: AsyncStoreLocks,
 }
 
 impl AsyncOpendalStore {
     /// Create a new [`AsyncOpendalStore`].
     #[must_use]
     pub fn new(operator: Operator) -> Self {
-        Self::new_with_locks(operator, Arc::new(AsyncDefaultStoreLocks::default()))
+        Self { operator }
+        // Self::new_with_locks(operator, Arc::new(AsyncDefaultStoreLocks::default()))
     }
 
-    /// Create a new [`AsyncOpendalStore`] with non-default store locks.
-    #[must_use]
-    pub fn new_with_locks(operator: Operator, store_locks: AsyncStoreLocks) -> Self {
-        Self {
-            operator,
-            locks: store_locks,
-        }
-    }
+    // /// Create a new [`AsyncOpendalStore`] with non-default store locks.
+    // #[must_use]
+    // pub fn new_with_locks(operator: Operator, store_locks: AsyncStoreLocks) -> Self {
+    //     Self {
+    //         operator,
+    //         locks: store_locks,
+    //     }
+    // }
 }
 
 /// Map [`opendal::ErrorKind::NotFound`] to None, pass through other errors
@@ -166,9 +166,9 @@ impl AsyncWritableStorageTraits for AsyncOpendalStore {
 
 #[async_trait::async_trait]
 impl AsyncReadableWritableStorageTraits for AsyncOpendalStore {
-    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-        Ok(self.locks.mutex(key).await)
-    }
+    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
+    //     Ok(self.locks.mutex(key).await)
+    // }
 }
 
 #[async_trait::async_trait]

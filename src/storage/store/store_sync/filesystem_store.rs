@@ -6,7 +6,6 @@ use crate::{
     array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
-        store_lock::{DefaultStoreLocks, StoreKeyMutex, StoreLocks},
         store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
         ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyError, StoreKeyRange,
         StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
@@ -56,7 +55,7 @@ pub struct FilesystemStore {
     sort: bool,
     readonly: bool,
     files: Mutex<HashMap<StoreKey, Arc<RwLock<()>>>>,
-    locks: StoreLocks,
+    // locks: StoreLocks,
 }
 
 impl FilesystemStore {
@@ -67,19 +66,6 @@ impl FilesystemStore {
     ///   - is not valid, or
     ///   - it points to an existing file rather than a directory.
     pub fn new<P: AsRef<Path>>(base_path: P) -> Result<Self, FilesystemStoreCreateError> {
-        Self::new_with_locks(base_path, Arc::new(DefaultStoreLocks::default()))
-    }
-
-    /// Create a new file system store at a given `base_path` with non-default store locks.
-    ///
-    /// # Errors
-    /// Returns a [`FilesystemStoreCreateError`] if `base_directory`:
-    ///   - is not valid, or
-    ///   - it points to an existing file rather than a directory.
-    pub fn new_with_locks<P: AsRef<Path>>(
-        base_path: P,
-        store_locks: StoreLocks,
-    ) -> Result<Self, FilesystemStoreCreateError> {
         let base_path = base_path.as_ref().to_path_buf();
         if base_path.to_str().is_none() {
             return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
@@ -101,9 +87,44 @@ impl FilesystemStore {
             sort: false,
             readonly,
             files: Mutex::default(),
-            locks: store_locks,
         })
+        // Self::new_with_locks(base_path, Arc::new(DefaultStoreLocks::default()))
     }
+
+    // /// Create a new file system store at a given `base_path` with non-default store locks.
+    // ///
+    // /// # Errors
+    // /// Returns a [`FilesystemStoreCreateError`] if `base_directory`:
+    // ///   - is not valid, or
+    // ///   - it points to an existing file rather than a directory.
+    // pub fn new_with_locks<P: AsRef<Path>>(
+    //     base_path: P,
+    //     store_locks: StoreLocks,
+    // ) -> Result<Self, FilesystemStoreCreateError> {
+    //     let base_path = base_path.as_ref().to_path_buf();
+    //     if base_path.to_str().is_none() {
+    //         return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
+    //     }
+
+    //     let readonly = if base_path.exists() {
+    //         // the path already exists, check if it is read only
+    //         let md = std::fs::metadata(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
+    //         md.permissions().readonly()
+    //     } else {
+    //         // the path does not exist, so try and create it. If this succeeds, the filesystem is not read only
+    //         std::fs::create_dir_all(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
+    //         std::fs::remove_dir(&base_path)?;
+    //         false
+    //     };
+
+    //     Ok(Self {
+    //         base_path,
+    //         sort: false,
+    //         readonly,
+    //         files: Mutex::default(),
+    //         locks: store_locks,
+    //     })
+    // }
 
     /// Makes the store sort directories/files when walking.
     #[must_use]
@@ -340,9 +361,9 @@ impl WritableStorageTraits for FilesystemStore {
 }
 
 impl ReadableWritableStorageTraits for FilesystemStore {
-    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-        Ok(self.locks.mutex(key))
-    }
+    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
+    //     Ok(self.locks.mutex(key))
+    // }
 }
 
 impl ListableStorageTraits for FilesystemStore {

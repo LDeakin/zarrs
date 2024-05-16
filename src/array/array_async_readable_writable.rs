@@ -1,9 +1,6 @@
 use futures::StreamExt;
 
-use crate::{
-    array_subset::ArraySubset,
-    storage::{data_key, AsyncReadableWritableStorageTraits},
-};
+use crate::{array_subset::ArraySubset, storage::AsyncReadableWritableStorageTraits};
 
 use super::{
     codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
@@ -153,9 +150,9 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 .await
         } else {
             // Lock the chunk
-            let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
-            let mutex = self.storage.mutex(&key).await?;
-            let _lock = mutex.lock();
+            // let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
+            // let mutex = self.storage.mutex(&key).await?;
+            // let _lock = mutex.lock();
 
             // Decode the entire chunk
             let mut chunk_bytes = self

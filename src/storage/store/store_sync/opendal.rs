@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
 use opendal::BlockingOperator;
 
 use crate::{
     array::MaybeBytes,
     byte_range::ByteRange,
     storage::{
-        store_lock::{DefaultStoreLocks, StoreKeyMutex, StoreLocks},
         ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
         StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
         WritableStorageTraits,
@@ -16,24 +13,25 @@ use crate::{
 /// An asynchronous store backed by an [`opendal::BlockingOperator`].
 pub struct OpendalStore {
     operator: BlockingOperator,
-    locks: StoreLocks,
+    // locks: StoreLocks,
 }
 
 impl OpendalStore {
     /// Create a new [`OpendalStore`].
     #[must_use]
     pub fn new(operator: BlockingOperator) -> Self {
-        Self::new_with_locks(operator, Arc::new(DefaultStoreLocks::default()))
+        Self { operator }
+        // Self::new_with_locks(operator, Arc::new(DefaultStoreLocks::default()))
     }
 
-    /// Create a new [`OpendalStore`] with non-default store locks.
-    #[must_use]
-    pub fn new_with_locks(operator: BlockingOperator, store_locks: StoreLocks) -> Self {
-        Self {
-            operator,
-            locks: store_locks,
-        }
-    }
+    // /// Create a new [`OpendalStore`] with non-default store locks.
+    // #[must_use]
+    // pub fn new_with_locks(operator: BlockingOperator, store_locks: StoreLocks) -> Self {
+    //     Self {
+    //         operator,
+    //         locks: store_locks,
+    //     }
+    // }
 }
 
 /// Map [`opendal::ErrorKind::NotFound`] to None, pass through other errors
@@ -172,9 +170,9 @@ impl WritableStorageTraits for OpendalStore {
 
 #[async_trait::async_trait]
 impl ReadableWritableStorageTraits for OpendalStore {
-    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-        Ok(self.locks.mutex(key))
-    }
+    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
+    //     Ok(self.locks.mutex(key))
+    // }
 }
 
 #[async_trait::async_trait]

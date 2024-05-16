@@ -3,14 +3,14 @@ use std::sync::Arc;
 use crate::{array::MaybeBytes, byte_range::ByteRange};
 
 use super::{
-    store_lock::StoreKeyMutex, ListableStorageTraits, ReadableStorageTraits,
-    ReadableWritableStorageTraits, StorageError, StoreKey, StorePrefix, WritableStorageTraits,
+    ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
+    StoreKey, StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
 use super::{
-    store_lock::AsyncStoreKeyMutex, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits,
+    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
+    AsyncWritableStorageTraits,
 };
 
 /// A storage handle.
@@ -107,9 +107,9 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for Storage
 impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
     for StorageHandle<TStorage>
 {
-    fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-        self.0.mutex(key)
-    }
+    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
+    //     self.0.mutex(key)
+    // }
 }
 
 #[cfg(feature = "async")]
@@ -207,7 +207,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
     for StorageHandle<TStorage>
 {
-    async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-        self.0.mutex(key).await
-    }
+    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
+    //     self.0.mutex(key).await
+    // }
 }
