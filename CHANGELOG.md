@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.3] - 2024-05-16
+
 ### Fixed
  - Change the store lock used by stores to `DisabledStoreLocks` rather than `DefaultStoreLocks` if not set explicitly
    - Fixes an occasional deadlock that needs further investigation
@@ -746,7 +748,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.2...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.13.3...HEAD
+[0.13.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.3
 [0.13.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.2
 [0.13.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.1
 [0.13.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.0
