@@ -170,12 +170,12 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// An example of such an approach can be found in the [`zarrs_benchmark_read_async`](https://github.com/LDeakin/zarrs_tools/blob/v0.3.0/src/bin/zarrs_benchmark_read_async.rs) application in the [zarrs_tools](https://github.com/LDeakin/zarrs_tools) crate.
 ///
 /// ### Parallel Writing
-///
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
 /// The [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
 /// It is the responsibility of zarrs consumers to ensure that:
 ///   - [`Array::store_chunk_subset`] is not called concurrently on the same chunk
 ///   - [`Array::store_array_subset`] is not called concurrently on regions sharing any chunks
+///
 /// Partial writes to a chunk may be lost if these rules are not respected.
 ///
 /// zarrs does not currently offer an API for locking chunks or regions.
@@ -183,16 +183,12 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// ### Best Practices
 ///
 /// #### Writing
-///
-/// For optimum write performance, an array should be written chunk-by-chunk (which can be done in parallel).
-/// Methods such as [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) may decode chunks and incur locking overhead, so they are less preferred.
+/// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
+/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and require careful usage if executed concurrently (see previous section).
 ///
 /// #### Reading
-///
-/// It is fastest to load arrays chunk-by-chunk (which can be done in parallel).
-/// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may partially decode chunks.
-/// This can be useful in many cases (e.g. decoding an inner chunk in a chunk encoded with the [`ShardingCodec`](crate::array::codec::ShardingCodec)).
-/// However, it can be quite inefficient with some codecs/stores.
+/// It is fastest to load arrays using [`retrieve_chunk`](Array::retrieve_chunk) or [`retrieve_chunks`](Array::retrieve_chunks) where possible.
+/// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may use partial decoders which can be less efficient with some codecs/stores.
 ///
 /// ### `zarrs` Metadata
 /// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata.
@@ -782,13 +778,7 @@ pub fn bytes_to_ndarray<T: bytemuck::Pod>(
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
-    use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-
-    use crate::storage::{
-        store::MemoryStore,
-        store_lock::{DefaultStoreLocks, StoreLocks},
-    };
+    use crate::storage::store::MemoryStore;
 
     use super::*;
 
@@ -902,44 +892,44 @@ mod tests {
             .is_none());
     }
 
-    fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {
-        let store = Arc::new(MemoryStore::new_with_locks(locks));
+    // fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {
+    //     let store = Arc::new(MemoryStore::new_with_locks(locks));
 
-        let array_path = "/array";
-        let array = ArrayBuilder::new(
-            vec![100, 4],
-            DataType::UInt8,
-            vec![10, 2].try_into().unwrap(),
-            FillValue::from(0u8),
-        )
-        .build(store, array_path)
-        .unwrap();
+    //     let array_path = "/array";
+    //     let array = ArrayBuilder::new(
+    //         vec![100, 4],
+    //         DataType::UInt8,
+    //         vec![10, 2].try_into().unwrap(),
+    //         FillValue::from(0u8),
+    //     )
+    //     .build(store, array_path)
+    //     .unwrap();
 
-        let mut any_not_equal = false;
-        for j in 1..10 {
-            (0..100).into_par_iter().for_each(|i| {
-                let subset = ArraySubset::new_with_ranges(&[i..i + 1, 0..4]);
-                array.store_array_subset(&subset, vec![j; 4]).unwrap();
-            });
-            let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
-            let data_all = array.retrieve_array_subset(&subset_all).unwrap();
-            let all_equal = data_all.iter().all_equal_value() == Ok(&j);
-            if expect_equal {
-                assert!(all_equal);
-            } else {
-                any_not_equal |= !all_equal;
-            }
-        }
-        if !expect_equal {
-            assert!(any_not_equal);
-        }
-    }
+    //     let mut any_not_equal = false;
+    //     for j in 1..10 {
+    //         (0..100).into_par_iter().for_each(|i| {
+    //             let subset = ArraySubset::new_with_ranges(&[i..i + 1, 0..4]);
+    //             array.store_array_subset(&subset, vec![j; 4]).unwrap();
+    //         });
+    //         let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+    //         let data_all = array.retrieve_array_subset(&subset_all).unwrap();
+    //         let all_equal = data_all.iter().all_equal_value() == Ok(&j);
+    //         if expect_equal {
+    //             assert!(all_equal);
+    //         } else {
+    //             any_not_equal |= !all_equal;
+    //         }
+    //     }
+    //     if !expect_equal {
+    //         assert!(any_not_equal);
+    //     }
+    // }
 
-    #[test]
-    #[cfg_attr(miri, ignore)]
-    fn array_subset_locking_default() {
-        array_subset_locking(Arc::new(DefaultStoreLocks::default()), true);
-    }
+    // #[test]
+    // #[cfg_attr(miri, ignore)]
+    // fn array_subset_locking_default() {
+    //     array_subset_locking(Arc::new(DefaultStoreLocks::default()), true);
+    // }
 
     // // Due to the nature of this test, it can fail sometimes. It was used for development but is now disabled.
     // #[test]
