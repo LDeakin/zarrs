@@ -52,6 +52,7 @@ impl NodeName {
 
     /// Validates a node name according to the following rules from the specification:
     /// - The root node does not have a name and is the empty string "".
+    ///
     /// Otherwise,
     /// - must not be the empty string (""),
     /// - must not include the character "/",

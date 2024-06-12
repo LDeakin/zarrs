@@ -52,6 +52,7 @@ impl StoreKey {
 
     /// Validates a key according to the following rule from the specification:
     /// - a key is a Unicode string, where the final character is not a `/` character.
+    ///
     /// Additionally, a key which starts with '/' is invalid even though this is not explicit in the specification.
     /// A key cannot be an empty string.
     #[must_use]

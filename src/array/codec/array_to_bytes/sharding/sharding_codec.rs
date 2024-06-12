@@ -397,6 +397,7 @@ impl ShardingCodec {
     /// Computed the bounded size of an encoded shard from
     ///  - the chunk bytes representation, and
     ///  - the number of chunks per shard.
+    ///
     /// Equal to `num chunks * max chunk size + index size`
     fn encoded_shard_bounded_size(
         index_encoded_size: u64,
