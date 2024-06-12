@@ -2,7 +2,7 @@ use opendal::BlockingOperator;
 
 use crate::{
     array::MaybeBytes,
-    byte_range::ByteRange,
+    byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
         ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
         StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -51,7 +51,7 @@ fn handle_result<T>(result: Result<T, opendal::Error>) -> Result<Option<T>, Stor
 #[async_trait::async_trait]
 impl ReadableStorageTraits for OpendalStore {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        handle_result(self.operator.read(key.as_str()))
+        handle_result(self.operator.read(key.as_str()).map(|buf| buf.to_vec()))
     }
 
     fn get_partial_values_key(
@@ -59,52 +59,21 @@ impl ReadableStorageTraits for OpendalStore {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
-        // FIXME: Does opendal offer a better way of retrieving multiple byte ranges?
-        // FIXME: Coalesce like object_store?
-        if byte_ranges
-            .iter()
-            .all(|byte_range| matches!(byte_range, ByteRange::FromEnd(_, _)))
-        {
-            let bytes = byte_ranges
-                .iter()
-                .map(|byte_range| {
-                    self.operator
-                        .read_with(key.as_str())
-                        .range(byte_range.offset()..)
-                        .call()
-                })
-                .collect::<Result<Vec<_>, _>>();
-            handle_result(bytes)
+        // FIXME: Get OpenDAL to return an error if byte range is OOB instead of panic
+        let size = self.size_key(key)?;
+        if let Some(size) = size {
+            let reader = self.operator.reader(key.as_str())?;
+            let mut bytes = Vec::with_capacity(byte_ranges.len());
+            for byte_range in byte_ranges {
+                let byte_range_opendal = byte_range.to_range(size);
+                if byte_range_opendal.end > size {
+                    return Err(InvalidByteRangeError::new(*byte_range, size).into());
+                }
+                bytes.push(reader.read(byte_range_opendal)?.to_vec());
+            }
+            Ok(Some(bytes))
         } else {
-            let size = self
-                .size_key(key)?
-                .ok_or(StorageError::UnknownKeySize(key.clone()))?;
-            let bytes = byte_ranges
-                .iter()
-                .map(|byte_range| {
-                    let start = byte_range.start(size);
-                    let end = byte_range.end(size);
-                    match self
-                        .operator
-                        .read_with(key.as_str())
-                        .range(start..end)
-                        .call()
-                    {
-                        Ok(bytes) => {
-                            if (end - start) == bytes.len() as u64 {
-                                Ok(bytes)
-                            } else {
-                                Err(opendal::Error::new(
-                                    opendal::ErrorKind::InvalidInput,
-                                    "InvalidByteRangeError",
-                                ))
-                            }
-                        }
-                        Err(err) => Err(err),
-                    }
-                })
-                .collect::<Result<Vec<_>, _>>();
-            handle_result(bytes)
+            Ok(None)
         }
     }
 
@@ -142,12 +111,8 @@ impl ReadableStorageTraits for OpendalStore {
 #[async_trait::async_trait]
 impl WritableStorageTraits for OpendalStore {
     fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        let bytes = unsafe {
-            // safety: bytes is never cloned and is consumed and dropped by opendal BlockingOperator::write.
-            let value = std::mem::transmute::<&[u8], &'static [u8]>(value);
-            bytes::Bytes::from_static(value)
-        };
-        Ok(self.operator.write(key.as_str(), bytes)?)
+        let value = value.to_vec();
+        Ok(self.operator.write(key.as_str(), value)?)
     }
 
     fn set_partial_values(
