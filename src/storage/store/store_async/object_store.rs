@@ -153,7 +153,9 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
 #[async_trait::async_trait]
 impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectStore<T> {
     async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
-        self.object_store.put(&key_to_path(key), value).await?;
+        self.object_store
+            .put(&key_to_path(key), value.into())
+            .await?;
         Ok(())
     }
 
