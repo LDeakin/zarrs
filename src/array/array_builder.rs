@@ -8,7 +8,8 @@ use super::{
         ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
     },
     data_type::IncompatibleFillValueError,
-    Array, ArrayCreateError, ArrayShape, ChunkGrid, CodecChain, DataType, DimensionName, FillValue,
+    ArcArray, Array, ArrayCreateError, ArrayShape, ChunkGrid, CodecChain, DataType, DimensionName,
+    FillValue,
 };
 
 /// An [`Array`] builder.
@@ -315,6 +316,20 @@ impl ArrayBuilder {
             additional_fields: self.additional_fields.clone(),
             include_zarrs_metadata: true,
         })
+    }
+
+    /// Build into an [`ArcArray`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ArrayCreateError`] if there is an error creating the array.
+    /// This can be due to a storage error, an invalid path, or a problem with array configuration.
+    pub fn build_arc<TStorage: ?Sized>(
+        &self,
+        storage: Arc<TStorage>,
+        path: &str,
+    ) -> Result<ArcArray<TStorage>, ArrayCreateError> {
+        Ok(Arc::new(self.build(storage, path)?))
     }
 }
 
