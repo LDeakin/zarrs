@@ -1,5 +1,3 @@
-use std::future::IntoFuture;
-
 use opendal::Operator;
 
 use crate::{
@@ -53,7 +51,12 @@ fn handle_result<T>(result: Result<T, opendal::Error>) -> Result<Option<T>, Stor
 #[async_trait::async_trait]
 impl AsyncReadableStorageTraits for AsyncOpendalStore {
     async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        handle_result(self.operator.read(key.as_str()).await)
+        handle_result(
+            self.operator
+                .read(key.as_str())
+                .await
+                .map(|buf| buf.to_vec()),
+        )
     }
 
     async fn get_partial_values_key(
@@ -61,51 +64,28 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
-        use futures::FutureExt;
-        // FIXME: Does opendal offer a better way of retrieving multiple byte ranges?
-        // FIXME: Coalesce like object_store?
-        if byte_ranges
-            .iter()
-            .all(|byte_range| matches!(byte_range, ByteRange::FromEnd(_, _)))
-        {
-            let futures = byte_ranges
-                .iter()
-                .map(|byte_range| {
-                    self.operator
-                        .read_with(key.as_str())
-                        .range(byte_range.offset()..)
-                        .into_future()
-                })
-                .collect::<Vec<_>>();
-            handle_result(futures::future::try_join_all(futures).await)
+        // FIXME: Get OpenDAL to return an error if byte range is OOB instead of panic, then don't need to query size
+        let size = self.size_key(key).await?;
+        if let Some(size) = size {
+            let mut byte_ranges_fetch = Vec::with_capacity(byte_ranges.len());
+            for byte_range in byte_ranges {
+                let byte_range_opendal = byte_range.to_range(size);
+                if byte_range_opendal.end > size {
+                    return Err(InvalidByteRangeError::new(*byte_range, size).into());
+                }
+                byte_ranges_fetch.push(byte_range_opendal);
+            }
+            let reader = self.operator.reader(key.as_str()).await?;
+            Ok(Some(
+                reader
+                    .fetch(byte_ranges_fetch)
+                    .await?
+                    .into_iter()
+                    .map(|buf| buf.to_vec())
+                    .collect(),
+            ))
         } else {
-            let size = self
-                .size_key(key)
-                .await?
-                .ok_or(StorageError::UnknownKeySize(key.clone()))?;
-            let futures = byte_ranges
-                .iter()
-                .map(|byte_range| {
-                    let start = byte_range.start(size);
-                    let end = byte_range.end(size);
-                    self.operator
-                        .read_with(key.as_str())
-                        .range(start..end)
-                        .into_future()
-                        .map(move |bytes| match bytes {
-                            Ok(bytes) => {
-                                if (end - start) == bytes.len() as u64 {
-                                    Ok(bytes)
-                                } else {
-                                    Err(InvalidByteRangeError::new(*byte_range, bytes.len() as u64)
-                                        .into())
-                                }
-                            }
-                            Err(err) => Err(StorageError::from(err.to_string())),
-                        })
-                })
-                .collect::<Vec<_>>();
-            futures::future::try_join_all(futures).await.map(Some)
+            Ok(None)
         }
     }
 
@@ -142,7 +122,7 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
 
 #[async_trait::async_trait]
 impl AsyncWritableStorageTraits for AsyncOpendalStore {
-    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
         Ok(self.operator.write(key.as_str(), value).await?)
     }
 
