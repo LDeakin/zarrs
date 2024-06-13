@@ -122,7 +122,7 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
 
 #[async_trait::async_trait]
 impl AsyncWritableStorageTraits for AsyncOpendalStore {
-    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
         Ok(self.operator.write(key.as_str(), value).await?)
     }
 

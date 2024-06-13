@@ -524,7 +524,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
-    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
         let len = value.len();
         let result = self.storage.set(key, value).await;
         writeln!(

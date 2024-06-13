@@ -123,9 +123,6 @@ pub mod version;
 /// Re-export [`bytemuck`].
 pub use bytemuck;
 
-/// Re-export [`bytes`].
-pub use bytes;
-
 /// Re-export [`dyn_clone`].
 pub use dyn_clone;
 

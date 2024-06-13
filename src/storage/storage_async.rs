@@ -1,6 +1,5 @@
 use async_recursion::async_recursion;
 
-use bytes::Bytes;
 use futures::{stream::FuturesUnordered, StreamExt};
 use itertools::Itertools;
 
@@ -205,7 +204,7 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
             }
 
             // Write the store key
-            store.set(&key, bytes.into()).await
+            store.set(&key, bytes).await
         })
         .collect::<FuturesUnordered<_>>();
     while let Some(item) = futures.next().await {
@@ -222,7 +221,7 @@ pub trait AsyncWritableStorageTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns a [`StorageError`] on failure to store.
-    async fn set(&self, key: &StoreKey, value: bytes::Bytes) -> Result<(), StorageError>;
+    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError>;
 
     /// Store bytes according to a list of [`StoreKeyStartValue`].
     ///
@@ -342,7 +341,7 @@ pub async fn async_create_group(
     let key = meta_key(path);
     let json = serde_json::to_vec_pretty(group)
         .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-    storage.set(&meta_key(path), json.into()).await?;
+    storage.set(&meta_key(path), json).await?;
     Ok(())
 }
 
@@ -358,7 +357,7 @@ pub async fn async_create_array(
     let key = meta_key(path);
     let json = serde_json::to_vec_pretty(array)
         .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-    storage.set(&meta_key(path), json.into()).await?;
+    storage.set(&meta_key(path), json).await?;
     Ok(())
 }
 
@@ -371,7 +370,7 @@ pub async fn async_store_chunk(
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
-    chunk_serialised: Bytes,
+    chunk_serialised: Vec<u8>,
 ) -> Result<(), StorageError> {
     storage
         .set(
