@@ -61,7 +61,7 @@ parking_lot = "0.12.0"
 pathdiff = "0.2.0"
 pco = { version = "0.2.1", optional = true }
 rayon = "1.10.0"
-reqwest = { version = "0.11.18", features = ["blocking"], optional = true }
+reqwest = { version = "0.12.0", features = ["blocking"], optional = true }
 serde = { version = "1.0.184", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
 thiserror = "1.0.7"
