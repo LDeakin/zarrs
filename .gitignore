@@ -15,6 +15,7 @@ Cargo.lock
 
 # Editor files
 .vscode
+.idea
 
 # Misc config files
 .config
