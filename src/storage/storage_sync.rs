@@ -156,7 +156,7 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
     // Group by key
     key_start_values
         .iter()
-        .group_by(|key_start_value| &key_start_value.key)
+        .chunk_by(|key_start_value| &key_start_value.key)
         .into_iter()
         .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
         .try_for_each(|(key, group)| {

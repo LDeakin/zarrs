@@ -173,7 +173,7 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
     // Group by key
     let group_by_key = key_start_values
         .iter()
-        .group_by(|key_start_value| &key_start_value.key)
+        .chunk_by(|key_start_value| &key_start_value.key)
         .into_iter()
         .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
         .collect::<Vec<_>>();

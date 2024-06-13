@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Async store methods taking `buffer::Buffer` now take `Vec<u8>`
  - Rename `async_http_array_read` example to `async_http_array_read_object_store`
  - Bump `rayon` to 1.10.0
+ - Bump `itertools` to 0.13
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency and public export
