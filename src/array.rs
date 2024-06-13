@@ -223,6 +223,9 @@ pub struct Array<TStorage: ?Sized> {
     include_zarrs_metadata: bool,
 }
 
+/// An [`Arc`] wrapped [`Array`].
+pub type ArcArray<TStorage> = Arc<Array<TStorage>>;
+
 impl<TStorage: ?Sized> Array<TStorage> {
     /// Create an array in `storage` at `path` with `metadata`.
     /// This does **not** write to the store, use [`store_metadata`](Array<WritableStorageTraits>::store_metadata) to write `metadata` to `storage`.

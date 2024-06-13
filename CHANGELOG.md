@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - Add `async_http_array_read_opendal` example
+ - Add `array::ArcArray`
 
 ### Changed
  - Support `object_store` 0.9-0.10
