@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rayon_iter_concurrent_limit::iter_concurrent_limit;
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use crate::{
     array_subset::ArraySubset,
@@ -350,7 +349,10 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                     self.store_chunk_opt(&chunk_indices, chunk_bytes, &options)
                 };
                 let indices = chunks.indices();
-                iter_concurrent_limit!(chunk_concurrent_limit, indices, try_for_each, store_chunk)?;
+                indices
+                    .into_par_iter()
+                    .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
+                    .try_for_each(store_chunk)?;
             }
         }
 

@@ -1,7 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rayon_iter_concurrent_limit::iter_concurrent_limit;
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use super::{
     codec::{CodecError, CodecOptions},
@@ -398,12 +397,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                         )
                     };
                     let indices = shards.indices();
-                    iter_concurrent_limit!(
-                        chunk_concurrent_limit,
-                        indices,
-                        try_for_each,
-                        retrieve_shard
-                    )?;
+                    indices
+                        .into_par_iter()
+                        .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
+                        .try_for_each(retrieve_shard)?;
                 }
                 unsafe { output.set_len(size_output) };
                 Ok(output)
