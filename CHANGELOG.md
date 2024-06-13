@@ -15,9 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Support `opendal` 0.46-0.47, drop support for 0.45
  - **Breaking**: Async store methods taking `buffer::Buffer` now take `Vec<u8>`
  - Rename `async_http_array_read` example to `async_http_array_read_object_store`
+ - Bump `rayon` to 1.10.0
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency and public export
+ - Remove `rayon_iter_concurrent_limit` dependency
+   - Rayon `rayon::iter::IndexedParallelIterator::by_uniform_blocks` (since `rayon` 1.9) is used instead
 
 ## [0.14.0] - 2024-05-16
 
