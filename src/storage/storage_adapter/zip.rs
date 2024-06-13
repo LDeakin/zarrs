@@ -260,7 +260,7 @@ mod tests {
         method: zip::CompressionMethod,
     ) -> zip::result::ZipResult<()> {
         let mut zip = zip::ZipWriter::new(writer);
-        let options = zip::write::FileOptions::default().compression_method(method);
+        let options = zip::write::SimpleFileOptions::default().compression_method(method);
         let mut buffer = Vec::new();
         for entry in it {
             let path = entry.path();
