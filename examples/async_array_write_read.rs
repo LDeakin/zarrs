@@ -66,7 +66,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // .bytes_to_bytes_codecs(vec![]) // uncompressed
     .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())
-    .build(store.clone(), array_path)?;
+    .build_arc(store.clone(), array_path)?;
 
     // Write array metadata to store
     array.async_store_metadata().await?;
@@ -102,15 +102,18 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         item?;
     }
 
+    let spawner = zarrs_tokio_spawner::TokioSpawner::new(tokio::runtime::Handle::current());
+
     let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_all)
         .await?;
     println!("async_store_chunk [0, 0] and [0, 1]:\n{data_all:+4.1}\n");
 
     // Store multiple chunks
     array
         .async_store_chunks_elements::<f32>(
+            &spawner,
             &ArraySubset::new_with_ranges(&[1..2, 0..2]),
             vec![
                 //
@@ -121,31 +124,33 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_all)
         .await?;
     println!("async_store_chunks [1..2, 0..2]:\n{data_all:+4.1}\n");
 
     // Write a subset spanning multiple chunks, including updating chunks already written
     array
         .async_store_array_subset_elements::<f32>(
+            &spawner,
             &ArraySubset::new_with_ranges(&[3..6, 3..6]),
             vec![-3.3, -3.4, -3.5, -4.3, -4.4, -4.5, -5.3, -5.4, -5.5],
         )
         .await?;
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_all)
         .await?;
     println!("async_store_array_subset [3..6, 3..6]:\n{data_all:+4.1}\n");
 
     // Store array subset
     array
         .async_store_array_subset_elements::<f32>(
+            &spawner,
             &ArraySubset::new_with_ranges(&[0..8, 6..7]),
             vec![-0.6, -1.6, -2.6, -3.6, -4.6, -5.6, -6.6, -7.6],
         )
         .await?;
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_all)
         .await?;
     println!("async_store_array_subset [0..8, 6..7]:\n{data_all:+4.1}\n");
 
@@ -160,14 +165,14 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_all)
         .await?;
     println!("async_store_chunk_subset [3..4, 0..4] of chunk [1, 1]:\n{data_all:+4.1}\n");
 
     // Erase a chunk
     array.async_erase_chunk(&[0, 0]).await?;
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_all)
         .await?;
     println!("async_erase_chunk [0, 0]:\n{data_all:+4.1}\n");
 
@@ -180,13 +185,15 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     // Read chunks
     let chunks = ArraySubset::new_with_ranges(&[0..2, 1..2]);
-    let data_chunks = array.async_retrieve_chunks_ndarray::<f32>(&chunks).await?;
+    let data_chunks = array
+        .async_retrieve_chunks_ndarray::<f32>(&spawner, &chunks)
+        .await?;
     println!("async_retrieve_chunks [0..2, 1..2]:\n{data_chunks:+4.1}\n");
 
     // Retrieve an array subset
     let subset = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
     let data_subset = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset)
         .await?;
     println!("async_retrieve_array_subset [2..6, 3..5]:\n{data_subset:+4.1}\n");
 

@@ -156,18 +156,20 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
 ///
 /// #### Async API
-/// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
+/// Zarrs has an experimental runtime-agnostic async API that can be enabled with the `async` feature.
+/// Async methods have the `async_` prefix to differentiate them from sync methods (unless they are in an async specific trait).
 ///
 /// <div class="warning">
 /// The async API is not as performant as the sync API.
 /// </div>
 ///
-/// This crate is async runtime-agnostic and does not spawn tasks internally.
-/// The implication is that methods like [`async_retrieve_array_subset`](Array::async_retrieve_array_subset) or [`async_retrieve_chunks`](Array::async_retrieve_chunks) do not parallelise over chunks and can be slow compared to the sync API (especially when they involve a large number of chunks).
+/// Some async [`Array`] methods have a `spawner` parameter (implementing [`futures::task::Spawn`]).
+/// This is necessary to spawn tasks internally.
+/// A zarrs consumer must provide an appropriate spawner for their async runtime.
 ///
-/// This limitation can be circumvented by spawning tasks outside of zarrs.
-/// For example, instead of using [`async_retrieve_chunks`](Array::async_retrieve_chunks), multiple tasks executing [`async_retrieve_chunk_into_array_view`](Array::async_retrieve_chunk_into_array_view) could be spawned that output to a preallocated buffer.
-/// An example of such an approach can be found in the [`zarrs_benchmark_read_async`](https://github.com/LDeakin/zarrs_tools/blob/v0.3.0/src/bin/zarrs_benchmark_read_async.rs) application in the [zarrs_tools](https://github.com/LDeakin/zarrs_tools) crate.
+/// ##### Spawner Example: `tokio`
+/// An example spawner for [`tokio`](https://docs.rs/tokio/latest/tokio/) can be found [here](https://github.com/LDeakin/zarrs/blob/main/utilities/zarrs_tokio_spawner/src/lib.rs).
+/// It is used internally for testing.
 ///
 /// ### Parallel Writing
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.

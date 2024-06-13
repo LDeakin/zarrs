@@ -78,6 +78,7 @@ object_store = { version = ">=0.9.0,<0.11", features = ["http"] }
 opendal = { version = ">=0.46,<0.48", features = ["services-fs", "services-http"] }
 tempfile = "3"
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
+zarrs_tokio_spawner = { path = "utilities/zarrs_tokio_spawner" }
 
 [[example]]
 name = "array_write_read"

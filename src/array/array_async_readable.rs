@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use futures::StreamExt;
+use futures::{
+    task::{Spawn, SpawnExt},
+    StreamExt,
+};
 
 use crate::{
     array_subset::ArraySubset,
@@ -44,7 +47,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_if_exists(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
     ) -> Result<Option<Vec<u8>>, ArrayError> {
         self.async_retrieve_chunk_if_exists_opt(chunk_indices, &CodecOptions::default())
@@ -54,7 +57,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_elements_if_exists`](Array::retrieve_chunk_elements_if_exists).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_elements_if_exists<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
     ) -> Result<Option<Vec<T>>, ArrayError> {
         self.async_retrieve_chunk_elements_if_exists_opt(chunk_indices, &CodecOptions::default())
@@ -65,7 +68,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_ndarray_if_exists`](Array::retrieve_chunk_ndarray_if_exists).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_ndarray_if_exists<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
     ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
         self.async_retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &CodecOptions::default())
@@ -97,7 +100,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
     /// Async variant of [`retrieve_chunk`](Array::retrieve_chunk).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_chunk(&self, chunk_indices: &[u64]) -> Result<Vec<u8>, ArrayError> {
+    pub async fn async_retrieve_chunk(
+        self: &Arc<Self>,
+        chunk_indices: &[u64],
+    ) -> Result<Vec<u8>, ArrayError> {
         self.async_retrieve_chunk_opt(chunk_indices, &CodecOptions::default())
             .await
     }
@@ -105,7 +111,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_elements`](Array::retrieve_chunk_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
     ) -> Result<Vec<T>, ArrayError> {
         self.async_retrieve_chunk_elements_opt(chunk_indices, &CodecOptions::default())
@@ -116,7 +122,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_ndarray`](Array::retrieve_chunk_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         self.async_retrieve_chunk_ndarray_opt(chunk_indices, &CodecOptions::default())
@@ -126,7 +132,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_into_array_view`](Array::retrieve_chunk_into_array_view).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_into_array_view(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         array_view: &ArrayView<'_>,
     ) -> Result<(), ArrayError> {
@@ -140,18 +146,23 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
     /// Async variant of [`retrieve_chunks`](Array::retrieve_chunks).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
-        self.async_retrieve_chunks_opt(chunks, &CodecOptions::default())
+    pub async fn async_retrieve_chunks(
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
+        chunks: &ArraySubset,
+    ) -> Result<Vec<u8>, ArrayError> {
+        self.async_retrieve_chunks_opt(spawner, chunks, &CodecOptions::default())
             .await
     }
 
     /// Async variant of [`retrieve_chunks_elements`](Array::retrieve_chunks_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunks_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
-        self.async_retrieve_chunks_elements_opt(chunks, &CodecOptions::default())
+        self.async_retrieve_chunks_elements_opt(spawner, chunks, &CodecOptions::default())
             .await
     }
 
@@ -159,28 +170,35 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunks_ndarray`](Array::retrieve_chunks_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunks_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.async_retrieve_chunks_ndarray_opt(chunks, &CodecOptions::default())
+        self.async_retrieve_chunks_ndarray_opt(spawner, chunks, &CodecOptions::default())
             .await
     }
 
     /// Async variant of [`retrieve_chunks_into_array_view`](Array::retrieve_chunks_into_array_view).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunks_into_array_view(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
         array_view: &ArrayView<'_>,
     ) -> Result<(), ArrayError> {
-        self.async_retrieve_chunks_into_array_view_opt(chunks, array_view, &CodecOptions::default())
-            .await
+        self.async_retrieve_chunks_into_array_view_opt(
+            spawner,
+            chunks,
+            array_view,
+            &CodecOptions::default(),
+        )
+        .await
     }
 
     /// Async variant of [`retrieve_chunk_subset`](Array::retrieve_chunk_subset).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_subset(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<u8>, ArrayError> {
@@ -191,7 +209,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_subset_elements`](Array::retrieve_chunk_subset_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_subset_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
@@ -207,7 +225,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_subset_ndarray`](Array::retrieve_chunk_subset_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -222,7 +240,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_subset_into_array_view`](Array::retrieve_chunk_subset_into_array_view).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_subset_into_array_view(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         array_view: &ArrayView<'_>,
@@ -239,42 +257,55 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_array_subset`](Array::retrieve_array_subset).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_array_subset(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
     ) -> Result<Vec<u8>, ArrayError> {
-        self.async_retrieve_array_subset_opt(array_subset, &CodecOptions::default())
+        self.async_retrieve_array_subset_opt(spawner, array_subset, &CodecOptions::default())
             .await
     }
 
     /// Async variant of [`retrieve_array_subset_elements`](Array::retrieve_array_subset_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_array_subset_elements<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
     ) -> Result<Vec<T>, ArrayError> {
-        self.async_retrieve_array_subset_elements_opt(array_subset, &CodecOptions::default())
-            .await
+        self.async_retrieve_array_subset_elements_opt(
+            spawner,
+            array_subset,
+            &CodecOptions::default(),
+        )
+        .await
     }
 
     #[cfg(feature = "ndarray")]
     /// Async variant of [`retrieve_array_subset_ndarray`](Array::retrieve_array_subset_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_array_subset_ndarray<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-        self.async_retrieve_array_subset_ndarray_opt(array_subset, &CodecOptions::default())
-            .await
+        self.async_retrieve_array_subset_ndarray_opt(
+            spawner,
+            array_subset,
+            &CodecOptions::default(),
+        )
+        .await
     }
 
     /// Async variant of [`retrieve_array_subset_into_array_view`](Array::retrieve_array_subset_into_array_view).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_array_subset_into_array_view(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
         array_view: &ArrayView<'_>,
     ) -> Result<(), ArrayError> {
         self.async_retrieve_array_subset_into_array_view_opt(
+            spawner,
             array_subset,
             array_view,
             &CodecOptions::default(),
@@ -299,7 +330,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_if_exists_opt`](Array::retrieve_chunk_if_exists_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_if_exists_opt(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Option<Vec<u8>>, ArrayError> {
@@ -344,7 +375,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_opt`](Array::retrieve_chunk_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_opt(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
@@ -363,7 +394,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_elements_if_exists_opt`](Array::retrieve_chunk_elements_if_exists_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_elements_if_exists_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Option<Vec<T>>, ArrayError> {
@@ -377,7 +408,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_elements_opt`](Array::retrieve_chunk_elements_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_elements_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
@@ -392,7 +423,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_ndarray_if_exists_opt`](Array::retrieve_chunk_ndarray_if_exists_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_ndarray_if_exists_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
@@ -415,7 +446,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_ndarray_opt`](Array::retrieve_chunk_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -433,7 +464,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_into_array_view_opt`](Array::retrieve_chunk_into_array_view_opt).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_into_array_view_opt(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         array_view: &ArrayView<'_>,
         options: &CodecOptions,
@@ -477,7 +508,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Returns a [`StorageError`] if there is an underlying store error.
     #[allow(clippy::missing_panics_doc)]
     pub async fn async_retrieve_encoded_chunks(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
     ) -> Result<Vec<Option<Vec<u8>>>, StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
@@ -486,16 +518,21 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .create_async_readable_transformer(storage_handle);
 
         let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
-            let storage_transformer = storage_transformer.clone();
-            async move {
-                crate::storage::async_retrieve_chunk(
-                    &*storage_transformer,
-                    self.path(),
-                    &chunk_indices,
-                    self.chunk_key_encoding(),
-                )
-                .await
-            }
+            spawner
+                .spawn_with_handle({
+                    let me = self.clone();
+                    let storage_transformer = storage_transformer.clone();
+                    async move {
+                        crate::storage::async_retrieve_chunk(
+                            &*storage_transformer,
+                            me.path(),
+                            &chunk_indices,
+                            me.chunk_key_encoding(),
+                        )
+                        .await
+                    }
+                })
+                .unwrap()
         };
 
         let indices = chunks.indices();
@@ -506,7 +543,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunks_opt`](Array::retrieve_chunks_opt).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunks_opt(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
@@ -547,30 +585,40 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
                 let mut output = Vec::with_capacity(size_output);
                 {
-                    let output_slice =
-                        UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let indices = chunks.indices();
+                    let output_slice = unsafe {
+                        // scoped lifetime extension
+                        std::slice::from_raw_parts_mut(output.as_mut_ptr(), size_output)
+                    };
+                    let output_slice = UnsafeCellSlice::new(output_slice);
                     let chunk0_subset = self.chunk_subset(chunks.start())?;
-                    let futures = indices.into_iter().map(|chunk_indices| {
-                        let options = options.clone();
-                        let array_subset = array_subset.clone();
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
-                        let array_view_subset =
-                            unsafe { chunk_subset.relative_to_unchecked(chunk0_subset.start()) };
-                        async move {
-                            self.async_retrieve_chunk_into_array_view_opt(
-                                &chunk_indices,
-                                &ArrayView::new(
-                                    unsafe { output_slice.get() },
-                                    array_subset.shape(),
-                                    array_view_subset,
-                                )
-                                .unwrap(), // FIXME: unwrap
-                                &options,
-                            )
-                            .await
-                        }
-                    });
+                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
+                        spawner
+                            .spawn_with_handle({
+                                let options = options.clone();
+                                let array_subset = array_subset.clone();
+                                let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
+                                let array_view_subset = unsafe {
+                                    chunk_subset.relative_to_unchecked(chunk0_subset.start())
+                                };
+                                let me = self.clone();
+                                async move {
+                                    me.async_retrieve_chunk_into_array_view_opt(
+                                        &chunk_indices,
+                                        &ArrayView::new(
+                                            unsafe { output_slice.get() },
+                                            array_subset.shape(),
+                                            array_view_subset,
+                                        )
+                                        .unwrap(), // FIXME: unwrap
+                                        &options,
+                                    )
+                                    .await
+                                }
+                            })
+                            .unwrap()
+                    };
+                    let indices = chunks.indices();
+                    let futures = indices.into_iter().map(retrieve_chunk);
                     let mut stream =
                         futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
                     while let Some(item) = stream.next().await {
@@ -586,12 +634,15 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunks_elements_opt`](Array::retrieve_chunks_elements_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunks_elements_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
-        let bytes = self.async_retrieve_chunks_opt(chunks, options).await?;
+        let bytes = self
+            .async_retrieve_chunks_opt(spawner, chunks, options)
+            .await?;
         Ok(transmute_from_bytes_vec::<T>(bytes))
     }
 
@@ -599,14 +650,15 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunks_ndarray_opt`](Array::retrieve_chunks_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunks_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
         let array_subset = self.chunks_subset(chunks)?;
         let elements = self
-            .async_retrieve_chunks_elements_opt(chunks, options)
+            .async_retrieve_chunks_elements_opt(spawner, chunks, options)
             .await?;
         elements_to_ndarray(array_subset.shape(), elements)
     }
@@ -615,7 +667,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     #[allow(clippy::too_many_lines)]
     pub async fn async_retrieve_array_subset_opt(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, ArrayError> {
@@ -681,33 +734,45 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 // let output_slice = output.as_mut_slice();
                 let mut output = Vec::with_capacity(size_output);
                 {
-                    let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                    let output_slice = unsafe {
+                        // scoped lifetime extension
+                        std::slice::from_raw_parts_mut(output.as_mut_ptr(), size_output)
+                    };
+                    let output_slice = UnsafeCellSlice::new(output_slice);
                     let retrieve_chunk = |chunk_indices: Vec<u64>| {
-                        let options = options.clone();
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
-                        let chunk_subset_in_array_subset =
-                            unsafe { chunk_subset.overlap_unchecked(array_subset) };
-                        let chunk_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
-                        };
-                        let array_view_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                        };
-                        let array_view = ArrayView::new(
-                            unsafe { output.get() },
-                            array_subset.shape(),
-                            array_view_subset,
-                        )
-                        .unwrap(); // FIXME: unwrap
-                        async move {
-                            self.async_retrieve_chunk_subset_into_array_view_opt(
-                                &chunk_indices,
-                                &chunk_subset,
-                                &array_view,
-                                &options,
-                            )
-                            .await
-                        }
+                        spawner
+                            .spawn_with_handle({
+                                let options = options.clone();
+                                let array_subset_shape = array_subset.shape().to_vec();
+                                let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
+                                let chunk_subset_in_array_subset =
+                                    unsafe { chunk_subset.overlap_unchecked(array_subset) };
+                                let chunk_subset = unsafe {
+                                    chunk_subset_in_array_subset
+                                        .relative_to_unchecked(chunk_subset.start())
+                                };
+                                let array_view_subset = unsafe {
+                                    chunk_subset_in_array_subset
+                                        .relative_to_unchecked(array_subset.start())
+                                };
+                                let me = self.clone();
+                                async move {
+                                    let array_view = ArrayView::new(
+                                        unsafe { output_slice.get() },
+                                        &array_subset_shape,
+                                        array_view_subset,
+                                    )
+                                    .unwrap(); // FIXME: unwrap
+                                    me.async_retrieve_chunk_subset_into_array_view_opt(
+                                        &chunk_indices,
+                                        &chunk_subset,
+                                        &array_view,
+                                        &options,
+                                    )
+                                    .await
+                                }
+                            })
+                            .unwrap()
                     };
                     let indices = chunks.indices();
                     let futures = indices.into_iter().map(retrieve_chunk);
@@ -726,13 +791,14 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_array_subset_elements_opt`](Array::retrieve_array_subset_elements_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_array_subset_elements_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
         validate_element_size::<T>(self.data_type())?;
         let bytes = self
-            .async_retrieve_array_subset_opt(array_subset, options)
+            .async_retrieve_array_subset_opt(spawner, array_subset, options)
             .await?;
         Ok(transmute_from_bytes_vec::<T>(bytes))
     }
@@ -741,21 +807,28 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_array_subset_ndarray_opt`](Array::retrieve_array_subset_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_array_subset_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         // validate_element_size::<T>(self.data_type())?; // in async_retrieve_array_subset_elements
         let elements = self
-            .async_retrieve_array_subset_elements_opt(array_subset, options)
+            .async_retrieve_array_subset_elements_opt(spawner, array_subset, options)
             .await?;
         elements_to_ndarray(array_subset.shape(), elements)
     }
 
     /// Async variant of [`retrieve_chunks_into_array_view_opt`](Array::retrieve_chunks_into_array_view_opt).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+    // TODO: Use spawner
+    #[allow(
+        clippy::missing_errors_doc,
+        clippy::missing_panics_doc,
+        unused_variables
+    )]
     pub async fn async_retrieve_chunks_into_array_view_opt(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         chunks: &ArraySubset,
         array_view: &ArrayView<'_>,
         options: &CodecOptions,
@@ -797,10 +870,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             );
 
             {
-                let indices = chunks.indices();
-                let futures = indices.into_iter().map(|chunk_indices| {
+                let retrieve_chunk = |chunk_indices: Vec<u64>| {
                     let chunk0_start = array_subset.start().to_vec();
                     let options = options.clone();
+                    // FIXME
+                    // spawner.spawn_with_handle(
                     async move {
                         let chunk_subset = self.chunk_subset(&chunk_indices).unwrap();
                         let array_view_subset =
@@ -812,7 +886,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                         )
                         .await
                     }
-                });
+                    // ).unwrap()
+                };
+                let indices = chunks.indices();
+                let futures = indices.into_iter().map(retrieve_chunk);
                 let mut stream =
                     futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
                 while let Some(item) = stream.next().await {
@@ -824,9 +901,15 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     /// Async variant of [`retrieve_array_subset_into_array_view_opt`](Array::retrieve_array_subset_into_array_view_opt).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+    // TODO: Use spawner
+    #[allow(
+        clippy::missing_errors_doc,
+        clippy::missing_panics_doc,
+        unused_variables
+    )]
     pub async fn async_retrieve_array_subset_into_array_view_opt(
-        &self,
+        self: &Arc<Self>,
+        spawner: impl Spawn + Send + Sync,
         array_subset: &ArraySubset,
         array_view: &ArrayView<'_>,
         options: &CodecOptions,
@@ -898,8 +981,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 );
 
                 {
-                    let indices = chunks.indices();
-                    let futures = indices.into_iter().map(|chunk_indices| {
+                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
                         let chunk_subset = self.chunk_subset(&chunk_indices).unwrap();
                         let chunk_subset_in_array_subset =
                             unsafe { chunk_subset.overlap_unchecked(array_subset) };
@@ -910,6 +992,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                             chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
                         };
                         let options = options.clone();
+                        // FIXME
+                        // spawner.spawn_with_handle(
                         async move {
                             self.async_retrieve_chunk_subset_into_array_view_opt(
                                 &chunk_indices,
@@ -919,7 +1003,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                             )
                             .await
                         }
-                    });
+                        // .unwrap()
+                    };
+                    let indices = chunks.indices();
+                    let futures = indices.into_iter().map(retrieve_chunk);
                     let mut stream =
                         futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
                     while let Some(item) = stream.next().await {
@@ -934,7 +1021,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_subset_opt`](Array::retrieve_chunk_subset_opt).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunk_subset_opt(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         options: &CodecOptions,
@@ -979,7 +1066,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_subset_elements_opt`](Array::retrieve_chunk_subset_elements_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_subset_elements_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         options: &CodecOptions,
@@ -995,7 +1082,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_subset_ndarray_opt`](Array::retrieve_chunk_subset_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_subset_ndarray_opt<T: bytemuck::Pod + Send + Sync>(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         options: &CodecOptions,
@@ -1010,7 +1097,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`retrieve_chunk_subset_into_array_view_opt`](Array::retrieve_chunk_subset_into_array_view_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_retrieve_chunk_subset_into_array_view_opt(
-        &self,
+        self: &Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         array_view: &ArrayView<'_>,

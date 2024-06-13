@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump minimum supported `flate2` to 1.0.30 and `thiserror` to 1.0.61
  - Add default implementations for `[Async]ReadableStorageTraits::{get,get_partial_values}`
  - **Breaking**: Move `[Async]ReadableStorageTraits::{size[_prefix]}` to `[Async]ListableStorageTraits` and add default implementation for `size`
+ - **Breaking**: async `Array` methods now take `self: &Arc<Self>` (`ArcArray`) instead of `&self`
+ - **Breaking**: Add `spawner` arg to various async `Array` methods for runtime-agnostic internal task spawning
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency

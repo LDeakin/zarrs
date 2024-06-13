@@ -13,6 +13,8 @@ use zarrs::storage::store::AsyncObjectStore;
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[rustfmt::skip]
 async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Result<(), Box<dyn std::error::Error>> {
+    let spawner = zarrs_tokio_spawner::TokioSpawner::new(tokio::runtime::Handle::current());
+
     assert_eq!(array.data_type(), &DataType::UInt8);
     assert_eq!(array.fill_value().as_ne_bytes(), &[0u8]);
     assert_eq!(array.shape(), &[4, 4]);
@@ -26,7 +28,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
     // 0  0 | 0  0
     array.async_store_chunk(&[0, 0], vec![1, 2, 0, 0]).await?;
     array.async_store_chunk(&[0, 1], vec![3, 4, 7, 8]).await?;
-    array.async_store_array_subset(&ArraySubset::new_with_ranges(&[1..3, 0..2]), vec![5, 6, 9, 10]).await?;
+    array.async_store_array_subset(&spawner, &ArraySubset::new_with_ranges(&[1..3, 0..2]), vec![5, 6, 9, 10]).await?;
 
     assert!(array.async_retrieve_chunk(&[0, 0, 0]).await.is_err());
     assert_eq!(array.async_retrieve_chunk(&[0, 0]).await?, [1, 2, 5, 6]);
@@ -63,35 +65,35 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
     assert_eq!(array.async_retrieve_chunk_subset_ndarray::<u8>(&[0, 0], &ArraySubset::new_with_ranges(&[0..1, 0..2])).await?, ndarray::array![[1, 2]].into_dyn());
     assert_eq!(array.async_retrieve_chunk_subset_ndarray::<u8>(&[0, 0], &ArraySubset::new_with_ranges(&[0..2, 1..2])).await?, ndarray::array![[2], [6]].into_dyn());
 
-    assert!(array.async_retrieve_chunks(&ArraySubset::new_with_ranges(&[0..2])).await.is_err());
-    assert_eq!(array.async_retrieve_chunks(&ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, Vec::<u8>::new());
-    assert_eq!(array.async_retrieve_chunks(&ArraySubset::new_with_ranges(&[0..1, 0..1])).await?, [1, 2, 5, 6]);
-    assert_eq!(array.async_retrieve_chunks(&ArraySubset::new_with_ranges(&[0..2, 0..2])).await?, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
-    assert_eq!(array.async_retrieve_chunks(&ArraySubset::new_with_ranges(&[0..2, 1..2])).await?, [3, 4, 7, 8, 0, 0, 0, 0]);
-    assert_eq!(array.async_retrieve_chunks(&ArraySubset::new_with_ranges(&[0..1, 1..3])).await?, [3, 4, 0, 0, 7, 8, 0, 0]);
+    assert!(array.async_retrieve_chunks(&spawner, &ArraySubset::new_with_ranges(&[0..2])).await.is_err());
+    assert_eq!(array.async_retrieve_chunks(&spawner, &ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, Vec::<u8>::new());
+    assert_eq!(array.async_retrieve_chunks(&spawner, &ArraySubset::new_with_ranges(&[0..1, 0..1])).await?, [1, 2, 5, 6]);
+    assert_eq!(array.async_retrieve_chunks(&spawner, &ArraySubset::new_with_ranges(&[0..2, 0..2])).await?, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
+    assert_eq!(array.async_retrieve_chunks(&spawner, &ArraySubset::new_with_ranges(&[0..2, 1..2])).await?, [3, 4, 7, 8, 0, 0, 0, 0]);
+    assert_eq!(array.async_retrieve_chunks(&spawner, &ArraySubset::new_with_ranges(&[0..1, 1..3])).await?, [3, 4, 0, 0, 7, 8, 0, 0]);
 
-    assert!(array.async_retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..2])).await.is_err());
-    assert!(array.async_retrieve_chunks_ndarray::<u16>(&ArraySubset::new_with_ranges(&[0..2, 0..2])).await.is_err());
-    assert_eq!(array.async_retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..2, 0..2])).await?, ndarray::array![[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 0, 0], [0, 0, 0, 0]].into_dyn());
-    assert_eq!(array.async_retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..2, 1..2])).await?, ndarray::array![[3, 4], [7, 8], [0, 0], [0, 0]].into_dyn());
-    assert_eq!(array.async_retrieve_chunks_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..1, 1..3])).await?, ndarray::array![[3, 4, 0, 0], [7, 8, 0, 0]].into_dyn());
+    assert!(array.async_retrieve_chunks_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..2])).await.is_err());
+    assert!(array.async_retrieve_chunks_ndarray::<u16>(&spawner, &ArraySubset::new_with_ranges(&[0..2, 0..2])).await.is_err());
+    assert_eq!(array.async_retrieve_chunks_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..2, 0..2])).await?, ndarray::array![[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 0, 0], [0, 0, 0, 0]].into_dyn());
+    assert_eq!(array.async_retrieve_chunks_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..2, 1..2])).await?, ndarray::array![[3, 4], [7, 8], [0, 0], [0, 0]].into_dyn());
+    assert_eq!(array.async_retrieve_chunks_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..1, 1..3])).await?, ndarray::array![[3, 4, 0, 0], [7, 8, 0, 0]].into_dyn());
 
-    assert!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..4])).await.is_err());
-    assert_eq!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, Vec::<u8>::new());
-    assert_eq!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, [] as [u8; 0]);
-    assert_eq!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..2, 0..2])).await?, [1, 2, 5, 6]);
-    assert_eq!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..4, 0..4])).await?, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
-    assert_eq!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[1..3, 1..3])).await?, [6, 7, 10 ,0]);
-    assert_eq!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[5..7, 5..6])).await?, [0, 0]); // OOB -> fill value
-    assert_eq!(array.async_retrieve_array_subset(&ArraySubset::new_with_ranges(&[0..5, 0..5])).await?, [1, 2, 3, 4, 0, 5, 6, 7, 8, 0, 9, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // OOB -> fill value
+    assert!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[0..4])).await.is_err());
+    assert_eq!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, Vec::<u8>::new());
+    assert_eq!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, [] as [u8; 0]);
+    assert_eq!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[0..2, 0..2])).await?, [1, 2, 5, 6]);
+    assert_eq!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[0..4, 0..4])).await?, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
+    assert_eq!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[1..3, 1..3])).await?, [6, 7, 10 ,0]);
+    assert_eq!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[5..7, 5..6])).await?, [0, 0]); // OOB -> fill value
+    assert_eq!(array.async_retrieve_array_subset(&spawner, &ArraySubset::new_with_ranges(&[0..5, 0..5])).await?, [1, 2, 3, 4, 0, 5, 6, 7, 8, 0, 9, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); // OOB -> fill value
 
-    assert!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..4])).await.is_err());
-    assert!(array.async_retrieve_array_subset_ndarray::<u16>(&ArraySubset::new_with_ranges(&[0..4, 0..4])).await.is_err());
-    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, ndarray::Array2::<u8>::zeros((0, 0)).into_dyn());
-    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..4, 0..4])).await?, ndarray::array![[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 0, 0], [0, 0, 0, 0]].into_dyn());
-    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[1..3, 1..3])).await?, ndarray::array![[6, 7], [10 ,0]].into_dyn());
-    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[5..7, 5..6])).await?, ndarray::array![[0], [0]].into_dyn()); // OOB -> fill value
-    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..5, 0..5])).await?, ndarray::array![[1, 2, 3, 4, 0], [5, 6, 7, 8, 0], [9, 10, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]].into_dyn()); // OOB -> fill value
+    assert!(array.async_retrieve_array_subset_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..4])).await.is_err());
+    assert!(array.async_retrieve_array_subset_ndarray::<u16>(&spawner, &ArraySubset::new_with_ranges(&[0..4, 0..4])).await.is_err());
+    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..0, 0..0])).await?, ndarray::Array2::<u8>::zeros((0, 0)).into_dyn());
+    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..4, 0..4])).await?, ndarray::array![[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 0, 0], [0, 0, 0, 0]].into_dyn());
+    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[1..3, 1..3])).await?, ndarray::array![[6, 7], [10 ,0]].into_dyn());
+    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[5..7, 5..6])).await?, ndarray::array![[0], [0]].into_dyn()); // OOB -> fill value
+    assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&spawner, &ArraySubset::new_with_ranges(&[0..5, 0..5])).await?, ndarray::array![[1, 2, 3, 4, 0], [5, 6, 7, 8, 0], [9, 10, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]].into_dyn()); // OOB -> fill value
 
     {
         // Invalid array view dimensionality
@@ -124,7 +126,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
         let shape = &[4, 4];
         let array_view_subset = ArraySubset::new_with_ranges(&[0..4, 0..4]);
         let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-        array.async_retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..2, 0..2]), &array_view).await?;
+        array.async_retrieve_chunks_into_array_view(&spawner, &ArraySubset::new_with_ranges(&[0..2, 0..2]), &array_view).await?;
         assert_eq!(data, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0]);
     }
     {
@@ -132,7 +134,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
         let shape = &[3, 4];
         let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..4]);
         let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-        array.async_retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await?;
+        array.async_retrieve_chunks_into_array_view(&spawner, &ArraySubset::new_with_ranges(&[0..1, 0..2]), &array_view).await?;
         assert_eq!(data, [0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
     }
     {
@@ -141,7 +143,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
         let shape = &[3, 4];
         let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..4]);
         let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-        array.async_retrieve_chunks_into_array_view(&ArraySubset::new_with_ranges(&[0..1, 1..3]), &array_view).await?;
+        array.async_retrieve_chunks_into_array_view(&spawner, &ArraySubset::new_with_ranges(&[0..1, 1..3]), &array_view).await?;
         assert_eq!(data, [0, 0, 0, 0, 3, 4, 0, 0, 7, 8, 0, 0]);
     }
 
@@ -150,7 +152,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
         let shape = &[3, 2];
         let array_view_subset = ArraySubset::new_with_ranges(&[1..2, 0..2]);
         let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..1,0..2]), &array_view).await?;
+        array.async_retrieve_array_subset_into_array_view(&spawner, &ArraySubset::new_with_ranges(&[0..1,0..2]), &array_view).await?;
         assert_eq!(data, [0, 0, 1, 2, 0, 0]);
     }
     {
@@ -158,7 +160,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
         let shape = &[3, 2];
         let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
         let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[0..2,0..2]), &array_view).await?;
+        array.async_retrieve_array_subset_into_array_view(&spawner, &ArraySubset::new_with_ranges(&[0..2,0..2]), &array_view).await?;
         assert_eq!(data, [0, 0, 1, 2, 5, 6]);
     }
     {
@@ -166,7 +168,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
         let shape = &[3, 2];
         let array_view_subset = ArraySubset::new_with_ranges(&[1..3, 0..2]);
         let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..3, 1..3]), &array_view).await?;
+        array.async_retrieve_array_subset_into_array_view(&spawner, &ArraySubset::new_with_ranges(&[1..3, 1..3]), &array_view).await?;
         assert_eq!(data, [0, 0, 6, 7, 10, 0]);
     }
     {
@@ -174,7 +176,7 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
         let shape = &[4, 2];
         let array_view_subset = ArraySubset::new_with_ranges(&[1..4, 0..2]);
         let array_view = ArrayView::new(&mut data, shape, array_view_subset)?;
-        array.async_retrieve_array_subset_into_array_view(&ArraySubset::new_with_ranges(&[1..4, 0..2]), &array_view).await?;
+        array.async_retrieve_array_subset_into_array_view(&spawner, &ArraySubset::new_with_ranges(&[1..4, 0..2]), &array_view).await?;
         assert_eq!(data, [0, 0, 5, 6, 9, 10, 0, 0]);
     }
 

@@ -9,6 +9,8 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
         },
     };
 
+    let spawner = zarrs_tokio_spawner::TokioSpawner::new(tokio::runtime::Handle::current());
+
     const HTTP_URL: &str =
         "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/array_write_read.zarr";
     const ARRAY_PATH: &str = "/group/array";
@@ -34,7 +36,7 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Init the existing array, reading metadata
-    let array = Array::async_new(store, ARRAY_PATH).await?;
+    let array = Arc::new(Array::async_new(store, ARRAY_PATH).await?);
 
     println!(
         "The array metadata is:\n{}\n",
@@ -44,7 +46,7 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     // Read the whole array
     let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_all)
         .await?;
     println!("The whole array is:\n{data_all}\n");
 
@@ -58,7 +60,7 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     // Read the central 4x2 subset of the array
     let subset_4x2 = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
     let data_4x2 = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_4x2)
+        .async_retrieve_array_subset_ndarray::<f32>(&spawner, &subset_4x2)
         .await?;
     println!("The middle 4x2 subset is:\n{data_4x2}\n");
 
