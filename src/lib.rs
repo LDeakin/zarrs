@@ -87,7 +87,8 @@
 //!
 //! #### Async API
 //! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs),
-//! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read.rs).
+//! [`async_http_array_read_object_store`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read_object_store.rs),
+//! [`async_http_array_read_opendal`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read_opendal.rs).
 //!
 //! ## `zarrs` Ecosystem
 //! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data. Includes `zarrs` benchmarks.

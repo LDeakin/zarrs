@@ -15,6 +15,7 @@ use std::str::FromStr;
 use thiserror::Error;
 
 /// A synchronous HTTP store.
+// TODO: Deprecate when opendal http service supports blocking
 #[derive(Debug)]
 pub struct HTTPStore {
     base_url: Url,

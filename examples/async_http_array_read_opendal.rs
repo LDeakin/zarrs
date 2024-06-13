@@ -14,11 +14,11 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store
-    let mut store: AsyncReadableWritableListableStorage = Arc::new(store::AsyncObjectStore::new(
-        object_store::http::HttpBuilder::new()
-            .with_url(HTTP_URL)
-            .build()?,
-    ));
+    let mut builder = opendal::services::Http::default();
+    builder.endpoint(HTTP_URL);
+    let operator = opendal::Operator::new(builder)?.finish();
+    let mut store: zarrs::storage::AsyncReadableStorage =
+        Arc::new(store::AsyncOpendalStore::new(operator));
     if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
         if arg1 == "--usage-log" {
             let log_writer = Arc::new(std::sync::Mutex::new(
@@ -29,9 +29,7 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
             let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
                 chrono::Utc::now().format("[%T%.3f] ").to_string()
             }));
-            store = usage_log
-                .clone()
-                .create_async_readable_writable_listable_transformer(store);
+            store = usage_log.clone().create_async_readable_transformer(store);
         }
     }
 
