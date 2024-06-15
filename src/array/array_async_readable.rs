@@ -78,7 +78,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Returns a [`StorageError`] if there is an underlying store error.
     #[allow(clippy::missing_panics_doc)]
     pub async fn async_retrieve_encoded_chunk(
-        self: &Arc<Self>,
+        &self,
         chunk_indices: &[u64],
     ) -> Result<Option<Vec<u8>>, StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
@@ -496,7 +496,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Returns a [`StorageError`] if there is an underlying store error.
     #[allow(clippy::missing_panics_doc)]
     pub async fn async_retrieve_encoded_chunks(
-        self: &Arc<Self>,
+        &self,
         chunks: &ArraySubset,
     ) -> Result<Vec<Option<Vec<u8>>>, StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
@@ -505,14 +505,13 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .create_async_readable_transformer(storage_handle);
 
         let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
-            let me = self.clone();
             let storage_transformer = storage_transformer.clone();
             async move {
                 crate::storage::async_retrieve_chunk(
                     &*storage_transformer,
-                    me.path(),
+                    self.path(),
                     &chunk_indices,
-                    me.chunk_key_encoding(),
+                    self.chunk_key_encoding(),
                 )
                 .await
             }
