@@ -75,7 +75,7 @@
 //!
 //! Add `-- --usage-log` to see storage API calls during example execution.
 //!
-//! Some examples require non-default features, which can be enabled with `--features <FEATURES>`.
+//! Some examples require non-default features, which can be enabled with `--all-features` or `--features <FEATURES>`.
 //!
 //! #### Sync API
 //! [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs),

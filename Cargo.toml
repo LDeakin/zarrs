@@ -75,7 +75,7 @@ zstd = { version = "0.13.1", features = ["zstdmt"], optional = true }
 chrono = "0.4"
 criterion = "0.5.1"
 object_store = { version = ">=0.9.0,<0.11", features = ["http"] }
-opendal = { version = ">=0.46,<0.48", features = ["services-fs"] }
+opendal = { version = ">=0.46,<0.48", features = ["services-fs", "services-http"] }
 tempfile = "3"
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
 
