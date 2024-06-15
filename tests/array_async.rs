@@ -12,7 +12,7 @@ use zarrs::storage::store::AsyncObjectStore;
 
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[rustfmt::skip]
-async fn array_async_read(array: Array<AsyncObjectStore<InMemory>>) -> Result<(), Box<dyn std::error::Error>> {
+async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(array.data_type(), &DataType::UInt8);
     assert_eq!(array.fill_value().as_ne_bytes(), &[0u8]);
     assert_eq!(array.shape(), &[4, 4]);
@@ -216,7 +216,7 @@ async fn array_async_read_uncompressed() -> Result<(), Box<dyn std::error::Error
     )
     .bytes_to_bytes_codecs(vec![])
     // .storage_transformers(vec![].into())
-    .build(store, array_path)
+    .build_arc(store, array_path)
     .unwrap();
     array_async_read(array).await
 }
@@ -242,7 +242,7 @@ async fn array_async_read_shard_compress() -> Result<(), Box<dyn std::error::Err
             .build(),
     ))
     // .storage_transformers(vec![].into())
-    .build(store, array_path)
+    .build_arc(store, array_path)
     .unwrap();
     array_async_read(array).await
 }

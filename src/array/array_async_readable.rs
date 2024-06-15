@@ -16,7 +16,7 @@ use super::{
     concurrency::concurrency_chunks_and_codec,
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
-    validate_element_size, ArcArray, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayView,
+    validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayView,
 };
 
 #[cfg(feature = "ndarray")]
@@ -28,7 +28,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_new(
         storage: Arc<TStorage>,
         path: &str,
-    ) -> Result<ArcArray<TStorage>, ArrayCreateError> {
+    ) -> Result<Arc<Array<TStorage>>, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
         let key = meta_key(&node_path);
         let metadata: ArrayMetadata = serde_json::from_slice(

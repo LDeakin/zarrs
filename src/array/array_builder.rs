@@ -8,8 +8,7 @@ use super::{
         ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
     },
     data_type::IncompatibleFillValueError,
-    ArcArray, Array, ArrayCreateError, ArrayShape, ChunkGrid, CodecChain, DataType, DimensionName,
-    FillValue,
+    Array, ArrayCreateError, ArrayShape, ChunkGrid, CodecChain, DataType, DimensionName, FillValue,
 };
 
 /// An [`Array`] builder.
@@ -318,7 +317,7 @@ impl ArrayBuilder {
         })
     }
 
-    /// Build into an [`ArcArray`].
+    /// Build into an [`Arc<Array>`].
     ///
     /// # Errors
     ///
@@ -328,7 +327,7 @@ impl ArrayBuilder {
         &self,
         storage: Arc<TStorage>,
         path: &str,
-    ) -> Result<ArcArray<TStorage>, ArrayCreateError> {
+    ) -> Result<Arc<Array<TStorage>>, ArrayCreateError> {
         Ok(Arc::new(self.build(storage, path)?))
     }
 }
