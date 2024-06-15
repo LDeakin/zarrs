@@ -28,7 +28,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_new(
         storage: Arc<TStorage>,
         path: &str,
-    ) -> Result<Arc<Array<TStorage>>, ArrayCreateError> {
+    ) -> Result<Array<TStorage>, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
         let key = meta_key(&node_path);
         let metadata: ArrayMetadata = serde_json::from_slice(
@@ -38,7 +38,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 .ok_or(ArrayCreateError::MissingMetadata)?,
         )
         .map_err(|err| crate::storage::StorageError::InvalidMetadata(key, err.to_string()))?;
-        Ok(Arc::new(Self::new_with_metadata(storage, path, metadata)?))
+        Self::new_with_metadata(storage, path, metadata)
     }
 
     /// Async variant of [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists).
