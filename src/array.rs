@@ -776,6 +776,26 @@ pub fn bytes_to_ndarray<T: bytemuck::Pod>(
     elements_to_ndarray(shape, elements)
 }
 
+// TODO: Optimise similarly to FillValue::equals_all with multibyte memcpy?
+fn fill_array_view_with_fill_value(array_view: &ArrayView<'_>, fill_value: &FillValue) {
+    let contiguous_indices = unsafe {
+        array_view
+            .subset()
+            .contiguous_linearised_indices_unchecked(array_view.array_shape())
+    };
+    let fill_value = fill_value.as_ne_bytes();
+    let element_size = fill_value.len();
+    let length = contiguous_indices.contiguous_elements_usize() * element_size;
+    let output = unsafe { array_view.bytes_mut() };
+    for (array_subset_element_index, _num_elements) in &contiguous_indices {
+        let output_offset = usize::try_from(array_subset_element_index).unwrap() * element_size;
+        debug_assert!((output_offset + length) <= output.len());
+        for i in 0..length {
+            output[output_offset + i] = fill_value[i % element_size];
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::storage::store::MemoryStore;

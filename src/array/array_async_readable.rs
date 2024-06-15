@@ -464,26 +464,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 .decode_into_array_view(&chunk_encoded, &chunk_representation, array_view, options)
                 .map_err(ArrayError::CodecError)
         } else {
-            // fill array_view with fill value
-            let contiguous_indices = unsafe {
-                array_view
-                    .subset()
-                    .contiguous_linearised_indices_unchecked(array_view.array_shape())
-            };
-            let element_size = chunk_representation.element_size();
-            let length = contiguous_indices.contiguous_elements_usize() * element_size;
-            let fill = self
-                .fill_value()
-                .as_ne_bytes()
-                .repeat(contiguous_indices.contiguous_elements_usize());
-            // FIXME: Par iteration?
-            let output = unsafe { array_view.bytes_mut() };
-            for (array_subset_element_index, _num_elements) in &contiguous_indices {
-                let output_offset =
-                    usize::try_from(array_subset_element_index).unwrap() * element_size;
-                debug_assert!((output_offset + length) <= output.len());
-                output[output_offset..output_offset + length].copy_from_slice(&fill);
-            }
+            super::fill_array_view_with_fill_value(array_view, self.fill_value());
             Ok(())
         }
     }
