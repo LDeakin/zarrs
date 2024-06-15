@@ -10,16 +10,15 @@ A rust library for the [Zarr V3](https://zarr.dev) storage format for multidimen
 
 Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 
-**zarrs is experimental and in limited production use. Use at your own risk! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).**
-
 A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
+Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
 
 ## Getting Started
 - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html) and [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html) are good places to start.
 - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and performance benchmarks of `zarrs`.
 
-## Example
+## Example (Sync API)
 ```rust
 let store_path: PathBuf = "/path/to/store".into();
 let store: zarrs::storage::ReadableWritableListableStorage =
