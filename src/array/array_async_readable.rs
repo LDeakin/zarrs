@@ -5,7 +5,7 @@ use futures::StreamExt;
 use crate::{
     array_subset::ArraySubset,
     node::NodePath,
-    storage::{data_key, meta_key, AsyncReadableStorageTraits, StorageHandle},
+    storage::{data_key, meta_key, AsyncReadableStorageTraits, StorageError, StorageHandle},
 };
 
 use super::{
@@ -70,6 +70,29 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ) -> Result<Option<ndarray::ArrayD<T>>, ArrayError> {
         self.async_retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &CodecOptions::default())
             .await
+    }
+
+    /// Retrieve the encoded bytes of a chunk.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    #[allow(clippy::missing_panics_doc)]
+    pub async fn async_retrieve_encoded_chunk(
+        self: &Arc<Self>,
+        chunk_indices: &[u64],
+    ) -> Result<Option<Vec<u8>>, StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_async_readable_transformer(storage_handle);
+
+        crate::storage::async_retrieve_chunk(
+            &*storage_transformer,
+            self.path(),
+            chunk_indices,
+            self.chunk_key_encoding(),
+        )
+        .await
     }
 
     /// Async variant of [`retrieve_chunk`](Array::retrieve_chunk).
@@ -463,6 +486,41 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             }
             Ok(())
         }
+    }
+
+    /// Retrieve the encoded bytes of the chunks in `chunks`.
+    ///
+    /// The chunks are in order of the chunk indices returned by `chunks.indices().into_iter()`.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    #[allow(clippy::missing_panics_doc)]
+    pub async fn async_retrieve_encoded_chunks(
+        self: &Arc<Self>,
+        chunks: &ArraySubset,
+    ) -> Result<Vec<Option<Vec<u8>>>, StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_async_readable_transformer(storage_handle);
+
+        let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
+            let me = self.clone();
+            let storage_transformer = storage_transformer.clone();
+            async move {
+                crate::storage::async_retrieve_chunk(
+                    &*storage_transformer,
+                    me.path(),
+                    &chunk_indices,
+                    me.chunk_key_encoding(),
+                )
+                .await
+            }
+        };
+
+        let indices = chunks.indices();
+        let futures = indices.into_iter().map(retrieve_encoded_chunk);
+        futures::future::try_join_all(futures).await
     }
 
     /// Async variant of [`retrieve_chunks_opt`](Array::retrieve_chunks_opt).

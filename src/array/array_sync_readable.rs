@@ -92,6 +92,28 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         self.retrieve_chunk_ndarray_if_exists_opt(chunk_indices, &CodecOptions::default())
     }
 
+    /// Retrieve the encoded bytes of a chunk.
+    ///
+    /// # Errors
+    /// Returns an [`StorageError`] if there is an underlying store error.
+    #[allow(clippy::missing_panics_doc)]
+    pub fn retrieve_encoded_chunk(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<Vec<u8>>, StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_readable_transformer(storage_handle);
+
+        crate::storage::retrieve_chunk(
+            &*storage_transformer,
+            self.path(),
+            chunk_indices,
+            self.chunk_key_encoding(),
+        )
+    }
+
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist with default codec options.
     ///
     /// # Errors
@@ -156,6 +178,37 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         array_view: &ArrayView,
     ) -> Result<(), ArrayError> {
         self.retrieve_chunk_into_array_view_opt(chunk_indices, array_view, &CodecOptions::default())
+    }
+
+    /// Retrieve the encoded bytes of the chunks in `chunks`.
+    ///
+    /// The chunks are in order of the chunk indices returned by `chunks.indices().into_iter()`.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    pub fn retrieve_encoded_chunks(
+        &self,
+        chunks: &ArraySubset,
+    ) -> Result<Vec<Option<Vec<u8>>>, StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_readable_transformer(storage_handle);
+
+        let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
+            crate::storage::retrieve_chunk(
+                &*storage_transformer,
+                self.path(),
+                &chunk_indices,
+                self.chunk_key_encoding(),
+            )
+        };
+
+        chunks
+            .indices()
+            .into_iter()
+            .map(retrieve_encoded_chunk)
+            .collect()
     }
 
     /// Read and decode the chunks at `chunks` into their bytes.

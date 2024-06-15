@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add `async_http_array_read_opendal` example
  - Add `ArrayBuilder::build_arc()`
+ - Add `Array::[async_]retrieve_encoded_chunk[s]`
 
 ### Changed
  - Support `object_store` 0.9-0.10
