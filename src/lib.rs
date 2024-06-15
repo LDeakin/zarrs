@@ -6,9 +6,10 @@
 //! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
 //!
 //! ## Getting Started
+//! - Review the [implementation status](#implementation-status) to see supported [Zarr ZEPs](https://zarr.dev/zeps/) and Zarr extension points.
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] and [`storage`] are good places to start.
-//! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and performance benchmarks of `zarrs`.
+//! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and [performance benchmarks](https://github.com/LDeakin/zarrs_tools/blob/main/docs/benchmarks.md) of `zarrs`.
 //!
 //! ## Example
 //! ```
@@ -63,7 +64,7 @@
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!
 //! #### Non-Default
-//!  - `async`: an experimental asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [`Group`](group::Group).
+//!  - `async`: an **experimental** asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [`Group`](group::Group).
 //!    - The async API is runtime-agnostic. This has some limitations that are detailed in the [`Array`](crate::array::Array) docs.
 //!    - The async API is not as performant as the sync API.
 //!  - Codecs: `bitround`, `bz2`, `pcodec`, `zfp`, `zstd`.
