@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump `reqwest` to 0.12
  - Bump `zip` to 2.1
  - Bump minimum supported `flate2` to 1.0.30 and `thiserror` to 1.0.61
+ - Add default implementations for `[Async]ReadableStorageTraits::{get,get_partial_values}`
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency

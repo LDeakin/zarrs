@@ -20,7 +20,11 @@ pub trait ReadableStorageTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying storage error.
-    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError>;
+    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+        Ok(self
+            .get_partial_values_key(key, &[ByteRange::FromStart(0, None)])?
+            .map(|mut v| v.remove(0)))
+    }
 
     /// Retrieve partial bytes from a list of byte ranges for a store key.
     ///
@@ -48,7 +52,9 @@ pub trait ReadableStorageTraits: Send + Sync {
     fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError>;
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        self.get_partial_values_batched_by_key(key_ranges)
+    }
 
     /// Return the size in bytes of all keys under `prefix`.
     ///

@@ -5,7 +5,7 @@ use crate::{
     byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
         ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
-        StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
         WritableStorageTraits,
     },
 };
@@ -75,13 +75,6 @@ impl ReadableStorageTraits for OpendalStore {
         } else {
             Ok(None)
         }
-    }
-
-    fn get_partial_values(
-        &self,
-        key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
-        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {

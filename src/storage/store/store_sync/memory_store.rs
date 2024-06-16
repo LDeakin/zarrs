@@ -8,8 +8,8 @@ use crate::{
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     storage::{
         store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
+        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
+        StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
     },
 };
 
@@ -113,13 +113,6 @@ impl ReadableStorageTraits for MemoryStore {
         } else {
             Ok(None)
         }
-    }
-
-    fn get_partial_values(
-        &self,
-        key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
-        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {

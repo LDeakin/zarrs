@@ -3,13 +3,11 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
 
 use crate::{
-    array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange},
     storage::{
         store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyError, StoreKeyRange,
-        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
-        WritableStorageTraits,
+        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyError, StoreKeyStartValue,
+        StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes, WritableStorageTraits,
     },
 };
 
@@ -206,12 +204,6 @@ impl FilesystemStore {
 }
 
 impl ReadableStorageTraits for FilesystemStore {
-    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        Ok(self
-            .get_partial_values_key(key, &[ByteRange::FromStart(0, None)])?
-            .map(|mut v| v.remove(0)))
-    }
-
     fn get_partial_values_key(
         &self,
         key: &StoreKey,
@@ -261,13 +253,6 @@ impl ReadableStorageTraits for FilesystemStore {
         }
 
         Ok(Some(out))
-    }
-
-    fn get_partial_values(
-        &self,
-        key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
-        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size(&self) -> Result<u64, StorageError> {
