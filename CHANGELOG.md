@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Support `object_store` 0.9-0.10
  - **Breaking**: Support `opendal` 0.46-0.47, drop support for 0.45
- - **Breaking**: Async store methods taking `buffer::Buffer` now take `Vec<u8>`
+ - **Breaking**: Async store methods taking `bytes::Bytes` now take `Vec<u8>`
  - Rename `async_http_array_read` example to `async_http_array_read_object_store`
  - Bump `rayon` to 1.10.0
  - Bump `itertools` to 0.13
