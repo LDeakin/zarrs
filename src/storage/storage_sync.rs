@@ -56,12 +56,6 @@ pub trait ReadableStorageTraits: Send + Sync {
         self.get_partial_values_batched_by_key(key_ranges)
     }
 
-    /// Return the size in bytes of all keys under `prefix`.
-    ///
-    /// # Errors
-    /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
-    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError>;
-
     /// Return the size in bytes of the value at `key`.
     ///
     /// Returns [`None`] if the key is not found.
@@ -69,14 +63,6 @@ pub trait ReadableStorageTraits: Send + Sync {
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying storage error.
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError>;
-
-    /// Return the total size in bytes of the storage.
-    ///
-    /// # Errors
-    /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
-    fn size(&self) -> Result<u64, StorageError> {
-        self.size_prefix(&StorePrefix::root())
-    }
 
     /// A utility method with the same input and output as [`get_partial_values`](ReadableStorageTraits::get_partial_values) that internally calls [`get_partial_values_key`](ReadableStorageTraits::get_partial_values_key) with byte ranges grouped by key.
     ///
@@ -146,6 +132,20 @@ pub trait ListableStorageTraits: Send + Sync {
     /// Returns a [`StorageError`] if the prefix is not a directory or there is an underlying error with the store.
     ///
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError>;
+
+    /// Return the size in bytes of all keys under `prefix`.
+    ///
+    /// # Errors
+    /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError>;
+
+    /// Return the total size in bytes of the storage.
+    ///
+    /// # Errors
+    /// Returns a `StorageError` if the store does not support `size()` or there is an underlying error with the store.
+    fn size(&self) -> Result<u64, StorageError> {
+        self.size_prefix(&StorePrefix::root())
+    }
 }
 
 /// Set partial values for a store.

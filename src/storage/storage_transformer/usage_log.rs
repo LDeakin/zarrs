@@ -234,26 +234,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         result
     }
 
-    fn size(&self) -> Result<u64, StorageError> {
-        let result = self.storage.size();
-        writeln!(
-            self.handle.lock().unwrap(),
-            "{}size() -> {result:?}",
-            (self.prefix_func)()
-        )?;
-        result
-    }
-
-    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        let result: Result<u64, StorageError> = self.storage.size_prefix(prefix);
-        writeln!(
-            self.handle.lock().unwrap(),
-            "{}size_prefix({prefix}) -> {result:?}",
-            (self.prefix_func)()
-        )?;
-        result
-    }
-
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let result = self.storage.size_key(key);
         writeln!(
@@ -306,6 +286,26 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
                 .iter()
                 .format(", ")
                 .to_string()),
+        )?;
+        result
+    }
+
+    fn size(&self) -> Result<u64, StorageError> {
+        let result = self.storage.size();
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}size() -> {result:?}",
+            (self.prefix_func)()
+        )?;
+        result
+    }
+
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let result: Result<u64, StorageError> = self.storage.size_prefix(prefix);
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}size_prefix({prefix}) -> {result:?}",
+            (self.prefix_func)()
         )?;
         result
     }
@@ -440,26 +440,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
         result
     }
 
-    async fn size(&self) -> Result<u64, StorageError> {
-        let result = self.storage.size().await;
-        writeln!(
-            self.handle.lock().unwrap(),
-            "{}size() -> {result:?}",
-            (self.prefix_func)()
-        )?;
-        result
-    }
-
-    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        let result: Result<u64, StorageError> = self.storage.size_prefix(prefix).await;
-        writeln!(
-            self.handle.lock().unwrap(),
-            "{}size_prefix({prefix}) -> {result:?}",
-            (self.prefix_func)()
-        )?;
-        result
-    }
-
     async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let result = self.storage.size_key(key).await;
         writeln!(
@@ -514,6 +494,26 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
                 .iter()
                 .format(", ")
                 .to_string()),
+        )?;
+        result
+    }
+
+    async fn size(&self) -> Result<u64, StorageError> {
+        let result = self.storage.size().await;
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}size() -> {result:?}",
+            (self.prefix_func)()
+        )?;
+        result
+    }
+
+    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let result: Result<u64, StorageError> = self.storage.size_prefix(prefix).await;
+        writeln!(
+            self.handle.lock().unwrap(),
+            "{}size_prefix({prefix}) -> {result:?}",
+            (self.prefix_func)()
         )?;
         result
     }

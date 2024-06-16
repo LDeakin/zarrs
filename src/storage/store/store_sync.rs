@@ -58,7 +58,9 @@ mod test_util {
         Ok(())
     }
 
-    pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
+    pub fn store_read<T: ReadableStorageTraits + ListableStorageTraits>(
+        store: &T,
+    ) -> Result<(), Box<dyn Error>> {
         assert!(store.get(&"notfound".try_into()?)?.is_none());
         assert!(store.size_key(&"notfound".try_into()?)?.is_none());
         assert_eq!(store.get(&"a/b".try_into()?)?, Some(vec![0, 1, 2]));

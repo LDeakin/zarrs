@@ -46,14 +46,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits for Storage
         self.0.get_partial_values(key_ranges)
     }
 
-    fn size(&self) -> Result<u64, super::StorageError> {
-        self.0.size()
-    }
-
-    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        self.0.size_prefix(prefix)
-    }
-
     fn size_key(&self, key: &super::StoreKey) -> Result<Option<u64>, super::StorageError> {
         self.0.size_key(key)
     }
@@ -76,6 +68,14 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits for Storage
         prefix: &super::StorePrefix,
     ) -> Result<super::StoreKeysPrefixes, super::StorageError> {
         self.0.list_dir(prefix)
+    }
+
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        self.0.size_prefix(prefix)
+    }
+
+    fn size(&self) -> Result<u64, super::StorageError> {
+        self.0.size()
     }
 }
 
@@ -136,16 +136,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
         self.0.get_partial_values(key_ranges).await
     }
 
-    async fn size_prefix(&self, prefix: &super::StorePrefix) -> Result<u64, super::StorageError> {
-        self.0.size_prefix(prefix).await
-    }
-
     async fn size_key(&self, key: &super::StoreKey) -> Result<Option<u64>, super::StorageError> {
         self.0.size_key(key).await
-    }
-
-    async fn size(&self) -> Result<u64, super::StorageError> {
-        self.0.size().await
     }
 }
 
@@ -170,6 +162,14 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
         prefix: &super::StorePrefix,
     ) -> Result<super::StoreKeysPrefixes, super::StorageError> {
         self.0.list_dir(prefix).await
+    }
+
+    async fn size_prefix(&self, prefix: &super::StorePrefix) -> Result<u64, super::StorageError> {
+        self.0.size_prefix(prefix).await
+    }
+
+    async fn size(&self) -> Result<u64, super::StorageError> {
+        self.0.size().await
     }
 }
 

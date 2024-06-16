@@ -218,14 +218,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         Ok(values)
     }
 
-    fn size(&self) -> Result<u64, StorageError> {
-        self.storage.size()
-    }
-
-    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        self.storage.size_prefix(prefix)
-    }
-
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         self.storage.size_key(key)
     }
@@ -244,6 +236,14 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
 
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
         self.storage.list_dir(prefix)
+    }
+
+    fn size(&self) -> Result<u64, StorageError> {
+        self.storage.size()
+    }
+
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        self.storage.size_prefix(prefix)
     }
 }
 
@@ -353,14 +353,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
         Ok(values)
     }
 
-    async fn size(&self) -> Result<u64, StorageError> {
-        self.storage.size().await
-    }
-
-    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        self.storage.size_prefix(prefix).await
-    }
-
     async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         self.storage.size_key(key).await
     }
@@ -381,6 +373,14 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 
     async fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
         self.storage.list_dir(prefix).await
+    }
+
+    async fn size(&self) -> Result<u64, StorageError> {
+        self.storage.size().await
+    }
+
+    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        self.storage.size_prefix(prefix).await
     }
 }
 

@@ -89,27 +89,9 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
         }
     }
 
-    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        let list = self
-            .operator
-            .list_with(prefix.as_str())
-            .recursive(true)
-            .metakey(opendal::Metakey::ContentLength)
-            .await?;
-        let size = list
-            .into_iter()
-            .map(|entry| entry.metadata().content_length())
-            .sum::<u64>();
-        Ok(size)
-    }
-
     async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         Ok(handle_result(self.operator.stat(key.as_str()).await)?
             .map(|metadata| metadata.content_length()))
-    }
-
-    async fn size(&self) -> Result<u64, StorageError> {
-        self.size_prefix(&StorePrefix::root()).await
     }
 }
 
@@ -191,6 +173,20 @@ impl AsyncListableStorageTraits for AsyncOpendalStore {
         keys.sort();
         prefixes.sort();
         Ok(StoreKeysPrefixes { keys, prefixes })
+    }
+
+    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let list = self
+            .operator
+            .list_with(prefix.as_str())
+            .recursive(true)
+            .metakey(opendal::Metakey::ContentLength)
+            .await?;
+        let size = list
+            .into_iter()
+            .map(|entry| entry.metadata().content_length())
+            .sum::<u64>();
+        Ok(size)
     }
 }
 
