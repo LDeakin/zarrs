@@ -3,7 +3,7 @@
 use crate::{
     array::MaybeBytes,
     byte_range::ByteRange,
-    storage::{ReadableStorageTraits, StorageError, StoreKey, StorePrefix},
+    storage::{ReadableStorageTraits, StorageError, StoreKey},
 };
 
 use itertools::Itertools;
@@ -146,12 +146,6 @@ impl ReadableStorageTraits for HTTPStore {
                 response.status()
             ))),
         }
-    }
-
-    fn size_prefix(&self, _prefix: &StorePrefix) -> Result<u64, StorageError> {
-        Err(StorageError::Unsupported(
-            "size_prefix() not supported for HTTP store".into(),
-        ))
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {

@@ -114,32 +114,11 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
         }
     }
 
-    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        let prefix: object_store::path::Path = prefix.as_str().into();
-        let mut locations = self.object_store.list(Some(&prefix));
-        let mut size = 0;
-        while let Some(item) = locations.next().await {
-            let meta = item?;
-            size += u64::try_from(meta.size).unwrap();
-        }
-        Ok(size)
-    }
-
     async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         Ok(
             handle_result(self.object_store.head(&key_to_path(key)).await)?
                 .map(|meta| meta.size as u64),
         )
-    }
-
-    async fn size(&self) -> Result<u64, StorageError> {
-        let mut locations = self.object_store.list(None);
-        let mut size = 0;
-        while let Some(item) = locations.next().await {
-            let meta = item?;
-            size += u64::try_from(meta.size).unwrap();
-        }
-        Ok(size)
     }
 }
 
@@ -248,6 +227,27 @@ impl<T: object_store::ObjectStore> AsyncListableStorageTraits for AsyncObjectSto
         keys.sort();
         prefixes.sort();
         Ok(StoreKeysPrefixes { keys, prefixes })
+    }
+
+    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let prefix: object_store::path::Path = prefix.as_str().into();
+        let mut locations = self.object_store.list(Some(&prefix));
+        let mut size = 0;
+        while let Some(item) = locations.next().await {
+            let meta = item?;
+            size += u64::try_from(meta.size).unwrap();
+        }
+        Ok(size)
+    }
+
+    async fn size(&self) -> Result<u64, StorageError> {
+        let mut locations = self.object_store.list(None);
+        let mut size = 0;
+        while let Some(item) = locations.next().await {
+            let meta = item?;
+            size += u64::try_from(meta.size).unwrap();
+        }
+        Ok(size)
     }
 }
 

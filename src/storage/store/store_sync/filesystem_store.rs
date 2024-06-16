@@ -255,30 +255,6 @@ impl ReadableStorageTraits for FilesystemStore {
         Ok(Some(out))
     }
 
-    fn size(&self) -> Result<u64, StorageError> {
-        Ok(WalkDir::new(&self.base_path)
-            .into_iter()
-            .filter_map(std::result::Result::ok)
-            .filter_map(|v| {
-                if v.path().is_file() {
-                    Some(std::fs::metadata(v.path()).unwrap().len())
-                } else {
-                    None
-                }
-            })
-            .sum())
-    }
-
-    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        let mut size = 0;
-        for key in self.list_prefix(prefix)? {
-            if let Some(size_key) = self.size_key(&key)? {
-                size += size_key;
-            }
-        }
-        Ok(size)
-    }
-
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let key_path = self.key_to_fspath(key);
         std::fs::metadata(key_path).map_or_else(|_| Ok(None), |metadata| Ok(Some(metadata.len())))
@@ -400,6 +376,30 @@ impl ListableStorageTraits for FilesystemStore {
         }
 
         Ok(StoreKeysPrefixes { keys, prefixes })
+    }
+
+    fn size(&self) -> Result<u64, StorageError> {
+        Ok(WalkDir::new(&self.base_path)
+            .into_iter()
+            .filter_map(std::result::Result::ok)
+            .filter_map(|v| {
+                if v.path().is_file() {
+                    Some(std::fs::metadata(v.path()).unwrap().len())
+                } else {
+                    None
+                }
+            })
+            .sum())
+    }
+
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let mut size = 0;
+        for key in self.list_prefix(prefix)? {
+            if let Some(size_key) = self.size_key(&key)? {
+                size += size_key;
+            }
+        }
+        Ok(size)
     }
 }
 

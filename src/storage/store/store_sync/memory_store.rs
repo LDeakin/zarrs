@@ -115,16 +115,6 @@ impl ReadableStorageTraits for MemoryStore {
         }
     }
 
-    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        let mut size = 0;
-        for key in self.list_prefix(prefix)? {
-            if let Some(size_key) = self.size_key(&key)? {
-                size += size_key;
-            }
-        }
-        Ok(size)
-    }
-
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let data_map = self.data_map.lock().unwrap();
         data_map
@@ -208,6 +198,16 @@ impl ListableStorageTraits for MemoryStore {
         }
         let prefixes: Vec<StorePrefix> = prefixes.iter().cloned().collect();
         Ok(StoreKeysPrefixes { keys, prefixes })
+    }
+
+    fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
+        let mut size = 0;
+        for key in self.list_prefix(prefix)? {
+            if let Some(size_key) = self.size_key(&key)? {
+                size += size_key;
+            }
+        }
+        Ok(size)
     }
 }
 

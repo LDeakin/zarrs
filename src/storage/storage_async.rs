@@ -64,13 +64,6 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
         self.get_partial_values_batched_by_key(key_ranges).await
     }
 
-    /// Return the size in bytes of all keys under `prefix`.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
-    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError>;
-
     /// Return the size in bytes of the value at `key`.
     ///
     /// Returns [`None`] if the key is not found.
@@ -79,13 +72,6 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
     ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError>;
-
-    /// Return the size in bytes of the readable storage.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
-    async fn size(&self) -> Result<u64, StorageError>;
 
     /// A utility method with the same input and output as [`get_partial_values`](AsyncReadableStorageTraits::get_partial_values) that internally calls [`get_partial_values_key`](AsyncReadableStorageTraits::get_partial_values_key) with byte ranges grouped by key.
     ///
@@ -164,6 +150,22 @@ pub trait AsyncListableStorageTraits: Send + Sync {
     /// Returns a [`StorageError`] if the prefix is not a directory or there is an underlying error with the store.
     ///
     async fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError>;
+
+    /// Return the size in bytes of all keys under `prefix`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
+    async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError>;
+
+    /// Return the size in bytes of the storage.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `StorageError` if the store does not support size() or there is an underlying error with the store.
+    async fn size(&self) -> Result<u64, StorageError> {
+        self.size_prefix(&StorePrefix::root()).await
+    }
 }
 
 /// Set partial values for an asynchronous store.

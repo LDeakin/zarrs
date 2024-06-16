@@ -69,7 +69,7 @@ mod test_util {
         Ok(())
     }
 
-    pub async fn store_read<T: AsyncReadableStorageTraits>(
+    pub async fn store_read<T: AsyncReadableStorageTraits + AsyncListableStorageTraits>(
         store: &T,
     ) -> Result<(), Box<dyn Error>> {
         assert!(store.get(&"notfound".try_into()?).await?.is_none());
