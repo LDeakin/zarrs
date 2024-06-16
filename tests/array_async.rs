@@ -5,7 +5,7 @@ use zarrs::array::{Array, ArrayBuilder, ArrayView, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 
 #[cfg(feature = "object_store")]
-use zarrs::object_store::memory::InMemory;
+use object_store::memory::InMemory;
 
 #[cfg(all(feature = "async", feature = "object_store"))]
 use zarrs::storage::store::AsyncObjectStore;

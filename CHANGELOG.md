@@ -25,9 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump minimum supported `flate2` to 1.0.30 and `thiserror` to 1.0.61
 
 ### Removed
- - **Breaking**: Remove `bytes` dependency and public export
+ - **Breaking**: Remove `bytes` dependency
  - Remove `rayon_iter_concurrent_limit` dependency
    - Rayon `rayon::iter::IndexedParallelIterator::by_uniform_blocks` (since `rayon` 1.9) is used instead
+ - **Breaking**: Remove re-exports of public dependencies
 
 ## [0.14.0] - 2024-05-16
 

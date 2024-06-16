@@ -121,30 +121,6 @@ pub mod plugin;
 pub mod storage;
 pub mod version;
 
-/// Re-export [`bytemuck`].
-pub use bytemuck;
-
-/// Re-export [`dyn_clone`].
-pub use dyn_clone;
-
-/// Re-export [`half`].
-pub use half;
-
-/// Re-export [`serde_json`].
-pub use serde_json;
-
-#[cfg(feature = "ndarray")]
-/// Re-export [`ndarray`].
-pub use ndarray;
-
-#[cfg(feature = "object_store")]
-/// Re-export [`object_store`].
-pub use object_store;
-
-#[cfg(feature = "opendal")]
-/// Re-export [`opendal`].
-pub use opendal;
-
 /// Get a mutable slice of the spare capacity in a vector.
 unsafe fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {
     let spare_capacity = vec.spare_capacity_mut();
