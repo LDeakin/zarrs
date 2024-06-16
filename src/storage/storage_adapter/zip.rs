@@ -1,12 +1,11 @@
 //! A zip storage adapter.
 
 use crate::{
-    array::{codec::extract_byte_ranges_read, MaybeBytes},
+    array::codec::extract_byte_ranges_read,
     byte_range::ByteRange,
     storage::{
         storage_value_io::StorageValueIO, ListableStorageTraits, ReadableStorageTraits,
-        StorageError, StoreKey, StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        StorePrefixes,
+        StorageError, StoreKey, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
     },
 };
 
@@ -99,25 +98,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     for ZipStorageAdapter<TStorage>
 {
-    fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        Ok(self.get_impl(key, &[ByteRange::FromStart(0, None)])?.map(
-            |mut bytes| bytes.remove(0), // extract single byte range
-        ))
-    }
-
     fn get_partial_values_key(
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
         self.get_impl(key, byte_ranges)
-    }
-
-    fn get_partial_values(
-        &self,
-        key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
-        self.get_partial_values_batched_by_key(key_ranges)
     }
 
     fn size(&self) -> Result<u64, StorageError> {

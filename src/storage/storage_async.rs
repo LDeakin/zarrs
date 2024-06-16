@@ -25,7 +25,12 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
     /// # Errors
     ///
     /// Returns a [`StorageError`] if the store key does not exist or there is an error with the underlying store.
-    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError>;
+    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+        Ok(self
+            .get_partial_values_key(key, &[ByteRange::FromStart(0, None)])
+            .await?
+            .map(|mut v| v.remove(0)))
+    }
 
     /// Retrieve partial bytes from a list of byte ranges for a store key.
     ///
@@ -55,7 +60,9 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
     async fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError>;
+    ) -> Result<Vec<MaybeBytes>, StorageError> {
+        self.get_partial_values_batched_by_key(key_ranges).await
+    }
 
     /// Return the size in bytes of all keys under `prefix`.
     ///

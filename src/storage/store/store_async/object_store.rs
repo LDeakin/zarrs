@@ -6,8 +6,8 @@ use crate::{
     byte_range::ByteRange,
     storage::{
         AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
-        AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix,
+        AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
+        StoreKeysPrefixes, StorePrefix,
     },
 };
 
@@ -112,13 +112,6 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
                 }
             }
         }
-    }
-
-    async fn get_partial_values(
-        &self,
-        key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
-        self.get_partial_values_batched_by_key(key_ranges).await
     }
 
     async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
