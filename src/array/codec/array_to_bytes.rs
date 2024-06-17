@@ -2,6 +2,8 @@
 
 pub mod bytes;
 pub mod codec_chain;
+pub mod vlen;
+pub mod vlen_interleaved;
 
 #[cfg(feature = "pcodec")]
 pub mod pcodec;

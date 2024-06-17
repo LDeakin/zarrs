@@ -63,7 +63,7 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<AsyncBytes>>, StorageError> {
-        // FIXME: Get OpenDAL to return an error if byte range is OOB instead of panic, then don't need to query size
+        // TODO: Get OpenDAL to return an error if byte range is OOB instead of panic, then don't need to query size
         let (size, reader) = futures::join!(self.size_key(key), self.operator.reader(key.as_str()));
         if let (Some(size), Some(reader)) = (size?, handle_result(reader)?) {
             let mut byte_ranges_fetch = Vec::with_capacity(byte_ranges.len());

@@ -175,7 +175,7 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
 
 #[cfg(test)]
 mod tests {
-    use std::{borrow::Cow, num::NonZeroU64};
+    use std::num::NonZeroU64;
 
     use array_representation::ChunkRepresentation;
     use itertools::Itertools;
@@ -183,10 +183,8 @@ mod tests {
     use crate::{
         array::{
             array_representation,
-            codec::{
-                ArrayCodecTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec,
-                CodecOptions,
-            },
+            codec::{ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, CodecOptions},
+            ArrayBytes,
         },
         array_subset::ArraySubset,
     };
@@ -217,25 +215,24 @@ mod tests {
             98765.43210,
         ];
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
             .unwrap();
         let decoded = codec
-            .decode(
-                Cow::Borrowed(&encoded),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
+            .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();
-        let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(decoded.to_vec());
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<f32>(
+            decoded.into_fixed().unwrap().into_owned(),
+        );
         assert_eq!(decoded_elements, &[0.0f32, 1.25f32, -8.0f32, 98304.0f32]);
     }
 
@@ -250,25 +247,24 @@ mod tests {
         .unwrap();
         let elements: Vec<u32> = vec![0, 1024, 1280, 1664, 1685, 123145182, 4294967295];
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
             .unwrap();
         let decoded = codec
-            .decode(
-                Cow::Borrowed(&encoded),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
+            .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();
-        let decoded_elements = crate::array::transmute_from_bytes_vec::<u32>(decoded.to_vec());
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<u32>(
+            decoded.into_fixed().unwrap().into_owned(),
+        );
         for element in &decoded_elements {
             println!("{element} -> {element:#b}");
         }
@@ -289,25 +285,24 @@ mod tests {
         .unwrap();
         let elements: Vec<u32> = vec![0, 3, 7, 15, 17, 54, 89, 128, 255];
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
         let codec = BitroundCodec::new_with_configuration(&codec_configuration);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
             .unwrap();
         let decoded = codec
-            .decode(
-                Cow::Borrowed(&encoded),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
+            .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();
-        let decoded_elements = crate::array::transmute_from_bytes_vec::<u32>(decoded.to_vec());
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<u32>(
+            decoded.into_fixed().unwrap().into_owned(),
+        );
         for element in &decoded_elements {
             println!("{element} -> {element:#b}");
         }
@@ -327,20 +322,21 @@ mod tests {
             0.0f32.into(),
         )
         .unwrap();
-        let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = crate::array::transmute_to_bytes_vec(elements).into();
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
-            .unwrap();
+            .unwrap()
+            .into_owned();
         let decoded_regions = [
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Box::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .partial_decoder(
@@ -361,7 +357,11 @@ mod tests {
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
-            .map(|bytes| crate::array::convert_from_bytes_slice::<f32>(&bytes))
+            .map(|bytes| {
+                crate::array::transmute_from_bytes_vec::<f32>(
+                    bytes.into_fixed().unwrap().into_owned(),
+                )
+            })
             .collect_vec();
         let answer: &[Vec<f32>] = &[vec![3.0, 4.0], vec![16.0, 16.0, 20.0, 20.0]];
         assert_eq!(answer, decoded_partial_chunk);
@@ -382,10 +382,11 @@ mod tests {
         )
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes = ArrayBytes::from(bytes);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -394,7 +395,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Box::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .async_partial_decoder(
@@ -418,7 +419,11 @@ mod tests {
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
-            .map(|bytes| crate::array::convert_from_bytes_slice::<f32>(&bytes))
+            .map(|bytes| {
+                crate::array::transmute_from_bytes_vec::<f32>(
+                    bytes.into_fixed().unwrap().into_owned(),
+                )
+            })
             .collect_vec();
         let answer: &[Vec<f32>] = &[vec![3.0, 4.0], vec![16.0, 16.0, 20.0, 20.0]];
         assert_eq!(answer, decoded_partial_chunk);

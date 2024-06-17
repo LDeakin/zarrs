@@ -1,6 +1,9 @@
 use std::num::NonZeroU64;
 
-use super::{data_type::IncompatibleFillValueError, ArrayShape, DataType, FillValue};
+use super::{
+    data_type::{DataTypeSize, IncompatibleFillValueError},
+    ArrayShape, DataType, FillValue,
+};
 use derive_more::Display;
 
 /// The shape, data type, and fill value of an `array`.
@@ -24,6 +27,23 @@ pub type ArrayRepresentation = ArrayRepresentationBase<u64>;
 /// The array representation of a chunk, which must have nonzero dimensions.
 pub type ChunkRepresentation = ArrayRepresentationBase<NonZeroU64>;
 
+/// The size of an array/chunk.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum ArraySize {
+    /// Fixed size.
+    Fixed {
+        /// The number of elements.
+        num_elements: u64,
+        /// The data type size (in bytes).
+        data_type_size: usize,
+    },
+    /// Variable sized.
+    Variable {
+        /// The number of elements.
+        num_elements: u64,
+    },
+}
+
 impl<TDim> ArrayRepresentationBase<TDim>
 where
     TDim: Into<u64> + core::fmt::Debug + Copy,
@@ -38,17 +58,26 @@ where
         data_type: DataType,
         fill_value: FillValue,
     ) -> Result<Self, IncompatibleFillValueError> {
-        if data_type.size() == fill_value.size() {
-            Ok(Self {
+        match data_type.size() {
+            DataTypeSize::Fixed(size) => {
+                if size == fill_value.size() {
+                    Ok(Self {
+                        array_shape,
+                        data_type,
+                        fill_value,
+                    })
+                } else {
+                    Err(IncompatibleFillValueError::new(
+                        data_type.name(),
+                        fill_value,
+                    ))
+                }
+            }
+            DataTypeSize::Variable => Ok(Self {
                 array_shape,
                 data_type,
                 fill_value,
-            })
-        } else {
-            Err(IncompatibleFillValueError::new(
-                data_type.name(),
-                fill_value,
-            ))
+            }),
         }
     }
 
@@ -62,7 +91,9 @@ where
         data_type: DataType,
         fill_value: FillValue,
     ) -> Self {
-        debug_assert_eq!(data_type.size(), fill_value.size());
+        if let Some(data_type_size) = data_type.fixed_size() {
+            debug_assert_eq!(data_type_size, fill_value.size());
+        }
         Self {
             array_shape,
             data_type,
@@ -123,23 +154,26 @@ where
 
     /// Return the element size.
     #[must_use]
-    pub fn element_size(&self) -> usize {
-        self.fill_value.size()
+    pub fn element_size(&self) -> DataTypeSize {
+        self.data_type().size()
     }
 
-    /// Return the total size in bytes.
-    ///
-    /// Equal to the product of each element of its shape and the element size.
+    /// Returns the element size in bytes with a fixed-size data type, otherwise returns [`None`].
     #[must_use]
-    pub fn size(&self) -> u64 {
-        self.num_elements() * self.element_size() as u64
+    pub fn fixed_element_size(&self) -> Option<usize> {
+        self.data_type().fixed_size()
     }
 
-    /// Return the total size in bytes as a [`usize`].
-    ///
-    /// Equal to the product of each element of its shape and the element size.
+    /// Return the array size.
     #[must_use]
-    pub fn size_usize(&self) -> usize {
-        self.num_elements_usize() * self.element_size()
+    pub fn size(&self) -> ArraySize {
+        let num_elements = self.num_elements();
+        match self.element_size() {
+            DataTypeSize::Fixed(data_type_size) => ArraySize::Fixed {
+                num_elements,
+                data_type_size,
+            },
+            DataTypeSize::Variable => ArraySize::Variable { num_elements },
+        }
     }
 }

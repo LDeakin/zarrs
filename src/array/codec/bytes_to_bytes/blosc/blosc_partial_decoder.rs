@@ -1,8 +1,12 @@
 use std::borrow::Cow;
 
 use crate::{
-    array::codec::{
-        bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError, CodecOptions,
+    array::{
+        codec::{
+            bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError,
+            CodecOptions,
+        },
+        RawBytes,
     },
     byte_range::ByteRange,
 };
@@ -28,7 +32,7 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
@@ -38,7 +42,6 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
             let nbytes = blosc_nbytes(&encoded_value);
             let typesize = blosc_typesize(&encoded_value);
             if let (Some(nbytes), Some(typesize)) = (nbytes, typesize) {
-                // FIXME: This needs coalescing to be efficient, for now CodecTraits::partial_decoder_decodes_all is set to true
                 let mut decoded_byte_ranges = Vec::with_capacity(decoded_regions.len());
                 for byte_range in decoded_regions {
                     let start = usize::try_from(byte_range.start(nbytes as u64)).unwrap();
@@ -81,7 +84,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncBloscPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);

@@ -26,12 +26,16 @@ pub enum FillValueMetadata {
     Int(i64),
     /// A float.
     Float(FillValueFloat),
-    /// A raw data type.
+    /// An array of integers. Suitable for raw (`r<N>`) and `binary` data types.
     #[display(fmt = "{_0:?}")]
     ByteArray(Vec<u8>),
     /// A complex number.
     #[display(fmt = "{{re:{_0}, im:{_1}}}")]
     Complex(FillValueFloat, FillValueFloat),
+    /// A string.
+    String(String),
+    /// An unsupported fill value.
+    Unsupported(serde_json::Value),
 }
 
 impl TryFrom<&str> for FillValueMetadata {
@@ -103,6 +107,12 @@ impl HexString {
     }
 }
 
+impl From<&HexString> for String {
+    fn from(value: &HexString) -> Self {
+        bytes_to_hex_string(value.as_be_bytes())
+    }
+}
+
 impl core::fmt::Display for HexString {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:?}", self.0)
@@ -160,6 +170,17 @@ pub enum FillValueFloatStringNonFinite {
     /// NaN (not-a-number).
     #[serde(rename = "NaN")]
     NaN,
+}
+
+impl From<&FillValueFloatStringNonFinite> for String {
+    fn from(value: &FillValueFloatStringNonFinite) -> Self {
+        match value {
+            FillValueFloatStringNonFinite::PosInfinity => "Infinity",
+            FillValueFloatStringNonFinite::NegInfinity => "-Infinity",
+            FillValueFloatStringNonFinite::NaN => "NaN",
+        }
+        .to_string()
+    }
 }
 
 impl FillValueMetadata {
@@ -542,6 +563,60 @@ mod tests {
         match metadata {
             FillValueMetadata::ByteArray(fill_value) => {
                 assert_eq!(fill_value, [0, 1, 2, 3]);
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    // Null is not currently supported, so recognise it as unknown fill value metadata
+    #[test]
+    fn fill_value_metadata_null() {
+        let json = r#"null"#;
+        let metadata: FillValueMetadata = json.try_into().unwrap();
+        assert_eq!(json, serde_json::to_string(&metadata).unwrap());
+        match metadata {
+            FillValueMetadata::Unsupported(fill_value) => {
+                assert!(fill_value.is_null())
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    // A negative single byte, so recognise it as unknown fill value metadata
+    #[test]
+    fn fill_value_metadata_neg_array1() {
+        let json = r#"[-5]"#;
+        let metadata: FillValueMetadata = json.try_into().unwrap();
+        assert_eq!(json, serde_json::to_string(&metadata).unwrap());
+        match metadata {
+            FillValueMetadata::Unsupported(fill_value) => {
+                assert!(fill_value.is_array())
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    // Two negative -> complex
+    #[test]
+    fn fill_value_metadata_neg_array2() {
+        let json = r#"[-5, -5]"#;
+        let metadata: FillValueMetadata = json.try_into().unwrap();
+        assert_ne!(json, serde_json::to_string(&metadata).unwrap()); // [-5.0, -5.0]
+        match metadata {
+            FillValueMetadata::Complex(_re, _im) => {}
+            _ => unreachable!(),
+        }
+    }
+
+    // Single array element > u8::MAX is currently unknown
+    #[test]
+    fn fill_value_metadata_large_array() {
+        let json = r#"[256]"#;
+        let metadata: FillValueMetadata = json.try_into().unwrap();
+        assert_eq!(json, serde_json::to_string(&metadata).unwrap());
+        match metadata {
+            FillValueMetadata::Unsupported(fill_value) => {
+                assert!(fill_value.is_array())
             }
             _ => unreachable!(),
         }

@@ -2,15 +2,18 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata>.
 
-use super::v2::{
-    array::{
-        array_metadata_fill_value_v2_to_v3, data_type_metadata_v2_to_endianness,
-        data_type_metadata_v2_to_v3_data_type, ArrayMetadataV2, ArrayMetadataV2DataType,
-        ArrayMetadataV2Order, DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
-    },
-    codec::blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
-};
 pub use super::v3::ArrayMetadataV3;
+use super::{
+    v2::{
+        array::{
+            array_metadata_fill_value_v2_to_v3, data_type_metadata_v2_to_endianness,
+            data_type_metadata_v2_to_v3_data_type, ArrayMetadataV2, ArrayMetadataV2DataType,
+            ArrayMetadataV2Order, DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
+        },
+        codec::blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
+    },
+    v3::codec::vlen_interleaved::VlenInterleavedCodecConfigurationV1,
+};
 use thiserror::Error;
 
 use derive_more::{Display, From};
@@ -138,22 +141,37 @@ pub fn array_metadata_v2_to_v3(
         codecs.push(transpose_metadata);
     }
 
-    // Filters (array to array codecs)
+    // Filters (array to array or array to bytes codecs)
+    let mut is_vlen = false;
     if let Some(filters) = &array_metadata_v2.filters {
         for filter in filters {
-            codecs.push(MetadataV3::new_with_configuration(
-                filter.id(),
-                filter.configuration().clone(),
-            ));
+            match filter.id() {
+                "vlen-utf8" | "vlen-bytes" | "vlen-array" => {
+                    is_vlen = true;
+                    let vlen_interleaved_metadata =
+                        MetadataV3::new_with_serializable_configuration(
+                            super::v3::codec::vlen_interleaved::IDENTIFIER,
+                            &VlenInterleavedCodecConfigurationV1 {},
+                        )?;
+                    codecs.push(vlen_interleaved_metadata);
+                }
+                _ => {
+                    codecs.push(MetadataV3::new_with_configuration(
+                        filter.id(),
+                        filter.configuration().clone(),
+                    ));
+                }
+            }
         }
     }
 
-    // Array-to-bytes codec
-    let bytes_metadata = MetadataV3::new_with_serializable_configuration(
-        super::v3::codec::bytes::IDENTIFIER,
-        &BytesCodecConfigurationV1 { endian: endianness },
-    )?;
-    codecs.push(bytes_metadata);
+    if !is_vlen {
+        let bytes_metadata = MetadataV3::new_with_serializable_configuration(
+            super::v3::codec::bytes::IDENTIFIER,
+            &BytesCodecConfigurationV1 { endian: endianness },
+        )?;
+        codecs.push(bytes_metadata);
+    }
 
     // Compressor (bytes to bytes codec)
     if let Some(compressor) = &array_metadata_v2.compressor {

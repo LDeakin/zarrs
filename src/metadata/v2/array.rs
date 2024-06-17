@@ -159,7 +159,12 @@ pub fn data_type_metadata_v2_to_v3_data_type(
                 "<f8" | ">f8" => Ok(DataType::Float64),
                 "<c8" | ">c8" => Ok(DataType::Complex64),
                 "<c16" | ">c16" => Ok(DataType::Complex128),
-                // TODO "|V"
+                "|O" => Ok(DataType::String), // LEGACY: This is not part of the spec. The dtype for a PyObject, which is what zarr-python 2 uses for string arrays.
+                // TODO "|mX" timedelta
+                // TODO "|MX" datetime
+                // TODO "|SX" string (fixed length sequence of char)
+                // TODO "|UX" string (fixed length sequence of Py_UNICODE)
+                // TODO "|VX" other (void * – each item is a fixed-size chunk of memory)
                 _ => Err(DataTypeMetadataV2UnsupportedDataTypeError(
                     data_type.clone(),
                 )),

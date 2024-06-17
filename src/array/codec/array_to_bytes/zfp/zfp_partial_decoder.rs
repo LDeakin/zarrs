@@ -1,8 +1,9 @@
-use std::borrow::Cow;
-
 use crate::{
     array::{
-        codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, CodecOptions},
+        codec::{
+            ArrayBytes, ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError,
+            CodecOptions,
+        },
         ChunkRepresentation, DataType,
     },
     array_subset::ArraySubset,
@@ -51,7 +52,10 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
+        let data_type_size = self.data_type().fixed_size().ok_or_else(|| {
+            CodecError::UnsupportedDataType(self.data_type().clone(), super::IDENTIFIER.to_string())
+        })?;
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -73,13 +77,9 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges = unsafe {
-                        array_subset.byte_ranges_unchecked(
-                            &chunk_shape,
-                            self.decoded_representation.element_size(),
-                        )
-                    };
-                    out.push(Cow::Owned(extract_byte_ranges_concat(
+                    let byte_ranges =
+                        unsafe { array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size) };
+                    out.push(ArrayBytes::from(extract_byte_ranges_concat(
                         &decoded_value,
                         &byte_ranges,
                     )?));
@@ -87,7 +87,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
             }
             None => {
                 for decoded_region in decoded_regions {
-                    out.push(Cow::Owned(
+                    out.push(ArrayBytes::from(
                         self.decoded_representation
                             .fill_value()
                             .as_ne_bytes()
@@ -141,7 +141,10 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
+        let data_type_size = self.data_type().fixed_size().ok_or_else(|| {
+            CodecError::UnsupportedDataType(self.data_type().clone(), super::IDENTIFIER.to_string())
+        })?;
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -163,13 +166,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges = unsafe {
-                        array_subset.byte_ranges_unchecked(
-                            &chunk_shape,
-                            self.decoded_representation.element_size(),
-                        )
-                    };
-                    out.push(Cow::Owned(extract_byte_ranges_concat(
+                    let byte_ranges =
+                        unsafe { array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size) };
+                    out.push(ArrayBytes::from(extract_byte_ranges_concat(
                         &decoded_value,
                         &byte_ranges,
                     )?));
@@ -177,7 +176,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
             }
             None => {
                 for decoded_region in decoded_regions {
-                    out.push(Cow::Owned(
+                    out.push(ArrayBytes::from(
                         self.decoded_representation
                             .fill_value()
                             .as_ne_bytes()

@@ -313,7 +313,7 @@ where
 {
     let prefixes = async_discover_children(storage, path).await?;
     let mut nodes: Vec<Node> = Vec::new();
-    // FIXME: Asynchronously get metadata of all prefixes
+    // TODO: Asynchronously get metadata of all prefixes
     for prefix in &prefixes {
         let key = meta_key(&prefix.try_into()?);
         let child_metadata = match storage.get(&key).await? {

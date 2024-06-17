@@ -20,6 +20,18 @@ impl From<&[u8]> for FillValue {
     }
 }
 
+impl<const N: usize> From<[u8; N]> for FillValue {
+    fn from(value: [u8; N]) -> Self {
+        Self(value.to_vec())
+    }
+}
+
+impl<const N: usize> From<&[u8; N]> for FillValue {
+    fn from(value: &[u8; N]) -> Self {
+        Self(value.to_vec())
+    }
+}
+
 impl From<Vec<u8>> for FillValue {
     fn from(value: Vec<u8>) -> Self {
         Self(value)
@@ -122,6 +134,18 @@ impl From<num::complex::Complex64> for FillValue {
     }
 }
 
+impl From<String> for FillValue {
+    fn from(value: String) -> Self {
+        Self(value.into_bytes())
+    }
+}
+
+impl From<&str> for FillValue {
+    fn from(value: &str) -> Self {
+        Self(value.as_bytes().to_vec())
+    }
+}
+
 impl FillValue {
     /// Create a new fill value composed of `bytes`.
     #[must_use]
@@ -146,6 +170,7 @@ impl FillValue {
     #[must_use]
     pub fn equals_all(&self, bytes: &[u8]) -> bool {
         match self.0.len() {
+            0 => bytes.is_empty(),
             1 => {
                 let fill_value = self.0[0];
                 let fill_value_128 = u128::from_ne_bytes([self.0[0]; 16]);

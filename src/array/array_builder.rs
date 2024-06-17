@@ -5,7 +5,8 @@ use crate::{metadata::v3::AdditionalFields, node::NodePath, storage::StorageTran
 use super::{
     chunk_key_encoding::{ChunkKeyEncoding, DefaultChunkKeyEncoding},
     codec::{
-        ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
+        array_to_bytes::vlen::VlenCodec, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
+        BytesCodec, BytesToBytesCodecTraits,
     },
     data_type::IncompatibleFillValueError,
     Array, ArrayCreateError, ArrayMetadata, ArrayMetadataV3, ArrayShape, ChunkGrid,
@@ -93,6 +94,7 @@ impl ArrayBuilder {
         chunk_grid: ChunkGrid,
         fill_value: FillValue,
     ) -> Self {
+        let is_fixed_size = data_type.fixed_size().is_some();
         Self {
             shape,
             data_type,
@@ -100,7 +102,12 @@ impl ArrayBuilder {
             chunk_key_encoding: ChunkKeyEncoding::new(DefaultChunkKeyEncoding::default()),
             fill_value,
             array_to_array_codecs: Vec::default(),
-            array_to_bytes_codec: Box::<BytesCodec>::default(),
+            array_to_bytes_codec: if is_fixed_size {
+                Box::<BytesCodec>::default()
+            } else {
+                Box::<VlenCodec>::default()
+                // Box::<VlenInterleavedCodec>::default()
+            },
             bytes_to_bytes_codecs: Vec::default(),
             attributes: serde_json::Map::default(),
             storage_transformers: StorageTransformerChain::default(),
@@ -287,12 +294,15 @@ impl ArrayBuilder {
                 ));
             }
         }
-        if self.data_type.size() != self.fill_value.size() {
-            return Err(IncompatibleFillValueError::new(
-                self.data_type.name(),
-                self.fill_value.clone(),
-            )
-            .into());
+
+        if let Some(data_type_size) = self.data_type.fixed_size() {
+            if data_type_size != self.fill_value.size() {
+                return Err(IncompatibleFillValueError::new(
+                    self.data_type.name(),
+                    self.fill_value.clone(),
+                )
+                .into());
+            }
         }
 
         let codec_chain = CodecChain::new(

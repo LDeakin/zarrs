@@ -8,7 +8,7 @@ use crate::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation, RawBytes,
     },
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
@@ -136,7 +136,6 @@ impl CodecTraits for BloscCodec {
             cname: self.cname,
             clevel: self.clevel,
             shuffle: self.shuffle_mode.unwrap_or_else(|| {
-                // FIXME: If type size is not known... it must be
                 if self.typesize.unwrap_or_default() > 0 {
                     BloscShuffleMode::BitShuffle
                 } else {
@@ -170,9 +169,9 @@ impl BytesToBytesCodecTraits for BloscCodec {
 
     fn encode<'a>(
         &self,
-        decoded_value: Cow<'a, [u8]>,
+        decoded_value: RawBytes<'a>,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<RawBytes<'a>, CodecError> {
         // let n_threads = std::cmp::min(
         //     options.concurrent_limit(),
         //     std::thread::available_parallelism().unwrap(),
@@ -184,10 +183,10 @@ impl BytesToBytesCodecTraits for BloscCodec {
 
     fn decode<'a>(
         &self,
-        encoded_value: Cow<'a, [u8]>,
+        encoded_value: RawBytes<'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<RawBytes<'a>, CodecError> {
         // let n_threads = std::cmp::min(
         //     options.concurrent_limit(),
         //     std::thread::available_parallelism().unwrap(),

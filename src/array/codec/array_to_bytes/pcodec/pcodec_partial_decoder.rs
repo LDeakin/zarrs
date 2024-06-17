@@ -1,14 +1,9 @@
-use std::borrow::Cow;
-
-use crate::{
-    array::{
-        codec::{
-            ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
-            CodecOptions,
-        },
-        ChunkRepresentation, DataType,
+use crate::array::{
+    codec::{
+        ArrayBytes, ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
+        CodecOptions, RawBytes,
     },
-    array_subset::IncompatibleArraySubsetAndShapeError,
+    ChunkRepresentation, DataType,
 };
 
 #[cfg(feature = "async")]
@@ -34,10 +29,10 @@ impl<'a> PcodecPartialDecoder<'a> {
 }
 
 fn do_partial_decode<'a>(
-    decoded: Option<Cow<'a, [u8]>>,
+    decoded: Option<RawBytes<'a>>,
     decoded_regions: &[ArraySubset],
     decoded_representation: &ChunkRepresentation,
-) -> Result<Vec<Cow<'a, [u8]>>, CodecError> {
+) -> Result<Vec<ArrayBytes<'a>>, CodecError> {
     let mut decoded_bytes = Vec::with_capacity(decoded_regions.len());
     let chunk_shape = decoded_representation.shape_u64();
     match decoded {
@@ -47,7 +42,7 @@ fn do_partial_decode<'a>(
                     .fill_value()
                     .as_ne_bytes()
                     .repeat(array_subset.num_elements_usize());
-                decoded_bytes.push(Cow::Owned(bytes_subset));
+                decoded_bytes.push(ArrayBytes::from(bytes_subset));
             }
         }
         Some(decoded_value) => {
@@ -56,20 +51,16 @@ fn do_partial_decode<'a>(
                     let decoded_chunk = pco::standalone::simple_decompress(&decoded_value)
                         .map(|bytes| crate::array::transmute_to_bytes_vec::<$t>(bytes))
                         .map_err(|err| CodecError::Other(err.to_string()))?;
+                    let decoded_chunk: ArrayBytes = decoded_chunk.into();
                     for array_subset in decoded_regions {
-                        let bytes_subset = array_subset
-                            .extract_bytes(
-                                decoded_chunk.as_slice(),
+                        let bytes_subset = decoded_chunk
+                            .extract_array_subset(
+                                array_subset,
                                 &chunk_shape,
-                                decoded_representation.element_size(),
-                            )
-                            .map_err(|_| {
-                                IncompatibleArraySubsetAndShapeError::from((
-                                    array_subset.clone(),
-                                    decoded_representation.shape_u64(),
-                                ))
-                            })?;
-                        decoded_bytes.push(Cow::Owned(bytes_subset));
+                                decoded_representation.data_type(),
+                            )?
+                            .into_owned();
+                        decoded_bytes.push(bytes_subset);
                     }
                 };
             }
@@ -115,7 +106,7 @@ impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let decoded = self.input_handle.decode(options)?;
         do_partial_decode(decoded, decoded_regions, &self.decoded_representation)
     }
@@ -153,7 +144,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(

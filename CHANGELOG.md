@@ -7,14 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `ArrayBytes`, `RawBytes`, `RawBytesOffsets`, and `ArrayBytesError`
+    - These can represent array data with fixed and variable length data types
+ - Add `array::Element[Owned]` traits representing array elements
+    - Supports conversion to and from `ArrayBytes`
+ - Add `array::ElementFixedLength` marker trait
+ - Add experimental `vlen` and `vlen_interleaved` codec for variable length data types
+    - `vlen_interleaved` is for legacy support of Zarr V2 `vlen-utf8`/`vlen-bytes`/`vlen-array` codecs
+ - Add `DataType::{String,Binary}` data types
+    - These are likely to become standardised in the future and are not feature gated
+ - Add `ArraySubset::contains()`
+ - Add `FillValueMetadata::{String,Unsupported}`
+   - `ArrayMetadata` can be serialised and deserialised with an unsupported `fill_value`, but `Array` creation will fail.
+ - Implement `From<{[u8; N],&[u8; N],String,&str}>` for `FillValue`
+ - Add `ArraySize` and `DataTypeSize`
+ - Add `DataType::fixed_size()` that returns `Option<usize>`. Returns `None` for variable length data types.
+ - Add `ArrayError::IncompatibleElementType` (replaces `ArrayError::IncompatibleElementSize`)
+ - Add `ArrayError::InvalidElementValue`
+
 ### Changed
  - Use `[async_]retrieve_array_subset_opt` internally in `Array::[async_]retrieve_chunks_opt`
  - **Breaking**: Replace `[Async]ArrayPartialDecoderTraits::element_size()` with `data_type()`
+ - Array `_store` methods now use `impl Into<ArrayBytes<'a>>` instead of `&[u8]` for the input bytes
+ - **Breaking**: Array `_store_{elements,ndarray}` methods now use `T: Element` instead of `T: bytemuck::Pod`
+ - **Breaking**: Array `_retrieve_{elements,ndarray}` methods now use `T: ElementOwned` instead of `T: bytemuck::Pod`
+ - Optimised `Array::[async_]store_array_subset_opt` when the subset is a subset of a single chunk
+ - Make `transmute_to_bytes` public
+ - Relax `ndarray_into_vec` from `T: bytemuck:Pod` to `T: Clone`
+ - **Breaking**: `DataType::size()` now returns a `DataTypeSize` instead of `usize`
+ - **Breaking**: `ArrayCodecTraits::{encode/decode}` have been specialised into `ArrayTo{Array,Bytes}CodecTraits::{encode/decode}`
 
 ### Removed
  - **Breaking**: Remove `into_array_view` array and codec API
    - This was not fully utilised, not applicable to variable sized data types, and quite unsafe for a public API
- - Remove internal `ChunksPerShardError` and just use `CodecError::Other`
+ - **Breaking**: Remove internal `ChunksPerShardError` and just use `CodecError::Other`
+ - **Breaking**: Remove `array_subset::{ArrayExtractBytesError,ArrayStoreBytesError}`
+ - **Breaking**: Remove `ArraySubset::{extract,store}_bytes[_unchecked]`, they are replaced by methods in `ArrayBytes`
+ - **Breaking**: Remove `array::validate_element_size` and `ArrayError::IncompatibleElementSize`
+    - The internal validation in array `_element` methods is now more strict than just matching the element size
+    - Example: `u16` must match `uint16` data type and will not match `int16` or `float16`
 
 ### Fixed
  - Fix an unnecessary copy in `async_store_set_partial_values`

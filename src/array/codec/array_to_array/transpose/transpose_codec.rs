@@ -1,14 +1,12 @@
-use std::borrow::Cow;
-
 use crate::{
     array::{
         codec::{
-            options::CodecOptions, ArrayCodecTraits, ArrayPartialDecoderTraits,
+            options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
         ArrayMetadataOptions, ChunkRepresentation,
     },
-    metadata::{v3::codec::transpose::TransposeCodecConfigurationV1, v3::MetadataV3},
+    metadata::v3::{codec::transpose::TransposeCodecConfigurationV1, MetadataV3},
     plugin::PluginCreateError,
 };
 
@@ -65,6 +63,90 @@ impl CodecTraits for TransposeCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for TransposeCodec {
+    fn encode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError> {
+        bytes.validate(
+            decoded_representation.num_elements(),
+            decoded_representation.data_type().size(),
+        )?;
+
+        match bytes {
+            ArrayBytes::Variable(bytes, offsets) => {
+                let order_encode = self.order.0.clone();
+                let shape = decoded_representation
+                    .shape()
+                    .iter()
+                    .map(|s| usize::try_from(s.get()).unwrap())
+                    .collect::<Vec<_>>();
+                Ok(super::transpose_vlen(
+                    &bytes,
+                    &offsets,
+                    &shape,
+                    order_encode,
+                ))
+            }
+            ArrayBytes::Fixed(bytes) => {
+                let order_encode =
+                    calculate_order_encode(&self.order, decoded_representation.shape().len());
+                let data_type_size = decoded_representation.data_type().fixed_size().unwrap();
+                let bytes = transpose_array(
+                    &order_encode,
+                    &decoded_representation.shape_u64(),
+                    data_type_size,
+                    &bytes,
+                )
+                .map_err(|_| CodecError::Other("transpose_array invalid arguments?".to_string()))?;
+                Ok(ArrayBytes::from(bytes))
+            }
+        }
+    }
+
+    fn decode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError> {
+        bytes.validate(
+            decoded_representation.num_elements(),
+            decoded_representation.data_type().size(),
+        )?;
+
+        match bytes {
+            ArrayBytes::Variable(bytes, offsets) => {
+                let mut order_decode = vec![0; decoded_representation.shape().len()];
+                for (i, val) in self.order.0.iter().enumerate() {
+                    order_decode[*val] = i;
+                }
+                let shape = decoded_representation
+                    .shape()
+                    .iter()
+                    .map(|s| usize::try_from(s.get()).unwrap())
+                    .collect::<Vec<_>>();
+                Ok(super::transpose_vlen(
+                    &bytes,
+                    &offsets,
+                    &shape,
+                    order_decode,
+                ))
+            }
+            ArrayBytes::Fixed(bytes) => {
+                let order_decode =
+                    calculate_order_decode(&self.order, decoded_representation.shape().len());
+                let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order);
+                let data_type_size = decoded_representation.data_type().fixed_size().unwrap();
+                let bytes =
+                    transpose_array(&order_decode, &transposed_shape, data_type_size, &bytes)
+                        .map_err(|_| CodecError::Other("transpose_array error".to_string()))?;
+                Ok(ArrayBytes::from(bytes))
+            }
+        }
+    }
+
     fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
@@ -118,61 +200,5 @@ impl ArrayCodecTraits for TransposeCodec {
     ) -> Result<RecommendedConcurrency, CodecError> {
         // TODO: This could be increased, need to implement `transpose_array` without ndarray
         Ok(RecommendedConcurrency::new_maximum(1))
-    }
-
-    fn encode<'a>(
-        &self,
-        decoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-
-        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
-            // Fast path for identity transform
-            Ok(decoded_value)
-        } else {
-            let len = decoded_value.len();
-            let order_encode =
-                calculate_order_encode(&self.order, decoded_representation.shape().len());
-            transpose_array(
-                &order_encode,
-                &decoded_representation.shape_u64(),
-                decoded_representation.element_size(),
-                &decoded_value,
-            )
-            .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
-            .map(Cow::Owned)
-        }
-    }
-
-    fn decode<'a>(
-        &self,
-        encoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
-            // Fast path for identity transform
-            Ok(encoded_value)
-        } else {
-            let order_decode =
-                calculate_order_decode(&self.order, decoded_representation.shape().len());
-            let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order);
-            let len = encoded_value.len();
-            transpose_array(
-                &order_decode,
-                &transposed_shape,
-                decoded_representation.element_size(),
-                &encoded_value,
-            )
-            .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
-            .map(Cow::Owned)
-        }
     }
 }

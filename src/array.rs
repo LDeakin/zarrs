@@ -22,6 +22,7 @@
 //! The documentation for [`Array`] details how to interact with arrays.
 
 mod array_builder;
+mod array_bytes;
 mod array_errors;
 mod array_metadata_options;
 mod array_representation;
@@ -33,6 +34,7 @@ pub mod codec;
 pub mod concurrency;
 pub mod data_type;
 mod dimension_name;
+mod element;
 mod endianness;
 mod fill_value;
 mod nan_representations;
@@ -47,9 +49,10 @@ use std::sync::Arc;
 
 pub use self::{
     array_builder::ArrayBuilder,
+    array_bytes::{ArrayBytes, ArrayBytesError, RawBytes, RawBytesOffsets},
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
-    array_representation::{ArrayRepresentation, ChunkRepresentation},
+    array_representation::{ArrayRepresentation, ArraySize, ChunkRepresentation},
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
     chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator},
@@ -57,8 +60,9 @@ pub use self::{
     codec::ArrayCodecTraits,
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
-    data_type::DataType,
+    data_type::{DataType, DataTypeSize},
     dimension_name::DimensionName,
+    element::{Element, ElementFixedLength},
     endianness::{Endianness, NATIVE_ENDIAN},
     fill_value::FillValue,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
@@ -641,9 +645,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
 #[cfg(feature = "ndarray")]
 /// Convert an ndarray into a vec with standard layout
-fn ndarray_into_vec<T: bytemuck::Pod, D: ndarray::Dimension>(
-    array: ndarray::Array<T, D>,
-) -> Vec<T> {
+fn ndarray_into_vec<T: Clone, D: ndarray::Dimension>(array: ndarray::Array<T, D>) -> Vec<T> {
     if array.is_standard_layout() {
         array
     } else {
@@ -695,7 +697,7 @@ pub fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
 
 /// Transmute from `&[T]` to `&[u8]`.
 #[must_use]
-fn transmute_to_bytes<T: bytemuck::NoUninit>(from: &[T]) -> &[u8] {
+pub fn transmute_to_bytes<T: bytemuck::NoUninit>(from: &[T]) -> &[u8] {
     bytemuck::must_cast_slice(from)
 }
 
@@ -731,17 +733,6 @@ pub fn ravel_indices(indices: &[u64], shape: &[u64]) -> u64 {
 fn iter_u64_to_usize<'a, I: Iterator<Item = &'a u64>>(iter: I) -> Vec<usize> {
     iter.map(|v| usize::try_from(*v).unwrap())
         .collect::<Vec<_>>()
-}
-
-fn validate_element_size<T>(data_type: &DataType) -> Result<(), ArrayError> {
-    if data_type.size() == std::mem::size_of::<T>() {
-        Ok(())
-    } else {
-        Err(ArrayError::IncompatibleElementSize(
-            data_type.size(),
-            std::mem::size_of::<T>(),
-        ))
-    }
 }
 
 #[cfg(feature = "ndarray")]

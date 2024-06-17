@@ -11,8 +11,8 @@ use zfp_sys::{
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits, RawBytes,
             RecommendedConcurrency,
         },
         ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataType,
@@ -129,18 +129,21 @@ impl ArrayCodecTraits for ZfpCodec {
         // TODO: zfp supports multi thread, when is it optimal to kick in?
         Ok(RecommendedConcurrency::new_maximum(1))
     }
+}
 
+#[cfg_attr(feature = "async", async_trait::async_trait)]
+impl ArrayToBytesCodecTraits for ZfpCodec {
     fn encode<'a>(
         &self,
-        decoded_value: Cow<'a, [u8]>,
+        bytes: ArrayBytes<'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        let mut decoded_value_promoted =
-            promote_before_zfp_encoding(&decoded_value, decoded_representation)?;
-        let zfp_type = decoded_value_promoted.zfp_type();
+    ) -> Result<RawBytes<'a>, CodecError> {
+        let bytes = bytes.into_fixed()?;
+        let mut bytes_promoted = promote_before_zfp_encoding(&bytes, decoded_representation)?;
+        let zfp_type = bytes_promoted.zfp_type();
         let Some(field) = ZfpField::new(
-            &mut decoded_value_promoted,
+            &mut bytes_promoted,
             &decoded_representation
                 .shape()
                 .iter()
@@ -185,22 +188,19 @@ impl ArrayCodecTraits for ZfpCodec {
 
     fn decode<'a>(
         &self,
-        encoded_value: Cow<'a, [u8]>,
+        bytes: RawBytes<'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<ArrayBytes<'a>, CodecError> {
         zfp_decode(
             &self.mode,
-            &mut encoded_value.to_vec(), // FIXME: Does zfp **really** need the encoded value as mutable?
+            &mut bytes.to_vec(), // FIXME: Does zfp **really** need the encoded value as mutable?
             decoded_representation,
             false, // FIXME
         )
-        .map(Cow::Owned)
+        .map(ArrayBytes::from)
     }
-}
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
-impl ArrayToBytesCodecTraits for ZfpCodec {
     fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,

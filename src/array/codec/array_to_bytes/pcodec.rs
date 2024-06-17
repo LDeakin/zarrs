@@ -47,12 +47,13 @@ pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, Plugin
 
 #[cfg(test)]
 mod tests {
-    use std::{borrow::Cow, num::NonZeroU64};
+    use std::num::NonZeroU64;
 
     use crate::{
         array::{
-            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
-            transmute_to_bytes_vec, ChunkRepresentation, ChunkShape, DataType, FillValue,
+            codec::{ArrayToBytesCodecTraits, CodecOptions},
+            transmute_to_bytes_vec, ArrayBytes, ChunkRepresentation, ChunkShape, DataType,
+            FillValue,
         },
         array_subset::ArraySubset,
     };
@@ -81,11 +82,14 @@ mod tests {
         let chunk_shape = vec![NonZeroU64::new(10).unwrap(), NonZeroU64::new(10).unwrap()];
         let chunk_representation =
             ChunkRepresentation::new(chunk_shape, data_type, fill_value).unwrap();
-        let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
+        let size = chunk_representation.num_elements_usize()
+            * chunk_representation.data_type().fixed_size().unwrap();
+        let bytes: Vec<u8> = (0..size).map(|s| s as u8).collect();
+        let bytes: ArrayBytes = bytes.into();
 
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation)?;
         let encoded = codec.encode(
-            Cow::Borrowed(&bytes),
+            bytes.clone(),
             &chunk_representation,
             &CodecOptions::default(),
         )?;
@@ -93,7 +97,7 @@ mod tests {
         let decoded = codec
             .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();
-        assert_eq!(bytes, decoded.to_vec());
+        assert_eq!(bytes, decoded);
         Ok(())
     }
 
@@ -228,12 +232,13 @@ mod tests {
         .unwrap();
         let elements: Vec<u32> = (0..chunk_representation.num_elements() as u32).collect();
         let bytes = transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -253,7 +258,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().into_owned())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())
@@ -275,12 +280,13 @@ mod tests {
         .unwrap();
         let elements: Vec<u32> = (0..chunk_representation.num_elements() as u32).collect();
         let bytes = transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -302,7 +308,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().into_owned())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())

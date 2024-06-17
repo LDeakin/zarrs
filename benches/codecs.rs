@@ -8,9 +8,10 @@ use zarrs::array::{
     codec::{
         array_to_bytes::bytes::Endianness,
         bytes_to_bytes::blosc::{BloscCompressor, BloscShuffleMode},
-        ArrayCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits, CodecOptions,
+        ArrayCodecTraits, ArrayToBytesCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits,
+        CodecOptions,
     },
-    BytesRepresentation, ChunkRepresentation, DataType,
+    BytesRepresentation, ChunkRepresentation, DataType, Element,
 };
 
 fn codec_bytes(c: &mut Criterion) {
@@ -35,12 +36,13 @@ fn codec_bytes(c: &mut Criterion) {
         .unwrap();
 
         let data = vec![0u8; size3.try_into().unwrap()];
+        let bytes = Element::into_array_bytes(&DataType::UInt8, &data).unwrap();
         group.throughput(Throughput::Bytes(size3));
         // encode and decode have the same implementation
         group.bench_function(BenchmarkId::new("encode_decode", size3), |b| {
             b.iter(|| {
                 codec
-                    .encode(Cow::Borrowed(&data), &rep, &CodecOptions::default())
+                    .encode(bytes.clone(), &rep, &CodecOptions::default())
                     .unwrap()
             });
         });

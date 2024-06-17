@@ -1,7 +1,5 @@
 //! An array to bytes codec formed by joining an array to array sequence, array to bytes, and bytes to bytes sequence of codecs.
 
-use std::borrow::Cow;
-
 use crate::{
     array::{
         codec::{
@@ -11,7 +9,8 @@ use crate::{
             CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
+        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
+        RawBytes,
     },
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
@@ -225,6 +224,81 @@ impl CodecTraits for CodecChain {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for CodecChain {
+    fn encode<'a>(
+        &self,
+        mut bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<RawBytes<'a>, CodecError> {
+        bytes.validate(
+            decoded_representation.num_elements(),
+            decoded_representation.data_type().size(),
+        )?;
+
+        let mut decoded_representation = decoded_representation.clone();
+
+        // array->array
+        for codec in &self.array_to_array {
+            bytes = codec.encode(bytes, &decoded_representation, options)?;
+            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
+        }
+
+        // array->bytes
+        let mut bytes = self
+            .array_to_bytes
+            .encode(bytes, &decoded_representation, options)?;
+        let mut decoded_representation = self
+            .array_to_bytes
+            .compute_encoded_size(&decoded_representation)?;
+
+        // bytes->bytes
+        for codec in &self.bytes_to_bytes {
+            bytes = codec.encode(bytes, options)?;
+            decoded_representation = codec.compute_encoded_size(&decoded_representation);
+        }
+
+        Ok(bytes)
+    }
+
+    fn decode<'a>(
+        &self,
+        mut bytes: RawBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        // bytes->bytes
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            bytes = codec.decode(bytes, bytes_representation, options)?;
+        }
+
+        // bytes->array
+        let mut bytes =
+            self.array_to_bytes
+                .decode(bytes, array_representations.last().unwrap(), options)?;
+
+        // array->array
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            bytes = codec.decode(bytes, array_representation, options)?;
+        }
+
+        bytes.validate(
+            decoded_representation.num_elements(),
+            decoded_representation.data_type().size(),
+        )?;
+        Ok(bytes)
+    }
+
     fn partial_decoder<'a>(
         &'a self,
         mut input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
@@ -427,90 +501,6 @@ impl ArrayCodecTraits for CodecChain {
 
         Ok(recommended_concurrency)
     }
-
-    fn encode<'a>(
-        &self,
-        decoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-
-        let mut decoded_representation = decoded_representation.clone();
-
-        let mut value = decoded_value;
-        // array->array
-        for codec in &self.array_to_array {
-            value = codec.encode(value, &decoded_representation, options)?;
-            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
-        }
-
-        // array->bytes
-        value = self
-            .array_to_bytes
-            .encode(value, &decoded_representation, options)?;
-        let mut decoded_representation = self
-            .array_to_bytes
-            .compute_encoded_size(&decoded_representation)?;
-
-        // bytes->bytes
-        for codec in &self.bytes_to_bytes {
-            value = codec.encode(value, options)?;
-            decoded_representation = codec.compute_encoded_size(&decoded_representation);
-        }
-
-        Ok(value)
-    }
-
-    fn decode<'a>(
-        &self,
-        mut encoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        let array_representations =
-            self.get_array_representations(decoded_representation.clone())?;
-        let bytes_representations =
-            self.get_bytes_representations(array_representations.last().unwrap())?;
-
-        // bytes->bytes
-        for (codec, bytes_representation) in std::iter::zip(
-            self.bytes_to_bytes.iter().rev(),
-            bytes_representations.iter().rev().skip(1),
-        ) {
-            encoded_value = codec.decode(encoded_value, bytes_representation, options)?;
-        }
-
-        // bytes->array
-        encoded_value = self.array_to_bytes.decode(
-            encoded_value,
-            array_representations.last().unwrap(),
-            options,
-        )?;
-
-        // array->array
-        for (codec, array_representation) in std::iter::zip(
-            self.array_to_array.iter().rev(),
-            array_representations.iter().rev().skip(1),
-        ) {
-            encoded_value = codec.decode(encoded_value, array_representation, options)?;
-        }
-
-        if encoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                encoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-
-        Ok(encoded_value)
-    }
-
     fn partial_decode_granularity(
         &self,
         decoded_representation: &ChunkRepresentation,
@@ -612,7 +602,7 @@ mod tests {
         decoded_regions: &[ArraySubset],
         decoded_partial_chunk_true: Vec<f32>,
     ) {
-        let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = crate::array::transmute_to_bytes_vec(elements).into();
 
         let codec_configurations: Vec<MetadataV3> = vec![
             #[cfg(feature = "transpose")]
@@ -637,7 +627,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -650,9 +640,9 @@ mod tests {
             )
             .unwrap();
         if not_just_bytes {
-            assert_ne!(encoded, decoded);
+            assert_ne!(encoded, decoded.clone().into_fixed().unwrap());
         }
-        assert_eq!(bytes, decoded.to_vec());
+        assert_eq!(bytes, decoded);
 
         // let encoded = codec
         //     .par_encode(bytes.clone(), &chunk_representation)
@@ -679,7 +669,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())

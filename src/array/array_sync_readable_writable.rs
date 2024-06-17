@@ -1,11 +1,10 @@
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{
-    array::validate_element_size, array_subset::ArraySubset, storage::ReadableWritableStorageTraits,
-};
+use crate::{array::ArrayBytes, array_subset::ArraySubset, storage::ReadableWritableStorageTraits};
 
 use super::{
-    codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
+    array_bytes::update_array_bytes, codec::options::CodecOptions,
+    concurrency::concurrency_chunks_and_codec, Array, ArrayError, Element,
 };
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage> {
@@ -23,11 +22,11 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     /// # Panics
     /// Panics if attempting to reference a byte beyond `usize::MAX`.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunk_subset(
+    pub fn store_chunk_subset<'a>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_bytes: &[u8],
+        chunk_subset_bytes: impl Into<ArrayBytes<'a>>,
     ) -> Result<(), ArrayError> {
         self.store_chunk_subset_opt(
             chunk_indices,
@@ -47,7 +46,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk_subset`](Array::store_chunk_subset) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunk_subset_elements<T: bytemuck::Pod>(
+    pub fn store_chunk_subset_elements<T: Element>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
@@ -70,7 +69,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_chunk_subset_elements`](Array::store_chunk_subset_elements) error condition is met.
     pub fn store_chunk_subset_ndarray<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -99,10 +98,10 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_array_subset(
+    pub fn store_array_subset<'a>(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: &[u8],
+        subset_bytes: impl Into<ArrayBytes<'a>>,
     ) -> Result<(), ArrayError> {
         self.store_array_subset_opt(array_subset, subset_bytes, &CodecOptions::default())
     }
@@ -117,7 +116,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     ///  - the size of `T` does not match the data type size, or
     ///  - a [`store_array_subset`](Array::store_array_subset) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_array_subset_elements<T: bytemuck::Pod>(
+    pub fn store_array_subset_elements<T: Element>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: &[T],
@@ -139,7 +138,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_array_subset_ndarray<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -156,11 +155,11 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
 
     /// Explicit options version of [`store_chunk_subset`](Array::store_chunk_subset).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunk_subset_opt(
+    pub fn store_chunk_subset_opt<'a>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_bytes: &[u8],
+        chunk_subset_bytes: impl Into<ArrayBytes<'a>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_shape = self
@@ -176,67 +175,55 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 chunk_shape,
             ));
         }
-        let expected_length =
-            chunk_subset.shape().iter().product::<u64>() * self.data_type().size() as u64;
-        if chunk_subset_bytes.len() as u64 != expected_length {
-            return Err(ArrayError::InvalidBytesInputSize(
-                chunk_subset_bytes.len(),
-                expected_length,
-            ));
-        }
 
         if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
             // The subset spans the whole chunk, so store the bytes directly and skip decoding
             self.store_chunk_opt(chunk_indices, chunk_subset_bytes, options)
         } else {
+            let chunk_subset_bytes = chunk_subset_bytes.into();
+            chunk_subset_bytes.validate(chunk_subset.num_elements(), self.data_type().size())?;
+
             // Lock the chunk
             // let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
             // let mutex = self.storage.mutex(&key)?;
             // let _lock = mutex.lock();
 
             // Decode the entire chunk
-            let mut chunk_bytes = self.retrieve_chunk_opt(chunk_indices, options)?;
+            let chunk_bytes_old = self.retrieve_chunk_opt(chunk_indices, options)?;
+            chunk_bytes_old.validate(chunk_shape.iter().product(), self.data_type().size())?;
 
-            // Update the intersecting subset of the chunk
-            let element_size = self.data_type().size();
-            let mut offset = 0;
-            let contiguous_indices =
-                unsafe { chunk_subset.contiguous_linearised_indices_unchecked(&chunk_shape) };
-            let length = contiguous_indices.contiguous_elements_usize() * element_size;
-            // FIXME: Par iter?
-            for (chunk_element_index, _num_elements) in &contiguous_indices {
-                let chunk_offset = usize::try_from(chunk_element_index).unwrap() * element_size;
-                debug_assert!(chunk_offset + length <= chunk_bytes.len());
-                debug_assert!(offset + length <= chunk_subset_bytes.len());
-                chunk_bytes[chunk_offset..chunk_offset + length]
-                    .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
-                offset += length;
-            }
+            // Update the chunk
+            let chunk_bytes_new = update_array_bytes(
+                chunk_bytes_old,
+                chunk_shape,
+                chunk_subset_bytes,
+                chunk_subset,
+                self.data_type().size(),
+            );
 
             // Store the updated chunk
-            self.store_chunk_opt(chunk_indices, &chunk_bytes, options)
+            self.store_chunk_opt(chunk_indices, chunk_bytes_new, options)
         }
     }
 
     /// Explicit options version of [`store_chunk_subset_elements`](Array::store_chunk_subset_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunk_subset_elements_opt<T: bytemuck::Pod>(
+    pub fn store_chunk_subset_elements_opt<T: Element>(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let chunk_subset_elements = crate::array::transmute_to_bytes(chunk_subset_elements);
-        self.store_chunk_subset_opt(chunk_indices, chunk_subset, chunk_subset_elements, options)
+        let chunk_subset_bytes = T::into_array_bytes(self.data_type(), chunk_subset_elements)?;
+        self.store_chunk_subset_opt(chunk_indices, chunk_subset, chunk_subset_bytes, options)
     }
 
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_chunk_subset_ndarray`](Array::store_chunk_subset_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_chunk_subset_ndarray_opt<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -246,7 +233,6 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         chunk_subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
         let chunk_subset_array: ndarray::Array<T, D> = chunk_subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             chunk_subset_start.to_vec(),
@@ -262,10 +248,11 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
 
     /// Explicit options version of [`store_array_subset`](Array::store_array_subset).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_array_subset_opt(
+    #[allow(clippy::too_many_lines)]
+    pub fn store_array_subset_opt<'a>(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: &[u8],
+        subset_bytes: impl Into<ArrayBytes<'a>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
@@ -273,13 +260,6 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             return Err(ArrayError::InvalidArraySubset(
                 array_subset.clone(),
                 self.shape().to_vec(),
-            ));
-        }
-        let expected_size = array_subset.num_elements() * self.data_type().size() as u64;
-        if subset_bytes.len() as u64 != expected_size {
-            return Err(ArrayError::InvalidBytesInputSize(
-                subset_bytes.len(),
-                expected_size,
             ));
         }
 
@@ -294,38 +274,23 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         let num_chunks = chunks.num_elements_usize();
         if num_chunks == 1 {
             let chunk_indices = chunks.start();
-            let chunk_subset_in_array = unsafe {
-                self.chunk_grid()
-                    .subset_unchecked(chunk_indices, self.shape())
-                    .unwrap()
-            };
-            if array_subset == &chunk_subset_in_array {
+            let chunk_subset = self.chunk_subset(chunk_indices)?;
+            if array_subset == &chunk_subset {
                 // A fast path if the array subset matches the chunk subset
                 // This skips the internal decoding occurring in store_chunk_subset
                 self.store_chunk_opt(chunk_indices, subset_bytes, options)?;
             } else {
-                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                let chunk_subset_in_array_subset =
-                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                let chunk_subset_bytes = unsafe {
-                    chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        subset_bytes,
-                        array_subset.shape(),
-                        self.data_type().size(),
-                    )
-                };
-
                 // Store the chunk subset
-                let array_subset_in_chunk_subset =
-                    unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
                 self.store_chunk_subset_opt(
                     chunk_indices,
-                    &array_subset_in_chunk_subset,
-                    &chunk_subset_bytes,
+                    &array_subset.relative_to(chunk_subset.start())?,
+                    subset_bytes,
                     options,
                 )?;
             }
         } else {
+            let subset_bytes = subset_bytes.into();
+            subset_bytes.validate(array_subset.num_elements(), self.data_type().size())?;
             // Calculate chunk/codec concurrency
             let chunk_representation =
                 self.chunk_array_representation(&vec![0; self.dimensionality()])?;
@@ -338,27 +303,21 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             );
 
             let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
-                let chunk_subset_in_array = unsafe {
-                    self.chunk_grid()
-                        .subset_unchecked(&chunk_indices, self.shape())
-                        .unwrap()
-                };
+                let chunk_subset_in_array = self.chunk_subset(&chunk_indices)?;
                 let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                 let chunk_subset_in_array_subset =
                     unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                let chunk_subset_bytes = subset_bytes.extract_array_subset(
+                    &chunk_subset_in_array_subset,
+                    array_subset.shape(),
+                    self.data_type(),
+                )?;
                 let array_subset_in_chunk_subset =
                     unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
-                let chunk_subset_bytes = unsafe {
-                    chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        subset_bytes,
-                        array_subset.shape(),
-                        self.data_type().size(),
-                    )
-                };
                 self.store_chunk_subset_opt(
                     &chunk_indices,
                     &array_subset_in_chunk_subset,
-                    &chunk_subset_bytes,
+                    chunk_subset_bytes,
                     &options,
                 )
             };
@@ -376,22 +335,21 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
 
     /// Explicit options version of [`store_array_subset_elements`](Array::store_array_subset_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_array_subset_elements_opt<T: bytemuck::Pod>(
+    pub fn store_array_subset_elements_opt<T: Element>(
         &self,
         array_subset: &ArraySubset,
         subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let subset_elements = crate::array::transmute_to_bytes(subset_elements);
-        self.store_array_subset_opt(array_subset, subset_elements, options)
+        let subset_bytes = T::into_array_bytes(self.data_type(), subset_elements)?;
+        self.store_array_subset_opt(array_subset, subset_bytes, options)
     }
 
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_array_subset_ndarray`](Array::store_array_subset_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_array_subset_ndarray_opt<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -400,7 +358,6 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
         let subset_array: ndarray::Array<T, D> = subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             subset_start.to_vec(),
