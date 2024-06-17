@@ -12,24 +12,23 @@
 //! See [`BitroundCodecConfigurationV1`] for example `JSON` metadata.
 
 mod bitround_codec;
-mod bitround_configuration;
 mod bitround_partial_decoder;
 
+pub use crate::metadata::v3::codec::bitround::{
+    BitroundCodecConfiguration, BitroundCodecConfigurationV1,
+};
 pub use bitround_codec::BitroundCodec;
-pub use bitround_configuration::{BitroundCodecConfiguration, BitroundCodecConfigurationV1};
 
 use crate::{
     array::{
         codec::{Codec, CodecError, CodecPlugin},
         DataType,
     },
-    metadata::Metadata,
+    metadata::v3::{codec::bitround, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-/// The identifier for the `bitround` codec.
-// TODO: ZEP for bitround
-pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_array/bitround";
+pub use bitround::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -40,7 +39,7 @@ fn is_name_bitround(name: &str) -> bool {
     name.eq(IDENTIFIER) || name == "bitround"
 }
 
-pub(crate) fn create_codec_bitround(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BitroundCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;

@@ -11,7 +11,7 @@ use crate::{
         concurrency::RecommendedConcurrency,
         ArrayMetadataOptions, ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
 
@@ -99,7 +99,7 @@ impl CodecChain {
     ///  - a codec could not be created,
     ///  - no array to bytes codec is supplied, or
     ///  - more than one array to bytes codec is supplied.
-    pub fn from_metadata(metadatas: &[Metadata]) -> Result<Self, PluginCreateError> {
+    pub fn from_metadata(metadatas: &[MetadataV3]) -> Result<Self, PluginCreateError> {
         let mut array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>> = vec![];
         let mut array_to_bytes: Option<Box<dyn ArrayToBytesCodecTraits>> = None;
         let mut bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>> = vec![];
@@ -130,7 +130,7 @@ impl CodecChain {
 
     /// Create codec chain metadata.
     #[must_use]
-    pub fn create_metadatas_opt(&self, options: &ArrayMetadataOptions) -> Vec<Metadata> {
+    pub fn create_metadatas_opt(&self, options: &ArrayMetadataOptions) -> Vec<MetadataV3> {
         let mut metadatas =
             Vec::with_capacity(self.array_to_array.len() + 1 + self.bytes_to_bytes.len());
         for codec in &self.array_to_array {
@@ -151,7 +151,7 @@ impl CodecChain {
 
     /// Create codec chain metadata with default options.
     #[must_use]
-    pub fn create_metadatas(&self) -> Vec<Metadata> {
+    pub fn create_metadatas(&self) -> Vec<MetadataV3> {
         self.create_metadatas_opt(&ArrayMetadataOptions::default())
     }
 
@@ -208,7 +208,7 @@ impl CodecTraits for CodecChain {
     /// Returns [`None`] since a codec chain does not have standard codec metadata.
     ///
     /// Note that usage of the codec chain is explicit in [`Array`](crate::array::Array) and [`CodecChain::create_metadatas_opt()`] will call [`CodecTraits::create_metadata_opt()`] from for each codec.
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         None
     }
 
@@ -703,7 +703,7 @@ mod tests {
     ) {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
-        let codec_configurations: Vec<Metadata> = vec![
+        let codec_configurations: Vec<MetadataV3> = vec![
             #[cfg(feature = "transpose")]
             serde_json::from_str(JSON_TRANSPOSE1).unwrap(),
             #[cfg(feature = "transpose")]

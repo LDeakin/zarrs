@@ -10,7 +10,7 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
 
@@ -26,7 +26,11 @@ use super::{
 /// A `blosc` codec implementation.
 #[derive(Clone, Debug)]
 pub struct BloscCodec {
-    configuration: BloscCodecConfigurationV1,
+    cname: BloscCompressor,
+    clevel: BloscCompressionLevel,
+    blocksize: usize,
+    shuffle_mode: Option<BloscShuffleMode>,
+    typesize: Option<usize>,
 }
 
 impl BloscCodec {
@@ -43,7 +47,7 @@ impl BloscCodec {
     pub fn new(
         cname: BloscCompressor,
         clevel: BloscCompressionLevel,
-        blocksize: Option<usize>,
+        blocksize: usize,
         shuffle_mode: BloscShuffleMode,
         typesize: Option<usize>,
     ) -> Result<Self, PluginCreateError> {
@@ -69,15 +73,13 @@ impl BloscCodec {
             )));
         }
 
-        let configuration = BloscCodecConfigurationV1 {
+        Ok(Self {
             cname,
             clevel,
             blocksize,
-            shuffle: shuffle_mode,
-            typesize: typesize.unwrap_or_default(),
-        };
-
-        Ok(Self { configuration })
+            shuffle_mode: Some(shuffle_mode),
+            typesize,
+        })
     }
 
     /// Create a new `blosc` codec from configuration.
@@ -88,24 +90,30 @@ impl BloscCodec {
     pub fn new_with_configuration(
         configuration: &BloscCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
-        let BloscCodecConfiguration::V1(configuration) = configuration;
-        Self::new(
-            configuration.cname,
-            configuration.clevel,
-            configuration.blocksize,
-            configuration.shuffle,
-            Some(configuration.typesize),
-        )
+        match configuration {
+            BloscCodecConfiguration::V1(configuration) => Self::new(
+                configuration.cname,
+                configuration.clevel,
+                configuration.blocksize,
+                configuration.shuffle,
+                configuration.typesize,
+            ),
+        }
     }
 
     fn do_encode(&self, decoded_value: &[u8], n_threads: usize) -> Result<Vec<u8>, CodecError> {
+        let typesize = self.typesize.unwrap_or_default();
         blosc_compress_bytes(
             decoded_value,
-            self.configuration.clevel,
-            self.configuration.shuffle,
-            self.configuration.typesize,
-            self.configuration.cname,
-            self.configuration.blocksize.unwrap_or(0),
+            self.clevel,
+            self.shuffle_mode.unwrap_or(if typesize > 0 {
+                BloscShuffleMode::BitShuffle
+            } else {
+                BloscShuffleMode::NoShuffle
+            }),
+            typesize,
+            self.cname,
+            self.blocksize,
             n_threads,
         )
         .map_err(|err: BloscError| CodecError::Other(err.to_string()))
@@ -123,10 +131,22 @@ impl BloscCodec {
 }
 
 impl CodecTraits for BloscCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
-        Some(
-            Metadata::new_with_serializable_configuration(IDENTIFIER, &self.configuration).unwrap(),
-        )
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+        let configuration = BloscCodecConfigurationV1 {
+            cname: self.cname,
+            clevel: self.clevel,
+            shuffle: self.shuffle_mode.unwrap_or_else(|| {
+                // FIXME: If type size is not known... it must be
+                if self.typesize.unwrap_or_default() > 0 {
+                    BloscShuffleMode::BitShuffle
+                } else {
+                    BloscShuffleMode::NoShuffle
+                }
+            }),
+            typesize: self.typesize,
+            blocksize: self.blocksize,
+        };
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

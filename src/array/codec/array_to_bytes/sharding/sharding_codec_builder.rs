@@ -5,7 +5,7 @@ use crate::array::{
     ChunkShape,
 };
 
-use super::{sharding_configuration::ShardingIndexLocation, ShardingCodec};
+use super::{ShardingCodec, ShardingIndexLocation};
 
 /// A [`ShardingCodec`] builder.
 ///

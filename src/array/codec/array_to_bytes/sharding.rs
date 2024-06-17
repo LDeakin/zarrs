@@ -12,12 +12,11 @@
 
 mod sharding_codec;
 mod sharding_codec_builder;
-mod sharding_configuration;
 mod sharding_partial_decoder;
 
 use std::num::NonZeroU64;
 
-pub use sharding_configuration::{
+pub use crate::metadata::v3::codec::sharding::{
     ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
 };
 
@@ -30,12 +29,11 @@ use crate::{
         codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecPlugin},
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
     },
-    metadata::Metadata,
+    metadata::v3::{codec::sharding, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-/// The identifier for the `sharding_indexed` codec.
-pub const IDENTIFIER: &str = "sharding_indexed";
+pub use sharding::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -46,7 +44,7 @@ fn is_name_sharding(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_sharding(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_sharding(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ShardingCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;

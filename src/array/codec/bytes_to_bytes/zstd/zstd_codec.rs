@@ -8,7 +8,7 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
@@ -45,12 +45,12 @@ impl ZstdCodec {
 }
 
 impl CodecTraits for ZstdCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = ZstdCodecConfigurationV1 {
             level: self.compression.into(),
             checksum: self.checksum,
         };
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

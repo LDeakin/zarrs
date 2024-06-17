@@ -17,7 +17,7 @@ Correctness issues with past versions are [detailed here](https://github.com/LDe
 ## Getting Started
 - Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status) to see supported [Zarr ZEPs](https://zarr.dev/zeps/) and Zarr extension points.
 - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
-- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html) and [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html) are good places to start.
+- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html), [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html), and [`metadata`](https://docs.rs/zarrs/latest/zarrs/metadata/index.html) are good places to start.
 - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and [performance benchmarks](https://github.com/LDeakin/zarrs_tools/blob/main/docs/benchmarks.md) of `zarrs`.
 
 ## Example (Sync API)

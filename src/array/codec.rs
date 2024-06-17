@@ -72,7 +72,7 @@ pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
     storage::{ReadableStorage, StorageError, StoreKey},
 };
@@ -110,7 +110,7 @@ impl Codec {
     ///
     /// # Errors
     /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered codec plugin.
-    pub fn from_metadata(metadata: &Metadata) -> Result<Self, PluginCreateError> {
+    pub fn from_metadata(metadata: &MetadataV3) -> Result<Self, PluginCreateError> {
         for plugin in inventory::iter::<CodecPlugin> {
             if plugin.match_name(metadata.name()) {
                 return plugin.create(metadata);
@@ -178,12 +178,12 @@ pub trait CodecTraits: Send + Sync {
     /// Create metadata.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<Metadata>;
+    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<MetadataV3>;
 
     /// Create metadata with default options.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata(&self) -> Option<MetadataV3> {
         self.create_metadata_opt(&ArrayMetadataOptions::default())
     }
 

@@ -2,21 +2,15 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata>.
 
-mod v3;
-
-pub use v3::ArrayMetadataV3;
-
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use super::{ArrayShape, DimensionName};
-
-/// Zarr array metadata.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
+/// A wrapper to handle various versions of Zarr array metadata.
+#[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum ArrayMetadata {
-    /// Version 3.0.
-    V3(ArrayMetadataV3),
+    /// Zarr Version 3.0.
+    V3(super::v3::ArrayMetadataV3),
 }
 
 impl TryFrom<&str> for ArrayMetadata {

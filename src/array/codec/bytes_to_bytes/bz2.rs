@@ -9,27 +9,24 @@
 //! See [`Bz2CodecConfigurationV1`] for example `JSON` metadata.
 
 mod bz2_codec;
-mod bz2_configuration;
 mod bz2_partial_decoder;
 
 use derive_more::From;
-use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::Metadata,
+    metadata::v3::{codec::bz2, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use self::{
-    bz2_codec::Bz2Codec,
-    bz2_configuration::{Bz2CodecConfiguration, Bz2CodecConfigurationV1},
+pub use crate::metadata::v3::codec::bz2::{
+    Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
 };
 
-/// The identifier for the `bz2` codec.
-// TODO: ZEP for bz2
-pub const IDENTIFIER: &str = "https://codec.zarrs.dev/bytes_to_bytes/bz2";
+pub use self::bz2_codec::Bz2Codec;
+
+pub use bz2::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -40,7 +37,7 @@ fn is_name_bz2(name: &str) -> bool {
     name.eq(IDENTIFIER) || name == "bz2"
 }
 
-pub(crate) fn create_codec_bz2(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_bz2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: Bz2CodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
@@ -55,70 +52,6 @@ struct Bz2Error(String);
 impl From<&str> for Bz2Error {
     fn from(err: &str) -> Self {
         Self(err.to_string())
-    }
-}
-
-/// An integer from 0 to 9 controlling the compression level
-///
-/// A level of 1 is the fastest compression method and produces the least compression, while 9 is slowest and produces the most compression.
-/// Compression is turned off when the compression level is 0.
-#[derive(Serialize, Copy, Clone, Debug, Eq, PartialEq)]
-pub struct Bz2CompressionLevel(u32);
-
-macro_rules! bz2_compression_level_try_from {
-    ( $t:ty ) => {
-        impl TryFrom<$t> for Bz2CompressionLevel {
-            type Error = $t;
-            fn try_from(level: $t) -> Result<Self, Self::Error> {
-                if level <= 9 {
-                    Ok(Self(u32::from(level)))
-                } else {
-                    Err(level)
-                }
-            }
-        }
-    };
-}
-
-bz2_compression_level_try_from!(u8);
-bz2_compression_level_try_from!(u16);
-bz2_compression_level_try_from!(u32);
-
-impl<'de> Deserialize<'de> for Bz2CompressionLevel {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let level = u32::deserialize(d)?;
-        if level <= 9 {
-            Ok(Self(level))
-        } else {
-            Err(serde::de::Error::custom(
-                "bz2 compression level must be between 0 and 9",
-            ))
-        }
-    }
-}
-
-impl Bz2CompressionLevel {
-    /// Create a new compression level.
-    ///
-    /// # Errors
-    /// Errors if `compression_level` is not between 0-9.
-    pub fn new<N: num::Unsigned + std::cmp::PartialOrd<u32>>(
-        compression_level: N,
-    ) -> Result<Self, N>
-    where
-        u32: From<N>,
-    {
-        if compression_level < 10 {
-            Ok(Self(u32::from(compression_level)))
-        } else {
-            Err(compression_level)
-        }
-    }
-
-    /// The underlying integer compression level.
-    #[must_use]
-    pub const fn as_u32(&self) -> u32 {
-        self.0
     }
 }
 

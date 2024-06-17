@@ -8,15 +8,15 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
-    bz2_configuration::{Bz2CodecConfiguration, Bz2CodecConfigurationV1},
-    bz2_partial_decoder, Bz2CompressionLevel, IDENTIFIER,
+    bz2_partial_decoder, Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
+    IDENTIFIER,
 };
 
 /// A `bz2` codec implementation.
@@ -42,11 +42,12 @@ impl Bz2Codec {
 }
 
 impl CodecTraits for Bz2Codec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = Bz2CodecConfigurationV1 {
-            level: Bz2CompressionLevel(self.compression.level()),
+            level: Bz2CompressionLevel::try_from(self.compression.level())
+                .expect("checked on init"),
         };
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -1,19 +1,18 @@
 //! The default chunk key encoding.
 
-use derive_more::Display;
-use serde::{Deserialize, Serialize};
-
 use crate::{
-    array::chunk_key_encoding::{ChunkKeyEncodingPlugin, ChunkKeySeparator},
-    metadata::Metadata,
+    array::chunk_key_encoding::ChunkKeyEncodingPlugin,
+    metadata::v3::{chunk_key_encoding::default, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
     storage::StoreKey,
 };
 
-use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits};
+use super::{
+    ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator,
+    DefaultChunkKeyEncodingConfiguration,
+};
 
-/// The identifier for the `default` chunk key encoding.
-pub const IDENTIFIER: &str = "default";
+pub use default::IDENTIFIER;
 
 // Register the chunk key encoding.
 inventory::submit! {
@@ -24,8 +23,8 @@ fn is_name_default(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub fn create_chunk_key_encoding_default(
-    metadata: &Metadata,
+pub(crate) fn create_chunk_key_encoding_default(
+    metadata: &MetadataV3,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: DefaultChunkKeyEncodingConfiguration =
         metadata.to_configuration().map_err(|_| {
@@ -33,20 +32,6 @@ pub fn create_chunk_key_encoding_default(
         })?;
     let default = DefaultChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(default))
-}
-
-/// A `default` chunk key encoding configuration.
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
-#[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
-pub struct DefaultChunkKeyEncodingConfiguration {
-    /// The chunk key separator.
-    #[serde(default = "default_separator")]
-    pub separator: ChunkKeySeparator,
-}
-
-const fn default_separator() -> ChunkKeySeparator {
-    ChunkKeySeparator::Slash
 }
 
 /// A `default` chunk key encoding.
@@ -89,17 +74,17 @@ impl Default for DefaultChunkKeyEncoding {
     /// Create a default chunk key encoding with default separator: `/`.
     fn default() -> Self {
         Self {
-            separator: default_separator(),
+            separator: ChunkKeySeparator::Slash,
         }
     }
 }
 
 impl ChunkKeyEncodingTraits for DefaultChunkKeyEncoding {
-    fn create_metadata(&self) -> Metadata {
+    fn create_metadata(&self) -> MetadataV3 {
         let configuration = DefaultChunkKeyEncodingConfiguration {
             separator: self.separator,
         };
-        Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
+        MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
     }
 
     fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey {

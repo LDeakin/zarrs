@@ -1,24 +1,24 @@
-//! The `CRC32C checksum` bytes to bytes codec.
+//! The `crc32c` (CRC32C checksum) bytes to bytes codec.
 //!
 //! Appends a CRC32C checksum of the input bytestream.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html>.
 
 mod crc32c_codec;
-mod crc32c_configuration;
 mod crc32c_partial_decoder;
 
+pub use crate::metadata::v3::codec::crc32c::{
+    Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
+};
 pub use crc32c_codec::Crc32cCodec;
-pub use crc32c_configuration::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1};
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::Metadata,
+    metadata::v3::{codec::crc32c, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-/// The identifier for the `crc32c` codec.
-pub const IDENTIFIER: &str = "crc32c";
+pub use crc32c::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -29,7 +29,7 @@ fn is_name_crc32c(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_crc32c(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_crc32c(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     if metadata.configuration_is_none_or_empty() {
         let codec = Box::new(Crc32cCodec::new());
         Ok(Codec::BytesToBytes(codec))

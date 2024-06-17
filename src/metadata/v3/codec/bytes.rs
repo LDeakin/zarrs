@@ -1,7 +1,35 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use super::Endianness;
+use crate::array::Endianness;
+
+/// The identifier for the `bytes` codec.
+pub const IDENTIFIER: &str = "bytes";
+
+impl serde::Serialize for Endianness {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Little => s.serialize_str("little"),
+            Self::Big => s.serialize_str("big"),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Endianness {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(d)?;
+        if let serde_json::Value::String(string) = value {
+            if string == "little" {
+                return Ok(Self::Little);
+            } else if string == "big" {
+                return Ok(Self::Big);
+            }
+        }
+        Err(serde::de::Error::custom(
+            "endian: A string equal to either \"big\" or \"little\"",
+        ))
+    }
+}
 
 /// A wrapper to handle various versions of `bytes` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]

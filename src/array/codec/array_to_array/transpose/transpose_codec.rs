@@ -1,6 +1,3 @@
-use derive_more::From;
-use thiserror::Error;
-
 use crate::{
     array::{
         codec::{
@@ -9,7 +6,7 @@ use crate::{
         },
         ArrayMetadataOptions, ChunkRepresentation,
     },
-    metadata::Metadata,
+    metadata::{v3::codec::transpose::TransposeCodecConfigurationV1, v3::MetadataV3},
     plugin::PluginCreateError,
 };
 
@@ -18,8 +15,7 @@ use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 use super::{
     calculate_order_decode, calculate_order_encode, permute, transpose_array,
-    transpose_configuration::TransposeCodecConfigurationV1, TransposeCodecConfiguration,
-    TransposeOrder, IDENTIFIER,
+    TransposeCodecConfiguration, TransposeOrder, IDENTIFIER,
 };
 
 /// A Transpose codec implementation.
@@ -27,11 +23,6 @@ use super::{
 pub struct TransposeCodec {
     order: TransposeOrder,
 }
-
-/// An invalid permutation order error.
-#[derive(Clone, Debug, Error, From)]
-#[error("permutation order {0:?} is invalid. It must be an array of integers specifying a permutation of 0, 1, …, n-1, where n is the number of dimensions")]
-pub struct InvalidPermutationError(Vec<usize>);
 
 impl TransposeCodec {
     /// Create a new transpose codec from configuration.
@@ -54,11 +45,11 @@ impl TransposeCodec {
 }
 
 impl CodecTraits for TransposeCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = TransposeCodecConfigurationV1 {
             order: self.order.clone(),
         };
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -13,7 +13,7 @@ pub use usage_log::UsageLogStorageTransformer;
 use std::sync::Arc;
 
 use crate::{
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
 };
 
@@ -41,7 +41,7 @@ inventory::collect!(StorageTransformerPlugin);
 ///
 /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered storage transformer plugin.
 pub fn try_create_storage_transformer(
-    metadata: &Metadata,
+    metadata: &MetadataV3,
 ) -> Result<StorageTransformer, PluginCreateError> {
     for plugin in inventory::iter::<StorageTransformerPlugin> {
         if plugin.match_name(metadata.name()) {
@@ -57,7 +57,7 @@ pub fn try_create_storage_transformer(
 /// A storage transformer extension.
 pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
     /// Create metadata.
-    fn create_metadata(&self) -> Option<Metadata>;
+    fn create_metadata(&self) -> Option<MetadataV3>;
 
     /// Create a readable transformer.
     fn create_readable_transformer(self: Arc<Self>, storage: ReadableStorage) -> ReadableStorage;

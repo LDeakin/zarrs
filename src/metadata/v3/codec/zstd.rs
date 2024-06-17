@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
-use zstd::zstd_safe;
+
+/// The identifier for the `zstd` codec.
+pub const IDENTIFIER: &str = "zstd";
 
 /// A wrapper to handle various versions of `zstd` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -34,7 +36,7 @@ impl ZstdCodecConfigurationV1 {
 /// A value of 0 indicates to use the default compression level.
 /// Otherwise, a higher level is expected to achieve a higher compression ratio at the cost of lower speed.
 #[derive(Serialize, Clone, Eq, PartialEq, Debug)]
-pub struct ZstdCompressionLevel(zstd_safe::CompressionLevel);
+pub struct ZstdCompressionLevel(i32);
 
 impl<'de> serde::Deserialize<'de> for ZstdCompressionLevel {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
@@ -54,18 +56,18 @@ impl<'de> serde::Deserialize<'de> for ZstdCompressionLevel {
 impl ZstdCompressionLevel {
     /// Create a new `Zstd` compression level.
     #[must_use]
-    pub const fn new(level: zstd_safe::CompressionLevel) -> Self {
+    pub const fn new(level: i32) -> Self {
         Self(level)
     }
 }
 
-impl From<zstd_safe::CompressionLevel> for ZstdCompressionLevel {
-    fn from(value: zstd_safe::CompressionLevel) -> Self {
+impl From<i32> for ZstdCompressionLevel {
+    fn from(value: i32) -> Self {
         Self(value)
     }
 }
 
-impl From<ZstdCompressionLevel> for zstd_safe::CompressionLevel {
+impl From<ZstdCompressionLevel> for i32 {
     fn from(value: ZstdCompressionLevel) -> Self {
         value.0
     }

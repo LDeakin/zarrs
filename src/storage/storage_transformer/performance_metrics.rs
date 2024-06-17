@@ -2,7 +2,7 @@
 
 use crate::{
     array::MaybeBytes,
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     storage::{
         ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
         ReadableStorageTraits, ReadableWritableListableStorage, ReadableWritableStorage,
@@ -83,7 +83,7 @@ impl PerformanceMetricsStorageTransformer {
 
 impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
     /// Returns [`None`], since this storage transformer is not intended to be included in array `storage_transformers` metadata.
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata(&self) -> Option<MetadataV3> {
         None
     }
 

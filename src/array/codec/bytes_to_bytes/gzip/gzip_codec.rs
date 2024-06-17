@@ -10,16 +10,15 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
-    gzip_compression_level::GzipCompressionLevelError,
-    gzip_configuration::GzipCodecConfigurationV1, gzip_partial_decoder, GzipCodecConfiguration,
-    GzipCompressionLevel, IDENTIFIER,
+    gzip_partial_decoder, GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
+    GzipCompressionLevelError, IDENTIFIER,
 };
 
 /// A `gzip` codec implementation.
@@ -49,11 +48,11 @@ impl GzipCodec {
 }
 
 impl CodecTraits for GzipCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = GzipCodecConfigurationV1 {
             level: self.compression_level,
         };
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

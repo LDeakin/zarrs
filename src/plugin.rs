@@ -1,6 +1,6 @@
-//! [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points) utilities.
+//! [Zarr V3 extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points) utilities.
 //!
-//! A [`Plugin`] creates objects from [`Metadata`] (consisting of a name and optional configuration).
+//! A [`Plugin`] creates objects from [`MetadataV3`] (consisting of a name and optional configuration).
 //! It is used to implement [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points), such as [chunk grids][`crate::array::chunk_grid`], [chunk key encodings](`crate::array::chunk_key_encoding`), [codecs](`crate::array::codec`), and [storage transformers](`crate::storage::storage_transformer`).
 //!
 //! [Data types](`crate::array::data_type`) are not currently supported as an extension point.
@@ -11,7 +11,7 @@
 
 use thiserror::Error;
 
-use crate::metadata::Metadata;
+use crate::metadata::v3::MetadataV3;
 
 /// A plugin.
 pub struct Plugin<TPlugin> {
@@ -20,7 +20,7 @@ pub struct Plugin<TPlugin> {
     /// Tests if the name is a match for this plugin.
     match_name_fn: fn(name: &str) -> bool,
     /// Create an implementation of this plugin from metadata.
-    create_fn: fn(metadata: &Metadata) -> Result<TPlugin, PluginCreateError>,
+    create_fn: fn(metadata: &MetadataV3) -> Result<TPlugin, PluginCreateError>,
 }
 
 /// An invalid plugin metadata error.
@@ -29,13 +29,13 @@ pub struct Plugin<TPlugin> {
 pub struct PluginMetadataInvalidError {
     identifier: &'static str,
     plugin_type: &'static str,
-    metadata: Metadata,
+    metadata: MetadataV3,
 }
 
 impl PluginMetadataInvalidError {
     /// Create a new [`PluginMetadataInvalidError`].
     #[must_use]
-    pub fn new(identifier: &'static str, plugin_type: &'static str, metadata: Metadata) -> Self {
+    pub fn new(identifier: &'static str, plugin_type: &'static str, metadata: MetadataV3) -> Self {
         Self {
             identifier,
             plugin_type,
@@ -76,7 +76,7 @@ impl<TPlugin> Plugin<TPlugin> {
     pub const fn new(
         identifier: &'static str,
         match_name_fn: fn(name: &str) -> bool,
-        create_fn: fn(metadata: &Metadata) -> Result<TPlugin, PluginCreateError>,
+        create_fn: fn(metadata: &MetadataV3) -> Result<TPlugin, PluginCreateError>,
     ) -> Self {
         Self {
             identifier,
@@ -92,7 +92,7 @@ impl<TPlugin> Plugin<TPlugin> {
     /// Returns a [`PluginCreateError`] if plugin creation fails due to either:
     ///  - metadata name being unregistered,
     ///  - or the configuration is invalid.
-    pub fn create(&self, metadata: &Metadata) -> Result<TPlugin, PluginCreateError> {
+    pub fn create(&self, metadata: &MetadataV3) -> Result<TPlugin, PluginCreateError> {
         (self.create_fn)(metadata)
     }
 

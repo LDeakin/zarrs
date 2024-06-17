@@ -14,14 +14,19 @@ pub mod regular;
 
 use std::num::NonZeroU64;
 
-pub use rectangular::{RectangularChunkGrid, RectangularChunkGridConfiguration};
-pub use regular::{RegularChunkGrid, RegularChunkGridConfiguration};
+pub use crate::metadata::v3::chunk_grid::rectangular::{
+    RectangularChunkGridConfiguration, RectangularChunkGridDimensionConfiguration,
+};
+pub use crate::metadata::v3::chunk_grid::regular::RegularChunkGridConfiguration;
+
+pub use rectangular::RectangularChunkGrid;
+pub use regular::RegularChunkGrid;
 
 use derive_more::{Deref, From};
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
 };
 
@@ -47,7 +52,7 @@ impl ChunkGrid {
     /// # Errors
     ///
     /// Returns a [`PluginCreateError`] if the metadata is invalid or not associated with a registered chunk grid plugin.
-    pub fn from_metadata(metadata: &Metadata) -> Result<Self, PluginCreateError> {
+    pub fn from_metadata(metadata: &MetadataV3) -> Result<Self, PluginCreateError> {
         for plugin in inventory::iter::<ChunkGridPlugin> {
             if plugin.match_name(metadata.name()) {
                 return plugin.create(metadata);
@@ -123,7 +128,7 @@ impl TryFrom<ArrayShape> for ChunkGrid {
 /// Chunk grid traits.
 pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync {
     /// Create metadata.
-    fn create_metadata(&self) -> Metadata;
+    fn create_metadata(&self) -> MetadataV3;
 
     /// The dimensionality of the grid.
     fn dimensionality(&self) -> usize;
@@ -468,7 +473,7 @@ mod tests {
             "chunk_shape": [5, 20, 400]
         }
     }"#;
-        let metadata = serde_json::from_str::<Metadata>(json).unwrap();
+        let metadata = serde_json::from_str::<MetadataV3>(json).unwrap();
         ChunkGrid::from_metadata(&metadata).unwrap();
     }
 
@@ -481,7 +486,7 @@ mod tests {
             "chunk_shape": [[5, 5, 5, 15, 15, 20, 35], 10]
         }
     }"#;
-        let metadata = serde_json::from_str::<Metadata>(json).unwrap();
+        let metadata = serde_json::from_str::<MetadataV3>(json).unwrap();
         ChunkGrid::from_metadata(&metadata).unwrap();
     }
 }

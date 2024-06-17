@@ -1,6 +1,10 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
+/// The identifier for the `zfp` codec.
+// TODO: ZEP for zfp
+pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/zfp";
+
 /// A wrapper to handle various versions of `zfp` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
 #[serde(untagged)]
@@ -86,7 +90,22 @@ pub enum ZfpCodecConfigurationV1 {
     Reversible,
 }
 
-/// The `zfp` configuration for expert mode.
+/// The `zfp` mode.
+#[derive(Clone, Copy, Debug)]
+pub enum ZfpMode {
+    /// Expert mode.
+    Expert(ZfpExpertConfiguration),
+    /// Fixed rate mode.
+    FixedRate(f64),
+    /// Fixed precision mode.
+    FixedPrecision(u32),
+    /// Fixed accuracy mode.
+    FixedAccuracy(f64),
+    /// Reversible mode.
+    Reversible,
+}
+
+/// `zfp` expert parameters.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ZfpExpertConfiguration {
     /// The minimum number of compressed bits used to represent a block.

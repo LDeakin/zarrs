@@ -8,7 +8,6 @@
 
 mod array_builder;
 mod array_errors;
-mod array_metadata;
 mod array_metadata_options;
 mod array_representation;
 mod array_view;
@@ -20,8 +19,8 @@ pub mod codec;
 pub mod concurrency;
 pub mod data_type;
 mod dimension_name;
+mod endianness;
 mod fill_value;
-mod fill_value_metadata;
 mod nan_representations;
 mod unsafe_cell_slice;
 
@@ -35,24 +34,25 @@ use std::sync::Arc;
 pub use self::{
     array_builder::ArrayBuilder,
     array_errors::{ArrayCreateError, ArrayError},
-    array_metadata::{ArrayMetadata, ArrayMetadataV3},
     array_metadata_options::ArrayMetadataOptions,
     array_representation::{ArrayRepresentation, ChunkRepresentation},
     array_view::{ArrayView, ArrayViewCreateError},
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
-    chunk_key_encoding::ChunkKeyEncoding,
+    chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator},
     chunk_shape::{chunk_shape_to_array_shape, ChunkShape},
     codec::ArrayCodecTraits,
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
     data_type::DataType,
     dimension_name::DimensionName,
+    endianness::{Endianness, NATIVE_ENDIAN},
     fill_value::FillValue,
-    fill_value_metadata::FillValueMetadata,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     unsafe_cell_slice::UnsafeCellSlice,
 };
+pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
+pub use crate::metadata::ArrayMetadata;
 
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
@@ -65,7 +65,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    metadata::AdditionalFields,
+    metadata::v3::AdditionalFields,
     node::NodePath,
     storage::storage_transformer::StorageTransformerChain,
 };
@@ -239,6 +239,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let path = NodePath::new(path)?;
 
         let ArrayMetadata::V3(metadata) = metadata;
+
         if !metadata.validate_format() {
             return Err(ArrayCreateError::InvalidZarrFormat(metadata.zarr_format));
         }

@@ -3,7 +3,7 @@
 use derive_more::From;
 
 use crate::{
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
     storage::{
         ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableStorage,
@@ -34,7 +34,7 @@ impl StorageTransformerChain {
     /// # Errors
     ///
     /// Returns [`PluginCreateError`] if there is a configuration issue or attempt to create an unregistered storage transformer.
-    pub fn from_metadata(metadatas: &[Metadata]) -> Result<Self, PluginCreateError> {
+    pub fn from_metadata(metadatas: &[MetadataV3]) -> Result<Self, PluginCreateError> {
         let mut storage_transformers = Vec::with_capacity(metadatas.len());
         for metadata in metadatas {
             let storage_transformer = try_create_storage_transformer(metadata)?;
@@ -45,7 +45,7 @@ impl StorageTransformerChain {
 
     /// Create storage transformer chain metadata.
     #[must_use]
-    pub fn create_metadatas(&self) -> Vec<Metadata> {
+    pub fn create_metadatas(&self) -> Vec<MetadataV3> {
         self.0
             .iter()
             .filter_map(|storage_transformer| storage_transformer.create_metadata())

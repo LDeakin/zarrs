@@ -1,10 +1,8 @@
-use super::{ArrayShape, DimensionName};
-use crate::{
-    array::FillValueMetadata,
-    metadata::{AdditionalFields, Metadata},
-};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
+
+use super::{AdditionalFields, MetadataV3};
+use crate::array::{ArrayShape, DimensionName, FillValueMetadata};
 
 /// Zarr array metadata (storage specification v3).
 ///
@@ -54,11 +52,11 @@ pub struct ArrayMetadataV3 {
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
     /// The data type of the Zarr array.
-    pub data_type: Metadata,
+    pub data_type: MetadataV3,
     /// The chunk grid of the Zarr array.
-    pub chunk_grid: Metadata,
+    pub chunk_grid: MetadataV3,
     /// The mapping from chunk grid cell coordinates to keys in the underlying store.
-    pub chunk_key_encoding: Metadata,
+    pub chunk_key_encoding: MetadataV3,
     /// Provides an element value to use for uninitialised portions of the Zarr array.
     ///
     /// Suitable values are dependent on the data type.
@@ -84,13 +82,13 @@ pub struct ArrayMetadataV3 {
     /// *An array of integers, with length equal to `<N>`, where each integer is in the range `[0, 255]`.*
     pub fill_value: FillValueMetadata,
     /// Specifies a list of codecs to be used for encoding and decoding chunks.
-    pub codecs: Vec<Metadata>,
+    pub codecs: Vec<MetadataV3>,
     /// Optional user defined attributes.
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub attributes: serde_json::Map<String, serde_json::Value>,
     /// An optional list of storage transformers.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub storage_transformers: Vec<Metadata>,
+    pub storage_transformers: Vec<MetadataV3>,
     /// An optional list of dimension names.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dimension_names: Option<Vec<DimensionName>>,
@@ -105,13 +103,13 @@ impl ArrayMetadataV3 {
     #[must_use]
     pub fn new(
         shape: ArrayShape,
-        data_type: Metadata,
-        chunk_grid: Metadata,
-        chunk_key_encoding: Metadata,
+        data_type: MetadataV3,
+        chunk_grid: MetadataV3,
+        chunk_key_encoding: MetadataV3,
         fill_value: FillValueMetadata,
-        codecs: Vec<Metadata>,
+        codecs: Vec<MetadataV3>,
         attributes: serde_json::Map<String, serde_json::Value>,
-        storage_transformers: Vec<Metadata>,
+        storage_transformers: Vec<MetadataV3>,
         dimension_names: Option<Vec<DimensionName>>,
         additional_fields: AdditionalFields,
     ) -> Self {

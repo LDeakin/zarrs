@@ -174,11 +174,14 @@ impl Node {
         fn print_metadata(name: &str, string: &mut String, metadata: &NodeMetadata) {
             match metadata {
                 NodeMetadata::Array(array_metadata) => {
-                    let ArrayMetadata::V3(array_metadata) = array_metadata;
-                    let s = format!(
-                        "{} {:?} {}",
-                        name, array_metadata.shape, array_metadata.data_type
-                    );
+                    let s = match array_metadata {
+                        ArrayMetadata::V3(array_metadata) => {
+                            format!(
+                                "{} {:?} {}",
+                                name, array_metadata.shape, array_metadata.data_type
+                            )
+                        }
+                    };
                     string.push_str(&s);
                 }
                 NodeMetadata::Group(_) => {
