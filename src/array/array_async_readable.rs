@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 
 use crate::{
     array_subset::ArraySubset,
@@ -479,6 +479,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_retrieve_encoded_chunks(
         &self,
         chunks: &ArraySubset,
+        options: &CodecOptions,
     ) -> Result<Vec<Option<Vec<u8>>>, StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -500,7 +501,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
         let indices = chunks.indices();
         let futures = indices.into_iter().map(retrieve_encoded_chunk);
-        futures::future::try_join_all(futures).await
+        futures::stream::iter(futures)
+            .buffered(options.concurrent_target())
+            .try_collect()
+            .await
     }
 
     /// Async variant of [`retrieve_chunks_opt`](Array::retrieve_chunks_opt).
@@ -549,9 +553,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 {
                     let output_slice =
                         UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let indices = chunks.indices();
                     let chunk0_subset = self.chunk_subset(chunks.start())?;
-                    let futures = indices.into_iter().map(|chunk_indices| {
+                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
                         let options = options.clone();
                         let array_subset = array_subset.clone();
                         let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
@@ -570,12 +573,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                             )
                             .await
                         }
-                    });
-                    let mut stream =
-                        futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
-                    while let Some(item) = stream.next().await {
-                        item?;
-                    }
+                    };
+                    futures::stream::iter(&chunks.indices())
+                        .map(Ok)
+                        .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
+                        .await?;
                 }
                 unsafe { output.set_len(size_output) };
                 Ok(output)
@@ -709,13 +711,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                             .await
                         }
                     };
-                    let indices = chunks.indices();
-                    let futures = indices.into_iter().map(retrieve_chunk);
-                    let mut stream =
-                        futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
-                    while let Some(item) = stream.next().await {
-                        item?;
-                    }
+                    futures::stream::iter(&chunks.indices())
+                        .map(Ok)
+                        .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
+                        .await?;
                 }
                 unsafe { output.set_len(size_output) };
                 Ok(output)
@@ -797,8 +796,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             );
 
             {
-                let indices = chunks.indices();
-                let futures = indices.into_iter().map(|chunk_indices| {
+                let retrieve_chunk = |chunk_indices: Vec<u64>| {
                     let chunk0_start = array_subset.start().to_vec();
                     let options = options.clone();
                     async move {
@@ -812,12 +810,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                         )
                         .await
                     }
-                });
-                let mut stream =
-                    futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
-                while let Some(item) = stream.next().await {
-                    item?;
-                }
+                };
+                futures::stream::iter(&chunks.indices())
+                    .map(Ok)
+                    .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
+                    .await?;
             }
             Ok(())
         }
@@ -898,8 +895,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 );
 
                 {
-                    let indices = chunks.indices();
-                    let futures = indices.into_iter().map(|chunk_indices| {
+                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
                         let chunk_subset = self.chunk_subset(&chunk_indices).unwrap();
                         let chunk_subset_in_array_subset =
                             unsafe { chunk_subset.overlap_unchecked(array_subset) };
@@ -919,12 +915,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                             )
                             .await
                         }
-                    });
-                    let mut stream =
-                        futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
-                    while let Some(item) = stream.next().await {
-                        item?;
-                    }
+                    };
+                    futures::stream::iter(&chunks.indices())
+                        .map(Ok)
+                        .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
+                        .await?;
                 }
                 Ok(())
             }

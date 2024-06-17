@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use futures::{stream::FuturesUnordered, StreamExt};
+use futures::{StreamExt, TryStreamExt};
 
 use crate::{
     array_subset::ArraySubset,
@@ -147,16 +147,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                 .await
             }
         };
-
-        let mut futures = chunks
-            .indices()
-            .into_iter()
-            .map(erase_chunk)
-            .collect::<FuturesUnordered<_>>();
-        while let Some(item) = futures.next().await {
-            item?;
-        }
-        Ok(())
+        futures::stream::iter(chunks.indices().into_iter())
+            .map(Ok)
+            .try_for_each_concurrent(None, erase_chunk)
+            .await
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -316,13 +310,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                             .await
                     }
                 };
-                let indices = chunks.indices();
-                let futures = indices.into_iter().map(store_chunk);
-                let mut stream =
-                    futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
-                while let Some(item) = stream.next().await {
-                    item?;
-                }
+                futures::stream::iter(&chunks.indices())
+                    .map(Ok)
+                    .try_for_each_concurrent(Some(chunk_concurrent_limit), store_chunk)
+                    .await?;
             }
         }
 

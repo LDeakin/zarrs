@@ -1,4 +1,4 @@
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 
 use crate::{array_subset::ArraySubset, storage::AsyncReadableWritableStorageTraits};
 
@@ -345,13 +345,10 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 }
             };
 
-            let indices = chunks.indices();
-            let futures = indices.into_iter().map(store_chunk);
-            let mut stream =
-                futures::stream::iter(futures).buffer_unordered(chunk_concurrent_limit);
-            while let Some(item) = stream.next().await {
-                item?;
-            }
+            futures::stream::iter(&chunks.indices())
+                .map(Ok)
+                .try_for_each_concurrent(Some(chunk_concurrent_limit), store_chunk)
+                .await?;
         }
         Ok(())
     }

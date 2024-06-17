@@ -1,6 +1,6 @@
 use async_recursion::async_recursion;
 
-use futures::{stream::FuturesUnordered, StreamExt};
+use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 
 use crate::{
@@ -179,24 +179,21 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
     store: &T,
     key_start_values: &[StoreKeyStartValue<'_>],
 ) -> Result<(), StorageError> {
-    // Group by key
-    let group_by_key = key_start_values
+    let groups = key_start_values
         .iter()
         .chunk_by(|key_start_value| &key_start_value.key)
         .into_iter()
-        .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
+        .map(|(key, group)| (key, group.into_iter().cloned().collect::<Vec<_>>()))
         .collect::<Vec<_>>();
-
-    // Read keys
-    let mut futures = group_by_key
-        .into_iter()
-        .map(|(key, group)| async move {
+    futures::stream::iter(&groups)
+        .map(Ok)
+        .try_for_each_concurrent(None, |(key, group)| async move {
             // Lock the store key
             // let mutex = store.mutex(&key).await?;
             // let _lock = mutex.lock().await;
 
             // Read the store key
-            let mut bytes = store.get(&key.clone()).await?.unwrap_or_else(Vec::default);
+            let mut bytes = store.get(key).await?.unwrap_or_else(Vec::default);
 
             // Expand the store key if needed
             let end_max =
@@ -213,14 +210,9 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
             }
 
             // Write the store key
-            store.set(&key, bytes).await
+            store.set(key, bytes).await
         })
-        .collect::<FuturesUnordered<_>>();
-    while let Some(item) = futures.next().await {
-        item?;
-    }
-
-    Ok(())
+        .await
 }
 
 /// Async writable storage traits.

@@ -33,7 +33,7 @@ async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>>
                 .build(),
         ));
     }
-    let array = builder.build_arc(store, array_path).unwrap();
+    let array = builder.build(store, array_path).unwrap();
 
     assert_eq!(array.data_type(), &DataType::UInt8);
     assert_eq!(array.fill_value().as_ne_bytes(), &[0u8]);
