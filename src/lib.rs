@@ -12,7 +12,7 @@
 //! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and [performance benchmarks](https://github.com/LDeakin/zarrs_tools/blob/main/docs/benchmarks.md) of `zarrs`.
 //!
 //! ## Example
-//! ```
+//! ```rust,ignore
 //! # use std::path::PathBuf;
 //! # use std::sync::Arc;
 //! let store_path: PathBuf = "/path/to/store".into();

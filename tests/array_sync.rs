@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use zarrs::array::codec::{array_to_bytes::sharding::ShardingCodecBuilder, GzipCodec};
 use zarrs::array::{Array, ArrayBuilder, ArrayCodecTraits, ArrayView, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 use zarrs::storage::store::MemoryStore;
@@ -231,23 +230,26 @@ fn array_sync_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
 fn array_sync_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(MemoryStore::default());
     let array_path = "/array";
-    let array = ArrayBuilder::new(
+    let mut builder = ArrayBuilder::new(
         vec![4, 4], // array shape
         DataType::UInt8,
         vec![2, 2].try_into().unwrap(), // regular chunk shape
         FillValue::from(0u8),
-    )
-    .array_to_bytes_codec(Box::new(
-        ShardingCodecBuilder::new(vec![1, 1].try_into().unwrap())
-            .bytes_to_bytes_codecs(vec![
-                #[cfg(feature = "gzip")]
-                Box::new(GzipCodec::new(5)?),
-            ])
-            .build(),
-    ))
+    );
+    #[cfg(feature = "sharding")]
+    builder.array_to_bytes_codec(Box::new(
+        zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder::new(
+            vec![1, 1].try_into().unwrap(),
+        )
+        .build(),
+    ));
+    builder.bytes_to_bytes_codecs(vec![
+        #[cfg(feature = "gzip")]
+        Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+    ]);
     // .storage_transformers(vec![].into())
-    .build(store, array_path)
-    .unwrap();
+
+    let array = builder.build(store, array_path).unwrap();
 
     let chunk_representation =
         array.chunk_array_representation(&vec![0; array.dimensionality()])?;
