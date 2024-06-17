@@ -8,8 +8,8 @@ use crate::{
 };
 
 use super::{
-    data_key, meta_key, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
-    StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, StorageError, StoreKey,
+    StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -312,10 +312,34 @@ pub fn create_array(
     path: &NodePath,
     array: &ArrayMetadata,
 ) -> Result<(), StorageError> {
-    let key = meta_key(path);
-    let json = serde_json::to_vec_pretty(array)
-        .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-    storage.set(&key, &json)?;
+    match array {
+        ArrayMetadata::V3(array) => {
+            let key = meta_key(path);
+            let json = serde_json::to_vec_pretty(array)
+                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+            storage.set(&key, &json)?;
+        }
+        ArrayMetadata::V2(array) => {
+            let mut array = array.clone();
+
+            if !array.attributes.is_empty() {
+                // Store .zattrs
+                let key = meta_key_v2_attributes(path);
+                let json = serde_json::to_vec_pretty(&array.attributes)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage.set(&key, &json)?;
+
+                array.attributes = serde_json::Map::default();
+            }
+
+            // Store .zarray
+            let key = meta_key_v2_array(path);
+            let json = serde_json::to_vec_pretty(&array)
+                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+            storage.set(&key, &json)?;
+        }
+    }
+
     Ok(())
 }
 

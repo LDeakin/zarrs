@@ -51,8 +51,9 @@ pub use self::{
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     unsafe_cell_slice::UnsafeCellSlice,
 };
+pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
-pub use crate::metadata::ArrayMetadata;
+pub use crate::metadata::{array_metadata_v2_to_v3, ArrayMetadata};
 
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
@@ -238,7 +239,12 @@ impl<TStorage: ?Sized> Array<TStorage> {
     ) -> Result<Self, ArrayCreateError> {
         let path = NodePath::new(path)?;
 
-        let ArrayMetadata::V3(metadata) = metadata;
+        // Convert V2 metadata to V3 if it is a compatible subset
+        let metadata = match metadata {
+            ArrayMetadata::V3(v3) => Ok(v3),
+            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(&v2)
+                .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
+        }?;
 
         if !metadata.validate_format() {
             return Err(ArrayCreateError::InvalidZarrFormat(metadata.zarr_format));
@@ -799,7 +805,7 @@ fn fill_array_view_with_fill_value(array_view: &ArrayView<'_>, fill_value: &Fill
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::store::MemoryStore;
+    use crate::storage::store::{FilesystemStore, MemoryStore};
 
     use super::*;
 
@@ -901,6 +907,56 @@ mod tests {
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 6
                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, // 7
             ]
+        );
+        assert!(array
+            .retrieve_chunk_elements_if_exists::<f32>(&[0; 2])
+            .unwrap()
+            .is_none());
+        #[cfg(feature = "ndarray")]
+        assert!(array
+            .retrieve_chunk_ndarray_if_exists::<f32>(&[0; 2])
+            .unwrap()
+            .is_none());
+    }
+
+    #[test]
+    fn array_v2_read() {
+        let store = Arc::new(FilesystemStore::new("tests/data/array_v2.zarr").unwrap());
+        let array_path = "/";
+        let array = Array::new(store, array_path).unwrap();
+
+        println!("{array:?}");
+
+        // array
+        //     .store_array_subset_elements::<f32>(
+        //         &ArraySubset::new_with_ranges(&[3..6, 3..6]),
+        //         vec![1.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        //     )
+        //     .unwrap();
+
+        let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+        let data_all = array
+            .retrieve_array_subset_elements::<f32>(&subset_all)
+            .unwrap();
+        use std::f32::NAN;
+        let assert_eq_nan = |input: &[f32], expected: &[f32]| {
+            std::iter::zip(input, expected).all(|(input, expected)| {
+                (input == expected) || (input.is_nan() && expected.is_nan())
+            })
+        };
+
+        assert_eq_nan(
+            &data_all,
+            &vec![
+                NAN, NAN, NAN, NAN, 0.1, 0.1, -0.6, 0.1, //
+                NAN, NAN, NAN, NAN, 0.1, 0.1, -1.6, 0.1, //
+                NAN, NAN, NAN, NAN, 0.1, 0.1, -2.6, 0.1, //
+                NAN, NAN, NAN, NAN, -3.4, -3.5, -3.6, 0.1, //
+                1.0, 1.0, 1.0, -4.3, -4.4, -4.5, -4.6, 1.1, //
+                1.0, 1.0, 1.0, -5.3, -5.4, -5.5, -5.6, 1.1, //
+                1.0, 1.0, 1.0, 1.0, 1.1, 1.1, -6.6, 1.1, //
+                1.0, 1.0, 1.0, 1.0, -7.4, -7.5, -7.6, -7.7, //
+            ],
         );
         assert!(array
             .retrieve_chunk_elements_if_exists::<f32>(&[0; 2])

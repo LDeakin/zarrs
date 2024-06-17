@@ -3,9 +3,13 @@ use std::sync::Arc;
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 use crate::{
+    array::ArrayMetadataV2,
     array_subset::ArraySubset,
     node::NodePath,
-    storage::{data_key, meta_key, ReadableStorageTraits, StorageError, StorageHandle},
+    storage::{
+        data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, ReadableStorageTraits,
+        StorageError, StorageHandle,
+    },
 };
 
 use super::{
@@ -16,7 +20,8 @@ use super::{
     concurrency::concurrency_chunks_and_codec,
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
-    validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayView,
+    validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayMetadataV3,
+    ArrayView,
 };
 
 #[cfg(feature = "ndarray")]
@@ -28,15 +33,53 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     /// # Errors
     /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
+        let array_v3 = Self::new_v3(storage.clone(), path);
+        if let Err(ArrayCreateError::MissingMetadata) = array_v3 {
+            Self::new_v2(storage, path)
+        } else {
+            array_v3
+        }
+    }
+
+    /// Create a new Zarr V3 array in `storage` at `path`. The metadata is read from the store.
+    ///
+    /// # Errors
+    /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
+    pub fn new_v3(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
         let key = meta_key(&node_path);
-        let metadata: ArrayMetadata = serde_json::from_slice(
+        let metadata: ArrayMetadataV3 = serde_json::from_slice(
             &storage
                 .get(&key)?
                 .ok_or(ArrayCreateError::MissingMetadata)?,
         )
         .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
-        Self::new_with_metadata(storage, path, metadata)
+        Self::new_with_metadata(storage, path, ArrayMetadata::V3(metadata))
+    }
+
+    /// Create a new Zarr V2 array in `storage` at `path`. The metadata is read from the store.
+    ///
+    /// # Errors
+    /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
+    pub fn new_v2(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
+        let node_path = NodePath::new(path)?;
+
+        let metadata_key = meta_key_v2_array(&node_path);
+        let mut metadata: ArrayMetadataV2 = serde_json::from_slice(
+            &storage
+                .get(&metadata_key)?
+                .ok_or(ArrayCreateError::MissingMetadata)?,
+        )
+        .map_err(|err| StorageError::InvalidMetadata(metadata_key, err.to_string()))?;
+
+        let attributes_key = meta_key_v2_attributes(&node_path);
+        let attributes = storage.get(&attributes_key)?;
+        if let Some(attributes) = attributes {
+            metadata.attributes = serde_json::from_slice(&attributes)
+                .map_err(|err| StorageError::InvalidMetadata(attributes_key, err.to_string()))?;
+        }
+
+        Self::new_with_metadata(storage, path, ArrayMetadata::V2(metadata))
     }
 
     /// Read and decode the chunk at `chunk_indices` into its bytes if it exists with default codec options.

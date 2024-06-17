@@ -54,7 +54,7 @@ pub struct Group<TStorage: ?Sized> {
     #[allow(dead_code)]
     path: NodePath,
     /// The metadata.
-    metadata: GroupMetadataV3,
+    metadata: GroupMetadata,
 }
 
 impl<TStorage: ?Sized> Group<TStorage> {
@@ -70,7 +70,6 @@ impl<TStorage: ?Sized> Group<TStorage> {
         metadata: GroupMetadata,
     ) -> Result<Self, GroupCreateError> {
         let path = NodePath::new(path)?;
-        let GroupMetadata::V3(metadata) = metadata;
         validate_group_metadata(&metadata)?;
         Ok(Self {
             storage,
@@ -88,31 +87,43 @@ impl<TStorage: ?Sized> Group<TStorage> {
     /// Get attributes.
     #[must_use]
     pub const fn attributes(&self) -> &serde_json::Map<String, serde_json::Value> {
-        &self.metadata.attributes
+        match &self.metadata {
+            GroupMetadata::V3(metadata) => &metadata.attributes,
+            GroupMetadata::V2(metadata) => &metadata.attributes,
+        }
     }
 
     /// Get additional fields.
     #[must_use]
     pub const fn additional_fields(&self) -> &AdditionalFields {
-        &self.metadata.additional_fields
+        match &self.metadata {
+            GroupMetadata::V3(metadata) => &metadata.additional_fields,
+            GroupMetadata::V2(metadata) => &metadata.additional_fields,
+        }
     }
 
     /// Get metadata.
     #[must_use]
     pub fn metadata(&self) -> GroupMetadata {
-        self.metadata.clone().into()
+        self.metadata.clone()
     }
 
     /// Mutably borrow the group attributes.
     #[must_use]
     pub fn attributes_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
-        &mut self.metadata.attributes
+        match &mut self.metadata {
+            GroupMetadata::V3(metadata) => &mut metadata.attributes,
+            GroupMetadata::V2(metadata) => &mut metadata.attributes,
+        }
     }
 
     /// Mutably borrow the additional fields.
     #[must_use]
     pub fn additional_fields_mut(&mut self) -> &mut AdditionalFields {
-        &mut self.metadata.additional_fields
+        match &mut self.metadata {
+            GroupMetadata::V3(metadata) => &mut metadata.additional_fields,
+            GroupMetadata::V2(metadata) => &mut metadata.additional_fields,
+        }
     }
 }
 
@@ -173,18 +184,23 @@ pub enum GroupCreateError {
     StorageError(#[from] StorageError),
 }
 
-fn validate_group_metadata(metadata: &GroupMetadataV3) -> Result<(), GroupCreateError> {
-    if !metadata.validate_format() {
-        Err(GroupCreateError::InvalidZarrFormat(metadata.zarr_format))
-    } else if !metadata.validate_node_type() {
-        Err(GroupCreateError::InvalidNodeType(
-            metadata.node_type.clone(),
-        ))
-    } else {
-        metadata
-            .additional_fields
-            .validate()
-            .map_err(GroupCreateError::UnsupportedAdditionalFieldError)
+fn validate_group_metadata(metadata: &GroupMetadata) -> Result<(), GroupCreateError> {
+    match metadata {
+        GroupMetadata::V3(metadata) => {
+            if !metadata.validate_format() {
+                Err(GroupCreateError::InvalidZarrFormat(metadata.zarr_format))
+            } else if !metadata.validate_node_type() {
+                Err(GroupCreateError::InvalidNodeType(
+                    metadata.node_type.clone(),
+                ))
+            } else {
+                metadata
+                    .additional_fields
+                    .validate()
+                    .map_err(GroupCreateError::UnsupportedAdditionalFieldError)
+            }
+        }
+        GroupMetadata::V2(_) => Ok(()),
     }
 }
 

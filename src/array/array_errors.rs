@@ -64,6 +64,9 @@ pub enum ArrayCreateError {
     /// Missing metadata.
     #[error("array metadata is missing")]
     MissingMetadata,
+    /// The Zarr V2 array is unsupported.
+    #[error("unsupported Zarr V2 array: {_0}")]
+    UnsupportedZarrV2Array(String),
 }
 
 /// Array errors.

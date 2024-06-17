@@ -5,12 +5,16 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
+use super::{v2::group::GroupMetadataV2, v3::GroupMetadataV3};
+
 /// A wrapper to handle various versions of Zarr group metadata.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum GroupMetadata {
     /// Zarr Version 3.0.
-    V3(super::v3::GroupMetadataV3),
+    V3(GroupMetadataV3),
+    /// Zarr Version 2.0.
+    V2(GroupMetadataV2),
 }
 
 impl TryFrom<&str> for GroupMetadata {

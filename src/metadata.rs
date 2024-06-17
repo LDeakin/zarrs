@@ -15,7 +15,10 @@ mod group;
 /// Zarr V3 metadata.
 pub mod v3;
 
-pub use array::ArrayMetadata;
+/// Zarr V2 metadata.
+pub mod v2;
+
+pub use array::{array_metadata_v2_to_v3, ArrayMetadata, ArrayMetadataV2ToV3ConversionError};
 pub use group::GroupMetadata;
 pub use v3::{AdditionalFields, ConfigurationInvalidError, UnsupportedAdditionalFieldError};
 

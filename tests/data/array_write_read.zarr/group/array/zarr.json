@@ -34,7 +34,7 @@
     "_zarrs": {
       "description": "This array was created with zarrs",
       "repository": "https://github.com/LDeakin/zarrs",
-      "version": "0.8.1"
+      "version": "0.15.0"
     }
   },
   "dimension_names": [

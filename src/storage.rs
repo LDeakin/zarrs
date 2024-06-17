@@ -247,6 +247,24 @@ pub fn meta_key(path: &NodePath) -> StoreKey {
     meta_key_any(path, "zarr.json")
 }
 
+/// Return the Zarr V2 array metadata key (.zarray) given a node path.
+#[must_use]
+pub fn meta_key_v2_array(path: &NodePath) -> StoreKey {
+    meta_key_any(path, ".zarray")
+}
+
+/// Return the Zarr V2 group metadata key (.zgroup) given a node path.
+#[must_use]
+pub fn meta_key_v2_group(path: &NodePath) -> StoreKey {
+    meta_key_any(path, ".zgroup")
+}
+
+/// Return the Zarr V2 user-defined attributes key (.zattrs) given a node path.
+#[must_use]
+pub fn meta_key_v2_attributes(path: &NodePath) -> StoreKey {
+    meta_key_any(path, ".zattrs")
+}
+
 /// Return the data key given a node path, chunk grid coordinates, and a chunk key encoding.
 #[must_use]
 pub fn data_key(
