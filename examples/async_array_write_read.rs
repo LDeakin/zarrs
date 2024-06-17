@@ -1,10 +1,11 @@
+use futures::TryStreamExt;
 use zarrs::storage::{
     storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
     AsyncReadableWritableListableStorage,
 };
 
 async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    use futures::{stream::FuturesUnordered, StreamExt};
+    use futures::StreamExt;
     use std::sync::Arc;
     use zarrs::{
         array::{DataType, FillValue, ZARR_NAN_F32},
@@ -66,7 +67,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // .bytes_to_bytes_codecs(vec![]) // uncompressed
     .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())
-    .build(store.clone(), array_path)?;
+    .build_arc(store.clone(), array_path)?;
 
     // Write array metadata to store
     array.async_store_metadata().await?;
@@ -77,30 +78,28 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Write some chunks
-    let subsets = (0..2)
-        .map(|i| {
+    let store_chunk = |i: u64| {
+        let array = array.clone();
+        async move {
             let chunk_indices: Vec<u64> = vec![0, i];
-            array
+            let chunk_subset = array
                 .chunk_grid()
                 .subset(&chunk_indices, array.shape())?
                 .ok_or_else(|| {
                     zarrs::array::ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec())
-                })
-                .map(|chunk_subset| (i, chunk_indices, chunk_subset))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let mut futures = subsets
-        .iter()
-        .map(|(i, chunk_indices, chunk_subset)| {
-            array.async_store_chunk_elements(
-                &chunk_indices,
-                vec![*i as f32 * 0.1; chunk_subset.num_elements() as usize],
-            )
-        })
-        .collect::<FuturesUnordered<_>>();
-    while let Some(item) = futures.next().await {
-        item?;
-    }
+                })?;
+            array
+                .async_store_chunk_elements(
+                    &chunk_indices,
+                    vec![i as f32 * 0.1; chunk_subset.num_elements() as usize],
+                )
+                .await
+        }
+    };
+    futures::stream::iter(0..2)
+        .map(Ok)
+        .try_for_each_concurrent(None, store_chunk)
+        .await?;
 
     let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
     let data_all = array

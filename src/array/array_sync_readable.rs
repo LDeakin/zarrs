@@ -189,6 +189,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn retrieve_encoded_chunks(
         &self,
         chunks: &ArraySubset,
+        options: &CodecOptions,
     ) -> Result<Vec<Option<Vec<u8>>>, StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
@@ -204,9 +205,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             )
         };
 
-        chunks
-            .indices()
-            .into_iter()
+        let indices = chunks.indices();
+        indices
+            .into_par_iter()
+            .by_uniform_blocks(indices.len().div_ceil(options.concurrent_target()).max(1))
             .map(retrieve_encoded_chunk)
             .collect()
     }
