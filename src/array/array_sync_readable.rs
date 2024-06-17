@@ -17,6 +17,7 @@ use super::{
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
     validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayView,
+    DataTypeSize,
 };
 
 #[cfg(feature = "ndarray")]
@@ -473,15 +474,19 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 .codecs()
                 .decode(chunk_encoded, &chunk_representation, options)
                 .map_err(ArrayError::CodecError)?;
-            let chunk_decoded_size =
-                chunk_representation.num_elements_usize() * chunk_representation.data_type().size();
-            if chunk_decoded.len() == chunk_decoded_size {
-                Ok(Some(chunk_decoded))
-            } else {
-                Err(ArrayError::UnexpectedChunkDecodedSize(
-                    chunk_decoded.len(),
-                    chunk_decoded_size,
-                ))
+            match chunk_representation.data_type().size() {
+                DataTypeSize::Fixed(data_type_size) => {
+                    let chunk_decoded_size =
+                        chunk_representation.num_elements_usize() * data_type_size;
+                    if chunk_decoded.len() == chunk_decoded_size {
+                        Ok(Some(chunk_decoded))
+                    } else {
+                        Err(ArrayError::UnexpectedChunkDecodedSize(
+                            chunk_decoded.len(),
+                            chunk_decoded_size,
+                        ))
+                    }
+                }
             }
         } else {
             Ok(None)
@@ -682,35 +687,41 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
                 // let mut output = vec![0; size_output];
                 // let output_slice = output.as_mut_slice();
-                let size_output = array_subset.num_elements_usize() * self.data_type().size();
-                let mut output = Vec::with_capacity(size_output);
-                {
-                    let output_slice =
-                        UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let indices = chunks.indices();
-                    let chunk0_subset = self.chunk_subset(chunks.start())?;
-                    indices
-                        .into_par_iter()
-                        .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                        .try_for_each(|chunk_indices: Vec<u64>| {
-                            let chunk_subset = self.chunk_subset(&chunk_indices)?;
-                            let array_view_subset = unsafe {
-                                chunk_subset.relative_to_unchecked(chunk0_subset.start())
-                            };
-                            self.retrieve_chunk_into_array_view_opt(
-                                &chunk_indices,
-                                &ArrayView::new(
-                                    unsafe { output_slice.get() },
-                                    array_subset.shape(),
-                                    array_view_subset,
+                match chunk_representation.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => {
+                        let size_output = array_subset.num_elements_usize() * data_type_size;
+                        let mut output = Vec::with_capacity(size_output);
+                        {
+                            let output_slice =
+                                UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                            let indices = chunks.indices();
+                            let chunk0_subset = self.chunk_subset(chunks.start())?;
+                            indices
+                                .into_par_iter()
+                                .by_uniform_blocks(
+                                    indices.len().div_ceil(chunk_concurrent_limit).max(1),
                                 )
-                                .map_err(|err| CodecError::from(err.to_string()))?,
-                                &options,
-                            )
-                        })?;
+                                .try_for_each(|chunk_indices: Vec<u64>| {
+                                    let chunk_subset = self.chunk_subset(&chunk_indices)?;
+                                    let array_view_subset = unsafe {
+                                        chunk_subset.relative_to_unchecked(chunk0_subset.start())
+                                    };
+                                    self.retrieve_chunk_into_array_view_opt(
+                                        &chunk_indices,
+                                        &ArrayView::new(
+                                            unsafe { output_slice.get() },
+                                            array_subset.shape(),
+                                            array_view_subset,
+                                        )
+                                        .map_err(|err| CodecError::from(err.to_string()))?,
+                                        &options,
+                                    )
+                                })?;
+                        }
+                        unsafe { output.set_len(size_output) };
+                        Ok(output)
+                    }
                 }
-                unsafe { output.set_len(size_output) };
-                Ok(output)
             }
         }
     }
@@ -788,13 +799,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 }
             }
             _ => {
-                // Allocate the output
-                let size_output = array_subset.num_elements_usize() * self.data_type().size();
-                let mut output = Vec::with_capacity(size_output);
-
-                // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+
+                // Calculate chunk/codec concurrency
                 let codec_concurrency =
                     self.recommended_codec_concurrency(&chunk_representation)?;
                 let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
@@ -804,39 +812,52 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     &codec_concurrency,
                 );
 
-                {
-                    let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
-                        let chunk_subset = self.chunk_subset(&chunk_indices)?;
-                        let chunk_subset_in_array_subset =
-                            unsafe { chunk_subset.overlap_unchecked(array_subset) };
-                        let chunk_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
-                        };
-                        let array_view_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                        };
-                        let array_view = ArrayView::new(
-                            unsafe { output.get() },
-                            array_subset.shape(),
-                            array_view_subset,
-                        )
-                        .map_err(|err| CodecError::from(err.to_string()))?;
-                        self.retrieve_chunk_subset_into_array_view_opt(
-                            &chunk_indices,
-                            &chunk_subset,
-                            &array_view,
-                            &options,
-                        )
-                    };
-                    let indices = chunks.indices();
-                    indices
-                        .into_par_iter()
-                        .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                        .try_for_each(retrieve_chunk)?;
+                match chunk_representation.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => {
+                        // Allocate the output
+                        let size_output = array_subset.num_elements_usize() * data_type_size;
+                        let mut output = Vec::with_capacity(size_output);
+
+                        {
+                            let output =
+                                UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                            let retrieve_chunk = |chunk_indices: Vec<u64>| {
+                                let chunk_subset = self.chunk_subset(&chunk_indices)?;
+                                let chunk_subset_in_array_subset =
+                                    unsafe { chunk_subset.overlap_unchecked(array_subset) };
+                                let chunk_subset = unsafe {
+                                    chunk_subset_in_array_subset
+                                        .relative_to_unchecked(chunk_subset.start())
+                                };
+                                let array_view_subset = unsafe {
+                                    chunk_subset_in_array_subset
+                                        .relative_to_unchecked(array_subset.start())
+                                };
+                                let array_view = ArrayView::new(
+                                    unsafe { output.get() },
+                                    array_subset.shape(),
+                                    array_view_subset,
+                                )
+                                .map_err(|err| CodecError::from(err.to_string()))?;
+                                self.retrieve_chunk_subset_into_array_view_opt(
+                                    &chunk_indices,
+                                    &chunk_subset,
+                                    &array_view,
+                                    &options,
+                                )
+                            };
+                            let indices = chunks.indices();
+                            indices
+                                .into_par_iter()
+                                .by_uniform_blocks(
+                                    indices.len().div_ceil(chunk_concurrent_limit).max(1),
+                                )
+                                .try_for_each(retrieve_chunk)?;
+                        }
+                        unsafe { output.set_len(size_output) };
+                        Ok(output)
+                    }
                 }
-                unsafe { output.set_len(size_output) };
-                Ok(output)
             }
         }
     }
@@ -1073,15 +1094,19 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             }
         };
 
-        let total_size = decoded_bytes.len();
-        let expected_size = chunk_subset.num_elements_usize() * self.data_type().size();
-        if total_size == chunk_subset.num_elements_usize() * self.data_type().size() {
-            Ok(decoded_bytes)
-        } else {
-            Err(ArrayError::UnexpectedChunkDecodedSize(
-                total_size,
-                expected_size,
-            ))
+        match chunk_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                let total_size = decoded_bytes.len();
+                let expected_size = chunk_subset.num_elements_usize() * data_type_size;
+                if total_size == expected_size {
+                    Ok(decoded_bytes)
+                } else {
+                    Err(ArrayError::UnexpectedChunkDecodedSize(
+                        total_size,
+                        expected_size,
+                    ))
+                }
+            }
         }
     }
 

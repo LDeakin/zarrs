@@ -4,7 +4,7 @@ use crate::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ChunkRepresentation,
+        ChunkRepresentation, DataTypeSize,
     },
     array_subset::IncompatibleArraySubsetAndShapeError,
 };
@@ -37,7 +37,7 @@ impl<'a> BytesPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -50,14 +50,16 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
         let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
             // Get byte ranges
-            let byte_ranges = array_subset
-                .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
-                .map_err(|_| {
-                    IncompatibleArraySubsetAndShapeError::from((
-                        array_subset.clone(),
-                        self.decoded_representation.shape_u64(),
-                    ))
-                })?;
+            let byte_ranges = match self.decoded_representation.data_type().size() {
+                DataTypeSize::Fixed(data_type_size) => array_subset
+                    .byte_ranges(&chunk_shape, data_type_size)
+                    .map_err(|_| {
+                        IncompatibleArraySubsetAndShapeError::from((
+                            array_subset.clone(),
+                            self.decoded_representation.shape_u64(),
+                        ))
+                    })?,
+            };
 
             // Decode
             let decoded = self
@@ -116,7 +118,7 @@ impl<'a> AsyncBytesPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -145,14 +147,16 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
             }
 
             // Get byte ranges
-            let byte_ranges = array_subset
-                .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
-                .map_err(|_| {
-                    IncompatibleArraySubsetAndShapeError::from((
-                        array_subset.clone(),
-                        self.decoded_representation.shape_u64(),
-                    ))
-                })?;
+            let byte_ranges = match self.decoded_representation.element_size() {
+                DataTypeSize::Fixed(data_type_size) => array_subset
+                    .byte_ranges(&chunk_shape, data_type_size)
+                    .map_err(|_| {
+                        IncompatibleArraySubsetAndShapeError::from((
+                            array_subset.clone(),
+                            self.decoded_representation.shape_u64(),
+                        ))
+                    })?,
+            };
 
             // Decode
             let decoded = self

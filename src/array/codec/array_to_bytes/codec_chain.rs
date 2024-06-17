@@ -9,7 +9,8 @@ use crate::{
             CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayMetadataOptions, ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
+        ArrayMetadataOptions, ArraySize, ArrayView, BytesRepresentation, ChunkRepresentation,
+        ChunkShape, DataTypeSize,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -432,12 +433,16 @@ impl ArrayCodecTraits for CodecChain {
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
+        match decoded_representation.size() {
+            ArraySize::Fixed(array_size) => {
+                if decoded_value.len() as u64 != array_size {
+                    return Err(CodecError::UnexpectedChunkDecodedSize(
+                        decoded_value.len(),
+                        array_size,
+                    ));
+                }
+            }
+        };
 
         let mut decoded_representation = decoded_representation.clone();
 
@@ -499,12 +504,16 @@ impl ArrayCodecTraits for CodecChain {
             encoded_value = codec.decode(encoded_value, array_representation, options)?;
         }
 
-        if encoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                encoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
+        match decoded_representation.size() {
+            ArraySize::Fixed(array_size) => {
+                if encoded_value.len() as u64 != array_size {
+                    return Err(CodecError::UnexpectedChunkDecodedSize(
+                        encoded_value.len(),
+                        array_size,
+                    ));
+                }
+            }
+        };
 
         Ok(encoded_value)
     }
@@ -567,35 +576,44 @@ impl ArrayCodecTraits for CodecChain {
                 encoded_value = codec.decode(encoded_value, array_representation, options)?;
             }
 
-            if encoded_value.len() as u64 != decoded_representation.size() {
-                return Err(CodecError::UnexpectedChunkDecodedSize(
-                    encoded_value.len(),
-                    decoded_representation.size(),
-                ));
-            }
+            match decoded_representation.size() {
+                ArraySize::Fixed(array_size) => {
+                    if encoded_value.len() as u64 != array_size {
+                        return Err(CodecError::UnexpectedChunkDecodedSize(
+                            encoded_value.len(),
+                            array_size,
+                        ));
+                    }
+                }
+            };
 
             // FIXME: the last array to array can decode into array_view
             //        Could also identify which filters are passthrough (e.g. bytes if endianness is native/none, transpose in C order, etc.)
             let decoded_value = encoded_value;
-            let contiguous_indices = unsafe {
-                array_view
-                    .subset()
-                    .contiguous_linearised_indices_unchecked(array_view.array_shape())
+
+            match decoded_representation.data_type().size() {
+                DataTypeSize::Fixed(data_type_size) => {
+                    let contiguous_indices = unsafe {
+                        array_view
+                            .subset()
+                            .contiguous_linearised_indices_unchecked(array_view.array_shape())
+                    };
+                    let length = contiguous_indices.contiguous_elements_usize() * data_type_size;
+                    let mut decoded_offset = 0;
+                    // FIXME: Par iteration?
+                    let output = unsafe { array_view.bytes_mut() };
+                    for (array_subset_element_index, _num_elements) in &contiguous_indices {
+                        let output_offset =
+                            usize::try_from(array_subset_element_index).unwrap() * data_type_size;
+                        debug_assert!((output_offset + length) <= output.len());
+                        debug_assert!((decoded_offset + length) <= decoded_value.len());
+                        output[output_offset..output_offset + length].copy_from_slice(
+                            &decoded_value[decoded_offset..decoded_offset + length],
+                        );
+                        decoded_offset += length;
+                    }
+                }
             };
-            let element_size = decoded_representation.element_size();
-            let length = contiguous_indices.contiguous_elements_usize() * element_size;
-            let mut decoded_offset = 0;
-            // FIXME: Par iteration?
-            let output = unsafe { array_view.bytes_mut() };
-            for (array_subset_element_index, _num_elements) in &contiguous_indices {
-                let output_offset =
-                    usize::try_from(array_subset_element_index).unwrap() * element_size;
-                debug_assert!((output_offset + length) <= output.len());
-                debug_assert!((decoded_offset + length) <= decoded_value.len());
-                output[output_offset..output_offset + length]
-                    .copy_from_slice(&decoded_value[decoded_offset..decoded_offset + length]);
-                decoded_offset += length;
-            }
             Ok(())
         }
     }

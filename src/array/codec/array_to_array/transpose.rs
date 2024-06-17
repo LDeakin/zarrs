@@ -115,7 +115,7 @@ mod tests {
                 ArrayCodecTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec,
                 CodecOptions,
             },
-            ChunkRepresentation, DataType, FillValue,
+            ArraySize, ChunkRepresentation, DataType, FillValue,
         },
         array_subset::ArraySubset,
     };
@@ -133,7 +133,8 @@ mod tests {
             fill_value,
         )
         .unwrap();
-        let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
+        let ArraySize::Fixed(size) = chunk_representation.size();
+        let bytes: Vec<u8> = (0..size).map(|s| s as u8).collect();
 
         let configuration: TransposeCodecConfiguration = serde_json::from_str(json).unwrap();
         let codec = TransposeCodec::new_with_configuration(&configuration).unwrap();

@@ -22,6 +22,7 @@ use super::{
 /// A data type.
 #[derive(Clone, Debug)]
 #[non_exhaustive]
+#[rustfmt::skip]
 pub enum DataType {
     /// `bool` Boolean.
     Bool,
@@ -56,8 +57,13 @@ pub enum DataType {
     /// `r*` raw bits, variable size given by *, limited to be a multiple of 8.
     RawBits(usize), // the stored usize is the size in bytes
 
-                    // /// An extension data type.
-                    // Extension(Box<dyn DataTypeExtension>),
+    // /// Variable-sized string.
+    // String,
+    // /// Variable-sized binary data.
+    // Binary,
+
+    // /// An extension data type.
+    // Extension(Box<dyn DataTypeExtension>),
 }
 
 /// An unsupported data type error.
@@ -102,6 +108,17 @@ impl IncompatibleFillValueError {
     }
 }
 
+/// The size of the data type.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DataTypeSize {
+    /// Fixed size (in bytes).
+    Fixed(usize),
+    // /// Variable sized.
+    // ///
+    // /// https://github.com/zarr-developers/zeps/pull/47
+    // Variable,
+}
+
 /// Extension data type traits.
 pub trait DataTypeExtension: dyn_clone::DynClone + core::fmt::Debug + Send + Sync {
     /// Returns the identifier.
@@ -110,8 +127,8 @@ pub trait DataTypeExtension: dyn_clone::DynClone + core::fmt::Debug + Send + Syn
     /// Returns the name.
     fn name(&self) -> String;
 
-    /// Returns the size in bytes.
-    fn size(&self) -> usize;
+    /// Returns the data type size in bytes.
+    fn size(&self) -> DataTypeSize;
 
     /// Returns the data type metadata.
     fn metadata(&self) -> Metadata;
@@ -178,16 +195,16 @@ impl DataType {
         // }
     }
 
-    /// Returns the size in bytes.
+    /// Returns the [`DataTypeSize`].
     #[must_use]
-    pub const fn size(&self) -> usize {
+    pub const fn size(&self) -> DataTypeSize {
         match self {
-            Self::Bool | Self::Int8 | Self::UInt8 => 1,
-            Self::Int16 | Self::UInt16 | Self::Float16 | Self::BFloat16 => 2,
-            Self::Int32 | Self::UInt32 | Self::Float32 => 4,
-            Self::Int64 | Self::UInt64 | Self::Float64 | Self::Complex64 => 8,
-            Self::Complex128 => 16,
-            Self::RawBits(size) => *size,
+            Self::Bool | Self::Int8 | Self::UInt8 => DataTypeSize::Fixed(1),
+            Self::Int16 | Self::UInt16 | Self::Float16 | Self::BFloat16 => DataTypeSize::Fixed(2),
+            Self::Int32 | Self::UInt32 | Self::Float32 => DataTypeSize::Fixed(4),
+            Self::Int64 | Self::UInt64 | Self::Float64 | Self::Complex64 => DataTypeSize::Fixed(8),
+            Self::Complex128 => DataTypeSize::Fixed(16),
+            Self::RawBits(size) => DataTypeSize::Fixed(*size),
             // Self::Extension(extension) => extension.size(),
         }
     }
@@ -869,7 +886,7 @@ mod tests {
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "r*");
         assert_eq!(data_type.name().as_str(), "r8");
-        assert_eq!(data_type.size(), 1);
+        assert_eq!(data_type.size(), DataTypeSize::Fixed(1));
 
         let metadata = serde_json::from_str::<FillValueMetadata>("[7]").unwrap();
         let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
@@ -885,7 +902,7 @@ mod tests {
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "r*");
         assert_eq!(data_type.name().as_str(), "r16");
-        assert_eq!(data_type.size(), 2);
+        assert_eq!(data_type.size(), DataTypeSize::Fixed(2));
 
         let metadata = serde_json::from_str::<FillValueMetadata>("[0, 255]").unwrap();
         let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
@@ -949,7 +966,7 @@ mod tests {
         let json = r#""r16""#;
         let metadata = serde_json::from_str::<Metadata>(json).unwrap();
         let data_type: DataType = DataType::from_metadata(&metadata).unwrap();
-        assert_eq!(data_type.size(), 2);
+        assert_eq!(data_type.size(), DataTypeSize::Fixed(2));
     }
 
     #[test]
@@ -960,7 +977,7 @@ mod tests {
     }"#;
         let metadata = serde_json::from_str::<Metadata>(json).unwrap();
         let data_type: DataType = DataType::from_metadata(&metadata).unwrap();
-        assert_eq!(data_type.size(), 2);
+        assert_eq!(data_type.size(), DataTypeSize::Fixed(2));
     }
 
     #[test]

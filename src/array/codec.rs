@@ -85,6 +85,7 @@ use std::{
     io::{Read, Seek, SeekFrom},
 };
 
+use super::data_type::DataTypeSize;
 use super::{
     concurrency::RecommendedConcurrency, ArrayMetadataOptions, ArrayView, BytesRepresentation,
     ChunkRepresentation, ChunkShape, DataType, MaybeBytes,
@@ -243,26 +244,31 @@ pub trait ArrayCodecTraits: CodecTraits {
         array_view: &ArrayView,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        let decoded_bytes = self.decode(encoded_value.to_vec(), decoded_representation, options)?;
-        let contiguous_indices = unsafe {
-            array_view
-                .subset()
-                .contiguous_linearised_indices_unchecked(array_view.array_shape())
-        };
-        let element_size = decoded_representation.element_size();
-        let length = contiguous_indices.contiguous_elements_usize() * element_size;
-        let mut decoded_offset = 0;
-        // FIXME: Par iteration?
-        let output = unsafe { array_view.bytes_mut() };
-        for (array_subset_element_index, _num_elements) in &contiguous_indices {
-            let output_offset = usize::try_from(array_subset_element_index).unwrap() * element_size;
-            debug_assert!((output_offset + length) <= output.len());
-            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-            output[output_offset..output_offset + length]
-                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
-            decoded_offset += length;
+        match decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                let decoded_bytes =
+                    self.decode(encoded_value.to_vec(), decoded_representation, options)?;
+                let contiguous_indices = unsafe {
+                    array_view
+                        .subset()
+                        .contiguous_linearised_indices_unchecked(array_view.array_shape())
+                };
+                let length = contiguous_indices.contiguous_elements_usize() * data_type_size;
+                let mut decoded_offset = 0;
+                // FIXME: Par iteration?
+                let output = unsafe { array_view.bytes_mut() };
+                for (array_subset_element_index, _num_elements) in &contiguous_indices {
+                    let output_offset =
+                        usize::try_from(array_subset_element_index).unwrap() * data_type_size;
+                    debug_assert!((output_offset + length) <= output.len());
+                    debug_assert!((decoded_offset + length) <= decoded_bytes.len());
+                    output[output_offset..output_offset + length]
+                        .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
+                    decoded_offset += length;
+                }
+                Ok(())
+            }
         }
-        Ok(())
     }
 
     /// Return the partial decode granularity.
@@ -374,7 +380,7 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
 /// Partial array decoder traits.
 pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// Return the element size of the partial decoder.
-    fn element_size(&self) -> usize;
+    fn element_size(&self) -> DataTypeSize;
 
     /// Partially decode a chunk with default codec options.
     ///
@@ -418,38 +424,42 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         array_view: &ArrayView,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        if array_subset.shape() != array_view.subset().shape() {
-            return Err(CodecError::InvalidArraySubsetError(
-                IncompatibleArraySubsetAndShapeError::new(
-                    array_subset.clone(),
-                    array_view.array_shape().to_vec(),
-                ),
-            ));
-        }
+        match self.element_size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                if array_subset.shape() != array_view.subset().shape() {
+                    return Err(CodecError::InvalidArraySubsetError(
+                        IncompatibleArraySubsetAndShapeError::new(
+                            array_subset.clone(),
+                            array_view.array_shape().to_vec(),
+                        ),
+                    ));
+                }
 
-        let decoded_bytes = self
-            .partial_decode_opt(&[array_subset.clone()], options)?
-            .pop()
-            .unwrap();
-        let contiguous_indices = unsafe {
-            array_view
-                .subset()
-                .contiguous_linearised_indices_unchecked(array_view.array_shape())
-        };
-        let element_size = self.element_size();
-        let length = contiguous_indices.contiguous_elements_usize() * element_size;
-        let mut decoded_offset = 0;
-        // FIXME: Par iteration?
-        let output = unsafe { array_view.bytes_mut() };
-        for (array_subset_element_index, _num_elements) in &contiguous_indices {
-            let output_offset = usize::try_from(array_subset_element_index).unwrap() * element_size;
-            debug_assert!((output_offset + length) <= output.len());
-            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-            output[output_offset..output_offset + length]
-                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
-            decoded_offset += length;
+                let decoded_bytes = self
+                    .partial_decode_opt(&[array_subset.clone()], options)?
+                    .pop()
+                    .unwrap();
+                let contiguous_indices = unsafe {
+                    array_view
+                        .subset()
+                        .contiguous_linearised_indices_unchecked(array_view.array_shape())
+                };
+                let length = contiguous_indices.contiguous_elements_usize() * data_type_size;
+                let mut decoded_offset = 0;
+                // FIXME: Par iteration?
+                let output = unsafe { array_view.bytes_mut() };
+                for (array_subset_element_index, _num_elements) in &contiguous_indices {
+                    let output_offset =
+                        usize::try_from(array_subset_element_index).unwrap() * data_type_size;
+                    debug_assert!((output_offset + length) <= output.len());
+                    debug_assert!((decoded_offset + length) <= decoded_bytes.len());
+                    output[output_offset..output_offset + length]
+                        .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
+                    decoded_offset += length;
+                }
+                Ok(())
+            }
         }
-        Ok(())
     }
 }
 
@@ -458,7 +468,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
 #[async_trait::async_trait]
 pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     /// Return the element size of the partial decoder.
-    fn element_size(&self) -> usize;
+    fn element_size(&self) -> DataTypeSize;
 
     /// Partially decode a chunk with default codec options.
     ///
@@ -500,39 +510,43 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
         array_view: &ArrayView,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        if array_subset.shape() != array_view.subset().shape() {
-            return Err(CodecError::InvalidArraySubsetError(
-                IncompatibleArraySubsetAndShapeError::new(
-                    array_subset.clone(),
-                    array_view.array_shape().to_vec(),
-                ),
-            ));
-        }
+        match self.element_size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                if array_subset.shape() != array_view.subset().shape() {
+                    return Err(CodecError::InvalidArraySubsetError(
+                        IncompatibleArraySubsetAndShapeError::new(
+                            array_subset.clone(),
+                            array_view.array_shape().to_vec(),
+                        ),
+                    ));
+                }
 
-        let decoded_bytes = self
-            .partial_decode_opt(&[array_subset.clone()], options)
-            .await?
-            .pop()
-            .unwrap();
-        let contiguous_indices = unsafe {
-            array_view
-                .subset()
-                .contiguous_linearised_indices_unchecked(array_view.array_shape())
-        };
-        let element_size = self.element_size();
-        let length = contiguous_indices.contiguous_elements_usize() * element_size;
-        let mut decoded_offset = 0;
-        // FIXME: Par iteration?
-        let output = unsafe { array_view.bytes_mut() };
-        for (array_subset_element_index, _num_elements) in &contiguous_indices {
-            let output_offset = usize::try_from(array_subset_element_index).unwrap() * element_size;
-            debug_assert!((output_offset + length) <= output.len());
-            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-            output[output_offset..output_offset + length]
-                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
-            decoded_offset += length;
+                let decoded_bytes = self
+                    .partial_decode_opt(&[array_subset.clone()], options)
+                    .await?
+                    .pop()
+                    .unwrap();
+                let contiguous_indices = unsafe {
+                    array_view
+                        .subset()
+                        .contiguous_linearised_indices_unchecked(array_view.array_shape())
+                };
+                let length = contiguous_indices.contiguous_elements_usize() * data_type_size;
+                let mut decoded_offset = 0;
+                // FIXME: Par iteration?
+                let output = unsafe { array_view.bytes_mut() };
+                for (array_subset_element_index, _num_elements) in &contiguous_indices {
+                    let output_offset =
+                        usize::try_from(array_subset_element_index).unwrap() * data_type_size;
+                    debug_assert!((output_offset + length) <= output.len());
+                    debug_assert!((decoded_offset + length) <= decoded_bytes.len());
+                    output[output_offset..output_offset + length]
+                        .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
+                    decoded_offset += length;
+                }
+                Ok(())
+            }
         }
-        Ok(())
     }
 }
 

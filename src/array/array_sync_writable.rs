@@ -10,7 +10,7 @@ use crate::{
 use super::{
     codec::{options::CodecOptions, ArrayCodecTraits},
     concurrency::concurrency_chunks_and_codec,
-    Array, ArrayError,
+    Array, ArrayError, ArraySize, DataTypeSize,
 };
 
 impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
@@ -208,11 +208,15 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ) -> Result<(), ArrayError> {
         // Validation
         let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
-        if chunk_bytes.len() as u64 != chunk_array_representation.size() {
-            return Err(ArrayError::InvalidBytesInputSize(
-                chunk_bytes.len(),
-                chunk_array_representation.size(),
-            ));
+        match chunk_array_representation.size() {
+            ArraySize::Fixed(array_size) => {
+                if chunk_bytes.len() as u64 != array_size {
+                    return Err(ArrayError::InvalidBytesInputSize(
+                        chunk_bytes.len(),
+                        array_size,
+                    ));
+                }
+            }
         }
 
         if !options.store_empty_chunks() && self.fill_value().equals_all(&chunk_bytes) {
@@ -299,16 +303,6 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 self.store_chunk_opt(chunk_indices, chunks_bytes, options)?;
             }
             _ => {
-                let array_subset = self.chunks_subset(chunks)?;
-                let element_size = self.data_type().size();
-                let expected_size = element_size as u64 * array_subset.num_elements();
-                if chunks_bytes.len() as u64 != expected_size {
-                    return Err(ArrayError::InvalidBytesInputSize(
-                        chunks_bytes.len(),
-                        expected_size,
-                    ));
-                }
-
                 // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
@@ -321,38 +315,56 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                     &codec_concurrency,
                 );
 
-                let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
-                    let chunk_subset_in_array = unsafe {
-                        self.chunk_grid()
-                            .subset_unchecked(&chunk_indices, self.shape())
-                            .ok_or_else(|| {
-                                ArrayError::InvalidChunkGridIndicesError(chunk_indices.clone())
-                            })?
-                    };
-                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                    let chunk_subset_in_array_subset =
-                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    #[allow(clippy::similar_names)]
-                    let chunk_bytes = unsafe {
-                        chunk_subset_in_array_subset.extract_bytes_unchecked(
-                            &chunks_bytes,
-                            array_subset.shape(),
-                            element_size,
-                        )
-                    };
+                let array_subset = self.chunks_subset(chunks)?;
+                match self.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => {
+                        let expected_size = array_subset.num_elements() * data_type_size as u64;
+                        if chunks_bytes.len() as u64 != expected_size {
+                            return Err(ArrayError::InvalidBytesInputSize(
+                                chunks_bytes.len(),
+                                expected_size,
+                            ));
+                        }
 
-                    debug_assert_eq!(
-                        chunk_subset_in_array.num_elements(),
-                        chunk_subset_in_array_subset.num_elements()
-                    );
+                        let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
+                            let chunk_subset_in_array = unsafe {
+                                self.chunk_grid()
+                                    .subset_unchecked(&chunk_indices, self.shape())
+                                    .ok_or_else(|| {
+                                        ArrayError::InvalidChunkGridIndicesError(
+                                            chunk_indices.clone(),
+                                        )
+                                    })?
+                            };
+                            let overlap =
+                                unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
+                            let chunk_subset_in_array_subset =
+                                unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                            #[allow(clippy::similar_names)]
+                            let chunk_bytes = unsafe {
+                                chunk_subset_in_array_subset.extract_bytes_unchecked(
+                                    &chunks_bytes,
+                                    array_subset.shape(),
+                                    data_type_size,
+                                )
+                            };
 
-                    self.store_chunk_opt(&chunk_indices, chunk_bytes, &options)
-                };
-                let indices = chunks.indices();
-                indices
-                    .into_par_iter()
-                    .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                    .try_for_each(store_chunk)?;
+                            debug_assert_eq!(
+                                chunk_subset_in_array.num_elements(),
+                                chunk_subset_in_array_subset.num_elements()
+                            );
+
+                            self.store_chunk_opt(&chunk_indices, chunk_bytes, &options)
+                        };
+                        let indices = chunks.indices();
+                        indices
+                            .into_par_iter()
+                            .by_uniform_blocks(
+                                indices.len().div_ceil(chunk_concurrent_limit).max(1),
+                            )
+                            .try_for_each(store_chunk)?;
+                    }
+                }
             }
         }
 

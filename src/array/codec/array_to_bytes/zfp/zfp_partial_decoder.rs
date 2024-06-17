@@ -1,7 +1,7 @@
 use crate::{
     array::{
         codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, CodecOptions},
-        ChunkRepresentation,
+        ChunkRepresentation, DataTypeSize,
     },
     array_subset::ArraySubset,
     byte_range::extract_byte_ranges_concat,
@@ -41,7 +41,7 @@ impl<'a> ZfpPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -71,11 +71,10 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges = unsafe {
-                        array_subset.byte_ranges_unchecked(
-                            &chunk_shape,
-                            self.decoded_representation.element_size(),
-                        )
+                    let byte_ranges = match self.decoded_representation.element_size() {
+                        DataTypeSize::Fixed(data_type_size) => unsafe {
+                            array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size)
+                        },
                     };
                     out.push(extract_byte_ranges_concat(&decoded_value, &byte_ranges)?);
                 }
@@ -128,7 +127,7 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -158,11 +157,10 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges = unsafe {
-                        array_subset.byte_ranges_unchecked(
-                            &chunk_shape,
-                            self.decoded_representation.element_size(),
-                        )
+                    let byte_ranges = match self.decoded_representation.element_size() {
+                        DataTypeSize::Fixed(data_type_size) => unsafe {
+                            array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size)
+                        },
                     };
                     out.push(extract_byte_ranges_concat(&decoded_value, &byte_ranges)?);
                 }

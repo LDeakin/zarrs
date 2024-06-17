@@ -37,7 +37,7 @@ pub use self::{
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata::{ArrayMetadata, ArrayMetadataV3},
     array_metadata_options::ArrayMetadataOptions,
-    array_representation::{ArrayRepresentation, ChunkRepresentation},
+    array_representation::{ArrayRepresentation, ArraySize, ChunkRepresentation},
     array_view::{ArrayView, ArrayViewCreateError},
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
@@ -46,7 +46,7 @@ pub use self::{
     codec::ArrayCodecTraits,
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
-    data_type::DataType,
+    data_type::{DataType, DataTypeSize},
     dimension_name::DimensionName,
     fill_value::FillValue,
     fill_value_metadata::FillValueMetadata,
@@ -599,14 +599,18 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
 macro_rules! array_store_elements {
     ( $self:expr, $elements:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            let $elements = crate::array::transmute_to_bytes_vec($elements);
-            $self.$func($($arg)*)
+        match $self.data_type.size() {
+            crate::array::DataTypeSize::Fixed(size) => {
+                if size != std::mem::size_of::<T>() {
+                    Err(ArrayError::IncompatibleElementSize(
+                        size,
+                        std::mem::size_of::<T>(),
+                    ))
+                } else {
+                    let $elements = crate::array::transmute_to_bytes_vec($elements);
+                    $self.$func($($arg)*)
+                }
+            }
         }
     };
 }
@@ -614,18 +618,22 @@ macro_rules! array_store_elements {
 #[cfg(feature = "ndarray")]
 macro_rules! array_store_ndarray {
     ( $self:expr, $array:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            if $array.is_standard_layout() {
-                let $array = $array.into_raw_vec();
-                $self.$func($($arg)*)
-            } else {
-                let $array = $array.as_standard_layout().into_owned().into_raw_vec();
-                $self.$func($($arg)*)
+        match $self.data_type.size() {
+            crate::array::DataTypeSize::Fixed(size) => {
+                if size != std::mem::size_of::<T>() {
+                    Err(ArrayError::IncompatibleElementSize(
+                        size,
+                        std::mem::size_of::<T>(),
+                    ))
+                } else {
+                    if $array.is_standard_layout() {
+                        let $array = $array.into_raw_vec();
+                        $self.$func($($arg)*)
+                    } else {
+                        let $array = $array.as_standard_layout().into_owned().into_raw_vec();
+                        $self.$func($($arg)*)
+                    }
+                }
             }
         }
     };
@@ -634,14 +642,18 @@ macro_rules! array_store_ndarray {
 #[cfg(feature = "async")]
 macro_rules! array_async_store_elements {
     ( $self:expr, $elements:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            let $elements = crate::array::transmute_to_bytes_vec($elements);
-            $self.$func($($arg)*).await
+        match $self.data_type.size() {
+            crate::array::DataTypeSize::Fixed(size) => {
+                if size != std::mem::size_of::<T>() {
+                    Err(ArrayError::IncompatibleElementSize(
+                        size,
+                        std::mem::size_of::<T>(),
+                    ))
+                } else {
+                    let $elements = crate::array::transmute_to_bytes_vec($elements);
+                    $self.$func($($arg)*).await
+                }
+            }
         }
     };
 }
@@ -650,18 +662,22 @@ macro_rules! array_async_store_elements {
 #[cfg(feature = "ndarray")]
 macro_rules! array_async_store_ndarray {
     ( $self:expr, $array:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            if $array.is_standard_layout() {
-                let $array = $array.into_raw_vec();
-                $self.$func($($arg)*).await
-            } else {
-                let $array = $array.as_standard_layout().into_owned().into_raw_vec();
-                $self.$func($($arg)*).await
+        match $self.data_type.size() {
+            crate::array::DataTypeSize::Fixed(size) => {
+                if size != std::mem::size_of::<T>() {
+                    Err(ArrayError::IncompatibleElementSize(
+                        size,
+                        std::mem::size_of::<T>(),
+                    ))
+                } else {
+                    if $array.is_standard_layout() {
+                        let $array = $array.into_raw_vec();
+                        $self.$func($($arg)*).await
+                    } else {
+                        let $array = $array.as_standard_layout().into_owned().into_raw_vec();
+                        $self.$func($($arg)*).await
+                    }
+                }
             }
         }
     };
@@ -731,13 +747,17 @@ fn iter_u64_to_usize<'a, I: Iterator<Item = &'a u64>>(iter: I) -> Vec<usize> {
 }
 
 fn validate_element_size<T>(data_type: &DataType) -> Result<(), ArrayError> {
-    if data_type.size() == std::mem::size_of::<T>() {
-        Ok(())
-    } else {
-        Err(ArrayError::IncompatibleElementSize(
-            data_type.size(),
-            std::mem::size_of::<T>(),
-        ))
+    match data_type.size() {
+        crate::array::DataTypeSize::Fixed(size) => {
+            if size == std::mem::size_of::<T>() {
+                Ok(())
+            } else {
+                Err(ArrayError::IncompatibleElementSize(
+                    size,
+                    std::mem::size_of::<T>(),
+                ))
+            }
+        }
     }
 }
 

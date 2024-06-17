@@ -206,7 +206,8 @@ mod tests {
     use crate::{
         array::{
             codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
-            transmute_to_bytes_vec, ChunkRepresentation, ChunkShape, DataType, FillValue,
+            transmute_to_bytes_vec, ArraySize, ChunkRepresentation, ChunkShape, DataType,
+            FillValue,
         },
         array_subset::ArraySubset,
     };
@@ -236,7 +237,8 @@ mod tests {
         let chunk_shape = vec![NonZeroU64::new(10).unwrap(), NonZeroU64::new(10).unwrap()];
         let chunk_representation =
             ChunkRepresentation::new(chunk_shape, data_type, fill_value).unwrap();
-        let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
+        let ArraySize::Fixed(size) = chunk_representation.size();
+        let bytes: Vec<u8> = (0..size).map(|s| s as u8).collect();
 
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation)?;
         let encoded = codec.encode(

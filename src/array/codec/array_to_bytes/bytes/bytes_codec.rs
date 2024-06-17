@@ -7,7 +7,7 @@ use crate::{
             BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation,
+        ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
     },
     metadata::Metadata,
 };
@@ -65,17 +65,21 @@ impl BytesCodec {
         mut value: Vec<u8>,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<Vec<u8>, CodecError> {
-        if value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                value.len(),
-                decoded_representation.size(),
-            ));
-        } else if decoded_representation.element_size() > 1 && self.endian.is_none() {
-            return Err(CodecError::Other(format!(
-                "tried to encode an array with element size {} with endianness None",
-                decoded_representation.size()
-            )));
-        }
+        match decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                let array_size = decoded_representation.num_elements() * data_type_size as u64;
+                if value.len() as u64 != array_size {
+                    return Err(CodecError::UnexpectedChunkDecodedSize(
+                        value.len(),
+                        array_size,
+                    ));
+                } else if data_type_size > 1 && self.endian.is_none() {
+                    return Err(CodecError::Other(format!(
+                        "tried to encode an array with element size {data_type_size} with endianness None"
+                    )));
+                }
+            }
+        };
 
         if let Some(endian) = &self.endian {
             if !endian.is_native() {
@@ -177,8 +181,10 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
-        Ok(BytesRepresentation::FixedSize(
-            decoded_representation.num_elements() * decoded_representation.element_size() as u64,
-        ))
+        match decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => Ok(BytesRepresentation::FixedSize(
+                decoded_representation.num_elements() * data_type_size as u64,
+            )),
+        }
     }
 }

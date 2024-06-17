@@ -2,7 +2,10 @@
 
 use std::marker::PhantomData;
 
-use crate::{array::ChunkRepresentation, array_subset::IncompatibleArraySubsetAndShapeError};
+use crate::{
+    array::{ChunkRepresentation, DataTypeSize},
+    array_subset::IncompatibleArraySubsetAndShapeError,
+};
 
 use super::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions};
 
@@ -69,7 +72,7 @@ impl<'a> ArrayPartialDecoderCache<'a> {
 }
 
 impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -80,18 +83,21 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
     ) -> Result<Vec<Vec<u8>>, CodecError> {
         let mut out: Vec<Vec<u8>> = Vec::with_capacity(decoded_regions.len());
         let array_shape = self.decoded_representation.shape_u64();
-        let element_size = self.decoded_representation.element_size();
-        for array_subset in decoded_regions {
-            out.push(
-                array_subset
-                    .extract_bytes(&self.cache, &array_shape, element_size)
-                    .map_err(|_| {
-                        IncompatibleArraySubsetAndShapeError::from((
-                            array_subset.clone(),
-                            self.decoded_representation.shape_u64(),
-                        ))
-                    })?,
-            );
+        match self.decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                for array_subset in decoded_regions {
+                    out.push(
+                        array_subset
+                            .extract_bytes(&self.cache, &array_shape, data_type_size)
+                            .map_err(|_| {
+                                IncompatibleArraySubsetAndShapeError::from((
+                                    array_subset.clone(),
+                                    self.decoded_representation.shape_u64(),
+                                ))
+                            })?,
+                    );
+                }
+            }
         }
         Ok(out)
     }
@@ -100,7 +106,7 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 

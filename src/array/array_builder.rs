@@ -7,7 +7,7 @@ use super::{
     codec::{
         ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
     },
-    data_type::IncompatibleFillValueError,
+    data_type::{DataTypeSize, IncompatibleFillValueError},
     Array, ArrayCreateError, ArrayShape, ChunkGrid, CodecChain, DataType, DimensionName, FillValue,
 };
 
@@ -286,12 +286,17 @@ impl ArrayBuilder {
                 ));
             }
         }
-        if self.data_type.size() != self.fill_value.size() {
-            return Err(IncompatibleFillValueError::new(
-                self.data_type.name(),
-                self.fill_value.clone(),
-            )
-            .into());
+
+        match self.data_type.size() {
+            DataTypeSize::Fixed(size) => {
+                if size != self.fill_value.size() {
+                    return Err(IncompatibleFillValueError::new(
+                        self.data_type.name(),
+                        self.fill_value.clone(),
+                    )
+                    .into());
+                }
+            }
         }
 
         self.additional_fields.validate()?;

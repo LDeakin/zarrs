@@ -10,7 +10,7 @@ use crate::{
 use super::{
     codec::{options::CodecOptions, ArrayCodecTraits},
     concurrency::concurrency_chunks_and_codec,
-    Array, ArrayError,
+    Array, ArrayError, ArraySize, DataTypeSize,
 };
 
 impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
@@ -167,12 +167,16 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     ) -> Result<(), ArrayError> {
         // Validation
         let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
-        if chunk_bytes.len() as u64 != chunk_array_representation.size() {
-            return Err(ArrayError::InvalidBytesInputSize(
-                chunk_bytes.len(),
-                chunk_array_representation.size(),
-            ));
-        }
+        match chunk_array_representation.size() {
+            ArraySize::Fixed(array_size) => {
+                if chunk_bytes.len() as u64 != array_size {
+                    return Err(ArrayError::InvalidBytesInputSize(
+                        chunk_bytes.len(),
+                        array_size,
+                    ));
+                }
+            }
+        };
 
         if !options.store_empty_chunks() && self.fill_value().equals_all(&chunk_bytes) {
             self.async_erase_chunk(chunk_indices).await?;
@@ -261,59 +265,63 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             }
             _ => {
                 let array_subset = self.chunks_subset(chunks)?;
-                let element_size = self.data_type().size();
-                let expected_size = element_size as u64 * array_subset.num_elements();
-                if chunks_bytes.len() as u64 != expected_size {
-                    return Err(ArrayError::InvalidBytesInputSize(
-                        chunks_bytes.len(),
-                        expected_size,
-                    ));
-                }
+                match self.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => {
+                        let expected_size = array_subset.num_elements() * data_type_size as u64;
+                        if chunks_bytes.len() as u64 != expected_size {
+                            return Err(ArrayError::InvalidBytesInputSize(
+                                chunks_bytes.len(),
+                                expected_size,
+                            ));
+                        }
 
-                // Calculate chunk/codec concurrency
-                let chunk_representation =
-                    self.chunk_array_representation(&vec![0; self.dimensionality()])?;
-                let codec_concurrency =
-                    self.recommended_codec_concurrency(&chunk_representation)?;
-                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
-                    options.concurrent_target(),
-                    num_chunks,
-                    options,
-                    &codec_concurrency,
-                );
+                        // Calculate chunk/codec concurrency
+                        let chunk_representation =
+                            self.chunk_array_representation(&vec![0; self.dimensionality()])?;
+                        let codec_concurrency =
+                            self.recommended_codec_concurrency(&chunk_representation)?;
+                        let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                            options.concurrent_target(),
+                            num_chunks,
+                            options,
+                            &codec_concurrency,
+                        );
 
-                let store_chunk = |chunk_indices: Vec<u64>| {
-                    let chunk_subset_in_array = unsafe {
-                        self.chunk_grid()
-                            .subset_unchecked(&chunk_indices, self.shape())
-                            .unwrap() // FIXME: Unwrap
-                    };
-                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                    let chunk_subset_in_array_subset =
-                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    let chunk_bytes = unsafe {
-                        chunk_subset_in_array_subset.extract_bytes_unchecked(
-                            &chunks_bytes,
-                            array_subset.shape(),
-                            element_size,
-                        )
-                    };
+                        let store_chunk = |chunk_indices: Vec<u64>| {
+                            let chunk_subset_in_array = unsafe {
+                                self.chunk_grid()
+                                    .subset_unchecked(&chunk_indices, self.shape())
+                                    .unwrap() // FIXME: Unwrap
+                            };
+                            let overlap =
+                                unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
+                            let chunk_subset_in_array_subset =
+                                unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                            let chunk_bytes = unsafe {
+                                chunk_subset_in_array_subset.extract_bytes_unchecked(
+                                    &chunks_bytes,
+                                    array_subset.shape(),
+                                    data_type_size,
+                                )
+                            };
 
-                    debug_assert_eq!(
-                        chunk_subset_in_array.num_elements(),
-                        chunk_subset_in_array_subset.num_elements()
-                    );
+                            debug_assert_eq!(
+                                chunk_subset_in_array.num_elements(),
+                                chunk_subset_in_array_subset.num_elements()
+                            );
 
-                    let options = options.clone();
-                    async move {
-                        self.async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
-                            .await
+                            let options = options.clone();
+                            async move {
+                                self.async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
+                                    .await
+                            }
+                        };
+                        futures::stream::iter(&chunks.indices())
+                            .map(Ok)
+                            .try_for_each_concurrent(Some(chunk_concurrent_limit), store_chunk)
+                            .await?;
                     }
-                };
-                futures::stream::iter(&chunks.indices())
-                    .map(Ok)
-                    .try_for_each_concurrent(Some(chunk_concurrent_limit), store_chunk)
-                    .await?;
+                }
             }
         }
 

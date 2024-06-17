@@ -4,6 +4,7 @@ use crate::{array_subset::ArraySubset, storage::ReadableWritableStorageTraits};
 
 use super::{
     codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
+    DataTypeSize,
 };
 
 impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage> {
@@ -174,14 +175,6 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 chunk_shape,
             ));
         }
-        let expected_length =
-            chunk_subset.shape().iter().product::<u64>() * self.data_type().size() as u64;
-        if chunk_subset_bytes.len() as u64 != expected_length {
-            return Err(ArrayError::InvalidBytesInputSize(
-                chunk_subset_bytes.len(),
-                expected_length,
-            ));
-        }
 
         if chunk_subset.shape() == chunk_shape && chunk_subset.start().iter().all(|&x| x == 0) {
             // The subset spans the whole chunk, so store the bytes directly and skip decoding
@@ -192,23 +185,40 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             // let mutex = self.storage.mutex(&key)?;
             // let _lock = mutex.lock();
 
+            match self.data_type().size() {
+                DataTypeSize::Fixed(data_type_size) => {
+                    let expected_length = chunk_subset.num_elements() * data_type_size as u64;
+                    if chunk_subset_bytes.len() as u64 != expected_length {
+                        return Err(ArrayError::InvalidBytesInputSize(
+                            chunk_subset_bytes.len(),
+                            expected_length,
+                        ));
+                    }
+                }
+            }
+
             // Decode the entire chunk
             let mut chunk_bytes = self.retrieve_chunk_opt(chunk_indices, options)?;
 
             // Update the intersecting subset of the chunk
-            let element_size = self.data_type().size();
-            let mut offset = 0;
-            let contiguous_indices =
-                unsafe { chunk_subset.contiguous_linearised_indices_unchecked(&chunk_shape) };
-            let length = contiguous_indices.contiguous_elements_usize() * element_size;
-            // FIXME: Par iter?
-            for (chunk_element_index, _num_elements) in &contiguous_indices {
-                let chunk_offset = usize::try_from(chunk_element_index).unwrap() * element_size;
-                debug_assert!(chunk_offset + length <= chunk_bytes.len());
-                debug_assert!(offset + length <= chunk_subset_bytes.len());
-                chunk_bytes[chunk_offset..chunk_offset + length]
-                    .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
-                offset += length;
+            match self.data_type().size() {
+                DataTypeSize::Fixed(data_type_size) => {
+                    let mut offset = 0;
+                    let contiguous_indices = unsafe {
+                        chunk_subset.contiguous_linearised_indices_unchecked(&chunk_shape)
+                    };
+                    let length = contiguous_indices.contiguous_elements_usize() * data_type_size;
+                    // FIXME: Par iter?
+                    for (chunk_element_index, _num_elements) in &contiguous_indices {
+                        let chunk_offset =
+                            usize::try_from(chunk_element_index).unwrap() * data_type_size;
+                        debug_assert!(chunk_offset + length <= chunk_bytes.len());
+                        debug_assert!(offset + length <= chunk_subset_bytes.len());
+                        chunk_bytes[chunk_offset..chunk_offset + length]
+                            .copy_from_slice(&chunk_subset_bytes[offset..offset + length]);
+                        offset += length;
+                    }
+                }
             }
 
             // Store the updated chunk
@@ -277,12 +287,17 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 self.shape().to_vec(),
             ));
         }
-        let expected_size = array_subset.num_elements() * self.data_type().size() as u64;
-        if subset_bytes.len() as u64 != expected_size {
-            return Err(ArrayError::InvalidBytesInputSize(
-                subset_bytes.len(),
-                expected_size,
-            ));
+
+        match self.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                let expected_size = array_subset.num_elements() * data_type_size as u64;
+                if subset_bytes.len() as u64 != expected_size {
+                    return Err(ArrayError::InvalidBytesInputSize(
+                        subset_bytes.len(),
+                        expected_size,
+                    ));
+                }
+            }
         }
 
         // Find the chunks intersecting this array subset
@@ -309,12 +324,15 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
                 let chunk_subset_in_array_subset =
                     unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                let chunk_subset_bytes = unsafe {
-                    chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        &subset_bytes,
-                        array_subset.shape(),
-                        self.data_type().size(),
-                    )
+
+                let chunk_subset_bytes = match self.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => unsafe {
+                        chunk_subset_in_array_subset.extract_bytes_unchecked(
+                            &subset_bytes,
+                            array_subset.shape(),
+                            data_type_size,
+                        )
+                    },
                 };
 
                 // Store the chunk subset
@@ -350,12 +368,14 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                 let array_subset_in_chunk_subset =
                     unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
-                let chunk_subset_bytes = unsafe {
-                    chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        &subset_bytes,
-                        array_subset.shape(),
-                        self.data_type().size(),
-                    )
+                let chunk_subset_bytes = match self.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => unsafe {
+                        chunk_subset_in_array_subset.extract_bytes_unchecked(
+                            &subset_bytes,
+                            array_subset.shape(),
+                            data_type_size,
+                        )
+                    },
                 };
                 self.store_chunk_subset_opt(
                     &chunk_indices,

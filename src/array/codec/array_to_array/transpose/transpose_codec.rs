@@ -7,7 +7,7 @@ use crate::{
             options::CodecOptions, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, ChunkRepresentation,
+        ArrayMetadataOptions, ChunkRepresentation, DataTypeSize,
     },
     metadata::Metadata,
     plugin::PluginCreateError,
@@ -133,22 +133,28 @@ impl ArrayCodecTraits for TransposeCodec {
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
     ) -> Result<Vec<u8>, CodecError> {
-        if decoded_value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                decoded_value.len(),
-                decoded_representation.size(),
-            ));
-        }
-        let len = decoded_value.len();
         let order_encode =
             calculate_order_encode(&self.order, decoded_representation.shape().len());
-        transpose_array(
-            &order_encode,
-            &decoded_representation.shape_u64(),
-            decoded_representation.element_size(),
-            decoded_value,
-        )
-        .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
+
+        match decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                let expected_size = decoded_representation.num_elements() * data_type_size as u64;
+                if decoded_value.len() as u64 != expected_size {
+                    return Err(CodecError::UnexpectedChunkDecodedSize(
+                        decoded_value.len(),
+                        expected_size,
+                    ));
+                }
+                let len = decoded_value.len();
+                transpose_array(
+                    &order_encode,
+                    &decoded_representation.shape_u64(),
+                    data_type_size,
+                    decoded_value,
+                )
+                .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, expected_size))
+            }
+        }
     }
 
     fn decode(
@@ -160,13 +166,23 @@ impl ArrayCodecTraits for TransposeCodec {
         let order_decode =
             calculate_order_decode(&self.order, decoded_representation.shape().len());
         let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order);
-        let len = encoded_value.len();
-        transpose_array(
-            &order_decode,
-            &transposed_shape,
-            decoded_representation.element_size(),
-            encoded_value,
-        )
-        .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
+
+        match decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                let len = encoded_value.len();
+                transpose_array(
+                    &order_decode,
+                    &transposed_shape,
+                    data_type_size,
+                    encoded_value,
+                )
+                .map_err(|_| {
+                    CodecError::UnexpectedChunkDecodedSize(
+                        len,
+                        decoded_representation.num_elements() * data_type_size as u64,
+                    )
+                })
+            }
+        }
     }
 }

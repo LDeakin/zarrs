@@ -1,6 +1,7 @@
 use crate::{
     array::{
         codec::{ArrayPartialDecoderTraits, CodecError, CodecOptions},
+        data_type::DataTypeSize,
         DataType,
     },
     array_subset::ArraySubset,
@@ -51,7 +52,7 @@ impl<'a> BitroundPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.data_type.size()
     }
 
@@ -116,7 +117,7 @@ impl<'a> AsyncBitroundPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.data_type.size()
     }
 

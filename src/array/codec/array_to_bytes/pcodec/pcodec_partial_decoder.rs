@@ -4,7 +4,7 @@ use crate::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ChunkRepresentation, DataType,
+        ChunkRepresentation, DataType, DataTypeSize,
     },
     array_subset::IncompatibleArraySubsetAndShapeError,
 };
@@ -56,18 +56,20 @@ fn do_partial_decode(
                             .map(|bytes| crate::array::transmute_to_bytes_vec::<$t>(bytes))
                             .map_err(|err| CodecError::Other(err.to_string()))?;
                     for array_subset in decoded_regions {
-                        let bytes_subset = array_subset
-                            .extract_bytes(
-                                decoded_chunk.as_slice(),
-                                &chunk_shape,
-                                decoded_representation.element_size(),
-                            )
-                            .map_err(|_| {
-                                IncompatibleArraySubsetAndShapeError::from((
-                                    array_subset.clone(),
-                                    decoded_representation.shape_u64(),
-                                ))
-                            })?;
+                        let bytes_subset = match decoded_representation.element_size() {
+                            DataTypeSize::Fixed(data_type_size) => array_subset
+                                .extract_bytes(
+                                    decoded_chunk.as_slice(),
+                                    &chunk_shape,
+                                    data_type_size,
+                                )
+                                .map_err(|_| {
+                                    IncompatibleArraySubsetAndShapeError::from((
+                                        array_subset.clone(),
+                                        decoded_representation.shape_u64(),
+                                    ))
+                                })?,
+                        };
                         decoded_bytes.push(bytes_subset);
                     }
                 };
@@ -106,7 +108,7 @@ fn do_partial_decode(
 }
 
 impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -144,7 +146,7 @@ impl<'a> AsyncPCodecPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 

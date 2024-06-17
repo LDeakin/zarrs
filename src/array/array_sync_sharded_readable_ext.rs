@@ -6,7 +6,7 @@ use super::{
     codec::{CodecError, CodecOptions},
     concurrency::concurrency_chunks_and_codec,
     transmute_from_bytes_vec, validate_element_size, Array, ArrayError, ArrayShardedExt, ArrayView,
-    ChunkGrid, UnsafeCellSlice,
+    ChunkGrid, DataTypeSize, UnsafeCellSlice,
 };
 use crate::storage::ReadableStorageTraits;
 use crate::{array::codec::ArrayPartialDecoderTraits, array_subset::ArraySubset};
@@ -354,10 +354,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                     .as_ne_bytes()
                     .repeat(array_subset.num_elements_usize()))
             } else {
-                // Allocate the output
-                let size_output = array_subset.num_elements_usize() * self.data_type().size();
-                let mut output = Vec::with_capacity(size_output);
-
                 // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
@@ -370,40 +366,53 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                     &codec_concurrency,
                 );
 
-                {
-                    let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let retrieve_shard = |shard_indices: Vec<u64>| {
-                        let shard_subset = self.chunk_subset(&shard_indices)?;
-                        let shard_subset_in_array_subset =
-                            unsafe { shard_subset.overlap_unchecked(array_subset) };
-                        let shard_subset = unsafe {
-                            shard_subset_in_array_subset.relative_to_unchecked(shard_subset.start())
-                        };
-                        let array_view_subset = unsafe {
-                            shard_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                        };
-                        let array_view = ArrayView::new(
-                            unsafe { output.get() },
-                            array_subset.shape(),
-                            array_view_subset,
-                        )
-                        .map_err(|err| CodecError::from(err.to_string()))?;
-                        self.retrieve_shard_subset_into_array_view_opt(
-                            cache,
-                            &shard_indices,
-                            &shard_subset,
-                            &array_view,
-                            &options,
-                        )
-                    };
-                    let indices = shards.indices();
-                    indices
-                        .into_par_iter()
-                        .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                        .try_for_each(retrieve_shard)?;
+                match self.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => {
+                        // Allocate the output
+                        let size_output = array_subset.num_elements_usize() * data_type_size;
+                        let mut output = Vec::with_capacity(size_output);
+
+                        {
+                            let output =
+                                UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                            let retrieve_shard = |shard_indices: Vec<u64>| {
+                                let shard_subset = self.chunk_subset(&shard_indices)?;
+                                let shard_subset_in_array_subset =
+                                    unsafe { shard_subset.overlap_unchecked(array_subset) };
+                                let shard_subset = unsafe {
+                                    shard_subset_in_array_subset
+                                        .relative_to_unchecked(shard_subset.start())
+                                };
+                                let array_view_subset = unsafe {
+                                    shard_subset_in_array_subset
+                                        .relative_to_unchecked(array_subset.start())
+                                };
+                                let array_view = ArrayView::new(
+                                    unsafe { output.get() },
+                                    array_subset.shape(),
+                                    array_view_subset,
+                                )
+                                .map_err(|err| CodecError::from(err.to_string()))?;
+                                self.retrieve_shard_subset_into_array_view_opt(
+                                    cache,
+                                    &shard_indices,
+                                    &shard_subset,
+                                    &array_view,
+                                    &options,
+                                )
+                            };
+                            let indices = shards.indices();
+                            indices
+                                .into_par_iter()
+                                .by_uniform_blocks(
+                                    indices.len().div_ceil(chunk_concurrent_limit).max(1),
+                                )
+                                .try_for_each(retrieve_shard)?;
+                        }
+                        unsafe { output.set_len(size_output) };
+                        Ok(output)
+                    }
                 }
-                unsafe { output.set_len(size_output) };
-                Ok(output)
             }
         } else {
             self.retrieve_array_subset_opt(array_subset, options)

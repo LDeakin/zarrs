@@ -17,6 +17,7 @@ use super::{
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
     validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayView,
+    DataTypeSize,
 };
 
 #[cfg(feature = "ndarray")]
@@ -326,15 +327,19 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 .codecs()
                 .decode(chunk_encoded, &chunk_representation, options)
                 .map_err(ArrayError::CodecError)?;
-            let chunk_decoded_size =
-                chunk_representation.num_elements_usize() * chunk_representation.data_type().size();
-            if chunk_decoded.len() == chunk_decoded_size {
-                Ok(Some(chunk_decoded))
-            } else {
-                Err(ArrayError::UnexpectedChunkDecodedSize(
-                    chunk_decoded.len(),
-                    chunk_decoded_size,
-                ))
+            match chunk_representation.data_type().size() {
+                DataTypeSize::Fixed(data_type_size) => {
+                    let chunk_decoded_size =
+                        chunk_representation.num_elements_usize() * data_type_size;
+                    if chunk_decoded.len() == chunk_decoded_size {
+                        Ok(Some(chunk_decoded))
+                    } else {
+                        Err(ArrayError::UnexpectedChunkDecodedSize(
+                            chunk_decoded.len(),
+                            chunk_decoded_size,
+                        ))
+                    }
+                }
             }
         } else {
             Ok(None)
@@ -532,11 +537,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 self.async_retrieve_chunk_opt(chunk_indices, options).await
             }
             _ => {
-                // Decode chunks and copy to output
-                let size_output =
-                    usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
-                        .unwrap();
-
                 // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
@@ -549,38 +549,51 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                     &codec_concurrency,
                 );
 
-                let mut output = Vec::with_capacity(size_output);
-                {
-                    let output_slice =
-                        UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let chunk0_subset = self.chunk_subset(chunks.start())?;
-                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
-                        let options = options.clone();
-                        let array_subset = array_subset.clone();
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
-                        let array_view_subset =
-                            unsafe { chunk_subset.relative_to_unchecked(chunk0_subset.start()) };
-                        async move {
-                            self.async_retrieve_chunk_into_array_view_opt(
-                                &chunk_indices,
-                                &ArrayView::new(
-                                    unsafe { output_slice.get() },
-                                    array_subset.shape(),
-                                    array_view_subset,
+                // Decode chunks
+                match chunk_representation.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => {
+                        let size_output =
+                            usize::try_from(array_subset.num_elements() * data_type_size as u64)
+                                .unwrap();
+
+                        let mut output = Vec::with_capacity(size_output);
+                        {
+                            let output_slice =
+                                UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                            let chunk0_subset = self.chunk_subset(chunks.start())?;
+                            let retrieve_chunk = |chunk_indices: Vec<u64>| {
+                                let options = options.clone();
+                                let array_subset = array_subset.clone();
+                                let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
+                                let array_view_subset = unsafe {
+                                    chunk_subset.relative_to_unchecked(chunk0_subset.start())
+                                };
+                                async move {
+                                    self.async_retrieve_chunk_into_array_view_opt(
+                                        &chunk_indices,
+                                        &ArrayView::new(
+                                            unsafe { output_slice.get() },
+                                            array_subset.shape(),
+                                            array_view_subset,
+                                        )
+                                        .unwrap(), // FIXME: unwrap
+                                        &options,
+                                    )
+                                    .await
+                                }
+                            };
+                            futures::stream::iter(&chunks.indices())
+                                .map(Ok)
+                                .try_for_each_concurrent(
+                                    Some(chunk_concurrent_limit),
+                                    retrieve_chunk,
                                 )
-                                .unwrap(), // FIXME: unwrap
-                                &options,
-                            )
-                            .await
+                                .await?;
                         }
-                    };
-                    futures::stream::iter(&chunks.indices())
-                        .map(Ok)
-                        .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
-                        .await?;
+                        unsafe { output.set_len(size_output) };
+                        Ok(output)
+                    }
                 }
-                unsafe { output.set_len(size_output) };
-                Ok(output)
             }
         }
     }
@@ -662,11 +675,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 }
             }
             _ => {
-                // Decode chunks and copy to output
-                let size_output =
-                    usize::try_from(array_subset.num_elements() * self.data_type().size() as u64)
-                        .unwrap();
-
                 // Calculate chunk/codec concurrency
                 let chunk_representation =
                     self.chunk_array_representation(&vec![0; self.dimensionality()])?;
@@ -679,45 +687,60 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                     &codec_concurrency,
                 );
 
-                // let mut output = vec![0; size_output];
-                // let output_slice = output.as_mut_slice();
-                let mut output = Vec::with_capacity(size_output);
-                {
-                    let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
-                        let options = options.clone();
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
-                        let chunk_subset_in_array_subset =
-                            unsafe { chunk_subset.overlap_unchecked(array_subset) };
-                        let chunk_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
-                        };
-                        let array_view_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                        };
-                        let array_view = ArrayView::new(
-                            unsafe { output.get() },
-                            array_subset.shape(),
-                            array_view_subset,
-                        )
-                        .unwrap(); // FIXME: unwrap
-                        async move {
-                            self.async_retrieve_chunk_subset_into_array_view_opt(
-                                &chunk_indices,
-                                &chunk_subset,
-                                &array_view,
-                                &options,
-                            )
-                            .await
+                // Decode chunks
+                match chunk_representation.data_type().size() {
+                    DataTypeSize::Fixed(data_type_size) => {
+                        let size_output =
+                            usize::try_from(array_subset.num_elements() * data_type_size as u64)
+                                .unwrap();
+
+                        // let mut output = vec![0; size_output];
+                        // let output_slice = output.as_mut_slice();
+                        let mut output = Vec::with_capacity(size_output);
+                        {
+                            let output =
+                                UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                            let retrieve_chunk = |chunk_indices: Vec<u64>| {
+                                let options = options.clone();
+                                let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
+                                let chunk_subset_in_array_subset =
+                                    unsafe { chunk_subset.overlap_unchecked(array_subset) };
+                                let chunk_subset = unsafe {
+                                    chunk_subset_in_array_subset
+                                        .relative_to_unchecked(chunk_subset.start())
+                                };
+                                let array_view_subset = unsafe {
+                                    chunk_subset_in_array_subset
+                                        .relative_to_unchecked(array_subset.start())
+                                };
+                                let array_view = ArrayView::new(
+                                    unsafe { output.get() },
+                                    array_subset.shape(),
+                                    array_view_subset,
+                                )
+                                .unwrap(); // FIXME: unwrap
+                                async move {
+                                    self.async_retrieve_chunk_subset_into_array_view_opt(
+                                        &chunk_indices,
+                                        &chunk_subset,
+                                        &array_view,
+                                        &options,
+                                    )
+                                    .await
+                                }
+                            };
+                            futures::stream::iter(&chunks.indices())
+                                .map(Ok)
+                                .try_for_each_concurrent(
+                                    Some(chunk_concurrent_limit),
+                                    retrieve_chunk,
+                                )
+                                .await?;
                         }
-                    };
-                    futures::stream::iter(&chunks.indices())
-                        .map(Ok)
-                        .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
-                        .await?;
+                        unsafe { output.set_len(size_output) };
+                        Ok(output)
+                    }
                 }
-                unsafe { output.set_len(size_output) };
-                Ok(output)
             }
         }
     }
@@ -960,14 +983,18 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .pop()
             .unwrap();
 
-        let expected_size = chunk_subset.num_elements_usize() * self.data_type().size();
-        if decoded_bytes.len() == chunk_subset.num_elements_usize() * self.data_type().size() {
-            Ok(decoded_bytes)
-        } else {
-            Err(ArrayError::UnexpectedChunkDecodedSize(
-                decoded_bytes.len(),
-                expected_size,
-            ))
+        match chunk_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                let expected_size = chunk_subset.num_elements_usize() * data_type_size;
+                if decoded_bytes.len() == expected_size {
+                    Ok(decoded_bytes)
+                } else {
+                    Err(ArrayError::UnexpectedChunkDecodedSize(
+                        decoded_bytes.len(),
+                        expected_size,
+                    ))
+                }
+            }
         }
     }
 

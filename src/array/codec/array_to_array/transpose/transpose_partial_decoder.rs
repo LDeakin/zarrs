@@ -1,6 +1,7 @@
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
     codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
+    data_type::DataTypeSize,
     ChunkRepresentation,
 };
 
@@ -30,7 +31,7 @@ impl<'a> TransposePartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -64,23 +65,25 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
         // Reverse the transpose on each subset
         let order_decode =
             calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-        let decoded_value = std::iter::zip(decoded_regions, encoded_value)
-            .map(|(subset, bytes)| {
-                let len = bytes.len();
-                transpose_array(
-                    &order_decode,
-                    &permute(subset.shape(), &self.order),
-                    self.decoded_representation.element_size(),
-                    bytes,
-                )
-                .map_err(|_| {
-                    CodecError::UnexpectedChunkDecodedSize(
-                        len,
-                        subset.num_elements() * self.decoded_representation.element_size() as u64,
+        let decoded_value = match self.decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => std::iter::zip(decoded_regions, encoded_value)
+                .map(|(subset, bytes)| {
+                    let len = bytes.len();
+                    transpose_array(
+                        &order_decode,
+                        &permute(subset.shape(), &self.order),
+                        data_type_size,
+                        bytes,
                     )
+                    .map_err(|_| {
+                        CodecError::UnexpectedChunkDecodedSize(
+                            len,
+                            subset.num_elements() * data_type_size as u64,
+                        )
+                    })
                 })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+                .collect::<Result<Vec<_>, _>>()?,
+        };
         Ok(decoded_value)
     }
 }
@@ -112,7 +115,7 @@ impl<'a> AsyncTransposePartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
-    fn element_size(&self) -> usize {
+    fn element_size(&self) -> DataTypeSize {
         self.decoded_representation.element_size()
     }
 
@@ -147,23 +150,25 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
         // Reverse the transpose on each subset
         let order_decode =
             calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-        let decoded_value = std::iter::zip(decoded_regions, encoded_value)
-            .map(|(subset, bytes)| {
-                let len = bytes.len();
-                transpose_array(
-                    &order_decode,
-                    &permute(subset.shape(), &self.order),
-                    self.decoded_representation.element_size(),
-                    bytes,
-                )
-                .map_err(|_| {
-                    CodecError::UnexpectedChunkDecodedSize(
-                        len,
-                        subset.num_elements() * self.decoded_representation.element_size() as u64,
+        let decoded_value = match self.decoded_representation.data_type().size() {
+            DataTypeSize::Fixed(data_type_size) => std::iter::zip(decoded_regions, encoded_value)
+                .map(|(subset, bytes)| {
+                    let len = bytes.len();
+                    transpose_array(
+                        &order_decode,
+                        &permute(subset.shape(), &self.order),
+                        data_type_size,
+                        bytes,
                     )
+                    .map_err(|_| {
+                        CodecError::UnexpectedChunkDecodedSize(
+                            len,
+                            subset.num_elements() * data_type_size as u64,
+                        )
+                    })
                 })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+                .collect::<Result<Vec<_>, _>>()?,
+        };
         Ok(decoded_value)
     }
 }

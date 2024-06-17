@@ -307,7 +307,7 @@ mod tests {
     use crate::{
         array::{
             codec::{BytesToBytesCodecTraits, CodecOptions},
-            ArrayRepresentation, BytesRepresentation, DataType, FillValue,
+            ArrayRepresentation, ArraySize, BytesRepresentation, DataType, DataTypeSize, FillValue,
         },
         array_subset::ArraySubset,
         byte_range::ByteRange,
@@ -398,7 +398,9 @@ mod tests {
         let array_representation =
             ArrayRepresentation::new(vec![2, 2, 2], DataType::UInt16, FillValue::from(0u16))
                 .unwrap();
-        let bytes_representation = BytesRepresentation::FixedSize(array_representation.size());
+        let ArraySize::Fixed(array_size) = array_representation.size();
+        let DataTypeSize::Fixed(data_type_size) = array_representation.data_type().size();
+        let bytes_representation = BytesRepresentation::FixedSize(array_size);
 
         let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -409,10 +411,7 @@ mod tests {
 
         let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
-            .byte_ranges(
-                array_representation.shape(),
-                array_representation.element_size(),
-            )
+            .byte_ranges(array_representation.shape(), data_type_size)
             .unwrap();
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
@@ -446,7 +445,9 @@ mod tests {
         let array_representation =
             ArrayRepresentation::new(vec![2, 2, 2], DataType::UInt16, FillValue::from(0u16))
                 .unwrap();
-        let bytes_representation = BytesRepresentation::FixedSize(array_representation.size());
+        let ArraySize::Fixed(array_size) = array_representation.size();
+        let DataTypeSize::Fixed(data_type_size) = array_representation.data_type().size();
+        let bytes_representation = BytesRepresentation::FixedSize(array_size);
 
         let elements: Vec<u16> = (0..array_representation.num_elements() as u16).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -457,10 +458,7 @@ mod tests {
 
         let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
-            .byte_ranges(
-                array_representation.shape(),
-                array_representation.element_size(),
-            )
+            .byte_ranges(array_representation.shape(), data_type_size)
             .unwrap();
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
