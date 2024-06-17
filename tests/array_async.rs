@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use zarrs::array::codec::{array_to_bytes::sharding::ShardingCodecBuilder, GzipCodec};
-use zarrs::array::{Array, ArrayBuilder, ArrayView, DataType, FillValue};
+use zarrs::array::{ArrayBuilder, ArrayView, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 
 #[cfg(feature = "object_store")]
@@ -12,7 +12,29 @@ use zarrs::storage::store::AsyncObjectStore;
 
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[rustfmt::skip]
-async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Result<(), Box<dyn std::error::Error>> {
+async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
+    let array_path = "/array";
+    let mut builder = ArrayBuilder::new(
+        vec![4, 4], // array shape
+        DataType::UInt8,
+        vec![2, 2].try_into().unwrap(), // regular chunk shape
+        FillValue::from(0u8),
+    );
+    builder.bytes_to_bytes_codecs(vec![]);
+    // builder.storage_transformers(vec![].into());
+    if shard {
+        builder.array_to_bytes_codec(Box::new(
+            ShardingCodecBuilder::new(vec![1, 1].try_into().unwrap())
+                .bytes_to_bytes_codecs(vec![
+                    #[cfg(feature = "gzip")]
+                    Box::new(GzipCodec::new(5)?),
+                ])
+                .build(),
+        ));
+    }
+    let array = builder.build_arc(store, array_path).unwrap();
+
     assert_eq!(array.data_type(), &DataType::UInt8);
     assert_eq!(array.fill_value().as_ne_bytes(), &[0u8]);
     assert_eq!(array.shape(), &[4, 4]);
@@ -206,43 +228,12 @@ async fn array_async_read(array: Arc<Array<AsyncObjectStore<InMemory>>>) -> Resu
 #[tokio::test]
 #[cfg_attr(miri, ignore)] // FIXME: Check if this failure is real
 async fn array_async_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
-    let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
-    let array_path = "/array";
-    let array = ArrayBuilder::new(
-        vec![4, 4], // array shape
-        DataType::UInt8,
-        vec![2, 2].try_into().unwrap(), // regular chunk shape
-        FillValue::from(0u8),
-    )
-    .bytes_to_bytes_codecs(vec![])
-    // .storage_transformers(vec![].into())
-    .build_arc(store, array_path)
-    .unwrap();
-    array_async_read(array).await
+    array_async_read(false).await
 }
 
 #[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[tokio::test]
 #[cfg_attr(miri, ignore)]
 async fn array_async_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
-    let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
-    let array_path = "/array";
-    let array = ArrayBuilder::new(
-        vec![4, 4], // array shape
-        DataType::UInt8,
-        vec![2, 2].try_into().unwrap(), // regular chunk shape
-        FillValue::from(0u8),
-    )
-    .array_to_bytes_codec(Box::new(
-        ShardingCodecBuilder::new(vec![1, 1].try_into().unwrap())
-            .bytes_to_bytes_codecs(vec![
-                #[cfg(feature = "gzip")]
-                Box::new(GzipCodec::new(5)?),
-            ])
-            .build(),
-    ))
-    // .storage_transformers(vec![].into())
-    .build_arc(store, array_path)
-    .unwrap();
-    array_async_read(array).await
+    array_async_read(true).await
 }
