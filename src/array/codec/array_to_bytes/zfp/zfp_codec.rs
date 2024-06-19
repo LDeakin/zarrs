@@ -31,7 +31,7 @@ use super::{
     zfp_field::ZfpField,
     zfp_partial_decoder,
     zfp_stream::ZfpStream,
-    ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertParams, ZfpMode, IDENTIFIER,
+    ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertConfiguration, ZfpMode, IDENTIFIER,
 };
 
 /// A `zfp` codec implementation.
@@ -43,7 +43,7 @@ pub struct ZfpCodec {
 impl ZfpCodec {
     /// Create a new `Zfp` codec in expert mode.
     #[must_use]
-    pub const fn new_expert(expert_params: ZfpExpertParams) -> Self {
+    pub const fn new_expert(expert_params: ZfpExpertConfiguration) -> Self {
         Self {
             mode: ZfpMode::Expert(expert_params),
         }

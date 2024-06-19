@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Rayon `rayon::iter::IndexedParallelIterator::by_uniform_blocks` (since `rayon` 1.9) is used instead
  - **Breaking**: Remove re-exports of public dependencies
 
+### Fixed
+ - **Breaking**: Change `ZfpExpertParams` to `ZfpExpertConfiguration` replacing existing `ZfpExpertConfiguration`
+   - The previous `ZfpExpertConfiguration` was incorrect and was identical to `ZfpFixedRateConfiguration`
+
 ## [0.14.0] - 2024-05-16
 
 ### Removed

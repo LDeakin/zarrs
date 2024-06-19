@@ -19,8 +19,6 @@ mod zfp_field;
 mod zfp_partial_decoder;
 mod zfp_stream;
 
-use serde::{Deserialize, Serialize};
-
 pub use zfp_codec::ZfpCodec;
 pub use zfp_configuration::{
     ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertConfiguration,
@@ -70,7 +68,7 @@ pub(crate) fn create_codec_zfp(metadata: &Metadata) -> Result<Codec, PluginCreat
 #[derive(Clone, Copy, Debug)]
 pub enum ZfpMode {
     /// Expert mode.
-    Expert(ZfpExpertParams),
+    Expert(ZfpExpertConfiguration),
     /// Fixed rate mode.
     FixedRate(f64),
     /// Fixed precision mode.
@@ -79,32 +77,6 @@ pub enum ZfpMode {
     FixedAccuracy(f64),
     /// Reversible mode.
     Reversible,
-}
-
-/// `zfp` expert parameters.
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ZfpExpertParams {
-    /// The minimum number of compressed bits used to represent a block.
-    ///
-    /// Usually this parameter equals one bit, unless each and every block is to be stored using a fixed number of bits to facilitate random access, in which case it should be set to the same value as `maxbits`.
-    pub minbits: u32,
-    /// The maximum number of bits used to represent a block.
-    ///
-    /// This parameter sets a hard upper bound on compressed block size and governs the rate in fixed-rate mode. It may also be used as an upper storage limit to guard against buffer overruns in combination with the accuracy constraints given by `zfp_stream.maxprec` and `zfp_stream.minexp`.
-    /// `maxbits` must be large enough to allow the common block exponent and any control bits to be encoded. This implies `maxbits` ≥ 9 for single-precision data and `maxbits` ≥ 12 for double-precision data.
-    pub maxbits: u32,
-    /// The maximum number of bit planes encoded.
-    ///
-    /// This parameter governs the number of most significant uncompressed bits encoded per transform coefficient.
-    /// It does not directly correspond to the number of uncompressed mantissa bits for the floating-point or integer values being compressed, but is closely related.
-    /// This is the parameter that specifies the precision in fixed-precision mode, and it provides a mechanism for controlling the relative error.
-    /// Note that this parameter selects how many bits planes to encode regardless of the magnitude of the common floating-point exponent within the block.
-    pub maxprec: u32,
-    /// The smallest absolute bit plane number encoded (applies to floating-point data only; this parameter is ignored for integer data).
-    ///
-    /// The place value of each transform coefficient bit depends on the common floating-point exponent, $e$, that scales the integer coefficients. If the most significant coefficient bit has place value $2^e$, then the number of bit planes encoded is (one plus) the difference between e and `zfp_stream.minexp`.
-    /// This parameter governs the absolute error in fixed-accuracy mode.
-    pub minexp: i32,
 }
 
 const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type> {
