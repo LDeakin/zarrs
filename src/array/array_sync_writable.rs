@@ -10,11 +10,11 @@ use crate::{
 use super::{
     codec::{options::CodecOptions, ArrayCodecTraits},
     concurrency::concurrency_chunks_and_codec,
-    Array, ArrayError,
+    Array, ArrayError, ArrayMetadataOptions,
 };
 
 impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
-    /// Store metadata.
+    /// Store metadata with default [`ArrayMetadataOptions`].
     ///
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying store error.
@@ -24,6 +24,22 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
             .storage_transformers()
             .create_writable_transformer(storage_handle);
         crate::storage::create_array(&*storage_transformer, self.path(), &self.metadata())
+    }
+
+    /// Store metadata with non-default options.
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying store error.
+    pub fn store_metadata_opt(&self, options: &ArrayMetadataOptions) -> Result<(), StorageError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_writable_transformer(storage_handle);
+        crate::storage::create_array(
+            &*storage_transformer,
+            self.path(),
+            &self.metadata_opt(options),
+        )
     }
 
     /// Encode `chunk_bytes` and store at `chunk_indices`.
