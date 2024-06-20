@@ -2,8 +2,9 @@
 
 use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+use crate::array::ArrayMetadataOptionsVersion;
 #[cfg(doc)]
-use crate::array::codec::CodecOptions;
+use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 
 /// Global configuration options for the zarrs crate.
 ///
@@ -52,6 +53,14 @@ use crate::array::codec::CodecOptions;
 /// If this option is `false`, experimental codecs with this behaviour will not write their metadata.
 /// This enables arrays to be consumed by other zarr3 implementations that do not support the experimental codec.
 /// Currently, this options only affects the `bitround` codec.
+///
+/// ## Array Metadata Version Behaviour
+/// > default: [`ArrayMetadataOptionsVersion::Unchanged`]
+///
+/// Some codecs perform potentially irreversible transformations during encoding that decoders do not need to be aware of.
+/// If this option is `false`, experimental codecs with this behaviour will not write their metadata.
+/// This enables arrays to be consumed by other zarr3 implementations that do not support the experimental codec.
+/// Currently, this options only affects the `bitround` codec.
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
@@ -59,6 +68,7 @@ pub struct Config {
     codec_concurrent_target: usize,
     chunk_concurrent_minimum: usize,
     experimental_codec_store_metadata_if_encode_only: bool,
+    array_metadata_version: ArrayMetadataOptionsVersion,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -74,6 +84,7 @@ impl Default for Config {
                 + concurrency_add,
             chunk_concurrent_minimum: 4,
             experimental_codec_store_metadata_if_encode_only: false,
+            array_metadata_version: ArrayMetadataOptionsVersion::Unchanged,
         }
     }
 }
@@ -132,6 +143,17 @@ impl Config {
     /// Set the [experimental codec store metadata if encode only](#experimental-codec-store-metadata-if-encode-only) configuration.
     pub fn set_experimental_codec_store_metadata_if_encode_only(&mut self, enabled: bool) {
         self.experimental_codec_store_metadata_if_encode_only = enabled;
+    }
+
+    /// Get the [array metadata version behaviour](#array-metadata-version-behaviour) configuration.
+    #[must_use]
+    pub fn array_metadata_version(&self) -> &ArrayMetadataOptionsVersion {
+        &self.array_metadata_version
+    }
+
+    /// Set the [array metadata version behaviour](#array-metadata-version-behaviour) configuration.
+    pub fn set_array_metadata_version(&mut self, version: ArrayMetadataOptionsVersion) {
+        self.array_metadata_version = version;
     }
 }
 

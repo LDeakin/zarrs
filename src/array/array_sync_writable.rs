@@ -4,13 +4,14 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 
 use crate::{
     array_subset::ArraySubset,
+    metadata::array_metadata_v2_to_v3,
     storage::{StorageError, StorageHandle, WritableStorageTraits},
 };
 
 use super::{
     codec::{options::CodecOptions, ArrayCodecTraits},
     concurrency::concurrency_chunks_and_codec,
-    Array, ArrayError, ArrayMetadataOptions,
+    Array, ArrayError, ArrayMetadata, ArrayMetadataOptions, ArrayMetadataOptionsVersion,
 };
 
 impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
@@ -31,15 +32,47 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata_opt(&self, options: &ArrayMetadataOptions) -> Result<(), StorageError> {
+        use ArrayMetadataOptionsVersion as V;
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
-        crate::storage::create_array(
-            &*storage_transformer,
-            self.path(),
-            &self.metadata_opt(options),
-        )
+
+        // Get the metadata with options applied
+        let metadata = self.metadata_opt(options);
+
+        // Convert/store the metadata as requested
+        match (metadata, options.array_metadata_version()) {
+            (ArrayMetadata::V3(metadata), V::Unchanged | V::V3) => {
+                // Store V3
+                crate::storage::create_array(
+                    &*storage_transformer,
+                    self.path(),
+                    &ArrayMetadata::V3(metadata),
+                )
+            }
+            (ArrayMetadata::V2(metadata), V::V3) => {
+                // Convert V2 to V3
+                let metadata = unsafe {
+                    // SAFETY: array_metadata_v2_to_v3 has already succeeded on array creation
+                    array_metadata_v2_to_v3(&metadata).unwrap_unchecked()
+                };
+                crate::storage::create_array(
+                    &*storage_transformer,
+                    self.path(),
+                    &ArrayMetadata::V3(metadata),
+                )
+            }
+            (ArrayMetadata::V2(metadata), V::Unchanged) => {
+                // Store V2
+                crate::storage::create_array(
+                    &*storage_transformer,
+                    self.path(),
+                    &ArrayMetadata::V2(metadata),
+                )
+            }
+        }
+        // if let ArrayMetadataOptionsVersion::Unchanged = options.array_metadata_version() {}
     }
 
     /// Encode `chunk_bytes` and store at `chunk_indices`.

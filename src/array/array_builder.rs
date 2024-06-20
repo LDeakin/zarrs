@@ -8,8 +8,8 @@ use super::{
         ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
     },
     data_type::IncompatibleFillValueError,
-    Array, ArrayCreateError, ArrayShape, ChunkGrid, ChunkKeySeparator, CodecChain, DataType,
-    DimensionName, FillValue,
+    Array, ArrayCreateError, ArrayMetadata, ArrayMetadataV3, ArrayShape, ChunkGrid,
+    ChunkKeySeparator, CodecChain, DataType, DimensionName, FillValue,
 };
 
 /// An [`Array`] builder.
@@ -297,10 +297,29 @@ impl ArrayBuilder {
 
         self.additional_fields.validate()?;
 
+        let codec_chain = CodecChain::new(
+            self.array_to_array_codecs.clone(),
+            self.array_to_bytes_codec.clone(),
+            self.bytes_to_bytes_codecs.clone(),
+        );
+
+        let array_metadata = ArrayMetadata::V3(ArrayMetadataV3::new(
+            self.shape.clone(),
+            self.data_type.metadata(),
+            self.chunk_grid.create_metadata(),
+            self.chunk_key_encoding.create_metadata(),
+            self.data_type.metadata_fill_value(&self.fill_value),
+            codec_chain.create_metadatas(),
+            self.attributes.clone(),
+            self.storage_transformers.create_metadatas(),
+            self.dimension_names.clone(),
+            self.additional_fields.clone(),
+        ));
+
         Ok(Array {
             storage,
             path,
-            shape: self.shape.clone(),
+            // shape: self.shape.clone(),
             data_type: self.data_type.clone(),
             chunk_grid: self.chunk_grid.clone(),
             chunk_key_encoding: self.chunk_key_encoding.clone(),
@@ -311,10 +330,11 @@ impl ArrayBuilder {
                 self.bytes_to_bytes_codecs.clone(),
             ),
             storage_transformers: self.storage_transformers.clone(),
-            attributes: self.attributes.clone(),
+            // attributes: self.attributes.clone(),
             dimension_names: self.dimension_names.clone(),
-            additional_fields: self.additional_fields.clone(),
+            // additional_fields: self.additional_fields.clone(),
             include_zarrs_metadata: true,
+            metadata: array_metadata,
         })
     }
 

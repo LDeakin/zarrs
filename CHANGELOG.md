@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `Array::[async_]retrieve_encoded_chunk[s]`
  - Add internal `fill_array_view_with_fill_value` function
  - Add `Array::store_metadata_opt`
+ - Add `ArrayMetadataOptionsVersion` and `{ArrayMetadataOptions,Config}::[set_]array_metadata_version`
 
 ### Changed
  - Support `object_store` 0.9-0.10
