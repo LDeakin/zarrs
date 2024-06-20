@@ -1,7 +1,9 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use super::{validate_permutation, InvalidPermutationError};
+/// The identifier for the `transpose` codec.
+pub const IDENTIFIER: &str = "transpose";
 
 /// A wrapper to handle various versions of Transpose codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -34,6 +36,11 @@ impl TransposeCodecConfigurationV1 {
 #[derive(Serialize, Clone, Eq, PartialEq, Debug)]
 pub struct TransposeOrder(pub Vec<usize>);
 
+/// An invalid permutation order error.
+#[derive(Clone, Debug, Error, From)]
+#[error("permutation order {0:?} is invalid. It must be an array of integers specifying a permutation of 0, 1, …, n-1, where n is the number of dimensions")]
+pub struct InvalidPermutationError(Vec<usize>);
+
 impl TransposeOrder {
     /// Create a new [`TransposeOrder`].
     ///
@@ -59,6 +66,20 @@ impl<'de> serde::Deserialize<'de> for TransposeOrder {
             ))
         }
     }
+}
+
+fn validate_permutation(permutation: &[usize]) -> bool {
+    let permutation_unique = to_vec_unique(permutation);
+    !permutation.is_empty()
+        && permutation_unique.len() == permutation.len()
+        && *permutation_unique.iter().max().unwrap() == permutation.len() - 1
+}
+
+fn to_vec_unique(v: &[usize]) -> Vec<usize> {
+    let mut v = v.to_vec();
+    v.sort_unstable();
+    v.dedup();
+    v
 }
 
 #[cfg(test)]

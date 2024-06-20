@@ -5,22 +5,21 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/v1.0.html>.
 
 mod gzip_codec;
-mod gzip_compression_level;
-mod gzip_configuration;
 mod gzip_partial_decoder;
 
+pub use crate::metadata::v3::codec::gzip::{
+    GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
+    GzipCompressionLevelError,
+};
 pub use gzip_codec::GzipCodec;
-pub use gzip_compression_level::{GzipCompressionLevel, GzipCompressionLevelError};
-pub use gzip_configuration::{GzipCodecConfiguration, GzipCodecConfigurationV1};
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::Metadata,
+    metadata::v3::{codec::gzip, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-/// The identifier for the `gzip` codec.
-pub const IDENTIFIER: &str = "gzip";
+pub use gzip::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -31,7 +30,7 @@ fn is_name_gzip(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_gzip(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_gzip(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: GzipCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;

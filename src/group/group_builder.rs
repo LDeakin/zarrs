@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use crate::metadata::AdditionalFields;
+use crate::metadata::{
+    v3::{AdditionalFields, GroupMetadataV3},
+    GroupMetadata,
+};
 
-use super::{Group, GroupCreateError, GroupMetadata, GroupMetadataV3};
+use super::{Group, GroupCreateError};
 
 /// A [`Group`] builder.
 pub struct GroupBuilder {

@@ -5,22 +5,20 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/zstd/v1.0.html>.
 
 mod zstd_codec;
-mod zstd_configuration;
 mod zstd_partial_decoder;
 
-pub use zstd_codec::ZstdCodec;
-pub use zstd_configuration::{
+pub use crate::metadata::v3::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
+pub use zstd_codec::ZstdCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::Metadata,
+    metadata::v3::{codec::zstd, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-/// The identifier for the `zstd` codec.
-pub const IDENTIFIER: &str = "zstd";
+pub use zstd::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -31,7 +29,7 @@ fn is_name_zstd(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_zstd(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_zstd(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZstdCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;

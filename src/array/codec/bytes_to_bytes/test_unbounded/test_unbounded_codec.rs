@@ -6,7 +6,7 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
@@ -29,7 +29,7 @@ impl TestUnboundedCodec {
 }
 
 impl CodecTraits for TestUnboundedCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         None
     }
 

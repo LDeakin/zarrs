@@ -20,7 +20,6 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group-metadata> for more information on group metadata.
 
 mod group_builder;
-mod group_metadata;
 
 use std::sync::Arc;
 
@@ -28,7 +27,7 @@ use derive_more::Display;
 use thiserror::Error;
 
 use crate::{
-    metadata::{AdditionalFields, UnsupportedAdditionalFieldError},
+    metadata::v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     node::{NodePath, NodePathError},
     storage::{
         meta_key, ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits,
@@ -38,10 +37,8 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::storage::{AsyncReadableStorageTraits, AsyncWritableStorageTraits};
 
-pub use self::{
-    group_builder::GroupBuilder,
-    group_metadata::{GroupMetadata, GroupMetadataV3},
-};
+pub use self::group_builder::GroupBuilder;
+pub use crate::metadata::{v3::GroupMetadataV3, GroupMetadata};
 
 /// A group.
 #[derive(Clone, Debug, Display)]

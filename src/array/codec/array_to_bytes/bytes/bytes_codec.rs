@@ -9,15 +9,15 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{
-    bytes_configuration::BytesCodecConfigurationV1, bytes_partial_decoder, reverse_endianness,
-    BytesCodecConfiguration, Endianness, IDENTIFIER, NATIVE_ENDIAN,
+    bytes_partial_decoder, reverse_endianness, BytesCodecConfiguration, BytesCodecConfigurationV1,
+    Endianness, IDENTIFIER, NATIVE_ENDIAN,
 };
 
 /// A `bytes` codec implementation.
@@ -87,11 +87,11 @@ impl BytesCodec {
 }
 
 impl CodecTraits for BytesCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = BytesCodecConfigurationV1 {
             endian: self.endian,
         };
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

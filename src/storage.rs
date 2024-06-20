@@ -229,16 +229,22 @@ impl From<opendal::Error> for StorageError {
     }
 }
 
-/// Return the metadata key given a node path.
+/// Return the metadata key given a node path for a specified metadata file name (e.g. zarr.json, .zarray, .zgroup, .zaatrs).
 #[must_use]
-pub fn meta_key(path: &NodePath) -> StoreKey {
+fn meta_key_any(path: &NodePath, metadata_file_name: &str) -> StoreKey {
     let path = path.as_str();
     if path.eq("/") {
-        unsafe { StoreKey::new_unchecked("zarr.json".to_string()) }
+        unsafe { StoreKey::new_unchecked(metadata_file_name.to_string()) }
     } else {
         let path = path.strip_prefix('/').unwrap_or(path);
-        unsafe { StoreKey::new_unchecked(path.to_string() + "/zarr.json") }
+        unsafe { StoreKey::new_unchecked(format!("{path}/{metadata_file_name}")) }
     }
+}
+
+/// Return the Zarr V3 metadata key (zarr.json) given a node path.
+#[must_use]
+pub fn meta_key(path: &NodePath) -> StoreKey {
+    meta_key_any(path, "zarr.json")
 }
 
 /// Return the data key given a node path, chunk grid coordinates, and a chunk key encoding.
@@ -266,7 +272,7 @@ pub fn data_key(
 //     let root_metadata = storage.get(&meta_key(&root_path));
 //     let root_metadata: NodeMetadata = match root_metadata {
 //         Ok(root_metadata) => serde_json::from_slice(root_metadata.as_slice())?,
-//         Err(..) => NodeMetadata::Group(GroupMetadata::default()), // root metadata does not exist, assume implicit group
+//         Err(..) => NodeMetadata::Group(GroupMetadataV3::default()), // root metadata does not exist, assume implicit group
 //     };
 
 //     let children = get_child_nodes(storage, &root_path)?;

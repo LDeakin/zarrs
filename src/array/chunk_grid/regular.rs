@@ -5,18 +5,15 @@
 use std::num::NonZeroU64;
 
 use crate::{
-    array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape, NonZeroError},
-    metadata::Metadata,
+    array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape},
+    metadata::v3::{chunk_grid::regular, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-use derive_more::Display;
-use serde::{Deserialize, Serialize};
-
+pub use super::RegularChunkGridConfiguration;
 use super::{ChunkGrid, ChunkGridTraits};
 
-/// The identifier for the `regular` chunk grid.
-pub const IDENTIFIER: &str = "regular";
+pub use regular::IDENTIFIER;
 
 // Register the chunk grid.
 inventory::submit! {
@@ -31,74 +28,13 @@ fn is_name_regular(name: &str) -> bool {
 ///
 /// # Errors
 /// Returns a [`PluginCreateError`] if the metadata is invalid for a regular chunk grid.
-pub fn create_chunk_grid_regular(metadata: &Metadata) -> Result<ChunkGrid, PluginCreateError> {
+pub fn create_chunk_grid_regular(metadata: &MetadataV3) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
     let chunk_grid = RegularChunkGrid::new(configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))
 }
-
-/// Configuration parameters for a `regular` chunk grid.
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
-#[serde(deny_unknown_fields)]
-#[display(
-    fmt = "regular chunk grid {}",
-    "serde_json::to_string(self).unwrap_or_default()"
-)]
-pub struct RegularChunkGridConfiguration {
-    /// The chunk shape.
-    pub chunk_shape: ChunkShape,
-}
-
-macro_rules! from_chunkgrid_regular_configuration {
-    ( $t:ty ) => {
-        impl From<$t> for RegularChunkGridConfiguration {
-            fn from(value: $t) -> Self {
-                Self {
-                    chunk_shape: value.into(),
-                }
-            }
-        }
-    };
-    ( $t:ty, $g:ident ) => {
-        impl<const $g: usize> From<$t> for RegularChunkGridConfiguration {
-            fn from(value: $t) -> Self {
-                Self {
-                    chunk_shape: value.into(),
-                }
-            }
-        }
-    };
-}
-
-macro_rules! try_from_chunkgrid_regular_configuration {
-    ( $t:ty ) => {
-        impl TryFrom<$t> for RegularChunkGridConfiguration {
-            type Error = NonZeroError;
-            fn try_from(value: $t) -> Result<Self, Self::Error> {
-                value.try_into()
-            }
-        }
-    };
-    ( $t:ty, $g:ident ) => {
-        impl<const $g: usize> TryFrom<$t> for RegularChunkGridConfiguration {
-            type Error = NonZeroError;
-            fn try_from(value: $t) -> Result<Self, Self::Error> {
-                value.try_into()
-            }
-        }
-    };
-}
-
-from_chunkgrid_regular_configuration!(Vec<NonZeroU64>);
-from_chunkgrid_regular_configuration!(&[NonZeroU64]);
-from_chunkgrid_regular_configuration!([NonZeroU64; N], N);
-from_chunkgrid_regular_configuration!(&[NonZeroU64; N], N);
-try_from_chunkgrid_regular_configuration!(Vec<u64>);
-try_from_chunkgrid_regular_configuration!(&[u64]);
-try_from_chunkgrid_regular_configuration!([u64; N], N);
-try_from_chunkgrid_regular_configuration!(&[u64; N], N);
 
 /// A `regular` chunk grid.
 #[derive(Debug, Clone)]
@@ -131,11 +67,11 @@ impl RegularChunkGrid {
 }
 
 impl ChunkGridTraits for RegularChunkGrid {
-    fn create_metadata(&self) -> Metadata {
+    fn create_metadata(&self) -> MetadataV3 {
         let configuration = RegularChunkGridConfiguration {
             chunk_shape: self.chunk_shape.clone(),
         };
-        Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
+        MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
     }
 
     fn dimensionality(&self) -> usize {
@@ -239,7 +175,7 @@ mod tests {
 
     #[test]
     fn chunk_grid_regular_metadata() {
-        let metadata: Metadata =
+        let metadata: MetadataV3 =
             serde_json::from_str(r#"{"name":"regular","configuration":{"chunk_shape":[1,2,3]}}"#)
                 .unwrap();
         assert!(create_chunk_grid_regular(&metadata).is_ok());
@@ -247,7 +183,7 @@ mod tests {
 
     #[test]
     fn chunk_grid_regular_metadata_invalid() {
-        let metadata: Metadata =
+        let metadata: MetadataV3 =
             serde_json::from_str(r#"{"name":"regular","configuration":{"invalid":[1,2,3]}}"#)
                 .unwrap();
         assert!(create_chunk_grid_regular(&metadata).is_err());

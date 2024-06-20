@@ -5,22 +5,21 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/v1.0.html>.
 
 mod transpose_codec;
-mod transpose_configuration;
 mod transpose_partial_decoder;
 
-pub use transpose_codec::{InvalidPermutationError, TransposeCodec};
-pub use transpose_configuration::{
-    TransposeCodecConfiguration, TransposeCodecConfigurationV1, TransposeOrder,
+pub use crate::metadata::v3::codec::transpose::{
+    InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
+    TransposeOrder,
 };
+pub use transpose_codec::TransposeCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::Metadata,
+    metadata::v3::{codec::transpose, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-/// The identifier for the `transpose` codec.
-pub const IDENTIFIER: &str = "transpose";
+pub use transpose::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -31,26 +30,12 @@ fn is_name_transpose(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_transpose(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_transpose(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: TransposeCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(TransposeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
-}
-
-fn to_vec_unique(v: &[usize]) -> Vec<usize> {
-    let mut v = v.to_vec();
-    v.sort_unstable();
-    v.dedup();
-    v
-}
-
-fn validate_permutation(permutation: &[usize]) -> bool {
-    let permutation_unique = to_vec_unique(permutation);
-    !permutation.is_empty()
-        && permutation_unique.len() == permutation.len()
-        && *permutation_unique.iter().max().unwrap() == permutation.len() - 1
 }
 
 fn calculate_order_encode(order: &TransposeOrder, array_dimensions: usize) -> Vec<usize> {

@@ -10,7 +10,7 @@ use itertools::Itertools;
 use crate::{
     array::MaybeBytes,
     byte_range::ByteRange,
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     storage::{
         ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
         ReadableStorageTraits, ReadableWritableListableStorage, ReadableWritableStorage,
@@ -97,7 +97,7 @@ impl UsageLogStorageTransformer {
 
 impl StorageTransformerExtension for UsageLogStorageTransformer {
     /// Returns [`None`], since this storage transformer is not intended to be included in array `storage_transformers` metadata.
-    fn create_metadata(&self) -> Option<Metadata> {
+    fn create_metadata(&self) -> Option<MetadataV3> {
         None
     }
 

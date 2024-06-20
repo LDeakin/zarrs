@@ -15,23 +15,17 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataType,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{
-    promote_before_zfp_encoding, zarr_to_zfp_data_type,
-    zfp_bitstream::ZfpBitstream,
-    zfp_configuration::{
-        ZfpFixedAccuracyConfiguration, ZfpFixedPrecisionConfiguration, ZfpFixedRateConfiguration,
-    },
-    zfp_decode,
-    zfp_field::ZfpField,
-    zfp_partial_decoder,
-    zfp_stream::ZfpStream,
-    ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertConfiguration, ZfpMode, IDENTIFIER,
+    promote_before_zfp_encoding, zarr_to_zfp_data_type, zfp_bitstream::ZfpBitstream, zfp_decode,
+    zfp_field::ZfpField, zfp_partial_decoder, zfp_stream::ZfpStream, ZfpCodecConfiguration,
+    ZfpCodecConfigurationV1, ZfpExpertConfiguration, ZfpFixedAccuracyConfiguration,
+    ZfpFixedPrecisionConfiguration, ZfpFixedRateConfiguration, ZfpMode, IDENTIFIER,
 };
 
 /// A `zfp` codec implementation.
@@ -97,7 +91,7 @@ impl ZfpCodec {
 }
 
 impl CodecTraits for ZfpCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = match self.mode {
             ZfpMode::Expert(expert) => ZfpCodecConfigurationV1::Expert(expert),
             ZfpMode::FixedRate(rate) => {
@@ -113,7 +107,7 @@ impl CodecTraits for ZfpCodec {
             }
             ZfpMode::Reversible => ZfpCodecConfigurationV1::Reversible,
         };
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

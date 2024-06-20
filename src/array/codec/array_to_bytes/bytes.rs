@@ -5,26 +5,24 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/bytes/v1.0.html>.
 
 mod bytes_codec;
-mod bytes_configuration;
 mod bytes_partial_decoder;
 
-pub use bytes_configuration::{BytesCodecConfiguration, BytesCodecConfigurationV1};
+pub use crate::array::endianness::{Endianness, NATIVE_ENDIAN};
+use crate::metadata::v3::codec::bytes;
+pub use crate::metadata::v3::codec::bytes::{BytesCodecConfiguration, BytesCodecConfigurationV1};
 
 pub use bytes_codec::BytesCodec;
-
-use derive_more::Display;
 
 use crate::{
     array::{
         codec::{Codec, CodecPlugin},
         DataType,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-/// The identifier for the `bytes` codec.
-pub const IDENTIFIER: &str = "bytes";
+pub use bytes::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -35,63 +33,13 @@ fn is_name_bytes(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_bytes(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BytesCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(BytesCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }
-
-/// The endianness of each element in an array, either `big` or `little`.
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
-pub enum Endianness {
-    /// Little endian.
-    Little,
-
-    /// Big endian.
-    Big,
-}
-
-impl Endianness {
-    /// Return true if the endianness matches the endianness of the CPU.
-    #[must_use]
-    pub fn is_native(self) -> bool {
-        self == NATIVE_ENDIAN
-    }
-}
-
-impl serde::Serialize for Endianness {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Little => s.serialize_str("little"),
-            Self::Big => s.serialize_str("big"),
-        }
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Endianness {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let value = serde_json::Value::deserialize(d)?;
-        if let serde_json::Value::String(string) = value {
-            if string == "little" {
-                return Ok(Self::Little);
-            } else if string == "big" {
-                return Ok(Self::Big);
-            }
-        }
-        Err(serde::de::Error::custom(
-            "endian: A string equal to either \"big\" or \"little\"",
-        ))
-    }
-}
-
-/// The endianness of the CPU.
-pub const NATIVE_ENDIAN: Endianness = if cfg!(target_endian = "big") {
-    Endianness::Big
-} else {
-    Endianness::Little
-};
 
 /// Reverse the endianness of bytes for a given data type.
 pub fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
@@ -128,7 +76,7 @@ mod tests {
     use crate::{
         array::{
             codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions, CodecTraits},
-            ChunkRepresentation, ChunkShape, FillValue,
+            ChunkRepresentation, ChunkShape, Endianness, FillValue,
         },
         array_subset::ArraySubset,
     };

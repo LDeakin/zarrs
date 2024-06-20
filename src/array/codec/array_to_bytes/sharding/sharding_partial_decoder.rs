@@ -27,7 +27,7 @@ use crate::array::codec::{
 
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
-    sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
+    sharding_index_decoded_representation, ShardingIndexLocation,
 };
 
 /// Partial decoder for the sharding codec.

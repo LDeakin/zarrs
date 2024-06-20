@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    metadata::UnsupportedAdditionalFieldError,
+    metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
     plugin::PluginCreateError,
     storage::StorageError,

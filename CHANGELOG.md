@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add default implementations for `[Async]ReadableStorageTraits::{get,get_partial_values}`
  - **Breaking**: Move `[Async]ReadableStorageTraits::{size[_prefix]}` to `[Async]ListableStorageTraits` and add default implementation for `size`
  - Use `futures::TryStreamExt::try_for_each_concurrent` instead of `FuturesUnordered` where appropriate
+ - Move all metadata/configuration structures into the metadata module (non breaking with re-exports)
+ - **Breaking**: Rename `Metadata` to `MetadataV3`
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency

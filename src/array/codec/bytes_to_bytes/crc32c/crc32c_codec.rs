@@ -6,29 +6,29 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
-    crc32c_configuration::Crc32cCodecConfigurationV1, crc32c_partial_decoder,
-    Crc32cCodecConfiguration, CHECKSUM_SIZE, IDENTIFIER,
+    crc32c_partial_decoder, Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE,
+    IDENTIFIER,
 };
 
-/// A `CRC32C checksum` codec implementation.
+/// A `crc32c` (CRC32C checksum) codec implementation.
 #[derive(Clone, Debug, Default)]
 pub struct Crc32cCodec;
 
 impl Crc32cCodec {
-    /// Create a new `CRC32C checksum` codec.
+    /// Create a new `crc32c` codec.
     #[must_use]
     pub const fn new() -> Self {
         Self {}
     }
 
-    /// Create a new `CRC32C checksum` codec.
+    /// Create a new `crc32c` codec.
     #[must_use]
     pub const fn new_with_configuration(_configuration: &Crc32cCodecConfiguration) -> Self {
         Self {}
@@ -36,9 +36,9 @@ impl Crc32cCodec {
 }
 
 impl CodecTraits for Crc32cCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = Crc32cCodecConfigurationV1 {};
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -88,7 +88,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
             Ok(encoded_value)
         } else {
             Err(CodecError::Other(
-                "CRC32C checksum decoder expects a 32 bit input".to_string(),
+                "crc32c decoder expects a 32 bit input".to_string(),
             ))
         }
     }

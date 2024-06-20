@@ -6,7 +6,7 @@ use crate::{
         },
         ArrayMetadataOptions, ChunkRepresentation, DataType,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
@@ -43,12 +43,15 @@ impl BitroundCodec {
 }
 
 impl CodecTraits for BitroundCodec {
-    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         if options.experimental_codec_store_metadata_if_encode_only() {
             let configuration = BitroundCodecConfigurationV1 {
                 keepbits: self.keepbits,
             };
-            Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+            Some(
+                MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration)
+                    .unwrap(),
+            )
         } else {
             None
         }

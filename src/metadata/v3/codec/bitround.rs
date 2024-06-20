@@ -1,6 +1,10 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
+/// The identifier for the `bitround` codec.
+// TODO: ZEP for bitround
+pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_array/bitround";
+
 /// A wrapper to handle various versions of `bitround` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
@@ -29,13 +33,13 @@ pub struct BitroundCodecConfigurationV1 {
 
 #[cfg(test)]
 mod tests {
-    use crate::metadata::Metadata;
+    use crate::metadata::v3::MetadataV3;
 
     use super::*;
 
     #[test]
     fn codec_bitround_metadata() {
-        serde_json::from_str::<Metadata>(
+        serde_json::from_str::<MetadataV3>(
             r#"{ 
             "name": "bitround",
             "configuration": {

@@ -1,4 +1,4 @@
-//! Zarr fill value metadata.
+//! Zarr V3 fill value metadata.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#fill-value>.
 //!
@@ -91,6 +91,7 @@ pub struct HexString(Vec<u8>);
 
 impl HexString {
     /// Create a new [`HexString`]
+    #[must_use]
     pub fn new(bytes: Vec<u8>) -> Self {
         Self(bytes)
     }

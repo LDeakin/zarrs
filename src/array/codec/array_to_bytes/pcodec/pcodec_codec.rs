@@ -10,7 +10,7 @@ use crate::{
         transmute_from_bytes_vec, transmute_to_bytes_vec, ArrayMetadataOptions,
         BytesRepresentation, ChunkRepresentation, DataType,
     },
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
 };
 
 #[cfg(feature = "async")]
@@ -59,7 +59,7 @@ impl PcodecCodec {
 }
 
 impl CodecTraits for PcodecCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let PagingSpec::EqualPagesUpTo(max_page_n) = self.chunk_config.paging_spec else {
             unreachable!()
         };
@@ -74,7 +74,7 @@ impl CodecTraits for PcodecCodec {
             max_page_n,
         });
 
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -14,7 +14,7 @@ use crate::{
         ArrayMetadataOptions, ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
     },
     array_subset::ArraySubset,
-    metadata::Metadata,
+    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
 
@@ -23,8 +23,8 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
-    sharding_configuration::ShardingIndexLocation, sharding_index_decoded_representation,
-    sharding_partial_decoder, ShardingCodecConfiguration, ShardingCodecConfigurationV1, IDENTIFIER,
+    sharding_index_decoded_representation, sharding_partial_decoder, ShardingCodecConfiguration,
+    ShardingCodecConfigurationV1, ShardingIndexLocation, IDENTIFIER,
 };
 
 use rayon::prelude::*;
@@ -80,14 +80,14 @@ impl ShardingCodec {
 }
 
 impl CodecTraits for ShardingCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<Metadata> {
+    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = ShardingCodecConfigurationV1 {
             chunk_shape: self.chunk_shape.clone(),
             codecs: self.inner_codecs.create_metadatas(),
             index_codecs: self.index_codecs.create_metadatas(),
             index_location: self.index_location,
         };
-        Some(Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

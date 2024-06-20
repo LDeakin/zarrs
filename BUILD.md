@@ -8,7 +8,7 @@ cargo build --release
 # Must have no warnings/errors to pass CI
 cargo build --all-features && \
 cargo test --all-features && \
-cargo +nightly doc --all-features && \
+RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features && \
 cargo fmt --all -- --check && \
 cargo +nightly clippy --all-features -- -D warnings && \
 cargo check && \

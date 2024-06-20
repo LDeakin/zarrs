@@ -1,7 +1,10 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::{array::ChunkShape, metadata::Metadata};
+use crate::{array::ChunkShape, metadata::v3::MetadataV3};
+
+/// The identifier for the `sharding_indexed` codec.
+pub const IDENTIFIER: &str = "sharding_indexed";
 
 /// A wrapper to handle various versions of Sharding codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -54,9 +57,9 @@ pub struct ShardingCodecConfigurationV1 {
     /// An array of integers specifying the shape of the inner chunks in a shard along each dimension of the outer array.
     pub chunk_shape: ChunkShape,
     /// A list of codecs to be used for encoding and decoding inner chunks.
-    pub codecs: Vec<Metadata>,
+    pub codecs: Vec<MetadataV3>,
     /// A list of codecs to be used for encoding and decoding the shard index.
-    pub index_codecs: Vec<Metadata>,
+    pub index_codecs: Vec<MetadataV3>,
     /// Specifies whether the shard index is located at the beginning or end of the file.
     #[serde(default)]
     pub index_location: ShardingIndexLocation,

@@ -14,16 +14,16 @@
 mod zfp_array;
 mod zfp_bitstream;
 mod zfp_codec;
-mod zfp_configuration;
 mod zfp_field;
 mod zfp_partial_decoder;
 mod zfp_stream;
 
-pub use zfp_codec::ZfpCodec;
-pub use zfp_configuration::{
+pub use crate::metadata::v3::codec::zfp::{
     ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertConfiguration,
     ZfpFixedAccuracyConfiguration, ZfpFixedPrecisionConfiguration, ZfpFixedRateConfiguration,
+    ZfpMode,
 };
+pub use zfp_codec::ZfpCodec;
 
 use zfp_sys::{
     zfp_decompress, zfp_exec_policy_zfp_exec_omp, zfp_stream_rewind, zfp_stream_set_bit_stream,
@@ -35,7 +35,7 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         transmute_from_bytes_vec, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
-    metadata::Metadata,
+    metadata::v3::{codec::zfp, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -43,9 +43,7 @@ use self::{
     zfp_array::ZfpArray, zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream,
 };
 
-/// The identifier for the `zfp` codec.
-// TODO: ZEP for zfp
-pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/zfp";
+pub use zfp::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
@@ -56,27 +54,12 @@ fn is_name_zfp(name: &str) -> bool {
     name.eq(IDENTIFIER) || name == "zfp"
 }
 
-pub(crate) fn create_codec_zfp(metadata: &Metadata) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZfpCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec: Box<ZfpCodec> = Box::new(ZfpCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
-}
-
-/// The `zfp` mode.
-#[derive(Clone, Copy, Debug)]
-pub enum ZfpMode {
-    /// Expert mode.
-    Expert(ZfpExpertConfiguration),
-    /// Fixed rate mode.
-    FixedRate(f64),
-    /// Fixed precision mode.
-    FixedPrecision(u32),
-    /// Fixed accuracy mode.
-    FixedAccuracy(f64),
-    /// Reversible mode.
-    Reversible,
 }
 
 const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type> {

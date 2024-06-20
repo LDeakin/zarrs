@@ -1,19 +1,17 @@
 //! The v2 chunk key encoding.
 
-use derive_more::Display;
-use serde::{Deserialize, Serialize};
-
 use crate::{
     array::chunk_key_encoding::ChunkKeyEncodingPlugin,
-    metadata::Metadata,
+    metadata::v3::{chunk_key_encoding::v2, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
     storage::StoreKey,
 };
 
-use super::{ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator};
+use super::{
+    ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator, V2ChunkKeyEncodingConfiguration,
+};
 
-/// The identifier for the `v2` chunk key encoding.
-pub const IDENTIFIER: &str = "v2";
+pub use v2::IDENTIFIER;
 
 // Register the chunk key encoding.
 inventory::submit! {
@@ -24,8 +22,8 @@ fn is_name_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub fn create_chunk_key_encoding_v2(
-    metadata: &Metadata,
+pub(crate) fn create_chunk_key_encoding_v2(
+    metadata: &MetadataV3,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: V2ChunkKeyEncodingConfiguration =
         metadata.to_configuration().map_err(|_| {
@@ -33,20 +31,6 @@ pub fn create_chunk_key_encoding_v2(
         })?;
     let v2 = V2ChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(v2))
-}
-
-/// A `v2` chunk key encoding configuration.
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
-#[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
-pub struct V2ChunkKeyEncodingConfiguration {
-    /// The chunk key separator.
-    #[serde(default = "v2_separator")]
-    pub separator: ChunkKeySeparator,
-}
-
-const fn v2_separator() -> ChunkKeySeparator {
-    ChunkKeySeparator::Dot
 }
 
 /// A `v2` chunk key encoding.
@@ -89,17 +73,17 @@ impl Default for V2ChunkKeyEncoding {
     /// Create a default chunk key encoding with default separator: `.`.
     fn default() -> Self {
         Self {
-            separator: v2_separator(),
+            separator: ChunkKeySeparator::Dot,
         }
     }
 }
 
 impl ChunkKeyEncodingTraits for V2ChunkKeyEncoding {
-    fn create_metadata(&self) -> Metadata {
+    fn create_metadata(&self) -> MetadataV3 {
         let configuration = V2ChunkKeyEncodingConfiguration {
             separator: self.separator,
         };
-        Metadata::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
+        MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
     }
 
     fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey {
