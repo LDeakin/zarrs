@@ -19,7 +19,7 @@ pub mod v3;
 pub mod v2;
 
 pub use array::{array_metadata_v2_to_v3, ArrayMetadata, ArrayMetadataV2ToV3ConversionError};
-pub use group::GroupMetadata;
+pub use group::{group_metadata_v2_to_v3, GroupMetadata};
 pub use v3::{AdditionalFields, ConfigurationInvalidError, UnsupportedAdditionalFieldError};
 
 #[cfg(test)]

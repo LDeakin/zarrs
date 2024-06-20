@@ -1,29 +1,13 @@
 use crate::config::{MetadataOptionsEraseVersion, MetadataOptionsStoreVersion};
 
-/// Options for writing array metadata.
+/// Options for writing group metadata.
 #[derive(Debug, Clone, Default)]
-pub struct ArrayMetadataOptions {
-    experimental_codec_store_metadata_if_encode_only: bool,
+pub struct GroupMetadataOptions {
     store_version: MetadataOptionsStoreVersion,
     erase_version: MetadataOptionsEraseVersion,
 }
 
-impl ArrayMetadataOptions {
-    /// Return the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
-    #[must_use]
-    pub fn experimental_codec_store_metadata_if_encode_only(&self) -> bool {
-        self.experimental_codec_store_metadata_if_encode_only
-    }
-
-    /// Set the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
-    pub fn set_experimental_codec_store_metadata_if_encode_only(
-        &mut self,
-        enabled: bool,
-    ) -> &mut Self {
-        self.experimental_codec_store_metadata_if_encode_only = enabled;
-        self
-    }
-
+impl GroupMetadataOptions {
     /// Get the [metadata store version behaviour](crate::config::Config#metadata-store-version-behaviour) configuration.
     #[must_use]
     pub fn metadata_store_version(&self) -> &MetadataOptionsStoreVersion {

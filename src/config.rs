@@ -2,7 +2,6 @@
 
 use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::array::ArrayMetadataOptionsVersion;
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 
@@ -54,13 +53,17 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 /// This enables arrays to be consumed by other zarr3 implementations that do not support the experimental codec.
 /// Currently, this options only affects the `bitround` codec.
 ///
-/// ## Array Metadata Version Behaviour
-/// > default: [`ArrayMetadataOptionsVersion::Unchanged`]
+/// ## Metadata Store Version Behaviour
+/// > default: [`MetadataOptionsStoreVersion::Default`]
 ///
-/// Some codecs perform potentially irreversible transformations during encoding that decoders do not need to be aware of.
-/// If this option is `false`, experimental codecs with this behaviour will not write their metadata.
-/// This enables arrays to be consumed by other zarr3 implementations that do not support the experimental codec.
-/// Currently, this options only affects the `bitround` codec.
+/// The default behaviour for [`Array::store_metadata`](crate::group::Group::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata) and async variants.
+/// Determines whether to write metadata of a specific Zarr version, or the same version the array/group was created with.
+///
+/// ## Metadata Erase Version Behaviour
+/// > default: [`MetadataOptionsEraseVersion::Default`]
+///
+/// The default behaviour for [`Array::erase_metadata`](crate::group::Group::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata) and async variants.
+/// Determines whether to erase metadata of a specific Zarr version, the same version as the array/group was created with, or all known versions.
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
@@ -68,7 +71,42 @@ pub struct Config {
     codec_concurrent_target: usize,
     chunk_concurrent_minimum: usize,
     experimental_codec_store_metadata_if_encode_only: bool,
-    array_metadata_version: ArrayMetadataOptionsVersion,
+    metadata_store_version: MetadataOptionsStoreVersion,
+    metadata_erase_version: MetadataOptionsEraseVersion,
+}
+
+/// Version options for [`Array::store_metadata`](crate::array::Array::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata), and their async variants.
+#[derive(Debug, Clone, Copy)]
+pub enum MetadataOptionsStoreVersion {
+    /// Write the same version as the input metadata.
+    Default,
+    /// Write Zarr V3 metadata. Zarr V2 will not be automatically removed if it exists.
+    V3,
+}
+
+impl Default for MetadataOptionsStoreVersion {
+    fn default() -> Self {
+        *global_config().metadata_store_version()
+    }
+}
+
+/// Version options for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata), and their async variants.
+#[derive(Debug, Clone, Copy)]
+pub enum MetadataOptionsEraseVersion {
+    /// Erase the same version as the input metadata.
+    Default,
+    /// Erase all metadata.
+    All,
+    /// Erase V3 metadata.
+    V3,
+    /// Erase V2 metadata.
+    V2,
+}
+
+impl Default for MetadataOptionsEraseVersion {
+    fn default() -> Self {
+        *global_config().metadata_erase_version()
+    }
 }
 
 #[allow(clippy::derivable_impls)]
@@ -84,7 +122,8 @@ impl Default for Config {
                 + concurrency_add,
             chunk_concurrent_minimum: 4,
             experimental_codec_store_metadata_if_encode_only: false,
-            array_metadata_version: ArrayMetadataOptionsVersion::Unchanged,
+            metadata_store_version: MetadataOptionsStoreVersion::Default,
+            metadata_erase_version: MetadataOptionsEraseVersion::Default,
         }
     }
 }
@@ -145,15 +184,26 @@ impl Config {
         self.experimental_codec_store_metadata_if_encode_only = enabled;
     }
 
-    /// Get the [array metadata version behaviour](#array-metadata-version-behaviour) configuration.
+    /// Get the [metadata store version behaviour](#metadata-store-version-behaviour) configuration.
     #[must_use]
-    pub fn array_metadata_version(&self) -> &ArrayMetadataOptionsVersion {
-        &self.array_metadata_version
+    pub fn metadata_store_version(&self) -> &MetadataOptionsStoreVersion {
+        &self.metadata_store_version
     }
 
-    /// Set the [array metadata version behaviour](#array-metadata-version-behaviour) configuration.
-    pub fn set_array_metadata_version(&mut self, version: ArrayMetadataOptionsVersion) {
-        self.array_metadata_version = version;
+    /// Set the [metadata store version behaviour](#metadata-store-version-behaviour) configuration.
+    pub fn set_metadata_store_version(&mut self, version: MetadataOptionsStoreVersion) {
+        self.metadata_store_version = version;
+    }
+
+    /// Get the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
+    #[must_use]
+    pub fn metadata_erase_version(&self) -> &MetadataOptionsEraseVersion {
+        &self.metadata_erase_version
+    }
+
+    /// Set the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
+    pub fn set_metadata_erase_version(&mut self, version: MetadataOptionsEraseVersion) {
+        self.metadata_erase_version = version;
     }
 }
 

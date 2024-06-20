@@ -20,6 +20,7 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group-metadata> for more information on group metadata.
 
 mod group_builder;
+mod group_metadata_options;
 
 use std::sync::Arc;
 
@@ -27,10 +28,15 @@ use derive_more::Display;
 use thiserror::Error;
 
 use crate::{
-    metadata::v3::{AdditionalFields, UnsupportedAdditionalFieldError},
+    config::{MetadataOptionsEraseVersion, MetadataOptionsStoreVersion},
+    metadata::{
+        group_metadata_v2_to_v3,
+        v3::{AdditionalFields, UnsupportedAdditionalFieldError},
+    },
     node::{NodePath, NodePathError},
     storage::{
-        meta_key, ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits,
+        meta_key, meta_key_v2_attributes, meta_key_v2_group, ReadableStorageTraits, StorageError,
+        StorageHandle, WritableStorageTraits,
     },
 };
 
@@ -39,6 +45,7 @@ use crate::storage::{AsyncReadableStorageTraits, AsyncWritableStorageTraits};
 
 pub use self::group_builder::GroupBuilder;
 pub use crate::metadata::{v3::GroupMetadataV3, GroupMetadata};
+pub use group_metadata_options::GroupMetadataOptions;
 
 /// A group.
 #[derive(Clone, Debug, Display)]
@@ -216,15 +223,89 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Group<TStorage> {
         crate::storage::create_group(&storage_handle, self.path(), &self.metadata())
     }
 
-    /// Erase the metadata.
+    /// Store metadata with non-default [`GroupMetadataOptions`].
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying store error.
+    pub fn store_metadata_opt(&self, options: &GroupMetadataOptions) -> Result<(), StorageError> {
+        use MetadataOptionsStoreVersion as V;
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+
+        let metadata = self.metadata();
+
+        // Get the metadata with options applied
+        // let metadata = self.metadata_opt(options);
+
+        // Convert/store the metadata as requested
+        match (metadata, options.metadata_store_version()) {
+            (GroupMetadata::V3(metadata), V::Default | V::V3) => {
+                // Store V3
+                crate::storage::create_group(
+                    &*storage_handle,
+                    self.path(),
+                    &GroupMetadata::V3(metadata),
+                )
+            }
+            (GroupMetadata::V2(metadata), V::V3) => {
+                // Convert V2 to V3
+                let metadata = group_metadata_v2_to_v3(&metadata);
+                crate::storage::create_group(
+                    &*storage_handle,
+                    self.path(),
+                    &GroupMetadata::V3(metadata),
+                )
+            }
+            (GroupMetadata::V2(metadata), V::Default) => {
+                // Store V2
+                crate::storage::create_group(
+                    &*storage_handle,
+                    self.path(),
+                    &GroupMetadata::V2(metadata),
+                )
+            }
+        }
+    }
+
+    /// Erase the metadata with default [`MetadataOptionsEraseVersion`] options.
     ///
     /// Succeeds if the metadata does not exist.
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub fn erase_metadata(&self) -> Result<(), StorageError> {
+        self.erase_metadata_opt(&MetadataOptionsEraseVersion::default())
+    }
+
+    /// Erase the metadata with non-default [`MetadataOptionsEraseVersion`] options.
+    ///
+    /// Succeeds if the metadata does not exist.
+    ///
+    /// # Errors
+    /// Returns a [`StorageError`] if there is an underlying store error.
+    pub fn erase_metadata_opt(
+        &self,
+        options: &MetadataOptionsEraseVersion,
+    ) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
-        crate::storage::erase_metadata(&storage_handle, self.path())
+        match options {
+            MetadataOptionsEraseVersion::Default => match self.metadata {
+                GroupMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())),
+                GroupMetadata::V2(_) => {
+                    storage_handle.erase(&meta_key_v2_group(self.path()))?;
+                    storage_handle.erase(&meta_key_v2_attributes(self.path()))
+                }
+            },
+            MetadataOptionsEraseVersion::All => {
+                storage_handle.erase(&meta_key(self.path()))?;
+                storage_handle.erase(&meta_key_v2_group(self.path()))?;
+                storage_handle.erase(&meta_key_v2_attributes(self.path()))
+            }
+            MetadataOptionsEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())),
+            MetadataOptionsEraseVersion::V2 => {
+                storage_handle.erase(&meta_key_v2_group(self.path()))?;
+                storage_handle.erase(&meta_key_v2_attributes(self.path()))
+            }
+        }
     }
 }
 
@@ -241,7 +322,58 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
-        crate::storage::async_erase_metadata(&storage_handle, self.path()).await
+        match self.metadata {
+            GroupMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())).await,
+            GroupMetadata::V2(_) => {
+                storage_handle
+                    .erase(&meta_key_v2_group(self.path()))
+                    .await?;
+                storage_handle
+                    .erase(&meta_key_v2_attributes(self.path()))
+                    .await?;
+                Ok(())
+            }
+        }
+    }
+
+    /// Async variant of [`erase_metadata_opt`](Group::erase_metadata_opt).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_erase_metadata_opt(
+        &self,
+        options: &MetadataOptionsEraseVersion,
+    ) -> Result<(), StorageError> {
+        let storage_handle = StorageHandle::new(self.storage.clone());
+        match options {
+            MetadataOptionsEraseVersion::Default => match self.metadata {
+                GroupMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())).await,
+                GroupMetadata::V2(_) => {
+                    storage_handle
+                        .erase(&meta_key_v2_group(self.path()))
+                        .await?;
+                    storage_handle
+                        .erase(&meta_key_v2_attributes(self.path()))
+                        .await
+                }
+            },
+            MetadataOptionsEraseVersion::All => {
+                storage_handle.erase(&meta_key(self.path())).await?;
+                storage_handle
+                    .erase(&meta_key_v2_group(self.path()))
+                    .await?;
+                storage_handle
+                    .erase(&meta_key_v2_attributes(self.path()))
+                    .await
+            }
+            MetadataOptionsEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())).await,
+            MetadataOptionsEraseVersion::V2 => {
+                storage_handle
+                    .erase(&meta_key_v2_group(self.path()))
+                    .await?;
+                storage_handle
+                    .erase(&meta_key_v2_attributes(self.path()))
+                    .await
+            }
+        }
     }
 }
 

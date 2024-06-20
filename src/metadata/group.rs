@@ -23,3 +23,13 @@ impl TryFrom<&str> for GroupMetadata {
         serde_json::from_str::<Self>(metadata_json)
     }
 }
+
+/// Convert Zarr v2 group metadata to v3.
+#[allow(clippy::too_many_lines)]
+#[must_use]
+pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMetadataV3 {
+    GroupMetadataV3::new(
+        group_metadata_v2.attributes.clone(),
+        group_metadata_v2.additional_fields.clone(),
+    )
+}

@@ -34,7 +34,7 @@ use std::sync::Arc;
 pub use self::{
     array_builder::ArrayBuilder,
     array_errors::{ArrayCreateError, ArrayError},
-    array_metadata_options::{ArrayMetadataOptions, ArrayMetadataOptionsVersion},
+    array_metadata_options::ArrayMetadataOptions,
     array_representation::{ArrayRepresentation, ChunkRepresentation},
     array_view::{ArrayView, ArrayViewCreateError},
     bytes_representation::BytesRepresentation,
@@ -823,7 +823,10 @@ fn fill_array_view_with_fill_value(array_view: &ArrayView<'_>, fill_value: &Fill
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::store::{FilesystemStore, MemoryStore};
+    use crate::{
+        config::MetadataOptionsStoreVersion,
+        storage::store::{FilesystemStore, MemoryStore},
+    };
 
     use super::*;
 
@@ -972,12 +975,12 @@ mod tests {
 
         // Store V2 and V3 metadata
         for version in [
-            ArrayMetadataOptionsVersion::Unchanged,
-            ArrayMetadataOptionsVersion::V3,
+            MetadataOptionsStoreVersion::Default,
+            MetadataOptionsStoreVersion::V3,
         ] {
             array_out
                 .store_metadata_opt(
-                    &ArrayMetadataOptions::default().set_array_metadata_version(version),
+                    &ArrayMetadataOptions::default().set_metadata_store_version(version),
                 )
                 .unwrap();
         }
