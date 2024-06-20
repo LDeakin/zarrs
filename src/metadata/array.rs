@@ -146,20 +146,16 @@ pub fn array_metadata_v2_to_v3(
                     serde_json::to_value(compressor.configuration())?,
                 )?;
                 let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, &data_type);
-                let metadata = MetadataV3::new_with_serializable_configuration(
+                MetadataV3::new_with_serializable_configuration(
                     super::v3::codec::blosc::IDENTIFIER,
                     &configuration,
-                )?;
-                Ok(metadata)
+                )?
             }
-            _ => {
-                // Incompatible compressor
-                Err(ArrayMetadataV2ToV3ConversionError::UnsupportedCodec(
-                    compressor.id().to_string(),
-                    compressor.configuration().clone(),
-                ))
-            }
-        }?;
+            _ => MetadataV3::new_with_configuration(
+                compressor.id(),
+                compressor.configuration().clone(),
+            ),
+        };
         codecs.push(metadata);
     }
 

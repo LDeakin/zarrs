@@ -12,7 +12,7 @@ pub struct ArrayMetadataOptions {
 pub enum ArrayMetadataOptionsVersion {
     /// Write the same version as the input metadata.
     Unchanged,
-    /// Write v3. Replace v2 if it exists.
+    /// Write Zarr V3 metadata. Zarr V2 will not be automatically removed if it exists.
     V3,
 }
 
@@ -34,8 +34,12 @@ impl ArrayMetadataOptions {
     }
 
     /// Set the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
-    pub fn set_experimental_codec_store_metadata_if_encode_only(&mut self, enabled: bool) {
+    pub fn set_experimental_codec_store_metadata_if_encode_only(
+        &mut self,
+        enabled: bool,
+    ) -> &mut Self {
         self.experimental_codec_store_metadata_if_encode_only = enabled;
+        self
     }
 
     /// Get the [array metadata version behaviour](crate::config::Config#array-metadata-version-behaviour) configuration.
@@ -45,7 +49,11 @@ impl ArrayMetadataOptions {
     }
 
     /// Set the [array metadata version behaviour](crate::config::Config#array-metadata-version-behaviour) configuration.
-    pub fn set_array_metadata_version(&mut self, version: ArrayMetadataOptionsVersion) {
+    pub fn set_array_metadata_version(
+        &mut self,
+        version: ArrayMetadataOptionsVersion,
+    ) -> &mut Self {
         self.version = version;
+        self
     }
 }

@@ -202,7 +202,7 @@ pub fn data_type_metadata_v2_to_endianness(
 }
 
 /// A scalar value providing the default value to use for uninitialized portions of the array, or null if no fill value is to be used.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum FillValueMetadataV2 {
     /// No fill value.
     Null,
@@ -214,6 +214,44 @@ pub enum FillValueMetadataV2 {
     NegInfinity,
     /// A number.
     Number(serde_json::Number),
+}
+
+impl<'de> serde::Deserialize<'de> for FillValueMetadataV2 {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum FillValueMetadataV2Type {
+            String(String),
+            Number(serde_json::Number),
+            Null,
+        }
+        let fill_value = FillValueMetadataV2Type::deserialize(d)?;
+        match fill_value {
+            FillValueMetadataV2Type::String(string) => match string.as_str() {
+                "NaN" => Ok(FillValueMetadataV2::NaN),
+                "Infinity" => Ok(FillValueMetadataV2::Infinity),
+                "-Infinity" => Ok(FillValueMetadataV2::NegInfinity),
+                _ => Err(serde::de::Error::custom("unsupported fill value")),
+            },
+            FillValueMetadataV2Type::Number(number) => Ok(FillValueMetadataV2::Number(number)),
+            FillValueMetadataV2Type::Null => Ok(FillValueMetadataV2::Null),
+        }
+    }
+}
+
+impl Serialize for FillValueMetadataV2 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Null => serializer.serialize_none(),
+            Self::NaN => serializer.serialize_str("NaN"),
+            Self::Infinity => serializer.serialize_str("Infinity"),
+            Self::NegInfinity => serializer.serialize_str("-Infinity"),
+            Self::Number(number) => number.serialize(serializer),
+        }
+    }
 }
 
 /// Convert Zarr V2 fill value metadata to [`FillValueMetadata`].

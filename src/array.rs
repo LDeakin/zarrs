@@ -937,54 +937,82 @@ mod tests {
             .is_none());
     }
 
-    #[test]
-    fn array_v2_read() {
-        let store = Arc::new(FilesystemStore::new("tests/data/array_v2.zarr").unwrap());
-        let array_path = "/";
-        let array = Array::new(store, array_path).unwrap();
+    fn array_v2_to_v3(path_in: &str, path_out: &str) {
+        let store = Arc::new(FilesystemStore::new(path_in).unwrap());
+        let array_in = Array::new(store, "/").unwrap();
 
-        println!("{array:?}");
+        println!("{array_in:?}");
 
-        // array
-        //     .store_array_subset_elements::<f32>(
-        //         &ArraySubset::new_with_ranges(&[3..6, 3..6]),
-        //         vec![1.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-        //     )
-        //     .unwrap();
-
-        let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
-        let data_all = array
+        let subset_all = ArraySubset::new_with_shape(array_in.shape().to_vec());
+        let elements = array_in
             .retrieve_array_subset_elements::<f32>(&subset_all)
             .unwrap();
-        use std::f32::NAN;
-        let assert_eq_nan = |input: &[f32], expected: &[f32]| {
-            std::iter::zip(input, expected).all(|(input, expected)| {
-                (input == expected) || (input.is_nan() && expected.is_nan())
-            })
-        };
 
-        assert_eq_nan(
-            &data_all,
+        assert_eq!(
+            &elements,
             &vec![
-                NAN, NAN, NAN, NAN, 0.1, 0.1, -0.6, 0.1, //
-                NAN, NAN, NAN, NAN, 0.1, 0.1, -1.6, 0.1, //
-                NAN, NAN, NAN, NAN, 0.1, 0.1, -2.6, 0.1, //
-                NAN, NAN, NAN, NAN, -3.4, -3.5, -3.6, 0.1, //
-                1.0, 1.0, 1.0, -4.3, -4.4, -4.5, -4.6, 1.1, //
-                1.0, 1.0, 1.0, -5.3, -5.4, -5.5, -5.6, 1.1, //
-                1.0, 1.0, 1.0, 1.0, 1.1, 1.1, -6.6, 1.1, //
-                1.0, 1.0, 1.0, 1.0, -7.4, -7.5, -7.6, -7.7, //
+                0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, //
+                10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, //
+                20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, //
+                30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, //
+                40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, //
+                50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, //
+                60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, //
+                70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, //
+                80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, //
+                90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, //
             ],
         );
-        assert!(array
-            .retrieve_chunk_elements_if_exists::<f32>(&[0; 2])
-            .unwrap()
-            .is_none());
-        #[cfg(feature = "ndarray")]
-        assert!(array
-            .retrieve_chunk_ndarray_if_exists::<f32>(&[0; 2])
-            .unwrap()
-            .is_none());
+
+        let store = Arc::new(FilesystemStore::new(path_out).unwrap());
+        let array_out = Array::new_with_metadata(store, "/", array_in.metadata()).unwrap();
+        array_out
+            .store_array_subset_elements::<f32>(&subset_all, elements)
+            .unwrap();
+
+        // Store V2 and V3 metadata
+        for version in [
+            ArrayMetadataOptionsVersion::Unchanged,
+            ArrayMetadataOptionsVersion::V3,
+        ] {
+            array_out
+                .store_metadata_opt(
+                    &ArrayMetadataOptions::default().set_array_metadata_version(version),
+                )
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn array_v2_blosc_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_blosc_C.zarr",
+            "tests/data/v3/array_blosc.zarr",
+        )
+    }
+
+    #[test]
+    fn array_v2_blosc_f() {
+        array_v2_to_v3(
+            "tests/data/v2/array_blosc_F.zarr",
+            "tests/data/v3/array_blosc_transpose.zarr",
+        )
+    }
+
+    #[test]
+    fn array_v2_gzip_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_gzip_C.zarr",
+            "tests/data/v3/array_gzip.zarr",
+        )
+    }
+
+    #[test]
+    fn array_v2_bz2_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_bz2_C.zarr",
+            "tests/data/v3/array_bz2.zarr",
+        )
     }
 
     // fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {
