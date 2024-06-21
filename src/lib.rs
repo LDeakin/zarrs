@@ -1,9 +1,11 @@
-//! A rust library for the [Zarr V3](https://zarr.dev) storage format for multidimensional arrays and metadata.
-//!
-//! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
+//! A rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. Supports:
+//! - [Zarr V3](https://zarr.readthedocs.io/en/stable/spec/v3.html).
+//! - A V3 compatible subset of [Zarr V2](https://zarr.readthedocs.io/en/stable/spec/v2.html).
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
+//!
+//! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status) to see supported [Zarr ZEPs](https://zarr.dev/zeps/) and Zarr extension points.

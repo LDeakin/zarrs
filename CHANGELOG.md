@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+ - Add support for a V3 compatible subset of Zarr V2
+   - Compatible subset: Zarr V2 data that is Zarr V3 compatible with only a metadata change
+   - Zarr V2 metadata (`.zarray`/`.zgroup`/`.zattrs`) can be transformed to V3 (`zarr.json`)
  - Add `async_http_array_read_opendal` example
  - Add `ArrayBuilder::build_arc()`
  - Add `Array::[async_]retrieve_encoded_chunk[s]`
