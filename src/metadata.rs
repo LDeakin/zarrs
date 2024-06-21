@@ -17,7 +17,10 @@ pub mod v3;
 
 pub use array::ArrayMetadata;
 pub use group::GroupMetadata;
-pub use v3::{AdditionalFields, ConfigurationInvalidError, UnsupportedAdditionalFieldError};
+pub use v3::{
+    AdditionalFields, ArrayMetadataV3, ConfigurationInvalidError, GroupMetadataV3, MetadataV3,
+    UnsupportedAdditionalFieldError,
+};
 
 #[cfg(test)]
 mod tests {
