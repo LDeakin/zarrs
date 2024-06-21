@@ -136,8 +136,9 @@ impl Config {
     }
 
     /// Set the [validate checksums](#validate-checksums) configuration.
-    pub fn set_validate_checksums(&mut self, validate_checksums: bool) {
+    pub fn set_validate_checksums(&mut self, validate_checksums: bool) -> &mut Self {
         self.validate_checksums = validate_checksums;
+        self
     }
 
     /// Get the [store empty chunks](#store-empty-chunks) configuration.
@@ -147,8 +148,9 @@ impl Config {
     }
 
     /// Set the [store empty chunks](#store-empty-chunks) configuration.
-    pub fn set_store_empty_chunks(&mut self, store_empty_chunks: bool) {
+    pub fn set_store_empty_chunks(&mut self, store_empty_chunks: bool) -> &mut Self {
         self.store_empty_chunks = store_empty_chunks;
+        self
     }
 
     /// Get the [codec concurrent target](#codec-concurrent-target) configuration.
@@ -158,8 +160,9 @@ impl Config {
     }
 
     /// Set the [codec concurrent target](#codec-concurrent-target) configuration.
-    pub fn set_codec_concurrent_target(&mut self, concurrent_target: usize) {
+    pub fn set_codec_concurrent_target(&mut self, concurrent_target: usize) -> &mut Self {
         self.codec_concurrent_target = concurrent_target;
+        self
     }
 
     /// Get the [chunk concurrent minimum](#chunk-concurrent-minimum) configuration.
@@ -169,8 +172,9 @@ impl Config {
     }
 
     /// Set the [chunk concurrent minimum](#chunk-concurrent-minimum) configuration.
-    pub fn set_chunk_concurrent_minimum(&mut self, concurrent_minimum: usize) {
+    pub fn set_chunk_concurrent_minimum(&mut self, concurrent_minimum: usize) -> &mut Self {
         self.chunk_concurrent_minimum = concurrent_minimum;
+        self
     }
 
     /// Get the [experimental codec store metadata if encode only](#experimental-codec-store-metadata-if-encode-only) configuration.
@@ -180,8 +184,12 @@ impl Config {
     }
 
     /// Set the [experimental codec store metadata if encode only](#experimental-codec-store-metadata-if-encode-only) configuration.
-    pub fn set_experimental_codec_store_metadata_if_encode_only(&mut self, enabled: bool) {
+    pub fn set_experimental_codec_store_metadata_if_encode_only(
+        &mut self,
+        enabled: bool,
+    ) -> &mut Self {
         self.experimental_codec_store_metadata_if_encode_only = enabled;
+        self
     }
 
     /// Get the [metadata store version behaviour](#metadata-store-version-behaviour) configuration.
@@ -191,8 +199,12 @@ impl Config {
     }
 
     /// Set the [metadata store version behaviour](#metadata-store-version-behaviour) configuration.
-    pub fn set_metadata_store_version(&mut self, version: MetadataOptionsStoreVersion) {
+    pub fn set_metadata_store_version(
+        &mut self,
+        version: MetadataOptionsStoreVersion,
+    ) -> &mut Self {
         self.metadata_store_version = version;
+        self
     }
 
     /// Get the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
@@ -202,8 +214,12 @@ impl Config {
     }
 
     /// Set the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
-    pub fn set_metadata_erase_version(&mut self, version: MetadataOptionsEraseVersion) {
+    pub fn set_metadata_erase_version(
+        &mut self,
+        version: MetadataOptionsEraseVersion,
+    ) -> &mut Self {
         self.metadata_erase_version = version;
+        self
     }
 }
 

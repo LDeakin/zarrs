@@ -46,8 +46,9 @@ impl CodecOptions {
     }
 
     /// Set whether or not to validate checksums.
-    pub fn set_validate_checksums(&mut self, validate_checksums: bool) {
+    pub fn set_validate_checksums(&mut self, validate_checksums: bool) -> &mut Self {
         self.validate_checksums = validate_checksums;
+        self
     }
 
     /// Return the store empty chunks setting.
@@ -57,8 +58,9 @@ impl CodecOptions {
     }
 
     /// Set whether or not to store empty chunks.
-    pub fn set_store_empty_chunks(&mut self, store_empty_chunks: bool) {
+    pub fn set_store_empty_chunks(&mut self, store_empty_chunks: bool) -> &mut Self {
         self.store_empty_chunks = store_empty_chunks;
+        self
     }
 
     /// Return the concurrent target.
@@ -68,8 +70,9 @@ impl CodecOptions {
     }
 
     /// Set the concurrent target.
-    pub fn set_concurrent_target(&mut self, concurrent_target: usize) {
+    pub fn set_concurrent_target(&mut self, concurrent_target: usize) -> &mut Self {
         self.concurrent_target = concurrent_target;
+        self
     }
 }
 
