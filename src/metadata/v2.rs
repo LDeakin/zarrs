@@ -16,6 +16,7 @@ pub mod codec {
 }
 
 pub use array::ArrayMetadataV2;
+pub use group::GroupMetadataV2;
 
 mod metadata;
 pub use metadata::MetadataV2;
