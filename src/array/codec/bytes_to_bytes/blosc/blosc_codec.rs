@@ -47,7 +47,7 @@ impl BloscCodec {
     pub fn new(
         cname: BloscCompressor,
         clevel: BloscCompressionLevel,
-        blocksize: usize,
+        blocksize: Option<usize>,
         shuffle_mode: BloscShuffleMode,
         typesize: Option<usize>,
     ) -> Result<Self, PluginCreateError> {
@@ -76,7 +76,7 @@ impl BloscCodec {
         Ok(Self {
             cname,
             clevel,
-            blocksize,
+            blocksize: blocksize.unwrap_or_default(),
             shuffle_mode: Some(shuffle_mode),
             typesize,
         })
@@ -94,7 +94,7 @@ impl BloscCodec {
             BloscCodecConfiguration::V1(configuration) => Self::new(
                 configuration.cname,
                 configuration.clevel,
-                configuration.blocksize,
+                Some(configuration.blocksize),
                 configuration.shuffle,
                 configuration.typesize,
             ),

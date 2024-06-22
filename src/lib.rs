@@ -1,9 +1,11 @@
-//! A rust library for the [Zarr V3](https://zarr.dev) storage format for multidimensional arrays and metadata.
-//!
-//! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
+//! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. Supports:
+//! - [Zarr V3](https://zarr.readthedocs.io/en/stable/spec/v3.html).
+//! - [Zarr V2](https://zarr.readthedocs.io/en/stable/spec/v2.html) (a [V3 compatible subset](#arrays-zarr-v3-and-zarr-v2)).
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
+//!
+//! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status) to see supported [Zarr ZEPs](https://zarr.dev/zeps/) and Zarr extension points.
@@ -29,14 +31,10 @@
 //! ```
 //!
 //! ## Implementation Status
-//! <details><summary>Zarr Enhancement Proposals (ZEPs)</summary>
 //!
 #![doc = include_str!("../doc/status/ZEPs.md")]
-//! </details>
-//! <details><summary>Stores and Storage Adapters</summary>
 //!
-#![doc = include_str!("../doc/status/stores.md")]
-//! </details>
+//! ### Arrays (Zarr V3 and Zarr V2)
 //! <details><summary>Data Types</summary>
 //!
 #![doc = include_str!("../doc/status/data_types.md")]
@@ -52,6 +50,13 @@
 //! <details><summary>Chunk Key Encodings</summary>
 //!
 #![doc = include_str!("../doc/status/chunk_key_encodings.md")]
+//! </details>
+//!
+//! ### Stores and Storage Transformers
+//!
+//! <details><summary>Stores and Storage Adapters</summary>
+//!
+#![doc = include_str!("../doc/status/stores.md")]
 //! </details>
 //! <details><summary>Storage Transformers</summary>
 //!

@@ -64,6 +64,7 @@ rayon = "1.10.0"
 reqwest = { version = ">=0.11.8,<0.13", features = ["blocking"], optional = true }
 serde = { version = "1.0.184", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
+serde_repr = "0.1.19"
 thiserror = "1.0.61"
 url = { version = "2.2.0", optional = true }
 walkdir = "2.3.2"

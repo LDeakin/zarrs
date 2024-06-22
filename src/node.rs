@@ -181,6 +181,12 @@ impl Node {
                                 name, array_metadata.shape, array_metadata.data_type
                             )
                         }
+                        ArrayMetadata::V2(array_metadata) => {
+                            format!(
+                                "{} {:?} {:?}",
+                                name, array_metadata.shape, array_metadata.dtype
+                            )
+                        }
                     };
                     string.push_str(&s);
                 }

@@ -32,8 +32,10 @@ impl GroupBuilder {
         &mut self,
         attributes: serde_json::Map<String, serde_json::Value>,
     ) -> &mut Self {
-        let GroupMetadata::V3(metadata) = &mut self.metadata;
-        metadata.attributes = attributes;
+        match &mut self.metadata {
+            GroupMetadata::V3(metadata) => metadata.attributes = attributes,
+            GroupMetadata::V2(metadata) => metadata.attributes = attributes,
+        }
         self
     }
 
@@ -45,8 +47,10 @@ impl GroupBuilder {
     /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
     /// zarrs will error when opening an array with additional fields without this annotation.
     pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
-        let GroupMetadata::V3(metadata) = &mut self.metadata;
-        metadata.additional_fields = additional_fields;
+        match &mut self.metadata {
+            GroupMetadata::V3(metadata) => metadata.additional_fields = additional_fields,
+            GroupMetadata::V2(metadata) => metadata.additional_fields = additional_fields,
+        };
         self
     }
 

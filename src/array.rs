@@ -51,8 +51,9 @@ pub use self::{
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     unsafe_cell_slice::UnsafeCellSlice,
 };
+pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
-pub use crate::metadata::ArrayMetadata;
+pub use crate::metadata::{array_metadata_v2_to_v3, ArrayMetadata};
 
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
@@ -199,8 +200,8 @@ pub struct Array<TStorage: ?Sized> {
     storage: Arc<TStorage>,
     /// The path of the array in a store.
     path: NodePath,
-    /// An array of integers providing the length of each dimension of the Zarr array.
-    shape: ArrayShape,
+    // /// An array of integers providing the length of each dimension of the Zarr array.
+    // shape: ArrayShape,
     /// The data type of the Zarr array.
     data_type: DataType,
     /// The chunk grid of the Zarr array.
@@ -211,16 +212,18 @@ pub struct Array<TStorage: ?Sized> {
     fill_value: FillValue,
     /// Specifies a list of codecs to be used for encoding and decoding chunks.
     codecs: CodecChain,
-    /// Optional user defined attributes.
-    attributes: serde_json::Map<String, serde_json::Value>,
+    // /// Optional user defined attributes.
+    // attributes: serde_json::Map<String, serde_json::Value>,
     /// An optional list of storage transformers.
     storage_transformers: StorageTransformerChain,
     /// An optional list of dimension names.
     dimension_names: Option<Vec<DimensionName>>,
-    /// Additional fields annotated with `"must_understand": false`.
-    additional_fields: AdditionalFields,
+    // /// Additional fields annotated with `"must_understand": false`.
+    // additional_fields: AdditionalFields,
     /// Zarrs metadata.
     include_zarrs_metadata: bool,
+    /// Metadata used to create the array
+    metadata: ArrayMetadata,
 }
 
 impl<TStorage: ?Sized> Array<TStorage> {
@@ -238,43 +241,48 @@ impl<TStorage: ?Sized> Array<TStorage> {
     ) -> Result<Self, ArrayCreateError> {
         let path = NodePath::new(path)?;
 
-        let ArrayMetadata::V3(metadata) = metadata;
+        // Convert V2 metadata to V3 if it is a compatible subset
+        let metadata_v3 = match &metadata {
+            ArrayMetadata::V3(v3) => Ok(v3.clone()),
+            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2)
+                .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
+        }?;
 
-        if !metadata.validate_format() {
-            return Err(ArrayCreateError::InvalidZarrFormat(metadata.zarr_format));
+        if !metadata_v3.validate_format() {
+            return Err(ArrayCreateError::InvalidZarrFormat(metadata_v3.zarr_format));
         }
-        if !metadata.validate_node_type() {
-            return Err(ArrayCreateError::InvalidNodeType(metadata.node_type));
+        if !metadata_v3.validate_node_type() {
+            return Err(ArrayCreateError::InvalidNodeType(metadata_v3.node_type));
         }
-        metadata
+        metadata_v3
             .additional_fields
             .validate()
             .map_err(ArrayCreateError::UnsupportedAdditionalFieldError)?;
-        let data_type = DataType::from_metadata(&metadata.data_type)
+        let data_type = DataType::from_metadata(&metadata_v3.data_type)
             .map_err(ArrayCreateError::DataTypeCreateError)?;
-        let chunk_grid = ChunkGrid::from_metadata(&metadata.chunk_grid)
+        let chunk_grid = ChunkGrid::from_metadata(&metadata_v3.chunk_grid)
             .map_err(ArrayCreateError::ChunkGridCreateError)?;
-        if chunk_grid.dimensionality() != metadata.shape.len() {
+        if chunk_grid.dimensionality() != metadata_v3.shape.len() {
             return Err(ArrayCreateError::InvalidChunkGridDimensionality(
                 chunk_grid.dimensionality(),
-                metadata.shape.len(),
+                metadata_v3.shape.len(),
             ));
         }
         let fill_value = data_type
-            .fill_value_from_metadata(&metadata.fill_value)
+            .fill_value_from_metadata(&metadata_v3.fill_value)
             .map_err(ArrayCreateError::InvalidFillValueMetadata)?;
-        let codecs = CodecChain::from_metadata(&metadata.codecs)
+        let codecs = CodecChain::from_metadata(&metadata_v3.codecs)
             .map_err(ArrayCreateError::CodecsCreateError)?;
         let storage_transformers =
-            StorageTransformerChain::from_metadata(&metadata.storage_transformers)
+            StorageTransformerChain::from_metadata(&metadata_v3.storage_transformers)
                 .map_err(ArrayCreateError::StorageTransformersCreateError)?;
-        let chunk_key_encoding = ChunkKeyEncoding::from_metadata(&metadata.chunk_key_encoding)
+        let chunk_key_encoding = ChunkKeyEncoding::from_metadata(&metadata_v3.chunk_key_encoding)
             .map_err(ArrayCreateError::ChunkKeyEncodingCreateError)?;
-        if let Some(dimension_names) = &metadata.dimension_names {
-            if dimension_names.len() != metadata.shape.len() {
+        if let Some(dimension_names) = &metadata_v3.dimension_names {
+            if dimension_names.len() != metadata_v3.shape.len() {
                 return Err(ArrayCreateError::InvalidDimensionNames(
                     dimension_names.len(),
-                    metadata.shape.len(),
+                    metadata_v3.shape.len(),
                 ));
             }
         }
@@ -282,29 +290,40 @@ impl<TStorage: ?Sized> Array<TStorage> {
         Ok(Self {
             storage,
             path,
-            shape: metadata.shape,
+            // shape: metadata_v3.shape,
             data_type,
             chunk_grid,
             chunk_key_encoding,
             fill_value,
             codecs,
-            attributes: metadata.attributes,
-            additional_fields: metadata.additional_fields,
+            // attributes: metadata_v3.attributes,
+            // additional_fields: metadata_v3.additional_fields,
             storage_transformers,
-            dimension_names: metadata.dimension_names,
+            dimension_names: metadata_v3.dimension_names,
             include_zarrs_metadata: true,
+            metadata,
         })
     }
 
     /// Set the shape of the array.
     pub fn set_shape(&mut self, shape: ArrayShape) {
-        self.shape = shape;
+        match &mut self.metadata {
+            ArrayMetadata::V3(metadata) => {
+                metadata.shape = shape;
+            }
+            ArrayMetadata::V2(metadata) => {
+                metadata.shape = shape;
+            }
+        }
     }
 
     /// Mutably borrow the array attributes.
     #[must_use]
     pub fn attributes_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
-        &mut self.attributes
+        match &mut self.metadata {
+            ArrayMetadata::V3(metadata) => &mut metadata.attributes,
+            ArrayMetadata::V2(metadata) => &mut metadata.attributes,
+        }
     }
 
     /// Get the node path.
@@ -328,13 +347,16 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Get the array shape.
     #[must_use]
     pub fn shape(&self) -> &[u64] {
-        &self.shape
+        match &self.metadata {
+            ArrayMetadata::V3(metadata) => &metadata.shape,
+            ArrayMetadata::V2(metadata) => &metadata.shape,
+        }
     }
 
     /// Get the array dimensionality.
     #[must_use]
     pub fn dimensionality(&self) -> usize {
-        self.shape.len()
+        self.shape().len()
     }
 
     /// Get the codecs.
@@ -370,13 +392,19 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Get the attributes.
     #[must_use]
     pub const fn attributes(&self) -> &serde_json::Map<String, serde_json::Value> {
-        &self.attributes
+        match &self.metadata {
+            ArrayMetadata::V3(metadata) => &metadata.attributes,
+            ArrayMetadata::V2(metadata) => &metadata.attributes,
+        }
     }
 
     /// Get the additional fields.
     #[must_use]
     pub const fn additional_fields(&self) -> &AdditionalFields {
-        &self.additional_fields
+        match &self.metadata {
+            ArrayMetadata::V3(metadata) => &metadata.additional_fields,
+            ArrayMetadata::V2(metadata) => &metadata.additional_fields,
+        }
     }
 
     /// Enable or disable the inclusion of zarrs metadata in the array attributes. Enabled by default.
@@ -389,7 +417,12 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Create [`ArrayMetadata`].
     #[must_use]
     pub fn metadata_opt(&self, options: &ArrayMetadataOptions) -> ArrayMetadata {
-        let attributes = if self.include_zarrs_metadata {
+        let mut metadata = self.metadata.clone();
+        let attributes = match &mut metadata {
+            ArrayMetadata::V3(metadata) => &mut metadata.attributes,
+            ArrayMetadata::V2(metadata) => &mut metadata.attributes,
+        };
+        if self.include_zarrs_metadata {
             #[derive(Serialize)]
             struct ZarrsMetadata {
                 description: String,
@@ -401,28 +434,19 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 repository: env!("CARGO_PKG_REPOSITORY").to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
             };
-            let mut attributes = self.attributes().clone();
             attributes.insert("_zarrs".to_string(), unsafe {
                 serde_json::to_value(zarrs_metadata).unwrap_unchecked()
             });
-            attributes
-        } else {
-            self.attributes().clone()
+        }
+        match &mut metadata {
+            ArrayMetadata::V3(metadata) => {
+                metadata.codecs = self.codecs().create_metadatas_opt(options);
+            }
+            ArrayMetadata::V2(_metadata) => {
+                // NOTE: The codec related options in ArrayMetadataOptions do not impact V2 codecs
+            }
         };
-
-        ArrayMetadataV3::new(
-            self.shape().to_vec(),
-            self.data_type().metadata(),
-            self.chunk_grid().create_metadata(),
-            self.chunk_key_encoding().create_metadata(),
-            self.data_type().metadata_fill_value(self.fill_value()),
-            self.codecs().create_metadatas_opt(options),
-            attributes,
-            self.storage_transformers().create_metadatas(),
-            self.dimension_names().clone(),
-            self.additional_fields().clone(),
-        )
-        .into()
+        metadata
     }
 
     /// Create [`ArrayMetadata`] with default options.
@@ -799,7 +823,10 @@ fn fill_array_view_with_fill_value(array_view: &ArrayView<'_>, fill_value: &Fill
 
 #[cfg(test)]
 mod tests {
-    use crate::storage::store::MemoryStore;
+    use crate::{
+        config::MetadataOptionsStoreVersion,
+        storage::store::{FilesystemStore, MemoryStore},
+    };
 
     use super::*;
 
@@ -911,6 +938,84 @@ mod tests {
             .retrieve_chunk_ndarray_if_exists::<f32>(&[0; 2])
             .unwrap()
             .is_none());
+    }
+
+    fn array_v2_to_v3(path_in: &str, path_out: &str) {
+        let store = Arc::new(FilesystemStore::new(path_in).unwrap());
+        let array_in = Array::new(store, "/").unwrap();
+
+        println!("{array_in:?}");
+
+        let subset_all = ArraySubset::new_with_shape(array_in.shape().to_vec());
+        let elements = array_in
+            .retrieve_array_subset_elements::<f32>(&subset_all)
+            .unwrap();
+
+        assert_eq!(
+            &elements,
+            &vec![
+                0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, //
+                10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, //
+                20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, //
+                30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, //
+                40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, //
+                50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, //
+                60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, //
+                70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, //
+                80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, //
+                90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, //
+            ],
+        );
+
+        let store = Arc::new(FilesystemStore::new(path_out).unwrap());
+        let array_out = Array::new_with_metadata(store, "/", array_in.metadata()).unwrap();
+        array_out
+            .store_array_subset_elements::<f32>(&subset_all, elements)
+            .unwrap();
+
+        // Store V2 and V3 metadata
+        for version in [
+            MetadataOptionsStoreVersion::Default,
+            MetadataOptionsStoreVersion::V3,
+        ] {
+            array_out
+                .store_metadata_opt(
+                    &ArrayMetadataOptions::default().set_metadata_store_version(version),
+                )
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn array_v2_blosc_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_blosc_C.zarr",
+            "tests/data/v3/array_blosc.zarr",
+        )
+    }
+
+    #[test]
+    fn array_v2_blosc_f() {
+        array_v2_to_v3(
+            "tests/data/v2/array_blosc_F.zarr",
+            "tests/data/v3/array_blosc_transpose.zarr",
+        )
+    }
+
+    #[test]
+    fn array_v2_gzip_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_gzip_C.zarr",
+            "tests/data/v3/array_gzip.zarr",
+        )
+    }
+
+    #[test]
+    fn array_v2_bz2_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_bz2_C.zarr",
+            "tests/data/v3/array_bz2.zarr",
+        )
     }
 
     // fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {

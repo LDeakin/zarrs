@@ -3,7 +3,7 @@
 use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 #[cfg(doc)]
-use crate::array::codec::CodecOptions;
+use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 
 /// Global configuration options for the zarrs crate.
 ///
@@ -52,6 +52,18 @@ use crate::array::codec::CodecOptions;
 /// If this option is `false`, experimental codecs with this behaviour will not write their metadata.
 /// This enables arrays to be consumed by other zarr3 implementations that do not support the experimental codec.
 /// Currently, this options only affects the `bitround` codec.
+///
+/// ## Metadata Store Version Behaviour
+/// > default: [`MetadataOptionsStoreVersion::Default`]
+///
+/// The default behaviour for [`Array::store_metadata`](crate::group::Group::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata) and async variants.
+/// Determines whether to write metadata of a specific Zarr version, or the same version the array/group was created with.
+///
+/// ## Metadata Erase Version Behaviour
+/// > default: [`MetadataOptionsEraseVersion::Default`]
+///
+/// The default behaviour for [`Array::erase_metadata`](crate::group::Group::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata) and async variants.
+/// Determines whether to erase metadata of a specific Zarr version, the same version as the array/group was created with, or all known versions.
 #[derive(Debug)]
 pub struct Config {
     validate_checksums: bool,
@@ -59,6 +71,42 @@ pub struct Config {
     codec_concurrent_target: usize,
     chunk_concurrent_minimum: usize,
     experimental_codec_store_metadata_if_encode_only: bool,
+    metadata_store_version: MetadataOptionsStoreVersion,
+    metadata_erase_version: MetadataOptionsEraseVersion,
+}
+
+/// Version options for [`Array::store_metadata`](crate::array::Array::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata), and their async variants.
+#[derive(Debug, Clone, Copy)]
+pub enum MetadataOptionsStoreVersion {
+    /// Write the same version as the input metadata.
+    Default,
+    /// Write Zarr V3 metadata. Zarr V2 will not be automatically removed if it exists.
+    V3,
+}
+
+impl Default for MetadataOptionsStoreVersion {
+    fn default() -> Self {
+        *global_config().metadata_store_version()
+    }
+}
+
+/// Version options for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata), and their async variants.
+#[derive(Debug, Clone, Copy)]
+pub enum MetadataOptionsEraseVersion {
+    /// Erase the same version as the input metadata.
+    Default,
+    /// Erase all metadata.
+    All,
+    /// Erase V3 metadata.
+    V3,
+    /// Erase V2 metadata.
+    V2,
+}
+
+impl Default for MetadataOptionsEraseVersion {
+    fn default() -> Self {
+        *global_config().metadata_erase_version()
+    }
 }
 
 #[allow(clippy::derivable_impls)]
@@ -74,6 +122,8 @@ impl Default for Config {
                 + concurrency_add,
             chunk_concurrent_minimum: 4,
             experimental_codec_store_metadata_if_encode_only: false,
+            metadata_store_version: MetadataOptionsStoreVersion::Default,
+            metadata_erase_version: MetadataOptionsEraseVersion::Default,
         }
     }
 }
@@ -86,8 +136,9 @@ impl Config {
     }
 
     /// Set the [validate checksums](#validate-checksums) configuration.
-    pub fn set_validate_checksums(&mut self, validate_checksums: bool) {
+    pub fn set_validate_checksums(&mut self, validate_checksums: bool) -> &mut Self {
         self.validate_checksums = validate_checksums;
+        self
     }
 
     /// Get the [store empty chunks](#store-empty-chunks) configuration.
@@ -97,8 +148,9 @@ impl Config {
     }
 
     /// Set the [store empty chunks](#store-empty-chunks) configuration.
-    pub fn set_store_empty_chunks(&mut self, store_empty_chunks: bool) {
+    pub fn set_store_empty_chunks(&mut self, store_empty_chunks: bool) -> &mut Self {
         self.store_empty_chunks = store_empty_chunks;
+        self
     }
 
     /// Get the [codec concurrent target](#codec-concurrent-target) configuration.
@@ -108,8 +160,9 @@ impl Config {
     }
 
     /// Set the [codec concurrent target](#codec-concurrent-target) configuration.
-    pub fn set_codec_concurrent_target(&mut self, concurrent_target: usize) {
+    pub fn set_codec_concurrent_target(&mut self, concurrent_target: usize) -> &mut Self {
         self.codec_concurrent_target = concurrent_target;
+        self
     }
 
     /// Get the [chunk concurrent minimum](#chunk-concurrent-minimum) configuration.
@@ -119,8 +172,9 @@ impl Config {
     }
 
     /// Set the [chunk concurrent minimum](#chunk-concurrent-minimum) configuration.
-    pub fn set_chunk_concurrent_minimum(&mut self, concurrent_minimum: usize) {
+    pub fn set_chunk_concurrent_minimum(&mut self, concurrent_minimum: usize) -> &mut Self {
         self.chunk_concurrent_minimum = concurrent_minimum;
+        self
     }
 
     /// Get the [experimental codec store metadata if encode only](#experimental-codec-store-metadata-if-encode-only) configuration.
@@ -130,8 +184,42 @@ impl Config {
     }
 
     /// Set the [experimental codec store metadata if encode only](#experimental-codec-store-metadata-if-encode-only) configuration.
-    pub fn set_experimental_codec_store_metadata_if_encode_only(&mut self, enabled: bool) {
+    pub fn set_experimental_codec_store_metadata_if_encode_only(
+        &mut self,
+        enabled: bool,
+    ) -> &mut Self {
         self.experimental_codec_store_metadata_if_encode_only = enabled;
+        self
+    }
+
+    /// Get the [metadata store version behaviour](#metadata-store-version-behaviour) configuration.
+    #[must_use]
+    pub fn metadata_store_version(&self) -> &MetadataOptionsStoreVersion {
+        &self.metadata_store_version
+    }
+
+    /// Set the [metadata store version behaviour](#metadata-store-version-behaviour) configuration.
+    pub fn set_metadata_store_version(
+        &mut self,
+        version: MetadataOptionsStoreVersion,
+    ) -> &mut Self {
+        self.metadata_store_version = version;
+        self
+    }
+
+    /// Get the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
+    #[must_use]
+    pub fn metadata_erase_version(&self) -> &MetadataOptionsEraseVersion {
+        &self.metadata_erase_version
+    }
+
+    /// Set the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
+    pub fn set_metadata_erase_version(
+        &mut self,
+        version: MetadataOptionsEraseVersion,
+    ) -> &mut Self {
+        self.metadata_erase_version = version;
+        self
     }
 }
 

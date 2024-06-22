@@ -4,13 +4,17 @@ use futures::{StreamExt, TryStreamExt};
 
 use crate::{
     array_subset::ArraySubset,
-    storage::{AsyncWritableStorageTraits, StorageError, StorageHandle},
+    config::MetadataOptionsEraseVersion,
+    storage::{
+        meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncWritableStorageTraits,
+        StorageError, StorageHandle,
+    },
 };
 
 use super::{
     codec::{options::CodecOptions, ArrayCodecTraits},
     concurrency::concurrency_chunks_and_codec,
-    Array, ArrayError,
+    Array, ArrayError, ArrayMetadata,
 };
 
 impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
@@ -105,11 +109,48 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`erase_metadata`](Array::erase_metadata).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-        let storage_transformer = self
-            .storage_transformers()
-            .create_async_writable_transformer(storage_handle);
-        crate::storage::async_erase_metadata(&*storage_transformer, self.path()).await
+        self.async_erase_metadata_opt(&MetadataOptionsEraseVersion::default())
+            .await
+    }
+
+    /// Async variant of [`erase_metadata_opt`](Array::erase_metadata_opt).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_erase_metadata_opt(
+        &self,
+        options: &MetadataOptionsEraseVersion,
+    ) -> Result<(), StorageError> {
+        let storage_handle = StorageHandle::new(self.storage.clone());
+        match options {
+            MetadataOptionsEraseVersion::Default => match self.metadata {
+                ArrayMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())).await,
+                ArrayMetadata::V2(_) => {
+                    storage_handle
+                        .erase(&meta_key_v2_array(self.path()))
+                        .await?;
+                    storage_handle
+                        .erase(&meta_key_v2_attributes(self.path()))
+                        .await
+                }
+            },
+            MetadataOptionsEraseVersion::All => {
+                storage_handle.erase(&meta_key(self.path())).await?;
+                storage_handle
+                    .erase(&meta_key_v2_array(self.path()))
+                    .await?;
+                storage_handle
+                    .erase(&meta_key_v2_attributes(self.path()))
+                    .await
+            }
+            MetadataOptionsEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())).await,
+            MetadataOptionsEraseVersion::V2 => {
+                storage_handle
+                    .erase(&meta_key_v2_array(self.path()))
+                    .await?;
+                storage_handle
+                    .erase(&meta_key_v2_attributes(self.path()))
+                    .await
+            }
+        }
     }
 
     /// Async variant of [`erase_chunk`](Array::erase_chunk).
