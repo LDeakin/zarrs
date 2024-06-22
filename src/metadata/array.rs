@@ -43,7 +43,7 @@ pub enum ArrayMetadata {
 /// An error conerting Zarr V3 array metadata to V3.
 #[derive(Debug, Error)]
 pub enum ArrayMetadataV2ToV3ConversionError {
-    /// Invalid zarr format.
+    /// Invalid Zarr format.
     #[error("expected zarr_format {_1}, got {_0}")]
     InvalidZarrFormat(usize, usize),
     /// Unsupported data type.

@@ -19,11 +19,11 @@ use super::{
 /// An array creation error.
 #[derive(Debug, Error)]
 pub enum ArrayCreateError {
-    /// Invalid zarr format.
-    #[error("invalid zarr format {0}, expected 3")]
+    /// Invalid Zarr format.
+    #[error("invalid Zarr format {0}, expected 3")]
     InvalidZarrFormat(usize),
     /// Invalid node type.
-    #[error("invalid zarr format {0}, expected array")]
+    #[error("invalid Zarr format {0}, expected array")]
     InvalidNodeType(String),
     /// An invalid node path
     #[error(transparent)]

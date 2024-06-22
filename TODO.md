@@ -10,7 +10,7 @@
     - Add `array_sharded_ext::{AsyncArrayShardedExt,AsyncArrayShardedReadableExt}`
     - Async support for `StorageValueIO` to enable `ZipStorageAdapter` with async stores
 - Write ZEPs for experimental codecs and stabilise
-  - Waiting on [the new zarr ZEP process](https://github.com/zarr-developers/zeps/pull/59)
+  - Waiting on [the new Zarr ZEP process](https://github.com/zarr-developers/zeps/pull/59)
   - `bitround`: easiest
   - `zfp`: most valuable
   - `pcodec`: too new/unstable?
@@ -26,4 +26,4 @@
 
 ### Miscellaneous
 - A logo for `zarrs`?
-  - zar**rs** was chosen because it is short, clearly associated with the zarr format, and subtly includes rs (rust) in the name
+  - zar**rs** was chosen because it is short, clearly associated with the Zarr format, and subtly includes rs (rust) in the name

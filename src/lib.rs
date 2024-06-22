@@ -1,4 +1,4 @@
-//! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. Supports:
+//! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. It supports:
 //! - [Zarr V3](https://zarr.readthedocs.io/en/stable/spec/v3.html).
 //! - [Zarr V2](https://zarr.readthedocs.io/en/stable/spec/v2.html) (a [V3 compatible subset](#arrays-zarr-v3-and-zarr-v2)).
 //!

@@ -174,11 +174,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
 /// A group creation error.
 #[derive(Debug, Error)]
 pub enum GroupCreateError {
-    /// Invalid zarr format.
-    #[error("invalid zarr format {0}, expected 3")]
+    /// Invalid Zarr format.
+    #[error("invalid Zarr format {0}, expected 3")]
     InvalidZarrFormat(usize),
     /// Invalid node type.
-    #[error("invalid zarr format {0}, expected group")]
+    #[error("invalid Zarr format {0}, expected group")]
     InvalidNodeType(String),
     /// An invalid node path
     #[error(transparent)]
@@ -437,7 +437,7 @@ mod tests {
         let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
         assert_eq!(
             group_metadata.unwrap_err().to_string(),
-            "invalid zarr format 2, expected 3"
+            "invalid Zarr format 2, expected 3"
         );
     }
 
@@ -459,7 +459,7 @@ mod tests {
         let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
         assert_eq!(
             group_metadata.unwrap_err().to_string(),
-            "invalid zarr format array, expected group"
+            "invalid Zarr format array, expected group"
         );
     }
 

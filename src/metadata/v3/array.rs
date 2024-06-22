@@ -48,7 +48,7 @@ pub struct ArrayMetadataV3 {
     pub zarr_format: usize,
     /// A string defining the type of hierarchy node element, must be `array` here.
     #[serde(skip_serializing)]
-    pub node_type: String, // Ideally this is serialized after zarr format, and tag serialization is skipped
+    pub node_type: String, // Ideally this is serialized after Zarr format, and tag serialization is skipped
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
     /// The data type of the Zarr array.

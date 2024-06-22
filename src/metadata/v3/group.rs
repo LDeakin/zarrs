@@ -26,7 +26,7 @@ pub struct GroupMetadataV3 {
     /// A string defining the type of hierarchy node element, must be `group` here.
     #[serde(skip_serializing)]
     #[allow(dead_code)]
-    pub node_type: String, // Ideally this is serialized after zarr format, and tag serialization is skipped
+    pub node_type: String, // Ideally this is serialized after Zarr format, and tag serialization is skipped
     /// Optional user metadata.
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub attributes: serde_json::Map<String, serde_json::Value>,
