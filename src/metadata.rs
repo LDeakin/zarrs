@@ -26,6 +26,11 @@ pub use v3::{
     UnsupportedAdditionalFieldError,
 };
 
+/// A type alias for [`MetadataV3`].
+///
+/// Kept for backwards compatibility with `zarrs` < 0.15.
+pub type Metadata = MetadataV3;
+
 #[cfg(test)]
 mod tests {
     use super::*;
