@@ -309,6 +309,19 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_blosc_round_trip_snappy() {
+        let json = r#"
+{
+    "cname": "snappy",
+    "clevel": 4,
+    "shuffle": "noshuffle",
+    "blocksize": 0
+}"#;
+        codec_blosc_round_trip(json);
+    }
+
+    #[test]
     #[should_panic]
     #[cfg_attr(miri, ignore)]
     fn codec_blosc_invalid_typesize_with_shuffling() {
