@@ -1,4 +1,4 @@
-# zarrs
+# zar[rs]
 
 [![Latest Version](https://img.shields.io/crates/v/zarrs.svg)](https://crates.io/crates/zarrs)
 [![zarrs documentation](https://docs.rs/zarrs/badge.svg)](https://docs.rs/zarrs)
@@ -7,9 +7,9 @@
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?token=OBKJQNAZPP)](https://codecov.io/gh/LDeakin/zarrs)
 
-A rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. Supports:
+`zarrs` is a Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. Supports:
  - [Zarr V3](https://zarr.readthedocs.io/en/stable/spec/v3.html).
- - A V3 compatible subset of [Zarr V2](https://zarr.readthedocs.io/en/stable/spec/v2.html).
+ - [Zarr V2](https://zarr.readthedocs.io/en/stable/spec/v2.html) (a [V3 compatible subset](https://docs.rs/zarrs/latest/zarrs/#arrays-zarr-v3-and-zarr-v2)).
 
 A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
