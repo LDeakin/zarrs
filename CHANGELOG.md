@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `{Array,Group}::{store,erase}_metadata_opt`
  - Add `MetadataOptions{Store,Erase}Version`
    - Add `{Config,{Array,Group}MetadataOptions}::[set_]metadata_{store,erase}_version`
-- Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata`
+ - Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata`
+ - Add `Array::set_dimension_names`
 
 ### Changed
  - Support `object_store` 0.9-0.10

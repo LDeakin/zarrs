@@ -124,20 +124,31 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///
 /// ### Methods
 ///
-/// #### Sync API
+/// #### Array Metadata
+///  - Immutable Array Metadata
+///    - [`path`](Array::path) / [`data_type`](Array::data_type) / [`fill_value`](Array::fill_value) / [`chunk_grid`](Array::chunk_grid) / [`chunk_key_encoding`](Array::chunk_key_encoding) / [`codecs`](Array::codecs) / [`storage_transformers`](Array::storage_transformers)
+///  - Mutable Array Metadata
+///    - [`shape`](Array::shape) / [`set_shape`](Array::set_shape)
+///    - [`dimension_names`](Array::dimension_names) / [`set_dimension_names`](Array::set_dimension_names)
+///    - [`attributes`](Array::attributes) / [`attributes_mut`](Array::attributes_mut)
+///  - Generate [`ArrayMetadata`] (with default or explicit [`ArrayMetadataOptions`]):
+///    - [`metadata`](Array::metadata) / [`metadata_opt`](Array::metadata_opt)
+///
+/// #### Chunk and Array Subset Extents
+///  - [`chunk_origin`](Array::chunk_origin) / [`chunk_shape`](Array::chunk_shape) / [`chunk_subset`](Array::chunk_subset) / [`chunk_subset_bounded`](Array::chunk_subset_bounded)
+///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
+///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
+///
+/// #### Sync Storage API
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
 /// The core array methods are:
 ///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
 ///    - [`new`](Array::new)
 ///    - [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists)
-///    - [`retrieve_chunk`](Array::retrieve_chunk)
-///    - [`retrieve_chunk_into_array_view`](Array::retrieve_chunk_into_array_view)
-///    - [`retrieve_chunks`](Array::retrieve_chunks)
-///    - [`retrieve_chunks_into_array_view`](Array::retrieve_chunks_into_array_view)
-///    - [`retrieve_chunk_subset`](Array::retrieve_chunk_subset)
-///    - [`retrieve_chunk_subset_into_array_view`](Array::retrieve_chunk_subset_into_array_view)
-///    - [`retrieve_array_subset`](Array::retrieve_array_subset)
-///    - [`retrieve_array_subset_into_array_view`](Array::retrieve_array_subset_into_array_view)
+///    - [`retrieve_chunk`](Array::retrieve_chunk) / [`retrieve_chunk_into_array_view`](Array::retrieve_chunk_into_array_view)
+///    - [`retrieve_chunks`](Array::retrieve_chunks) / [`retrieve_chunks_into_array_view`](Array::retrieve_chunks_into_array_view)
+///    - [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) / [`retrieve_chunk_subset_into_array_view`](Array::retrieve_chunk_subset_into_array_view)
+///    - [`retrieve_array_subset`](Array::retrieve_array_subset) / [`retrieve_array_subset_into_array_view`](Array::retrieve_array_subset_into_array_view)
 ///    - [`partial_decoder`](Array::partial_decoder)
 ///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and store metadata
 ///    - [`store_metadata`](Array::store_metadata)
@@ -156,7 +167,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///   - Retrieve and store methods have an `_opt` variant with an additional [`CodecOptions`](crate::array::codec::CodecOptions) argument for fine-grained concurrency control.
 ///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
 ///
-/// #### Async API
+/// #### Async Storage API
 /// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
 ///
 /// <div class="warning">
@@ -302,18 +313,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
         })
     }
 
-    /// Set the shape of the array.
-    pub fn set_shape(&mut self, shape: ArrayShape) {
-        match &mut self.metadata {
-            ArrayMetadata::V3(metadata) => {
-                metadata.shape = shape;
-            }
-            ArrayMetadata::V2(metadata) => {
-                metadata.shape = shape;
-            }
-        }
-    }
-
     /// Mutably borrow the array attributes.
     #[must_use]
     pub fn attributes_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
@@ -347,6 +346,18 @@ impl<TStorage: ?Sized> Array<TStorage> {
         match &self.metadata {
             ArrayMetadata::V3(metadata) => &metadata.shape,
             ArrayMetadata::V2(metadata) => &metadata.shape,
+        }
+    }
+
+    /// Set the array shape.
+    pub fn set_shape(&mut self, shape: ArrayShape) {
+        match &mut self.metadata {
+            ArrayMetadata::V3(metadata) => {
+                metadata.shape = shape;
+            }
+            ArrayMetadata::V2(metadata) => {
+                metadata.shape = shape;
+            }
         }
     }
 
@@ -384,6 +395,15 @@ impl<TStorage: ?Sized> Array<TStorage> {
     #[must_use]
     pub const fn dimension_names(&self) -> &Option<Vec<DimensionName>> {
         &self.dimension_names
+    }
+
+    /// Set the dimension names.
+    pub fn set_dimension_names(
+        &mut self,
+        dimension_names: Option<Vec<DimensionName>>,
+    ) -> &mut Self {
+        self.dimension_names = dimension_names;
+        self
     }
 
     /// Get the attributes.
