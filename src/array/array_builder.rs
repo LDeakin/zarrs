@@ -333,7 +333,6 @@ impl ArrayBuilder {
             // attributes: self.attributes.clone(),
             dimension_names: self.dimension_names.clone(),
             // additional_fields: self.additional_fields.clone(),
-            include_zarrs_metadata: true,
             metadata: array_metadata,
         })
     }

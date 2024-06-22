@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `{Array,Group}::{store,erase}_metadata_opt`
  - Add `MetadataOptions{Store,Erase}Version`
    - Add `{Config,{Array,Group}MetadataOptions}::[set_]metadata_{store,erase}_version`
+- Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata`
 
 ### Changed
  - Support `object_store` 0.9-0.10
@@ -42,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Remove `rayon_iter_concurrent_limit` dependency
    - Rayon `rayon::iter::IndexedParallelIterator::by_uniform_blocks` (since `rayon` 1.9) is used instead
  - **Breaking**: Remove re-exports of public dependencies
+ - **Breaking**: Remove `Array::set_include_zarrs_metadata`. Use `{Config,ArrayMetadataOptions}::set_include_zarrs_metadata`
 
 ### Fixed
  - **Breaking**: Change `ZfpExpertParams` to `ZfpExpertConfiguration` replacing existing `ZfpExpertConfiguration`

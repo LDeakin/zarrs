@@ -192,8 +192,8 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may use partial decoders which can be less efficient with some codecs/stores.
 ///
 /// ### `zarrs` Metadata
-/// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata.
-/// This can be disabled with [`set_include_zarrs_metadata(false)`](Array::set_include_zarrs_metadata).
+/// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata when calling [`store_metadata`](Array::store_metadata).
+/// Override this behaviour globally with [`Config::set_include_zarrs_metadata`](crate::config::Config::set_include_zarrs_metadata) or call [`store_metadata_opt`](Array::store_metadata_opt) with an explicit [`ArrayMetadataOptions`].
 #[derive(Debug)]
 pub struct Array<TStorage: ?Sized> {
     /// The storage (including storage transformers).
@@ -220,8 +220,6 @@ pub struct Array<TStorage: ?Sized> {
     dimension_names: Option<Vec<DimensionName>>,
     // /// Additional fields annotated with `"must_understand": false`.
     // additional_fields: AdditionalFields,
-    /// Zarrs metadata.
-    include_zarrs_metadata: bool,
     /// Metadata used to create the array
     metadata: ArrayMetadata,
 }
@@ -300,7 +298,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
             // additional_fields: metadata_v3.additional_fields,
             storage_transformers,
             dimension_names: metadata_v3.dimension_names,
-            include_zarrs_metadata: true,
             metadata,
         })
     }
@@ -407,13 +404,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
         }
     }
 
-    /// Enable or disable the inclusion of zarrs metadata in the array attributes. Enabled by default.
-    ///
-    /// Zarrs metadata includes the zarrs version and some parameters.
-    pub fn set_include_zarrs_metadata(&mut self, include_zarrs_metadata: bool) {
-        self.include_zarrs_metadata = include_zarrs_metadata;
-    }
-
     /// Create [`ArrayMetadata`].
     #[must_use]
     pub fn metadata_opt(&self, options: &ArrayMetadataOptions) -> ArrayMetadata {
@@ -422,7 +412,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             ArrayMetadata::V3(metadata) => &mut metadata.attributes,
             ArrayMetadata::V2(metadata) => &mut metadata.attributes,
         };
-        if self.include_zarrs_metadata {
+        if options.include_zarrs_metadata() {
             #[derive(Serialize)]
             struct ZarrsMetadata {
                 description: String,

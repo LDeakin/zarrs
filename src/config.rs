@@ -56,15 +56,30 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 /// ## Metadata Store Version Behaviour
 /// > default: [`MetadataOptionsStoreVersion::Default`]
 ///
-/// The default behaviour for [`Array::store_metadata`](crate::group::Group::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata) and async variants.
+/// The default behaviour for [`Array::store_metadata`](crate::array::Array::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata) and async variants.
 /// Determines whether to write metadata of a specific Zarr version, or the same version the array/group was created with.
 ///
 /// ## Metadata Erase Version Behaviour
 /// > default: [`MetadataOptionsEraseVersion::Default`]
 ///
-/// The default behaviour for [`Array::erase_metadata`](crate::group::Group::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata) and async variants.
+/// The default behaviour for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata) and async variants.
 /// Determines whether to erase metadata of a specific Zarr version, the same version as the array/group was created with, or all known versions.
+///
+/// ## Include `zarrs` Metadata
+/// > default: [`true`]
+///
+/// If true, array metadata generated with [`Array::metadata`](crate::array::Array::metadata) includes the `zarrs` version and a link to its source code.
+/// For example:
+/// ```json
+/// "_zarrs": {
+///    "description": "This array was created with zarrs",
+///    "repository": "https://github.com/LDeakin/zarrs",
+///    "version": "0.15.0"
+///  }
+/// ```
+/// Generated metadata is created and stored by [`Array::store_metadata`](crate::array::Array::store_metadata).
 #[derive(Debug)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Config {
     validate_checksums: bool,
     store_empty_chunks: bool,
@@ -73,6 +88,7 @@ pub struct Config {
     experimental_codec_store_metadata_if_encode_only: bool,
     metadata_store_version: MetadataOptionsStoreVersion,
     metadata_erase_version: MetadataOptionsEraseVersion,
+    include_zarrs_metadata: bool,
 }
 
 /// Version options for [`Array::store_metadata`](crate::array::Array::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata), and their async variants.
@@ -124,6 +140,7 @@ impl Default for Config {
             experimental_codec_store_metadata_if_encode_only: false,
             metadata_store_version: MetadataOptionsStoreVersion::Default,
             metadata_erase_version: MetadataOptionsEraseVersion::Default,
+            include_zarrs_metadata: true,
         }
     }
 }
@@ -219,6 +236,18 @@ impl Config {
         version: MetadataOptionsEraseVersion,
     ) -> &mut Self {
         self.metadata_erase_version = version;
+        self
+    }
+
+    /// Get the [include zarrs metadata](include-zarrs-metadata) configuration.
+    #[must_use]
+    pub fn include_zarrs_metadata(&self) -> bool {
+        self.include_zarrs_metadata
+    }
+
+    /// Set the [include zarrs metadata](include-zarrs-metadata) configuration.
+    pub fn set_include_zarrs_metadata(&mut self, include_zarrs_metadata: bool) -> &mut Self {
+        self.include_zarrs_metadata = include_zarrs_metadata;
         self
     }
 }
