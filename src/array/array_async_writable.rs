@@ -4,7 +4,7 @@ use futures::{StreamExt, TryStreamExt};
 
 use crate::{
     array_subset::ArraySubset,
-    config::MetadataOptionsEraseVersion,
+    config::MetadataEraseVersion,
     storage::{
         meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncWritableStorageTraits,
         StorageError, StorageHandle,
@@ -14,19 +14,31 @@ use crate::{
 use super::{
     codec::{options::CodecOptions, ArrayCodecTraits},
     concurrency::concurrency_chunks_and_codec,
-    Array, ArrayError, ArrayMetadata,
+    Array, ArrayError, ArrayMetadata, ArrayMetadataOptions,
 };
 
 impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_metadata`](Array::store_metadata).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_metadata(&self) -> Result<(), StorageError> {
+        self.async_store_metadata_opt(&ArrayMetadataOptions::default())
+            .await
+    }
+
+    /// Async variant of [`store_metadata_opt`](Array::store_metadata_opt).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_store_metadata_opt(
+        &self,
+        options: &ArrayMetadataOptions,
+    ) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_writable_transformer(storage_handle);
-        crate::storage::async_create_array(&*storage_transformer, self.path(), &self.metadata())
-            .await
+
+        // Get the metadata with options applied and store
+        let metadata = self.metadata_opt(options);
+        crate::storage::async_create_array(&*storage_transformer, self.path(), &metadata).await
     }
 
     /// Async variant of [`store_chunk`](Array::store_chunk).
@@ -109,7 +121,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`erase_metadata`](Array::erase_metadata).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
-        self.async_erase_metadata_opt(&MetadataOptionsEraseVersion::default())
+        self.async_erase_metadata_opt(&MetadataEraseVersion::default())
             .await
     }
 
@@ -117,11 +129,11 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata_opt(
         &self,
-        options: &MetadataOptionsEraseVersion,
+        options: &MetadataEraseVersion,
     ) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
-            MetadataOptionsEraseVersion::Default => match self.metadata {
+            MetadataEraseVersion::Default => match self.metadata {
                 ArrayMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())).await,
                 ArrayMetadata::V2(_) => {
                     storage_handle
@@ -132,7 +144,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                         .await
                 }
             },
-            MetadataOptionsEraseVersion::All => {
+            MetadataEraseVersion::All => {
                 storage_handle.erase(&meta_key(self.path())).await?;
                 storage_handle
                     .erase(&meta_key_v2_array(self.path()))
@@ -141,8 +153,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                     .erase(&meta_key_v2_attributes(self.path()))
                     .await
             }
-            MetadataOptionsEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())).await,
-            MetadataOptionsEraseVersion::V2 => {
+            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())).await,
+            MetadataEraseVersion::V2 => {
                 storage_handle
                     .erase(&meta_key_v2_array(self.path()))
                     .await?;

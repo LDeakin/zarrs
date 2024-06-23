@@ -216,7 +216,7 @@ impl Node {
 #[cfg(test)]
 mod tests {
     use crate::{
-        array::{ArrayBuilder, FillValue},
+        array::{ArrayBuilder, ArrayMetadataOptions, FillValue},
         group::GroupMetadata,
         storage::{store::MemoryStore, StoreKey, WritableStorageTraits},
     };
@@ -318,8 +318,10 @@ mod tests {
         .build(store.clone(), node_path)
         .unwrap();
         array.store_metadata().unwrap();
+        let stored_metadata = array.metadata_opt(&ArrayMetadataOptions::default());
+
         let node = Node::new(&*store, node_path).unwrap();
-        assert_eq!(node.metadata, NodeMetadata::Array(array.metadata()));
+        assert_eq!(node.metadata, NodeMetadata::Array(stored_metadata));
     }
 
     #[test]

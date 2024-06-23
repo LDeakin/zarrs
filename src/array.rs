@@ -66,6 +66,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
+    config::MetadataConvertVersion,
     metadata::v3::AdditionalFields,
     node::NodePath,
     storage::storage_transformer::StorageTransformerChain,
@@ -424,14 +425,23 @@ impl<TStorage: ?Sized> Array<TStorage> {
         }
     }
 
-    /// Create [`ArrayMetadata`].
+    /// Return the underlying array metadata.
+    #[must_use]
+    pub fn metadata(&self) -> &ArrayMetadata {
+        &self.metadata
+    }
+
+    /// Return a new [`ArrayMetadata`] with [`ArrayMetadataOptions`] applied.
+    ///
+    /// This method is used internally by [`Array::store_metadata`] and [`Array::store_metadata_opt`].
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn metadata_opt(&self, options: &ArrayMetadataOptions) -> ArrayMetadata {
+        use ArrayMetadata as AM;
+        use MetadataConvertVersion as V;
         let mut metadata = self.metadata.clone();
-        let attributes = match &mut metadata {
-            ArrayMetadata::V3(metadata) => &mut metadata.attributes,
-            ArrayMetadata::V2(metadata) => &mut metadata.attributes,
-        };
+
+        // Attribute manipulation
         if options.include_zarrs_metadata() {
             #[derive(Serialize)]
             struct ZarrsMetadata {
@@ -444,10 +454,16 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 repository: env!("CARGO_PKG_REPOSITORY").to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
             };
+            let attributes = match &mut metadata {
+                AM::V3(metadata) => &mut metadata.attributes,
+                AM::V2(metadata) => &mut metadata.attributes,
+            };
             attributes.insert("_zarrs".to_string(), unsafe {
                 serde_json::to_value(zarrs_metadata).unwrap_unchecked()
             });
         }
+
+        // Codec metadata manipulation
         match &mut metadata {
             ArrayMetadata::V3(metadata) => {
                 metadata.codecs = self.codecs().create_metadatas_opt(options);
@@ -456,13 +472,17 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 // NOTE: The codec related options in ArrayMetadataOptions do not impact V2 codecs
             }
         };
-        metadata
-    }
 
-    /// Create [`ArrayMetadata`] with default options.
-    #[must_use]
-    pub fn metadata(&self) -> ArrayMetadata {
-        self.metadata_opt(&ArrayMetadataOptions::default())
+        // Convert version
+        match (metadata, options.metadata_convert_version()) {
+            (AM::V3(metadata), V::Default | V::V3) => ArrayMetadata::V3(metadata),
+            (AM::V2(metadata), V::Default) => ArrayMetadata::V2(metadata),
+            (AM::V2(metadata), V::V3) => {
+                let metadata = array_metadata_v2_to_v3(&metadata)
+                    .expect("conversion succeeded on array creation");
+                AM::V3(metadata)
+            }
+        }
     }
 
     /// Create an array builder matching the parameters of this array.
@@ -834,7 +854,7 @@ fn fill_array_view_with_fill_value(array_view: &ArrayView<'_>, fill_value: &Fill
 #[cfg(test)]
 mod tests {
     use crate::{
-        config::MetadataOptionsStoreVersion,
+        config::MetadataConvertVersion,
         storage::store::{FilesystemStore, MemoryStore},
     };
 
@@ -854,13 +874,14 @@ mod tests {
         .build(store.clone(), array_path)
         .unwrap();
         array.store_metadata().unwrap();
+        let stored_metadata = array.metadata_opt(&ArrayMetadataOptions::default());
 
         // let metadata: ArrayMetadata =
         //     serde_json::from_slice(&store.get(&meta_key(&array_path))?)?;
         // println!("{:?}", metadata);
 
-        let metadata = Array::new(store, array_path).unwrap().metadata();
-        assert_eq!(metadata, array.metadata());
+        let array_other = Array::new(store, array_path).unwrap();
+        assert_eq!(array_other.metadata(), &stored_metadata);
     }
 
     #[test]
@@ -978,19 +999,16 @@ mod tests {
         );
 
         let store = Arc::new(FilesystemStore::new(path_out).unwrap());
-        let array_out = Array::new_with_metadata(store, "/", array_in.metadata()).unwrap();
+        let array_out = Array::new_with_metadata(store, "/", array_in.metadata().clone()).unwrap();
         array_out
             .store_array_subset_elements::<f32>(&subset_all, elements)
             .unwrap();
 
         // Store V2 and V3 metadata
-        for version in [
-            MetadataOptionsStoreVersion::Default,
-            MetadataOptionsStoreVersion::V3,
-        ] {
+        for version in [MetadataConvertVersion::Default, MetadataConvertVersion::V3] {
             array_out
                 .store_metadata_opt(
-                    &ArrayMetadataOptions::default().set_metadata_store_version(version),
+                    &ArrayMetadataOptions::default().set_metadata_convert_version(version),
                 )
                 .unwrap();
         }

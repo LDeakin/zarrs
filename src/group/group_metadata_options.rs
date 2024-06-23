@@ -1,40 +1,24 @@
-use crate::config::{MetadataOptionsEraseVersion, MetadataOptionsStoreVersion};
+use crate::config::MetadataConvertVersion;
 
 /// Options for writing group metadata.
 #[derive(Debug, Clone, Default)]
 pub struct GroupMetadataOptions {
-    store_version: MetadataOptionsStoreVersion,
-    erase_version: MetadataOptionsEraseVersion,
+    convert_version: MetadataConvertVersion,
 }
 
 impl GroupMetadataOptions {
-    /// Get the [metadata store version behaviour](crate::config::Config#metadata-store-version-behaviour) configuration.
+    /// Get the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.
     #[must_use]
-    pub fn metadata_store_version(&self) -> &MetadataOptionsStoreVersion {
-        &self.store_version
+    pub fn metadata_convert_version(&self) -> &MetadataConvertVersion {
+        &self.convert_version
     }
 
-    /// Set the [metadata store version behaviour](crate::config::Config#metadata-store-version-behaviour) configuration.
-    pub fn set_metadata_store_version(
+    /// Set the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.
+    pub fn set_metadata_convert_version(
         &mut self,
-        store_version: MetadataOptionsStoreVersion,
+        convert_version: MetadataConvertVersion,
     ) -> &mut Self {
-        self.store_version = store_version;
-        self
-    }
-
-    /// Get the [metadata erase version behaviour](crate::config::Config#metadata-erase-version-behaviour) configuration.
-    #[must_use]
-    pub fn metadata_erase_version(&self) -> &MetadataOptionsEraseVersion {
-        &self.erase_version
-    }
-
-    /// Set the [metadata erase version behaviour](crate::config::Config#metadata-erase-version-behaviour) configuration.
-    pub fn set_metadata_erase_version(
-        &mut self,
-        erase_version: MetadataOptionsEraseVersion,
-    ) -> &mut Self {
-        self.erase_version = erase_version;
+        self.convert_version = convert_version;
         self
     }
 }

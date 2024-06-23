@@ -12,13 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Compatible subset: Zarr V2 data that is Zarr V3 compatible with only a metadata change
    - Zarr V2 metadata (`.zarray`/`.zgroup`/`.zattrs`) can be transformed to V3 (`zarr.json`)
  - Add `async_http_array_read_opendal` example
- - Add `ArrayBuilder::build_arc()`
- - Add `Array::[async_]retrieve_encoded_chunk[s]`
+ - Add `ArrayBuilder::build_arc` method
+ - Add `Array::[async_]retrieve_encoded_chunk[s]` method
  - Add internal `fill_array_view_with_fill_value` function
- - Add `{Array,Group}::{store,erase}_metadata_opt`
- - Add `MetadataOptions{Store,Erase}Version`
-   - Add `{Config,{Array,Group}MetadataOptions}::[set_]metadata_{store,erase}_version`
- - Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata`
+ - Add `Group::metadata_opt` method
+ - Add `{Array,Group}::{store,erase}_metadata_opt` methods
+ - Add `MetadataConvertVersion` enum
+ - Add `MetadataEraseVersion` enum
+ - Add `Config::[set_]metadata_{convert,erase}_version` methods
+ - Add `{Array,Group}MetadataOptions::[set_]metadata_convert_version` methods
+ - Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata` methods
  - Add `Array::set_dimension_names`
 
 ### Changed
@@ -38,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Use `futures::TryStreamExt::try_for_each_concurrent` instead of `FuturesUnordered` where appropriate
  - Move all metadata/configuration structures into the metadata module (non breaking with re-exports)
  - Rename `Metadata` to `MetadataV3`, an alias is retained
+ - **Breaking**: `{Array,Group}::metadata()` now return references instead of values
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency

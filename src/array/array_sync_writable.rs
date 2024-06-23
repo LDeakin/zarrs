@@ -4,8 +4,7 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 
 use crate::{
     array_subset::ArraySubset,
-    config::{MetadataOptionsEraseVersion, MetadataOptionsStoreVersion},
-    metadata::array_metadata_v2_to_v3,
+    config::MetadataEraseVersion,
     storage::{
         meta_key, meta_key_v2_array, meta_key_v2_attributes, StorageError, StorageHandle,
         WritableStorageTraits,
@@ -21,59 +20,29 @@ use super::{
 impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     /// Store metadata with default [`ArrayMetadataOptions`].
     ///
+    /// The metadata is created with [`Array::metadata_opt`].
+    ///
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata(&self) -> Result<(), StorageError> {
-        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-        let storage_transformer = self
-            .storage_transformers()
-            .create_writable_transformer(storage_handle);
-        crate::storage::create_array(&*storage_transformer, self.path(), &self.metadata())
+        self.store_metadata_opt(&ArrayMetadataOptions::default())
     }
 
     /// Store metadata with non-default [`ArrayMetadataOptions`].
     ///
+    /// The metadata is created with [`Array::metadata_opt`].
+    ///
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying store error.
     pub fn store_metadata_opt(&self, options: &ArrayMetadataOptions) -> Result<(), StorageError> {
-        use MetadataOptionsStoreVersion as V;
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
 
-        // Get the metadata with options applied
+        // Get the metadata with options applied and store
         let metadata = self.metadata_opt(options);
-
-        // Convert/store the metadata as requested
-        match (metadata, options.metadata_store_version()) {
-            (ArrayMetadata::V3(metadata), V::Default | V::V3) => {
-                // Store V3
-                crate::storage::create_array(
-                    &*storage_transformer,
-                    self.path(),
-                    &ArrayMetadata::V3(metadata),
-                )
-            }
-            (ArrayMetadata::V2(metadata), V::V3) => {
-                // Convert V2 to V3
-                let metadata = array_metadata_v2_to_v3(&metadata)
-                    .map_err(|err| StorageError::from(err.to_string()))?;
-                crate::storage::create_array(
-                    &*storage_transformer,
-                    self.path(),
-                    &ArrayMetadata::V3(metadata),
-                )
-            }
-            (ArrayMetadata::V2(metadata), V::Default) => {
-                // Store V2
-                crate::storage::create_array(
-                    &*storage_transformer,
-                    self.path(),
-                    &ArrayMetadata::V2(metadata),
-                )
-            }
-        }
+        crate::storage::create_array(&*storage_transformer, self.path(), &metadata)
     }
 
     /// Encode `chunk_bytes` and store at `chunk_indices`.
@@ -190,42 +159,39 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         self.store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
     }
 
-    /// Erase the metadata with default [`MetadataOptionsEraseVersion`] options.
+    /// Erase the metadata with default [`MetadataEraseVersion`] options.
     ///
     /// Succeeds if the metadata does not exist.
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub fn erase_metadata(&self) -> Result<(), StorageError> {
-        self.erase_metadata_opt(&MetadataOptionsEraseVersion::default())
+        self.erase_metadata_opt(&MetadataEraseVersion::default())
     }
 
-    /// Erase the metadata with non-default [`MetadataOptionsEraseVersion`] options.
+    /// Erase the metadata with non-default [`MetadataEraseVersion`] options.
     ///
     /// Succeeds if the metadata does not exist.
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
-    pub fn erase_metadata_opt(
-        &self,
-        options: &MetadataOptionsEraseVersion,
-    ) -> Result<(), StorageError> {
+    pub fn erase_metadata_opt(&self, options: &MetadataEraseVersion) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
-            MetadataOptionsEraseVersion::Default => match self.metadata {
+            MetadataEraseVersion::Default => match self.metadata {
                 ArrayMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())),
                 ArrayMetadata::V2(_) => {
                     storage_handle.erase(&meta_key_v2_array(self.path()))?;
                     storage_handle.erase(&meta_key_v2_attributes(self.path()))
                 }
             },
-            MetadataOptionsEraseVersion::All => {
+            MetadataEraseVersion::All => {
                 storage_handle.erase(&meta_key(self.path()))?;
                 storage_handle.erase(&meta_key_v2_array(self.path()))?;
                 storage_handle.erase(&meta_key_v2_attributes(self.path()))
             }
-            MetadataOptionsEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())),
-            MetadataOptionsEraseVersion::V2 => {
+            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())),
+            MetadataEraseVersion::V2 => {
                 storage_handle.erase(&meta_key_v2_array(self.path()))?;
                 storage_handle.erase(&meta_key_v2_attributes(self.path()))
             }
