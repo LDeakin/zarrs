@@ -1,4 +1,6 @@
 //! `zarrs` global configuration options.
+//!
+//! See [`Config`] for the list of options.
 
 use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -6,11 +8,13 @@ use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 
-/// Global configuration options for the zarrs crate.
+/// Global configuration options for the `zarrs` crate.
 ///
 /// Retrieve the global [`Config`] with [`global_config`] and modify it with [`global_config_mut`].
 ///
-/// ## Validate Checksums
+/// ## Codec / Chunk Options
+///
+/// ### Validate Checksums
 ///  > default: [`true`]
 ///
 /// [`CodecOptions::validate_checksums()`] defaults to [`Config::validate_checksums()`].
@@ -18,7 +22,7 @@ use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 /// If validate checksums is enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
 /// Note that regardless of this configuration option, checksum codecs may skip validation when partial decoding.
 ///
-/// ## Store Empty Chunks
+/// ### Store Empty Chunks
 ///  > default: [`false`]
 ///
 /// [`CodecOptions::store_empty_chunks()`] defaults to [`Config::store_empty_chunks()`].
@@ -27,7 +31,7 @@ use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 /// This incurs a computational overhead as each element must be tested for equality to the fill value before a chunk is encoded.
 /// If `true`, the aforementioned test is skipped and all chunks are stored.
 ///
-/// ## Codec Concurrent Target
+/// ### Codec Concurrent Target
 /// > default: [`std::thread::available_parallelism`]`()`
 ///
 /// [`CodecOptions::concurrent_target()`] defaults to [`Config::codec_concurrent_target()`].
@@ -39,14 +43,16 @@ use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 /// Note that the default codec concurrent target can be overridden for any encode/decode operation.
 /// This is performed automatically for many array operations (see the [chunk concurrent minimum](#chunk-concurrent-minimum) option).
 ///
-/// ## Chunk Concurrent Minimum
+/// ### Chunk Concurrent Minimum
 /// > default: `4`
 ///
 /// For array operations involving multiple chunks, this is the preferred minimum chunk concurrency.
 /// For example, `array_store_chunks` will concurrently encode and store up to four chunks at a time by default.
 /// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`] parameter of an encode or decode method.
 ///
-/// ## Experimental Codec Store Metadata If Encode Only
+/// ## Metadata Options
+///
+/// ### Experimental Codec Store Metadata If Encode Only
 /// > default: [`false`]
 ///
 /// Some codecs perform potentially irreversible transformations during encoding that decoders do not need to be aware of.
@@ -54,22 +60,26 @@ use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 /// This enables arrays to be consumed by other zarr3 implementations that do not support the experimental codec.
 /// Currently, this options only affects the `bitround` codec.
 ///
-/// ## Metadata Convert Version
+/// ### Metadata Convert Version
 /// > default: [`MetadataConvertVersion::Default`] (keep existing version)
+///
+/// [`ArrayMetadataOptions::metadata_convert_version`](crate::array::ArrayMetadataOptions::metadata_convert_version) and [`GroupMetadataOptions::metadata_convert_version`](crate::group::GroupMetadataOptions::metadata_convert_version) default to [`Config::metadata_convert_version`].
 ///
 /// Determines the Zarr version of metadata created with [`crate::array::Array::metadata_opt`] and [`crate::group::Group::metadata_opt`].
 /// These methods are used internally by `store_metadata` and `store_metadata_opt` methods of [`crate::array::Array`] and [`crate::group::Group`].
 ///
-/// ## Metadata Erase Version
-/// > default: [`MetadataEraseVersion::Default`]
+/// ### Metadata Erase Version
+/// > default: [`MetadataEraseVersion::Default`] (erase existing version)
 ///
 /// The default behaviour for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata) and async variants.
 /// Determines whether to erase metadata of a specific Zarr version, the same version as the array/group was created with, or all known versions.
 ///
-/// ## Include `zarrs` Metadata
+/// ### Include `zarrs` Metadata
 /// > default: [`true`]
 ///
-/// If true, array metadata generated with [`Array::metadata`](crate::array::Array::metadata) includes the `zarrs` version and a link to its source code.
+/// [`ArrayMetadataOptions::include_zarrs_metadata`](crate::array::ArrayMetadataOptions::include_zarrs_metadata) defaults to [`Config::include_zarrs_metadata`].
+///
+/// If true, array metadata generated with [`Array::metadata_opt`](crate::array::Array::metadata_opt) (used internally by [`Array::store_metadata`](crate::array::Array::store_metadata)) includes the `zarrs` version and a link to its source code.
 /// For example:
 /// ```json
 /// "_zarrs": {
@@ -78,7 +88,6 @@ use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 ///    "version": "0.15.0"
 ///  }
 /// ```
-/// Generated metadata is created and stored by [`Array::store_metadata`](crate::array::Array::store_metadata).
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -215,7 +224,7 @@ impl Config {
 
 static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
 
-/// Returns a reference to the global zarrs configuration.
+/// Returns a reference to the global `zarrs` configuration.
 ///
 /// # Panics
 /// This function panics if the underlying lock has been poisoned and might panic if the global config is already held by the current thread.
@@ -226,7 +235,7 @@ pub fn global_config() -> RwLockReadGuard<'static, Config> {
         .unwrap()
 }
 
-/// Returns a mutable reference to the global zarrs configuration.
+/// Returns a mutable reference to the global `zarrs` configuration.
 ///
 /// # Panics
 /// This function panics if the underlying lock has been poisoned and might panic if the global config is already held by the current thread.

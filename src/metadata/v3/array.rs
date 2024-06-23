@@ -6,7 +6,7 @@ use crate::array::{ArrayShape, DimensionName, FillValueMetadata};
 
 /// Zarr array metadata (storage specification v3).
 ///
-/// An example `JSON` document for a v3 array:
+/// An example `JSON` document for a Zarr V3 array:
 /// ```json
 /// {
 ///     "zarr_format": 3,

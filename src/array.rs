@@ -3,7 +3,6 @@
 //! An array is a node in a Zarr hierarchy used to hold multidimensional array data and associated metadata.
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array>.
 //!
-//! Use [`ArrayBuilder`] to setup a new array, or use [`Array::open`] for an existing array.
 //! The documentation for [`Array`] details how to interact with arrays.
 
 mod array_builder;
@@ -53,7 +52,7 @@ pub use self::{
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
-pub use crate::metadata::{array_metadata_v2_to_v3, ArrayMetadata};
+pub use crate::metadata::ArrayMetadata;
 
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
@@ -66,7 +65,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    metadata::{v3::AdditionalFields, MetadataConvertVersion},
+    metadata::{array_metadata_v2_to_v3, v3::AdditionalFields, MetadataConvertVersion},
     node::NodePath,
     storage::storage_transformer::StorageTransformerChain,
 };
@@ -119,6 +118,10 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// A *new* array can be initialised with an [`ArrayBuilder`] or [`Array::new_with_metadata`].
 ///
 /// An *existing* array can be initialised with [`Array::open`] or [`Array::open_opt`], its metadata is read from the store.
+///
+/// [`Array`] initialisation will error if [`ArrayMetadata`] contains:
+///  - unsupported extension points, including extensions which are supported by `zarrs` but have not been enabled with the appropriate features gates, or
+///  - incompatible codecs (e.g. codecs in wrong order, codecs incompatible with data type, etc.).
 ///
 /// The `shape`, `attributes`, and `dimension_names` of an array are mutable and can be updated after construction.
 /// However, array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata) if an array is newly created or its metadata has been mutated.

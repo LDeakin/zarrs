@@ -1,7 +1,7 @@
-/// Zarr v3 group metadata.
+/// Zarr V3 group metadata.
 pub mod group;
 
-/// Zarr v3 array metadata.
+/// Zarr V3 array metadata.
 pub mod array;
 
 /// Zarr V3 codec metadata.

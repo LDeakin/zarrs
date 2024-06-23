@@ -7,7 +7,7 @@ use super::AdditionalFields;
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group-metadata>.
 ///
-/// An example `JSON` document for an explicit v3 group:
+/// An example `JSON` document for an explicit Zarr V3 group:
 /// ```json
 /// {
 ///     "zarr_format": 3,

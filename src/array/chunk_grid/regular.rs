@@ -1,4 +1,4 @@
-//! The regular chunk grid.
+//! The `regular` chunk grid.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#regular-grids>.
 
@@ -24,7 +24,7 @@ fn is_name_regular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-/// Create a regular chunk grid from metadata.
+/// Create a `regular` chunk grid from metadata.
 ///
 /// # Errors
 /// Returns a [`PluginCreateError`] if the metadata is invalid for a regular chunk grid.
@@ -43,7 +43,7 @@ pub struct RegularChunkGrid {
 }
 
 impl RegularChunkGrid {
-    /// Create a new regular chunk grid with chunk shape `chunk_shape`.
+    /// Create a new `regular` chunk grid with chunk shape `chunk_shape`.
     #[must_use]
     pub fn new(chunk_shape: ChunkShape) -> Self {
         Self { chunk_shape }
@@ -90,7 +90,7 @@ impl ChunkGridTraits for RegularChunkGrid {
         )
     }
 
-    /// The chunk shape. Fixed for a regular grid.
+    /// The chunk shape. Fixed for a `regular` grid.
     unsafe fn chunk_shape_unchecked(
         &self,
         chunk_indices: &[u64],
@@ -100,7 +100,7 @@ impl ChunkGridTraits for RegularChunkGrid {
         Some(self.chunk_shape.clone())
     }
 
-    /// The chunk shape as an [`ArrayShape`] ([`Vec<u64>`]). Fixed for a regular grid.
+    /// The chunk shape as an [`ArrayShape`] ([`Vec<u64>`]). Fixed for a `regular` grid.
     unsafe fn chunk_shape_u64_unchecked(
         &self,
         chunk_indices: &[u64],

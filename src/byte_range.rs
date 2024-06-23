@@ -5,10 +5,9 @@
 //!
 //! A [codec](crate::array::codec) partially decoding from bytes will retrieve byte ranges from an input handle implementing [`BytesPartialDecoderTraits`](crate::array::codec::BytesPartialDecoderTraits) which can be either:
 //! - a [store](crate::storage::store) or [storage transformer](crate::storage::storage_transformer) wrapped by [`StoragePartialDecoder`](crate::array::codec::StoragePartialDecoder), or
-//! - the bytes partial decoder of the next codec in the codec chain.
+//! - the bytes partial decoder of the next codec in the [`CodecChain`](crate::array::codec::CodecChain).
 //!
-//! This module provides the [`extract_byte_ranges`] convenience function for extracting byte ranges from a slice of bytes.
-//!
+//! [`extract_byte_ranges`] is a convenience function for extracting byte ranges from a slice of bytes.
 
 use std::ops::Range;
 

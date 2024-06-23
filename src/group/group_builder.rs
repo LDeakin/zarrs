@@ -45,7 +45,7 @@ impl GroupBuilder {
     /// Use this cautiously. In general, store user defined attributes using [`GroupBuilder::attributes`].
     ///
     /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
-    /// zarrs will error when opening an array with additional fields without this annotation.
+    /// `zarrs` will error when opening an array with additional fields without this annotation.
     pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         match &mut self.metadata {
             GroupMetadata::V3(metadata) => metadata.additional_fields = additional_fields,

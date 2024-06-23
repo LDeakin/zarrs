@@ -17,7 +17,7 @@ use super::MetadataV2;
 
 /// Zarr array metadata (storage specification v2).
 ///
-/// An example `JSON` document for a v2 array:
+/// An example `JSON` document for a Zarr V2 array:
 /// ```json
 /// {
 ///     "chunks": [
@@ -132,7 +132,7 @@ pub enum ArrayMetadataV2DataType {
 
 /// An unsupported Zarr V2 data type error.
 #[derive(Debug, Error)]
-#[error("v2 data type {_0:?} is not supported")]
+#[error("V2 data type {_0:?} is not supported")]
 pub struct DataTypeMetadataV2UnsupportedDataTypeError(ArrayMetadataV2DataType);
 
 /// Convert a Zarr V2 data type to a compatible V3 data type.
@@ -173,7 +173,7 @@ pub fn data_type_metadata_v2_to_v3_data_type(
 
 /// A Zarr V2 invalid data type endianness error.
 #[derive(Debug, Error)]
-#[error("invalid v2 data type for {_0:?} endianness, must begin with |, < or >")]
+#[error("invalid V2 data type for {_0:?} endianness, must begin with |, < or >")]
 pub struct DataTypeMetadataV2InvalidEndiannessError(ArrayMetadataV2DataType);
 
 /// Get the endianness of a Zarr V2 data type.

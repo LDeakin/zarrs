@@ -3,7 +3,7 @@
 //! An [`ArraySubset`] represents a subset of an array or chunk.
 //!
 //! Many [`Array`](crate::array::Array) store and retrieve methods have an [`ArraySubset`] parameter.
-//! This module includes various types of [`iterators`] over the elements represented by an [`ArraySubset`].
+//! [`iterators`] includes various types of [`ArraySubset`] iterators.
 //!
 //! This module also provides convenience functions for:
 //!  - computing the byte ranges of array subsets within an array, and
@@ -44,7 +44,7 @@ pub struct ArraySubset {
 #[error("array subset {_0} is incompatible with array of shape {_1:?} and element size {_2}")]
 pub struct ArrayExtractBytesError(ArraySubset, ArrayShape, usize);
 
-/// An array extract bytes error.
+/// An array store bytes error.
 #[derive(Debug, Error)]
 pub enum ArrayStoreBytesError {
     /// Incompatible array subset and array shape.

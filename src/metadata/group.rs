@@ -24,7 +24,7 @@ impl TryFrom<&str> for GroupMetadata {
     }
 }
 
-/// Convert Zarr v2 group metadata to v3.
+/// Convert Zarr V2 group metadata to V3.
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMetadataV3 {

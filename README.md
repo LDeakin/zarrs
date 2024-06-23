@@ -21,9 +21,9 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html), [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html), and [`metadata`](https://docs.rs/zarrs/latest/zarrs/metadata/index.html) are good places to start.
 - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
-  - A reencoder that can change codecs, chunk shape, etc., and convert Zarr V2 to V3.
+  - A reencoder that can change codecs, chunk shape, convert Zarr V2 to V3, etc.
   - Create an [OME-Zarr](https://ngff.openmicroscopy.org/latest/) hierarchy from a Zarr array.
-  - Transform arrays (e.g. crop, rescale, clamp, downsample, gradient magnitude, gaussian, summed area table, noise filtering, etc.)
+  - Transform arrays: crop, rescale, downsample, gradient magnitude, gaussian, noise filtering, etc.
   - Benchmarking tools and performance benchmarks of `zarrs`.
 
 ## Example (Sync API)
@@ -41,7 +41,7 @@ println!("Chunk [1,0] is:\n{chunk}");
 
 ## `zarrs` Ecosystem
 - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
-- [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of zarrs exposed as a C API.
+- [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C API.
 
 ## Licence
 `zarrs` is licensed under either of

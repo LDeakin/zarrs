@@ -46,13 +46,13 @@ pub struct V2ChunkKeyEncoding {
 }
 
 impl V2ChunkKeyEncoding {
-    /// Create a new v2 chunk key encoding with separator `separator`.
+    /// Create a new `v2` chunk key encoding with separator `separator`.
     #[must_use]
     pub const fn new(separator: ChunkKeySeparator) -> Self {
         Self { separator }
     }
 
-    /// Create a new v2 chunk key encoding with separator `.`.
+    /// Create a new `v2` chunk key encoding with separator `.`.
     #[must_use]
     pub const fn new_dot() -> Self {
         Self {
@@ -60,7 +60,7 @@ impl V2ChunkKeyEncoding {
         }
     }
 
-    /// Create a new v2 chunk key encoding with separator `/`.
+    /// Create a new `v2` chunk key encoding with separator `/`.
     #[must_use]
     pub const fn new_slash() -> Self {
         Self {
@@ -70,7 +70,7 @@ impl V2ChunkKeyEncoding {
 }
 
 impl Default for V2ChunkKeyEncoding {
-    /// Create a default chunk key encoding with default separator: `.`.
+    /// Create a `v2` chunk key encoding with default separator: `.`.
     fn default() -> Self {
         Self {
             separator: ChunkKeySeparator::Dot,

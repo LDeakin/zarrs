@@ -60,7 +60,7 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     SerdeError(#[from] serde_json::Error),
 }
 
-/// Convert Zarr v2 array metadata to v3.
+/// Convert Zarr V2 array metadata to V3.
 ///
 /// # Errors
 /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is invalid or is not compatible with Zarr V3 metadata.

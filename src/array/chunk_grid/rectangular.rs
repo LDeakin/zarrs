@@ -1,4 +1,4 @@
-//! The rectangular chunk grid.
+//! The `rectangular` chunk grid.
 //!
 //! See <https://zarr.dev/zeps/draft/ZEP0003.html>.
 
@@ -27,7 +27,7 @@ fn is_name_rectangular(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-/// Create a rectangular chunk grid from metadata.
+/// Create a `rectangular` chunk grid from metadata.
 ///
 /// # Errors
 /// Returns a [`PluginCreateError`] if the metadata is invalid for a regular chunk grid.
@@ -58,7 +58,7 @@ enum RectangularChunkGridDimension {
 }
 
 impl RectangularChunkGrid {
-    /// Create a new rectangular chunk grid with chunk shapes `chunk_shapes`.
+    /// Create a new `rectangular` chunk grid with chunk shapes `chunk_shapes`.
     #[must_use]
     pub fn new(chunk_shapes: &[RectangularChunkGridDimensionConfiguration]) -> Self {
         let chunks = chunk_shapes

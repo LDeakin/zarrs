@@ -47,13 +47,13 @@ pub struct DefaultChunkKeyEncoding {
 }
 
 impl DefaultChunkKeyEncoding {
-    /// Create a new default chunk key encoding with separator `separator`.
+    /// Create a new `default` chunk key encoding with separator `separator`.
     #[must_use]
     pub const fn new(separator: ChunkKeySeparator) -> Self {
         Self { separator }
     }
 
-    /// Create a new default chunk key encoding with separator `.`.
+    /// Create a new `default` chunk key encoding with separator `.`.
     #[must_use]
     pub const fn new_dot() -> Self {
         Self {
@@ -61,7 +61,7 @@ impl DefaultChunkKeyEncoding {
         }
     }
 
-    /// Create a new default chunk key encoding with separator `/`.
+    /// Create a new `default` chunk key encoding with separator `/`.
     #[must_use]
     pub const fn new_slash() -> Self {
         Self {
@@ -71,7 +71,7 @@ impl DefaultChunkKeyEncoding {
 }
 
 impl Default for DefaultChunkKeyEncoding {
-    /// Create a default chunk key encoding with default separator: `/`.
+    /// Create a `default` chunk key encoding with default separator: `/`.
     fn default() -> Self {
         Self {
             separator: ChunkKeySeparator::Slash,
