@@ -8,10 +8,14 @@
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
 //! ## Getting Started
-//! - Review the [implementation status](#implementation-status) to see supported [Zarr ZEPs](https://zarr.dev/zeps/) and Zarr extension points.
+//! - Review the [implementation status](#implementation-status).
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`], [`storage`], and [`metadata`] are good places to start.
-//! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and [performance benchmarks](https://github.com/LDeakin/zarrs_tools/blob/main/docs/benchmarks.md) of `zarrs`.
+//! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
+//!   - A reencoder that can change codecs, chunk shape, etc., and convert Zarr V2 to V3.
+//!   - Create an [OME-Zarr](https://ngff.openmicroscopy.org/latest/) hierarchy from a Zarr array.
+//!   - Transform arrays (e.g. crop, rescale, clamp, downsample, gradient magnitude, gaussian, summed area table, noise filtering, etc.)
+//!   - Benchmarking tools and performance benchmarks of `zarrs`.
 //!
 //! ## Example
 //! ```rust,ignore
@@ -77,12 +81,10 @@
 //!
 //! ## Examples
 //! Examples can be run with `cargo run --example <EXAMPLE_NAME>`.
+//!  - Add `-- --usage-log` to see storage API calls during example execution.
+//!  - Some examples require non-default features, which can be enabled with `--all-features` or `--features <FEATURES>`.
 //!
-//! Add `-- --usage-log` to see storage API calls during example execution.
-//!
-//! Some examples require non-default features, which can be enabled with `--all-features` or `--features <FEATURES>`.
-//!
-//! #### Sync API
+//! #### Sync API Examples
 //! [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs),
 //! [`array_write_read_ndarray`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read_ndarray.rs),
 //! [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs),
@@ -90,13 +92,13 @@
 //! [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs),
 //! [`http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/http_array_read.rs).
 //!
-//! #### Async API
+//! #### Async API Examples
 //! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs),
 //! [`async_http_array_read_object_store`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read_object_store.rs),
 //! [`async_http_array_read_opendal`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read_opendal.rs).
 //!
 //! ## `zarrs` Ecosystem
-//! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data. Includes `zarrs` benchmarks.
+//! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
 //! - [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of zarrs exposed as a C API.
 //!
 //! ## Licence

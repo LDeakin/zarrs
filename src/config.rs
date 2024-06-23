@@ -1,4 +1,4 @@
-//! Zarrs global configuration options.
+//! `zarrs` global configuration options.
 
 use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -96,7 +96,7 @@ pub struct Config {
 pub enum MetadataConvertVersion {
     /// Write the same version as the input metadata.
     Default,
-    /// Write Zarr V3 metadata. Zarr V2 will not be automatically removed if it exists.
+    /// Write Zarr V3 metadata. Zarr V2 metadata will not be automatically removed if it exists.
     V3,
 }
 

@@ -97,7 +97,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata>.
 ///
-/// ### Metadata
+/// ## Metadata
 ///
 /// An array is defined by the following parameters (which are encoded in its JSON metadata):
 ///  - **shape**: defines the length of the array dimensions,
@@ -114,33 +114,33 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata> for more information on array metadata.
 ///
-/// ### Initilisation
+/// ## Methods Overview
 ///
+/// ### Initilisation
 /// A *new* array can be initialised with an [`ArrayBuilder`] or [`Array::new_with_metadata`].
 ///
 /// An *existing* array can be initialised with [`Array::new`], its metadata is read from the store.
 ///
-/// The `shape` and `attributes` of an array are mutable and can be updated after construction.
+/// The `shape`, `attributes`, and `dimension_names` of an array are mutable and can be updated after construction.
 /// However, array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata) if an array is newly created or its metadata has been mutated.
 ///
-/// ### Methods
-///
-/// #### Array Metadata
+/// ### Array Metadata
 ///  - Immutable Array Metadata
 ///    - [`path`](Array::path) / [`data_type`](Array::data_type) / [`fill_value`](Array::fill_value) / [`chunk_grid`](Array::chunk_grid) / [`chunk_key_encoding`](Array::chunk_key_encoding) / [`codecs`](Array::codecs) / [`storage_transformers`](Array::storage_transformers)
+///    - [`metadata`](Array::metadata): the underlying [`ArrayMetadata`] structure
 ///  - Mutable Array Metadata
 ///    - [`shape`](Array::shape) / [`set_shape`](Array::set_shape)
-///    - [`dimension_names`](Array::dimension_names) / [`set_dimension_names`](Array::set_dimension_names)
 ///    - [`attributes`](Array::attributes) / [`attributes_mut`](Array::attributes_mut)
-///  - Generate [`ArrayMetadata`] (with default or explicit [`ArrayMetadataOptions`]):
-///    - [`metadata`](Array::metadata) / [`metadata_opt`](Array::metadata_opt)
+///    - [`dimension_names`](Array::dimension_names) / [`set_dimension_names`](Array::set_dimension_names)
+///  - [`metadata_opt`](Array::metadata_opt): [`ArrayMetadata`] transformed with [`ArrayMetadataOptions`]
+///    - Used internally by [`store_metadata`](Array::store_metadata) / [`store_metadata_opt`](Array::store_metadata_opt)
 ///
-/// #### Chunk and Array Subset Extents
+/// ### Chunk and Array Subset Extents
 ///  - [`chunk_origin`](Array::chunk_origin) / [`chunk_shape`](Array::chunk_shape) / [`chunk_subset`](Array::chunk_subset) / [`chunk_subset_bounded`](Array::chunk_subset_bounded)
 ///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
 ///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
 ///
-/// #### Sync Storage API
+/// ### Sync API
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
 /// The core array methods are:
 ///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
@@ -157,51 +157,51 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///    - [`store_chunks`](Array::store_chunks)
 ///    - [`erase_chunk`](Array::erase_chunk)
 ///    - [`erase_chunks`](Array::erase_chunks)
-///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading
+///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading *and* writing
 ///    - [`store_chunk_subset`](Array::store_chunk_subset)
 ///    - [`store_array_subset`](Array::store_array_subset)
 ///
-/// All `retrieve` and `store` methods have multiple variants:
+/// Many `retrieve` and `store` methods have multiple variants:
 ///   - Standard variants store or retrieve data represented as bytes.
 ///   - `_elements` suffix variants can store or retrieve chunks with a known type.
 ///   - `_ndarray` suffix variants can store or retrieve [`ndarray::Array`]s (requires `ndarray` feature).
 ///   - Retrieve and store methods have an `_opt` variant with an additional [`CodecOptions`](crate::array::codec::CodecOptions) argument for fine-grained concurrency control.
 ///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
+///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
-/// #### Async Storage API
-/// With the `async` feature and an async store, there are equivalent methods to the sync API with an `async_` prefix.
-///
-/// <div class="warning">
-/// The async API is not as performant as the sync API.
-/// </div>
-///
-/// This crate is async runtime-agnostic and does not spawn tasks internally.
-/// The implication is that methods like [`async_retrieve_array_subset`](Array::async_retrieve_array_subset) or [`async_retrieve_chunks`](Array::async_retrieve_chunks) do not parallelise over chunks and can be slow compared to the sync API (especially when they involve a large number of chunks).
-///
-/// This limitation can be circumvented by spawning tasks outside of zarrs.
-/// For example, instead of using [`async_retrieve_chunks`](Array::async_retrieve_chunks), multiple tasks executing [`async_retrieve_chunk_into_array_view`](Array::async_retrieve_chunk_into_array_view) could be spawned that output to a preallocated buffer.
-/// An example of such an approach can be found in the [`zarrs_benchmark_read_async`](https://github.com/LDeakin/zarrs_tools/blob/v0.3.0/src/bin/zarrs_benchmark_read_async.rs) application in the [zarrs_tools](https://github.com/LDeakin/zarrs_tools) crate.
-///
-/// ### Parallel Writing
-/// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
-/// The [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits) [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve a chunk, update it, then store it.
-/// It is the responsibility of zarrs consumers to ensure that:
-///   - [`Array::store_chunk_subset`] is not called concurrently on the same chunk, and
-///   - [`Array::store_array_subset`] is not called concurrently on regions sharing chunks.
-///
-/// Partial writes to a chunk may be lost if these rules are not respected.
-///
-/// zarrs does not currently offer an API for locking chunks or regions.
-///
-/// ### Best Practices
-///
-/// #### Writing
 /// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and require careful usage if executed concurrently (see previous section).
+/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and [require careful usage if executed in parallel](#parallel-writing-considerations).
 ///
-/// #### Reading
 /// It is fastest to load arrays using [`retrieve_chunk`](Array::retrieve_chunk) or [`retrieve_chunks`](Array::retrieve_chunks) where possible.
 /// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may use partial decoders which can be less efficient with some codecs/stores.
+///
+/// ### Sync API Parallelism
+/// Codecs run in parallel using a dedicated threadpool (where possible/efficient).
+/// Array store and retrieve methods will also run in parallel when they involve multiple chunks.
+/// `zarrs` will automatically choose where to prioritise parallelism between codecs/chunks based on the codecs and number of chunks.
+///
+/// By default, all available CPU cores will be used (when efficient).
+/// Concurrency can be limited globally with [`Config::set_codec_concurrent_target`](crate::config::Config::set_codec_concurrent_target) or as required using `_opt` methods with [`CodecOptions`](crate::array::codec::CodecOptions) manipulated with [`CodecOptions::set_concurrent_target`](crate::array::codec::CodecOptions::set_concurrent_target).
+///
+/// ### Async API Concurrency/Parallelism
+/// This crate is async runtime-agnostic.
+/// Async methods do not spawn tasks internally, so asynchronous storage calls are concurrent but not parallel.
+/// Some codec encoding and decoding operations may still execute in parallel.
+///
+/// Due the lack of parallelism, methods like [`async_retrieve_array_subset`](Array::async_retrieve_array_subset) or [`async_retrieve_chunks`](Array::async_retrieve_chunks) do not parallelise over chunks and can be slow compared to the sync API.
+/// Parallelism over chunks can be achieved by spawning tasks outside of `zarrs`.
+/// A crate like [`async-scoped`](https://crates.io/crates/async-scoped) can enable spawning non-`'static` futures.
+/// If executing many tasks concurrently, consider reducing the codec [`concurrent_target`](crate::array::codec::CodecOptions::set_concurrent_target).
+///
+/// ### Parallel Writing Considerations
+/// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
+/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve, update, and store chunks.
+/// It is the responsibility of `zarrs` consumers to ensure:
+///   - [`Array::store_chunk_subset`] is not called concurrently on the same chunk, and
+///   - [`Array::store_array_subset`] is not called concurrently on array subsets sharing chunks.
+///
+/// Partial writes to a chunk may be lost if these rules are not respected.
+/// `zarrs` does not currently offer an API for locking chunks or array subsets.
 ///
 /// ### `zarrs` Metadata
 /// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata when calling [`store_metadata`](Array::store_metadata).

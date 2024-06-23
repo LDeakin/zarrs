@@ -17,10 +17,14 @@ Correctness issues with past versions are [detailed here](https://github.com/LDe
 Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 
 ## Getting Started
-- Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status) to see supported [Zarr ZEPs](https://zarr.dev/zeps/) and Zarr extension points.
+- Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status).
 - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html), [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html), and [`metadata`](https://docs.rs/zarrs/latest/zarrs/metadata/index.html) are good places to start.
-- Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for real-world usage and [performance benchmarks](https://github.com/LDeakin/zarrs_tools/blob/main/docs/benchmarks.md) of `zarrs`.
+- Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
+  - A reencoder that can change codecs, chunk shape, etc., and convert Zarr V2 to V3.
+  - Create an [OME-Zarr](https://ngff.openmicroscopy.org/latest/) hierarchy from a Zarr array.
+  - Transform arrays (e.g. crop, rescale, clamp, downsample, gradient magnitude, gaussian, summed area table, noise filtering, etc.)
+  - Benchmarking tools and performance benchmarks of `zarrs`.
 
 ## Example (Sync API)
 ```rust
@@ -36,7 +40,7 @@ println!("Chunk [1,0] is:\n{chunk}");
 ```
 
 ## `zarrs` Ecosystem
-- [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr v3 data. Includes `zarrs` benchmarks.
+- [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
 - [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of zarrs exposed as a C API.
 
 ## Licence

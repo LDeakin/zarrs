@@ -1,4 +1,4 @@
-//! Zarrs version information.
+//! `zarrs` version information.
 
 /// The major version of this module.
 #[must_use]
