@@ -66,8 +66,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    config::MetadataConvertVersion,
-    metadata::v3::AdditionalFields,
+    metadata::{v3::AdditionalFields, MetadataConvertVersion},
     node::NodePath,
     storage::storage_transformer::StorageTransformerChain,
 };
@@ -119,7 +118,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// ### Initilisation
 /// A *new* array can be initialised with an [`ArrayBuilder`] or [`Array::new_with_metadata`].
 ///
-/// An *existing* array can be initialised with [`Array::new`], its metadata is read from the store.
+/// An *existing* array can be initialised with [`Array::open`] or [`Array::open_opt`], its metadata is read from the store.
 ///
 /// The `shape`, `attributes`, and `dimension_names` of an array are mutable and can be updated after construction.
 /// However, array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata) if an array is newly created or its metadata has been mutated.
@@ -144,7 +143,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
 /// The core array methods are:
 ///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
-///    - [`new`](Array::new)
+///    - [`open`](Array::open) / [`open_opt`](Array::open_opt)
 ///    - [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists)
 ///    - [`retrieve_chunk`](Array::retrieve_chunk) / [`retrieve_chunk_into_array_view`](Array::retrieve_chunk_into_array_view)
 ///    - [`retrieve_chunks`](Array::retrieve_chunks) / [`retrieve_chunks_into_array_view`](Array::retrieve_chunks_into_array_view)
@@ -853,10 +852,7 @@ fn fill_array_view_with_fill_value(array_view: &ArrayView<'_>, fill_value: &Fill
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        config::MetadataConvertVersion,
-        storage::store::{FilesystemStore, MemoryStore},
-    };
+    use crate::storage::store::{FilesystemStore, MemoryStore};
 
     use super::*;
 

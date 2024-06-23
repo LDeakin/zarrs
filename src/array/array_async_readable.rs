@@ -4,8 +4,12 @@ use futures::{StreamExt, TryStreamExt};
 
 use crate::{
     array_subset::ArraySubset,
+    metadata::MetadataRetrieveVersion,
     node::NodePath,
-    storage::{data_key, meta_key, AsyncReadableStorageTraits, StorageError, StorageHandle},
+    storage::{
+        data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncReadableStorageTraits,
+        StorageError, StorageHandle,
+    },
 };
 
 use super::{
@@ -16,7 +20,8 @@ use super::{
     concurrency::concurrency_chunks_and_codec,
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
-    validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayView,
+    validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayMetadataV2,
+    ArrayMetadataV3, ArrayView,
 };
 
 #[cfg(feature = "ndarray")]
@@ -25,20 +30,62 @@ use super::elements_to_ndarray;
 impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`new`](Array::new).
     #[allow(clippy::missing_errors_doc)]
+    // #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
     pub async fn async_new(
         storage: Arc<TStorage>,
         path: &str,
     ) -> Result<Array<TStorage>, ArrayCreateError> {
+        Self::async_open(storage, path).await
+    }
+
+    /// Async variant of [`open`](Array::open).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_open(
+        storage: Arc<TStorage>,
+        path: &str,
+    ) -> Result<Array<TStorage>, ArrayCreateError> {
+        Self::async_open_opt(storage, path, &MetadataRetrieveVersion::Default).await
+    }
+
+    /// Async variant of [`open_opt`](Array::open_opt).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_open_opt(
+        storage: Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<Array<TStorage>, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
-        let key = meta_key(&node_path);
-        let metadata: ArrayMetadata = serde_json::from_slice(
-            &storage
-                .get(&key)
-                .await?
-                .ok_or(ArrayCreateError::MissingMetadata)?,
-        )
-        .map_err(|err| crate::storage::StorageError::InvalidMetadata(key, err.to_string()))?;
-        Self::new_with_metadata(storage, path, metadata)
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
+            // Try V3
+            let key_v3 = meta_key(&node_path);
+            if let Some(metadata) = storage.get(&key_v3).await? {
+                let metadata: ArrayMetadataV3 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
+                return Self::new_with_metadata(storage, path, ArrayMetadata::V3(metadata));
+            }
+        }
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V2 = version {
+            // Try V2
+            let key_v2 = meta_key_v2_array(&node_path);
+            if let Some(metadata) = storage.get(&key_v2).await? {
+                let mut metadata: ArrayMetadataV2 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v2, err.to_string()))?;
+
+                let attributes_key = meta_key_v2_attributes(&node_path);
+                let attributes = storage.get(&attributes_key).await?;
+                if let Some(attributes) = attributes {
+                    metadata.attributes = serde_json::from_slice(&attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(attributes_key, err.to_string())
+                    })?;
+                }
+
+                return Self::new_with_metadata(storage, path, ArrayMetadata::V2(metadata));
+            }
+        }
+
+        Err(ArrayCreateError::MissingMetadata)
     }
 
     /// Async variant of [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists).

@@ -4,7 +4,7 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 
 use crate::{
     array_subset::ArraySubset,
-    config::MetadataEraseVersion,
+    metadata::MetadataEraseVersion,
     storage::{
         meta_key, meta_key_v2_array, meta_key_v2_attributes, StorageError, StorageHandle,
         WritableStorageTraits,

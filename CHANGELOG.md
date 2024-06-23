@@ -19,8 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add internal `fill_array_view_with_fill_value` function
  - Add `Group::metadata_opt` method
  - Add `{Array,Group}::{store,erase}_metadata_opt` methods
- - Add `MetadataConvertVersion` enum
- - Add `MetadataEraseVersion` enum
+ - Add `metadata::Metadata{Retrieve,Convert,Erase}Version` enums
  - Add `Config::[set_]metadata_{convert,erase}_version` methods
  - Add `{Array,Group}MetadataOptions::[set_]metadata_convert_version` methods
  - Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata` methods
@@ -45,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Rename `Metadata` to `MetadataV3`, an alias is retained
  - **Breaking**: `{Array,Group}::metadata()` now return references instead of values
  - Improve various docs
+ - **Breaking**: Add `MissingMetadata` to `GroupCreateError` enum
+ - **Breaking**: Change `{Array,Group}::new` to `open` and add `open_opt`
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency

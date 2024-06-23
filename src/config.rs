@@ -4,6 +4,7 @@ use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
+use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 
 /// Global configuration options for the zarrs crate.
 ///
@@ -89,40 +90,6 @@ pub struct Config {
     metadata_convert_version: MetadataConvertVersion,
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
-}
-
-/// Version options for [`Array::store_metadata`](crate::array::Array::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata), and their async variants.
-#[derive(Debug, Clone, Copy)]
-pub enum MetadataConvertVersion {
-    /// Write the same version as the input metadata.
-    Default,
-    /// Write Zarr V3 metadata. Zarr V2 metadata will not be automatically removed if it exists.
-    V3,
-}
-
-impl Default for MetadataConvertVersion {
-    fn default() -> Self {
-        *global_config().metadata_convert_version()
-    }
-}
-
-/// Version options for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata), and their async variants.
-#[derive(Debug, Clone, Copy)]
-pub enum MetadataEraseVersion {
-    /// Erase the same version as the input metadata.
-    Default,
-    /// Erase all metadata.
-    All,
-    /// Erase V3 metadata.
-    V3,
-    /// Erase V2 metadata.
-    V2,
-}
-
-impl Default for MetadataEraseVersion {
-    fn default() -> Self {
-        *global_config().metadata_erase_version()
-    }
 }
 
 #[allow(clippy::derivable_impls)]

@@ -1,4 +1,4 @@
-use crate::config::{global_config, MetadataConvertVersion};
+use crate::{config::global_config, metadata::MetadataConvertVersion};
 
 /// Options for writing array metadata.
 #[derive(Debug, Clone)]

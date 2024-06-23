@@ -28,10 +28,10 @@ use derive_more::Display;
 use thiserror::Error;
 
 use crate::{
-    config::{MetadataConvertVersion, MetadataEraseVersion},
     metadata::{
         group_metadata_v2_to_v3,
         v3::{AdditionalFields, UnsupportedAdditionalFieldError},
+        GroupMetadataV2, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
     node::{NodePath, NodePathError},
     storage::{
@@ -151,39 +151,148 @@ impl<TStorage: ?Sized> Group<TStorage> {
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
-    /// Create a group in `storage` at `path`. The metadata is read from the store.
+    /// Open a group in `storage` at `path` with [`MetadataRetrieveVersion`].
+    /// The metadata is read from the store.
     ///
     /// # Errors
-    ///
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    // #[deprecated(since = "0.15.0", note = "please use `open` instead")]
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
+        Self::open(storage, path)
+    }
+
+    /// Open a group in `storage` at `path` with [`MetadataRetrieveVersion`].
+    /// The metadata is read from the store.
+    ///
+    /// # Errors
+    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    pub fn open(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
+        Self::open_opt(storage, path, &MetadataRetrieveVersion::Default)
+    }
+
+    /// Open a group in `storage` at `path` with non-default [`MetadataRetrieveVersion`].
+    /// The metadata is read from the store.
+    ///
+    /// # Errors
+    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    pub fn open_opt(
+        storage: Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<Self, GroupCreateError> {
         let node_path = path.try_into()?;
-        let key = meta_key(&node_path);
-        let metadata: GroupMetadata = match storage.get(&key)? {
-            Some(metadata) => serde_json::from_slice(&metadata)
-                .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?,
-            None => GroupMetadataV3::default().into(),
-        };
-        Self::new_with_metadata(storage, path, metadata)
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
+            // Try Zarr V3
+            let key_v3 = meta_key(&node_path);
+            if let Some(metadata) = storage.get(&key_v3)? {
+                let metadata: GroupMetadataV3 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
+                return Self::new_with_metadata(storage, path, GroupMetadata::V3(metadata));
+            }
+        }
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V2 = version {
+            // Try Zarr V2
+            let key_v2 = meta_key_v2_group(&node_path);
+            if let Some(metadata) = storage.get(&key_v2)? {
+                let mut metadata: GroupMetadataV2 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v2, err.to_string()))?;
+                let attributes_key = meta_key_v2_attributes(&node_path);
+                let attributes = storage.get(&attributes_key)?;
+                if let Some(attributes) = attributes {
+                    metadata.attributes = serde_json::from_slice(&attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(attributes_key, err.to_string())
+                    })?;
+                }
+                return Self::new_with_metadata(storage, path, GroupMetadata::V2(metadata));
+            }
+        }
+
+        // No metadata has been found
+        match version {
+            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
+                // V3 supports missing metadata
+                Self::new_with_metadata(
+                    storage,
+                    path,
+                    GroupMetadata::V3(GroupMetadataV3::default()),
+                )
+            }
+            MetadataRetrieveVersion::V2 => {
+                // V2 does not support missing metadata
+                Err(GroupCreateError::MissingMetadata)
+            }
+        }
     }
 }
 
 #[cfg(feature = "async")]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
-    /// Create a group in `storage` at `path`. The metadata is read from the store.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    /// Async variant of [`new`](Group::new).
+    // #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
+    #[allow(clippy::missing_errors_doc)]
     pub async fn async_new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
+        Self::async_open(storage, path).await
+    }
+
+    /// Async variant of [`open`](Group::open).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_open(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
+        Self::async_open_opt(storage, path, &MetadataRetrieveVersion::Default).await
+    }
+
+    /// Async variant of [`open_opt`](Group::open_opt).
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn async_open_opt(
+        storage: Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<Self, GroupCreateError> {
         let node_path = path.try_into()?;
-        let key = meta_key(&node_path);
-        let metadata: GroupMetadata = match storage.get(&key).await? {
-            Some(metadata) => serde_json::from_slice(&metadata)
-                .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?,
-            None => GroupMetadataV3::default().into(),
-        };
-        Self::new_with_metadata(storage, path, metadata)
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
+            // Try Zarr V3
+            let key_v3 = meta_key(&node_path);
+            if let Some(metadata) = storage.get(&key_v3).await? {
+                let metadata: GroupMetadataV3 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
+                return Self::new_with_metadata(storage, path, GroupMetadata::V3(metadata));
+            }
+        }
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V2 = version {
+            // Try Zarr V2
+            let key_v2 = meta_key_v2_group(&node_path);
+            if let Some(metadata) = storage.get(&key_v2).await? {
+                let mut metadata: GroupMetadataV2 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v2, err.to_string()))?;
+                let attributes_key = meta_key_v2_attributes(&node_path);
+                let attributes = storage.get(&attributes_key).await?;
+                if let Some(attributes) = attributes {
+                    metadata.attributes = serde_json::from_slice(&attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(attributes_key, err.to_string())
+                    })?;
+                }
+                return Self::new_with_metadata(storage, path, GroupMetadata::V2(metadata));
+            }
+        }
+
+        // No metadata has been found
+        match version {
+            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
+                // V3 supports missing metadata
+                Self::new_with_metadata(
+                    storage,
+                    path,
+                    GroupMetadata::V3(GroupMetadataV3::default()),
+                )
+            }
+            MetadataRetrieveVersion::V2 => {
+                // V2 does not support missing metadata
+                Err(GroupCreateError::MissingMetadata)
+            }
+        }
     }
 }
 
@@ -205,6 +314,9 @@ pub enum GroupCreateError {
     /// Storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
+    /// Missing metadata (Zarr V2 only).
+    #[error("group metadata is missing (Zarr V2 only)")]
+    MissingMetadata,
 }
 
 fn validate_group_metadata(metadata: &GroupMetadata) -> Result<(), GroupCreateError> {

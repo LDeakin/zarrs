@@ -1,4 +1,4 @@
-use crate::config::MetadataConvertVersion;
+use crate::metadata::MetadataConvertVersion;
 
 /// Options for writing group metadata.
 #[derive(Debug, Clone, Default)]
