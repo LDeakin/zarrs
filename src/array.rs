@@ -1008,7 +1008,9 @@ mod tests {
         for version in [MetadataConvertVersion::Default, MetadataConvertVersion::V3] {
             array_out
                 .store_metadata_opt(
-                    &ArrayMetadataOptions::default().set_metadata_convert_version(version),
+                    &ArrayMetadataOptions::default()
+                        .set_metadata_convert_version(version)
+                        .set_include_zarrs_metadata(false),
                 )
                 .unwrap();
         }

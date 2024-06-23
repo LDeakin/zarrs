@@ -50,11 +50,6 @@
     }
   ],
   "attributes": {
-    "key": "value",
-    "_zarrs": {
-      "description": "This array was created with zarrs",
-      "repository": "https://github.com/LDeakin/zarrs",
-      "version": "0.15.0"
-    }
+    "key": "value"
   }
 }
