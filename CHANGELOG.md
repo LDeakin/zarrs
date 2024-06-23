@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0-beta.0] - 2024-06-23
+
 ### Added
  - Add support for a V3 compatible subset of Zarr V2
    - Compatible subset: Zarr V2 data that is Zarr V3 compatible with only a metadata change
@@ -42,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Move all metadata/configuration structures into the metadata module (non breaking with re-exports)
  - Rename `Metadata` to `MetadataV3`, an alias is retained
  - **Breaking**: `{Array,Group}::metadata()` now return references instead of values
+ - Improve various docs
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency
@@ -801,6 +804,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial public release
 
 [unreleased]: https://github.com/LDeakin/zarrs/compare/v0.14.0...HEAD
+[0.15.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.0-beta.0
 [0.14.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.14.0
 [0.13.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.3
 [0.13.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.2
