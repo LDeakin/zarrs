@@ -32,7 +32,7 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Init the existing array, reading metadata
-    let array = Array::new(store, ARRAY_PATH)?;
+    let array = Array::open(store, ARRAY_PATH)?;
 
     println!(
         "The array metadata is:\n{}\n",

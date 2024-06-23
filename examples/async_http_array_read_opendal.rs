@@ -34,7 +34,7 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Init the existing array, reading metadata
-    let array = Array::async_new(store, ARRAY_PATH).await?;
+    let array = Array::async_open(store, ARRAY_PATH).await?;
 
     println!(
         "The array metadata is:\n{}\n",

@@ -4,7 +4,7 @@
 //! It can have associated metadata and may have child nodes (groups or [`arrays`](crate::array)).
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group>.
 //!
-//! Use [`GroupBuilder`] to setup a new group, or use [`Group::new`] to read and/or write an existing group.
+//! Use [`GroupBuilder`] to setup a new group, or use [`Group::open`] to read and/or write an existing group.
 //!
 //! A group can optionally store attributes in metadata in an accompanying `zarr.json` file. For example:
 //! ```json
@@ -156,7 +156,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     ///
     /// # Errors
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
-    // #[deprecated(since = "0.15.0", note = "please use `open` instead")]
+    #[deprecated(since = "0.15.0", note = "please use `open` instead")]
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
         Self::open(storage, path)
     }
@@ -229,8 +229,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
 
 #[cfg(feature = "async")]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
-    /// Async variant of [`new`](Group::new).
-    // #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
+    /// Async variant of [`new`](Group::open).
+    #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
         Self::async_open(storage, path).await
@@ -590,7 +590,7 @@ mod tests {
             .unwrap();
         group.store_metadata().unwrap();
 
-        let group_copy = Group::new(store, group_path).unwrap();
+        let group_copy = Group::open(store, group_path).unwrap();
         assert_eq!(group_copy.metadata(), group.metadata());
         assert_eq!(
             group.metadata().to_string(),
@@ -618,7 +618,7 @@ mod tests {
     fn group_invalid_path() {
         let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
         assert_eq!(
-            Group::new(store, "abc").unwrap_err().to_string(),
+            Group::open(store, "abc").unwrap_err().to_string(),
             "invalid node path abc"
         );
     }
@@ -630,7 +630,7 @@ mod tests {
             .set(&StoreKey::new("zarr.json").unwrap(), &[0])
             .unwrap();
         assert_eq!(
-            Group::new(store, "/").unwrap_err().to_string(),
+            Group::open(store, "/").unwrap_err().to_string(),
             "error parsing metadata for zarr.json: expected value at line 1 column 1"
         );
     }
@@ -647,7 +647,7 @@ mod tests {
             .unwrap();
         group.async_store_metadata().await.unwrap();
 
-        let group_copy = Group::async_new(store, group_path).await.unwrap();
+        let group_copy = Group::async_open(store, group_path).await.unwrap();
         assert_eq!(group_copy.metadata(), group.metadata());
     }
 
@@ -655,7 +655,7 @@ mod tests {
     fn group_default() {
         let store = std::sync::Arc::new(MemoryStore::new());
         let group_path = "/group";
-        let group = Group::new(store, group_path).unwrap();
+        let group = Group::open(store, group_path).unwrap();
         assert_eq!(group.attributes(), &serde_json::Map::default());
         assert_eq!(group.additional_fields(), &AdditionalFields::default());
     }

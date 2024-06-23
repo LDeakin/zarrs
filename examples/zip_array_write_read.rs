@@ -195,7 +195,7 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     );
     let store = Arc::new(store::FilesystemStore::new(&path.path())?);
     let store = Arc::new(ZipStorageAdapter::new(store, zip_key)?);
-    let array = Array::new(store.clone(), ARRAY_PATH)?;
+    let array = Array::open(store.clone(), ARRAY_PATH)?;
     read_array_from_store(array)?;
 
     // Show the hierarchy

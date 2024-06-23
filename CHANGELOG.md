@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `{Array,Group}::metadata()` now return references instead of values
  - Improve various docs
  - **Breaking**: Add `MissingMetadata` to `GroupCreateError` enum
- - **Breaking**: Change `{Array,Group}::new` to `open` and add `open_opt`
+ - **Breaking**: Deprecate `{Array,Group}::new` for `open`, and add `open_opt`
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency

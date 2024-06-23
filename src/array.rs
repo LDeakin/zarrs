@@ -3,7 +3,7 @@
 //! An array is a node in a Zarr hierarchy used to hold multidimensional array data and associated metadata.
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array>.
 //!
-//! Use [`ArrayBuilder`] to setup a new array, or use [`Array::new`] for an existing array.
+//! Use [`ArrayBuilder`] to setup a new array, or use [`Array::open`] for an existing array.
 //! The documentation for [`Array`] details how to interact with arrays.
 
 mod array_builder;
@@ -876,7 +876,7 @@ mod tests {
         //     serde_json::from_slice(&store.get(&meta_key(&array_path))?)?;
         // println!("{:?}", metadata);
 
-        let array_other = Array::new(store, array_path).unwrap();
+        let array_other = Array::open(store, array_path).unwrap();
         assert_eq!(array_other.metadata(), &stored_metadata);
     }
 
@@ -969,7 +969,7 @@ mod tests {
 
     fn array_v2_to_v3(path_in: &str, path_out: &str) {
         let store = Arc::new(FilesystemStore::new(path_in).unwrap());
-        let array_in = Array::new(store, "/").unwrap();
+        let array_in = Array::open(store, "/").unwrap();
 
         println!("{array_in:?}");
 

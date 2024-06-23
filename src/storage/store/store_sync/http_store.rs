@@ -223,7 +223,7 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     fn http_store_array() {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
-        let array = Array::new(store.into(), ARRAY_PATH_REF).unwrap();
+        let array = Array::open(store.into(), ARRAY_PATH_REF).unwrap();
         assert_eq!(array.data_type(), &DataType::Float64);
     }
 
@@ -236,7 +236,7 @@ mod tests {
         const ARRAY_PATH: &str = "/group/array";
 
         let store = HTTPStore::new(HTTP_TEST_PATH).unwrap();
-        let array = Array::new(store.into(), ARRAY_PATH).unwrap();
+        let array = Array::open(store.into(), ARRAY_PATH).unwrap();
         assert_eq!(array.data_type(), &DataType::Float32);
 
         // Read the central 4x2 subset of the array
@@ -266,7 +266,7 @@ mod tests {
         const ARRAY_PATH_SHARDED: &str = "/group/array";
 
         let store = HTTPStore::new(HTTP_TEST_PATH_SHARDED).unwrap();
-        let array = Array::new(store.into(), ARRAY_PATH_SHARDED).unwrap();
+        let array = Array::open(store.into(), ARRAY_PATH_SHARDED).unwrap();
         assert_eq!(array.data_type(), &DataType::UInt16);
 
         // Read the central 4x2 subset of the array

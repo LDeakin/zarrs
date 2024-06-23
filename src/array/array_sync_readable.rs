@@ -34,7 +34,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Errors
     /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
-    // #[deprecated(since = "0.15.0", note = "please use `open` instead")]
+    #[deprecated(since = "0.15.0", note = "please use `open` instead")]
     pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
         Self::open(storage, path)
     }

@@ -27,7 +27,7 @@
 //!     Arc::new(zarrs::storage::store::FilesystemStore::new(&store_path)?);
 //!
 //! let array_path: &str = "/group/array"; // /path/to/store/group/array
-//! let array = zarrs::array::Array::new(store, array_path)?;
+//! let array = zarrs::array::Array::open(store, array_path)?;
 //!
 //! let chunk: ndarray::ArrayD<f32> = array.retrieve_chunk_ndarray(&[1, 0])?;
 //! println!("Chunk [1,0] is:\n{chunk}");
