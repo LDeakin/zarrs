@@ -3,6 +3,22 @@
 //! An array is a node in a Zarr hierarchy used to hold multidimensional array data and associated metadata.
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array>.
 //!
+//! A Zarr V3 array is defined by the following parameters (which are encoded in its JSON metadata):
+//!  - **shape**: defines the length of the array dimensions,
+//!  - **data type**: defines the numerical representation array elements,
+//!  - **chunk grid**: defines how the array is subdivided into chunks,
+//!  - **chunk key encoding**: defines how chunk grid cell coordinates are mapped to keys in a store,
+//!  - **fill value**: an element value to use for uninitialised portions of the array,
+//!  - **codecs**: used to encode and decode chunks.
+//!  - (optional) **attributes**: user-defined attributes,
+//!  - (optional) **storage transformers**: used to intercept and alter the storage keys and bytes of an array before they reach the underlying physical storage, and
+//!  - (optional) **dimension names**: defines the names of the array dimensions.
+//!
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata> for more information on array metadata.
+//!
+//! `zarrs` supports a subset of Zarr V2 arrays which are a compatible subset of Zarr V3 arrays.
+//! This encompasses Zarr V2 array that use supported codecs and **could** be converted to a Zarr V3 array with only a metadata change.
+//!
 //! The documentation for [`Array`] details how to interact with arrays.
 
 mod array_builder;
@@ -93,28 +109,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 
 /// A Zarr array.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata>.
-///
-/// ## Metadata
-///
-/// An array is defined by the following parameters (which are encoded in its JSON metadata):
-///  - **shape**: defines the length of the array dimensions,
-///  - **data type**: defines the numerical representation array elements,
-///  - **chunk grid**: defines how the array is subdivided into chunks,
-///  - **chunk key encoding**: defines how chunk grid cell coordinates are mapped to keys in a store,
-///  - **fill value**: an element value to use for uninitialised portions of the array.
-///  - **codecs**: used to encode and decode chunks,
-///
-/// and optional parameters:
-///  - **attributes**: user-defined attributes,
-///  - **storage transformers**: used to intercept and alter the storage keys and bytes of an array before they reach the underlying physical storage, and
-///  - **dimension names**: defines the names of the array dimensions.
-///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata> for more information on array metadata.
-///
-/// ## Methods Overview
-///
-/// ### Initilisation
+/// ## Initilisation
 /// A *new* array can be initialised with an [`ArrayBuilder`] or [`Array::new_with_metadata`].
 ///
 /// An *existing* array can be initialised with [`Array::open`] or [`Array::open_opt`], its metadata is read from the store.
@@ -126,7 +121,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// The `shape`, `attributes`, and `dimension_names` of an array are mutable and can be updated after construction.
 /// However, array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata) if an array is newly created or its metadata has been mutated.
 ///
-/// ### Array Metadata
+/// ## Array Metadata
 ///  - Immutable Array Metadata
 ///    - [`path`](Array::path) / [`data_type`](Array::data_type) / [`fill_value`](Array::fill_value) / [`chunk_grid`](Array::chunk_grid) / [`chunk_key_encoding`](Array::chunk_key_encoding) / [`codecs`](Array::codecs) / [`storage_transformers`](Array::storage_transformers)
 ///    - [`metadata`](Array::metadata): the underlying [`ArrayMetadata`] structure
@@ -137,12 +132,12 @@ pub type MaybeBytes = Option<Vec<u8>>;
 ///  - [`metadata_opt`](Array::metadata_opt): [`ArrayMetadata`] transformed with [`ArrayMetadataOptions`]
 ///    - Used internally by [`store_metadata`](Array::store_metadata) / [`store_metadata_opt`](Array::store_metadata_opt)
 ///
-/// ### Chunk and Array Subset Extents
+/// ## Chunk and Array Subset Extents
 ///  - [`chunk_origin`](Array::chunk_origin) / [`chunk_shape`](Array::chunk_shape) / [`chunk_subset`](Array::chunk_subset) / [`chunk_subset_bounded`](Array::chunk_subset_bounded)
 ///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
 ///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
 ///
-/// ### Sync API
+/// ## Sync API
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
 /// The core array methods are:
 ///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
@@ -177,7 +172,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// It is fastest to load arrays using [`retrieve_chunk`](Array::retrieve_chunk) or [`retrieve_chunks`](Array::retrieve_chunks) where possible.
 /// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may use partial decoders which can be less efficient with some codecs/stores.
 ///
-/// ### Sync API Parallelism
+/// ## Sync API Parallelism
 /// Codecs run in parallel using a dedicated threadpool (where possible/efficient).
 /// Array store and retrieve methods will also run in parallel when they involve multiple chunks.
 /// `zarrs` will automatically choose where to prioritise parallelism between codecs/chunks based on the codecs and number of chunks.
@@ -185,7 +180,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// By default, all available CPU cores will be used (when efficient).
 /// Concurrency can be limited globally with [`Config::set_codec_concurrent_target`](crate::config::Config::set_codec_concurrent_target) or as required using `_opt` methods with [`CodecOptions`](crate::array::codec::CodecOptions) manipulated with [`CodecOptions::set_concurrent_target`](crate::array::codec::CodecOptions::set_concurrent_target).
 ///
-/// ### Async API Concurrency/Parallelism
+/// ## Async API Concurrency/Parallelism
 /// This crate is async runtime-agnostic.
 /// Async methods do not spawn tasks internally, so asynchronous storage calls are concurrent but not parallel.
 /// Some codec encoding and decoding operations may still execute in parallel.
@@ -195,7 +190,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// A crate like [`async-scoped`](https://crates.io/crates/async-scoped) can enable spawning non-`'static` futures.
 /// If executing many tasks concurrently, consider reducing the codec [`concurrent_target`](crate::array::codec::CodecOptions::set_concurrent_target).
 ///
-/// ### Parallel Writing Considerations
+/// ## Parallel Writing Considerations
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
 /// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve, update, and store chunks.
 /// It is the responsibility of `zarrs` consumers to ensure:
@@ -205,7 +200,7 @@ pub type MaybeBytes = Option<Vec<u8>>;
 /// Partial writes to a chunk may be lost if these rules are not respected.
 /// `zarrs` does not currently offer an API for locking chunks or array subsets.
 ///
-/// ### `zarrs` Metadata
+/// ## `zarrs` Metadata
 /// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata when calling [`store_metadata`](Array::store_metadata).
 /// Override this behaviour globally with [`Config::set_include_zarrs_metadata`](crate::config::Config::set_include_zarrs_metadata) or call [`store_metadata_opt`](Array::store_metadata_opt) with an explicit [`ArrayMetadataOptions`].
 #[derive(Debug)]

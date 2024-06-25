@@ -1,6 +1,6 @@
 //! `zarrs` version information.
 
-/// The major version of this module.
+/// The `zarrs` major version.
 #[must_use]
 pub fn version_major() -> u32 {
     const VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
@@ -8,7 +8,7 @@ pub fn version_major() -> u32 {
     major
 }
 
-/// The minor version.
+/// The `zarrs` minor version.
 #[must_use]
 pub fn version_minor() -> u32 {
     const VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
@@ -16,7 +16,7 @@ pub fn version_minor() -> u32 {
     minor
 }
 
-/// The patch version.
+/// The `zarrs` patch version.
 #[must_use]
 pub fn version_patch() -> u32 {
     const VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
@@ -24,7 +24,7 @@ pub fn version_patch() -> u32 {
     patch
 }
 
-/// A [`u32`] representation of the version.
+/// A [`u32`] representation of the `zarrs` version.
 ///
 /// Encoded as
 /// ```rust
