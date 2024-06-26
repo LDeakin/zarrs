@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Improve various docs
  - **Breaking**: Add `MissingMetadata` to `GroupCreateError` enum
  - **Breaking**: Deprecate `{Array,Group}::new` for `open`, and add `open_opt`
+ - Change internal structure of various iterators to use `std::ops::Range` and remove redundant `length`
+ - **Breaking**: `Indices::new_with_start_end` now takes a `range` rather than a `start` and `end`
 
 ### Removed
  - **Breaking**: Remove `bytes` dependency

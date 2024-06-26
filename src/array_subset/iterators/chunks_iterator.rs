@@ -17,7 +17,7 @@ use super::{
 /// Iterates over the regular sized chunks overlapping this array subset.
 ///
 /// Iterates over the last dimension fastest (i.e. C-contiguous order).
-/// All chunks have the same size, and may extend over the bounds of the array subset.
+/// All chunks have the same size, and may extend over the bounds of the array subset since the start of the first chunk is aligned to the chunk size.
 ///
 /// The iterator item is a ([`ArrayIndices`], [`ArraySubset`]) tuple corresponding to the chunk indices and array subset.
 ///
@@ -232,11 +232,7 @@ impl<'a> Producer for ParChunksIteratorProducer<'a> {
 
     fn into_iter(self) -> Self::IntoIter {
         ChunksIterator {
-            inner: IndicesIterator::new_with_start_end(
-                self.inner.subset,
-                self.inner.index_front,
-                self.inner.index_back,
-            ),
+            inner: IndicesIterator::new_with_start_end(self.inner.subset, self.inner.range),
             chunk_shape: self.chunk_shape,
         }
     }

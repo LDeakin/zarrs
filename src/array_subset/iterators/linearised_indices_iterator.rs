@@ -91,7 +91,7 @@ impl<'a> IntoIterator for &'a LinearisedIndices {
     }
 }
 
-/// Parallel linearised indices iterator.
+/// Serial linearised indices iterator.
 ///
 /// See [`LinearisedIndices`].
 pub struct LinearisedIndicesIterator<'a> {
@@ -124,3 +124,39 @@ impl DoubleEndedIterator for LinearisedIndicesIterator<'_> {
 impl ExactSizeIterator for LinearisedIndicesIterator<'_> {}
 
 impl FusedIterator for LinearisedIndicesIterator<'_> {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn linearised_indices_iterator_partial() {
+        let indices =
+            LinearisedIndices::new(ArraySubset::new_with_ranges(&[1..3, 5..7]), vec![8, 8])
+                .unwrap();
+        assert_eq!(indices.len(), 4);
+        let mut iter = indices.iter();
+        assert_eq!(iter.next(), Some(13)); // [1,5]
+        assert_eq!(iter.next(), Some(14)); // [1,6]
+        assert_eq!(iter.next_back(), Some(22)); // [2,6]
+        assert_eq!(iter.next(), Some(21)); // [2,5]
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn linearised_indices_iterator_oob() {
+        assert!(
+            LinearisedIndices::new(ArraySubset::new_with_ranges(&[1..3, 5..7]), vec![1, 1])
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn linearised_indices_iterator_empty() {
+        let indices =
+            LinearisedIndices::new(ArraySubset::new_with_ranges(&[1..1, 5..5]), vec![5, 5])
+                .unwrap();
+        assert_eq!(indices.len(), 0);
+        assert!(indices.is_empty());
+    }
+}

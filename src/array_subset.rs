@@ -68,7 +68,7 @@ impl ArraySubset {
         }
     }
 
-    /// Create a new array subset from a `ranges`.
+    /// Create a new array subset from a list of [`Range`]s.
     #[must_use]
     pub fn new_with_ranges(ranges: &[Range<u64>]) -> Self {
         let start = ranges.iter().map(|range| range.start).collect();
