@@ -110,10 +110,13 @@ mod tests {
     fn array_subset_iter_contiguous_indices2() {
         let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
         let indices = subset.contiguous_indices(&[4, 4]).unwrap();
-        let mut iter = indices.into_iter();
+        assert_eq!(indices.len(), 2);
+        assert!(!indices.is_empty());
+        assert_eq!(indices.contiguous_elements_usize(), 2);
+        let mut iter = indices.iter();
         assert_eq!(iter.size_hint(), (2, Some(2)));
+        assert_eq!(iter.next_back(), Some((vec![2, 1], 2)));
         assert_eq!(iter.next(), Some((vec![1, 1], 2)));
-        assert_eq!(iter.next(), Some((vec![2, 1], 2)));
         assert_eq!(iter.next(), None);
     }
 
@@ -131,14 +134,17 @@ mod tests {
     fn array_subset_iter_continuous_linearised_indices() {
         let subset = ArraySubset::new_with_ranges(&[1..3, 1..3]);
         let indices = subset.contiguous_linearised_indices(&[4, 4]).unwrap();
-        let mut iter = indices.into_iter();
+        assert_eq!(indices.len(), 2);
+        assert!(!indices.is_empty());
+        assert_eq!(indices.contiguous_elements_usize(), 2);
+        let mut iter = indices.iter();
         //  0  1  2  3
         //  4  5  6  7
         //  8  9 10 11
         // 12 13 14 15
         assert_eq!(iter.size_hint(), (2, Some(2)));
+        assert_eq!(iter.next_back(), Some((9, 2)));
         assert_eq!(iter.next(), Some((5, 2)));
-        assert_eq!(iter.next(), Some((9, 2)));
         assert_eq!(iter.next(), None);
     }
 
