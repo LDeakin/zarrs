@@ -150,9 +150,11 @@ mod tests {
         assert!(subset.chunks(&chunk_shape_invalid).is_err());
         let chunk_shape = [NonZeroU64::new(2).unwrap(), NonZeroU64::new(2).unwrap()];
         let chunks = subset.chunks(&chunk_shape).unwrap();
-        let mut iter = chunks.into_iter();
+        assert!(!chunks.is_empty());
+        let mut iter = chunks.iter();
         assert_eq!(iter.size_hint(), (9, Some(9)));
         assert_eq!(iter.next(), Some((vec![0, 0], ArraySubset::new_with_ranges(&[0..2, 0..2]))));
+        assert_eq!(iter.next_back(), Some((vec![2, 2], ArraySubset::new_with_ranges(&[4..6, 4..6]))));
         assert_eq!(iter.next(), Some((vec![0, 1], ArraySubset::new_with_ranges(&[0..2, 2..4]))));
         assert_eq!(iter.next(), Some((vec![0, 2], ArraySubset::new_with_ranges(&[0..2, 4..6]))));
         assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..2]))));
@@ -160,7 +162,6 @@ mod tests {
         assert_eq!(iter.next(), Some((vec![1, 2], ArraySubset::new_with_ranges(&[2..4, 4..6]))));
         assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..2]))));
         assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 2..4]))));
-        assert_eq!(iter.next(), Some((vec![2, 2], ArraySubset::new_with_ranges(&[4..6, 4..6]))));
         assert_eq!(iter.next(), None);
     }
 
