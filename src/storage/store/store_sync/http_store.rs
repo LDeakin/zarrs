@@ -1,9 +1,8 @@
 //! A synchronous HTTP store.
 
 use crate::{
-    array::MaybeBytes,
     byte_range::ByteRange,
-    storage::{ReadableStorageTraits, StorageError, StoreKey},
+    storage::{MaybeBytes, ReadableStorageTraits, StorageError, StoreKey},
 };
 
 use itertools::Itertools;

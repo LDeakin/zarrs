@@ -1,11 +1,10 @@
 use opendal::BlockingOperator;
 
 use crate::{
-    array::MaybeBytes,
     byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
-        ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
-        StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        ListableStorageTraits, MaybeBytes, ReadableStorageTraits, ReadableWritableStorageTraits,
+        StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
         WritableStorageTraits,
     },
 };

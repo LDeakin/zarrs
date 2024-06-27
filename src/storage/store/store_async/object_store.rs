@@ -2,12 +2,11 @@ use futures::{StreamExt, TryStreamExt};
 use object_store::path::Path;
 
 use crate::{
-    array::MaybeBytes,
     byte_range::ByteRange,
     storage::{
-        AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
-        AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
-        StoreKeysPrefixes, StorePrefix,
+        AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+        AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+        StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
     },
 };
 
@@ -62,11 +61,11 @@ impl<T: object_store::ObjectStore> AsyncObjectStore<T> {
 
 #[async_trait::async_trait]
 impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectStore<T> {
-    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+    async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
         let get = handle_result(self.object_store.get(&key_to_path(key)).await)?;
         if let Some(get) = get {
             let bytes = get.bytes().await?;
-            Ok(Some(bytes.to_vec()))
+            Ok(Some(bytes))
         } else {
             Ok(None)
         }
@@ -76,7 +75,7 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<AsyncBytes>>, StorageError> {
         let Some(size) = self.size_key(key).await? else {
             return Ok(None);
         };
@@ -93,7 +92,7 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
                 std::iter::zip(ranges, get_ranges)
                     .map(|(range, bytes)| {
                         if range.len() == bytes.len() {
-                            Ok(bytes.to_vec())
+                            Ok(bytes)
                         } else {
                             Err(StorageError::Other(format!(
                                 "Unexpected length of bytes returned, expected {}, got {}",
@@ -124,7 +123,7 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
 
 #[async_trait::async_trait]
 impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectStore<T> {
-    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError> {
         self.object_store
             .put(&key_to_path(key), value.into())
             .await?;

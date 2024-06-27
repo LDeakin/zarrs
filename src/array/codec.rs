@@ -69,6 +69,7 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 #[cfg(feature = "async")]
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 
+use crate::storage::MaybeBytes;
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
@@ -87,7 +88,7 @@ use std::{
 
 use super::{
     concurrency::RecommendedConcurrency, ArrayMetadataOptions, ArrayView, BytesRepresentation,
-    ChunkRepresentation, ChunkShape, DataType, MaybeBytes,
+    ChunkRepresentation, ChunkShape, DataType,
 };
 
 /// A codec plugin.
@@ -587,7 +588,8 @@ impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder {
         Ok(self
             .storage
             .get_partial_values_key(&self.key, decoded_regions)
-            .await?)
+            .await?
+            .map(|vec_bytes| vec_bytes.into_iter().map(|bytes| bytes.to_vec()).collect()))
     }
 }
 

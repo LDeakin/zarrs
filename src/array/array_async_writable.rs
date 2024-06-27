@@ -6,8 +6,8 @@ use crate::{
     array_subset::ArraySubset,
     metadata::MetadataEraseVersion,
     storage::{
-        meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncWritableStorageTraits,
-        StorageError, StorageHandle,
+        meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncBytes,
+        AsyncWritableStorageTraits, StorageError, StorageHandle,
     },
 };
 
@@ -239,6 +239,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                 .codecs()
                 .encode(chunk_bytes, &chunk_array_representation, options)
                 .map_err(ArrayError::CodecError)?;
+            let chunk_encoded = AsyncBytes::from(chunk_encoded);
             crate::storage::async_store_chunk(
                 &*storage_transformer,
                 self.path(),

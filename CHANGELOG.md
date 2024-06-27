@@ -24,11 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `{Array,Group}MetadataOptions::[set_]metadata_convert_version` methods
  - Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata` methods
  - Add `Array::set_dimension_names`
+ - Add `storage::[Maybe]AsyncBytes`
 
 ### Changed
  - Support `object_store` 0.9-0.10
  - **Breaking**: Support `opendal` 0.46-0.47, drop support for 0.45
- - **Breaking**: Async store methods taking `bytes::Bytes` now take `Vec<u8>`
  - Rename `async_http_array_read` example to `async_http_array_read_object_store`
  - Bump `rayon` to 1.10.0
  - Bump `itertools` to 0.13
@@ -49,9 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Change internal structure of various iterators to use `std::ops::Range` and remove redundant `length`
  - **Breaking**: `Indices::new_with_start_end` now takes a `range` rather than a `start` and `end`
  - `RecommendedConcurrency::new` takes `impl std::ops::RangeBounds<usize>` instead of `std::ops::Range`
+ - **Breaking**: Move `array::MaybeBytes` to `storage::MaybeBytes`
 
 ### Removed
- - **Breaking**: Remove `bytes` dependency
  - **Breaking**: Remove re-exports of public dependencies
  - **Breaking**: Remove `Array::set_include_zarrs_metadata`. Use `{Config,ArrayMetadataOptions}::set_include_zarrs_metadata`
 

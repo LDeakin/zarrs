@@ -1,12 +1,11 @@
 use opendal::Operator;
 
 use crate::{
-    array::MaybeBytes,
     byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
-        AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
-        AsyncWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
-        StoreKeysPrefixes, StorePrefix,
+        AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+        AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+        StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
     },
 };
 
@@ -50,20 +49,17 @@ fn handle_result<T>(result: Result<T, opendal::Error>) -> Result<Option<T>, Stor
 
 #[async_trait::async_trait]
 impl AsyncReadableStorageTraits for AsyncOpendalStore {
-    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        handle_result(
-            self.operator
-                .read(key.as_str())
-                .await
-                .map(|buf| buf.to_vec()),
-        )
+    async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
+        handle_result(self.operator.read(key.as_str()).await.map(
+            |buf| buf.to_bytes(), // FIXME: Opendal: to_bytes optimisation
+        ))
     }
 
     async fn get_partial_values_key(
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<AsyncBytes>>, StorageError> {
         // FIXME: Get OpenDAL to return an error if byte range is OOB instead of panic, then don't need to query size
         let size = self.size_key(key).await?;
         if let Some(size) = size {
@@ -81,7 +77,9 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
                     .fetch(byte_ranges_fetch)
                     .await?
                     .into_iter()
-                    .map(|buf| buf.to_vec())
+                    .map(
+                        |buf| buf.to_bytes(), // FIXME: Opendal: to_bytes optimisation
+                    )
                     .collect(),
             ))
         } else {
@@ -97,7 +95,7 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
 
 #[async_trait::async_trait]
 impl AsyncWritableStorageTraits for AsyncOpendalStore {
-    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError> {
         Ok(self.operator.write(key.as_str(), value).await?)
     }
 

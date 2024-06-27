@@ -1,21 +1,22 @@
 //! A storage transformer which records performance metrics.
 
 use crate::{
-    array::MaybeBytes,
     metadata::v3::MetadataV3,
     storage::{
-        ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, ReadableWritableListableStorage, ReadableWritableStorage,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
+        ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
+        ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
+        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
+        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        WritableStorage, WritableStorageTraits,
     },
 };
 
 #[cfg(feature = "async")]
 use crate::storage::{
-    AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
+    AsyncBytes, AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
     AsyncReadableStorage, AsyncReadableStorageTraits, AsyncReadableWritableListableStorage,
     AsyncReadableWritableStorageTraits, AsyncWritableStorage, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 use std::sync::{
@@ -302,11 +303,11 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTr
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
-    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+    async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
         let value = self.storage.get(key).await;
         let bytes_read = value
             .as_ref()
-            .map_or(0, |v| v.as_ref().map_or(0, std::vec::Vec::len));
+            .map_or(0, |v| v.as_ref().map_or(0, AsyncBytes::len));
         self.transformer
             .bytes_read
             .fetch_add(bytes_read, Ordering::Relaxed);
@@ -318,13 +319,13 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
         &self,
         key: &StoreKey,
         byte_ranges: &[crate::byte_range::ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<AsyncBytes>>, StorageError> {
         let values = self
             .storage
             .get_partial_values_key(key, byte_ranges)
             .await?;
         if let Some(values) = &values {
-            let bytes_read = values.iter().map(Vec::len).sum();
+            let bytes_read = values.iter().map(AsyncBytes::len).sum();
             self.transformer
                 .bytes_read
                 .fetch_add(bytes_read, Ordering::Relaxed);
@@ -338,11 +339,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     async fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
+    ) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
         let values = self.storage.get_partial_values(key_ranges).await?;
         let bytes_read = values
             .iter()
-            .map(|value| value.as_ref().map_or(0, Vec::len))
+            .map(|value| value.as_ref().map_or(0, AsyncBytes::len))
             .sum::<usize>();
         self.transformer
             .bytes_read
@@ -389,7 +390,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
-    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError> {
         self.transformer
             .bytes_written
             .fetch_add(value.len(), Ordering::Relaxed);

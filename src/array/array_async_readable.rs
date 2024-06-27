@@ -7,8 +7,8 @@ use crate::{
     metadata::MetadataRetrieveVersion,
     node::NodePath,
     storage::{
-        data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncReadableStorageTraits,
-        StorageError, StorageHandle,
+        data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncBytes,
+        AsyncReadableStorageTraits, StorageError, StorageHandle,
     },
 };
 
@@ -127,7 +127,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_retrieve_encoded_chunk(
         &self,
         chunk_indices: &[u64],
-    ) -> Result<Option<Vec<u8>>, StorageError> {
+    ) -> Result<Option<AsyncBytes>, StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
@@ -368,6 +368,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         .await
         .map_err(ArrayError::StorageError)?;
         if let Some(chunk_encoded) = chunk_encoded {
+            let chunk_encoded = chunk_encoded.to_vec(); // FIXME: Decode on cow slice
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let chunk_decoded = self
                 .codecs()
@@ -527,7 +528,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunks: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<Vec<Option<Vec<u8>>>, StorageError> {
+    ) -> Result<Vec<Option<AsyncBytes>>, StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()

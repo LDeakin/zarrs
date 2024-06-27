@@ -3,8 +3,8 @@
 use std::marker::PhantomData;
 
 use crate::{
-    array::MaybeBytes,
     byte_range::{extract_byte_ranges, ByteRange},
+    storage::MaybeBytes,
 };
 
 use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};

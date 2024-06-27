@@ -8,22 +8,23 @@ use std::{
 use itertools::Itertools;
 
 use crate::{
-    array::MaybeBytes,
     byte_range::ByteRange,
     metadata::v3::MetadataV3,
     storage::{
-        ListableStorage, ListableStorageTraits, ReadableListableStorage, ReadableStorage,
-        ReadableStorageTraits, ReadableWritableListableStorage, ReadableWritableStorage,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
+        ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
+        ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
+        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
+        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+        WritableStorage, WritableStorageTraits,
     },
 };
 
 #[cfg(feature = "async")]
 use crate::storage::{
-    AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
+    AsyncBytes, AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
     AsyncReadableStorage, AsyncReadableStorageTraits, AsyncReadableWritableListableStorage,
     AsyncReadableWritableStorageTraits, AsyncWritableStorage, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 use super::StorageTransformerExtension;
@@ -390,7 +391,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTr
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
-    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+    async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
         let result = self.storage.get(key).await;
         writeln!(
             self.handle.lock().unwrap(),
@@ -398,7 +399,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
             (self.prefix_func)(),
             result
                 .as_ref()
-                .map(|v| v.as_ref().map_or(0, std::vec::Vec::len))
+                .map(|v| v.as_ref().map_or(0, AsyncBytes::len))
         )?;
         result
     }
@@ -407,7 +408,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<AsyncBytes>>, StorageError> {
         let result = self.storage.get_partial_values_key(key, byte_ranges).await;
         writeln!(
             self.handle.lock().unwrap(),
@@ -416,7 +417,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
             byte_ranges.iter().format(", "),
             result.as_ref().map(|v| {
                 v.as_ref()
-                    .map_or(vec![], |v| v.iter().map(std::vec::Vec::len).collect_vec())
+                    .map_or(vec![], |v| v.iter().map(AsyncBytes::len).collect_vec())
             })
         )?;
         result
@@ -425,7 +426,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     async fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
+    ) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
         let result = self.storage.get_partial_values(key_ranges).await;
         writeln!(
             self.handle.lock().unwrap(),
@@ -434,7 +435,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
             key_ranges.iter().format(", "),
             result.as_ref().map(|v| {
                 v.iter()
-                    .map(|v| v.iter().map(std::vec::Vec::len).collect_vec())
+                    .map(|v| v.iter().map(AsyncBytes::len).collect_vec())
             })
         )?;
         result
@@ -524,7 +525,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
-    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError> {
         let len = value.len();
         let result = self.storage.set(key, value).await;
         writeln!(

@@ -101,7 +101,7 @@ impl Node {
         let key = meta_key(&path);
         let metadata = storage.get(&key).await?;
         let metadata: NodeMetadata = match metadata {
-            Some(metadata) => serde_json::from_slice(metadata.as_slice()).map_err(|e| {
+            Some(metadata) => serde_json::from_slice(&metadata).map_err(|e| {
                 NodeCreateError::StorageError(StorageError::InvalidMetadata(key, e.to_string()))
             })?,
             None => NodeMetadata::Group(GroupMetadataV3::default().into()),
