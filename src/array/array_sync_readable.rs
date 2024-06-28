@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use crate::{
     array::ArrayMetadataV2,
@@ -259,11 +260,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         };
 
         let indices = chunks.indices();
-        indices
-            .into_par_iter()
-            .by_uniform_blocks(indices.len().div_ceil(options.concurrent_target()).max(1))
-            .map(retrieve_encoded_chunk)
-            .collect()
+        iter_concurrent_limit!(
+            options.concurrent_target(),
+            indices,
+            map,
+            retrieve_encoded_chunk
+        )
+        .collect()
     }
 
     /// Read and decode the chunks at `chunks` into their bytes.
@@ -742,10 +745,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
                     let indices = chunks.indices();
                     let chunk0_subset = self.chunk_subset(chunks.start())?;
-                    indices
-                        .into_par_iter()
-                        .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                        .try_for_each(|chunk_indices: Vec<u64>| {
+                    rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                        chunk_concurrent_limit,
+                        indices,
+                        try_for_each,
+                        |chunk_indices: Vec<u64>| {
                             let chunk_subset = self.chunk_subset(&chunk_indices)?;
                             let array_view_subset = unsafe {
                                 chunk_subset.relative_to_unchecked(chunk0_subset.start())
@@ -760,7 +764,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 .map_err(|err| CodecError::from(err.to_string()))?,
                                 &options,
                             )
-                        })?;
+                        }
+                    )?;
                 }
                 unsafe { output.set_len(size_output) };
                 Ok(output)
@@ -883,10 +888,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                         )
                     };
                     let indices = chunks.indices();
-                    indices
-                        .into_par_iter()
-                        .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                        .try_for_each(retrieve_chunk)?;
+                    iter_concurrent_limit!(
+                        chunk_concurrent_limit,
+                        indices,
+                        try_for_each,
+                        retrieve_chunk
+                    )?;
                 }
                 unsafe { output.set_len(size_output) };
                 Ok(output)
@@ -939,10 +946,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
             {
                 let indices = chunks.indices();
-                indices
-                    .into_par_iter()
-                    .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                    .try_for_each(|chunk_indices: Vec<u64>| {
+                iter_concurrent_limit!(
+                    chunk_concurrent_limit,
+                    indices,
+                    try_for_each,
+                    |chunk_indices: Vec<u64>| {
                         let chunk_subset = self.chunk_subset(&chunk_indices)?;
                         let array_view_subset =
                             unsafe { chunk_subset.relative_to_unchecked(array_subset.start()) };
@@ -952,7 +960,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 .map_err(|err| CodecError::from(err.to_string()))?,
                             &options,
                         )
-                    })?;
+                    }
+                )?;
             }
             Ok(())
         }
@@ -1032,10 +1041,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
                 {
                     let indices = chunks.indices();
-                    indices
-                        .into_par_iter()
-                        .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                        .try_for_each(|chunk_indices: Vec<u64>| {
+                    iter_concurrent_limit!(
+                        chunk_concurrent_limit,
+                        indices,
+                        try_for_each,
+                        |chunk_indices: Vec<u64>| {
                             let chunk_subset = self.chunk_subset(&chunk_indices)?;
                             let chunk_subset_in_array_subset =
                                 unsafe { chunk_subset.overlap_unchecked(array_subset) };
@@ -1054,7 +1064,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                     .map_err(|err| CodecError::from(err.to_string()))?,
                                 &options,
                             )
-                        })?;
+                        }
+                    )?;
                 }
                 Ok(())
             }

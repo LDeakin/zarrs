@@ -1,4 +1,4 @@
-use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{array_subset::ArraySubset, storage::ReadableWritableStorageTraits};
 
@@ -366,10 +366,12 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             };
 
             let indices = chunks.indices();
-            indices
-                .into_par_iter()
-                .by_uniform_blocks(indices.len().div_ceil(chunk_concurrent_limit).max(1))
-                .try_for_each(store_chunk)?;
+            rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                chunk_concurrent_limit,
+                indices,
+                try_for_each,
+                store_chunk
+            )?;
         }
         Ok(())
     }

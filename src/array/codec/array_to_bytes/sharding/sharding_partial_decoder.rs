@@ -193,11 +193,10 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             let out_array_subset_slice = UnsafeCellSlice::new(out_array_subset.as_mut_slice());
 
             let chunks = unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
-            chunks
-                .into_par_iter()
-                .by_uniform_blocks(
-                    chunks.len().div_ceil(inner_chunk_concurrent_limit).max(1))
-                .try_for_each(
+            rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                inner_chunk_concurrent_limit,
+                chunks,
+                try_for_each,
                 |(chunk_indices, chunk_subset): (Vec<u64>, _)| {
                     let out_array_subset_slice = unsafe { out_array_subset_slice.get() };
 
@@ -495,11 +494,11 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
             // FIXME: Concurrency limit for futures
 
             if !results.is_empty() {
-                let n = results.len();
-                results
-                    .into_par_iter()
-                    .by_uniform_blocks(n.div_ceil(options.concurrent_target()).max(1))
-                    .try_for_each(|subset_and_decoded_chunk| {
+                rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                    options.concurrent_target(),
+                    results,
+                    try_for_each,
+                    |subset_and_decoded_chunk| {
                         let (chunk_subset_in_array_subset, decoded_chunk): (ArraySubset, Vec<u8>) =
                             subset_and_decoded_chunk?;
                         let mut data_idx = 0;
@@ -520,7 +519,8 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                             data_idx += length;
                         }
                         Ok::<_, CodecError>(())
-                    })?;
+                    }
+                )?;
             }
 
             // Write filled chunks
@@ -543,11 +543,11 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                     .repeat(chunk_array_ss.num_elements_usize());
 
                 // Write filled chunks
-                let n = filled_chunks.len();
-                filled_chunks
-                    .into_par_iter()
-                    .by_uniform_blocks(n.div_ceil(options.concurrent_target()).max(1))
-                    .for_each(|chunk_subset: &ArraySubset| {
+                rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                    options.concurrent_target(),
+                    filled_chunks,
+                    for_each,
+                    |chunk_subset: &ArraySubset| {
                         let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
                         let chunk_subset_in_array_subset =
                             unsafe { overlap.relative_to_unchecked(array_subset.start()) };
@@ -568,7 +568,8 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                                 .copy_from_slice(&filled_chunk[data_idx..data_idx + length]);
                             data_idx += length;
                         }
-                    });
+                    }
+                );
             };
             unsafe { shard.set_len(shard_size) };
             out.push(shard);

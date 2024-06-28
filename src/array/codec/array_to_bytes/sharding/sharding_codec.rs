@@ -229,10 +229,11 @@ impl ArrayCodecTraits for ShardingCodec {
             .map(|i| usize::try_from(i.get()).unwrap())
             .product::<usize>();
         let element_size = chunk_representation.element_size() as u64;
-        (0..num_chunks)
-        .into_par_iter()
-        .by_uniform_blocks(num_chunks.div_ceil(shard_concurrent_limit).max(1))
-        .try_for_each(
+
+        rayon_iter_concurrent_limit::iter_concurrent_limit!(
+            shard_concurrent_limit,
+            (0..num_chunks),
+            try_for_each,
             |chunk_index: usize| {
                 let chunk_subset =
                     self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
@@ -470,10 +471,11 @@ impl ShardingCodec {
                 .iter()
                 .map(|i| usize::try_from(i.get()).unwrap())
                 .product::<usize>();
-            (0..n_chunks)
-                .into_par_iter()
-                .by_uniform_blocks(n_chunks.div_ceil(shard_concurrent_limit).max(1))
-                .try_for_each(|chunk_index: usize| {
+            rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                shard_concurrent_limit,
+                (0..n_chunks),
+                try_for_each,
+                |chunk_index: usize| {
                     let chunk_subset =
                         self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                     let bytes = unsafe {
@@ -510,7 +512,8 @@ impl ShardingCodec {
                         }
                     }
                     Ok(())
-                })?;
+                }
+            )?;
         }
 
         // Truncate shard
@@ -588,31 +591,34 @@ impl ShardingCodec {
             .build();
         // println!("{shard_concurrent_limit} {concurrency_limit_inner_chunks:?}"); // FIXME: log debug?
 
-        let encoded_chunks: Vec<(usize, Vec<u8>)> = (0..n_chunks)
-            .into_par_iter()
-            .by_uniform_blocks(n_chunks.div_ceil(shard_concurrent_limit).max(1))
-            .filter_map(|chunk_index| {
-                let chunk_subset =
-                    self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
-                let bytes = unsafe {
-                    chunk_subset.extract_bytes_unchecked(
-                        decoded_value,
-                        &shard_shape,
-                        shard_representation.element_size(),
-                    )
-                };
-                if chunk_representation.fill_value().equals_all(&bytes) {
-                    None
-                } else {
-                    let encoded_chunk =
-                        self.inner_codecs
-                            .encode(bytes, chunk_representation, &options_inner);
-                    match encoded_chunk {
-                        Ok(encoded_chunk) => Some(Ok((chunk_index, encoded_chunk))),
-                        Err(err) => Some(Err(err)),
+        let encoded_chunks: Vec<(usize, Vec<u8>)> =
+            rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                shard_concurrent_limit,
+                (0..n_chunks).into_par_iter(),
+                filter_map,
+                |chunk_index| {
+                    let chunk_subset =
+                        self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
+                    let bytes = unsafe {
+                        chunk_subset.extract_bytes_unchecked(
+                            decoded_value,
+                            &shard_shape,
+                            shard_representation.element_size(),
+                        )
+                    };
+                    if chunk_representation.fill_value().equals_all(&bytes) {
+                        None
+                    } else {
+                        let encoded_chunk =
+                            self.inner_codecs
+                                .encode(bytes, chunk_representation, &options_inner);
+                        match encoded_chunk {
+                            Ok(encoded_chunk) => Some(Ok((chunk_index, encoded_chunk))),
+                            Err(err) => Some(Err(err)),
+                        }
                     }
                 }
-            })
+            )
             .collect::<Result<Vec<_>, _>>()?;
 
         // Allocate the shard
@@ -634,11 +640,11 @@ impl ShardingCodec {
         if !encoded_chunks.is_empty() {
             let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
             let shard_index_slice = UnsafeCellSlice::new(&mut shard_index);
-            let n_chunks = encoded_chunks.len();
-            encoded_chunks
-                .into_par_iter()
-                .by_uniform_blocks(n_chunks.div_ceil(options.concurrent_target()).max(1))
-                .for_each(|(chunk_index, chunk_encoded): (usize, Vec<u8>)| {
+            rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                options.concurrent_target(),
+                encoded_chunks,
+                for_each,
+                |(chunk_index, chunk_encoded): (usize, Vec<u8>)| {
                     let chunk_offset = encoded_shard_offset
                         .fetch_add(chunk_encoded.len(), std::sync::atomic::Ordering::Relaxed);
                     unsafe {
@@ -651,7 +657,8 @@ impl ShardingCodec {
                         shard_unsafe[chunk_offset..chunk_offset + chunk_encoded.len()]
                             .copy_from_slice(&chunk_encoded);
                     }
-                });
+                }
+            );
         }
 
         // Write shard index
