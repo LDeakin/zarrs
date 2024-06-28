@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::byte_range::{ByteLength, ByteOffset, ByteRange};
 
 use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};
@@ -34,7 +36,7 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
         &self,
         byte_ranges: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let byte_ranges: Vec<ByteRange> = byte_ranges
             .iter()
             .map(|byte_range| match byte_range {
@@ -90,7 +92,7 @@ impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> 
         &self,
         byte_ranges: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let byte_ranges: Vec<ByteRange> = byte_ranges
             .iter()
             .map(|byte_range| match byte_range {

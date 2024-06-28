@@ -1,4 +1,7 @@
-use std::io::Read;
+use std::{
+    borrow::Cow,
+    io::{Cursor, Read},
+};
 
 use crate::{
     array::{
@@ -69,27 +72,27 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        let mut encoder = bzip2::read::BzEncoder::new(decoded_value.as_slice(), self.compression);
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
+        let mut encoder = bzip2::read::BzEncoder::new(Cursor::new(decoded_value), self.compression);
         let mut out: Vec<u8> = Vec::new();
         encoder.read_to_end(&mut out)?;
-        Ok(out)
+        Ok(Cow::Owned(out))
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        let mut decoder = bzip2::read::BzDecoder::new(encoded_value.as_slice());
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
+        let mut decoder = bzip2::read::BzDecoder::new(Cursor::new(encoded_value));
         let mut out: Vec<u8> = Vec::new();
         decoder.read_to_end(&mut out)?;
-        Ok(out)
+        Ok(Cow::Owned(out))
     }
 
     fn partial_decoder<'a>(

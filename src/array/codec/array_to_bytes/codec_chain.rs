@@ -1,5 +1,7 @@
 //! An array to bytes codec formed by joining an array to array sequence, array to bytes, and bytes to bytes sequence of codecs.
 
+use std::borrow::Cow;
+
 use crate::{
     array::{
         codec::{
@@ -426,12 +428,12 @@ impl ArrayCodecTraits for CodecChain {
         Ok(recommended_concurrency)
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         if decoded_value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
                 decoded_value.len(),
@@ -465,12 +467,12 @@ impl ArrayCodecTraits for CodecChain {
         Ok(value)
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        mut encoded_value: Vec<u8>,
+        mut encoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
         let bytes_representations =
@@ -511,7 +513,7 @@ impl ArrayCodecTraits for CodecChain {
 
     fn decode_into_array_view(
         &self,
-        encoded_value: &[u8],
+        mut encoded_value: Cow<'_, [u8]>,
         decoded_representation: &ChunkRepresentation,
         array_view: &ArrayView,
         options: &CodecOptions,
@@ -532,9 +534,6 @@ impl ArrayCodecTraits for CodecChain {
             );
         }
 
-        // Default path
-        let mut encoded_value = encoded_value.to_vec();
-
         // bytes->bytes
         for (codec, bytes_representation) in std::iter::zip(
             self.bytes_to_bytes.iter().rev(),
@@ -546,7 +545,7 @@ impl ArrayCodecTraits for CodecChain {
         if self.array_to_array.is_empty() {
             // bytes->array
             self.array_to_bytes.decode_into_array_view(
-                &encoded_value,
+                encoded_value,
                 array_representations.last().unwrap(),
                 array_view,
                 options,
@@ -726,7 +725,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -741,7 +740,7 @@ mod tests {
         if not_just_bytes {
             assert_ne!(encoded, decoded);
         }
-        assert_eq!(bytes, decoded);
+        assert_eq!(bytes, decoded.to_vec());
 
         // let encoded = codec
         //     .par_encode(bytes.clone(), &chunk_representation)
@@ -768,6 +767,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
+            .map(|v| v.to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())

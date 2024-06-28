@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::byte_range::ByteRange;
 
 use super::{
-    ListableStorageTraits, MaybeBytes, ReadableStorageTraits, ReadableWritableStorageTraits,
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, ReadableWritableStorageTraits,
     StorageError, StoreKey, StorePrefix, WritableStorageTraits,
 };
 
@@ -35,7 +35,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits for Storage
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         self.0.get_partial_values_key(key, byte_ranges)
     }
 
@@ -80,7 +80,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits for Storage
 }
 
 impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for StorageHandle<TStorage> {
-    fn set(&self, key: &super::StoreKey, value: &[u8]) -> Result<(), super::StorageError> {
+    fn set(&self, key: &super::StoreKey, value: Bytes) -> Result<(), super::StorageError> {
         self.0.set(key, value)
     }
 

@@ -11,7 +11,7 @@ use crate::{
     byte_range::ByteRange,
     metadata::v3::MetadataV3,
     storage::{
-        ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
+        Bytes, ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
         ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
         ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
         StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -191,9 +191,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
             self.handle.lock().unwrap(),
             "{}get({key}) -> len={:?}",
             (self.prefix_func)(),
-            result
-                .as_ref()
-                .map(|v| v.as_ref().map_or(0, std::vec::Vec::len))
+            result.as_ref().map(|v| v.as_ref().map_or(0, Bytes::len))
         )?;
         result
     }
@@ -202,7 +200,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let result = self.storage.get_partial_values_key(key, byte_ranges);
         writeln!(
             self.handle.lock().unwrap(),
@@ -211,7 +209,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
             byte_ranges.iter().format(", "),
             result.as_ref().map(|v| {
                 v.as_ref()
-                    .map_or(vec![], |v| v.iter().map(std::vec::Vec::len).collect_vec())
+                    .map_or(vec![], |v| v.iter().map(Bytes::len).collect_vec())
             })
         )?;
         result
@@ -227,10 +225,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
             "{}get_partial_values([{}]) -> len={:?}",
             (self.prefix_func)(),
             key_ranges.iter().format(", "),
-            result.as_ref().map(|v| {
-                v.iter()
-                    .map(|v| v.iter().map(std::vec::Vec::len).collect_vec())
-            })
+            result
+                .as_ref()
+                .map(|v| { v.iter().map(|v| v.iter().map(Bytes::len).collect_vec()) })
         )?;
         result
     }
@@ -315,13 +312,14 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
 impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     for UsageLogStorageTransformerImpl<TStorage>
 {
-    fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+    fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
+        let len = value.len();
         let result = self.storage.set(key, value);
         writeln!(
             self.handle.lock().unwrap(),
             "{}set({key}, len={}) -> {result:?}",
             (self.prefix_func)(),
-            value.len()
+            len
         )?;
         result
     }

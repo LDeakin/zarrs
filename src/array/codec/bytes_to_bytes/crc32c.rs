@@ -44,6 +44,8 @@ const CHECKSUM_SIZE: usize = core::mem::size_of::<u32>();
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use crate::{
         array::{
             codec::{BytesToBytesCodecTraits, CodecOptions, CodecTraits},
@@ -77,7 +79,7 @@ mod tests {
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
         let encoded = codec
-            .encode(bytes.clone(), &CodecOptions::default())
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
             .unwrap();
         let decoded = codec
             .decode(
@@ -86,7 +88,7 @@ mod tests {
                 &CodecOptions::default(),
             )
             .unwrap();
-        assert_eq!(bytes, decoded);
+        assert_eq!(bytes, decoded.to_vec());
 
         // Check that the checksum is correct
         let checksum: &[u8; 4] = &encoded
@@ -106,7 +108,9 @@ mod tests {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
+        let encoded = codec
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
@@ -121,7 +125,13 @@ mod tests {
             .unwrap()
             .unwrap();
         let answer: &[Vec<u8>] = &[vec![3, 4]];
-        assert_eq!(answer, decoded_partial_chunk);
+        assert_eq!(
+            answer,
+            decoded_partial_chunk
+                .into_iter()
+                .map(|v| v.to_vec())
+                .collect::<Vec<_>>()
+        );
     }
 
     #[cfg(feature = "async")]
@@ -134,7 +144,9 @@ mod tests {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
 
-        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
+        let encoded = codec
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
@@ -151,6 +163,12 @@ mod tests {
             .unwrap()
             .unwrap();
         let answer: &[Vec<u8>] = &[vec![3, 4]];
-        assert_eq!(answer, decoded_partial_chunk);
+        assert_eq!(
+            answer,
+            decoded_partial_chunk
+                .into_iter()
+                .map(|v| v.to_vec())
+                .collect::<Vec<_>>()
+        );
     }
 }

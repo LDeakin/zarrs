@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use futures::{StreamExt, TryStreamExt};
 
@@ -46,7 +46,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunk(
         &self,
         chunk_indices: &[u64],
-        chunk_bytes: Vec<u8>,
+        chunk_bytes: &[u8],
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
             .await
@@ -57,7 +57,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunk_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
-        chunk_elements: Vec<T>,
+        chunk_elements: &[T],
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_elements_opt(chunk_indices, chunk_elements, &CodecOptions::default())
             .await
@@ -85,7 +85,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunks(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: Vec<u8>,
+        chunks_bytes: &[u8],
     ) -> Result<(), ArrayError> {
         self.async_store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
             .await
@@ -96,7 +96,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunks_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunks: &ArraySubset,
-        chunks_elements: Vec<T>,
+        chunks_elements: &[T],
     ) -> Result<(), ArrayError> {
         self.async_store_chunks_elements_opt(chunks, chunks_elements, &CodecOptions::default())
             .await
@@ -215,7 +215,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunk_opt(
         &self,
         chunk_indices: &[u64],
-        chunk_bytes: Vec<u8>,
+        chunk_bytes: &[u8],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
@@ -227,7 +227,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             ));
         }
 
-        if !options.store_empty_chunks() && self.fill_value().equals_all(&chunk_bytes) {
+        if !options.store_empty_chunks() && self.fill_value().equals_all(chunk_bytes) {
             self.async_erase_chunk(chunk_indices).await?;
             Ok(())
         } else {
@@ -235,11 +235,15 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             let storage_transformer = self
                 .storage_transformers()
                 .create_async_writable_transformer(storage_handle);
-            let chunk_encoded: Vec<u8> = self
+            let chunk_encoded = self
                 .codecs()
-                .encode(chunk_bytes, &chunk_array_representation, options)
+                .encode(
+                    Cow::Borrowed(chunk_bytes),
+                    &chunk_array_representation,
+                    options,
+                )
                 .map_err(ArrayError::CodecError)?;
-            let chunk_encoded = AsyncBytes::from(chunk_encoded);
+            let chunk_encoded = AsyncBytes::from(chunk_encoded.to_vec());
             crate::storage::async_store_chunk(
                 &*storage_transformer,
                 self.path(),
@@ -257,13 +261,13 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunk_elements_opt<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunk_indices: &[u64],
-        chunk_elements: Vec<T>,
+        chunk_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_async_store_elements!(
             self,
             chunk_elements,
-            async_store_chunk_opt(chunk_indices, chunk_elements, options)
+            async_store_chunk_opt(chunk_indices, &chunk_elements, options)
         )
     }
 
@@ -286,7 +290,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             array_async_store_ndarray!(
                 self,
                 chunk_array,
-                async_store_chunk_elements_opt(chunk_indices, chunk_array, options)
+                async_store_chunk_elements_opt(chunk_indices, &chunk_array, options)
             )
         } else {
             Err(ArrayError::InvalidDataShape(
@@ -302,7 +306,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunks_opt(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: Vec<u8>,
+        chunks_bytes: &[u8],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let num_chunks = chunks.num_elements_usize();
@@ -347,7 +351,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                         unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                     let chunk_bytes = unsafe {
                         chunk_subset_in_array_subset.extract_bytes_unchecked(
-                            &chunks_bytes,
+                            chunks_bytes,
                             array_subset.shape(),
                             element_size,
                         )
@@ -360,7 +364,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
 
                     let options = options.clone();
                     async move {
-                        self.async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
+                        self.async_store_chunk_opt(&chunk_indices, &chunk_bytes, &options)
                             .await
                     }
                 };
@@ -379,13 +383,13 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunks_elements_opt<T: bytemuck::Pod + Send + Sync>(
         &self,
         chunks: &ArraySubset,
-        chunks_elements: Vec<T>,
+        chunks_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_async_store_elements!(
             self,
             chunks_elements,
-            async_store_chunks_opt(chunks, chunks_elements, options)
+            async_store_chunks_opt(chunks, &chunks_elements, options)
         )
     }
 
@@ -409,7 +413,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             array_async_store_ndarray!(
                 self,
                 chunks_array,
-                async_store_chunks_elements_opt(chunks, chunks_array, options)
+                async_store_chunks_elements_opt(chunks, &chunks_array, options)
             )
         } else {
             Err(ArrayError::InvalidDataShape(

@@ -224,7 +224,7 @@ fn demote_after_zfp_decoding(
 
 fn zfp_decode(
     zfp_mode: &ZfpMode,
-    mut encoded_value: Vec<u8>,
+    encoded_value: &mut [u8],
     decoded_representation: &ChunkRepresentation,
     parallel: bool,
 ) -> Result<Vec<u8>, CodecError> {
@@ -244,7 +244,7 @@ fn zfp_decode(
         return Err(CodecError::from("failed to create zfp stream"));
     };
 
-    let Some(stream) = ZfpBitstream::new(&mut encoded_value) else {
+    let Some(stream) = ZfpBitstream::new(encoded_value) else {
         return Err(CodecError::from("failed to create zfp field"));
     };
     unsafe {
@@ -271,7 +271,7 @@ fn zfp_decode(
 #[cfg(test)]
 mod tests {
     use num::traits::AsPrimitive;
-    use std::num::NonZeroU64;
+    use std::{borrow::Cow, num::NonZeroU64};
 
     use crate::{
         array::codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
@@ -318,7 +318,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -331,7 +331,7 @@ mod tests {
             )
             .unwrap();
 
-        let decoded_elements = crate::array::transmute_from_bytes_vec::<T>(decoded);
+        let decoded_elements = crate::array::transmute_from_bytes_vec::<T>(decoded.to_vec());
         assert_eq!(elements, decoded_elements);
     }
 
@@ -499,7 +499,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -523,6 +523,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
+            .map(|v| v.to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())
@@ -554,7 +555,7 @@ mod tests {
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -581,6 +582,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
+            .map(|v| v.to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())

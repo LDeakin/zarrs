@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use pco::{standalone::guarantee::file_size, ChunkConfig, FloatMultSpec, IntMultSpec, PagingSpec};
 
 use crate::{
@@ -95,19 +97,20 @@ impl ArrayCodecTraits for PcodecCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_encode {
             ( $t:ty ) => {
                 pco::standalone::simple_compress(
-                    transmute_from_bytes_vec::<$t>(decoded_value).as_slice(),
+                    &transmute_from_bytes_vec::<$t>(decoded_value.to_vec()) /* FIXME: transmute from bytes slice */,
                     &self.chunk_config,
                 )
+                .map(Cow::Owned)
                 .map_err(|err| CodecError::Other(err.to_string()))
             };
         }
@@ -138,17 +141,17 @@ impl ArrayCodecTraits for PcodecCodec {
         }
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_decode {
             ( $t:ty ) => {
-                pco::standalone::simple_decompress(encoded_value.as_slice())
-                    .map(|bytes| transmute_to_bytes_vec::<$t>(bytes))
+                pco::standalone::simple_decompress(&encoded_value)
+                    .map(|bytes| Cow::Owned(transmute_to_bytes_vec::<$t>(bytes)))
                     .map_err(|err| CodecError::Other(err.to_string()))
             };
         }

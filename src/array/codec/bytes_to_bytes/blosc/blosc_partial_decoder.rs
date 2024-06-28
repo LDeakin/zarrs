@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     array::codec::{
         bytes_to_bytes::blosc::blosc_nbytes, BytesPartialDecoderTraits, CodecError, CodecOptions,
@@ -26,7 +28,7 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
@@ -48,6 +50,7 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
                             end - start,
                             typesize,
                         )
+                        .map(Cow::Owned)
                         .map_err(|err| CodecError::from(err.to_string()))?,
                     );
                 }
@@ -78,7 +81,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncBloscPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
@@ -99,6 +102,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncBloscPartialDecoder<'_> {
                             end - start,
                             typesize,
                         )
+                        .map(Cow::Owned)
                         .map_err(|err| CodecError::from(err.to_string()))?,
                     );
                 }

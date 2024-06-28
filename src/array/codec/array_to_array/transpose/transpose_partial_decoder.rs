@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
     codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
@@ -38,7 +40,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -71,7 +73,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
                     &order_decode,
                     &permute(subset.shape(), &self.order),
                     self.decoded_representation.element_size(),
-                    bytes,
+                    &bytes,
                 )
                 .map_err(|_| {
                     CodecError::UnexpectedChunkDecodedSize(
@@ -79,6 +81,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
                         subset.num_elements() * self.decoded_representation.element_size() as u64,
                     )
                 })
+                .map(Cow::Owned)
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(decoded_value)
@@ -120,7 +123,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -154,8 +157,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
                     &order_decode,
                     &permute(subset.shape(), &self.order),
                     self.decoded_representation.element_size(),
-                    bytes,
+                    &bytes,
                 )
+                .map(Cow::Owned)
                 .map_err(|_| {
                     CodecError::UnexpectedChunkDecodedSize(
                         len,

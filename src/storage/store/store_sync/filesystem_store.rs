@@ -5,7 +5,7 @@
 use crate::{
     byte_range::{ByteOffset, ByteRange},
     storage::{
-        store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
+        store_set_partial_values, Bytes, ListableStorageTraits, ReadableStorageTraits,
         ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyError, StoreKeyStartValue,
         StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes, WritableStorageTraits,
     },
@@ -208,7 +208,7 @@ impl ReadableStorageTraits for FilesystemStore {
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let file = self.get_file_mutex(key);
         let _lock = file.read();
 
@@ -249,7 +249,7 @@ impl ReadableStorageTraits for FilesystemStore {
                     }
                 }
             };
-            out.push(bytes);
+            out.push(Bytes::from(bytes));
         }
 
         Ok(Some(out))
@@ -262,11 +262,11 @@ impl ReadableStorageTraits for FilesystemStore {
 }
 
 impl WritableStorageTraits for FilesystemStore {
-    fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+    fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
         if self.readonly {
             Err(StorageError::ReadOnly)
         } else {
-            Self::set_impl(self, key, value, None, true)
+            Self::set_impl(self, key, &value, None, true)
         }
     }
 

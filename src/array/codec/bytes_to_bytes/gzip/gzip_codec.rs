@@ -1,4 +1,7 @@
-use std::io::{Cursor, Read};
+use std::{
+    borrow::Cow,
+    io::{Cursor, Read},
+};
 
 use flate2::bufread::{GzDecoder, GzEncoder};
 
@@ -73,30 +76,30 @@ impl BytesToBytesCodecTraits for GzipCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let mut encoder = GzEncoder::new(
             Cursor::new(decoded_value),
             flate2::Compression::new(self.compression_level.as_u32()),
         );
         let mut out: Vec<u8> = Vec::new();
         encoder.read_to_end(&mut out)?;
-        Ok(out)
+        Ok(Cow::Owned(out))
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let mut decoder = GzDecoder::new(Cursor::new(encoded_value));
         let mut out: Vec<u8> = Vec::new();
         decoder.read_to_end(&mut out)?;
-        Ok(out)
+        Ok(Cow::Owned(out))
     }
 
     fn partial_decoder<'a>(

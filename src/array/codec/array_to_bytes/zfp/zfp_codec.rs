@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use zfp_sys::{
     zfp_compress,
     zfp_stream_maximum_size,
@@ -128,14 +130,14 @@ impl ArrayCodecTraits for ZfpCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let mut decoded_value_promoted =
-            promote_before_zfp_encoding(decoded_value, decoded_representation)?;
+            promote_before_zfp_encoding(decoded_value.to_vec(), decoded_representation)?;
         let zfp_type = decoded_value_promoted.zfp_type();
         let Some(field) = ZfpField::new(
             &mut decoded_value_promoted,
@@ -177,22 +179,23 @@ impl ArrayCodecTraits for ZfpCodec {
             Err(CodecError::from("zfp compression failed"))
         } else {
             encoded_value.truncate(size);
-            Ok(encoded_value)
+            Ok(Cow::Owned(encoded_value))
         }
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         zfp_decode(
             &self.mode,
-            encoded_value,
+            &mut encoded_value.to_vec(),
             decoded_representation,
             false, // FIXME
         )
+        .map(Cow::Owned)
     }
 }
 

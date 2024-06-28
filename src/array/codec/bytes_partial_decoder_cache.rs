@@ -1,11 +1,8 @@
 //! A cache for partial decoders.
 
-use std::marker::PhantomData;
+use std::{borrow::Cow, marker::PhantomData};
 
-use crate::{
-    byte_range::{extract_byte_ranges, ByteRange},
-    storage::MaybeBytes,
-};
+use crate::byte_range::{extract_byte_ranges, ByteRange};
 
 use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};
 
@@ -14,7 +11,7 @@ use super::AsyncBytesPartialDecoderTraits;
 
 /// A cache for a [`BytesPartialDecoderTraits`] partial decoder.
 pub struct BytesPartialDecoderCache<'a> {
-    cache: MaybeBytes,
+    cache: Option<Vec<u8>>,
     phantom: PhantomData<&'a ()>,
 }
 
@@ -29,7 +26,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
     ) -> Result<Self, CodecError> {
         let cache = input_handle
             .partial_decode(&[ByteRange::FromStart(0, None)], options)?
-            .map(|mut bytes| bytes.remove(0));
+            .map(|mut bytes| bytes.remove(0).into_owned());
         Ok(Self {
             cache,
             phantom: PhantomData,
@@ -48,7 +45,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
         let cache = input_handle
             .partial_decode(&[ByteRange::FromStart(0, None)], options)
             .await?
-            .map(|mut bytes| bytes.remove(0));
+            .map(|mut bytes| bytes.remove(0).into_owned());
         Ok(Self {
             cache,
             phantom: PhantomData,
@@ -61,11 +58,14 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
         &self,
         decoded_regions: &[ByteRange],
         _options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         Ok(match &self.cache {
             Some(bytes) => Some(
                 extract_byte_ranges(bytes, decoded_regions)
-                    .map_err(CodecError::InvalidByteRangeError)?,
+                    .map_err(CodecError::InvalidByteRangeError)?
+                    .into_iter()
+                    .map(Cow::Owned)
+                    .collect(),
             ),
             None => None,
         })
@@ -79,7 +79,7 @@ impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         BytesPartialDecoderTraits::partial_decode(self, decoded_regions, options)
     }
 }

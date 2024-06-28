@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     array::codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
     byte_range::ByteRange,
@@ -25,14 +27,16 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let bytes = self.input_handle.partial_decode(decoded_regions, options)?;
-        let Some(mut bytes) = bytes else {
+        let Some(bytes) = bytes else {
             return Ok(None);
         };
 
         // Drop trailing checksum
-        for (bytes, byte_range) in bytes.iter_mut().zip(decoded_regions) {
+        let mut output = Vec::with_capacity(bytes.len());
+        for (bytes, byte_range) in bytes.into_iter().zip(decoded_regions) {
+            let mut bytes = bytes.to_vec();
             match byte_range {
                 ByteRange::FromStart(_, Some(_)) => {}
                 ByteRange::FromStart(_, None) => {
@@ -45,9 +49,10 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
                     }
                 }
             };
+            output.push(Cow::Owned(bytes));
         }
 
-        Ok(Some(bytes))
+        Ok(Some(output))
     }
 }
 
@@ -72,17 +77,19 @@ impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let bytes = self
             .input_handle
             .partial_decode(decoded_regions, options)
             .await?;
-        let Some(mut bytes) = bytes else {
+        let Some(bytes) = bytes else {
             return Ok(None);
         };
 
         // Drop trailing checksum
-        for (bytes, byte_range) in bytes.iter_mut().zip(decoded_regions) {
+        let mut output = Vec::with_capacity(bytes.len());
+        for (bytes, byte_range) in bytes.into_iter().zip(decoded_regions) {
+            let mut bytes = bytes.to_vec();
             match byte_range {
                 ByteRange::FromStart(_, Some(_)) => {}
                 ByteRange::FromStart(_, None) => {
@@ -95,8 +102,9 @@ impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
                     }
                 }
             };
+            output.push(Cow::Owned(bytes));
         }
 
-        Ok(Some(bytes))
+        Ok(Some(output))
     }
 }

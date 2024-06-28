@@ -1,4 +1,4 @@
-use std::ffi::c_char;
+use std::{borrow::Cow, ffi::c_char};
 
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
 
@@ -168,33 +168,33 @@ impl BytesToBytesCodecTraits for BloscCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         // let n_threads = std::cmp::min(
         //     options.concurrent_limit(),
         //     std::thread::available_parallelism().unwrap(),
         // )
         // .get();
         let n_threads = 1;
-        self.do_encode(&decoded_value, n_threads)
+        Ok(Cow::Owned(self.do_encode(&decoded_value, n_threads)?))
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         // let n_threads = std::cmp::min(
         //     options.concurrent_limit(),
         //     std::thread::available_parallelism().unwrap(),
         // )
         // .get();
         let n_threads = 1;
-        Self::do_decode(&encoded_value, n_threads)
+        Ok(Cow::Owned(Self::do_decode(&encoded_value, n_threads)?))
     }
 
     fn partial_decoder<'a>(

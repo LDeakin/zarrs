@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     array::{
         codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, CodecOptions},
@@ -49,7 +51,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -63,10 +65,10 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
         let mut out = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         match encoded_value {
-            Some(encoded_value) => {
+            Some(mut encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
-                    encoded_value,
+                    encoded_value.to_mut(),
                     &self.decoded_representation,
                     false, // FIXME
                 )?;
@@ -77,17 +79,20 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
                             self.decoded_representation.element_size(),
                         )
                     };
-                    out.push(extract_byte_ranges_concat(&decoded_value, &byte_ranges)?);
+                    out.push(Cow::Owned(extract_byte_ranges_concat(
+                        &decoded_value,
+                        &byte_ranges,
+                    )?));
                 }
             }
             None => {
                 for decoded_region in decoded_regions {
-                    out.push(
+                    out.push(Cow::Owned(
                         self.decoded_representation
                             .fill_value()
                             .as_ne_bytes()
                             .repeat(decoded_region.num_elements_usize()),
-                    );
+                    ));
                 }
             }
         }
@@ -136,7 +141,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -150,10 +155,10 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
         let chunk_shape = self.decoded_representation.shape_u64();
         let mut out = Vec::with_capacity(decoded_regions.len());
         match encoded_value {
-            Some(encoded_value) => {
+            Some(mut encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
-                    encoded_value,
+                    encoded_value.to_mut(),
                     &self.decoded_representation,
                     false, // FIXME
                 )?;
@@ -164,17 +169,20 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
                             self.decoded_representation.element_size(),
                         )
                     };
-                    out.push(extract_byte_ranges_concat(&decoded_value, &byte_ranges)?);
+                    out.push(Cow::Owned(extract_byte_ranges_concat(
+                        &decoded_value,
+                        &byte_ranges,
+                    )?));
                 }
             }
             None => {
                 for decoded_region in decoded_regions {
-                    out.push(
+                    out.push(Cow::Owned(
                         self.decoded_representation
                             .fill_value()
                             .as_ne_bytes()
                             .repeat(decoded_region.num_elements_usize()),
-                    );
+                    ));
                 }
             }
         }

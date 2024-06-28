@@ -139,7 +139,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     let decoded_inner_chunks_bytes = partial_decoder.partial_decode(&inner_chunks_to_decode)?;
     let decoded_inner_chunks_ndarray = decoded_inner_chunks_bytes
         .into_iter()
-        .map(|bytes| bytes_to_ndarray::<u16>(&inner_chunk_shape, bytes))
+        .map(|bytes| bytes_to_ndarray::<u16>(&inner_chunk_shape, bytes.to_vec()))
         .collect::<Result<Vec<_>, _>>()?;
     println!("Decoded inner chunks:");
     for (inner_chunk_subset, decoded_inner_chunk) in

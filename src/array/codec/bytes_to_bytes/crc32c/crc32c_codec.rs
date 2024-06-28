@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     array::{
         codec::{
@@ -59,23 +61,24 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        mut decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let checksum = crc32c::crc32c(&decoded_value).to_le_bytes();
-        decoded_value.reserve_exact(checksum.len());
-        decoded_value.extend(&checksum);
-        Ok(decoded_value)
+        let mut encoded_value: Vec<u8> = Vec::with_capacity(decoded_value.len() + checksum.len());
+        encoded_value.extend_from_slice(&decoded_value);
+        encoded_value.extend_from_slice(&checksum);
+        Ok(Cow::Owned(encoded_value))
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        mut encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         _decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         if encoded_value.len() >= CHECKSUM_SIZE {
             if options.validate_checksums() {
                 let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
@@ -84,8 +87,8 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
                     return Err(CodecError::InvalidChecksum);
                 }
             }
-            encoded_value.resize_with(encoded_value.len() - CHECKSUM_SIZE, Default::default);
-            Ok(encoded_value)
+            let decoded_value = encoded_value[..encoded_value.len() - CHECKSUM_SIZE].to_vec();
+            Ok(Cow::Owned(decoded_value))
         } else {
             Err(CodecError::Other(
                 "crc32c decoder expects a 32 bit input".to_string(),

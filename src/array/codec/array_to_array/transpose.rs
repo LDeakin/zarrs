@@ -56,11 +56,12 @@ fn calculate_order_decode(order: &TransposeOrder, array_dimensions: usize) -> Ve
     permutation_decode
 }
 
+// TODO: Optimise this to use cow and be pass through for an identity permutation
 fn transpose_array(
     transpose_order: &[usize],
     untransposed_shape: &[u64],
     bytes_per_element: usize,
-    data: Vec<u8>,
+    data: &[u8],
 ) -> Result<Vec<u8>, ndarray::ShapeError> {
     // Create an array view of the data
     let mut shape_n = Vec::with_capacity(untransposed_shape.len() + 1);
@@ -68,12 +69,12 @@ fn transpose_array(
         shape_n.push(usize::try_from(*size).unwrap());
     }
     shape_n.push(bytes_per_element);
-    let array = ndarray::ArrayD::<u8>::from_shape_vec(shape_n, data)?;
+    let array = ndarray::ArrayViewD::<u8>::from_shape(shape_n, data)?;
 
     // Transpose the data
     let array_transposed = array.permuted_axes(transpose_order);
     if array_transposed.is_standard_layout() {
-        Ok(array_transposed.into_raw_vec())
+        Ok(array_transposed.to_owned().into_raw_vec())
     } else {
         Ok(array_transposed
             .as_standard_layout()
@@ -92,7 +93,7 @@ fn permute<T: Copy>(v: &[T], order: &TransposeOrder) -> Vec<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU64;
+    use std::{borrow::Cow, num::NonZeroU64};
 
     use crate::{
         array::{
@@ -125,15 +126,19 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
             .unwrap();
         let decoded = codec
-            .decode(encoded, &chunk_representation, &CodecOptions::default())
+            .decode(
+                Cow::Borrowed(&encoded),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
-        assert_eq!(bytes, decoded);
+        assert_eq!(bytes, decoded.to_vec());
 
         // let array = ndarray::ArrayViewD::from_shape(array_representation.shape(), &bytes).unwrap();
         // let array_representation_transpose =
@@ -178,7 +183,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -209,7 +214,7 @@ mod tests {
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
-            .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
+            .map(|bytes| crate::array::convert_from_bytes_slice::<f32>(&bytes))
             .collect::<Vec<_>>();
         let answer: &[Vec<f32>] = &[
             vec![
@@ -238,7 +243,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -272,7 +277,7 @@ mod tests {
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
-            .map(|bytes| crate::array::transmute_from_bytes_vec::<f32>(bytes))
+            .map(|bytes| crate::array::convert_from_bytes_slice::<f32>(&bytes))
             .collect::<Vec<_>>();
         let answer: &[Vec<f32>] = &[
             vec![

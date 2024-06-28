@@ -1,5 +1,7 @@
 // Note: No validation that this codec is created *without* a specified endianness for multi-byte data types.
 
+use std::borrow::Cow;
+
 use crate::{
     array::{
         codec::{
@@ -60,11 +62,11 @@ impl BytesCodec {
         Self::new(configuration.endian)
     }
 
-    fn do_encode_or_decode(
+    fn do_encode_or_decode<'a>(
         &self,
-        mut value: Vec<u8>,
+        mut value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         if value.len() as u64 != decoded_representation.size() {
             return Err(CodecError::UnexpectedChunkDecodedSize(
                 value.len(),
@@ -79,7 +81,7 @@ impl BytesCodec {
 
         if let Some(endian) = &self.endian {
             if !endian.is_native() {
-                reverse_endianness(&mut value, decoded_representation.data_type());
+                reverse_endianness(value.to_mut(), decoded_representation.data_type());
             }
         }
         Ok(value)
@@ -123,21 +125,21 @@ impl ArrayCodecTraits for BytesCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         self.do_encode_or_decode(decoded_value, decoded_representation)
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         self.do_encode_or_decode(encoded_value, decoded_representation)
     }
 }

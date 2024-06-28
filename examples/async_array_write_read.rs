@@ -91,7 +91,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
             array
                 .async_store_chunk_elements(
                     &chunk_indices,
-                    vec![i as f32 * 0.1; chunk_subset.num_elements() as usize],
+                    &vec![i as f32 * 0.1; chunk_subset.num_elements() as usize],
                 )
                 .await
         }
@@ -111,7 +111,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     array
         .async_store_chunks_elements::<f32>(
             &ArraySubset::new_with_ranges(&[1..2, 0..2]),
-            vec![
+            &[
                 //
                 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1,
                 //
@@ -128,7 +128,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     array
         .async_store_array_subset_elements::<f32>(
             &ArraySubset::new_with_ranges(&[3..6, 3..6]),
-            vec![-3.3, -3.4, -3.5, -4.3, -4.4, -4.5, -5.3, -5.4, -5.5],
+            &[-3.3, -3.4, -3.5, -4.3, -4.4, -4.5, -5.3, -5.4, -5.5],
         )
         .await?;
     let data_all = array
@@ -140,7 +140,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     array
         .async_store_array_subset_elements::<f32>(
             &ArraySubset::new_with_ranges(&[0..8, 6..7]),
-            vec![-0.6, -1.6, -2.6, -3.6, -4.6, -5.6, -6.6, -7.6],
+            &[-0.6, -1.6, -2.6, -3.6, -4.6, -5.6, -6.6, -7.6],
         )
         .await?;
     let data_all = array
@@ -155,7 +155,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
             &[1, 1],
             // subset within chunk
             &ArraySubset::new_with_ranges(&[3..4, 0..4]),
-            vec![-7.4, -7.5, -7.6, -7.7],
+            &[-7.4, -7.5, -7.6, -7.7],
         )
         .await?;
     let data_all = array

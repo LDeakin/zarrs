@@ -2,7 +2,7 @@
 
 use crate::{
     byte_range::ByteRange,
-    storage::{MaybeBytes, ReadableStorageTraits, StorageError, StoreKey},
+    storage::{Bytes, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey},
 };
 
 use itertools::Itertools;
@@ -91,7 +91,7 @@ impl ReadableStorageTraits for HTTPStore {
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let url = self.key_to_url(key)?;
         let client = reqwest::blocking::Client::new();
         let Some(size) = self.size_key(key)? else {
@@ -119,8 +119,8 @@ impl ReadableStorageTraits for HTTPStore {
                     let mut out = Vec::with_capacity(byte_ranges.len());
                     for byte_range in byte_ranges {
                         let bytes_range =
-                            bytes.split_to(usize::try_from(byte_range.length(size)).unwrap());
-                        out.push(bytes_range.to_vec());
+                            bytes.split_to(usize::try_from(byte_range.length(size)).unwrap()).to_vec();
+                        out.push(bytes_range);
                     }
                     Ok(Some(out))
                 } else {
@@ -136,7 +136,7 @@ impl ReadableStorageTraits for HTTPStore {
                 for byte_range in byte_ranges {
                     let start = usize::try_from(byte_range.start(size)).unwrap();
                     let end = usize::try_from(byte_range.end(size)).unwrap();
-                    out.push(bytes[start..end].to_vec());
+                    out.push(bytes.slice(start..end).to_vec());
                 }
                 Ok(Some(out))
             }

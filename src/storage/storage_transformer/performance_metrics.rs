@@ -3,7 +3,7 @@
 use crate::{
     metadata::v3::MetadataV3,
     storage::{
-        ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
+        Bytes, ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
         ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
         ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
         StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -175,7 +175,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         let value = self.storage.get(key);
         let bytes_read = value
             .as_ref()
-            .map_or(0, |v| v.as_ref().map_or(0, std::vec::Vec::len));
+            .map_or(0, |v| v.as_ref().map_or(0, Bytes::len));
         self.transformer
             .bytes_read
             .fetch_add(bytes_read, Ordering::Relaxed);
@@ -187,10 +187,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         &self,
         key: &StoreKey,
         byte_ranges: &[crate::byte_range::ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let values = self.storage.get_partial_values_key(key, byte_ranges)?;
         if let Some(values) = &values {
-            let bytes_read = values.iter().map(Vec::len).sum();
+            let bytes_read = values.iter().map(Bytes::len).sum();
             self.transformer
                 .bytes_read
                 .fetch_add(bytes_read, Ordering::Relaxed);
@@ -208,7 +208,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         let values = self.storage.get_partial_values(key_ranges)?;
         let bytes_read = values
             .iter()
-            .map(|value| value.as_ref().map_or(0, Vec::len))
+            .map(|value| value.as_ref().map_or(0, Bytes::len))
             .sum::<usize>();
         self.transformer
             .bytes_read
@@ -251,7 +251,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
 impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     for PerformanceMetricsStorageTransformerImpl<TStorage>
 {
-    fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+    fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
         self.transformer
             .bytes_written
             .fetch_add(value.len(), Ordering::Relaxed);

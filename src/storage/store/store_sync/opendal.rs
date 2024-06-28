@@ -3,9 +3,9 @@ use opendal::BlockingOperator;
 use crate::{
     byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
-        ListableStorageTraits, MaybeBytes, ReadableStorageTraits, ReadableWritableStorageTraits,
-        StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        WritableStorageTraits,
+        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
+        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
+        StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
     },
 };
 
@@ -50,14 +50,18 @@ fn handle_result<T>(result: Result<T, opendal::Error>) -> Result<Option<T>, Stor
 #[async_trait::async_trait]
 impl ReadableStorageTraits for OpendalStore {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        handle_result(self.operator.read(key.as_str()).map(|buf| buf.to_vec()))
+        handle_result(
+            self.operator
+                .read(key.as_str())
+                .map(|buf| buf.to_vec() /* FIXME: opendal fast variant */),
+        )
     }
 
     fn get_partial_values_key(
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         // FIXME: Get OpenDAL to return an error if byte range is OOB instead of panic
         let size = self.size_key(key)?;
         if let Some(size) = size {
@@ -68,7 +72,9 @@ impl ReadableStorageTraits for OpendalStore {
                 if byte_range_opendal.end > size {
                     return Err(InvalidByteRangeError::new(*byte_range, size).into());
                 }
-                bytes.push(reader.read(byte_range_opendal)?.to_vec());
+                bytes.push(
+                    reader.read(byte_range_opendal)?.to_vec(), /* FIXME: opendal fast variant */
+                );
             }
             Ok(Some(bytes))
         } else {
@@ -84,7 +90,7 @@ impl ReadableStorageTraits for OpendalStore {
 
 #[async_trait::async_trait]
 impl WritableStorageTraits for OpendalStore {
-    fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
+    fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
         let value = value.to_vec();
         Ok(self.operator.write(key.as_str(), value)?)
     }
