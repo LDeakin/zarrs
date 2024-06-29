@@ -68,7 +68,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
             Some(mut encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
-                    encoded_value.to_mut(),
+                    encoded_value.to_mut(), // FIXME: Does zfp **really** need the encoded value as mutable?
                     &self.decoded_representation,
                     false, // FIXME
                 )?;
@@ -158,7 +158,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
             Some(mut encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
-                    encoded_value.to_mut(),
+                    encoded_value.to_mut(), // FIXME: Does zfp **really** need the encoded value as mutable?
                     &self.decoded_representation,
                     false, // FIXME
                 )?;

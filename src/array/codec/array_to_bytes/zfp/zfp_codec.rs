@@ -137,7 +137,7 @@ impl ArrayCodecTraits for ZfpCodec {
         _options: &CodecOptions,
     ) -> Result<Cow<'a, [u8]>, CodecError> {
         let mut decoded_value_promoted =
-            promote_before_zfp_encoding(decoded_value.to_vec(), decoded_representation)?;
+            promote_before_zfp_encoding(&decoded_value, decoded_representation)?;
         let zfp_type = decoded_value_promoted.zfp_type();
         let Some(field) = ZfpField::new(
             &mut decoded_value_promoted,
@@ -191,7 +191,7 @@ impl ArrayCodecTraits for ZfpCodec {
     ) -> Result<Cow<'a, [u8]>, CodecError> {
         zfp_decode(
             &self.mode,
-            &mut encoded_value.to_vec(),
+            &mut encoded_value.to_vec(), // FIXME: Does zfp **really** need the encoded value as mutable?
             decoded_representation,
             false, // FIXME
         )
