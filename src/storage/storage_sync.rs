@@ -172,14 +172,20 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
             // let _lock = mutex.lock();
 
             // Read the store key
-            let mut bytes = store.get(&key)?.unwrap_or_default().to_vec();
+            let bytes = store.get(&key)?.unwrap_or_default();
 
-            // Expand the store key if needed
+            // Convert to a mutable vector of the required length
             let end_max =
                 usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
-            if bytes.len() < end_max {
-                bytes.resize_with(end_max, Default::default);
-            }
+            let mut bytes = if bytes.len() < end_max {
+                // Expand the store key if needed
+                let mut vec = Vec::with_capacity(end_max);
+                vec.extend_from_slice(&bytes);
+                vec.resize_with(end_max, Default::default);
+                vec
+            } else {
+                bytes.to_vec()
+            };
 
             // Update the store key
             for key_start_value in group {
@@ -189,7 +195,7 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
             }
 
             // Write the store key
-            store.set(&key, bytes.into())
+            store.set(&key, Bytes::from(bytes))
         })?;
     Ok(())
 }
