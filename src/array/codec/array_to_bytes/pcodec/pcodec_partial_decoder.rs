@@ -47,7 +47,7 @@ fn do_partial_decode<'a>(
                     .fill_value()
                     .as_ne_bytes()
                     .repeat(array_subset.num_elements_usize());
-                decoded_bytes.push(bytes_subset.into());
+                decoded_bytes.push(Cow::Owned(bytes_subset));
             }
         }
         Some(decoded_value) => {
@@ -69,7 +69,7 @@ fn do_partial_decode<'a>(
                                     decoded_representation.shape_u64(),
                                 ))
                             })?;
-                        decoded_bytes.push(bytes_subset.into());
+                        decoded_bytes.push(Cow::Owned(bytes_subset));
                     }
                 };
             }

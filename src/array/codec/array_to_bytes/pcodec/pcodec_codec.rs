@@ -9,7 +9,7 @@ use crate::{
             BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
-        transmute_from_bytes_vec, transmute_to_bytes_vec, ArrayMetadataOptions,
+        convert_from_bytes_slice, transmute_to_bytes_vec, ArrayMetadataOptions,
         BytesRepresentation, ChunkRepresentation, DataType,
     },
     metadata::v3::MetadataV3,
@@ -107,7 +107,7 @@ impl ArrayCodecTraits for PcodecCodec {
         macro_rules! pcodec_encode {
             ( $t:ty ) => {
                 pco::standalone::simple_compress(
-                    &transmute_from_bytes_vec::<$t>(decoded_value.to_vec()) /* FIXME: transmute from bytes slice */,
+                    &convert_from_bytes_slice::<$t>(&decoded_value),
                     &self.chunk_config,
                 )
                 .map(Cow::Owned)
