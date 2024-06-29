@@ -132,17 +132,23 @@ impl ArrayCodecTraits for TransposeCodec {
                 decoded_representation.size(),
             ));
         }
-        let len = decoded_value.len();
-        let order_encode =
-            calculate_order_encode(&self.order, decoded_representation.shape().len());
-        transpose_array(
-            &order_encode,
-            &decoded_representation.shape_u64(),
-            decoded_representation.element_size(),
-            &decoded_value,
-        )
-        .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
-        .map(Cow::Owned)
+
+        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
+            // Fast path for identity transform
+            Ok(decoded_value)
+        } else {
+            let len = decoded_value.len();
+            let order_encode =
+                calculate_order_encode(&self.order, decoded_representation.shape().len());
+            transpose_array(
+                &order_encode,
+                &decoded_representation.shape_u64(),
+                decoded_representation.element_size(),
+                &decoded_value,
+            )
+            .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
+            .map(Cow::Owned)
+        }
     }
 
     fn decode<'a>(
@@ -151,17 +157,22 @@ impl ArrayCodecTraits for TransposeCodec {
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
     ) -> Result<Cow<'a, [u8]>, CodecError> {
-        let order_decode =
-            calculate_order_decode(&self.order, decoded_representation.shape().len());
-        let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order);
-        let len = encoded_value.len();
-        transpose_array(
-            &order_decode,
-            &transposed_shape,
-            decoded_representation.element_size(),
-            &encoded_value,
-        )
-        .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
-        .map(Cow::Owned)
+        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
+            // Fast path for identity transform
+            Ok(encoded_value)
+        } else {
+            let order_decode =
+                calculate_order_decode(&self.order, decoded_representation.shape().len());
+            let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order);
+            let len = encoded_value.len();
+            transpose_array(
+                &order_decode,
+                &transposed_shape,
+                decoded_representation.element_size(),
+                &encoded_value,
+            )
+            .map_err(|_| CodecError::UnexpectedChunkDecodedSize(len, decoded_representation.size()))
+            .map(Cow::Owned)
+        }
     }
 }

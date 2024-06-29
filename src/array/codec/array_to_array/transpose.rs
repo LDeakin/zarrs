@@ -56,7 +56,6 @@ fn calculate_order_decode(order: &TransposeOrder, array_dimensions: usize) -> Ve
     permutation_decode
 }
 
-// TODO: Optimise this to use cow and be pass through for an identity permutation
 fn transpose_array(
     transpose_order: &[usize],
     untransposed_shape: &[u64],
