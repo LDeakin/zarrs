@@ -36,20 +36,23 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
         // Drop trailing checksum
         let mut output = Vec::with_capacity(bytes.len());
         for (bytes, byte_range) in bytes.into_iter().zip(decoded_regions) {
-            let mut bytes = bytes.to_vec();
-            match byte_range {
-                ByteRange::FromStart(_, Some(_)) => {}
+            let bytes = match byte_range {
+                ByteRange::FromStart(_, Some(_)) => bytes,
                 ByteRange::FromStart(_, None) => {
-                    bytes.resize(bytes.len() - CHECKSUM_SIZE, 0);
+                    let length = bytes.len() - CHECKSUM_SIZE;
+                    Cow::Owned(bytes[..length].to_vec())
                 }
                 ByteRange::FromEnd(offset, _) => {
                     if *offset < CHECKSUM_SIZE as u64 {
                         let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64 - offset);
-                        bytes.resize(usize::try_from(length).unwrap(), 0);
+                        let length = usize::try_from(length).unwrap();
+                        Cow::Owned(bytes[..length].to_vec())
+                    } else {
+                        bytes
                     }
                 }
             };
-            output.push(Cow::Owned(bytes));
+            output.push(bytes);
         }
 
         Ok(Some(output))
@@ -89,20 +92,23 @@ impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
         // Drop trailing checksum
         let mut output = Vec::with_capacity(bytes.len());
         for (bytes, byte_range) in bytes.into_iter().zip(decoded_regions) {
-            let mut bytes = bytes.to_vec();
-            match byte_range {
-                ByteRange::FromStart(_, Some(_)) => {}
+            let bytes = match byte_range {
+                ByteRange::FromStart(_, Some(_)) => bytes,
                 ByteRange::FromStart(_, None) => {
-                    bytes.resize(bytes.len() - CHECKSUM_SIZE, 0);
+                    let length = bytes.len() - CHECKSUM_SIZE;
+                    Cow::Owned(bytes[..length].to_vec())
                 }
                 ByteRange::FromEnd(offset, _) => {
                     if *offset < CHECKSUM_SIZE as u64 {
                         let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64 - offset);
-                        bytes.resize(usize::try_from(length).unwrap(), 0);
+                        let length = usize::try_from(length).unwrap();
+                        Cow::Owned(bytes[..length].to_vec())
+                    } else {
+                        bytes
                     }
                 }
             };
-            output.push(Cow::Owned(bytes));
+            output.push(bytes);
         }
 
         Ok(Some(output))
