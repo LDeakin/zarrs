@@ -68,7 +68,7 @@ impl Node {
         let key = meta_key(&path);
         let metadata = storage.get(&key)?;
         let metadata: NodeMetadata = match metadata {
-            Some(metadata) => serde_json::from_slice(metadata.as_slice()).map_err(|e| {
+            Some(metadata) => serde_json::from_slice(&metadata).map_err(|e| {
                 NodeCreateError::StorageError(StorageError::InvalidMetadata(key, e.to_string()))
             })?,
             None => NodeMetadata::Group(GroupMetadataV3::default().into()),
@@ -101,7 +101,7 @@ impl Node {
         let key = meta_key(&path);
         let metadata = storage.get(&key).await?;
         let metadata: NodeMetadata = match metadata {
-            Some(metadata) => serde_json::from_slice(metadata.as_slice()).map_err(|e| {
+            Some(metadata) => serde_json::from_slice(&metadata).map_err(|e| {
                 NodeCreateError::StorageError(StorageError::InvalidMetadata(key, e.to_string()))
             })?,
             None => NodeMetadata::Group(GroupMetadataV3::default().into()),
@@ -340,7 +340,7 @@ mod tests {
     fn node_invalid_metadata() {
         let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
         store
-            .set(&StoreKey::new("node/zarr.json").unwrap(), &[0])
+            .set(&StoreKey::new("node/zarr.json").unwrap(), vec![0].into())
             .unwrap();
         assert_eq!(
             Node::new(&*store, "/node").unwrap_err().to_string(),
@@ -352,7 +352,10 @@ mod tests {
     fn node_invalid_child() {
         let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
         store
-            .set(&StoreKey::new("node/array/zarr.json").unwrap(), &[0])
+            .set(
+                &StoreKey::new("node/array/zarr.json").unwrap(),
+                vec![0].into(),
+            )
             .unwrap();
         assert_eq!(
             Node::new(&*store, "/node").unwrap_err().to_string(),

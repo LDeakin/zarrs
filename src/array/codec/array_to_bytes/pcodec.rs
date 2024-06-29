@@ -51,7 +51,7 @@ pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, Plugin
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU64;
+    use std::{borrow::Cow, num::NonZeroU64};
 
     use crate::{
         array::{
@@ -90,7 +90,7 @@ mod tests {
 
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation)?;
         let encoded = codec.encode(
-            bytes.clone(),
+            Cow::Borrowed(&bytes),
             &chunk_representation,
             &CodecOptions::default(),
         )?;
@@ -98,7 +98,7 @@ mod tests {
         let decoded = codec
             .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();
-        assert_eq!(bytes, decoded);
+        assert_eq!(bytes, decoded.to_vec());
         Ok(())
     }
 
@@ -207,7 +207,11 @@ mod tests {
         let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
 
         let encoded = codec
-            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .encode(
+                Cow::Borrowed(&bytes),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -224,6 +228,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
+            .map(|v| v.to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())
@@ -249,7 +254,11 @@ mod tests {
         let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
 
         let encoded = codec
-            .encode(bytes, &chunk_representation, &CodecOptions::default())
+            .encode(
+                Cow::Borrowed(&bytes),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -268,6 +277,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
+            .map(|v| v.to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())

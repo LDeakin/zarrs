@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use std::{borrow::Cow, num::NonZeroU64};
 
 use rayon::prelude::*;
 
@@ -109,7 +109,7 @@ impl<'a> ShardingPartialDecoder<'a> {
 
         Ok(match encoded_shard_index {
             Some(encoded_shard_index) => Some(decode_shard_index(
-                encoded_shard_index,
+                &encoded_shard_index,
                 &index_array_representation,
                 index_codecs,
                 options,
@@ -129,7 +129,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in array_subsets {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -143,10 +143,12 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             return Ok(array_subsets
                 .iter()
                 .map(|decoded_region| {
-                    self.decoded_representation
-                        .fill_value()
-                        .as_ne_bytes()
-                        .repeat(decoded_region.num_elements_usize())
+                    Cow::Owned(
+                        self.decoded_representation
+                            .fill_value()
+                            .as_ne_bytes()
+                            .repeat(decoded_region.num_elements_usize()),
+                    )
                 })
                 .collect());
         };
@@ -233,9 +235,10 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         } else {
                             err
                         })?;
-                        partial_decoder
+                        let decoded_bytes = partial_decoder
                             .partial_decode_opt(&[array_subset_in_chunk_subset], &options)?
-                            .remove(0)
+                            .remove(0);
+                        decoded_bytes.to_vec()
                     };
 
                     // Copy decoded bytes to the output
@@ -259,7 +262,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                     Ok::<_, CodecError>(())
                 }
             )?;
-            out.push(out_array_subset);
+            out.push(Cow::Owned(out_array_subset));
         }
         Ok(out)
     }
@@ -348,7 +351,7 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
 
         Ok(match encoded_shard_index {
             Some(encoded_shard_index) => Some(decode_shard_index(
-                encoded_shard_index,
+                &encoded_shard_index,
                 &index_array_representation,
                 index_codecs,
                 options,
@@ -370,7 +373,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in array_subsets {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -384,10 +387,12 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
             return Ok(array_subsets
                 .iter()
                 .map(|decoded_region| {
-                    self.decoded_representation
-                        .fill_value()
-                        .as_ne_bytes()
-                        .repeat(decoded_region.num_elements_usize())
+                    Cow::Owned(
+                        self.decoded_representation
+                            .fill_value()
+                            .as_ne_bytes()
+                            .repeat(decoded_region.num_elements_usize()),
+                    )
                 })
                 .collect());
         };
@@ -572,7 +577,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                 );
             };
             unsafe { shard.set_len(shard_size) };
-            out.push(shard);
+            out.push(Cow::Owned(shard));
         }
         Ok(out)
     }

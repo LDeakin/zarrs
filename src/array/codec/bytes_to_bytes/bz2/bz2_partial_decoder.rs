@@ -1,4 +1,6 @@
-use std::io::Read;
+use std::{borrow::Cow, io::Read};
+
+use bytes::Buf;
 
 use crate::{
     array::codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
@@ -24,19 +26,22 @@ impl BytesPartialDecoderTraits for Bz2PartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
 
-        let mut decoder = bzip2::read::BzDecoder::new(encoded_value.as_slice());
+        let mut decoder = bzip2::read::BzDecoder::new(encoded_value.reader());
         let mut decompressed = Vec::new();
         decoder.read_to_end(&mut decompressed)?;
 
         Ok(Some(
             extract_byte_ranges(&decompressed, decoded_regions)
-                .map_err(CodecError::InvalidByteRangeError)?,
+                .map_err(CodecError::InvalidByteRangeError)?
+                .into_iter()
+                .map(Cow::Owned)
+                .collect(),
         ))
     }
 }
@@ -61,19 +66,22 @@ impl AsyncBytesPartialDecoderTraits for AsyncBz2PartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
         };
 
-        let mut decoder = bzip2::read::BzDecoder::new(encoded_value.as_slice());
+        let mut decoder = bzip2::read::BzDecoder::new(encoded_value.reader());
         let mut decompressed = Vec::new();
         decoder.read_to_end(&mut decompressed)?;
 
         Ok(Some(
             extract_byte_ranges(&decompressed, decoded_regions)
-                .map_err(CodecError::InvalidByteRangeError)?,
+                .map_err(CodecError::InvalidByteRangeError)?
+                .into_iter()
+                .map(Cow::Owned)
+                .collect(),
         ))
     }
 }

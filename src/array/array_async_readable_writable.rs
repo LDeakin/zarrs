@@ -13,7 +13,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_bytes: Vec<u8>,
+        chunk_subset_bytes: &[u8],
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_subset_opt(
             chunk_indices,
@@ -30,7 +30,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_elements: Vec<T>,
+        chunk_subset_elements: &[T],
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_subset_elements_opt(
             chunk_indices,
@@ -68,7 +68,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     pub async fn async_store_array_subset(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: Vec<u8>,
+        subset_bytes: &[u8],
     ) -> Result<(), ArrayError> {
         self.async_store_array_subset_opt(array_subset, subset_bytes, &CodecOptions::default())
             .await
@@ -79,7 +79,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     pub async fn async_store_array_subset_elements<T: bytemuck::Pod + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
-        subset_elements: Vec<T>,
+        subset_elements: &[T],
     ) -> Result<(), ArrayError> {
         self.async_store_array_subset_elements_opt(
             array_subset,
@@ -119,7 +119,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_bytes: Vec<u8>,
+        chunk_subset_bytes: &[u8],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_shape = self
@@ -175,7 +175,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             }
 
             // Store the updated chunk
-            self.async_store_chunk_opt(chunk_indices, chunk_bytes, options)
+            self.async_store_chunk_opt(chunk_indices, &chunk_bytes, options)
                 .await
         }
     }
@@ -186,7 +186,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_elements: Vec<T>,
+        chunk_subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_async_store_elements!(
@@ -195,7 +195,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             async_store_chunk_subset_opt(
                 chunk_indices,
                 chunk_subset,
-                chunk_subset_elements,
+                &chunk_subset_elements,
                 options
             )
         )
@@ -229,7 +229,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             async_store_chunk_subset_elements_opt(
                 chunk_indices,
                 &subset,
-                chunk_subset_array,
+                &chunk_subset_array,
                 options
             )
         )
@@ -241,7 +241,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     pub async fn async_store_array_subset_opt(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: Vec<u8>,
+        subset_bytes: &[u8],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
@@ -286,7 +286,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                     unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                 let chunk_subset_bytes = unsafe {
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        &subset_bytes,
+                        subset_bytes,
                         array_subset.shape(),
                         self.data_type().size(),
                     )
@@ -298,7 +298,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 self.async_store_chunk_subset_opt(
                     chunk_indices,
                     &array_subset_in_chunk_subset,
-                    chunk_subset_bytes,
+                    &chunk_subset_bytes,
                     options,
                 )
                 .await?;
@@ -328,7 +328,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                     unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
                 let chunk_subset_bytes = unsafe {
                     chunk_subset_in_array_subset.extract_bytes_unchecked(
-                        &subset_bytes,
+                        subset_bytes,
                         array_subset.shape(),
                         self.data_type().size(),
                     )
@@ -338,7 +338,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                     self.async_store_chunk_subset_opt(
                         &chunk_indices,
                         &array_subset_in_chunk_subset,
-                        chunk_subset_bytes,
+                        &chunk_subset_bytes,
                         &options,
                     )
                     .await
@@ -358,13 +358,13 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     pub async fn async_store_array_subset_elements_opt<T: bytemuck::Pod + Send + Sync>(
         &self,
         array_subset: &ArraySubset,
-        subset_elements: Vec<T>,
+        subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_async_store_elements!(
             self,
             subset_elements,
-            async_store_array_subset_opt(array_subset, subset_elements, options)
+            async_store_array_subset_opt(array_subset, &subset_elements, options)
         )
     }
 
@@ -389,7 +389,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         array_async_store_ndarray!(
             self,
             subset_array,
-            async_store_array_subset_elements_opt(&subset, subset_array, options)
+            async_store_array_subset_elements_opt(&subset, &subset_array, options)
         )
     }
 }

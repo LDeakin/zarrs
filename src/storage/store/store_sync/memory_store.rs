@@ -4,10 +4,9 @@ use parking_lot::RwLock;
 use std::sync::Mutex;
 
 use crate::{
-    array::MaybeBytes,
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     storage::{
-        store_set_partial_values, ListableStorageTraits, ReadableStorageTraits,
+        store_set_partial_values, Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
         ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
         StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
     },
@@ -82,7 +81,7 @@ impl ReadableStorageTraits for MemoryStore {
             let data = data.clone();
             drop(data_map);
             let data = data.read();
-            Ok(Some(data.clone()))
+            Ok(Some(data.clone().into()))
         } else {
             Ok(None)
         }
@@ -92,7 +91,7 @@ impl ReadableStorageTraits for MemoryStore {
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let data_map = self.data_map.lock().unwrap();
         let data = data_map.get(key);
         if let Some(data) = data {
@@ -107,7 +106,7 @@ impl ReadableStorageTraits for MemoryStore {
                     return Err(InvalidByteRangeError::new(*byte_range, data.len() as u64).into());
                 }
                 let bytes = data[start..end].to_vec();
-                out.push(bytes);
+                out.push(bytes.into());
             }
             Ok(Some(out))
         } else {
@@ -124,8 +123,8 @@ impl ReadableStorageTraits for MemoryStore {
 }
 
 impl WritableStorageTraits for MemoryStore {
-    fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError> {
-        Self::set_impl(self, key, value, None, true);
+    fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
+        Self::set_impl(self, key, &value, None, true);
         Ok(())
     }
 

@@ -40,6 +40,8 @@ pub(crate) fn create_codec_gzip(metadata: &MetadataV3) -> Result<Codec, PluginCr
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use crate::{
         array::{
             codec::{BytesToBytesCodecTraits, CodecOptions},
@@ -85,12 +87,12 @@ mod tests {
         let codec = GzipCodec::new_with_configuration(&configuration);
 
         let encoded = codec
-            .encode(bytes.clone(), &CodecOptions::default())
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
             .unwrap();
         let decoded = codec
             .decode(encoded, &bytes_representation, &CodecOptions::default())
             .unwrap();
-        assert_eq!(bytes, decoded);
+        assert_eq!(bytes, decoded.to_vec());
     }
 
     #[test]
@@ -102,7 +104,9 @@ mod tests {
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = GzipCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
+        let encoded = codec
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
             ByteRange::FromStart(10, Some(2)),
@@ -117,15 +121,13 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions, &CodecOptions::default())
+            .partial_decode_concat(&decoded_regions, &CodecOptions::default())
             .unwrap()
             .unwrap();
 
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u16>())
+            .to_vec()
+            .chunks_exact(std::mem::size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u16> = vec![2, 3, 5];
@@ -142,7 +144,9 @@ mod tests {
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
         let codec = GzipCodec::new_with_configuration(&configuration);
 
-        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
+        let encoded = codec
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
             ByteRange::FromStart(10, Some(2)),
@@ -158,16 +162,14 @@ mod tests {
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode(&decoded_regions, &CodecOptions::default())
+            .partial_decode_concat(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap()
             .unwrap();
 
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u16>())
+            .to_vec()
+            .chunks_exact(std::mem::size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u16> = vec![2, 3, 5];

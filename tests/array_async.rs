@@ -46,9 +46,9 @@ async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>>
     // -----|-----
     // 9 10 | 0  0
     // 0  0 | 0  0
-    array.async_store_chunk(&[0, 0], vec![1, 2, 0, 0]).await?;
-    array.async_store_chunk(&[0, 1], vec![3, 4, 7, 8]).await?;
-    array.async_store_array_subset(&ArraySubset::new_with_ranges(&[1..3, 0..2]), vec![5, 6, 9, 10]).await?;
+    array.async_store_chunk(&[0, 0], &[1, 2, 0, 0]).await?;
+    array.async_store_chunk(&[0, 1], &[3, 4, 7, 8]).await?;
+    array.async_store_array_subset(&ArraySubset::new_with_ranges(&[1..3, 0..2]), &[5, 6, 9, 10]).await?;
 
     assert!(array.async_retrieve_chunk(&[0, 0, 0]).await.is_err());
     assert_eq!(array.async_retrieve_chunk(&[0, 0]).await?, [1, 2, 5, 6]);

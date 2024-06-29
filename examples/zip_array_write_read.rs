@@ -50,7 +50,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'st
             if let Some(chunk_subset) = chunk_grid.subset(&chunk_indices, array.shape())? {
                 array.store_chunk_elements(
                     &chunk_indices,
-                    vec![i as f32; chunk_subset.num_elements() as usize],
+                    &vec![i as f32; chunk_subset.num_elements() as usize],
                 )
                 // let chunk_shape = chunk_grid.chunk_shape(&chunk_indices, &array.shape())?;
                 // let chunk_array = ndarray::ArrayD::<f32>::from_elem(chunk_shape.clone(), i as f32);
@@ -70,13 +70,13 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'st
     // Write a subset spanning multiple chunks, including updating chunks already written
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_ranges(&[3..6, 3..6]),
-        vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        &[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     )?;
 
     // Store elements directly, in this case set the 7th column to 123.0
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_ranges(&[0..8, 6..7]),
-        vec![123.0; 8],
+        &[123.0; 8],
     )?;
 
     // Store elements directly in a chunk, in this case set the last row of the bottom right chunk
@@ -85,7 +85,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'st
         &[1, 1],
         // subset within chunk
         &ArraySubset::new_with_ranges(&[3..4, 0..4]),
-        vec![-4.0; 4],
+        &[-4.0; 4],
     )?;
 
     Ok(array)

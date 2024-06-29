@@ -33,7 +33,7 @@ use zfp_sys::{
 use crate::{
     array::{
         codec::{Codec, CodecError, CodecPlugin},
-        transmute_from_bytes_vec, transmute_to_bytes_vec, ChunkRepresentation, DataType,
+        convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
     metadata::v3::{codec::zfp, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
@@ -78,13 +78,13 @@ const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type
 }
 
 fn promote_before_zfp_encoding(
-    decoded_value: Vec<u8>,
+    decoded_value: &[u8],
     decoded_representation: &ChunkRepresentation,
 ) -> Result<ZfpArray, CodecError> {
     #[allow(clippy::cast_possible_wrap)]
     match decoded_representation.data_type() {
         DataType::Int8 => {
-            let decoded_value = transmute_from_bytes_vec::<i8>(decoded_value);
+            let decoded_value = convert_from_bytes_slice::<i8>(decoded_value);
             let decoded_value_promoted = decoded_value
                 .into_iter()
                 .map(|i| i32::from(i) << 23)
@@ -92,7 +92,7 @@ fn promote_before_zfp_encoding(
             Ok(ZfpArray::Int32(decoded_value_promoted))
         }
         DataType::UInt8 => {
-            let decoded_value = transmute_from_bytes_vec::<u8>(decoded_value);
+            let decoded_value = convert_from_bytes_slice::<u8>(decoded_value);
             let decoded_value_promoted = decoded_value
                 .into_iter()
                 .map(|i| (i32::from(i) - 0x80) << 23)
@@ -100,7 +100,7 @@ fn promote_before_zfp_encoding(
             Ok(ZfpArray::Int32(decoded_value_promoted))
         }
         DataType::Int16 => {
-            let decoded_value = transmute_from_bytes_vec::<i16>(decoded_value);
+            let decoded_value = convert_from_bytes_slice::<i16>(decoded_value);
             let decoded_value_promoted = decoded_value
                 .into_iter()
                 .map(|i| i32::from(i) << 15)
@@ -108,39 +108,39 @@ fn promote_before_zfp_encoding(
             Ok(ZfpArray::Int32(decoded_value_promoted))
         }
         DataType::UInt16 => {
-            let decoded_value = transmute_from_bytes_vec::<u16>(decoded_value);
+            let decoded_value = convert_from_bytes_slice::<u16>(decoded_value);
             let decoded_value_promoted = decoded_value
                 .into_iter()
                 .map(|i| (i32::from(i) - 0x8000) << 15)
                 .collect();
             Ok(ZfpArray::Int32(decoded_value_promoted))
         }
-        DataType::Int32 => Ok(ZfpArray::Int32(transmute_from_bytes_vec::<i32>(
+        DataType::Int32 => Ok(ZfpArray::Int32(convert_from_bytes_slice::<i32>(
             decoded_value,
         ))),
         DataType::UInt32 => {
-            let u = transmute_from_bytes_vec::<u32>(decoded_value);
+            let u = convert_from_bytes_slice::<u32>(decoded_value);
             let i = u
                 .into_iter()
                 .map(|u| core::cmp::min(u, i32::MAX as u32) as i32)
                 .collect();
             Ok(ZfpArray::Int32(i))
         }
-        DataType::Int64 => Ok(ZfpArray::Int64(transmute_from_bytes_vec::<i64>(
+        DataType::Int64 => Ok(ZfpArray::Int64(convert_from_bytes_slice::<i64>(
             decoded_value,
         ))),
         DataType::UInt64 => {
-            let u = transmute_from_bytes_vec::<u64>(decoded_value);
+            let u = convert_from_bytes_slice::<u64>(decoded_value);
             let i = u
                 .into_iter()
                 .map(|u| core::cmp::min(u, i64::MAX as u64) as i64)
                 .collect();
             Ok(ZfpArray::Int64(i))
         }
-        DataType::Float32 => Ok(ZfpArray::Float(transmute_from_bytes_vec::<f32>(
+        DataType::Float32 => Ok(ZfpArray::Float(convert_from_bytes_slice::<f32>(
             decoded_value,
         ))),
-        DataType::Float64 => Ok(ZfpArray::Double(transmute_from_bytes_vec::<f64>(
+        DataType::Float64 => Ok(ZfpArray::Double(convert_from_bytes_slice::<f64>(
             decoded_value,
         ))),
         _ => Err(CodecError::UnsupportedDataType(
@@ -224,7 +224,7 @@ fn demote_after_zfp_decoding(
 
 fn zfp_decode(
     zfp_mode: &ZfpMode,
-    mut encoded_value: Vec<u8>,
+    encoded_value: &mut [u8],
     decoded_representation: &ChunkRepresentation,
     parallel: bool,
 ) -> Result<Vec<u8>, CodecError> {
@@ -244,8 +244,8 @@ fn zfp_decode(
         return Err(CodecError::from("failed to create zfp stream"));
     };
 
-    let Some(stream) = ZfpBitstream::new(&mut encoded_value) else {
-        return Err(CodecError::from("failed to create zfp field"));
+    let Some(stream) = ZfpBitstream::new(encoded_value) else {
+        return Err(CodecError::from("failed to create zfp bitstream"));
     };
     unsafe {
         zfp_stream_set_bit_stream(zfp.as_zfp_stream(), stream.as_bitstream());
@@ -271,7 +271,7 @@ fn zfp_decode(
 #[cfg(test)]
 mod tests {
     use num::traits::AsPrimitive;
-    use std::num::NonZeroU64;
+    use std::{borrow::Cow, num::NonZeroU64};
 
     use crate::{
         array::codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
@@ -318,7 +318,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -331,7 +331,7 @@ mod tests {
             )
             .unwrap();
 
-        let decoded_elements = crate::array::transmute_from_bytes_vec::<T>(decoded);
+        let decoded_elements = crate::array::convert_from_bytes_slice::<T>(&decoded);
         assert_eq!(elements, decoded_elements);
     }
 
@@ -499,7 +499,7 @@ mod tests {
 
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -523,6 +523,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
+            .map(|v| v.to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())
@@ -554,7 +555,7 @@ mod tests {
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
         let encoded = codec
             .encode(
-                bytes.clone(),
+                Cow::Borrowed(&bytes),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -581,6 +582,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
+            .map(|v| v.to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())

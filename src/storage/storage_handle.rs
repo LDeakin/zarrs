@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
-use crate::{array::MaybeBytes, byte_range::ByteRange};
+use crate::byte_range::ByteRange;
 
 use super::{
-    ListableStorageTraits, ReadableStorageTraits, ReadableWritableStorageTraits, StorageError,
-    StoreKey, StorePrefix, WritableStorageTraits,
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, ReadableWritableStorageTraits,
+    StorageError, StoreKey, StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
 use super::{
-    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits,
-    AsyncWritableStorageTraits,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
 };
 
 /// A storage handle.
@@ -35,7 +35,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits for Storage
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         self.0.get_partial_values_key(key, byte_ranges)
     }
 
@@ -80,7 +80,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits for Storage
 }
 
 impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for StorageHandle<TStorage> {
-    fn set(&self, key: &super::StoreKey, value: &[u8]) -> Result<(), super::StorageError> {
+    fn set(&self, key: &super::StoreKey, value: Bytes) -> Result<(), super::StorageError> {
         self.0.set(key, value)
     }
 
@@ -117,7 +117,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTr
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
     for StorageHandle<TStorage>
 {
-    async fn get(&self, key: &super::StoreKey) -> Result<MaybeBytes, super::StorageError> {
+    async fn get(&self, key: &super::StoreKey) -> Result<MaybeAsyncBytes, super::StorageError> {
         self.0.get(key).await
     }
 
@@ -125,14 +125,14 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<AsyncBytes>>, StorageError> {
         self.0.get_partial_values_key(key, byte_ranges).await
     }
 
     async fn get_partial_values(
         &self,
         key_ranges: &[super::StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
+    ) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
         self.0.get_partial_values(key_ranges).await
     }
 
@@ -178,7 +178,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     for StorageHandle<TStorage>
 {
-    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError> {
+    async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError> {
         self.0.set(key, value).await
     }
 

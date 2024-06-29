@@ -1,16 +1,16 @@
 use itertools::Itertools;
 
 use crate::{
-    array::{ArrayMetadata, ChunkKeyEncoding, MaybeBytes},
+    array::{ArrayMetadata, ChunkKeyEncoding},
     byte_range::ByteRange,
     group::{GroupMetadata, GroupMetadataV3},
     node::{Node, NodeMetadata, NodePath},
 };
 
 use super::{
-    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, StorageError,
-    StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-    StorePrefixes,
+    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, Bytes,
+    MaybeBytes, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
+    StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -37,7 +37,7 @@ pub trait ReadableStorageTraits: Send + Sync {
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError>;
+    ) -> Result<Option<Vec<Bytes>>, StorageError>;
 
     /// Retrieve partial bytes from a list of [`StoreKeyRange`].
     ///
@@ -172,14 +172,20 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
             // let _lock = mutex.lock();
 
             // Read the store key
-            let mut bytes = store.get(&key)?.unwrap_or_default();
+            let bytes = store.get(&key)?.unwrap_or_default();
 
-            // Expand the store key if needed
+            // Convert to a mutable vector of the required length
             let end_max =
                 usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
-            if bytes.len() < end_max {
-                bytes.resize_with(end_max, Default::default);
-            }
+            let mut bytes = if bytes.len() < end_max {
+                // Expand the store key if needed
+                let mut vec = Vec::with_capacity(end_max);
+                vec.extend_from_slice(&bytes);
+                vec.resize_with(end_max, Default::default);
+                vec
+            } else {
+                bytes.to_vec()
+            };
 
             // Update the store key
             for key_start_value in group {
@@ -189,7 +195,7 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
             }
 
             // Write the store key
-            store.set(&key, &bytes)
+            store.set(&key, Bytes::from(bytes))
         })?;
     Ok(())
 }
@@ -200,7 +206,7 @@ pub trait WritableStorageTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns a [`StorageError`] on failure to store.
-    fn set(&self, key: &StoreKey, value: &[u8]) -> Result<(), StorageError>;
+    fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError>;
 
     /// Store bytes according to a list of [`StoreKeyStartValue`].
     ///
@@ -272,7 +278,7 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
         let key = meta_key(&prefix.try_into()?);
         let child_metadata = match storage.get(&key)? {
             Some(child_metadata) => {
-                let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())
+                let metadata: NodeMetadata = serde_json::from_slice(&child_metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
                 metadata
             }
@@ -302,7 +308,7 @@ pub fn create_group(
             let key = meta_key(path);
             let json = serde_json::to_vec_pretty(group)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&meta_key(path), &json)
+            storage.set(&meta_key(path), json.into())
         }
         GroupMetadata::V2(group) => {
             let mut group = group.clone();
@@ -312,7 +318,7 @@ pub fn create_group(
                 let key = meta_key_v2_attributes(path);
                 let json = serde_json::to_vec_pretty(&group.attributes)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage.set(&key, &json)?;
+                storage.set(&key, json.into())?;
 
                 group.attributes = serde_json::Map::default();
             }
@@ -321,7 +327,7 @@ pub fn create_group(
             let key = meta_key_v2_group(path);
             let json = serde_json::to_vec_pretty(&group)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, &json)?;
+            storage.set(&key, json.into())?;
             Ok(())
         }
     }
@@ -341,7 +347,7 @@ pub fn create_array(
             let key = meta_key(path);
             let json = serde_json::to_vec_pretty(array)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, &json)
+            storage.set(&key, json.into())
         }
         ArrayMetadata::V2(array) => {
             let mut array = array.clone();
@@ -351,7 +357,7 @@ pub fn create_array(
                 let key = meta_key_v2_attributes(path);
                 let json = serde_json::to_vec_pretty(&array.attributes)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage.set(&meta_key_v2_attributes(path), &json)?;
+                storage.set(&meta_key_v2_attributes(path), json.into())?;
 
                 array.attributes = serde_json::Map::default();
             }
@@ -360,7 +366,7 @@ pub fn create_array(
             let key = meta_key_v2_array(path);
             let json = serde_json::to_vec_pretty(&array)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, &json)
+            storage.set(&key, json.into())
         }
     }
 }
@@ -374,7 +380,7 @@ pub fn store_chunk(
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
-    chunk_serialised: &[u8],
+    chunk_serialised: Bytes,
 ) -> Result<(), StorageError> {
     storage.set(
         &data_key(array_path, chunk_grid_indices, chunk_key_encoding),

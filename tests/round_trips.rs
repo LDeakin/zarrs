@@ -55,7 +55,10 @@ fn group_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
 fn metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
     let store = MemoryStore::new();
     let metadata_in = include_bytes!("data/array_metadata.json");
-    store.set(&meta_key(&"/group/array".try_into()?), metadata_in)?;
+    store.set(
+        &meta_key(&"/group/array".try_into()?),
+        metadata_in.to_vec().into(),
+    )?;
     let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?.unwrap();
     assert_eq!(metadata_in.as_slice(), metadata_out);
     Ok(())
@@ -67,7 +70,10 @@ fn metadata_round_trip_filesystem() -> Result<(), Box<dyn Error>> {
     let path = tempfile::TempDir::new()?;
     let store = FilesystemStore::new(path.path())?;
     let metadata_in = include_bytes!("data/array_metadata.json");
-    store.set(&meta_key(&"/group/array".try_into()?), metadata_in)?;
+    store.set(
+        &meta_key(&"/group/array".try_into()?),
+        metadata_in.to_vec().into(),
+    )?;
     let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?.unwrap();
     assert_eq!(metadata_in.as_slice(), metadata_out);
     Ok(())
@@ -81,7 +87,7 @@ fn filesystem_chunk_round_trip_impl(
     let data_serialised_in: Vec<u8> = vec![0, 1, 2];
     store.set(
         &data_key(&"/group/array".try_into()?, &[0, 0, 0], chunk_key_encoding),
-        &data_serialised_in,
+        data_serialised_in.clone().into(),
     )?;
     let data_serialised_out = store
         .get(&data_key(
@@ -89,7 +95,8 @@ fn filesystem_chunk_round_trip_impl(
             &[0, 0, 0],
             chunk_key_encoding,
         ))?
-        .unwrap();
+        .unwrap()
+        .to_vec();
     assert_eq!(data_serialised_in, data_serialised_out);
     Ok(())
 }

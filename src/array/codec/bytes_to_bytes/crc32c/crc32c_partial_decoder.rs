@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     array::codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
     byte_range::ByteRange,
@@ -25,29 +27,35 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let bytes = self.input_handle.partial_decode(decoded_regions, options)?;
-        let Some(mut bytes) = bytes else {
+        let Some(bytes) = bytes else {
             return Ok(None);
         };
 
         // Drop trailing checksum
-        for (bytes, byte_range) in bytes.iter_mut().zip(decoded_regions) {
-            match byte_range {
-                ByteRange::FromStart(_, Some(_)) => {}
+        let mut output = Vec::with_capacity(bytes.len());
+        for (bytes, byte_range) in bytes.into_iter().zip(decoded_regions) {
+            let bytes = match byte_range {
+                ByteRange::FromStart(_, Some(_)) => bytes,
                 ByteRange::FromStart(_, None) => {
-                    bytes.resize(bytes.len() - CHECKSUM_SIZE, 0);
+                    let length = bytes.len() - CHECKSUM_SIZE;
+                    Cow::Owned(bytes[..length].to_vec())
                 }
                 ByteRange::FromEnd(offset, _) => {
                     if *offset < CHECKSUM_SIZE as u64 {
                         let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64 - offset);
-                        bytes.resize(usize::try_from(length).unwrap(), 0);
+                        let length = usize::try_from(length).unwrap();
+                        Cow::Owned(bytes[..length].to_vec())
+                    } else {
+                        bytes
                     }
                 }
             };
+            output.push(bytes);
         }
 
-        Ok(Some(bytes))
+        Ok(Some(output))
     }
 }
 
@@ -72,31 +80,37 @@ impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let bytes = self
             .input_handle
             .partial_decode(decoded_regions, options)
             .await?;
-        let Some(mut bytes) = bytes else {
+        let Some(bytes) = bytes else {
             return Ok(None);
         };
 
         // Drop trailing checksum
-        for (bytes, byte_range) in bytes.iter_mut().zip(decoded_regions) {
-            match byte_range {
-                ByteRange::FromStart(_, Some(_)) => {}
+        let mut output = Vec::with_capacity(bytes.len());
+        for (bytes, byte_range) in bytes.into_iter().zip(decoded_regions) {
+            let bytes = match byte_range {
+                ByteRange::FromStart(_, Some(_)) => bytes,
                 ByteRange::FromStart(_, None) => {
-                    bytes.resize(bytes.len() - CHECKSUM_SIZE, 0);
+                    let length = bytes.len() - CHECKSUM_SIZE;
+                    Cow::Owned(bytes[..length].to_vec())
                 }
                 ByteRange::FromEnd(offset, _) => {
                     if *offset < CHECKSUM_SIZE as u64 {
                         let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64 - offset);
-                        bytes.resize(usize::try_from(length).unwrap(), 0);
+                        let length = usize::try_from(length).unwrap();
+                        Cow::Owned(bytes[..length].to_vec())
+                    } else {
+                        bytes
                     }
                 }
             };
+            output.push(bytes);
         }
 
-        Ok(Some(bytes))
+        Ok(Some(output))
     }
 }

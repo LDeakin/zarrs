@@ -18,9 +18,9 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
     // -----|-----
     // 9 10 | 0  0
     // 0  0 | 0  0
-    array.store_chunk(&[0, 0], vec![1, 2, 0, 0])?;
-    array.store_chunk(&[0, 1], vec![3, 4, 7, 8])?;
-    array.store_array_subset(&ArraySubset::new_with_ranges(&[1..3, 0..2]), vec![5, 6, 9, 10])?;
+    array.store_chunk(&[0, 0], &[1, 2, 0, 0])?;
+    array.store_chunk(&[0, 1], &[3, 4, 7, 8])?;
+    array.store_array_subset(&ArraySubset::new_with_ranges(&[1..3, 0..2]), &[5, 6, 9, 10])?;
 
     assert!(array.retrieve_chunk(&[0, 0, 0]).is_err());
     assert_eq!(array.retrieve_chunk(&[0, 0])?, [1, 2, 5, 6]);

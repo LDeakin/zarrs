@@ -237,7 +237,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
             Ok(partial_decoder
                 .partial_decode_opt(&[shard_subset], options)?
                 .pop()
-                .expect("partial_decode_opt called with one subset, returned without error"))
+                .expect("partial_decode_opt called with one subset, returned without error")
+                .into_owned())
         } else {
             self.retrieve_chunk_opt(inner_chunk_indices, options)
         }
@@ -493,7 +494,7 @@ mod tests {
 
         array.store_array_subset_elements(
             &ArraySubset::new_with_shape(array.shape().to_vec()),
-            data,
+            &data,
         )?;
 
         let cache = ArrayShardedReadableExtCache::new(&array);

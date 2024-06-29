@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
     codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
@@ -38,7 +40,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -61,27 +63,34 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
             .input_handle
             .partial_decode_opt(&decoded_regions_transposed, options)?;
 
-        // Reverse the transpose on each subset
-        let order_decode =
-            calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-        let decoded_value = std::iter::zip(decoded_regions, encoded_value)
-            .map(|(subset, bytes)| {
-                let len = bytes.len();
-                transpose_array(
-                    &order_decode,
-                    &permute(subset.shape(), &self.order),
-                    self.decoded_representation.element_size(),
-                    bytes,
-                )
-                .map_err(|_| {
-                    CodecError::UnexpectedChunkDecodedSize(
-                        len,
-                        subset.num_elements() * self.decoded_representation.element_size() as u64,
+        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
+            // Fast path for identity transform
+            Ok(encoded_value)
+        } else {
+            // Reverse the transpose on each subset
+            let order_decode =
+                calculate_order_decode(&self.order, self.decoded_representation.shape().len());
+            let decoded_value = std::iter::zip(decoded_regions, encoded_value)
+                .map(|(subset, bytes)| {
+                    let len = bytes.len();
+                    transpose_array(
+                        &order_decode,
+                        &permute(subset.shape(), &self.order),
+                        self.decoded_representation.element_size(),
+                        &bytes,
                     )
+                    .map_err(|_| {
+                        CodecError::UnexpectedChunkDecodedSize(
+                            len,
+                            subset.num_elements()
+                                * self.decoded_representation.element_size() as u64,
+                        )
+                    })
+                    .map(Cow::Owned)
                 })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(decoded_value)
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(decoded_value)
+        }
     }
 }
 
@@ -120,7 +129,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -144,26 +153,33 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
             .partial_decode_opt(&decoded_regions_transposed, options)
             .await?;
 
-        // Reverse the transpose on each subset
-        let order_decode =
-            calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-        let decoded_value = std::iter::zip(decoded_regions, encoded_value)
-            .map(|(subset, bytes)| {
-                let len = bytes.len();
-                transpose_array(
-                    &order_decode,
-                    &permute(subset.shape(), &self.order),
-                    self.decoded_representation.element_size(),
-                    bytes,
-                )
-                .map_err(|_| {
-                    CodecError::UnexpectedChunkDecodedSize(
-                        len,
-                        subset.num_elements() * self.decoded_representation.element_size() as u64,
+        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
+            // Fast path for identity transform
+            Ok(encoded_value)
+        } else {
+            // Reverse the transpose on each subset
+            let order_decode =
+                calculate_order_decode(&self.order, self.decoded_representation.shape().len());
+            let decoded_value = std::iter::zip(decoded_regions, encoded_value)
+                .map(|(subset, bytes)| {
+                    let len = bytes.len();
+                    transpose_array(
+                        &order_decode,
+                        &permute(subset.shape(), &self.order),
+                        self.decoded_representation.element_size(),
+                        &bytes,
                     )
+                    .map(Cow::Owned)
+                    .map_err(|_| {
+                        CodecError::UnexpectedChunkDecodedSize(
+                            len,
+                            subset.num_elements()
+                                * self.decoded_representation.element_size() as u64,
+                        )
+                    })
                 })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(decoded_value)
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(decoded_value)
+        }
     }
 }

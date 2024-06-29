@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     array::{
         codec::{ArrayPartialDecoderTraits, CodecError, CodecOptions},
@@ -59,13 +61,13 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         let mut bytes = self
             .input_handle
             .partial_decode_opt(array_subsets, options)?;
 
         for bytes in &mut bytes {
-            round_bytes(bytes, &self.data_type, self.keepbits)?;
+            round_bytes(bytes.to_mut(), &self.data_type, self.keepbits)?;
         }
 
         Ok(bytes)
@@ -124,14 +126,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         let mut bytes = self
             .input_handle
             .partial_decode_opt(array_subsets, options)
             .await?;
 
         for bytes in &mut bytes {
-            round_bytes(bytes, &self.data_type, self.keepbits)?;
+            round_bytes(bytes.to_mut(), &self.data_type, self.keepbits)?;
         }
 
         Ok(bytes)

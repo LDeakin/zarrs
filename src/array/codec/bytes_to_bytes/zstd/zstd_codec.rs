@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use zstd::zstd_safe;
 
 use crate::{
@@ -72,11 +74,11 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         Ok(RecommendedConcurrency::new_maximum(1))
     }
 
-    fn encode(
+    fn encode<'a>(
         &self,
-        decoded_value: Vec<u8>,
+        decoded_value: Cow<'a, [u8]>,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
         let mut result = Vec::<u8>::new();
         let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
         encoder.include_checksum(self.checksum)?;
@@ -84,18 +86,20 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         //     let n_threads = std::thread::available_parallelism().unwrap().get();
         //     encoder.multithread(u32::try_from(n_threads).unwrap())?; // TODO: Check overhead of zstd par_encode
         // }
-        std::io::copy(&mut decoded_value.as_slice(), &mut encoder)?;
+        std::io::copy(&mut std::io::Cursor::new(&decoded_value), &mut encoder)?;
         encoder.finish()?;
-        Ok(result)
+        Ok(Cow::Owned(result))
     }
 
-    fn decode(
+    fn decode<'a>(
         &self,
-        encoded_value: Vec<u8>,
+        encoded_value: Cow<'a, [u8]>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Vec<u8>, CodecError> {
-        zstd::decode_all(encoded_value.as_slice()).map_err(CodecError::IOError)
+    ) -> Result<Cow<'a, [u8]>, CodecError> {
+        zstd::decode_all(std::io::Cursor::new(&encoded_value))
+            .map_err(CodecError::IOError)
+            .map(Cow::Owned)
     }
 
     fn partial_decoder<'a>(

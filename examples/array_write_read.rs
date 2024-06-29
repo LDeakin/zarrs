@@ -85,7 +85,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
             })?;
         array.store_chunk_elements(
             &chunk_indices,
-            vec![i as f32 * 0.1; chunk_subset.num_elements() as usize],
+            &vec![i as f32 * 0.1; chunk_subset.num_elements() as usize],
         )
     })?;
 
@@ -96,7 +96,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Store multiple chunks
     array.store_chunks_elements::<f32>(
         &ArraySubset::new_with_ranges(&[1..2, 0..2]),
-        vec![
+        &[
             //
             1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1,
             //
@@ -109,7 +109,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Write a subset spanning multiple chunks, including updating chunks already written
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_ranges(&[3..6, 3..6]),
-        vec![-3.3, -3.4, -3.5, -4.3, -4.4, -4.5, -5.3, -5.4, -5.5],
+        &[-3.3, -3.4, -3.5, -4.3, -4.4, -4.5, -5.3, -5.4, -5.5],
     )?;
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
     println!("store_array_subset [3..6, 3..6]:\n{data_all:+4.1}\n");
@@ -117,7 +117,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Store array subset
     array.store_array_subset_elements::<f32>(
         &ArraySubset::new_with_ranges(&[0..8, 6..7]),
-        vec![-0.6, -1.6, -2.6, -3.6, -4.6, -5.6, -6.6, -7.6],
+        &[-0.6, -1.6, -2.6, -3.6, -4.6, -5.6, -6.6, -7.6],
     )?;
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
     println!("store_array_subset [0..8, 6..7]:\n{data_all:+4.1}\n");
@@ -128,7 +128,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         &[1, 1],
         // subset within chunk
         &ArraySubset::new_with_ranges(&[3..4, 0..4]),
-        vec![-7.4, -7.5, -7.6, -7.7],
+        &[-7.4, -7.5, -7.6, -7.7],
     )?;
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
     println!("store_chunk_subset [3..4, 0..4] of chunk [1, 1]:\n{data_all:+4.1}\n");

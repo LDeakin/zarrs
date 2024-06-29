@@ -4,16 +4,16 @@ use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 
 use crate::{
-    array::{ArrayMetadata, ChunkKeyEncoding, MaybeBytes},
+    array::{ArrayMetadata, ChunkKeyEncoding},
     byte_range::ByteRange,
     group::{GroupMetadata, GroupMetadataV3},
     node::{Node, NodeMetadata, NodePath},
 };
 
 use super::{
-    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, StorageError,
-    StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-    StorePrefixes,
+    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, AsyncBytes,
+    MaybeAsyncBytes, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
+    StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Async readable storage traits.
@@ -26,7 +26,7 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
     /// # Errors
     ///
     /// Returns a [`StorageError`] if the store key does not exist or there is an error with the underlying store.
-    async fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
+    async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
         Ok(self
             .get_partial_values_key(key, &[ByteRange::FromStart(0, None)])
             .await?
@@ -44,7 +44,7 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError>;
+    ) -> Result<Option<Vec<AsyncBytes>>, StorageError>;
 
     /// Retrieve partial bytes from a list of [`StoreKeyRange`].
     ///
@@ -61,7 +61,7 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
     async fn get_partial_values(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
+    ) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
         self.get_partial_values_batched_by_key(key_ranges).await
     }
 
@@ -84,8 +84,8 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
     async fn get_partial_values_batched_by_key(
         &self,
         key_ranges: &[StoreKeyRange],
-    ) -> Result<Vec<MaybeBytes>, StorageError> {
-        let mut out: Vec<MaybeBytes> = Vec::with_capacity(key_ranges.len());
+    ) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
+        let mut out: Vec<MaybeAsyncBytes> = Vec::with_capacity(key_ranges.len());
         let mut last_key = None;
         let mut byte_ranges_key = Vec::new();
         for key_range in key_ranges {
@@ -194,24 +194,25 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
             // let _lock = mutex.lock().await;
 
             // Read the store key
-            let mut bytes = store.get(key).await?.unwrap_or_else(Vec::default);
+            let bytes = store.get(key).await?.unwrap_or_default();
+            let mut vec: Vec<u8> = bytes.to_vec(); // FIXME
 
             // Expand the store key if needed
             let end_max =
                 usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
             if bytes.len() < end_max {
-                bytes.resize_with(end_max, Default::default);
+                vec.resize_with(end_max, Default::default);
             }
 
             // Update the store key
             for key_start_value in group {
                 let start: usize = key_start_value.start.try_into().unwrap();
                 let end: usize = key_start_value.end().try_into().unwrap();
-                bytes[start..end].copy_from_slice(key_start_value.value);
+                vec[start..end].copy_from_slice(key_start_value.value);
             }
 
             // Write the store key
-            store.set(key, bytes).await
+            store.set(key, vec.into()).await
         })
         .await
 }
@@ -223,7 +224,7 @@ pub trait AsyncWritableStorageTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns a [`StorageError`] on failure to store.
-    async fn set(&self, key: &StoreKey, value: Vec<u8>) -> Result<(), StorageError>;
+    async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError>;
 
     /// Store bytes according to a list of [`StoreKeyStartValue`].
     ///
@@ -315,7 +316,7 @@ where
         let key = meta_key(&prefix.try_into()?);
         let child_metadata = match storage.get(&key).await? {
             Some(child_metadata) => {
-                let metadata: NodeMetadata = serde_json::from_slice(child_metadata.as_slice())
+                let metadata: NodeMetadata = serde_json::from_slice(&child_metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
                 metadata
             }
@@ -345,7 +346,7 @@ pub async fn async_create_group(
             let key = meta_key(path);
             let json = serde_json::to_vec_pretty(group)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&meta_key(path), json).await
+            storage.set(&meta_key(path), json.into()).await
         }
         GroupMetadata::V2(group) => {
             let mut group = group.clone();
@@ -355,7 +356,7 @@ pub async fn async_create_group(
                 let key = meta_key_v2_attributes(path);
                 let json = serde_json::to_vec_pretty(&group.attributes)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage.set(&key, json).await?;
+                storage.set(&key, json.into()).await?;
 
                 group.attributes = serde_json::Map::default();
             }
@@ -364,7 +365,7 @@ pub async fn async_create_group(
             let key = meta_key_v2_group(path);
             let json = serde_json::to_vec_pretty(&group)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json).await?;
+            storage.set(&key, json.into()).await?;
             Ok(())
         }
     }
@@ -384,7 +385,7 @@ pub async fn async_create_array(
             let key = meta_key(path);
             let json = serde_json::to_vec_pretty(array)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json).await
+            storage.set(&key, json.into()).await
         }
         ArrayMetadata::V2(array) => {
             let mut array = array.clone();
@@ -394,7 +395,9 @@ pub async fn async_create_array(
                 let key = meta_key_v2_attributes(path);
                 let json = serde_json::to_vec_pretty(&array.attributes)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage.set(&meta_key_v2_attributes(path), json).await?;
+                storage
+                    .set(&meta_key_v2_attributes(path), json.into())
+                    .await?;
 
                 array.attributes = serde_json::Map::default();
             }
@@ -403,7 +406,7 @@ pub async fn async_create_array(
             let key = meta_key_v2_array(path);
             let json = serde_json::to_vec_pretty(&array)
                 .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json).await
+            storage.set(&key, json.into()).await
         }
     }
 }
@@ -417,7 +420,7 @@ pub async fn async_store_chunk(
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
-    chunk_serialised: Vec<u8>,
+    chunk_serialised: AsyncBytes,
 ) -> Result<(), StorageError> {
     storage
         .set(
@@ -437,7 +440,7 @@ pub async fn async_retrieve_chunk(
     array_path: &NodePath,
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<MaybeBytes, StorageError> {
+) -> Result<MaybeAsyncBytes, StorageError> {
     storage
         .get(&data_key(
             array_path,
@@ -489,7 +492,7 @@ pub async fn async_retrieve_partial_values(
     chunk_grid_indices: &[u64],
     chunk_key_encoding: &ChunkKeyEncoding,
     bytes_ranges: &[ByteRange],
-) -> Result<Vec<MaybeBytes>, StorageError> {
+) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
     let key = data_key(array_path, chunk_grid_indices, chunk_key_encoding);
     let key_ranges: Vec<StoreKeyRange> = bytes_ranges
         .iter()

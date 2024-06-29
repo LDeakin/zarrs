@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
@@ -7,7 +7,7 @@ use crate::{
     array_subset::ArraySubset,
     metadata::MetadataEraseVersion,
     storage::{
-        meta_key, meta_key_v2_array, meta_key_v2_attributes, StorageError, StorageHandle,
+        meta_key, meta_key_v2_array, meta_key_v2_attributes, Bytes, StorageError, StorageHandle,
         WritableStorageTraits,
     },
 };
@@ -57,11 +57,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
-    pub fn store_chunk(
-        &self,
-        chunk_indices: &[u64],
-        chunk_bytes: Vec<u8>,
-    ) -> Result<(), ArrayError> {
+    pub fn store_chunk(&self, chunk_indices: &[u64], chunk_bytes: &[u8]) -> Result<(), ArrayError> {
         self.store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
     }
 
@@ -77,7 +73,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     pub fn store_chunk_elements<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
-        chunk_elements: Vec<T>,
+        chunk_elements: &[T],
     ) -> Result<(), ArrayError> {
         self.store_chunk_elements_opt(chunk_indices, chunk_elements, &CodecOptions::default())
     }
@@ -120,7 +116,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     pub fn store_chunks(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: Vec<u8>,
+        chunks_bytes: &[u8],
     ) -> Result<(), ArrayError> {
         self.store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
     }
@@ -135,7 +131,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     pub fn store_chunks_elements<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
-        chunks_elements: Vec<T>,
+        chunks_elements: &[T],
     ) -> Result<(), ArrayError> {
         self.store_chunks_elements_opt(chunks, chunks_elements, &CodecOptions::default())
     }
@@ -248,7 +244,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     pub fn store_chunk_opt(
         &self,
         chunk_indices: &[u64],
-        chunk_bytes: Vec<u8>,
+        chunk_bytes: &[u8],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation
@@ -260,7 +256,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
             ));
         }
 
-        if !options.store_empty_chunks() && self.fill_value().equals_all(&chunk_bytes) {
+        if !options.store_empty_chunks() && self.fill_value().equals_all(chunk_bytes) {
             self.erase_chunk(chunk_indices)?;
             Ok(())
         } else {
@@ -268,16 +264,20 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
             let storage_transformer = self
                 .storage_transformers()
                 .create_writable_transformer(storage_handle);
-            let chunk_encoded: Vec<u8> = self
+            let chunk_encoded = self
                 .codecs()
-                .encode(chunk_bytes, &chunk_array_representation, options)
+                .encode(
+                    Cow::Borrowed(chunk_bytes),
+                    &chunk_array_representation,
+                    options,
+                )
                 .map_err(ArrayError::CodecError)?;
             crate::storage::store_chunk(
                 &*storage_transformer,
                 self.path(),
                 chunk_indices,
                 self.chunk_key_encoding(),
-                &chunk_encoded,
+                Bytes::from(chunk_encoded.into_owned()),
             )
             .map_err(ArrayError::StorageError)
         }
@@ -288,13 +288,13 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     pub fn store_chunk_elements_opt<T: bytemuck::Pod>(
         &self,
         chunk_indices: &[u64],
-        chunk_elements: Vec<T>,
+        chunk_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
             chunk_elements,
-            store_chunk_opt(chunk_indices, chunk_elements, options)
+            store_chunk_opt(chunk_indices, &chunk_elements, options)
         )
     }
 
@@ -317,7 +317,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
             array_store_ndarray!(
                 self,
                 chunk_array,
-                store_chunk_elements_opt(chunk_indices, chunk_array, options)
+                store_chunk_elements_opt(chunk_indices, &chunk_array, options)
             )
         } else {
             Err(ArrayError::InvalidDataShape(
@@ -333,7 +333,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     pub fn store_chunks_opt(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: Vec<u8>,
+        chunks_bytes: &[u8],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let num_chunks = chunks.num_elements_usize();
@@ -380,7 +380,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                     #[allow(clippy::similar_names)]
                     let chunk_bytes = unsafe {
                         chunk_subset_in_array_subset.extract_bytes_unchecked(
-                            &chunks_bytes,
+                            chunks_bytes,
                             array_subset.shape(),
                             element_size,
                         )
@@ -391,7 +391,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                         chunk_subset_in_array_subset.num_elements()
                     );
 
-                    self.store_chunk_opt(&chunk_indices, chunk_bytes, &options)
+                    self.store_chunk_opt(&chunk_indices, &chunk_bytes, &options)
                 };
                 let indices = chunks.indices();
                 iter_concurrent_limit!(chunk_concurrent_limit, indices, try_for_each, store_chunk)?;
@@ -406,13 +406,13 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     pub fn store_chunks_elements_opt<T: bytemuck::Pod>(
         &self,
         chunks: &ArraySubset,
-        chunks_elements: Vec<T>,
+        chunks_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         array_store_elements!(
             self,
             chunks_elements,
-            store_chunks_opt(chunks, chunks_elements, options)
+            store_chunks_opt(chunks, &chunks_elements, options)
         )
     }
 
@@ -436,7 +436,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
             array_store_ndarray!(
                 self,
                 chunks_array,
-                store_chunks_elements_opt(chunks, chunks_array, options)
+                store_chunks_elements_opt(chunks, &chunks_array, options)
             )
         } else {
             Err(ArrayError::InvalidDataShape(

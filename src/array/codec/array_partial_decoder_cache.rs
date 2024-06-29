@@ -1,6 +1,6 @@
 //! A cache for partial decoders.
 
-use std::marker::PhantomData;
+use std::{borrow::Cow, marker::PhantomData};
 
 use crate::{array::ChunkRepresentation, array_subset::IncompatibleArraySubsetAndShapeError};
 
@@ -33,7 +33,8 @@ impl<'a> ArrayPartialDecoderCache<'a> {
                 )],
                 options,
             )?
-            .remove(0);
+            .remove(0)
+            .into_owned();
         Ok(Self {
             decoded_representation,
             cache,
@@ -59,7 +60,8 @@ impl<'a> ArrayPartialDecoderCache<'a> {
                 options,
             )
             .await?
-            .remove(0);
+            .remove(0)
+            .into_owned();
         Ok(Self {
             decoded_representation,
             cache,
@@ -77,12 +79,12 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
         &self,
         decoded_regions: &[ArraySubset],
         _options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
-        let mut out: Vec<Vec<u8>> = Vec::with_capacity(decoded_regions.len());
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+        let mut out = Vec::with_capacity(decoded_regions.len());
         let array_shape = self.decoded_representation.shape_u64();
         let element_size = self.decoded_representation.element_size();
         for array_subset in decoded_regions {
-            out.push(
+            out.push(Cow::Owned(
                 array_subset
                     .extract_bytes(&self.cache, &array_shape, element_size)
                     .map_err(|_| {
@@ -91,7 +93,7 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
                             self.decoded_representation.shape_u64(),
                         ))
                     })?,
-            );
+            ));
         }
         Ok(out)
     }
@@ -108,7 +110,7 @@ impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         ArrayPartialDecoderTraits::partial_decode_opt(self, decoded_regions, options)
     }
 }

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
@@ -166,6 +166,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             chunk_indices,
             self.chunk_key_encoding(),
         )
+        .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
     }
 
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist with default codec options.
@@ -257,6 +258,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 &chunk_indices,
                 self.chunk_key_encoding(),
             )
+            .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
         };
 
         let indices = chunks.indices();
@@ -527,12 +529,16 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let chunk_decoded = self
                 .codecs()
-                .decode(chunk_encoded, &chunk_representation, options)
+                .decode(
+                    Cow::Borrowed(&chunk_encoded),
+                    &chunk_representation,
+                    options,
+                )
                 .map_err(ArrayError::CodecError)?;
             let chunk_decoded_size =
                 chunk_representation.num_elements_usize() * chunk_representation.data_type().size();
             if chunk_decoded.len() == chunk_decoded_size {
-                Ok(Some(chunk_decoded))
+                Ok(Some(chunk_decoded.into_owned()))
             } else {
                 Err(ArrayError::UnexpectedChunkDecodedSize(
                     chunk_decoded.len(),
@@ -655,7 +661,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         .map_err(ArrayError::StorageError)?;
         if let Some(chunk_encoded) = chunk_encoded {
             self.codecs()
-                .decode_into_array_view(&chunk_encoded, &chunk_representation, array_view, options)
+                .decode_into_array_view(
+                    Cow::Borrowed(&chunk_encoded),
+                    &chunk_representation,
+                    array_view,
+                    options,
+                )
                 .map_err(ArrayError::CodecError)
         } else {
             super::fill_array_view_with_fill_value(array_view, self.fill_value());
@@ -718,7 +729,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         // Retrieve chunk bytes
         let num_chunks = chunks.num_elements_usize();
         match num_chunks {
-            0 => Ok(vec![]),
+            0 => Ok(Vec::default()),
             1 => {
                 let chunk_indices = chunks.start();
                 self.retrieve_chunk_opt(chunk_indices, options)
@@ -1134,6 +1145,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     .partial_decode_opt(&[chunk_subset.clone()], options)?
                     .pop()
                     .unwrap_unchecked()
+                    .into_owned()
             }
         };
 

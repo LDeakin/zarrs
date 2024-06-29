@@ -1,4 +1,7 @@
-use std::io::{Cursor, Read};
+use std::{
+    borrow::Cow,
+    io::{Cursor, Read},
+};
 
 use flate2::bufread::GzDecoder;
 
@@ -27,7 +30,7 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
@@ -39,7 +42,10 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
 
         Ok(Some(
             extract_byte_ranges(&decompressed, decoded_regions)
-                .map_err(CodecError::InvalidByteRangeError)?,
+                .map_err(CodecError::InvalidByteRangeError)?
+                .into_iter()
+                .map(Cow::Owned)
+                .collect(),
         ))
     }
 }
@@ -65,7 +71,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncGzipPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Vec<u8>>>, CodecError> {
+    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
@@ -77,7 +83,10 @@ impl AsyncBytesPartialDecoderTraits for AsyncGzipPartialDecoder<'_> {
 
         Ok(Some(
             extract_byte_ranges(&decompressed, decoded_regions)
-                .map_err(CodecError::InvalidByteRangeError)?,
+                .map_err(CodecError::InvalidByteRangeError)?
+                .into_iter()
+                .map(Cow::Owned)
+                .collect(),
         ))
     }
 }

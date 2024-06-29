@@ -227,6 +227,8 @@ fn blosc_decompress_bytes_partial(
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use crate::{
         array::{
             codec::{BytesToBytesCodecTraits, CodecOptions},
@@ -282,12 +284,12 @@ mod tests {
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
-            .encode(bytes.clone(), &CodecOptions::default())
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
             .unwrap();
         let decoded = codec
             .decode(encoded, &bytes_representation, &CodecOptions::default())
             .unwrap();
-        assert_eq!(bytes, decoded);
+        assert_eq!(bytes, decoded.to_vec());
     }
 
     #[test]
@@ -343,7 +345,9 @@ mod tests {
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
+        let encoded = codec
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(
                 array_representation.shape(),
@@ -359,15 +363,13 @@ mod tests {
             )
             .unwrap();
         let decoded = partial_decoder
-            .partial_decode(&decoded_regions, &CodecOptions::default())
+            .partial_decode_concat(&decoded_regions, &CodecOptions::default())
             .unwrap()
             .unwrap();
 
         let decoded: Vec<u16> = decoded
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u16>())
+            .to_vec()
+            .chunks_exact(std::mem::size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
 
@@ -391,7 +393,9 @@ mod tests {
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
 
-        let encoded = codec.encode(bytes, &CodecOptions::default()).unwrap();
+        let encoded = codec
+            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(
                 array_representation.shape(),
@@ -408,16 +412,14 @@ mod tests {
             .await
             .unwrap();
         let decoded = partial_decoder
-            .partial_decode(&decoded_regions, &CodecOptions::default())
+            .partial_decode_concat(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap()
             .unwrap();
 
         let decoded: Vec<u16> = decoded
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u16>())
+            .to_vec()
+            .chunks_exact(std::mem::size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
 

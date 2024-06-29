@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{
     array::{
         codec::{
@@ -45,7 +47,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
@@ -65,16 +67,18 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                 .partial_decode_concat(&byte_ranges, options)?
                 .map_or_else(
                     || {
-                        self.decoded_representation
-                            .fill_value()
-                            .as_ne_bytes()
-                            .repeat(array_subset.num_elements_usize())
+                        Cow::Owned(
+                            self.decoded_representation
+                                .fill_value()
+                                .as_ne_bytes()
+                                .repeat(array_subset.num_elements_usize()),
+                        )
                     },
                     |mut decoded| {
                         if let Some(endian) = &self.endian {
                             if !endian.is_native() {
                                 reverse_endianness(
-                                    &mut decoded,
+                                    decoded.to_mut(),
                                     self.decoded_representation.data_type(),
                                 );
                             }
@@ -124,7 +128,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Vec<u8>>, CodecError> {
+    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -161,16 +165,18 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
                 .await?
                 .map_or_else(
                     || {
-                        self.decoded_representation
-                            .fill_value()
-                            .as_ne_bytes()
-                            .repeat(array_subset.num_elements_usize())
+                        Cow::Owned(
+                            self.decoded_representation
+                                .fill_value()
+                                .as_ne_bytes()
+                                .repeat(array_subset.num_elements_usize()),
+                        )
                     },
                     |mut decoded| {
                         if let Some(endian) = &self.endian {
                             if !endian.is_native() {
                                 reverse_endianness(
-                                    &mut decoded,
+                                    decoded.to_mut(),
                                     self.decoded_representation.data_type(),
                                 );
                             }

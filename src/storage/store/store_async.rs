@@ -74,7 +74,10 @@ mod test_util {
     ) -> Result<(), Box<dyn Error>> {
         assert!(store.get(&"notfound".try_into()?).await?.is_none());
         assert!(store.size_key(&"notfound".try_into()?).await?.is_none());
-        assert_eq!(store.get(&"a/b".try_into()?).await?, Some(vec![0, 1, 2]));
+        assert_eq!(
+            store.get(&"a/b".try_into()?).await?,
+            Some(vec![0, 1, 2].into())
+        );
         assert_eq!(store.size_key(&"a/b".try_into()?).await?, Some(3));
         assert_eq!(store.size_key(&"a/c".try_into()?).await?, Some(1));
         assert_eq!(store.size_key(&"i/j/k".try_into()?).await?, Some(2));
@@ -88,7 +91,7 @@ mod test_util {
                     ]
                 )
                 .await?,
-            Some(vec![vec![1], vec![2]])
+            Some(vec![vec![1].into(), vec![2].into()])
         );
         assert_eq!(
             store
@@ -98,7 +101,11 @@ mod test_util {
                     StoreKeyRange::new("i/j/k".try_into()?, ByteRange::FromStart(1, Some(1))),
                 ])
                 .await?,
-            vec![Some(vec![1, 2]), Some(vec![0, 1]), Some(vec![1])]
+            vec![
+                Some(vec![1, 2].into()),
+                Some(vec![0, 1].into()),
+                Some(vec![1].into())
+            ]
         );
         assert!(store
             .get_partial_values(&[StoreKeyRange::new(

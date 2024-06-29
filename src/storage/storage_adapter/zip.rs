@@ -4,7 +4,7 @@ use crate::{
     array::codec::extract_byte_ranges_read,
     byte_range::ByteRange,
     storage::{
-        storage_value_io::StorageValueIO, ListableStorageTraits, ReadableStorageTraits,
+        storage_value_io::StorageValueIO, Bytes, ListableStorageTraits, ReadableStorageTraits,
         StorageError, StoreKey, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
     },
 };
@@ -68,7 +68,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let mut zip_archive = self.zip_archive.lock();
         let mut zip_name = self.zip_path.clone();
         zip_name.push(key.as_str());
@@ -85,7 +85,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         };
         let size = file.size();
 
-        let out = extract_byte_ranges_read(&mut file, size, byte_ranges)?;
+        let out = extract_byte_ranges_read(&mut file, size, byte_ranges)?
+            .into_iter()
+            .map(Bytes::from)
+            .collect();
         Ok(Some(out))
     }
 
@@ -102,7 +105,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
-    ) -> Result<Option<Vec<Vec<u8>>>, StorageError> {
+    ) -> Result<Option<Vec<Bytes>>, StorageError> {
         self.get_impl(key, byte_ranges)
     }
 
@@ -271,13 +274,13 @@ mod tests {
         let tmp_path = tempfile::TempDir::new()?;
         let tmp_path = tmp_path.path();
         let store = FilesystemStore::new(tmp_path)?.sorted();
-        store.set(&"a/b".try_into()?, &[0, 1, 2, 3])?;
-        store.set(&"a/c".try_into()?, &[])?;
-        store.set(&"a/d/e".try_into()?, &[])?;
-        store.set(&"a/f/g".try_into()?, &[])?;
-        store.set(&"a/f/h".try_into()?, &[])?;
-        store.set(&"b/c/d".try_into()?, &[])?;
-        store.set(&"c".try_into()?, &[])?;
+        store.set(&"a/b".try_into()?, vec![0, 1, 2, 3].into())?;
+        store.set(&"a/c".try_into()?, vec![].into())?;
+        store.set(&"a/d/e".try_into()?, vec![].into())?;
+        store.set(&"a/f/g".try_into()?, vec![].into())?;
+        store.set(&"a/f/h".try_into()?, vec![].into())?;
+        store.set(&"b/c/d".try_into()?, vec![].into())?;
+        store.set(&"c".try_into()?, vec![].into())?;
 
         let walkdir = WalkDir::new(tmp_path);
 
@@ -353,7 +356,7 @@ mod tests {
             &"/a/b".try_into()?
         )?);
 
-        assert_eq!(store.get(&"a/b".try_into()?)?.unwrap(), &[0, 1, 2, 3]);
+        assert_eq!(store.get(&"a/b".try_into()?)?.unwrap(), vec![0, 1, 2, 3]);
         assert_eq!(
             store.get(&"a/c".try_into()?)?.unwrap(),
             Vec::<u8>::new().as_slice()
@@ -407,7 +410,7 @@ mod tests {
             &"/b".try_into()?
         )?);
 
-        assert_eq!(store.get(&"b".try_into()?)?.unwrap(), &[0, 1, 2, 3]);
+        assert_eq!(store.get(&"b".try_into()?)?.unwrap(), vec![0, 1, 2, 3]);
         // assert_eq!(store.get(&"c".try_into()?)?, Vec::<u8>::new().as_slice());
 
         Ok(())

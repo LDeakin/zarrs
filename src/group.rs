@@ -627,7 +627,7 @@ mod tests {
     fn group_invalid_metadata() {
         let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
         store
-            .set(&StoreKey::new("zarr.json").unwrap(), &[0])
+            .set(&StoreKey::new("zarr.json").unwrap(), vec![0].into())
             .unwrap();
         assert_eq!(
             Group::open(store, "/").unwrap_err().to_string(),

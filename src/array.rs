@@ -100,13 +100,6 @@ pub type ArrayShape = Vec<u64>;
 #[error("value must be non-zero")]
 pub struct NonZeroError;
 
-/// An alias for bytes which may or may not be available.
-///
-/// When a value is read from a store, it returns `MaybeBytes` which is [`None`] if the key is not available.
-/// A bytes to bytes codec only decodes `MaybeBytes` holding actual bytes, otherwise the bytes are propagated to the next decoder.
-/// An array to bytes partial decoder must take care of converting missing chunks to the fill value.
-pub type MaybeBytes = Option<Vec<u8>>;
-
 /// A Zarr array.
 ///
 /// ## Initilisation
@@ -657,7 +650,7 @@ macro_rules! array_store_elements {
                 std::mem::size_of::<T>(),
             ))
         } else {
-            let $elements = crate::array::transmute_to_bytes_vec($elements);
+            let $elements = crate::array::convert_to_bytes_vec($elements);
             $self.$func($($arg)*)
         }
     };
@@ -692,7 +685,7 @@ macro_rules! array_async_store_elements {
                 std::mem::size_of::<T>(),
             ))
         } else {
-            let $elements = crate::array::transmute_to_bytes_vec($elements);
+            let $elements = crate::array::convert_to_bytes_vec($elements);
             $self.$func($($arg)*).await
         }
     };
@@ -736,16 +729,28 @@ mod array_async_readable_writable;
 
 /// Transmute from `Vec<u8>` to `Vec<T>`.
 #[must_use]
+pub fn convert_from_bytes_slice<T: bytemuck::Pod>(from: &[u8]) -> Vec<T> {
+    bytemuck::allocation::pod_collect_to_vec(from)
+}
+
+/// Transmute from `Vec<u8>` to `Vec<T>`.
+#[must_use]
 pub fn transmute_from_bytes_vec<T: bytemuck::Pod>(from: Vec<u8>) -> Vec<T> {
     bytemuck::allocation::try_cast_vec(from)
-        .unwrap_or_else(|(_err, from)| bytemuck::allocation::pod_collect_to_vec(&from))
+        .unwrap_or_else(|(_err, from)| convert_from_bytes_slice(&from))
+}
+
+/// Convert from `&[T]` to `Vec<u8>`.
+#[must_use]
+pub fn convert_to_bytes_vec<T: bytemuck::NoUninit>(from: &[T]) -> Vec<u8> {
+    bytemuck::allocation::pod_collect_to_vec(from)
 }
 
 /// Transmute from `Vec<T>` to `Vec<u8>`.
 #[must_use]
 pub fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
     bytemuck::allocation::try_cast_vec(from)
-        .unwrap_or_else(|(_err, from)| bytemuck::allocation::pod_collect_to_vec(&from))
+        .unwrap_or_else(|(_err, from)| convert_to_bytes_vec(&from))
 }
 
 /// Unravel a linearised index to ND indices.
@@ -931,7 +936,7 @@ mod tests {
         array
             .store_array_subset_elements::<f32>(
                 &ArraySubset::new_with_ranges(&[3..6, 3..6]),
-                vec![1.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+                &[1.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
             )
             .unwrap();
 
@@ -978,7 +983,7 @@ mod tests {
 
         assert_eq!(
             &elements,
-            &vec![
+            &[
                 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, //
                 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, //
                 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, //
@@ -995,7 +1000,7 @@ mod tests {
         let store = Arc::new(FilesystemStore::new(path_out).unwrap());
         let array_out = Array::new_with_metadata(store, "/", array_in.metadata().clone()).unwrap();
         array_out
-            .store_array_subset_elements::<f32>(&subset_all, elements)
+            .store_array_subset_elements::<f32>(&subset_all, &elements)
             .unwrap();
 
         // Store V2 and V3 metadata
