@@ -340,7 +340,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded.to_vec()));
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .partial_decoder(
@@ -394,7 +394,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded.to_vec()));
+        let input_handle = Box::new(std::io::Cursor::new(encoded));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .async_partial_decoder(

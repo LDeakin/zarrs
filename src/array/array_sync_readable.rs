@@ -166,7 +166,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             chunk_indices,
             self.chunk_key_encoding(),
         )
-        .map(|maybe_vec| maybe_vec.map(|bytes| bytes.to_vec()))
+        .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
     }
 
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist with default codec options.
@@ -258,7 +258,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 &chunk_indices,
                 self.chunk_key_encoding(),
             )
-            .map(|maybe_vec| maybe_vec.map(|bytes| bytes.to_vec()))
+            .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
         };
 
         let indices = chunks.indices();
