@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `{Config,ArrayMetadataOptions}::[set_]include_zarrs_metadata` methods
  - Add `Array::set_dimension_names`
  - Add `storage::[Maybe]AsyncBytes`
+ - Add `array::{convert_from_bytes_slice,convert_to_bytes_vec}`
 
 ### Changed
  - Support `object_store` 0.9-0.10
@@ -50,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `Indices::new_with_start_end` now takes a `range` rather than a `start` and `end`
  - `RecommendedConcurrency::new` takes `impl std::ops::RangeBounds<usize>` instead of `std::ops::Range`
  - **Breaking**: Move `array::MaybeBytes` to `storage::MaybeBytes`
+ - **Breaking**: `Array` store methods now take slices instead of `Vec`s
+ - **Breaking**: Sync and async stores now consume and return `bytes::Bytes` instead of `Vec<u8>`
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies

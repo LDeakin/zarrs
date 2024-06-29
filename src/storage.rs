@@ -99,8 +99,8 @@ pub type AsyncReadableListableStorage = Arc<dyn AsyncReadableListableStorageTrai
 /// [`Arc`] wrapped asynchronous readable, writable and listable storage.
 pub type AsyncReadableWritableListableStorage = Arc<dyn AsyncReadableWritableListableStorageTraits>;
 
-/// An alias for [`Vec<u8>`].
-pub type Bytes = Vec<u8>;
+/// An alias for [`bytes::Bytes`].
+pub type Bytes = bytes::Bytes;
 
 /// An alias for bytes which may or may not be available.
 ///

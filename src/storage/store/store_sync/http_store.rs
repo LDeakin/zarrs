@@ -78,7 +78,7 @@ impl ReadableStorageTraits for HTTPStore {
         let client = reqwest::blocking::Client::new();
         let response = client.get(url).send()?;
         match response.status() {
-            StatusCode::OK => Ok(Some(response.bytes()?.to_vec())),
+            StatusCode::OK => Ok(Some(response.bytes()?)),
             StatusCode::NOT_FOUND => Ok(None),
             _ => Err(StorageError::from(format!(
                 "http unexpected status code: {}",
@@ -119,7 +119,7 @@ impl ReadableStorageTraits for HTTPStore {
                     let mut out = Vec::with_capacity(byte_ranges.len());
                     for byte_range in byte_ranges {
                         let bytes_range =
-                            bytes.split_to(usize::try_from(byte_range.length(size)).unwrap()).to_vec();
+                            bytes.split_to(usize::try_from(byte_range.length(size)).unwrap());
                         out.push(bytes_range);
                     }
                     Ok(Some(out))
@@ -136,7 +136,7 @@ impl ReadableStorageTraits for HTTPStore {
                 for byte_range in byte_ranges {
                     let start = usize::try_from(byte_range.start(size)).unwrap();
                     let end = usize::try_from(byte_range.end(size)).unwrap();
-                    out.push(bytes.slice(start..end).to_vec());
+                    out.push(bytes.slice(start..end));
                 }
                 Ok(Some(out))
             }

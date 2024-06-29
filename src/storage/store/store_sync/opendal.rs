@@ -53,7 +53,7 @@ impl ReadableStorageTraits for OpendalStore {
         handle_result(
             self.operator
                 .read(key.as_str())
-                .map(|buf| buf.to_vec() /* FIXME: opendal fast variant */),
+                .map(|buf| buf.to_bytes() /* FIXME: opendal fast variant */),
         )
     }
 
@@ -73,7 +73,7 @@ impl ReadableStorageTraits for OpendalStore {
                     return Err(InvalidByteRangeError::new(*byte_range, size).into());
                 }
                 bytes.push(
-                    reader.read(byte_range_opendal)?.to_vec(), /* FIXME: opendal fast variant */
+                    reader.read(byte_range_opendal)?.to_bytes(), /* FIXME: opendal fast variant */
                 );
             }
             Ok(Some(bytes))

@@ -530,7 +530,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             let chunk_decoded = self
                 .codecs()
                 .decode(
-                    Cow::Owned(chunk_encoded),
+                    Cow::Borrowed(&chunk_encoded),
                     &chunk_representation,
                     options,
                 )
@@ -662,7 +662,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         if let Some(chunk_encoded) = chunk_encoded {
             self.codecs()
                 .decode_into_array_view(
-                    Cow::Owned(chunk_encoded),
+                    Cow::Borrowed(&chunk_encoded),
                     &chunk_representation,
                     array_view,
                     options,

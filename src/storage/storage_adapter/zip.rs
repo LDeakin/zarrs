@@ -356,10 +356,7 @@ mod tests {
             &"/a/b".try_into()?
         )?);
 
-        assert_eq!(
-            store.get(&"a/b".try_into()?)?.unwrap(),
-            Bytes::from(vec![0, 1, 2, 3])
-        );
+        assert_eq!(store.get(&"a/b".try_into()?)?.unwrap(), vec![0, 1, 2, 3]);
         assert_eq!(
             store.get(&"a/c".try_into()?)?.unwrap(),
             Vec::<u8>::new().as_slice()
@@ -413,10 +410,7 @@ mod tests {
             &"/b".try_into()?
         )?);
 
-        assert_eq!(
-            store.get(&"b".try_into()?)?.unwrap(),
-            Bytes::from(vec![0, 1, 2, 3])
-        );
+        assert_eq!(store.get(&"b".try_into()?)?.unwrap(), vec![0, 1, 2, 3]);
         // assert_eq!(store.get(&"c".try_into()?)?, Vec::<u8>::new().as_slice());
 
         Ok(())
