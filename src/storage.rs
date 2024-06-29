@@ -99,6 +99,8 @@ pub type AsyncReadableListableStorage = Arc<dyn AsyncReadableListableStorageTrai
 /// [`Arc`] wrapped asynchronous readable, writable and listable storage.
 pub type AsyncReadableWritableListableStorage = Arc<dyn AsyncReadableWritableListableStorageTraits>;
 
+/// The type for bytes used in synchronous store set and get methods.
+///
 /// An alias for [`bytes::Bytes`].
 pub type Bytes = bytes::Bytes;
 
@@ -111,6 +113,8 @@ pub type Bytes = bytes::Bytes;
 pub type MaybeBytes = Option<Bytes>;
 
 #[cfg(feature = "async")]
+/// The type for bytes used in asynchronous store set and get methods.
+///
 /// An alias for [`bytes::Bytes`].
 pub type AsyncBytes = bytes::Bytes;
 
