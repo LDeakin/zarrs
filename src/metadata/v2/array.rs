@@ -255,28 +255,32 @@ impl Serialize for FillValueMetadataV2 {
 }
 
 /// Convert Zarr V2 fill value metadata to [`FillValueMetadata`].
+///
+/// Returns [`None`] for [`FillValueMetadataV2::Null`].
 #[must_use]
-pub fn array_metadata_fill_value_v2_to_v3(fill_value: &FillValueMetadataV2) -> FillValueMetadata {
+pub fn array_metadata_fill_value_v2_to_v3(
+    fill_value: &FillValueMetadataV2,
+) -> Option<FillValueMetadata> {
     match fill_value {
-        FillValueMetadataV2::Null => todo!(),
-        FillValueMetadataV2::NaN => FillValueMetadata::Float(FillValueFloat::NonFinite(
+        FillValueMetadataV2::Null => None,
+        FillValueMetadataV2::NaN => Some(FillValueMetadata::Float(FillValueFloat::NonFinite(
             FillValueFloatStringNonFinite::NaN,
-        )),
-        FillValueMetadataV2::Infinity => FillValueMetadata::Float(FillValueFloat::NonFinite(
+        ))),
+        FillValueMetadataV2::Infinity => Some(FillValueMetadata::Float(FillValueFloat::NonFinite(
             FillValueFloatStringNonFinite::PosInfinity,
-        )),
-        FillValueMetadataV2::NegInfinity => FillValueMetadata::Float(FillValueFloat::NonFinite(
-            FillValueFloatStringNonFinite::NegInfinity,
+        ))),
+        FillValueMetadataV2::NegInfinity => Some(FillValueMetadata::Float(
+            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity),
         )),
         FillValueMetadataV2::Number(number) => {
             if let Some(u) = number.as_u64() {
-                FillValueMetadata::UInt(u)
+                Some(FillValueMetadata::UInt(u))
             } else if let Some(i) = number.as_i64() {
-                FillValueMetadata::Int(i)
+                Some(FillValueMetadata::Int(i))
             } else if let Some(f) = number.as_f64() {
-                FillValueMetadata::Float(FillValueFloat::Float(f))
+                Some(FillValueMetadata::Float(FillValueFloat::Float(f)))
             } else {
-                todo!()
+                unreachable!("number must be convertible to u64, i64 or f64")
             }
         }
     }

@@ -6,7 +6,7 @@ use super::v2::{
     array::{
         array_metadata_fill_value_v2_to_v3, data_type_metadata_v2_to_endianness,
         data_type_metadata_v2_to_v3_data_type, ArrayMetadataV2, ArrayMetadataV2DataType,
-        ArrayMetadataV2Order, DataTypeMetadataV2InvalidEndiannessError,
+        ArrayMetadataV2Order, DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
     },
     codec::blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
 };
@@ -20,6 +20,7 @@ use crate::{
     array::{
         chunk_grid::RegularChunkGridConfiguration,
         chunk_key_encoding::V2ChunkKeyEncodingConfiguration, codec::BytesCodecConfigurationV1,
+        DataType, FillValueMetadata,
     },
     metadata::{
         v3::{
@@ -55,6 +56,9 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     /// An unsupported codec.
     #[error("unsupported codec {_0} with configuration {_1:?}")]
     UnsupportedCodec(String, serde_json::Map<String, serde_json::Value>),
+    /// An unsupported fill value.
+    #[error("unsupported fill value {_1:?} for data type {_0}")]
+    UnsupportedFillValue(DataType, FillValueMetadataV2),
     /// Serialization/deserialization error.
     #[error("JSON serialization or deserialization error: {_0}")]
     SerdeError(#[from] serde_json::Error),
@@ -100,7 +104,30 @@ pub fn array_metadata_v2_to_v3(
         ));
     };
 
-    let fill_value = array_metadata_fill_value_v2_to_v3(&array_metadata_v2.fill_value);
+    // Fill value
+    let mut fill_value = array_metadata_fill_value_v2_to_v3(&array_metadata_v2.fill_value)
+        .ok_or_else(|| {
+            // TODO: How best to deal with null fill values? What do other implementations do?
+            ArrayMetadataV2ToV3ConversionError::UnsupportedFillValue(
+                data_type.clone(),
+                array_metadata_v2.fill_value.clone(),
+            )
+        })?;
+    if data_type == crate::array::DataType::Bool {
+        // Map a 0/1 scalar fill value to a bool
+        if let Some(fill_value_uint) = fill_value.try_as_uint::<u64>() {
+            if fill_value_uint == 0 {
+                fill_value = FillValueMetadata::Bool(false);
+            } else if fill_value_uint == 1 {
+                fill_value = FillValueMetadata::Bool(true);
+            } else {
+                return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedFillValue(
+                    data_type.clone(),
+                    array_metadata_v2.fill_value.clone(),
+                ));
+            }
+        }
+    }
 
     let mut codecs: Vec<MetadataV3> = vec![];
 
