@@ -66,8 +66,7 @@ mod tests {
     const JSON_VALID: &str = r#"{
         "level": 8,
         "delta_encoding_order": 2,
-        "int_mult_spec": true,
-        "float_mult_spec": true,
+        "mode_spec": "auto",
         "max_page_n": 262144
     }"#;
 
@@ -103,6 +102,16 @@ mod tests {
     }
 
     #[test]
+    fn codec_pcodec_round_trip_u16() {
+        codec_pcodec_round_trip_impl(
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            DataType::UInt16,
+            FillValue::from(0u16),
+        )
+        .unwrap();
+    }
+
+    #[test]
     fn codec_pcodec_round_trip_u32() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -123,6 +132,16 @@ mod tests {
     }
 
     #[test]
+    fn codec_pcodec_round_trip_i16() {
+        codec_pcodec_round_trip_impl(
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            DataType::Int16,
+            FillValue::from(0i16),
+        )
+        .unwrap();
+    }
+
+    #[test]
     fn codec_pcodec_round_trip_i32() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
@@ -138,6 +157,16 @@ mod tests {
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
             DataType::Int64,
             FillValue::from(0i64),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_pcodec_round_trip_f16() {
+        codec_pcodec_round_trip_impl(
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            DataType::Float16,
+            FillValue::from(half::f16::from_f32(0.0)),
         )
         .unwrap();
     }

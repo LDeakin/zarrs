@@ -6,7 +6,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/pcodec";
 
 /// A wrapper to handle various versions of `pcodec` codec configuration parameters.
-#[derive(Serialize, Deserialize, Clone, Copy, Eq, PartialEq, Debug, Display, From)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum PcodecCodecConfiguration {
     /// Version 1.0 draft.
@@ -31,39 +31,172 @@ impl Default for PcodecCodecConfiguration {
 /// }
 /// # "#;
 /// # let configuration: zarrs::array::codec::PcodecCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-#[derive(Serialize, Deserialize, Clone, Copy, Eq, PartialEq, Debug, Display)]
-#[serde(deny_unknown_fields)]
+// TODO: Examples for more advanced configurations
+// TODO: Docs about valid usage with base/k
+#[derive(Clone, PartialEq, Debug, Display)]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct PcodecCodecConfigurationV1 {
     /// A compression level from 0-12, where 12 takes the longest and compresses the most.
     ///
     /// The default is 8.
-    #[serde(default)]
     pub level: PcodecCompressionLevel,
     /// Either a delta encoding level from 0-7 or None.
     ///
     /// If set to None, pcodec will try to infer the optimal delta encoding order.
     /// The default is None.
-    #[serde(default)]
     pub delta_encoding_order: Option<PcodecDeltaEncodingOrder>,
-    /// If enabled, pcodec will consider using int mult mode, which can substantially improve compression ratio but decrease speed in some cases for integer types.
-    ///
-    /// The default is true.
-    #[serde(default = "default_mult_spec")]
-    pub int_mult_spec: bool,
-    /// If enabled, pcodec will consider using float mult mode, which can substantially improve compression ratio but decrease speed in some cases for float types.
-    ///
-    /// The default is true.
-    #[serde(default = "default_mult_spec")]
-    pub float_mult_spec: bool,
+    /// The pcodec mode spec.
+    pub mode_spec: PcodecModeSpecConfiguration,
     /// The maximum number of values to encode per pcodec page.
     ///
     /// If set too high or too low, pcodec's compression ratio may drop.
     /// See <https://docs.rs/pco/latest/pco/enum.PagingSpec.html#variant.EqualPagesUpTo>.
     ///
     /// The default is `1 << 18`.
-    #[serde(default = "default_max_page_n")]
     pub max_page_n: usize,
+}
+
+/// Specifies how Pco should choose a [`mode`][crate::Mode] to compress this
+/// chunk of data.
+///
+/// see [`pco::ModeSpec`].
+#[derive(Deserialize, Clone, Copy, PartialEq, Debug, Display)]
+pub enum PcodecModeSpecConfiguration {
+    /// Automatically detect a good mode.
+    ///
+    /// This works well most of the time, but costs some compression time and can
+    /// select a bad mode in adversarial cases.
+    Auto,
+    /// Only use `Classic` mode.
+    Classic,
+    /// Try using `FloatMult` mode with a given `base`.
+    ///
+    /// Only applies to floating-point types.
+    TryFloatMult(f64),
+    /// Try using `FloatQuant` mode with `k` bits of quantization.
+    ///
+    /// Only applies to floating-point types.
+    TryFloatQuant(u32),
+    /// Try using `IntMult` mode with a given `base`.
+    ///
+    /// Only applies to integer types.
+    TryIntMult(u64),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+// #[serde(untagged)]
+#[serde(rename_all = "snake_case")]
+enum PcodecModeSpecConfigurationIntermediate {
+    Auto,
+    Classic,
+    TryFloatMult,
+    TryFloatQuant,
+    TryIntMult,
+}
+
+impl Default for PcodecModeSpecConfigurationIntermediate {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+enum UIntOrFloat {
+    UInt(u64),
+    Float(f64),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+struct PcodecCodecConfigurationIntermediate {
+    #[serde(default)]
+    level: PcodecCompressionLevel,
+    #[serde(default)]
+    delta_encoding_order: Option<PcodecDeltaEncodingOrder>,
+    #[serde(default)]
+    mode_spec: PcodecModeSpecConfigurationIntermediate,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    base: Option<UIntOrFloat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    k: Option<u32>,
+    #[serde(default = "default_max_page_n")]
+    max_page_n: usize,
+}
+
+impl serde::Serialize for PcodecCodecConfigurationV1 {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let (mode_spec, base, k) = match self.mode_spec {
+            PcodecModeSpecConfiguration::Auto => {
+                (PcodecModeSpecConfigurationIntermediate::Auto, None, None)
+            }
+            PcodecModeSpecConfiguration::Classic => {
+                (PcodecModeSpecConfigurationIntermediate::Classic, None, None)
+            }
+            PcodecModeSpecConfiguration::TryFloatMult(base) => (
+                PcodecModeSpecConfigurationIntermediate::TryFloatMult,
+                Some(UIntOrFloat::Float(base)),
+                None,
+            ),
+            PcodecModeSpecConfiguration::TryFloatQuant(k) => (
+                PcodecModeSpecConfigurationIntermediate::TryFloatQuant,
+                None,
+                Some(k),
+            ),
+            PcodecModeSpecConfiguration::TryIntMult(base) => (
+                PcodecModeSpecConfigurationIntermediate::TryIntMult,
+                Some(UIntOrFloat::UInt(base)),
+                None,
+            ),
+        };
+
+        let config = PcodecCodecConfigurationIntermediate {
+            level: self.level,
+            delta_encoding_order: self.delta_encoding_order,
+            mode_spec,
+            base,
+            k,
+            max_page_n: self.max_page_n,
+        };
+        config.serialize(s)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for PcodecCodecConfigurationV1 {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let config = PcodecCodecConfigurationIntermediate::deserialize(d)?;
+        let mode_spec = match (config.mode_spec, config.base, config.k) {
+            (PcodecModeSpecConfigurationIntermediate::Auto, None, None) => {
+                Ok(PcodecModeSpecConfiguration::Auto)
+            }
+            (PcodecModeSpecConfigurationIntermediate::Classic, None, None) => {
+                Ok(PcodecModeSpecConfiguration::Classic)
+            }
+            (
+                PcodecModeSpecConfigurationIntermediate::TryFloatMult,
+                Some(UIntOrFloat::Float(base)),
+                None,
+            ) => Ok(PcodecModeSpecConfiguration::TryFloatMult(base)),
+            (PcodecModeSpecConfigurationIntermediate::TryFloatQuant, None, Some(k)) => {
+                Ok(PcodecModeSpecConfiguration::TryFloatQuant(k))
+            }
+            (
+                PcodecModeSpecConfigurationIntermediate::TryIntMult,
+                Some(UIntOrFloat::UInt(base)),
+                None,
+            ) => Ok(PcodecModeSpecConfiguration::TryIntMult(base)),
+            _ => Err(serde::de::Error::custom(
+                "For requested mode_spec, base or k incompatible/missing",
+            )),
+        }?;
+        let config = PcodecCodecConfigurationV1 {
+            level: config.level,
+            delta_encoding_order: config.delta_encoding_order,
+            mode_spec,
+            max_page_n: config.max_page_n,
+        };
+        Ok(config)
+    }
 }
 
 impl Default for PcodecCodecConfigurationV1 {
@@ -71,8 +204,7 @@ impl Default for PcodecCodecConfigurationV1 {
         Self {
             level: PcodecCompressionLevel::default(),
             delta_encoding_order: None,
-            int_mult_spec: default_mult_spec(),
-            float_mult_spec: default_mult_spec(),
+            mode_spec: PcodecModeSpecConfiguration::Auto,
             max_page_n: default_max_page_n(),
         }
     }
@@ -226,10 +358,6 @@ impl PcodecDeltaEncodingOrder {
     }
 }
 
-const fn default_mult_spec() -> bool {
-    true
-}
-
 const fn default_max_page_n() -> usize {
     // pco::constants::DEFAULT_MAX_PAGE_N
     1 << 18
@@ -257,13 +385,67 @@ mod tests {
     }
 
     #[test]
-    fn codec_pcodec_valid() {
+    fn codec_pcodec_valid_auto() {
         serde_json::from_str::<PcodecCodecConfiguration>(
             r#"{
             "level": 8,
             "delta_encoding_order": 2,
-            "int_mult_spec": true,
-            "float_mult_spec": true,
+            "mode_spec": "auto",
+            "max_page_n": 262144
+        }"#,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_pcodec_valid_classic() {
+        serde_json::from_str::<PcodecCodecConfiguration>(
+            r#"{
+            "level": 8,
+            "delta_encoding_order": 2,
+            "mode_spec": "classic",
+            "max_page_n": 262144
+        }"#,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_pcodec_valid_try_float_mult() {
+        serde_json::from_str::<PcodecCodecConfiguration>(
+            r#"{
+            "level": 8,
+            "delta_encoding_order": 2,
+            "mode_spec": "try_float_mult",
+            "base": 0.1,
+            "max_page_n": 262144
+        }"#,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_pcodec_valid_try_float_quant() {
+        serde_json::from_str::<PcodecCodecConfiguration>(
+            r#"{
+            "level": 8,
+            "delta_encoding_order": 2,
+            "mode_spec": "try_float_quant",
+            "k": 1,
+            "max_page_n": 262144
+        }"#,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_pcodec_valid_try_int_mult() {
+        serde_json::from_str::<PcodecCodecConfiguration>(
+            r#"{
+            "level": 8,
+            "delta_encoding_order": 2,
+            "mode_spec": "try_int_mult",
+            "base": 1,
             "max_page_n": 262144
         }"#,
         )
@@ -276,8 +458,7 @@ mod tests {
             r#"{
             "level": 13,
             "delta_encoding_order": 2,
-            "int_mult_spec": true,
-            "float_mult_spec": true,
+            "mode_spec": "auto",
             "max_page_n": 262144
         }"#,
         )
@@ -290,8 +471,7 @@ mod tests {
             r#"{
             "level": 8,
             "delta_encoding_order": 8,
-            "int_mult_spec": true,
-            "float_mult_spec": true,
+            "mode_spec": "auto",
             "max_page_n": 262144
         }"#,
         )

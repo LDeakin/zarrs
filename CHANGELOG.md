@@ -62,6 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `AdditionalFields` is now an alias for `BTreeMap<String, AdditionalField>` instead of an opaque struct
  - **Breaking**: Move `storage::storage_adapter::ZipStorageAdapter[CreateError]` to `storage::storage_adapter::zip::`
  - The `{async,sync}_http_array_read` examples now demonstrate usage of `opendal` and `object_store` storage backends
+ - Bump `pcodec` to 0.3
+   - Adds support for `uint16`, `int16` and `float16` data types to the experimental `pcodec` codec
+   - **Breaking**: The schema for `PcodecCodecConfigurationV1` has changed
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies
