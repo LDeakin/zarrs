@@ -32,7 +32,7 @@ fn array_blosc_write_all(c: &mut Criterion) {
                 .unwrap();
                 let data = vec![1u8; num_elements.try_into().unwrap()];
                 let subset = zarrs::array_subset::ArraySubset::new_with_shape(vec![size; 3]);
-                array.store_array_subset_elements(&subset, data).unwrap();
+                array.store_array_subset_elements(&subset, &data).unwrap();
             });
         });
     }
@@ -67,7 +67,7 @@ fn array_blosc_read_all(c: &mut Criterion) {
             .unwrap();
             let data = vec![1u8; num_elements.try_into().unwrap()];
             let subset = zarrs::array_subset::ArraySubset::new_with_shape(vec![size; 3]);
-            array.store_array_subset_elements(&subset, data).unwrap();
+            array.store_array_subset_elements(&subset, &data).unwrap();
 
             // Benchmark reading the data
             b.iter(|| {

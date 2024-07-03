@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use criterion::{
     criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
     Throughput,
@@ -38,7 +40,7 @@ fn codec_bytes(c: &mut Criterion) {
         group.bench_function(BenchmarkId::new("encode_decode", size3), |b| {
             b.iter(|| {
                 codec
-                    .encode(data.clone(), &rep, &CodecOptions::default())
+                    .encode(Cow::Borrowed(&data), &rep, &CodecOptions::default())
                     .unwrap()
             });
         });
@@ -65,20 +67,20 @@ fn codec_blosc(c: &mut Criterion) {
 
         let data_decoded: Vec<u8> = (0..size3).map(|i| i as u8).collect();
         let data_encoded = codec
-            .encode(data_decoded.clone(), &CodecOptions::default())
+            .encode(Cow::Borrowed(&data_decoded), &CodecOptions::default())
             .unwrap();
         group.throughput(Throughput::Bytes(size3));
         group.bench_function(BenchmarkId::new("encode", size3), |b| {
             b.iter(|| {
                 codec
-                    .encode(data_decoded.clone(), &CodecOptions::default())
+                    .encode(Cow::Borrowed(&data_decoded), &CodecOptions::default())
                     .unwrap()
             });
         });
         group.bench_function(BenchmarkId::new("decode", size3), |b| {
             b.iter(|| {
                 codec
-                    .decode(data_encoded.clone(), &rep, &CodecOptions::default())
+                    .decode(Cow::Borrowed(&data_encoded), &rep, &CodecOptions::default())
                     .unwrap()
             });
         });
