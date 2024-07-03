@@ -10,6 +10,8 @@ mod node_metadata;
 mod node_name;
 mod node_path;
 
+use std::sync::Arc;
+
 pub use node_metadata::NodeMetadata;
 pub use node_name::{NodeName, NodeNameError};
 pub use node_path::{NodePath, NodePathError};
@@ -18,8 +20,10 @@ use thiserror::Error;
 use crate::{
     array::ArrayMetadata,
     group::GroupMetadataV3,
+    metadata::{ArrayMetadataV2, GroupMetadata, GroupMetadataV2, MetadataRetrieveVersion},
     storage::{
-        get_child_nodes, meta_key, ListableStorageTraits, ReadableStorageTraits, StorageError,
+        get_child_nodes, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group,
+        ListableStorageTraits, ReadableStorageTraits, StorageError,
     },
 };
 
@@ -52,27 +56,181 @@ pub enum NodeCreateError {
     /// A storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
+    /// Metadata version mismatch
+    #[error("Found V2 metadata in V3 key or vice-versa")]
+    MetadataVersionMismatch,
+    /// Missing metadata (Zarr V2 only).
+    #[error("group metadata is missing (Zarr V2 only)")]
+    MissingMetadata,
 }
 
 impl Node {
-    /// Create a new node at `path` and read metadata and children from `storage`.
+    fn get_metadata<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+        storage: &Arc<TStorage>,
+        path: &NodePath,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<NodeMetadata, NodeCreateError> {
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
+            // Try a Zarr V3 group/array
+            let key_v3 = meta_key(path);
+            if let Some(metadata) = storage.get(&key_v3)? {
+                let metadata: NodeMetadata = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
+                match metadata {
+                    NodeMetadata::Array(ArrayMetadata::V3(_))
+                    | NodeMetadata::Group(GroupMetadata::V3(_)) => return Ok(metadata),
+                    NodeMetadata::Array(ArrayMetadata::V2(_))
+                    | NodeMetadata::Group(GroupMetadata::V2(_)) => {
+                        return Err(NodeCreateError::MetadataVersionMismatch)
+                    }
+                }
+            }
+        }
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V2 = version {
+            // Try a Zarr V2 array
+            let array_key = meta_key_v2_array(path);
+            let attributes_key = meta_key_v2_attributes(path);
+            if let Some(metadata) = storage.get(&array_key)? {
+                let mut metadata: ArrayMetadataV2 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(array_key, err.to_string()))?;
+                let attributes = storage.get(&attributes_key)?;
+                if let Some(attributes) = attributes {
+                    metadata.attributes = serde_json::from_slice(&attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(attributes_key, err.to_string())
+                    })?;
+                }
+                return Ok(NodeMetadata::Array(ArrayMetadata::V2(metadata)));
+            }
+
+            // Try a Zarr V2 group
+            let group_key = meta_key_v2_group(path);
+            if let Some(metadata) = storage.get(&group_key)? {
+                let mut metadata: GroupMetadataV2 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(group_key, err.to_string()))?;
+                let attributes = storage.get(&attributes_key)?;
+                if let Some(attributes) = attributes {
+                    metadata.attributes = serde_json::from_slice(&attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(attributes_key, err.to_string())
+                    })?;
+                }
+                return Ok(NodeMetadata::Group(GroupMetadata::V2(metadata)));
+            }
+        }
+
+        // No metadata has been found
+        match version {
+            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
+                // V3 supports missing metadata
+                Ok(NodeMetadata::Group(GroupMetadata::V3(
+                    GroupMetadataV3::default(),
+                )))
+            }
+            MetadataRetrieveVersion::V2 => {
+                // V2 does not support missing metadata
+                Err(NodeCreateError::MissingMetadata)
+            }
+        }
+    }
+
+    #[cfg(feature = "async")]
+    // Identical to get_metadata.. with awaits
+    // "maybe async" one day?
+    async fn async_get_metadata<
+        TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+    >(
+        storage: &Arc<TStorage>,
+        path: &NodePath,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<NodeMetadata, NodeCreateError> {
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
+            // Try a Zarr V3 group/array
+            let key_v3 = meta_key(path);
+            if let Some(metadata) = storage.get(&key_v3).await? {
+                let metadata: NodeMetadata = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
+                match metadata {
+                    NodeMetadata::Array(ArrayMetadata::V3(_))
+                    | NodeMetadata::Group(GroupMetadata::V3(_)) => return Ok(metadata),
+                    NodeMetadata::Array(ArrayMetadata::V2(_))
+                    | NodeMetadata::Group(GroupMetadata::V2(_)) => {
+                        return Err(NodeCreateError::MetadataVersionMismatch)
+                    }
+                }
+            }
+        }
+
+        if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V2 = version {
+            // Try a Zarr V2 array
+            let array_key = meta_key_v2_array(path);
+            let attributes_key = meta_key_v2_attributes(path);
+            if let Some(metadata) = storage.get(&array_key).await? {
+                let mut metadata: ArrayMetadataV2 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(array_key, err.to_string()))?;
+                let attributes = storage.get(&attributes_key).await?;
+                if let Some(attributes) = attributes {
+                    metadata.attributes = serde_json::from_slice(&attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(attributes_key, err.to_string())
+                    })?;
+                }
+                return Ok(NodeMetadata::Array(ArrayMetadata::V2(metadata)));
+            }
+
+            // Try a Zarr V2 group
+            let group_key = meta_key_v2_group(path);
+            if let Some(metadata) = storage.get(&group_key).await? {
+                let mut metadata: GroupMetadataV2 = serde_json::from_slice(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(group_key, err.to_string()))?;
+                let attributes = storage.get(&attributes_key).await?;
+                if let Some(attributes) = attributes {
+                    metadata.attributes = serde_json::from_slice(&attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(attributes_key, err.to_string())
+                    })?;
+                }
+                return Ok(NodeMetadata::Group(GroupMetadata::V2(metadata)));
+            }
+        }
+
+        // No metadata has been found
+        match version {
+            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
+                // V3 supports missing metadata
+                Ok(NodeMetadata::Group(GroupMetadata::V3(
+                    GroupMetadataV3::default(),
+                )))
+            }
+            MetadataRetrieveVersion::V2 => {
+                // V2 does not support missing metadata
+                Err(NodeCreateError::MissingMetadata)
+            }
+        }
+    }
+
+    /// Open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
     ///
     /// # Errors
     ///
     /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub fn new<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-        storage: &TStorage,
+    pub fn open<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+        storage: &Arc<TStorage>,
         path: &str,
     ) -> Result<Self, NodeCreateError> {
+        Self::open_opt(storage, path, &MetadataRetrieveVersion::Default)
+    }
+
+    /// Open a node at `path` and read metadata and children from `storage` with non-default [`MetadataRetrieveVersion`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
+
+    pub fn open_opt<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+        storage: &Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<Self, NodeCreateError> {
         let path: NodePath = path.try_into()?;
-        let key = meta_key(&path);
-        let metadata = storage.get(&key)?;
-        let metadata: NodeMetadata = match metadata {
-            Some(metadata) => serde_json::from_slice(&metadata).map_err(|e| {
-                NodeCreateError::StorageError(StorageError::InvalidMetadata(key, e.to_string()))
-            })?,
-            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
-        };
+        let metadata = Self::get_metadata(storage, &path, version)?;
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),
             NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
@@ -86,29 +244,38 @@ impl Node {
     }
 
     #[cfg(feature = "async")]
-    /// Asynchronously create a new node at `path` and read metadata and children from `storage`.
+    /// Asynchronously open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
     ///
     /// # Errors
     ///
     /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub async fn async_new<
+    pub async fn async_open<
         TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
     >(
-        storage: &TStorage,
+        storage: Arc<TStorage>,
         path: &str,
     ) -> Result<Self, NodeCreateError> {
+        Self::async_open_opt(storage, path, &MetadataRetrieveVersion::Default).await
+    }
+
+    #[cfg(feature = "async")]
+    /// Asynchronously open a node at `path` and read metadata and children from `storage` with non-default [`MetadataRetrieveVersion`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
+    pub async fn async_open_opt<
+        TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+    >(
+        storage: Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<Self, NodeCreateError> {
         let path: NodePath = path.try_into()?;
-        let key = meta_key(&path);
-        let metadata = storage.get(&key).await?;
-        let metadata: NodeMetadata = match metadata {
-            Some(metadata) => serde_json::from_slice(&metadata).map_err(|e| {
-                NodeCreateError::StorageError(StorageError::InvalidMetadata(key, e.to_string()))
-            })?,
-            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
-        };
+        let metadata = Self::async_get_metadata(&storage, &path, version).await?;
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),
-            NodeMetadata::Group(_) => async_get_child_nodes(storage, &path).await?,
+            NodeMetadata::Group(_) => async_get_child_nodes(&storage, &path).await?,
         };
         let node = Self {
             path,
@@ -298,7 +465,7 @@ mod tests {
     fn node_default() {
         let store = std::sync::Arc::new(MemoryStore::new());
         let node_path = "/node";
-        let node = Node::new(&*store, node_path).unwrap();
+        let node = Node::open(&store, node_path).unwrap();
         assert_eq!(
             node.metadata,
             NodeMetadata::Group(GroupMetadata::V3(GroupMetadataV3::default()))
@@ -320,7 +487,7 @@ mod tests {
         array.store_metadata().unwrap();
         let stored_metadata = array.metadata_opt(&ArrayMetadataOptions::default());
 
-        let node = Node::new(&*store, node_path).unwrap();
+        let node = Node::open(&store, node_path).unwrap();
         assert_eq!(node.metadata, NodeMetadata::Array(stored_metadata));
     }
 
@@ -329,7 +496,7 @@ mod tests {
         let store: std::sync::Arc<MemoryStore> = std::sync::Arc::new(MemoryStore::new());
         let invalid_node_path = "node";
         assert_eq!(
-            Node::new(&*store, invalid_node_path)
+            Node::open(&store, invalid_node_path)
                 .unwrap_err()
                 .to_string(),
             "invalid node path node"
@@ -343,7 +510,7 @@ mod tests {
             .set(&StoreKey::new("node/zarr.json").unwrap(), vec![0].into())
             .unwrap();
         assert_eq!(
-            Node::new(&*store, "/node").unwrap_err().to_string(),
+            Node::open(&store, "/node").unwrap_err().to_string(),
             "error parsing metadata for node/zarr.json: expected value at line 1 column 1"
         );
     }
@@ -358,7 +525,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            Node::new(&*store, "/node").unwrap_err().to_string(),
+            Node::open(&store, "/node").unwrap_err().to_string(),
             "error parsing metadata for node/array/zarr.json: expected value at line 1 column 1"
         );
     }

@@ -154,7 +154,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     println!("retrieve_array_subset [2..6, 3..5]:\n{data_subset:+4.1}\n");
 
     // Show the hierarchy
-    let node = Node::new(&*store, "/").unwrap();
+    let node = Node::open(&store, "/").unwrap();
     let tree = node.hierarchy_tree();
     println!("hierarchy_tree:\n{}", tree);
 

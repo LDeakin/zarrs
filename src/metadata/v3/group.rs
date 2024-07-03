@@ -21,7 +21,7 @@ use super::AdditionalFields;
 #[serde(tag = "node_type", rename = "group")]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct GroupMetadataV3 {
-    /// An integer defining the version of the storage specification to which the array store adheres. Must be `3`.
+    /// An integer defining the version of the storage specification to which the array adheres. Must be `3`.
     pub zarr_format: usize,
     /// A string defining the type of hierarchy node element, must be `group` here.
     #[serde(skip_serializing)]

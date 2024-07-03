@@ -305,7 +305,10 @@ mod tests {
         path.push("test.zip");
         zip_write(&path)?;
 
-        let store = ZipStorageAdapter::new(store.into(), StoreKey::new("test.zip")?)?;
+        let store = Arc::new(ZipStorageAdapter::new(
+            store.into(),
+            StoreKey::new("test.zip")?,
+        )?);
 
         assert_eq!(
             store.list()?,
@@ -374,8 +377,11 @@ mod tests {
         path.push("test.zip");
         zip_write(&path)?;
 
-        let store =
-            ZipStorageAdapter::new_with_path(store.into(), StoreKey::new("test.zip")?, "a/")?;
+        let store = Arc::new(ZipStorageAdapter::new_with_path(
+            store.into(),
+            StoreKey::new("test.zip")?,
+            "a/",
+        )?);
 
         assert_eq!(
             store.list()?,

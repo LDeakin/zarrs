@@ -47,7 +47,7 @@ use super::MetadataV2;
 #[serde(tag = "node_type", rename = "array")]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct ArrayMetadataV2 {
-    /// An integer defining the version of the storage specification to which the array store adheres.
+    /// An integer defining the version of the storage specification to which the array adheres. Must be `2`.
     pub zarr_format: usize,
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
@@ -72,7 +72,7 @@ pub struct ArrayMetadataV2 {
     pub attributes: serde_json::Map<String, serde_json::Value>,
     /// Additional fields.
     ///
-    /// These are not part of Zarr V2, but are retrained for compatibility/flexibility.
+    /// These are not part of Zarr V2, but are retained for compatibility/flexibility.
     #[serde(flatten)]
     pub additional_fields: AdditionalFields,
 }

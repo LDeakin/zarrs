@@ -44,7 +44,7 @@ use crate::array::{ArrayShape, DimensionName, FillValueMetadata};
 #[serde(tag = "node_type", rename = "array")]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct ArrayMetadataV3 {
-    /// An integer defining the version of the storage specification to which the array store adheres.
+    /// An integer defining the version of the storage specification to which the array adheres. Must be `3`.
     pub zarr_format: usize,
     /// A string defining the type of hierarchy node element, must be `array` here.
     #[serde(skip_serializing)]

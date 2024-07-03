@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_recursion::async_recursion;
 
 use futures::{StreamExt, TryStreamExt};
@@ -303,7 +305,7 @@ impl<T> AsyncReadableWritableListableStorageTraits for T where
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 #[async_recursion]
 pub async fn async_get_child_nodes<TStorage>(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<Vec<Node>, StorageError>
 where
@@ -508,7 +510,7 @@ pub async fn async_retrieve_partial_values(
 pub async fn async_discover_children<
     TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
 >(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<StorePrefixes, StorageError> {
     let prefix: StorePrefix = path.try_into()?;
@@ -555,7 +557,7 @@ pub async fn async_erase_node(
 pub async fn async_node_exists<
     TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
 >(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<bool, StorageError> {
     Ok(storage
@@ -569,7 +571,7 @@ pub async fn async_node_exists<
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub async fn async_node_exists_listable<TStorage: ?Sized + AsyncListableStorageTraits>(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<bool, StorageError> {
     let prefix: StorePrefix = path.try_into()?;

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use itertools::Itertools;
 
 use crate::{
@@ -269,7 +271,7 @@ impl<T> ReadableWritableListableStorageTraits for T where
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<Vec<Node>, StorageError> {
     let prefixes = discover_children(storage, path)?;
@@ -464,7 +466,7 @@ pub fn retrieve_partial_values(
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn discover_children<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<StorePrefixes, StorageError> {
     let prefix: StorePrefix = path.try_into()?;
@@ -506,7 +508,7 @@ pub fn erase_node(
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn node_exists<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<bool, StorageError> {
     Ok(storage
@@ -519,7 +521,7 @@ pub fn node_exists<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTra
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn node_exists_listable<TStorage: ?Sized + ListableStorageTraits>(
-    storage: &TStorage,
+    storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<bool, StorageError> {
     let prefix: StorePrefix = path.try_into()?;

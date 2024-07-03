@@ -309,7 +309,7 @@ pub fn data_key(
 // /// # Errors
 // /// Returns a [`StorageError`] if there is an underlying error with the store.
 // pub fn create_hierarchy<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-//     storage: &TStorage,
+//     storage: &Arc<TStorage>,
 // ) -> Result<Hierarchy, StorageError> {
 //     let root_path: NodePath = NodePath::new("/")?;
 //     let root_metadata = storage.get(&meta_key(&root_path));

@@ -53,6 +53,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Move `array::MaybeBytes` to `storage::MaybeBytes`
  - **Breaking**: `Array` store methods now take slices instead of `Vec`s
  - **Breaking**: Sync and async stores now consume and return `bytes::Bytes` instead of `Vec<u8>`
+ - **Breaking**: `Node::[async_]new` renamed to `Node::[async_]open`
+   - Added `Node::[async_]open_opt`
+ - **Breaking**: Change various store methods to take `&Arc<TStorage>` instead of `&TStorage`
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies
