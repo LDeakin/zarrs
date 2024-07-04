@@ -8,7 +8,7 @@ use crate::metadata::AdditionalFields;
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct GroupMetadataV2 {
     /// An integer defining the version of the storage specification to which the group adheres. Must be `2`.
-    pub zarr_format: usize,
+    pub zarr_format: monostate::MustBe!(2u64),
     /// Optional user metadata.
     #[serde(default, flatten)]
     pub attributes: serde_json::Map<String, serde_json::Value>,

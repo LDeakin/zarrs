@@ -248,12 +248,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
         }?;
 
-        if !metadata_v3.validate_format() {
-            return Err(ArrayCreateError::InvalidZarrFormat(metadata_v3.zarr_format));
-        }
-        if !metadata_v3.validate_node_type() {
-            return Err(ArrayCreateError::InvalidNodeType(metadata_v3.node_type));
-        }
         metadata_v3
             .additional_fields
             .validate()

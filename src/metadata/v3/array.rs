@@ -41,14 +41,12 @@ use crate::array::{ArrayShape, DimensionName, FillValueMetadata};
 /// }
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
-#[serde(tag = "node_type", rename = "array")]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct ArrayMetadataV3 {
     /// An integer defining the version of the storage specification to which the array adheres. Must be `3`.
-    pub zarr_format: usize,
+    pub zarr_format: monostate::MustBe!(3u64),
     /// A string defining the type of hierarchy node element, must be `array` here.
-    #[serde(skip_serializing)]
-    pub node_type: String, // Ideally this is serialized after Zarr format, and tag serialization is skipped
+    pub node_type: monostate::MustBe!("array"),
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
     /// The data type of the Zarr array.
@@ -114,8 +112,8 @@ impl ArrayMetadataV3 {
         additional_fields: AdditionalFields,
     ) -> Self {
         Self {
-            zarr_format: 3,
-            node_type: "array".to_string(),
+            zarr_format: monostate::MustBe!(3u64),
+            node_type: monostate::MustBe!("array"),
             shape,
             data_type,
             chunk_grid,
@@ -127,17 +125,5 @@ impl ArrayMetadataV3 {
             dimension_names,
             additional_fields,
         }
-    }
-
-    /// Validates that the `zarr_format` field is `3`.
-    #[must_use]
-    pub const fn validate_format(&self) -> bool {
-        self.zarr_format == 3
-    }
-
-    /// Validates that the `node_type` is `"array"`.
-    #[must_use]
-    pub fn validate_node_type(&self) -> bool {
-        self.node_type == "array"
     }
 }

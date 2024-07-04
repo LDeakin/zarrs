@@ -56,10 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `Node::[async_]new` renamed to `Node::[async_]open`
    - Added `Node::[async_]open_opt`
  - **Breaking**: Change various store methods to take `&Arc<TStorage>` instead of `&TStorage`
+ - Use `monostate` for `zarr_format` and `node_type` in array and group metadata
+   - `zarr_format` and `node_type` now must be valid on deserialisation rather than array/group initialisation
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies
  - **Breaking**: Remove `Array::set_include_zarrs_metadata`. Use `{Config,ArrayMetadataOptions}::set_include_zarrs_metadata`
+ - **Breaking**: Remove `ArrayMetadataV2ToV3ConversionError::InvalidZarrFormat`
+ - **Breaking**: Remove `{Array,Group}CreateError::{InvalidZarrFormat,InvalidNodeType}`
 
 ### Fixed
  - **Breaking**: Change `ZfpExpertParams` to `ZfpExpertConfiguration` replacing existing `ZfpExpertConfiguration`
