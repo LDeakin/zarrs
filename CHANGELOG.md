@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `Array::set_dimension_names`
  - Add `storage::[Maybe]AsyncBytes`
  - Add `array::{convert_from_bytes_slice,convert_to_bytes_vec}`
+ - Add `AdditionalFields::as_mut_map` and `{Array,Group}::additional_fields_mut`
 
 ### Changed
  - Support `object_store` 0.9-0.10
@@ -56,8 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `Node::[async_]new` renamed to `Node::[async_]open`
    - Added `Node::[async_]open_opt`
  - **Breaking**: Change various store methods to take `&Arc<TStorage>` instead of `&TStorage`
- - Use `monostate` for `zarr_format` and `node_type` in array and group metadata
-   - `zarr_format` and `node_type` now must be valid on deserialisation rather than array/group initialisation
+ - Use `monostate` for `zarr_format`, `node_type`, and `must_understand` in unknown fields in array and group metadata
+   - These fields must be be valid on deserialisation rather than array/group initialisation
+   - **Breaking**: Remove associated field validation functions
+ - **Breaking**: `{Array,Group}::additional_fields` now returns `&serde_json::Map<String, serde_json::Value>` instead of `&AdditionalFields`
+ - **Breaking**: `{Array,Group}Builder::additional_fields` now takes `serde_json::Map<String, serde_json::Value>` instead of `AdditionalFields`
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies

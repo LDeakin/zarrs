@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::metadata::{
-    v3::{AdditionalFields, GroupMetadataV3},
-    GroupMetadata,
-};
+use crate::metadata::{v3::GroupMetadataV3, GroupMetadata};
 
 use super::{Group, GroupCreateError};
 
@@ -46,10 +43,13 @@ impl GroupBuilder {
     ///
     /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
     /// `zarrs` will error when opening an array with additional fields without this annotation.
-    pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
+    pub fn additional_fields(
+        &mut self,
+        additional_fields: serde_json::Map<String, serde_json::Value>,
+    ) -> &mut Self {
         match &mut self.metadata {
-            GroupMetadata::V3(metadata) => metadata.additional_fields = additional_fields,
-            GroupMetadata::V2(metadata) => metadata.additional_fields = additional_fields,
+            GroupMetadata::V3(metadata) => metadata.additional_fields = additional_fields.into(),
+            GroupMetadata::V2(metadata) => metadata.additional_fields = additional_fields.into(),
         };
         self
     }
@@ -83,10 +83,8 @@ mod tests {
         builder.attributes(attributes.clone());
 
         let mut additional_fields = serde_json::Map::new();
-        let mut additional_field = serde_json::Map::new();
-        additional_field.insert("must_understand".to_string(), false.into());
+        let additional_field = serde_json::Map::new();
         additional_fields.insert("key".to_string(), additional_field.into());
-        let additional_fields: AdditionalFields = additional_fields.into();
         builder.additional_fields(additional_fields.clone());
 
         let storage = Arc::new(MemoryStore::new());

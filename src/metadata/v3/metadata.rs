@@ -268,44 +268,104 @@ impl UnsupportedAdditionalFieldError {
     }
 }
 
-/// Additional fields in array or group metadata.
+/// An additional field in array or group metadata.
+///
+/// Must be an object with a `"must_understand": false` field.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Default, From)]
+pub struct AdditionalField {
+    must_understand: monostate::MustBe!(false),
+    #[serde(flatten)]
+    fields: serde_json::Map<String, serde_json::Value>,
+}
+
+impl AdditionalField {
+    /// Return the underlying map.
+    #[must_use]
+    pub const fn as_map(&self) -> &serde_json::Map<String, serde_json::Value> {
+        &self.fields
+    }
+}
+
+impl From<AdditionalField> for serde_json::Map<String, serde_json::Value> {
+    fn from(value: AdditionalField) -> Self {
+        value.fields
+    }
+}
+
+impl From<serde_json::Map<String, serde_json::Value>> for AdditionalField {
+    fn from(value: serde_json::Map<String, serde_json::Value>) -> Self {
+        AdditionalField {
+            must_understand: monostate::MustBe!(false),
+            fields: value,
+        }
+    }
+}
+
+/// Additional fields in array or group metadata.
+#[derive(Clone, Eq, PartialEq, Debug, Default, From)]
 pub struct AdditionalFields(serde_json::Map<String, serde_json::Value>);
 
 impl AdditionalFields {
-    /// Checks if additional fields are valid.
-    ///
-    /// # Errors
-    /// Returns an [`UnsupportedAdditionalFieldError`] if an unsupported additional field is identified.
-    pub fn validate(&self) -> Result<(), UnsupportedAdditionalFieldError> {
-        fn is_unknown_field_allowed(field: &serde_json::Value) -> bool {
-            field.as_object().map_or(false, |value| {
-                if value.contains_key("must_understand") {
-                    let must_understand = &value["must_understand"];
-                    match must_understand {
-                        serde_json::Value::Bool(must_understand) => !must_understand,
-                        _ => false,
-                    }
-                } else {
-                    false
-                }
-            })
-        }
-
-        for (key, value) in &self.0 {
-            if !is_unknown_field_allowed(value) {
-                return Err(UnsupportedAdditionalFieldError {
-                    name: key.to_string(),
-                    value: value.clone(),
-                });
-            }
-        }
-        Ok(())
-    }
-
     /// Return the underlying map.
     #[must_use]
     pub const fn as_map(&self) -> &serde_json::Map<String, serde_json::Value> {
         &self.0
+    }
+
+    /// Mutably borrow the underlying map.
+    #[must_use]
+    pub fn as_mut_map(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
+        &mut self.0
+    }
+}
+
+struct AdditionalFieldVisitor;
+
+impl<'de> serde::de::Visitor<'de> for AdditionalFieldVisitor {
+    type Value = AdditionalFields;
+
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+        formatter.write_str(r#"a map containing the field "must_understand": false"#)
+    }
+
+    fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+    where
+        M: serde::de::MapAccess<'de>,
+    {
+        let mut map = serde_json::Map::<String, serde_json::Value>::with_capacity(
+            access.size_hint().unwrap_or(0),
+        );
+        while let Some((key, value)) = access.next_entry()? {
+            let value = serde_json::from_value::<AdditionalField>(value).map_err(|_| {
+                serde::de::Error::custom(r#"additional fields require "must_understand": false"#)
+            })?;
+            map.insert(key, serde_json::Value::Object(value.into()));
+        }
+
+        Ok(AdditionalFields(map))
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for AdditionalFields {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        d.deserialize_map(AdditionalFieldVisitor)
+    }
+}
+
+impl serde::Serialize for AdditionalFields {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(self.0.len()))?;
+        for (k, v) in &self.0 {
+            match v {
+                serde_json::Value::Object(object) => {
+                    seq.serialize_entry(&k, &AdditionalField::from(object.clone()))?;
+                }
+                _ => return Err(serde::ser::Error::custom("expected a JSON struct")),
+            }
+        }
+        seq.end()
     }
 }

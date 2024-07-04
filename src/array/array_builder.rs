@@ -224,8 +224,11 @@ impl ArrayBuilder {
     ///
     /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
     /// `zarrs` will error when opening an array with additional fields without this annotation.
-    pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
-        self.additional_fields = additional_fields;
+    pub fn additional_fields(
+        &mut self,
+        additional_fields: serde_json::Map<String, serde_json::Value>,
+    ) -> &mut Self {
+        self.additional_fields = additional_fields.into();
         self
     }
 
@@ -294,8 +297,6 @@ impl ArrayBuilder {
             )
             .into());
         }
-
-        self.additional_fields.validate()?;
 
         let codec_chain = CodecChain::new(
             self.array_to_array_codecs.clone(),
@@ -386,10 +387,8 @@ mod tests {
         builder.attributes(attributes.clone());
 
         let mut additional_fields = serde_json::Map::new();
-        let mut additional_field = serde_json::Map::new();
-        additional_field.insert("must_understand".to_string(), false.into());
+        let additional_field = serde_json::Map::new();
         additional_fields.insert("key".to_string(), additional_field.into());
-        let additional_fields: AdditionalFields = additional_fields.into();
         builder.additional_fields(additional_fields.clone());
 
         builder.chunk_key_encoding(V2ChunkKeyEncoding::new_dot().into());

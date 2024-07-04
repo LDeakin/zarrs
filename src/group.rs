@@ -29,9 +29,8 @@ use thiserror::Error;
 
 use crate::{
     metadata::{
-        group_metadata_v2_to_v3,
-        v3::{AdditionalFields, UnsupportedAdditionalFieldError},
-        GroupMetadataV2, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
+        group_metadata_v2_to_v3, v3::UnsupportedAdditionalFieldError, GroupMetadataV2,
+        MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
     node::{NodePath, NodePathError},
     storage::{
@@ -77,7 +76,6 @@ impl<TStorage: ?Sized> Group<TStorage> {
         metadata: GroupMetadata,
     ) -> Result<Self, GroupCreateError> {
         let path = NodePath::new(path)?;
-        validate_group_metadata(&metadata)?;
         Ok(Self {
             storage,
             path,
@@ -100,15 +98,32 @@ impl<TStorage: ?Sized> Group<TStorage> {
         }
     }
 
-    /// Get additional fields.
+    /// Mutably borrow the group attributes.
     #[must_use]
-    pub const fn additional_fields(&self) -> &AdditionalFields {
-        match &self.metadata {
-            GroupMetadata::V3(metadata) => &metadata.additional_fields,
-            GroupMetadata::V2(metadata) => &metadata.additional_fields,
+    pub fn attributes_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
+        match &mut self.metadata {
+            GroupMetadata::V3(metadata) => &mut metadata.attributes,
+            GroupMetadata::V2(metadata) => &mut metadata.attributes,
         }
     }
 
+    /// Get additional fields.
+    #[must_use]
+    pub const fn additional_fields(&self) -> &serde_json::Map<String, serde_json::Value> {
+        match &self.metadata {
+            GroupMetadata::V3(metadata) => metadata.additional_fields.as_map(),
+            GroupMetadata::V2(metadata) => metadata.additional_fields.as_map(),
+        }
+    }
+
+    /// Mutably borrow the additional fields.
+    #[must_use]
+    pub fn additional_fields_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
+        match &mut self.metadata {
+            GroupMetadata::V3(metadata) => metadata.additional_fields.as_mut_map(),
+            GroupMetadata::V2(metadata) => metadata.additional_fields.as_mut_map(),
+        }
+    }
     /// Return the underlying group metadata.
     #[must_use]
     pub fn metadata(&self) -> &GroupMetadata {
@@ -128,24 +143,6 @@ impl<TStorage: ?Sized> Group<TStorage> {
             (GM::V3(metadata), V::Default | V::V3) => GM::V3(metadata),
             (GM::V2(metadata), V::Default) => GM::V2(metadata),
             (GM::V2(metadata), V::V3) => GM::V3(group_metadata_v2_to_v3(&metadata)),
-        }
-    }
-
-    /// Mutably borrow the group attributes.
-    #[must_use]
-    pub fn attributes_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
-        match &mut self.metadata {
-            GroupMetadata::V3(metadata) => &mut metadata.attributes,
-            GroupMetadata::V2(metadata) => &mut metadata.attributes,
-        }
-    }
-
-    /// Mutably borrow the additional fields.
-    #[must_use]
-    pub fn additional_fields_mut(&mut self) -> &mut AdditionalFields {
-        match &mut self.metadata {
-            GroupMetadata::V3(metadata) => &mut metadata.additional_fields,
-            GroupMetadata::V2(metadata) => &mut metadata.additional_fields,
         }
     }
 }
@@ -311,16 +308,6 @@ pub enum GroupCreateError {
     /// Missing metadata (Zarr V2 only).
     #[error("group metadata is missing (Zarr V2 only)")]
     MissingMetadata,
-}
-
-fn validate_group_metadata(metadata: &GroupMetadata) -> Result<(), GroupCreateError> {
-    match metadata {
-        GroupMetadata::V3(metadata) => metadata
-            .additional_fields
-            .validate()
-            .map_err(GroupCreateError::UnsupportedAdditionalFieldError),
-        GroupMetadata::V2(_) => Ok(()),
-    }
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {}
@@ -530,7 +517,7 @@ mod tests {
 
     #[test]
     fn group_metadata_invalid_additional_field() {
-        let group_metadata: GroupMetadata = serde_json::from_str(
+        let group_metadata = serde_json::from_str::<GroupMetadata>(
             r#"{
                 "zarr_format": 3,
                 "node_type": "group",
@@ -540,15 +527,8 @@ mod tests {
                 },
                 "unknown": "fail"
             }"#,
-        )
-        .unwrap();
-        print!("{group_metadata:?}");
-        let store = MemoryStore::default();
-        let group_metadata = Group::new_with_metadata(store.into(), "/", group_metadata);
-        assert_eq!(
-            group_metadata.unwrap_err().to_string(),
-            r#"unsupported additional field unknown with value "fail""#
         );
+        assert!(group_metadata.is_err());
     }
 
     #[test]
@@ -629,6 +609,6 @@ mod tests {
         let group_path = "/group";
         let group = Group::open(store, group_path).unwrap();
         assert_eq!(group.attributes(), &serde_json::Map::default());
-        assert_eq!(group.additional_fields(), &AdditionalFields::default());
+        assert_eq!(group.additional_fields(), &serde_json::Map::default());
     }
 }
