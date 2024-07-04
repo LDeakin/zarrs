@@ -44,9 +44,6 @@ pub enum ArrayMetadata {
 /// An error conerting Zarr V3 array metadata to V3.
 #[derive(Debug, Error)]
 pub enum ArrayMetadataV2ToV3ConversionError {
-    /// Invalid Zarr format.
-    #[error("expected zarr_format {_1}, got {_0}")]
-    InvalidZarrFormat(usize, usize),
     /// Unsupported data type.
     #[error("unsupported data type {_0:?}")]
     UnsupportedDataType(String),
@@ -72,13 +69,6 @@ pub enum ArrayMetadataV2ToV3ConversionError {
 pub fn array_metadata_v2_to_v3(
     array_metadata_v2: &ArrayMetadataV2,
 ) -> Result<ArrayMetadataV3, ArrayMetadataV2ToV3ConversionError> {
-    if array_metadata_v2.zarr_format != 2 {
-        return Err(ArrayMetadataV2ToV3ConversionError::InvalidZarrFormat(
-            array_metadata_v2.zarr_format,
-            2,
-        ));
-    }
-
     let shape = array_metadata_v2.shape.clone();
     let chunk_grid = MetadataV3::new_with_serializable_configuration(
         crate::array::chunk_grid::regular::IDENTIFIER,

@@ -1,6 +1,6 @@
 {
-  "node_type": "array",
   "zarr_format": 3,
+  "node_type": "array",
   "shape": [
     8,
     8
@@ -50,6 +50,9 @@
             "configuration": {
               "endian": "little"
             }
+          },
+          {
+            "name": "crc32c"
           }
         ],
         "index_location": "end"
@@ -60,7 +63,7 @@
     "_zarrs": {
       "description": "This array was created with zarrs",
       "repository": "https://github.com/LDeakin/zarrs",
-      "version": "0.11.4"
+      "version": "0.15.0"
     }
   },
   "dimension_names": [

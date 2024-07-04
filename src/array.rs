@@ -81,7 +81,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    metadata::{array_metadata_v2_to_v3, v3::AdditionalFields, MetadataConvertVersion},
+    metadata::{array_metadata_v2_to_v3, MetadataConvertVersion},
     node::NodePath,
     storage::storage_transformer::StorageTransformerChain,
 };
@@ -248,16 +248,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
         }?;
 
-        if !metadata_v3.validate_format() {
-            return Err(ArrayCreateError::InvalidZarrFormat(metadata_v3.zarr_format));
-        }
-        if !metadata_v3.validate_node_type() {
-            return Err(ArrayCreateError::InvalidNodeType(metadata_v3.node_type));
-        }
-        metadata_v3
-            .additional_fields
-            .validate()
-            .map_err(ArrayCreateError::UnsupportedAdditionalFieldError)?;
         let data_type = DataType::from_metadata(&metadata_v3.data_type)
             .map_err(ArrayCreateError::DataTypeCreateError)?;
         let chunk_grid = ChunkGrid::from_metadata(&metadata_v3.chunk_grid)
@@ -302,15 +292,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
             dimension_names: metadata_v3.dimension_names,
             metadata,
         })
-    }
-
-    /// Mutably borrow the array attributes.
-    #[must_use]
-    pub fn attributes_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
-        match &mut self.metadata {
-            ArrayMetadata::V3(metadata) => &mut metadata.attributes,
-            ArrayMetadata::V2(metadata) => &mut metadata.attributes,
-        }
     }
 
     /// Get the node path.
@@ -406,12 +387,30 @@ impl<TStorage: ?Sized> Array<TStorage> {
         }
     }
 
+    /// Mutably borrow the array attributes.
+    #[must_use]
+    pub fn attributes_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
+        match &mut self.metadata {
+            ArrayMetadata::V3(metadata) => &mut metadata.attributes,
+            ArrayMetadata::V2(metadata) => &mut metadata.attributes,
+        }
+    }
+
     /// Get the additional fields.
     #[must_use]
-    pub const fn additional_fields(&self) -> &AdditionalFields {
+    pub const fn additional_fields(&self) -> &serde_json::Map<String, serde_json::Value> {
         match &self.metadata {
-            ArrayMetadata::V3(metadata) => &metadata.additional_fields,
-            ArrayMetadata::V2(metadata) => &metadata.additional_fields,
+            ArrayMetadata::V3(metadata) => metadata.additional_fields.as_map(),
+            ArrayMetadata::V2(metadata) => metadata.additional_fields.as_map(),
+        }
+    }
+
+    /// Mutably borrow the additional fields.
+    #[must_use]
+    pub fn additional_fields_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
+        match &mut self.metadata {
+            ArrayMetadata::V3(metadata) => metadata.additional_fields.as_mut_map(),
+            ArrayMetadata::V2(metadata) => metadata.additional_fields.as_mut_map(),
         }
     }
 

@@ -18,15 +18,12 @@ use super::AdditionalFields;
 ///     }
 /// }
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
-#[serde(tag = "node_type", rename = "group")]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct GroupMetadataV3 {
-    /// An integer defining the version of the storage specification to which the array adheres. Must be `3`.
-    pub zarr_format: usize,
+    /// An integer defining the version of the storage specification to which the group adheres. Must be `3`.
+    pub zarr_format: monostate::MustBe!(3u64),
     /// A string defining the type of hierarchy node element, must be `group` here.
-    #[serde(skip_serializing)]
-    #[allow(dead_code)]
-    pub node_type: String, // Ideally this is serialized after Zarr format, and tag serialization is skipped
+    pub node_type: monostate::MustBe!("group"),
     /// Optional user metadata.
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub attributes: serde_json::Map<String, serde_json::Value>,
@@ -49,22 +46,10 @@ impl GroupMetadataV3 {
         additional_fields: AdditionalFields,
     ) -> Self {
         Self {
-            zarr_format: 3,
-            node_type: "group".to_string(),
+            zarr_format: monostate::MustBe!(3u64),
+            node_type: monostate::MustBe!("group"),
             attributes,
             additional_fields,
         }
-    }
-
-    /// Validates that the `zarr_format` field is `3`.
-    #[must_use]
-    pub const fn validate_format(&self) -> bool {
-        self.zarr_format == 3
-    }
-
-    /// Validates that the `node_type` is `"group"`.
-    #[must_use]
-    pub fn validate_node_type(&self) -> bool {
-        self.node_type == "group"
     }
 }

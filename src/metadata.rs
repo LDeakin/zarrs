@@ -114,46 +114,37 @@ mod tests {
     }
 
     #[test]
-    fn additional_fields_valid() {
+    fn additional_fields_auto() {
         let mut additional_fields_map = serde_json::Map::new();
-        let mut additional_field = serde_json::Map::new();
-        additional_field.insert("must_understand".to_string(), false.into());
+        let additional_field = serde_json::Map::new();
         additional_fields_map.insert("key".to_string(), additional_field.into());
         let additional_fields: AdditionalFields = additional_fields_map.clone().into();
-        assert!(additional_fields.validate().is_ok());
-        assert_eq!(additional_fields.as_map(), &additional_fields_map);
+        assert!(!additional_fields.as_map().contains_key("must_understand"));
+        assert!(serde_json::to_string(&additional_fields)
+            .unwrap()
+            .contains(r#""must_understand":false"#));
     }
 
     #[test]
-    fn additional_fields_invalid1() {
-        let mut additional_fields = serde_json::Map::new();
-        let mut additional_field = serde_json::Map::new();
-        additional_field.insert("must_understand".to_string(), true.into());
-        additional_fields.insert("key".to_string(), additional_field.clone().into());
-        let additional_fields: AdditionalFields = additional_fields.into();
-        let validate = additional_fields.validate();
-        assert!(validate.is_err());
-        let err = validate.unwrap_err();
-        assert_eq!(err.name(), "key");
-        assert_eq!(err.value(), &serde_json::Value::Object(additional_field));
+    fn additional_fields_valid() {
+        let json = r#"{
+            "unknown_field": {
+                "key": "value",
+                "must_understand": false
+            }
+        }"#;
+        let additional_fields = serde_json::from_str::<AdditionalFields>(json);
+        assert!(additional_fields.is_ok());
     }
 
     #[test]
-    fn additional_fields_invalid2() {
-        let mut additional_fields = serde_json::Map::new();
-        let additional_field = serde_json::Map::new();
-        additional_fields.insert("key".to_string(), additional_field.into());
-        let additional_fields: AdditionalFields = additional_fields.into();
-        assert!(additional_fields.validate().is_err());
-    }
-
-    #[test]
-    fn additional_fields_invalid3() {
-        let mut additional_fields = serde_json::Map::new();
-        let mut additional_field = serde_json::Map::new();
-        additional_field.insert("must_understand".to_string(), 0.into());
-        additional_fields.insert("key".to_string(), additional_field.into());
-        let additional_fields: AdditionalFields = additional_fields.into();
-        assert!(additional_fields.validate().is_err());
+    fn additional_fields_invalid() {
+        let json = r#"{
+            "unknown_field": {
+                "key": "value"
+            }
+        }"#;
+        let additional_fields = serde_json::from_str::<AdditionalFields>(json);
+        assert!(additional_fields.is_err());
     }
 }

@@ -48,7 +48,7 @@ use super::MetadataV2;
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct ArrayMetadataV2 {
     /// An integer defining the version of the storage specification to which the array adheres. Must be `2`.
-    pub zarr_format: usize,
+    pub zarr_format: monostate::MustBe!(2u64),
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
     /// A list of integers defining the length of each dimension of a chunk of the array.
