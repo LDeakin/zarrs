@@ -302,70 +302,15 @@ impl From<serde_json::Map<String, serde_json::Value>> for AdditionalField {
 }
 
 /// Additional fields in array or group metadata.
-#[derive(Clone, Eq, PartialEq, Debug, Default, From)]
-pub struct AdditionalFields(serde_json::Map<String, serde_json::Value>);
-
-impl AdditionalFields {
-    /// Return the underlying map.
-    #[must_use]
-    pub const fn as_map(&self) -> &serde_json::Map<String, serde_json::Value> {
-        &self.0
-    }
-
-    /// Mutably borrow the underlying map.
-    #[must_use]
-    pub fn as_mut_map(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
-        &mut self.0
-    }
-}
-
-struct AdditionalFieldVisitor;
-
-impl<'de> serde::de::Visitor<'de> for AdditionalFieldVisitor {
-    type Value = AdditionalFields;
-
-    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        formatter.write_str(r#"a map containing the field "must_understand": false"#)
-    }
-
-    fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
-    where
-        M: serde::de::MapAccess<'de>,
-    {
-        let mut map = serde_json::Map::<String, serde_json::Value>::with_capacity(
-            access.size_hint().unwrap_or(0),
-        );
-        while let Some((key, value)) = access.next_entry()? {
-            let value = serde_json::from_value::<AdditionalField>(value).map_err(|_| {
-                serde::de::Error::custom(r#"additional fields require "must_understand": false"#)
-            })?;
-            map.insert(key, serde_json::Value::Object(value.into()));
-        }
-
-        Ok(AdditionalFields(map))
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for AdditionalFields {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        d.deserialize_map(AdditionalFieldVisitor)
-    }
-}
-
-impl serde::Serialize for AdditionalFields {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut seq = serializer.serialize_map(Some(self.0.len()))?;
-        for (k, v) in &self.0 {
-            match v {
-                serde_json::Value::Object(object) => {
-                    seq.serialize_entry(&k, &AdditionalField::from(object.clone()))?;
-                }
-                _ => return Err(serde::ser::Error::custom("expected a JSON struct")),
-            }
-        }
-        seq.end()
-    }
-}
+///
+/// Additional fields are a JSON object with a `"must_understand": false` key-value pair.
+///
+/// ### Example additional field JSON
+/// ```json
+/// "unknown_field": {
+///   "key": "value",
+///   "must_understand": false
+/// }
+/// ```
+// NOTE: It would be nice if this was just a serde_json::Map, but it only has implementations for `<String, serde_json::Value>`.
+pub type AdditionalFields = std::collections::BTreeMap<String, AdditionalField>;

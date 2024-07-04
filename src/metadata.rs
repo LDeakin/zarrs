@@ -115,11 +115,10 @@ mod tests {
 
     #[test]
     fn additional_fields_auto() {
-        let mut additional_fields_map = serde_json::Map::new();
+        let mut additional_fields = AdditionalFields::new();
         let additional_field = serde_json::Map::new();
-        additional_fields_map.insert("key".to_string(), additional_field.into());
-        let additional_fields: AdditionalFields = additional_fields_map.clone().into();
-        assert!(!additional_fields.as_map().contains_key("must_understand"));
+        additional_fields.insert("key".to_string(), additional_field.into());
+        assert!(!additional_fields.contains_key("must_understand"));
         assert!(serde_json::to_string(&additional_fields)
             .unwrap()
             .contains(r#""must_understand":false"#));

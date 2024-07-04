@@ -29,8 +29,8 @@ use thiserror::Error;
 
 use crate::{
     metadata::{
-        group_metadata_v2_to_v3, v3::UnsupportedAdditionalFieldError, GroupMetadataV2,
-        MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
+        group_metadata_v2_to_v3, v3::UnsupportedAdditionalFieldError, AdditionalFields,
+        GroupMetadataV2, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
     node::{NodePath, NodePathError},
     storage::{
@@ -109,19 +109,19 @@ impl<TStorage: ?Sized> Group<TStorage> {
 
     /// Get additional fields.
     #[must_use]
-    pub const fn additional_fields(&self) -> &serde_json::Map<String, serde_json::Value> {
+    pub const fn additional_fields(&self) -> &AdditionalFields {
         match &self.metadata {
-            GroupMetadata::V3(metadata) => metadata.additional_fields.as_map(),
-            GroupMetadata::V2(metadata) => metadata.additional_fields.as_map(),
+            GroupMetadata::V3(metadata) => &metadata.additional_fields,
+            GroupMetadata::V2(metadata) => &metadata.additional_fields,
         }
     }
 
     /// Mutably borrow the additional fields.
     #[must_use]
-    pub fn additional_fields_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
+    pub fn additional_fields_mut(&mut self) -> &mut AdditionalFields {
         match &mut self.metadata {
-            GroupMetadata::V3(metadata) => metadata.additional_fields.as_mut_map(),
-            GroupMetadata::V2(metadata) => metadata.additional_fields.as_mut_map(),
+            GroupMetadata::V3(metadata) => &mut metadata.additional_fields,
+            GroupMetadata::V2(metadata) => &mut metadata.additional_fields,
         }
     }
     /// Return the underlying group metadata.
@@ -609,6 +609,6 @@ mod tests {
         let group_path = "/group";
         let group = Group::open(store, group_path).unwrap();
         assert_eq!(group.attributes(), &serde_json::Map::default());
-        assert_eq!(group.additional_fields(), &serde_json::Map::default());
+        assert_eq!(group.additional_fields(), &AdditionalFields::default());
     }
 }

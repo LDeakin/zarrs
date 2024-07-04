@@ -81,7 +81,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    metadata::{array_metadata_v2_to_v3, MetadataConvertVersion},
+    metadata::{array_metadata_v2_to_v3, AdditionalFields, MetadataConvertVersion},
     node::NodePath,
     storage::storage_transformer::StorageTransformerChain,
 };
@@ -398,19 +398,19 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Get the additional fields.
     #[must_use]
-    pub const fn additional_fields(&self) -> &serde_json::Map<String, serde_json::Value> {
+    pub const fn additional_fields(&self) -> &AdditionalFields {
         match &self.metadata {
-            ArrayMetadata::V3(metadata) => metadata.additional_fields.as_map(),
-            ArrayMetadata::V2(metadata) => metadata.additional_fields.as_map(),
+            ArrayMetadata::V3(metadata) => &metadata.additional_fields,
+            ArrayMetadata::V2(metadata) => &metadata.additional_fields,
         }
     }
 
     /// Mutably borrow the additional fields.
     #[must_use]
-    pub fn additional_fields_mut(&mut self) -> &mut serde_json::Map<String, serde_json::Value> {
+    pub fn additional_fields_mut(&mut self) -> &mut AdditionalFields {
         match &mut self.metadata {
-            ArrayMetadata::V3(metadata) => metadata.additional_fields.as_mut_map(),
-            ArrayMetadata::V2(metadata) => metadata.additional_fields.as_mut_map(),
+            ArrayMetadata::V3(metadata) => &mut metadata.additional_fields,
+            ArrayMetadata::V2(metadata) => &mut metadata.additional_fields,
         }
     }
 

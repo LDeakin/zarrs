@@ -224,11 +224,8 @@ impl ArrayBuilder {
     ///
     /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
     /// `zarrs` will error when opening an array with additional fields without this annotation.
-    pub fn additional_fields(
-        &mut self,
-        additional_fields: serde_json::Map<String, serde_json::Value>,
-    ) -> &mut Self {
-        self.additional_fields = additional_fields.into();
+    pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
+        self.additional_fields = additional_fields;
         self
     }
 
@@ -386,7 +383,7 @@ mod tests {
         attributes.insert("key".to_string(), "value".into());
         builder.attributes(attributes.clone());
 
-        let mut additional_fields = serde_json::Map::new();
+        let mut additional_fields = AdditionalFields::new();
         let additional_field = serde_json::Map::new();
         additional_fields.insert("key".to_string(), additional_field.into());
         builder.additional_fields(additional_fields.clone());
