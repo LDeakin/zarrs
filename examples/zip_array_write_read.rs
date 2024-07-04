@@ -147,7 +147,7 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use walkdir::WalkDir;
     use zarrs::{
         node::Node,
-        storage::{storage_adapter::ZipStorageAdapter, store},
+        storage::{storage_adapter::zip::ZipStorageAdapter, store},
     };
 
     // Create a store
