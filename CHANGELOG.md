@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `storage::[Maybe]AsyncBytes`
  - Add `array::{convert_from_bytes_slice,convert_to_bytes_vec}`
  - Add `AdditionalField`
+ - Add `AsyncToSyncStorageAdapter` and `AsyncToSyncBlockOn`
+ - Add `sync_http_array_read_object_store` example
 
 ### Changed
  - Support `object_store` 0.9-0.10
@@ -61,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - These fields must be be valid on deserialisation rather than array/group initialisation
    - **Breaking**: Remove associated field validation functions
  - **Breaking**: `AdditionalFields` is now an alias for `BTreeMap<String, AdditionalField>` instead of an opaque struct
+ - **Breaking**: Move `storage::storage_adapter::ZipStorageAdapter[CreateError]` to `storage::storage_adapter::zip::`
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies

@@ -1,8 +1,9 @@
-//! Storage adapters. Includes a [zip](ZipStorageAdapter) implementation.
+//! Storage adapters.
 //!
-//! An adapter is a nested resource using a specified protocol they can be chained with a an absolute resource location (e.g. a filesystem store).
+//! Storage adapters can be layered on stores.
 
 #[cfg(feature = "zip")]
-mod zip;
-#[cfg(feature = "zip")]
-pub use self::zip::{ZipStorageAdapter, ZipStorageAdapterCreateError};
+pub mod zip;
+
+#[cfg(feature = "async")]
+pub mod async_to_sync;
