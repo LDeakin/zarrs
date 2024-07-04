@@ -12,6 +12,7 @@ pub use store_sync::filesystem_store::{FilesystemStore, FilesystemStoreCreateErr
 pub use store_sync::memory_store::MemoryStore;
 
 #[cfg(feature = "http")]
+#[allow(deprecated)]
 pub use store_sync::http_store::{HTTPStore, HTTPStoreCreateError};
 
 #[cfg(feature = "object_store")]

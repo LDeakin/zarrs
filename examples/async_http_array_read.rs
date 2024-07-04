@@ -1,4 +1,11 @@
-async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
+use zarrs::storage::AsyncReadableStorage;
+
+enum Backend {
+    OpenDAL,
+    ObjectStore,
+}
+
+async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
     use zarrs::{
         array::Array,
@@ -14,11 +21,20 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store
-    let mut builder = opendal::services::Http::default();
-    builder.endpoint(HTTP_URL);
-    let operator = opendal::Operator::new(builder)?.finish();
-    let mut store: zarrs::storage::AsyncReadableStorage =
-        Arc::new(store::AsyncOpendalStore::new(operator));
+    let mut store: AsyncReadableStorage = match backend {
+        Backend::OpenDAL => {
+            let mut builder = opendal::services::Http::default();
+            builder.endpoint(HTTP_URL);
+            let operator = opendal::Operator::new(builder)?.finish();
+            Arc::new(store::AsyncOpendalStore::new(operator))
+        }
+        Backend::ObjectStore => {
+            let store = object_store::http::HttpBuilder::new()
+                .with_url(HTTP_URL)
+                .build()?;
+            Arc::new(store::AsyncObjectStore::new(store))
+        }
+    };
     if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
         if arg1 == "--usage-log" {
             let log_writer = Arc::new(std::sync::Mutex::new(
@@ -66,8 +82,10 @@ async fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[tokio::main]
-async fn main() {
-    if let Err(err) = http_array_read().await {
-        println!("{:?}", err);
-    }
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("------------ object_store backend ------------");
+    http_array_read(Backend::ObjectStore).await?;
+    println!("------------   opendal backend    ------------");
+    http_array_read(Backend::OpenDAL).await?;
+    Ok(())
 }

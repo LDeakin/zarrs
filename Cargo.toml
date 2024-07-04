@@ -99,23 +99,13 @@ required-features = ["ndarray", "async", "object_store"]
 doc-scrape-examples = true
 
 [[example]]
-name = "async_http_array_read_object_store"
-required-features = ["ndarray", "async", "object_store/http"]
+name = "async_http_array_read"
+required-features = ["ndarray", "async", "opendal/services-http", "object_store/http"]
 doc-scrape-examples = true
 
 [[example]]
-name = "sync_http_array_read_object_store"
-required-features = ["ndarray", "async", "object_store/http"]
-doc-scrape-examples = true
-
-[[example]]
-name = "async_http_array_read_opendal"
-required-features = ["ndarray", "async", "opendal/services-http"]
-doc-scrape-examples = true
-
-[[example]]
-name = "http_array_read"
-required-features = ["ndarray", "http"]
+name = "sync_http_array_read"
+required-features = ["ndarray", "async", "opendal/services-http", "object_store/http"]
 doc-scrape-examples = true
 
 [[example]]
