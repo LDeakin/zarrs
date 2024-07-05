@@ -1,6 +1,22 @@
-use zarrs::storage::ReadableStorage;
+use zarrs::storage::{
+    storage_adapter::async_to_sync::{AsyncToSyncBlockOn, AsyncToSyncStorageAdapter},
+    ReadableStorage,
+};
 
-fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
+struct TokioBlockOn(tokio::runtime::Runtime);
+
+impl AsyncToSyncBlockOn for TokioBlockOn {
+    fn block_on<F: core::future::Future>(&self, future: F) -> F::Output {
+        self.0.block_on(future)
+    }
+}
+
+enum Backend {
+    OpenDAL,
+    ObjectStore,
+}
+
+fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
     use zarrs::{
         array::Array,
@@ -16,7 +32,24 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store
-    let mut store: ReadableStorage = Arc::new(store::HTTPStore::new(HTTP_URL)?);
+    // let mut store: ReadableStorage = Arc::new(store::HTTPStore::new(HTTP_URL)?);
+    let block_on = TokioBlockOn(tokio::runtime::Runtime::new()?);
+    let mut store: ReadableStorage = match backend {
+        Backend::OpenDAL => {
+            let mut builder = opendal::services::Http::default();
+            builder.endpoint(HTTP_URL);
+            let operator = opendal::Operator::new(builder)?.finish();
+            let store = Arc::new(store::AsyncOpendalStore::new(operator));
+            Arc::new(AsyncToSyncStorageAdapter::new(store, block_on))
+        }
+        Backend::ObjectStore => {
+            let store = object_store::http::HttpBuilder::new()
+                .with_url(HTTP_URL)
+                .build()?;
+            let store = Arc::new(store::AsyncObjectStore::new(store));
+            Arc::new(AsyncToSyncStorageAdapter::new(store, block_on))
+        }
+    };
     if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
         if arg1 == "--usage-log" {
             let log_writer = Arc::new(std::sync::Mutex::new(
@@ -57,8 +90,10 @@ fn http_array_read() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn main() {
-    if let Err(err) = http_array_read() {
-        println!("{:?}", err);
-    }
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("------------ object_store backend ------------");
+    http_array_read(Backend::ObjectStore)?;
+    println!("------------   opendal backend    ------------");
+    http_array_read(Backend::OpenDAL)?;
+    Ok(())
 }

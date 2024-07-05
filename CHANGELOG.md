@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add support for a V3 compatible subset of Zarr V2
    - Compatible subset: Zarr V2 data that is Zarr V3 compatible with only a metadata change
    - Zarr V2 metadata (`.zarray`/`.zgroup`/`.zattrs`) can be transformed to V3 (`zarr.json`)
- - Add `async_http_array_read_opendal` example
  - Add `ArrayBuilder::build_arc` method
  - Add `Array::[async_]retrieve_encoded_chunk[s]` method
  - Add internal `fill_array_view_with_fill_value` function
@@ -28,12 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `array::{convert_from_bytes_slice,convert_to_bytes_vec}`
  - Add `AdditionalField`
  - Add `AsyncToSyncStorageAdapter` and `AsyncToSyncBlockOn`
- - Add `sync_http_array_read_object_store` example
 
 ### Changed
  - Support `object_store` 0.9-0.10
  - **Breaking**: Support `opendal` 0.46-0.47, drop support for 0.45
- - Rename `async_http_array_read` example to `async_http_array_read_object_store`
  - Bump `rayon` to 1.10.0
  - Bump `itertools` to 0.13
  - Bump `reqwest` to 0.12
@@ -64,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking**: Remove associated field validation functions
  - **Breaking**: `AdditionalFields` is now an alias for `BTreeMap<String, AdditionalField>` instead of an opaque struct
  - **Breaking**: Move `storage::storage_adapter::ZipStorageAdapter[CreateError]` to `storage::storage_adapter::zip::`
+ - The `{async,sync}_http_array_read` examples now demonstrate usage of `opendal` and `object_store` storage backends
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies

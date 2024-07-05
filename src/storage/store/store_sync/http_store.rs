@@ -1,5 +1,7 @@
 //! A synchronous HTTP store.
 
+#![allow(deprecated)]
+
 use crate::{
     byte_range::ByteRange,
     storage::{Bytes, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey},
@@ -14,11 +16,15 @@ use std::str::FromStr;
 use thiserror::Error;
 
 /// A synchronous HTTP store.
-// TODO: Deprecate when opendal http service supports blocking
+#[deprecated(
+    since = "0.15.0",
+    note = "Use an opendal or object_store HTTP store with AsyncToSyncStorageAdapter instead, or write a new sync HTTP store."
+)]
 #[derive(Debug)]
 pub struct HTTPStore {
     base_url: Url,
     batch_range_requests: bool,
+    client: reqwest::blocking::Client,
 }
 
 impl From<reqwest::Error> for StorageError {
@@ -42,9 +48,11 @@ impl HTTPStore {
     pub fn new(base_url: &str) -> Result<Self, HTTPStoreCreateError> {
         let base_url = Url::from_str(base_url)
             .map_err(|_| HTTPStoreCreateError::InvalidBaseURL(base_url.into()))?;
+        let client = reqwest::blocking::Client::new();
         Ok(Self {
             base_url,
             batch_range_requests: true,
+            client,
         })
     }
 
@@ -75,8 +83,7 @@ impl HTTPStore {
 impl ReadableStorageTraits for HTTPStore {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let url = self.key_to_url(key)?;
-        let client = reqwest::blocking::Client::new();
-        let response = client.get(url).send()?;
+        let response = self.client.get(url).send()?;
         match response.status() {
             StatusCode::OK => Ok(Some(response.bytes()?)),
             StatusCode::NOT_FOUND => Ok(None),
@@ -93,7 +100,6 @@ impl ReadableStorageTraits for HTTPStore {
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let url = self.key_to_url(key)?;
-        let client = reqwest::blocking::Client::new();
         let Some(size) = self.size_key(key)? else {
             return Ok(None);
         };
@@ -103,7 +109,7 @@ impl ReadableStorageTraits for HTTPStore {
             .join(", ");
 
         let range = HeaderValue::from_str(&format!("bytes={bytes_strs}")).unwrap();
-        let response = client.get(url).header(RANGE, range).send()?;
+        let response = self.client.get(url).header(RANGE, range).send()?;
 
         match response.status() {
             StatusCode::NOT_FOUND => Err(StorageError::from("the http server returned a NOT FOUND status for the byte range request, but returned a non zero size for CONTENT_LENGTH")),
@@ -149,8 +155,7 @@ impl ReadableStorageTraits for HTTPStore {
 
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         let url = self.key_to_url(key)?;
-        let client = reqwest::blocking::Client::new();
-        let response = client.head(url).send()?;
+        let response = self.client.head(url).send()?;
         match response.status() {
             StatusCode::OK => {
                 let length = response
