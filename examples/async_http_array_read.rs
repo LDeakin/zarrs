@@ -29,8 +29,10 @@ async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Err
             Arc::new(store::AsyncOpendalStore::new(operator))
         }
         Backend::ObjectStore => {
+            let options = object_store::ClientOptions::new().with_allow_http(true);
             let store = object_store::http::HttpBuilder::new()
                 .with_url(HTTP_URL)
+                .with_client_options(options)
                 .build()?;
             Arc::new(store::AsyncObjectStore::new(store))
         }
