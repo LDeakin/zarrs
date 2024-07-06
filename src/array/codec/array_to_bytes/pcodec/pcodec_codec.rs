@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use pco::{standalone::guarantee::file_size, ChunkConfig, FloatMultSpec, IntMultSpec, PagingSpec};
+use pco::{standalone::guarantee::file_size, ChunkConfig, ModeSpec, PagingSpec};
 
 use crate::{
     array::{
@@ -12,7 +12,7 @@ use crate::{
         convert_from_bytes_slice, transmute_to_bytes_vec, ArrayMetadataOptions,
         BytesRepresentation, ChunkRepresentation, DataType,
     },
-    metadata::v3::MetadataV3,
+    metadata::v3::{codec::pcodec::PcodecModeSpecConfiguration, MetadataV3},
 };
 
 #[cfg(feature = "async")]
@@ -29,7 +29,29 @@ pub struct PcodecCodec {
     chunk_config: ChunkConfig,
 }
 
+fn mode_spec_config_to_pco(mode_spec: &PcodecModeSpecConfiguration) -> ModeSpec {
+    match mode_spec {
+        PcodecModeSpecConfiguration::Auto => ModeSpec::Auto,
+        PcodecModeSpecConfiguration::Classic => ModeSpec::Classic,
+        PcodecModeSpecConfiguration::TryFloatMult(base) => ModeSpec::TryFloatMult(*base),
+        PcodecModeSpecConfiguration::TryFloatQuant(k) => ModeSpec::TryFloatQuant(*k),
+        PcodecModeSpecConfiguration::TryIntMult(base) => ModeSpec::TryIntMult(*base),
+    }
+}
+
+fn mode_spec_pco_to_config(mode_spec: &ModeSpec) -> PcodecModeSpecConfiguration {
+    match mode_spec {
+        ModeSpec::Auto => PcodecModeSpecConfiguration::Auto,
+        ModeSpec::Classic => PcodecModeSpecConfiguration::Classic,
+        ModeSpec::TryFloatMult(base) => PcodecModeSpecConfiguration::TryFloatMult(*base),
+        ModeSpec::TryFloatQuant(k) => PcodecModeSpecConfiguration::TryFloatQuant(*k),
+        ModeSpec::TryIntMult(base) => PcodecModeSpecConfiguration::TryIntMult(*base),
+        _ => unreachable!("Mode spec is not supported"),
+    }
+}
+
 fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> ChunkConfig {
+    let mode_spec = mode_spec_config_to_pco(&configuration.mode_spec);
     ChunkConfig::default()
         .with_compression_level(configuration.level.as_usize())
         .with_delta_encoding_order(
@@ -37,16 +59,7 @@ fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> 
                 .delta_encoding_order
                 .map(|order| order.as_usize()),
         )
-        .with_int_mult_spec(if configuration.int_mult_spec {
-            IntMultSpec::Enabled
-        } else {
-            IntMultSpec::Disabled
-        })
-        .with_float_mult_spec(if configuration.float_mult_spec {
-            FloatMultSpec::Enabled
-        } else {
-            FloatMultSpec::Disabled
-        })
+        .with_mode_spec(mode_spec)
         .with_paging_spec(PagingSpec::EqualPagesUpTo(configuration.max_page_n))
 }
 
@@ -71,8 +84,7 @@ impl CodecTraits for PcodecCodec {
                 .chunk_config
                 .delta_encoding_order
                 .map(|order| PcodecDeltaEncodingOrder::try_from(order).unwrap()),
-            int_mult_spec: self.chunk_config.int_mult_spec == IntMultSpec::Enabled,
-            float_mult_spec: self.chunk_config.float_mult_spec == FloatMultSpec::Enabled,
+            mode_spec: mode_spec_pco_to_config(&self.chunk_config.mode_spec),
             max_page_n,
         });
 
@@ -116,17 +128,26 @@ impl ArrayCodecTraits for PcodecCodec {
         }
 
         match data_type {
+            DataType::UInt16 => {
+                pcodec_encode!(u16)
+            }
             DataType::UInt32 => {
                 pcodec_encode!(u32)
             }
             DataType::UInt64 => {
                 pcodec_encode!(u64)
             }
+            DataType::Int16 => {
+                pcodec_encode!(i16)
+            }
             DataType::Int32 => {
                 pcodec_encode!(i32)
             }
             DataType::Int64 => {
                 pcodec_encode!(i64)
+            }
+            DataType::Float16 => {
+                pcodec_encode!(half::f16)
             }
             DataType::Float32 | DataType::Complex64 => {
                 pcodec_encode!(f32)
@@ -157,17 +178,26 @@ impl ArrayCodecTraits for PcodecCodec {
         }
 
         match data_type {
+            DataType::UInt16 => {
+                pcodec_decode!(u16)
+            }
             DataType::UInt32 => {
                 pcodec_decode!(u32)
             }
             DataType::UInt64 => {
                 pcodec_decode!(u64)
             }
+            DataType::Int16 => {
+                pcodec_decode!(i16)
+            }
             DataType::Int32 => {
                 pcodec_decode!(i32)
             }
             DataType::Int64 => {
                 pcodec_decode!(i64)
+            }
+            DataType::Float16 => {
+                pcodec_decode!(half::f16)
             }
             DataType::Float32 | DataType::Complex64 => {
                 pcodec_decode!(f32)
@@ -223,6 +253,11 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         }
 
         let size = match data_type {
+            DataType::UInt16 | DataType::Int16 | DataType::Float16 => Ok(file_size::<u16>(
+                num_elements,
+                &self.chunk_config.paging_spec,
+            )
+            .map_err(|err| CodecError::from(err.to_string()))?),
             DataType::UInt32 | DataType::Int32 | DataType::Float32 | DataType::Complex64 => Ok(
                 file_size::<u32>(num_elements, &self.chunk_config.paging_spec)
                     .map_err(|err| CodecError::from(err.to_string()))?,
