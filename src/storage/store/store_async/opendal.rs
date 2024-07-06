@@ -61,8 +61,8 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<AsyncBytes>>, StorageError> {
         // FIXME: Get OpenDAL to return an error if byte range is OOB instead of panic, then don't need to query size
-        let size = self.size_key(key).await?;
-        if let Some(size) = size {
+        let (size, reader) = futures::join!(self.size_key(key), self.operator.reader(key.as_str()));
+        if let (Some(size), Some(reader)) = (size?, handle_result(reader)?) {
             let mut byte_ranges_fetch = Vec::with_capacity(byte_ranges.len());
             for byte_range in byte_ranges {
                 let byte_range_opendal = byte_range.to_range(size);
@@ -71,7 +71,6 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
                 }
                 byte_ranges_fetch.push(byte_range_opendal);
             }
-            let reader = self.operator.reader(key.as_str()).await?;
             Ok(Some(
                 reader
                     .fetch(byte_ranges_fetch)
@@ -107,13 +106,11 @@ impl AsyncWritableStorageTraits for AsyncOpendalStore {
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
-        self.operator.remove(vec![key.to_string()]).await?;
-        Ok(())
+        Ok(self.operator.remove(vec![key.to_string()]).await?)
     }
 
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
-        self.operator.remove_all(prefix.as_str()).await?;
-        Ok(())
+        Ok(self.operator.remove_all(prefix.as_str()).await?)
     }
 }
 
@@ -131,60 +128,84 @@ impl AsyncListableStorageTraits for AsyncOpendalStore {
     }
 
     async fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
-        let mut list = self
-            .operator
-            .list_with(prefix.as_str())
-            .recursive(true)
-            .await?
-            .into_iter()
-            .filter_map(|entry| {
-                if entry.metadata().mode() == opendal::EntryMode::FILE {
-                    Some(StoreKey::try_from(entry.path()))
-                } else {
-                    None
-                }
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        list.sort();
-        Ok(list)
+        handle_result(
+            self.operator
+                .list_with(prefix.as_str())
+                .recursive(true)
+                .await,
+        )?
+        .map_or_else(
+            || Ok(vec![]),
+            |list_with_prefix| {
+                let mut list = list_with_prefix
+                    .into_iter()
+                    .filter_map(|entry| {
+                        if entry.metadata().mode() == opendal::EntryMode::FILE {
+                            Some(StoreKey::try_from(entry.path()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                list.sort();
+                Ok(list)
+            },
+        )
     }
 
     async fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
-        let entries = self
-            .operator
-            .list_with(prefix.as_str())
-            .recursive(false)
-            .await?;
-        let mut prefixes = Vec::<StorePrefix>::with_capacity(entries.len());
-        let mut keys = Vec::<StoreKey>::with_capacity(entries.len());
-        for entry in entries {
-            match entry.metadata().mode() {
-                opendal::EntryMode::FILE => {
-                    keys.push(StoreKey::try_from(entry.path())?);
+        handle_result(
+            self.operator
+                .list_with(prefix.as_str())
+                .recursive(false)
+                .await,
+        )?
+        .map_or_else(
+            || {
+                Ok(StoreKeysPrefixes {
+                    keys: vec![],
+                    prefixes: vec![],
+                })
+            },
+            |entries| {
+                let mut prefixes = Vec::<StorePrefix>::with_capacity(entries.len());
+                let mut keys = Vec::<StoreKey>::with_capacity(entries.len());
+                for entry in entries {
+                    match entry.metadata().mode() {
+                        opendal::EntryMode::FILE => {
+                            keys.push(StoreKey::try_from(entry.path())?);
+                        }
+                        opendal::EntryMode::DIR => {
+                            prefixes.push(StorePrefix::try_from(entry.path())?);
+                        }
+                        opendal::EntryMode::Unknown => {}
+                    }
                 }
-                opendal::EntryMode::DIR => {
-                    prefixes.push(StorePrefix::try_from(entry.path())?);
-                }
-                opendal::EntryMode::Unknown => {}
-            }
-        }
-        keys.sort();
-        prefixes.sort();
-        Ok(StoreKeysPrefixes { keys, prefixes })
+                keys.sort();
+                prefixes.sort();
+                Ok(StoreKeysPrefixes { keys, prefixes })
+            },
+        )
     }
 
     async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        let list = self
-            .operator
-            .list_with(prefix.as_str())
-            .recursive(true)
-            .metakey(opendal::Metakey::ContentLength)
-            .await?;
-        let size = list
-            .into_iter()
-            .map(|entry| entry.metadata().content_length())
-            .sum::<u64>();
-        Ok(size)
+        handle_result(
+            self.operator
+                .list_with(prefix.as_str())
+                .recursive(true)
+                .metakey(opendal::Metakey::ContentLength)
+                .await,
+        )?
+        .map_or_else(
+            || Ok(0),
+            |list| {
+                let size = list
+                    .into_iter()
+                    .map(|entry| entry.metadata().content_length())
+                    .sum::<u64>();
+                Ok(size)
+            },
+        )
     }
 }
 
