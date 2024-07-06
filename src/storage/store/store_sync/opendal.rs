@@ -50,9 +50,7 @@ fn handle_result<T>(result: Result<T, opendal::Error>) -> Result<Option<T>, Stor
 #[async_trait::async_trait]
 impl ReadableStorageTraits for OpendalStore {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        handle_result(self.operator.read(key.as_str()).map(
-            |buf| buf.to_bytes(), // FIXME: Opendal: to_bytes optimisation
-        ))
+        handle_result(self.operator.read(key.as_str()).map(|buf| buf.to_bytes()))
     }
 
     fn get_partial_values_key(
@@ -70,9 +68,7 @@ impl ReadableStorageTraits for OpendalStore {
                 if byte_range_opendal.end > size {
                     return Err(InvalidByteRangeError::new(*byte_range, size).into());
                 }
-                bytes.push(
-                    reader.read(byte_range_opendal)?.to_bytes(), // FIXME: Opendal: to_bytes optimisation
-                );
+                bytes.push(reader.read(byte_range_opendal)?.to_bytes());
             }
             Ok(Some(bytes))
         } else {

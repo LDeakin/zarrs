@@ -50,9 +50,12 @@ fn handle_result<T>(result: Result<T, opendal::Error>) -> Result<Option<T>, Stor
 #[async_trait::async_trait]
 impl AsyncReadableStorageTraits for AsyncOpendalStore {
     async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
-        handle_result(self.operator.read(key.as_str()).await.map(
-            |buf| buf.to_bytes(), // FIXME: Opendal: to_bytes optimisation
-        ))
+        handle_result(
+            self.operator
+                .read(key.as_str())
+                .await
+                .map(|buf| buf.to_bytes()),
+        )
     }
 
     async fn get_partial_values_key(
@@ -76,9 +79,7 @@ impl AsyncReadableStorageTraits for AsyncOpendalStore {
                     .fetch(byte_ranges_fetch)
                     .await?
                     .into_iter()
-                    .map(
-                        |buf| buf.to_bytes(), // FIXME: Opendal: to_bytes optimisation
-                    )
+                    .map(|buf| buf.to_bytes())
                     .collect(),
             ))
         } else {
