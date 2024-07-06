@@ -117,6 +117,18 @@ mod test_util {
         );
 
         assert_eq!(
+            store.list_prefix(&"".try_into()?)?,
+            &[
+                "a/b".try_into()?,
+                "a/c".try_into()?,
+                "a/d/e".try_into()?,
+                "a/f/g".try_into()?,
+                "a/f/h".try_into()?,
+                "i/j/k".try_into()?
+            ]
+        );
+
+        assert_eq!(
             store.list_prefix(&"a/".try_into()?)?,
             &[
                 "a/b".try_into()?,

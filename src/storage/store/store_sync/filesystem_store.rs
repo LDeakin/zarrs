@@ -132,8 +132,6 @@ impl FilesystemStore {
     }
 
     /// Maps a [`StoreKey`] to a filesystem [`PathBuf`].
-    ///
-    /// If key is empty `""` then this is the top level file/directory
     #[must_use]
     pub fn key_to_fspath(&self, key: &StoreKey) -> PathBuf {
         let mut path = self.base_path.clone();
@@ -339,8 +337,7 @@ impl ListableStorageTraits for FilesystemStore {
     }
 
     fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
-        let key: StoreKey = prefix.into();
-        Ok(WalkDir::new(self.key_to_fspath(&key))
+        Ok(WalkDir::new(self.prefix_to_fs_path(prefix))
             .sort_by_file_name()
             .into_iter()
             .filter_map(std::result::Result::ok)
