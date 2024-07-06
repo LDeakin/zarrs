@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Change `ZfpExpertParams` to `ZfpExpertConfiguration` replacing existing `ZfpExpertConfiguration`
    - The previous `ZfpExpertConfiguration` was incorrect and was identical to `ZfpFixedRateConfiguration`
  - Fix `FilesystemStore::list_prefix` with an empty prefix
+ - Fix `storage::[async_]discover_nodes` and add tests
 
 ## [0.14.0] - 2024-05-16
 

@@ -486,7 +486,7 @@ pub fn discover_children<TStorage: ?Sized + ReadableStorageTraits + ListableStor
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 ///
 pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, StorageError> {
-    storage.list_prefix(&"/".try_into()?)
+    storage.list_prefix(&"".try_into()?)
 }
 
 /// Erase a node (group or array) and all of its children.

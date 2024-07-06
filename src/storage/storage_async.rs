@@ -533,7 +533,7 @@ pub async fn async_discover_children<
 pub async fn async_discover_nodes(
     storage: &dyn AsyncListableStorageTraits,
 ) -> Result<StoreKeys, StorageError> {
-    storage.list_prefix(&"/".try_into()?).await
+    storage.list_prefix(&"".try_into()?).await
 }
 
 /// Asynchronously erase a node (group or array) and all of its children.
