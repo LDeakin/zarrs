@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.15.0] - 2024-07-07
 
 ### Highlights
- - Zarr V2 support
- - 
- - Async optimisations
- - 
+ - Zarr V2 support (a Zarr V3 compatible subset)
+ - Codec and array optimisations
+    - Array store methods previously taking `Vec<u8>` now take `&[u8]`
+    - Codec methods previously taking `Vec<u8>` now take `Cow<'_, [u8]>`
+ - `AsyncToSyncStorageAdapter`: use an async store (e.g. HTTP, S3, etc.) in a sync context
+ - Snappy codec support for the `blosc` codec
 
 ### Added
  - Add support for a V3 compatible subset of Zarr V2
@@ -21,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Zarr V2 metadata (`.zarray`/`.zgroup`/`.zattrs`) can be transformed to V3 (`zarr.json`)
  - Add `ArrayBuilder::build_arc` method
  - Add `Array::[async_]retrieve_encoded_chunk[s]` method
- - Add internal `fill_array_view_with_fill_value` function
  - Add `Group::metadata_opt` method
  - Add `{Array,Group}::{store,erase}_metadata_opt` methods
  - Add `metadata::Metadata{Retrieve,Convert,Erase}Version` enums
@@ -33,8 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `array::{convert_from_bytes_slice,convert_to_bytes_vec}`
  - Add `AdditionalField`
  - Add `AsyncToSyncStorageAdapter` and `AsyncToSyncBlockOn`
+ - Add internal `fill_array_view_with_fill_value` function
 
 ### Changed
+ - **Breaking**: Deprecate `{Array,Group,Node}::[async_]new` for `[async_]open`, and add `open_opt`
+ - **Breaking**: `Array` store methods now take slices instead of `Vec`s
+ - **Breaking**: Change various store methods to take `&Arc<TStorage>` instead of `&TStorage`
+ - **Breaking**: Sync and async stores now consume and return `bytes::Bytes` instead of `Vec<u8>`
+ - **Breaking**: `{Array,Group}::metadata()` now return references instead of values
+ - **Breaking**: `AdditionalFields` is now an alias for `BTreeMap<String, AdditionalField>` instead of an opaque struct
+ - **Breaking**: Move `[Async]ReadableStorageTraits::{size[_prefix]}` to `[Async]ListableStorageTraits` and add default implementation for `size`
+ - Use `monostate` for `zarr_format`, `node_type`, and `must_understand` in unknown fields in array and group metadata
+   - These fields must be be valid on deserialisation rather than array/group initialisation
+   - **Breaking**: Remove associated field validation functions
  - Support `object_store` 0.9-0.10
  - **Breaking**: Support `opendal` 0.46-0.47, drop support for 0.45
  - Bump `rayon` to 1.10.0
@@ -45,27 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Adds `snappy` codec support
  - Bump minimum supported `flate2` to 1.0.30 and `thiserror` to 1.0.61
  - Add default implementations for `[Async]ReadableStorageTraits::{get,get_partial_values}`
- - **Breaking**: Move `[Async]ReadableStorageTraits::{size[_prefix]}` to `[Async]ListableStorageTraits` and add default implementation for `size`
  - Use `futures::TryStreamExt::try_for_each_concurrent` instead of `FuturesUnordered` where appropriate
  - Move all metadata/configuration structures into the metadata module (non breaking with re-exports)
  - Rename `Metadata` to `MetadataV3`, an alias is retained
- - **Breaking**: `{Array,Group}::metadata()` now return references instead of values
  - Improve various docs
  - **Breaking**: Add `MissingMetadata` to `GroupCreateError` enum
- - **Breaking**: Deprecate `{Array,Group}::new` for `open`, and add `open_opt`
  - Change internal structure of various iterators to use `std::ops::Range` and remove redundant `length`
  - **Breaking**: `Indices::new_with_start_end` now takes a `range` rather than a `start` and `end`
  - `RecommendedConcurrency::new` takes `impl std::ops::RangeBounds<usize>` instead of `std::ops::Range`
  - **Breaking**: Move `array::MaybeBytes` to `storage::MaybeBytes`
- - **Breaking**: `Array` store methods now take slices instead of `Vec`s
- - **Breaking**: Sync and async stores now consume and return `bytes::Bytes` instead of `Vec<u8>`
- - **Breaking**: `Node::[async_]new` is deprecated, use `Node::[async_]open` instead
-   - Added `Node::[async_]open_opt`
- - **Breaking**: Change various store methods to take `&Arc<TStorage>` instead of `&TStorage`
- - Use `monostate` for `zarr_format`, `node_type`, and `must_understand` in unknown fields in array and group metadata
-   - These fields must be be valid on deserialisation rather than array/group initialisation
-   - **Breaking**: Remove associated field validation functions
- - **Breaking**: `AdditionalFields` is now an alias for `BTreeMap<String, AdditionalField>` instead of an opaque struct
  - **Breaking**: Move `storage::storage_adapter::ZipStorageAdapter[CreateError]` to `storage::storage_adapter::zip::`
  - The `{async,sync}_http_array_read` examples now demonstrate usage of `opendal` and `object_store` storage backends
  - Bump `pcodec` to 0.3
@@ -830,8 +830,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.14.0...HEAD
-[0.15.0-beta.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.0-beta.1
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.0
 [0.14.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.14.0
 [0.13.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.3
 [0.13.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.2
