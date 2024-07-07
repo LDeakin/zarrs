@@ -56,7 +56,7 @@ pub struct PcodecCodecConfigurationV1 {
     pub max_page_n: usize,
 }
 
-/// Specifies how Pco should choose a [`mode`][crate::Mode] to compress this
+/// Specifies how Pco should choose a [`mode`][pco::Mode] to compress this
 /// chunk of data.
 ///
 /// see [`pco::ModeSpec`].
