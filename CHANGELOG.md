@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.15.0-beta.1] - 2024-06-23
+## [0.15.0] - 2024-07-07
+
+### Highlights
+ - Zarr V2 support
+ - 
+ - Async optimisations
+ - 
 
 ### Added
  - Add support for a V3 compatible subset of Zarr V2
@@ -53,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Move `array::MaybeBytes` to `storage::MaybeBytes`
  - **Breaking**: `Array` store methods now take slices instead of `Vec`s
  - **Breaking**: Sync and async stores now consume and return `bytes::Bytes` instead of `Vec<u8>`
- - **Breaking**: `Node::[async_]new` renamed to `Node::[async_]open`
+ - **Breaking**: `Node::[async_]new` is deprecated, use `Node::[async_]open` instead
    - Added `Node::[async_]open_opt`
  - **Breaking**: Change various store methods to take `&Arc<TStorage>` instead of `&TStorage`
  - Use `monostate` for `zarr_format`, `node_type`, and `must_understand` in unknown fields in array and group metadata
