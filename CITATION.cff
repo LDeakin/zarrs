@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Deakin
+    given-names: Lachlan
+    orcid: https://orcid.org/0000-0003-2026-759X
+title: "zarrs"
+version: 0.15.0
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.12719776
+date-released: 2024-07-07
