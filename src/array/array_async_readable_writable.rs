@@ -1,6 +1,9 @@
 use futures::{StreamExt, TryStreamExt};
 
-use crate::{array_subset::ArraySubset, storage::AsyncReadableWritableStorageTraits};
+use crate::{
+    array::validate_element_size, array_subset::ArraySubset,
+    storage::AsyncReadableWritableStorageTraits,
+};
 
 use super::{
     codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
@@ -189,16 +192,15 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         chunk_subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_async_store_elements!(
-            self,
-            chunk_subset_elements,
-            async_store_chunk_subset_opt(
-                chunk_indices,
-                chunk_subset,
-                &chunk_subset_elements,
-                options
-            )
+        validate_element_size::<T>(self.data_type())?;
+        let chunk_subset_elements = crate::array::convert_to_bytes_vec(chunk_subset_elements);
+        self.async_store_chunk_subset_opt(
+            chunk_indices,
+            chunk_subset,
+            &chunk_subset_elements,
+            options,
         )
+        .await
     }
 
     /// Async variant of [`store_chunk_subset_ndarray_opt`](Array::store_chunk_subset_ndarray_opt).
@@ -214,6 +216,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         chunk_subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
         let chunk_subset_array: ndarray::Array<T, D> = chunk_subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             chunk_subset_start.to_vec(),
@@ -223,16 +226,14 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                 .map(|u| *u as u64)
                 .collect(),
         )?;
-        array_async_store_ndarray!(
-            self,
-            chunk_subset_array,
-            async_store_chunk_subset_elements_opt(
-                chunk_indices,
-                &subset,
-                &chunk_subset_array,
-                options
-            )
+        let chunk_subset_array = super::ndarray_into_vec(chunk_subset_array);
+        self.async_store_chunk_subset_elements_opt(
+            chunk_indices,
+            &subset,
+            &chunk_subset_array,
+            options,
         )
+        .await
     }
 
     /// Async variant of [`store_array_subset_opt`](Array::store_array_subset_opt).
@@ -361,11 +362,10 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_async_store_elements!(
-            self,
-            subset_elements,
-            async_store_array_subset_opt(array_subset, &subset_elements, options)
-        )
+        validate_element_size::<T>(self.data_type())?;
+        let subset_elements = crate::array::convert_to_bytes_vec(subset_elements);
+        self.async_store_array_subset_opt(array_subset, &subset_elements, options)
+            .await
     }
 
     #[cfg(feature = "ndarray")]
@@ -381,15 +381,14 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
         let subset_array: ndarray::Array<T, D> = subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             subset_start.to_vec(),
             subset_array.shape().iter().map(|u| *u as u64).collect(),
         )?;
-        array_async_store_ndarray!(
-            self,
-            subset_array,
-            async_store_array_subset_elements_opt(&subset, &subset_array, options)
-        )
+        let subset_array = super::ndarray_into_vec(subset_array);
+        self.async_store_array_subset_elements_opt(&subset, &subset_array, options)
+            .await
     }
 }

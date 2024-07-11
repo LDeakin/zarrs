@@ -1,6 +1,8 @@
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::{array_subset::ArraySubset, storage::ReadableWritableStorageTraits};
+use crate::{
+    array::validate_element_size, array_subset::ArraySubset, storage::ReadableWritableStorageTraits,
+};
 
 use super::{
     codec::options::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
@@ -225,11 +227,9 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         chunk_subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
-            chunk_subset_elements,
-            store_chunk_subset_opt(chunk_indices, chunk_subset, &chunk_subset_elements, options)
-        )
+        validate_element_size::<T>(self.data_type())?;
+        let chunk_subset_elements = crate::array::convert_to_bytes_vec(chunk_subset_elements);
+        self.store_chunk_subset_opt(chunk_indices, chunk_subset, &chunk_subset_elements, options)
     }
 
     #[cfg(feature = "ndarray")]
@@ -246,6 +246,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         chunk_subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
         let chunk_subset_array: ndarray::Array<T, D> = chunk_subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             chunk_subset_start.to_vec(),
@@ -255,11 +256,8 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                 .map(|u| *u as u64)
                 .collect(),
         )?;
-        array_store_ndarray!(
-            self,
-            chunk_subset_array,
-            store_chunk_subset_elements_opt(chunk_indices, &subset, &chunk_subset_array, options)
-        )
+        let chunk_subset_array = super::ndarray_into_vec(chunk_subset_array);
+        self.store_chunk_subset_elements_opt(chunk_indices, &subset, &chunk_subset_array, options)
     }
 
     /// Explicit options version of [`store_array_subset`](Array::store_array_subset).
@@ -384,11 +382,9 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         subset_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
-            subset_elements,
-            store_array_subset_opt(array_subset, &subset_elements, options)
-        )
+        validate_element_size::<T>(self.data_type())?;
+        let subset_elements = crate::array::convert_to_bytes_vec(subset_elements);
+        self.store_array_subset_opt(array_subset, &subset_elements, options)
     }
 
     #[cfg(feature = "ndarray")]
@@ -404,15 +400,13 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
         subset_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
         let subset_array: ndarray::Array<T, D> = subset_array.into();
         let subset = ArraySubset::new_with_start_shape(
             subset_start.to_vec(),
             subset_array.shape().iter().map(|u| *u as u64).collect(),
         )?;
-        array_store_ndarray!(
-            self,
-            subset_array,
-            store_array_subset_elements_opt(&subset, &subset_array, options)
-        )
+        let subset_array = super::ndarray_into_vec(subset_array);
+        self.store_array_subset_elements_opt(&subset, &subset_array, options)
     }
 }

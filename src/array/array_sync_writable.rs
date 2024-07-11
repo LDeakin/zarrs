@@ -4,6 +4,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use crate::{
+    array::validate_element_size,
     array_subset::ArraySubset,
     metadata::MetadataEraseVersion,
     storage::{
@@ -291,11 +292,9 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunk_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
-            chunk_elements,
-            store_chunk_opt(chunk_indices, &chunk_elements, options)
-        )
+        validate_element_size::<T>(self.data_type())?;
+        let chunk_elements = crate::array::convert_to_bytes_vec(chunk_elements);
+        self.store_chunk_opt(chunk_indices, &chunk_elements, options)
     }
 
     #[cfg(feature = "ndarray")]
@@ -311,14 +310,12 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunk_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
         let chunk_array: ndarray::Array<T, D> = chunk_array.into();
         let chunk_shape = self.chunk_shape_usize(chunk_indices)?;
         if chunk_array.shape() == chunk_shape {
-            array_store_ndarray!(
-                self,
-                chunk_array,
-                store_chunk_elements_opt(chunk_indices, &chunk_array, options)
-            )
+            let chunk_array = super::ndarray_into_vec(chunk_array);
+            self.store_chunk_elements_opt(chunk_indices, &chunk_array, options)
         } else {
             Err(ArrayError::InvalidDataShape(
                 chunk_array.shape().to_vec(),
@@ -409,11 +406,9 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunks_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        array_store_elements!(
-            self,
-            chunks_elements,
-            store_chunks_opt(chunks, &chunks_elements, options)
-        )
+        validate_element_size::<T>(self.data_type())?;
+        let chunks_elements = crate::array::convert_to_bytes_vec(chunks_elements);
+        self.store_chunks_opt(chunks, &chunks_elements, options)
     }
 
     #[cfg(feature = "ndarray")]
@@ -429,15 +424,13 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunks_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        validate_element_size::<T>(self.data_type())?;
         let chunks_array: ndarray::Array<T, D> = chunks_array.into();
         let chunks_subset = self.chunks_subset(chunks)?;
         let chunks_shape = chunks_subset.shape_usize();
         if chunks_array.shape() == chunks_shape {
-            array_store_ndarray!(
-                self,
-                chunks_array,
-                store_chunks_elements_opt(chunks, &chunks_array, options)
-            )
+            let chunks_array = super::ndarray_into_vec(chunks_array);
+            self.store_chunks_elements_opt(chunks, &chunks_array, options)
         } else {
             Err(ArrayError::InvalidDataShape(
                 chunks_array.shape().to_vec(),

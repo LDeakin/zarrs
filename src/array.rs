@@ -641,74 +641,17 @@ impl<TStorage: ?Sized> Array<TStorage> {
     }
 }
 
-macro_rules! array_store_elements {
-    ( $self:expr, $elements:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            let $elements = crate::array::convert_to_bytes_vec($elements);
-            $self.$func($($arg)*)
-        }
-    };
-}
-
 #[cfg(feature = "ndarray")]
-macro_rules! array_store_ndarray {
-    ( $self:expr, $array:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            if $array.is_standard_layout() {
-                let $array = $array.into_raw_vec();
-                $self.$func($($arg)*)
-            } else {
-                let $array = $array.as_standard_layout().into_owned().into_raw_vec();
-                $self.$func($($arg)*)
-            }
-        }
-    };
-}
-
-#[cfg(feature = "async")]
-macro_rules! array_async_store_elements {
-    ( $self:expr, $elements:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            let $elements = crate::array::convert_to_bytes_vec($elements);
-            $self.$func($($arg)*).await
-        }
-    };
-}
-
-#[cfg(feature = "async")]
-#[cfg(feature = "ndarray")]
-macro_rules! array_async_store_ndarray {
-    ( $self:expr, $array:ident, $func:ident($($arg:tt)*) ) => {
-        if $self.data_type.size() != std::mem::size_of::<T>() {
-            Err(ArrayError::IncompatibleElementSize(
-                $self.data_type.size(),
-                std::mem::size_of::<T>(),
-            ))
-        } else {
-            if $array.is_standard_layout() {
-                let $array = $array.into_raw_vec();
-                $self.$func($($arg)*).await
-            } else {
-                let $array = $array.as_standard_layout().into_owned().into_raw_vec();
-                $self.$func($($arg)*).await
-            }
-        }
-    };
+/// Convert an ndarray into a vec with standard layout
+fn ndarray_into_vec<T: bytemuck::Pod, D: ndarray::Dimension>(
+    array: ndarray::Array<T, D>,
+) -> Vec<T> {
+    if array.is_standard_layout() {
+        array
+    } else {
+        array.as_standard_layout().into_owned()
+    }
+    .into_raw_vec()
 }
 
 mod array_sync_readable;
