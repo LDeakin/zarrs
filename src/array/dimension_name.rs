@@ -26,6 +26,12 @@ impl DimensionName {
     }
 }
 
+// impl<T: Into<String>> From<T> for DimensionName {
+//     fn from(name: T) -> Self {
+//         Self::new(name)
+//     }
+// }
+
 impl From<&str> for DimensionName {
     fn from(name: &str) -> Self {
         Self::new(name)
@@ -34,6 +40,12 @@ impl From<&str> for DimensionName {
 
 impl From<String> for DimensionName {
     fn from(name: String) -> Self {
+        Self::new(name)
+    }
+}
+
+impl From<&String> for DimensionName {
+    fn from(name: &String) -> Self {
         Self::new(name)
     }
 }
