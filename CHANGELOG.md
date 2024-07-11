@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Implement `From<&String>` for `DimensionName`
  - Cleanup macro usage in array
 
+### Fixed
+ - Fix unnecessary allocations in `_elements` variants of array store methods
+
 ## [0.15.0] - 2024-07-07
 
 ### Highlights

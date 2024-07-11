@@ -193,11 +193,11 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         validate_element_size::<T>(self.data_type())?;
-        let chunk_subset_elements = crate::array::convert_to_bytes_vec(chunk_subset_elements);
+        let chunk_subset_elements = crate::array::transmute_to_bytes(chunk_subset_elements);
         self.async_store_chunk_subset_opt(
             chunk_indices,
             chunk_subset,
-            &chunk_subset_elements,
+            chunk_subset_elements,
             options,
         )
         .await
@@ -363,8 +363,8 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         validate_element_size::<T>(self.data_type())?;
-        let subset_elements = crate::array::convert_to_bytes_vec(subset_elements);
-        self.async_store_array_subset_opt(array_subset, &subset_elements, options)
+        let subset_elements = crate::array::transmute_to_bytes(subset_elements);
+        self.async_store_array_subset_opt(array_subset, subset_elements, options)
             .await
     }
 

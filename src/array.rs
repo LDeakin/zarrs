@@ -695,6 +695,12 @@ pub fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
         .unwrap_or_else(|(_err, from)| convert_to_bytes_vec(&from))
 }
 
+/// Transmute from `&[T]` to `&[u8]`.
+#[must_use]
+fn transmute_to_bytes<T: bytemuck::NoUninit>(from: &[T]) -> &[u8] {
+    bytemuck::must_cast_slice(from)
+}
+
 /// Unravel a linearised index to ND indices.
 #[must_use]
 pub fn unravel_index(mut index: u64, shape: &[u64]) -> ArrayIndices {

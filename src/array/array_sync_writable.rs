@@ -293,8 +293,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         validate_element_size::<T>(self.data_type())?;
-        let chunk_elements = crate::array::convert_to_bytes_vec(chunk_elements);
-        self.store_chunk_opt(chunk_indices, &chunk_elements, options)
+        let chunk_elements = crate::array::transmute_to_bytes(chunk_elements);
+        self.store_chunk_opt(chunk_indices, chunk_elements, options)
     }
 
     #[cfg(feature = "ndarray")]
@@ -407,8 +407,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         validate_element_size::<T>(self.data_type())?;
-        let chunks_elements = crate::array::convert_to_bytes_vec(chunks_elements);
-        self.store_chunks_opt(chunks, &chunks_elements, options)
+        let chunks_elements = crate::array::transmute_to_bytes(chunks_elements);
+        self.store_chunks_opt(chunks, chunks_elements, options)
     }
 
     #[cfg(feature = "ndarray")]
