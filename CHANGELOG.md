@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2024-07-11
+
+### Added
+ - Add `CITATION.cff`
+
 ### Changed
  - Implement `From<&String>` for `DimensionName`
  - Cleanup macro usage in array
@@ -837,7 +842,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.15.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.1
 [0.15.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.0
 [0.14.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.14.0
 [0.13.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.13.3
