@@ -1,18 +1,15 @@
-use std::sync::Arc;
+#![cfg(all(feature = "async", feature = "ndarray", feature = "object_store"))]
 
 use zarrs::array::{ArrayBuilder, ArrayView, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 
-#[cfg(feature = "object_store")]
 use object_store::memory::InMemory;
 
-#[cfg(all(feature = "async", feature = "object_store"))]
 use zarrs::storage::store::AsyncObjectStore;
 
-#[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[rustfmt::skip]
 async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let store = Arc::new(AsyncObjectStore::new(InMemory::new()));
+    let store = std::sync::Arc::new(AsyncObjectStore::new(InMemory::new()));
     let array_path = "/array";
     let mut builder = ArrayBuilder::new(
         vec![4, 4], // array shape
@@ -224,14 +221,12 @@ async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
-#[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[tokio::test]
 #[cfg_attr(miri, ignore)] // FIXME: Check if this failure is real
 async fn array_async_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
     array_async_read(false).await
 }
 
-#[cfg(all(feature = "ndarray", feature = "async", feature = "object_store"))]
 #[tokio::test]
 #[cfg_attr(miri, ignore)]
 async fn array_async_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {

@@ -22,7 +22,8 @@ pub enum Bz2CodecConfiguration {
 ///     "level": 9
 /// }
 /// # "#;
-/// # let configuration: zarrs::array::codec::Bz2CodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs::metadata::v2::codec::bz2::Bz2CodecConfigurationV1;
+/// # let configuration: Bz2CodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]

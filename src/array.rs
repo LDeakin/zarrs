@@ -918,6 +918,7 @@ mod tests {
             .is_none());
     }
 
+    #[allow(dead_code)]
     fn array_v2_to_v3(path_in: &str, path_out: &str) {
         let store = Arc::new(FilesystemStore::new(path_in).unwrap());
         let array_in = Array::open(store, "/").unwrap();
@@ -963,6 +964,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "blosc")]
     #[test]
     fn array_v2_blosc_c() {
         array_v2_to_v3(
@@ -971,6 +973,7 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "blosc")]
     #[test]
     fn array_v2_blosc_f() {
         array_v2_to_v3(
@@ -979,6 +982,7 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "gzip")]
     #[test]
     fn array_v2_gzip_c() {
         array_v2_to_v3(
@@ -987,6 +991,7 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "bz2")]
     #[test]
     fn array_v2_bz2_c() {
         array_v2_to_v3(

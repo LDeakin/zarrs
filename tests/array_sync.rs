@@ -1,10 +1,9 @@
-use std::sync::Arc;
+#![cfg(feature = "ndarray")]
 
 use zarrs::array::{Array, ArrayBuilder, ArrayCodecTraits, ArrayView, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 use zarrs::storage::store::MemoryStore;
 
-#[cfg(feature = "ndarray")]
 #[rustfmt::skip]
 fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(array.data_type(), &DataType::UInt8);
@@ -196,10 +195,9 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
     Ok(())
 }
 
-#[cfg(feature = "ndarray")]
 #[test]
 fn array_sync_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
-    let store = Arc::new(MemoryStore::default());
+    let store = std::sync::Arc::new(MemoryStore::default());
     let array_path = "/array";
     let array = ArrayBuilder::new(
         vec![4, 4], // array shape
@@ -224,11 +222,10 @@ fn array_sync_read_uncompressed() -> Result<(), Box<dyn std::error::Error>> {
     array_sync_read(array)
 }
 
-#[cfg(feature = "ndarray")]
 #[test]
 #[cfg_attr(miri, ignore)]
 fn array_sync_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
-    let store = Arc::new(MemoryStore::default());
+    let store = std::sync::Arc::new(MemoryStore::default());
     let array_path = "/array";
     let mut builder = ArrayBuilder::new(
         vec![4, 4], // array shape

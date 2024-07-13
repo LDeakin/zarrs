@@ -48,7 +48,8 @@ pub enum ShardingCodecConfiguration {
 ///     ]
 /// }
 /// # "#;
-/// # let configuration: zarrs::array::codec::ShardingCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs::metadata::v3::codec::sharding::ShardingCodecConfigurationV1;
+/// # let configuration: ShardingCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

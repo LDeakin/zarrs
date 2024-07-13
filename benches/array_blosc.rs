@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use zarrs::array::codec::{
-    bytes_to_bytes::blosc::{BloscCompressionLevel, BloscShuffleMode},
-    BloscCodec,
+use zarrs::{
+    array::codec::BloscCodec,
+    metadata::v3::codec::blosc::{BloscCompressionLevel, BloscCompressor, BloscShuffleMode},
 };
 
 fn array_blosc_write_all(c: &mut Criterion) {
@@ -20,7 +20,7 @@ fn array_blosc_write_all(c: &mut Criterion) {
                 )
                 .bytes_to_bytes_codecs(vec![Box::new(
                     BloscCodec::new(
-                        zarrs::array::codec::bytes_to_bytes::blosc::BloscCompressor::BloscLZ,
+                        BloscCompressor::BloscLZ,
                         BloscCompressionLevel::try_from(9).unwrap(),
                         None,
                         BloscShuffleMode::BitShuffle,
@@ -55,7 +55,7 @@ fn array_blosc_read_all(c: &mut Criterion) {
             )
             .bytes_to_bytes_codecs(vec![Box::new(
                 BloscCodec::new(
-                    zarrs::array::codec::bytes_to_bytes::blosc::BloscCompressor::BloscLZ,
+                    BloscCompressor::BloscLZ,
                     BloscCompressionLevel::try_from(9).unwrap(),
                     None,
                     BloscShuffleMode::BitShuffle,

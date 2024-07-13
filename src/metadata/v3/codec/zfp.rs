@@ -27,7 +27,8 @@ pub enum ZfpCodecConfiguration {
 ///     "rate": 10.5
 /// }
 /// # "#;
-/// # let configuration: zarrs::array::codec::ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
 /// ### Encode in fixed precision mode with 19 uncompressed bits per value
@@ -38,7 +39,8 @@ pub enum ZfpCodecConfiguration {
 ///     "precision": 19
 /// }
 /// # "#;
-/// # let configuration: zarrs::array::codec::ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
 /// ### Encode in fixed accuracy mode with a tolerance of 0.05
@@ -49,7 +51,8 @@ pub enum ZfpCodecConfiguration {
 ///     "tolerance": 0.05
 /// }
 /// # "#;
-/// # let configuration: zarrs::array::codec::ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
 /// ### Encode in reversible mode
@@ -59,7 +62,8 @@ pub enum ZfpCodecConfiguration {
 ///     "mode": "reversible"
 /// }
 /// # "#;
-/// # let configuration: zarrs::array::codec::ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
 /// ### Encode in expert mode
@@ -73,7 +77,8 @@ pub enum ZfpCodecConfiguration {
 ///     "minexp": -2
 /// }
 /// # "#;
-/// # let configuration: zarrs::array::codec::ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(tag = "mode", rename_all = "lowercase")]
