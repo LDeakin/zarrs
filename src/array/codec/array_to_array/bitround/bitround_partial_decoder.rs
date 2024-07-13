@@ -53,8 +53,8 @@ impl<'a> BitroundPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.data_type.size()
+    fn data_type(&self) -> &DataType {
+        &self.data_type
     }
 
     fn partial_decode_opt(
@@ -118,8 +118,8 @@ impl<'a> AsyncBitroundPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.data_type.size()
+    fn data_type(&self) -> &DataType {
+        &self.data_type
     }
 
     async fn partial_decode_opt(

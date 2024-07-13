@@ -14,7 +14,7 @@ use crate::{
         concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
         ravel_indices,
         unsafe_cell_slice::UnsafeCellSlice,
-        ChunkRepresentation, ChunkShape,
+        ChunkRepresentation, ChunkShape, DataType,
     },
     byte_range::ByteRange,
 };
@@ -119,8 +119,8 @@ impl<'a> ShardingPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     #[allow(clippy::too_many_lines)]
@@ -361,8 +361,8 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     #[allow(clippy::too_many_lines)]

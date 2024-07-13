@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::{
     array::{
         codec::{ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError, CodecOptions},
-        ChunkRepresentation,
+        ChunkRepresentation, DataType,
     },
     array_subset::ArraySubset,
     byte_range::extract_byte_ranges_concat,
@@ -43,8 +43,8 @@ impl<'a> ZfpPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     fn partial_decode_opt(
@@ -133,8 +133,8 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     async fn partial_decode_opt(

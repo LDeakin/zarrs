@@ -2,7 +2,10 @@
 
 use std::{borrow::Cow, marker::PhantomData};
 
-use crate::{array::ChunkRepresentation, array_subset::IncompatibleArraySubsetAndShapeError};
+use crate::{
+    array::{ChunkRepresentation, DataType},
+    array_subset::IncompatibleArraySubsetAndShapeError,
+};
 
 use super::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions};
 
@@ -71,8 +74,8 @@ impl<'a> ArrayPartialDecoderCache<'a> {
 }
 
 impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     fn partial_decode_opt(
@@ -102,8 +105,8 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     async fn partial_decode_opt(

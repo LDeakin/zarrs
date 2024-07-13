@@ -338,8 +338,8 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
 
 /// Partial array decoder traits.
 pub trait ArrayPartialDecoderTraits: Send + Sync {
-    /// Return the element size of the partial decoder.
-    fn element_size(&self) -> usize;
+    /// Return the data type of the partial decoder.
+    fn data_type(&self) -> &DataType;
 
     /// Partially decode a chunk with default codec options.
     ///
@@ -368,8 +368,8 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
 /// Asynchronous partial array decoder traits.
 #[async_trait::async_trait]
 pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
-    /// Return the element size of the partial decoder.
-    fn element_size(&self) -> usize;
+    /// Return the data type of the partial decoder.
+    fn data_type(&self) -> &DataType;
 
     /// Partially decode a chunk with default codec options.
     ///

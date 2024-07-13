@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Use `[async_]retrieve_array_subset_opt` internally in `Array::[async_]retrieve_chunks_opt`
+ - **Breaking**: Replace `[Async]ArrayPartialDecoderTraits::element_size()` with `data_type()`
 
 ### Removed
  - **Breaking**: Remove `into_array_view` array and codec API

@@ -107,8 +107,8 @@ fn do_partial_decode<'a>(
 }
 
 impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     fn partial_decode_opt(
@@ -145,8 +145,8 @@ impl<'a> AsyncPCodecPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     async fn partial_decode_opt(

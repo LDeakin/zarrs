@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
     codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
-    ChunkRepresentation,
+    ChunkRepresentation, DataType,
 };
 
 #[cfg(feature = "async")]
@@ -32,8 +32,8 @@ impl<'a> TransposePartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     fn partial_decode_opt(
@@ -121,8 +121,8 @@ impl<'a> AsyncTransposePartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     async fn partial_decode_opt(

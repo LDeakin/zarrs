@@ -6,7 +6,7 @@ use crate::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ChunkRepresentation,
+        ChunkRepresentation, DataType,
     },
     array_subset::IncompatibleArraySubsetAndShapeError,
 };
@@ -39,8 +39,8 @@ impl<'a> BytesPartialDecoder<'a> {
 }
 
 impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     fn partial_decode_opt(
@@ -120,8 +120,8 @@ impl<'a> AsyncBytesPartialDecoder<'a> {
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
-    fn element_size(&self) -> usize {
-        self.decoded_representation.element_size()
+    fn data_type(&self) -> &DataType {
+        self.decoded_representation.data_type()
     }
 
     async fn partial_decode_opt(
