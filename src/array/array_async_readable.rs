@@ -15,13 +15,13 @@ use crate::{
 use super::{
     codec::{
         options::CodecOptions, ArrayCodecTraits, ArrayToBytesCodecTraits,
-        AsyncArrayPartialDecoderTraits, AsyncStoragePartialDecoder, CodecError,
+        AsyncArrayPartialDecoderTraits, AsyncStoragePartialDecoder,
     },
     concurrency::concurrency_chunks_and_codec,
     transmute_from_bytes_vec,
     unsafe_cell_slice::UnsafeCellSlice,
     validate_element_size, Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayMetadataV2,
-    ArrayMetadataV3, ArrayView,
+    ArrayMetadataV3,
 };
 
 #[cfg(feature = "ndarray")]
@@ -170,21 +170,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .await
     }
 
-    /// Async variant of [`retrieve_chunk_into_array_view`](Array::retrieve_chunk_into_array_view).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_chunk_into_array_view(
-        &self,
-        chunk_indices: &[u64],
-        array_view: &ArrayView<'_>,
-    ) -> Result<(), ArrayError> {
-        self.async_retrieve_chunk_into_array_view_opt(
-            chunk_indices,
-            array_view,
-            &CodecOptions::default(),
-        )
-        .await
-    }
-
     /// Async variant of [`retrieve_chunks`](Array::retrieve_chunks).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_chunks(&self, chunks: &ArraySubset) -> Result<Vec<u8>, ArrayError> {
@@ -210,17 +195,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         chunks: &ArraySubset,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         self.async_retrieve_chunks_ndarray_opt(chunks, &CodecOptions::default())
-            .await
-    }
-
-    /// Async variant of [`retrieve_chunks_into_array_view`](Array::retrieve_chunks_into_array_view).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_chunks_into_array_view(
-        &self,
-        chunks: &ArraySubset,
-        array_view: &ArrayView<'_>,
-    ) -> Result<(), ArrayError> {
-        self.async_retrieve_chunks_into_array_view_opt(chunks, array_view, &CodecOptions::default())
             .await
     }
 
@@ -266,23 +240,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         .await
     }
 
-    /// Async variant of [`retrieve_chunk_subset_into_array_view`](Array::retrieve_chunk_subset_into_array_view).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_chunk_subset_into_array_view(
-        &self,
-        chunk_indices: &[u64],
-        chunk_subset: &ArraySubset,
-        array_view: &ArrayView<'_>,
-    ) -> Result<(), ArrayError> {
-        self.async_retrieve_chunk_subset_into_array_view_opt(
-            chunk_indices,
-            chunk_subset,
-            array_view,
-            &CodecOptions::default(),
-        )
-        .await
-    }
-
     /// Async variant of [`retrieve_array_subset`](Array::retrieve_array_subset).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_retrieve_array_subset(
@@ -312,21 +269,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         self.async_retrieve_array_subset_ndarray_opt(array_subset, &CodecOptions::default())
             .await
-    }
-
-    /// Async variant of [`retrieve_array_subset_into_array_view`](Array::retrieve_array_subset_into_array_view).
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn async_retrieve_array_subset_into_array_view(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView<'_>,
-    ) -> Result<(), ArrayError> {
-        self.async_retrieve_array_subset_into_array_view_opt(
-            array_subset,
-            array_view,
-            &CodecOptions::default(),
-        )
-        .await
     }
 
     /// Async variant of [`partial_decoder`](Array::partial_decoder).
@@ -479,50 +421,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_chunk_elements_opt(chunk_indices, options)
             .await?;
         elements_to_ndarray(&shape, elements)
-    }
-
-    /// Async variant of [`retrieve_chunk_into_array_view_opt`](Array::retrieve_chunk_into_array_view_opt).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_chunk_into_array_view_opt(
-        &self,
-        chunk_indices: &[u64],
-        array_view: &ArrayView<'_>,
-        options: &CodecOptions,
-    ) -> Result<(), ArrayError> {
-        let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-        let chunk_shape_u64 = chunk_representation.shape_u64();
-        if chunk_shape_u64 != array_view.subset().shape() {
-            return Err(ArrayError::InvalidArraySubset(
-                array_view.subset().clone(),
-                chunk_shape_u64,
-            ));
-        }
-
-        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-        let storage_transformer = self
-            .storage_transformers()
-            .create_async_readable_transformer(storage_handle);
-        let chunk_encoded = crate::storage::async_retrieve_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
-        .await
-        .map_err(ArrayError::StorageError)?;
-        if let Some(chunk_encoded) = chunk_encoded {
-            self.codecs()
-                .decode_into_array_view(
-                    Cow::Borrowed(&chunk_encoded),
-                    &chunk_representation,
-                    array_view,
-                    options,
-                )
-                .map_err(ArrayError::CodecError)
-        } else {
-            super::fill_array_view_with_fill_value(array_view, self.fill_value());
-            Ok(())
-        }
     }
 
     /// Retrieve the encoded bytes of the chunks in `chunks`.
@@ -683,29 +581,41 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                     let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
                     let retrieve_chunk = |chunk_indices: Vec<u64>| {
                         let options = options.clone();
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
-                        let chunk_subset_in_array_subset =
-                            unsafe { chunk_subset.overlap_unchecked(array_subset) };
-                        let chunk_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
-                        };
-                        let array_view_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                        };
-                        let array_view = ArrayView::new(
-                            unsafe { output.get() },
-                            array_subset.shape(),
-                            array_view_subset,
-                        )
-                        .unwrap(); // FIXME: unwrap
                         async move {
-                            self.async_retrieve_chunk_subset_into_array_view_opt(
-                                &chunk_indices,
-                                &chunk_subset,
-                                &array_view,
-                                &options,
-                            )
-                            .await
+                            let chunk_subset = self.chunk_subset(&chunk_indices)?;
+                            let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
+                            let chunk_subset_bytes = self
+                                .async_retrieve_chunk_subset_opt(
+                                    &chunk_indices,
+                                    &chunk_subset_overlap.relative_to(chunk_subset.start())?,
+                                    &options,
+                                )
+                                .await?;
+                            let contiguous_indices = unsafe {
+                                chunk_subset_overlap
+                                    .relative_to(array_subset.start())?
+                                    .contiguous_linearised_indices_unchecked(array_subset.shape())
+                            };
+                            let element_size = self.data_type().size();
+                            let length =
+                                contiguous_indices.contiguous_elements_usize() * element_size;
+                            let mut decoded_offset = 0;
+                            // FIXME: Par iteration?
+                            let output = unsafe { output.get() };
+                            for (array_subset_element_index, _num_elements) in &contiguous_indices {
+                                let output_offset = usize::try_from(array_subset_element_index)
+                                    .unwrap()
+                                    * element_size;
+                                debug_assert!((output_offset + length) <= output.len());
+                                debug_assert!(
+                                    (decoded_offset + length) <= chunk_subset_bytes.len()
+                                );
+                                output[output_offset..output_offset + length].copy_from_slice(
+                                    &chunk_subset_bytes[decoded_offset..decoded_offset + length],
+                                );
+                                decoded_offset += length;
+                            }
+                            Ok::<_, ArrayError>(())
                         }
                     };
                     futures::stream::iter(&chunks.indices())
@@ -746,181 +656,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_array_subset_elements_opt(array_subset, options)
             .await?;
         elements_to_ndarray(array_subset.shape(), elements)
-    }
-
-    /// Async variant of [`retrieve_chunks_into_array_view_opt`](Array::retrieve_chunks_into_array_view_opt).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_chunks_into_array_view_opt(
-        &self,
-        chunks: &ArraySubset,
-        array_view: &ArrayView<'_>,
-        options: &CodecOptions,
-    ) -> Result<(), ArrayError> {
-        if chunks.dimensionality() != self.dimensionality() {
-            return Err(ArrayError::InvalidArraySubset(
-                chunks.clone(),
-                self.chunk_grid_shape()
-                    .unwrap_or_else(|| vec![0u64; self.dimensionality()]),
-            ));
-        }
-        let num_chunks = chunks.num_elements_usize();
-        if num_chunks == 0 {
-            return Ok(());
-        }
-
-        let array_subset = self.chunks_subset(chunks)?;
-        if array_subset.shape() != array_view.subset().shape() {
-            return Err(ArrayError::InvalidArraySubset(
-                array_subset.clone(),
-                array_view.subset().shape().to_vec(),
-            ));
-        }
-
-        if num_chunks == 1 {
-            let chunk_indices = chunks.start();
-            self.async_retrieve_chunk_into_array_view_opt(chunk_indices, array_view, options)
-                .await
-        } else {
-            // Calculate chunk/codec concurrency
-            let chunk_representation =
-                self.chunk_array_representation(&vec![0; self.dimensionality()])?;
-            let codec_concurrency = self.recommended_codec_concurrency(&chunk_representation)?;
-            let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
-                options.concurrent_target(),
-                num_chunks,
-                options,
-                &codec_concurrency,
-            );
-
-            {
-                let retrieve_chunk = |chunk_indices: Vec<u64>| {
-                    let chunk0_start = array_subset.start().to_vec();
-                    let options = options.clone();
-                    async move {
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap();
-                        let array_view_subset =
-                            unsafe { chunk_subset.relative_to_unchecked(&chunk0_start) };
-                        self.async_retrieve_chunk_into_array_view_opt(
-                            &chunk_indices,
-                            &unsafe { array_view.subset_view(&array_view_subset) }.unwrap(), // FIXME: unwrap
-                            &options,
-                        )
-                        .await
-                    }
-                };
-                futures::stream::iter(&chunks.indices())
-                    .map(Ok)
-                    .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
-                    .await?;
-            }
-            Ok(())
-        }
-    }
-
-    /// Async variant of [`retrieve_array_subset_into_array_view_opt`](Array::retrieve_array_subset_into_array_view_opt).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_retrieve_array_subset_into_array_view_opt(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView<'_>,
-        options: &CodecOptions,
-    ) -> Result<(), ArrayError> {
-        if array_subset.shape() != array_view.subset().shape() {
-            return Err(ArrayError::InvalidArraySubset(
-                array_subset.clone(),
-                array_view.subset().shape().to_vec(),
-            ));
-        }
-
-        // Find the chunks intersecting this array subset
-        let chunks = self.chunks_in_array_subset(array_subset)?;
-        let Some(chunks) = chunks else {
-            return Err(ArrayError::InvalidArraySubset(
-                array_subset.clone(),
-                self.shape().to_vec(),
-            ));
-        };
-
-        // Retrieve chunk bytes
-        let num_chunks = chunks.num_elements_usize();
-        match num_chunks {
-            0 => Ok(()),
-            1 => {
-                let chunk_indices = chunks.start();
-                let chunk_subset = self.chunk_subset(chunk_indices).unwrap();
-                if &chunk_subset == array_subset {
-                    // Single chunk fast path if the array subset domain matches the chunk domain
-                    let array_view_subset =
-                        unsafe { chunk_subset.relative_to_unchecked(array_subset.start()) };
-                    self.async_retrieve_chunk_into_array_view_opt(
-                        chunk_indices,
-                        &unsafe { array_view.subset_view(&array_view_subset) }
-                            .map_err(|err| CodecError::from(err.to_string()))?,
-                        options,
-                    )
-                    .await
-                } else {
-                    let chunk_subset_in_array_subset =
-                        unsafe { chunk_subset.overlap_unchecked(array_subset) };
-                    let chunk_subset = unsafe {
-                        chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
-                    };
-                    let array_view_subset = unsafe {
-                        chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                    };
-                    self.async_retrieve_chunk_subset_into_array_view_opt(
-                        chunk_indices,
-                        &chunk_subset,
-                        &unsafe { array_view.subset_view(&array_view_subset) }
-                            .map_err(|err| CodecError::from(err.to_string()))?,
-                        options,
-                    )
-                    .await
-                }
-            }
-            _ => {
-                // Calculate chunk/codec concurrency
-                let chunk_representation =
-                    self.chunk_array_representation(&vec![0; self.dimensionality()])?;
-                let codec_concurrency =
-                    self.recommended_codec_concurrency(&chunk_representation)?;
-                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
-                    options.concurrent_target(),
-                    num_chunks,
-                    options,
-                    &codec_concurrency,
-                );
-
-                {
-                    let retrieve_chunk = |chunk_indices: Vec<u64>| {
-                        let chunk_subset = self.chunk_subset(&chunk_indices).unwrap();
-                        let chunk_subset_in_array_subset =
-                            unsafe { chunk_subset.overlap_unchecked(array_subset) };
-                        let chunk_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(chunk_subset.start())
-                        };
-                        let array_view_subset = unsafe {
-                            chunk_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                        };
-                        let options = options.clone();
-                        async move {
-                            self.async_retrieve_chunk_subset_into_array_view_opt(
-                                &chunk_indices,
-                                &chunk_subset,
-                                &unsafe { array_view.subset_view(&array_view_subset) }.unwrap(),
-                                &options,
-                            )
-                            .await
-                        }
-                    };
-                    futures::stream::iter(&chunks.indices())
-                        .map(Ok)
-                        .try_for_each_concurrent(Some(chunk_concurrent_limit), retrieve_chunk)
-                        .await?;
-                }
-                Ok(())
-            }
-        }
     }
 
     /// Async variant of [`retrieve_chunk_subset_opt`](Array::retrieve_chunk_subset_opt).
@@ -998,45 +733,6 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .async_retrieve_chunk_subset_elements_opt(chunk_indices, chunk_subset, options)
             .await?;
         elements_to_ndarray(chunk_subset.shape(), elements)
-    }
-
-    /// Async variant of [`retrieve_chunk_subset_into_array_view_opt`](Array::retrieve_chunk_subset_into_array_view_opt).
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn async_retrieve_chunk_subset_into_array_view_opt(
-        &self,
-        chunk_indices: &[u64],
-        chunk_subset: &ArraySubset,
-        array_view: &ArrayView<'_>,
-        options: &CodecOptions,
-    ) -> Result<(), ArrayError> {
-        if chunk_subset.shape() != array_view.subset().shape() {
-            return Err(ArrayError::InvalidArraySubset(
-                chunk_subset.clone(),
-                array_view.subset().shape().to_vec(),
-            ));
-        }
-
-        let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-        if chunk_subset.shape() == chunk_representation.shape_u64() {
-            self.async_retrieve_chunk_into_array_view_opt(chunk_indices, array_view, options)
-                .await
-        } else {
-            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-            let storage_transformer = self
-                .storage_transformers()
-                .create_async_readable_transformer(storage_handle);
-            let input_handle = Box::new(AsyncStoragePartialDecoder::new(
-                storage_transformer,
-                data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
-            ));
-
-            self.codecs()
-                .async_partial_decoder(input_handle, &chunk_representation, options)
-                .await?
-                .partial_decode_into_array_view_opt(chunk_subset, array_view, options)
-                .await
-                .map_err(ArrayError::CodecError)
-        }
     }
 
     /// Async variant of [`partial_decoder_opt`](Array::partial_decoder_opt).
