@@ -22,7 +22,6 @@ pub use crate::metadata::v3::codec::sharding::{
 
 pub use sharding_codec::ShardingCodec;
 pub use sharding_codec_builder::ShardingCodecBuilder;
-use thiserror::Error;
 
 use crate::{
     array::{
@@ -52,17 +51,10 @@ pub(crate) fn create_codec_sharding(metadata: &MetadataV3) -> Result<Codec, Plug
     Ok(Codec::ArrayToBytes(Box::new(codec)))
 }
 
-#[derive(Debug, Error)]
-#[error("invalid inner chunk shape {chunk_shape:?}, it must evenly divide {shard_shape:?}")]
-struct ChunksPerShardError {
-    chunk_shape: ChunkShape,
-    shard_shape: ChunkShape,
-}
-
 fn calculate_chunks_per_shard(
     shard_shape: &[NonZeroU64],
     chunk_shape: &[NonZeroU64],
-) -> Result<ChunkShape, ChunksPerShardError> {
+) -> Result<ChunkShape, CodecError> {
     use num::Integer;
 
     Ok(std::iter::zip(shard_shape, chunk_shape)
@@ -72,10 +64,9 @@ fn calculate_chunks_per_shard(
             if s.is_multiple_of(&c) {
                 Ok(unsafe { NonZeroU64::new_unchecked(s / c) })
             } else {
-                Err(ChunksPerShardError {
-                    chunk_shape: chunk_shape.into(),
-                    shard_shape: shard_shape.into(),
-                })
+                Err(CodecError::Other(
+                    format!("invalid inner chunk shape {chunk_shape:?}, it must evenly divide {shard_shape:?}")
+                ))
             }
         })
         .collect::<Result<Vec<_>, _>>()?

@@ -87,8 +87,7 @@ impl<'a> ShardingPartialDecoder<'a> {
 
         // Calculate chunks per shard
         let chunks_per_shard =
-            calculate_chunks_per_shard(shard_shape, chunk_representation.shape())
-                .map_err(|e| CodecError::Other(e.to_string()))?;
+            calculate_chunks_per_shard(shard_shape, chunk_representation.shape())?;
 
         // Get index array representation and encoded size
         let index_array_representation =
@@ -164,8 +163,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         let chunks_per_shard = calculate_chunks_per_shard(
             self.decoded_representation.shape(),
             chunk_representation.shape(),
-        )
-        .map_err(|e| CodecError::Other(e.to_string()))?;
+        )?;
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
         let num_chunks = usize::try_from(chunks_per_shard.iter().product::<u64>()).unwrap();
 
@@ -328,8 +326,7 @@ impl<'a> AsyncShardingPartialDecoder<'a> {
 
         // Calculate chunks per shard
         let chunks_per_shard =
-            calculate_chunks_per_shard(shard_shape, chunk_representation.shape())
-                .map_err(|e| CodecError::Other(e.to_string()))?;
+            calculate_chunks_per_shard(shard_shape, chunk_representation.shape())?;
 
         // Get index array representation and encoded size
         let index_array_representation =
@@ -400,8 +397,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         let chunks_per_shard = calculate_chunks_per_shard(
             self.decoded_representation.shape(),
             self.chunk_grid.chunk_shape(),
-        )
-        .map_err(|e| CodecError::Other(e.to_string()))?;
+        )?;
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
 
         let element_size = self.decoded_representation.element_size();

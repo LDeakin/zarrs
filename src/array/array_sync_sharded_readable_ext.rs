@@ -4,10 +4,8 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use super::{
-    codec::{CodecError, CodecOptions},
-    concurrency::concurrency_chunks_and_codec,
-    transmute_from_bytes_vec, validate_element_size, Array, ArrayError, ArrayShardedExt, ArrayView,
-    ChunkGrid, UnsafeCellSlice,
+    codec::CodecOptions, concurrency::concurrency_chunks_and_codec, transmute_from_bytes_vec,
+    validate_element_size, Array, ArrayError, ArrayShardedExt, ChunkGrid, UnsafeCellSlice,
 };
 use crate::storage::ReadableStorageTraits;
 use crate::{array::codec::ArrayPartialDecoderTraits, array_subset::ArraySubset};
@@ -187,21 +185,6 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError>;
-
-    /// Retrieve a shard subset into an array view.
-    ///
-    /// For an unsharded array, retrieves
-    ///
-    /// See [`Array::retrieve_array_subset_into_array_view_opt`].
-    #[allow(clippy::missing_errors_doc)]
-    fn retrieve_shard_subset_into_array_view_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
-        shard_indices: &[u64],
-        shard_subset: &ArraySubset,
-        array_view: &ArrayView,
-        options: &CodecOptions,
-    ) -> Result<(), ArrayError>;
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt<TStorage>
@@ -376,27 +359,43 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                     let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
                     let retrieve_shard = |shard_indices: Vec<u64>| {
                         let shard_subset = self.chunk_subset(&shard_indices)?;
-                        let shard_subset_in_array_subset =
-                            unsafe { shard_subset.overlap_unchecked(array_subset) };
-                        let shard_subset = unsafe {
-                            shard_subset_in_array_subset.relative_to_unchecked(shard_subset.start())
+                        let shard_subset_overlap = shard_subset.overlap(array_subset)?;
+                        // let shard_subset_bytes = self.retrieve_chunk_subset_opt(
+                        //     &shard_indices,
+                        //     &shard_subset_overlap.relative_to(shard_subset.start())?,
+                        //     &options,
+                        // )?;
+                        let shard_subset_bytes = cache
+                            .retrieve(self, &shard_indices)?
+                            .partial_decode_opt(
+                                &[shard_subset_overlap.relative_to(shard_subset.start())?],
+                                &options,
+                            )?
+                            .pop()
+                            .unwrap()
+                            .into_owned();
+
+                        let contiguous_indices = unsafe {
+                            shard_subset_overlap
+                                .relative_to(array_subset.start())?
+                                .contiguous_linearised_indices_unchecked(array_subset.shape())
                         };
-                        let array_view_subset = unsafe {
-                            shard_subset_in_array_subset.relative_to_unchecked(array_subset.start())
-                        };
-                        let array_view = ArrayView::new(
-                            unsafe { output.get() },
-                            array_subset.shape(),
-                            array_view_subset,
-                        )
-                        .map_err(|err| CodecError::from(err.to_string()))?;
-                        self.retrieve_shard_subset_into_array_view_opt(
-                            cache,
-                            &shard_indices,
-                            &shard_subset,
-                            &array_view,
-                            &options,
-                        )
+                        let element_size = self.data_type().size();
+                        let length = contiguous_indices.contiguous_elements_usize() * element_size;
+                        let mut decoded_offset = 0;
+                        // FIXME: Par iteration?
+                        let output = unsafe { output.get() };
+                        for (array_subset_element_index, _num_elements) in &contiguous_indices {
+                            let output_offset =
+                                usize::try_from(array_subset_element_index).unwrap() * element_size;
+                            debug_assert!((output_offset + length) <= output.len());
+                            debug_assert!((decoded_offset + length) <= shard_subset_bytes.len());
+                            output[output_offset..output_offset + length].copy_from_slice(
+                                &shard_subset_bytes[decoded_offset..decoded_offset + length],
+                            );
+                            decoded_offset += length;
+                        }
+                        Ok::<_, ArrayError>(())
                     };
                     let indices = shards.indices();
                     iter_concurrent_limit!(
@@ -435,20 +434,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         let elements =
             self.retrieve_array_subset_elements_sharded_opt::<T>(cache, array_subset, options)?;
         super::elements_to_ndarray(array_subset.shape(), elements)
-    }
-
-    fn retrieve_shard_subset_into_array_view_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
-        shard_indices: &[u64],
-        shard_subset: &ArraySubset,
-        array_view: &ArrayView,
-        options: &CodecOptions,
-    ) -> Result<(), ArrayError> {
-        cache
-            .retrieve(self, shard_indices)?
-            .partial_decode_into_array_view_opt(shard_subset, array_view, options)
-            .map_err(ArrayError::CodecError)
     }
 }
 
@@ -616,7 +601,7 @@ mod tests {
     }
 
     #[test]
-    fn array_sharded_ext() -> Result<(), Box<dyn std::error::Error>> {
+    fn array_sharded_ext_sharded() -> Result<(), Box<dyn std::error::Error>> {
         array_sharded_ext_impl(true)
     }
 

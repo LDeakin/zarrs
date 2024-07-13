@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Use `[async_]retrieve_array_subset_opt` internally in `Array::[async_]retrieve_chunks_opt`
 
+### Removed
+ - **Breaking**: Remove `into_array_view` array and codec API
+   - This was not fully utilised, not applicable to variable sized data types, and quite unsafe for a public API
+ - Remove internal `ChunksPerShardError` and just use `CodecError::Other`
+
 ## [0.15.1] - 2024-07-11
 
 ### Added

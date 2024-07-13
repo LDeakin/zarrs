@@ -11,7 +11,7 @@ use crate::{
             CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayMetadataOptions, ArrayView, BytesRepresentation, ChunkRepresentation, ChunkShape,
+        ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
     },
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
@@ -509,94 +509,6 @@ impl ArrayCodecTraits for CodecChain {
         }
 
         Ok(encoded_value)
-    }
-
-    fn decode_into_array_view(
-        &self,
-        mut encoded_value: Cow<'_, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        array_view: &ArrayView,
-        options: &CodecOptions,
-    ) -> Result<(), CodecError> {
-        let array_representations =
-            self.get_array_representations(decoded_representation.clone())?;
-        let bytes_representations =
-            self.get_bytes_representations(array_representations.last().unwrap())?;
-
-        if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
-            // Shortcut path if no bytes to bytes or array to array codecs
-            // TODO: This shouldn't be necessary with appropriate optimisations detailed in below FIXME
-            return self.array_to_bytes.decode_into_array_view(
-                encoded_value,
-                array_representations.last().unwrap(),
-                array_view,
-                options,
-            );
-        }
-
-        // bytes->bytes
-        for (codec, bytes_representation) in std::iter::zip(
-            self.bytes_to_bytes.iter().rev(),
-            bytes_representations.iter().rev().skip(1),
-        ) {
-            encoded_value = codec.decode(encoded_value, bytes_representation, options)?;
-        }
-
-        if self.array_to_array.is_empty() {
-            // bytes->array
-            self.array_to_bytes.decode_into_array_view(
-                encoded_value,
-                array_representations.last().unwrap(),
-                array_view,
-                options,
-            )
-        } else {
-            // bytes->array
-            encoded_value = self.array_to_bytes.decode(
-                encoded_value,
-                array_representations.last().unwrap(),
-                options,
-            )?;
-
-            // array->array
-            for (codec, array_representation) in std::iter::zip(
-                self.array_to_array.iter().rev(),
-                array_representations.iter().rev().skip(1),
-            ) {
-                encoded_value = codec.decode(encoded_value, array_representation, options)?;
-            }
-
-            if encoded_value.len() as u64 != decoded_representation.size() {
-                return Err(CodecError::UnexpectedChunkDecodedSize(
-                    encoded_value.len(),
-                    decoded_representation.size(),
-                ));
-            }
-
-            // FIXME: the last array to array can decode into array_view
-            //        Could also identify which filters are passthrough (e.g. bytes if endianness is native/none, transpose in C order, etc.)
-            let decoded_value = encoded_value;
-            let contiguous_indices = unsafe {
-                array_view
-                    .subset()
-                    .contiguous_linearised_indices_unchecked(array_view.array_shape())
-            };
-            let element_size = decoded_representation.element_size();
-            let length = contiguous_indices.contiguous_elements_usize() * element_size;
-            let mut decoded_offset = 0;
-            // FIXME: Par iteration?
-            let output = unsafe { array_view.bytes_mut() };
-            for (array_subset_element_index, _num_elements) in &contiguous_indices {
-                let output_offset =
-                    usize::try_from(array_subset_element_index).unwrap() * element_size;
-                debug_assert!((output_offset + length) <= output.len());
-                debug_assert!((decoded_offset + length) <= decoded_value.len());
-                output[output_offset..output_offset + length]
-                    .copy_from_slice(&decoded_value[decoded_offset..decoded_offset + length]);
-                decoded_offset += length;
-            }
-            Ok(())
-        }
     }
 
     fn partial_decode_granularity(

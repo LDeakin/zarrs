@@ -87,7 +87,7 @@ use std::{
 };
 
 use super::{
-    concurrency::RecommendedConcurrency, ArrayMetadataOptions, ArrayView, BytesRepresentation,
+    concurrency::RecommendedConcurrency, ArrayMetadataOptions, BytesRepresentation,
     ChunkRepresentation, ChunkShape, DataType,
 };
 
@@ -230,42 +230,6 @@ pub trait ArrayCodecTraits: CodecTraits {
         options: &CodecOptions,
     ) -> Result<Cow<'a, [u8]>, CodecError>;
 
-    /// Decode into the subset of an array.
-    ///
-    /// The default implementation decodes the chunk as normal then copies it into the array subset.
-    /// Codecs can override this method to avoid allocations where possible.
-    ///
-    /// # Errors
-    /// Returns an error if the internal call to [`decode`](ArrayCodecTraits::decode) fails.
-    fn decode_into_array_view(
-        &self,
-        encoded_value: Cow<'_, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        array_view: &ArrayView,
-        options: &CodecOptions,
-    ) -> Result<(), CodecError> {
-        let decoded_bytes = self.decode(encoded_value, decoded_representation, options)?;
-        let contiguous_indices = unsafe {
-            array_view
-                .subset()
-                .contiguous_linearised_indices_unchecked(array_view.array_shape())
-        };
-        let element_size = decoded_representation.element_size();
-        let length = contiguous_indices.contiguous_elements_usize() * element_size;
-        let mut decoded_offset = 0;
-        // FIXME: Par iteration?
-        let output = unsafe { array_view.bytes_mut() };
-        for (array_subset_element_index, _num_elements) in &contiguous_indices {
-            let output_offset = usize::try_from(array_subset_element_index).unwrap() * element_size;
-            debug_assert!((output_offset + length) <= output.len());
-            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-            output[output_offset..output_offset + length]
-                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
-            decoded_offset += length;
-        }
-        Ok(())
-    }
-
     /// Return the partial decode granularity.
     ///
     /// This represents the shape of the smallest subset of a chunk that can be efficiently decoded if the chunk were subdivided into a regular grid.
@@ -398,63 +362,6 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<Cow<'_, [u8]>>, CodecError>;
-
-    /// Partially decode a subset of an array into an array view with default codec options.
-    ///
-    /// Use [`partial_decode_into_array_view_opt`](ArrayPartialDecoderTraits::partial_decode_into_array_view_opt) to control codec options.
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails, array subset is invalid, or the array subset shape does not match array view subset shape.
-    fn partial_decode_into_array_view(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView,
-    ) -> Result<(), CodecError> {
-        self.partial_decode_into_array_view_opt(array_subset, array_view, &CodecOptions::default())
-    }
-
-    // TODO: Override partial_decode_into_array_view_opt for CodecChain/Sharding
-    /// Explicit options version of [`partial_decode_into_array_view`](ArrayPartialDecoderTraits::partial_decode_into_array_view).
-    #[allow(clippy::missing_errors_doc)]
-    fn partial_decode_into_array_view_opt(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView,
-        options: &CodecOptions,
-    ) -> Result<(), CodecError> {
-        if array_subset.shape() != array_view.subset().shape() {
-            return Err(CodecError::InvalidArraySubsetError(
-                IncompatibleArraySubsetAndShapeError::new(
-                    array_subset.clone(),
-                    array_view.array_shape().to_vec(),
-                ),
-            ));
-        }
-
-        let decoded_bytes = self
-            .partial_decode_opt(&[array_subset.clone()], options)?
-            .pop()
-            .unwrap();
-        let contiguous_indices = unsafe {
-            array_view
-                .subset()
-                .contiguous_linearised_indices_unchecked(array_view.array_shape())
-        };
-        let element_size = self.element_size();
-        let length = contiguous_indices.contiguous_elements_usize() * element_size;
-        let mut decoded_offset = 0;
-        // FIXME: Par iteration?
-        let output = unsafe { array_view.bytes_mut() };
-        for (array_subset_element_index, _num_elements) in &contiguous_indices {
-            let output_offset = usize::try_from(array_subset_element_index).unwrap() * element_size;
-            debug_assert!((output_offset + length) <= output.len());
-            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-            output[output_offset..output_offset + length]
-                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
-            decoded_offset += length;
-        }
-        Ok(())
-    }
 }
 
 #[cfg(feature = "async")]
@@ -482,62 +389,6 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<Cow<'_, [u8]>>, CodecError>;
-
-    /// Partially decode a subset of an array into an array view with default codec options.
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails, array subset is invalid, or the array subset shape does not match array view subset shape.
-    async fn partial_decode_into_array_view(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView,
-    ) -> Result<(), CodecError> {
-        self.partial_decode_into_array_view_opt(array_subset, array_view, &CodecOptions::default())
-            .await
-    }
-
-    /// Explicit options variant of [`partial_decode_into_array_view`](AsyncArrayPartialDecoderTraits::partial_decode_into_array_view).
-    // TODO: Override this for CodecChain/Sharding
-    async fn partial_decode_into_array_view_opt(
-        &self,
-        array_subset: &ArraySubset,
-        array_view: &ArrayView,
-        options: &CodecOptions,
-    ) -> Result<(), CodecError> {
-        if array_subset.shape() != array_view.subset().shape() {
-            return Err(CodecError::InvalidArraySubsetError(
-                IncompatibleArraySubsetAndShapeError::new(
-                    array_subset.clone(),
-                    array_view.array_shape().to_vec(),
-                ),
-            ));
-        }
-
-        let decoded_bytes = self
-            .partial_decode_opt(&[array_subset.clone()], options)
-            .await?
-            .pop()
-            .unwrap();
-        let contiguous_indices = unsafe {
-            array_view
-                .subset()
-                .contiguous_linearised_indices_unchecked(array_view.array_shape())
-        };
-        let element_size = self.element_size();
-        let length = contiguous_indices.contiguous_elements_usize() * element_size;
-        let mut decoded_offset = 0;
-        // FIXME: Par iteration?
-        let output = unsafe { array_view.bytes_mut() };
-        for (array_subset_element_index, _num_elements) in &contiguous_indices {
-            let output_offset = usize::try_from(array_subset_element_index).unwrap() * element_size;
-            debug_assert!((output_offset + length) <= output.len());
-            debug_assert!((decoded_offset + length) <= decoded_bytes.len());
-            output[output_offset..output_offset + length]
-                .copy_from_slice(&decoded_bytes[decoded_offset..decoded_offset + length]);
-            decoded_offset += length;
-        }
-        Ok(())
-    }
 }
 
 /// A [`ReadableStorage`] store value partial decoder.
