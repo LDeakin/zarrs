@@ -197,12 +197,12 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
 
             // Read the store key
             let bytes = store.get(key).await?.unwrap_or_default();
-            let mut vec: Vec<u8> = bytes.to_vec(); // FIXME
+            let mut vec = Vec::<u8>::from(bytes);
 
             // Expand the store key if needed
             let end_max =
                 usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
-            if bytes.len() < end_max {
+            if vec.len() < end_max {
                 vec.resize_with(end_max, Default::default);
             }
 
