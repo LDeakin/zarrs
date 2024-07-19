@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Fix an unnecessary copy in `async_store_set_partial_values`
+ - Fix error when `bytes` metadata is encoded without a configuration, even if empty
 
 ## [0.15.1] - 2024-07-11
 

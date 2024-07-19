@@ -160,36 +160,10 @@ impl MetadataV3 {
     pub fn to_configuration<TConfiguration: DeserializeOwned>(
         &self,
     ) -> Result<TConfiguration, ConfigurationInvalidError> {
-        self.configuration.as_ref().map_or_else(
-            || {
-                Err(ConfigurationInvalidError::new(
-                    self.name.clone(),
-                    self.configuration.clone(),
-                ))
-            },
-            |configuration| {
-                let value = serde_json::to_value(configuration);
-                value.map_or_else(
-                    |_| {
-                        Err(ConfigurationInvalidError::new(
-                            self.name.clone(),
-                            self.configuration.clone(),
-                        ))
-                    },
-                    |value| {
-                        serde_json::from_value(value).map_or_else(
-                            |_| {
-                                Err(ConfigurationInvalidError::new(
-                                    self.name.clone(),
-                                    self.configuration.clone(),
-                                ))
-                            },
-                            |configuration| Ok(configuration),
-                        )
-                    },
-                )
-            },
-        )
+        let err = |_| ConfigurationInvalidError::new(self.name.clone(), self.configuration.clone());
+        let configuration = self.configuration.clone().unwrap_or_default();
+        let value = serde_json::to_value(configuration).map_err(err)?;
+        serde_json::from_value(value).map_err(err)
     }
 
     /// Returns the metadata name.

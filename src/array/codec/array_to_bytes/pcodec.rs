@@ -38,13 +38,9 @@ fn is_name_pcodec(name: &str) -> bool {
 }
 
 pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
-    let configuration = if metadata.configuration_is_none_or_empty() {
-        PcodecCodecConfiguration::default()
-    } else {
-        metadata
-            .to_configuration()
-            .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?
-    };
+    let configuration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(PcodecCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }

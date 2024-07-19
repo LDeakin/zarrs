@@ -30,14 +30,11 @@ fn is_name_crc32c(name: &str) -> bool {
 }
 
 pub(crate) fn create_codec_crc32c(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
-    if metadata.configuration_is_none_or_empty() {
-        let codec = Box::new(Crc32cCodec::new());
-        Ok(Codec::BytesToBytes(codec))
-    } else {
-        Err(PluginCreateError::MetadataInvalid(
-            PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()),
-        ))
-    }
+    let configuration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+    let codec = Box::new(Crc32cCodec::new_with_configuration(&configuration));
+    Ok(Codec::BytesToBytes(codec))
 }
 
 const CHECKSUM_SIZE: usize = core::mem::size_of::<u32>();
