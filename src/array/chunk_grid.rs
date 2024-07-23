@@ -41,7 +41,7 @@ pub type ChunkGridPlugin = Plugin<ChunkGrid>;
 inventory::collect!(ChunkGridPlugin);
 
 impl ChunkGrid {
-    /// Create a chunk key encoding.
+    /// Create a chunk grid.
     pub fn new<T: ChunkGridTraits + 'static>(chunk_grid: T) -> Self {
         let chunk_grid: Box<dyn ChunkGridTraits> = Box::new(chunk_grid);
         chunk_grid.into()
