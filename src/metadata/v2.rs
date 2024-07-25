@@ -6,6 +6,9 @@ pub mod array;
 
 /// Zarr V2 codec metadata.
 pub mod codec {
+    #[cfg(feature = "bitround")]
+    /// `bitround` codec metadata.
+    pub mod bitround;
     /// `blosc` codec metadata.
     pub mod blosc;
     #[cfg(feature = "bz2")]
@@ -13,6 +16,9 @@ pub mod codec {
     pub mod bz2;
     /// `gzip` codec metadata.
     pub mod gzip;
+    #[cfg(feature = "zstd")]
+    /// `zstd` codec metadata.
+    pub mod zstd;
 }
 
 pub use array::ArrayMetadataV2;

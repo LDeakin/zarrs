@@ -2,7 +2,7 @@ Experimental codecs are recommended for evaluation only.
 
 | Codec Type     | Codec                            | ZEP | V3      | V2      | Feature Flag |
 | -------------- | -------------------------------- | --- | ------- | ------- | ------------ |
-| Array to Array | [bitround]                       |     | &check; |         | bitround     |
+| Array to Array | [bitround]                       |     | &check; | &check; | bitround     |
 | Array to Bytes | [zfp]                            |     | &check; |         | zfp          |
 |                | [pcodec]                         |     | &check; |         | pcodec       |
 |                | [vlen]                           |     | &check; |         |              |
