@@ -47,6 +47,10 @@
 //!
 #![doc = include_str!("../doc/status/codecs.md")]
 //! </details>
+//! <details><summary>Codecs (Experimental)</summary>
+//!
+#![doc = include_str!("../doc/status/codecs_experimental.md")]
+//! </details>
 //! <details><summary>Chunk Grids</summary>
 //!
 #![doc = include_str!("../doc/status/chunk_grids.md")]
