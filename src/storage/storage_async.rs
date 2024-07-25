@@ -204,7 +204,9 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
                 usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
             if vec.len() < end_max {
                 vec.resize_with(end_max, Default::default);
-            }
+            } else {
+                vec.truncate(end_max);
+            };
 
             // Update the store key
             for key_start_value in group {

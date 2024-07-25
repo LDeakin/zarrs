@@ -186,7 +186,9 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
                 vec.resize_with(end_max, Default::default);
                 vec
             } else {
-                bytes.to_vec()
+                let mut bytes = bytes.to_vec();
+                bytes.truncate(end_max);
+                bytes
             };
 
             // Update the store key
