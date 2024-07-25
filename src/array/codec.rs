@@ -145,6 +145,12 @@ impl Codec {
                 array_to_bytes::zfp::IDENTIFIER => {
                     return array_to_bytes::zfp::create_codec_zfp(metadata);
                 }
+                array_to_bytes::vlen::IDENTIFIER => {
+                    return array_to_bytes::vlen::create_codec_vlen(metadata);
+                }
+                array_to_bytes::vlen_v2::IDENTIFIER => {
+                    return array_to_bytes::vlen_v2::create_codec_vlen_v2(metadata);
+                }
                 #[cfg(feature = "blosc")]
                 bytes_to_bytes::blosc::IDENTIFIER => {
                     return bytes_to_bytes::blosc::create_codec_blosc(metadata);
