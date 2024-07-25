@@ -32,9 +32,7 @@ fn is_name_vlen_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_vlen_v2(
-    metadata: &MetadataV3,
-) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: VlenV2CodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;

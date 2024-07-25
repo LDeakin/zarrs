@@ -148,11 +148,10 @@ pub fn array_metadata_v2_to_v3(
             match filter.id() {
                 "vlen-utf8" | "vlen-bytes" | "vlen-array" => {
                     is_vlen = true;
-                    let vlen_v2_metadata =
-                        MetadataV3::new_with_serializable_configuration(
-                            super::v3::codec::vlen_v2::IDENTIFIER,
-                            &VlenV2CodecConfigurationV1 {},
-                        )?;
+                    let vlen_v2_metadata = MetadataV3::new_with_serializable_configuration(
+                        super::v3::codec::vlen_v2::IDENTIFIER,
+                        &VlenV2CodecConfigurationV1 {},
+                    )?;
                     codecs.push(vlen_v2_metadata);
                 }
                 _ => {

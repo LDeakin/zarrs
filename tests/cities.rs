@@ -8,8 +8,7 @@ use zarrs::{
     array::{
         codec::{
             array_to_bytes::{
-                sharding::ShardingCodecBuilder, vlen::VlenCodec,
-                vlen_v2::VlenV2Codec,
+                sharding::ShardingCodecBuilder, vlen::VlenCodec, vlen_v2::VlenV2Codec,
             },
             ArrayToBytesCodecTraits, ZstdCodec,
         },
