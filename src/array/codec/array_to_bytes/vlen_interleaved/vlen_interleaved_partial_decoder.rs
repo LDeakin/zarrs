@@ -5,7 +5,7 @@ use crate::array::{
     codec::{
         ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError, CodecOptions,
     },
-    ArrayBytes, ChunkRepresentation, DataType, FillValue, RawBytes,
+    ArrayBytes, ArraySize, ChunkRepresentation, DataType, DataTypeSize, FillValue, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -33,6 +33,7 @@ impl<'a> VlenInterleavedPartialDecoder<'a> {
 fn decode_vlen_bytes<'a>(
     bytes: Option<RawBytes>,
     decoded_regions: &[ArraySubset],
+    data_type_size: DataTypeSize,
     fill_value: &FillValue,
     shape: &[u64],
 ) -> Result<Vec<ArrayBytes<'a>>, CodecError> {
@@ -44,10 +45,8 @@ fn decode_vlen_bytes<'a>(
         // Chunk is empty, all decoded regions are empty
         let mut output = Vec::with_capacity(decoded_regions.len());
         for decoded_region in decoded_regions {
-            output.push(ArrayBytes::new_fill_value(
-                decoded_region.num_elements_usize(),
-                fill_value,
-            ));
+            let array_size = ArraySize::new(data_type_size, decoded_region.num_elements());
+            output.push(ArrayBytes::new_fill_value(array_size, fill_value));
         }
         Ok(output)
     }
@@ -68,6 +67,7 @@ impl ArrayPartialDecoderTraits for VlenInterleavedPartialDecoder<'_> {
         decode_vlen_bytes(
             bytes,
             decoded_regions,
+            self.decoded_representation.data_type().size(),
             self.decoded_representation.fill_value(),
             &self.decoded_representation.shape_u64(),
         )
@@ -112,6 +112,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncVlenInterleavedPartialDecoder<'_> {
         decode_vlen_bytes(
             bytes,
             decoded_regions,
+            self.decoded_representation.data_type().size(),
             self.decoded_representation.fill_value(),
             &self.decoded_representation.shape_u64(),
         )

@@ -120,6 +120,10 @@ impl ArrayToBytesCodecTraits for VlenCodec {
             decoded_representation.data_type().size(),
         )?;
         let (data, offsets) = bytes.into_variable()?;
+        assert_eq!(
+            offsets.len(),
+            decoded_representation.num_elements_usize() + 1
+        );
 
         // Encode offsets
         let num_offsets =

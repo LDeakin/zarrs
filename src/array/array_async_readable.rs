@@ -22,7 +22,7 @@ use super::{
     element::ElementOwned,
     unsafe_cell_slice::UnsafeCellSlice,
     Array, ArrayBytes, ArrayCreateError, ArrayError, ArrayMetadata, ArrayMetadataV2,
-    ArrayMetadataV3, DataTypeSize,
+    ArrayMetadataV3, ArraySize, DataTypeSize,
 };
 
 #[cfg(feature = "ndarray")]
@@ -349,11 +349,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         if let Some(chunk) = chunk {
             Ok(chunk)
         } else {
-            let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-            Ok(ArrayBytes::new_fill_value(
-                chunk_representation.num_elements_usize(),
-                self.fill_value(),
-            ))
+            let chunk_shape = self.chunk_shape(chunk_indices)?;
+            let array_size =
+                ArraySize::new(self.data_type().size(), chunk_shape.num_elements_u64());
+            Ok(ArrayBytes::new_fill_value(array_size, self.fill_value()))
         }
     }
 
@@ -542,10 +541,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         // Retrieve chunk bytes
         let num_chunks = chunks.num_elements_usize();
         match num_chunks {
-            0 => Ok(ArrayBytes::new_fill_value(
-                array_subset.num_elements_usize(),
-                self.fill_value(),
-            )),
+            0 => {
+                let array_size =
+                    ArraySize::new(self.data_type().size(), array_subset.num_elements());
+                Ok(ArrayBytes::new_fill_value(array_size, self.fill_value()))
+            }
             1 => {
                 let chunk_indices = chunks.start();
                 let chunk_subset = self.chunk_subset(chunk_indices)?;

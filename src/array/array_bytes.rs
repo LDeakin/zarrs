@@ -8,7 +8,9 @@ use crate::{
     byte_range::extract_byte_ranges_concat_unchecked,
 };
 
-use super::{codec::CodecError, ravel_indices, ArrayShape, DataType, DataTypeSize, FillValue};
+use super::{
+    codec::CodecError, ravel_indices, ArrayShape, ArraySize, DataType, DataTypeSize, FillValue,
+};
 
 /// Array element bytes.
 pub type RawBytes<'a> = Cow<'a, [u8]>;
@@ -50,17 +52,28 @@ impl<'a> ArrayBytes<'a> {
     }
 
     /// Create a new [`ArrayBytes`] with `num_elements` composed entirely of the `fill_value`.
+    ///
+    /// # Panics
+    /// Panics if the number of elements in `array_size` exceeds [`usize::MAX`].
     #[must_use]
-    pub fn new_fill_value(num_elements: usize, fill_value: &FillValue) -> Self {
-        if fill_value.size() == 0 {
-            Self::new_vlen(
-                fill_value.as_ne_bytes().repeat(num_elements),
-                (0..=num_elements)
-                    .map(|i| i * fill_value.size())
-                    .collect::<Vec<_>>(),
-            )
-        } else {
-            Self::new_flen(fill_value.as_ne_bytes().repeat(num_elements))
+    pub fn new_fill_value(array_size: ArraySize, fill_value: &FillValue) -> Self {
+        match array_size {
+            ArraySize::Fixed {
+                num_elements,
+                data_type_size: _,
+            } => {
+                let num_elements = usize::try_from(num_elements).unwrap();
+                Self::new_flen(fill_value.as_ne_bytes().repeat(num_elements))
+            }
+            ArraySize::Variable { num_elements } => {
+                let num_elements = usize::try_from(num_elements).unwrap();
+                Self::new_vlen(
+                    fill_value.as_ne_bytes().repeat(num_elements),
+                    (0..=num_elements)
+                        .map(|i| i * fill_value.size())
+                        .collect::<Vec<_>>(),
+                )
+            }
         }
     }
 
@@ -290,9 +303,7 @@ pub(crate) fn update_bytes_vlen<'a>(
 ) -> ArrayBytes<'a> {
     // Get the current and new length of the bytes in the chunk subset
     let size_subset_new = {
-        let chunk_subset_indices = subset
-            .relative_to(subset.start())
-            .unwrap()
+        let chunk_subset_indices = ArraySubset::new_with_shape(subset.shape().to_vec())
             .linearised_indices(subset.shape())
             .unwrap();
         chunk_subset_indices

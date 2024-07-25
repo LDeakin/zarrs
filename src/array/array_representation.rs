@@ -44,6 +44,20 @@ pub enum ArraySize {
     },
 }
 
+impl ArraySize {
+    /// Create a new [`ArraySize`] from a data type size and number of elements.
+    #[must_use]
+    pub fn new(data_type_size: DataTypeSize, num_elements: u64) -> Self {
+        match data_type_size {
+            DataTypeSize::Fixed(data_type_size) => Self::Fixed {
+                num_elements,
+                data_type_size,
+            },
+            DataTypeSize::Variable => Self::Variable { num_elements },
+        }
+    }
+}
+
 impl<TDim> ArrayRepresentationBase<TDim>
 where
     TDim: Into<u64> + core::fmt::Debug + Copy,

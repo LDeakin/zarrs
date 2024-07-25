@@ -9,7 +9,7 @@ use crate::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ArrayBytes, ChunkRepresentation, CodecChain, DataType, FillValue, RawBytes,
+        ArrayBytes, ArraySize, ChunkRepresentation, CodecChain, DataType, FillValue, RawBytes,
     },
     metadata::v3::codec::vlen::VlenIndexDataType,
 };
@@ -86,10 +86,10 @@ fn decode_vlen_bytes<'a>(
         // Chunk is empty, all decoded regions are empty
         let mut output = Vec::with_capacity(decoded_regions.len());
         for decoded_region in decoded_regions {
-            output.push(ArrayBytes::new_fill_value(
-                decoded_region.num_elements_usize(),
-                fill_value,
-            ));
+            let array_size = ArraySize::Variable {
+                num_elements: decoded_region.num_elements(),
+            };
+            output.push(ArrayBytes::new_fill_value(array_size, fill_value));
         }
         Ok(output)
     }

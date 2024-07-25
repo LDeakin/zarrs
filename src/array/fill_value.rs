@@ -2,6 +2,8 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#fill-value>.
 
+use num::Integer;
+
 /// The fill value of the Zarr array.
 ///
 /// Provides an element value to use for uninitialised portions of the Zarr array.
@@ -169,6 +171,11 @@ impl FillValue {
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn equals_all(&self, bytes: &[u8]) -> bool {
+        // Special cases for variable length data
+        if !bytes.len().is_multiple_of(&self.0.len()) || bytes.len() < self.0.len() {
+            return false;
+        }
+
         match self.0.len() {
             0 => bytes.is_empty(),
             1 => {

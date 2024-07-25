@@ -15,7 +15,7 @@ use crate::{
         concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
         ravel_indices,
         unsafe_cell_slice::UnsafeCellSlice,
-        ArrayBytes, ChunkRepresentation, ChunkShape, DataType, DataTypeSize,
+        ArrayBytes, ArraySize, ChunkRepresentation, ChunkShape, DataType, DataTypeSize,
     },
     byte_range::ByteRange,
 };
@@ -205,8 +205,12 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                             unsafe { array_subset.overlap_unchecked(&chunk_subset) };
 
                         let chunk_subset_bytes = if offset == u64::MAX && size == u64::MAX {
+                            let array_size = ArraySize::new(
+                                chunk_representation.data_type().size(),
+                                chunk_subset_overlap.num_elements(),
+                            );
                             ArrayBytes::new_fill_value(
-                                chunk_subset_overlap.num_elements_usize(),
+                                array_size,
                                 chunk_representation.fill_value(),
                             )
                         } else {
@@ -282,8 +286,12 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                             unsafe { array_subset.overlap_unchecked(&chunk_subset) };
 
                         let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
+                            let array_size = ArraySize::new(
+                                chunk_representation.data_type().size(),
+                                chunk_subset_overlap.num_elements(),
+                            );
                             ArrayBytes::new_fill_value(
-                                chunk_subset_overlap.num_elements_usize(),
+                                array_size,
                                 chunk_representation.fill_value(),
                             )
                         } else {
@@ -509,8 +517,12 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                                 unsafe { array_subset.overlap_unchecked(&chunk_subset) };
 
                             let chunk_subset_bytes = if offset == u64::MAX && size == u64::MAX {
+                                let array_size = ArraySize::new(
+                                    self.data_type().size(),
+                                    chunk_subset_overlap.num_elements(),
+                                );
                                 ArrayBytes::new_fill_value(
-                                    chunk_subset_overlap.num_elements_usize(),
+                                    array_size,
                                     chunk_representation.fill_value(),
                                 )
                             } else {
