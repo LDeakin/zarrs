@@ -22,6 +22,7 @@ pub use pcodec_codec::PcodecCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
+    config::global_config,
     metadata::v3::{codec::pcodec, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -34,7 +35,12 @@ inventory::submit! {
 }
 
 fn is_name_pcodec(name: &str) -> bool {
-    name.eq(IDENTIFIER) || name == "pcodec"
+    name.eq(IDENTIFIER)
+        || name
+            == global_config()
+                .experimental_codec_names()
+                .get(IDENTIFIER)
+                .expect("experimental codec identifier in global map")
 }
 
 pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

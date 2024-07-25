@@ -6,6 +6,7 @@ use crate::{
         },
         ArrayMetadataOptions, ChunkRepresentation, DataType,
     },
+    config::global_config,
     metadata::v3::MetadataV3,
 };
 
@@ -49,8 +50,14 @@ impl CodecTraits for BitroundCodec {
                 keepbits: self.keepbits,
             };
             Some(
-                MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration)
-                    .unwrap(),
+                MetadataV3::new_with_serializable_configuration(
+                    global_config()
+                        .experimental_codec_names()
+                        .get(super::IDENTIFIER)
+                        .expect("experimental codec identifier in global map"),
+                    &configuration,
+                )
+                .unwrap(),
             )
         } else {
             None

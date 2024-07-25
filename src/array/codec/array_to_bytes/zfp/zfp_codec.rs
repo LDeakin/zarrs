@@ -17,6 +17,7 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataType,
     },
+    config::global_config,
     metadata::v3::MetadataV3,
 };
 
@@ -109,7 +110,16 @@ impl CodecTraits for ZfpCodec {
             }
             ZfpMode::Reversible => ZfpCodecConfigurationV1::Reversible,
         };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(
+            MetadataV3::new_with_serializable_configuration(
+                global_config()
+                    .experimental_codec_names()
+                    .get(super::IDENTIFIER)
+                    .expect("experimental codec identifier in global map"),
+                &configuration,
+            )
+            .unwrap(),
+        )
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

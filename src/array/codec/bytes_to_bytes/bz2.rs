@@ -11,11 +11,9 @@
 mod bz2_codec;
 mod bz2_partial_decoder;
 
-use derive_more::From;
-use thiserror::Error;
-
 use crate::{
     array::codec::{Codec, CodecPlugin},
+    config::global_config,
     metadata::v3::{codec::bz2, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -34,7 +32,12 @@ inventory::submit! {
 }
 
 fn is_name_bz2(name: &str) -> bool {
-    name.eq(IDENTIFIER) || name == "bz2"
+    name.eq(IDENTIFIER)
+        || name
+            == global_config()
+                .experimental_codec_names()
+                .get(IDENTIFIER)
+                .expect("experimental codec identifier in global map")
 }
 
 pub(crate) fn create_codec_bz2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
@@ -43,16 +46,6 @@ pub(crate) fn create_codec_bz2(metadata: &MetadataV3) -> Result<Codec, PluginCre
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
     let codec = Box::new(Bz2Codec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
-}
-
-#[derive(Debug, Error, From)]
-#[error("{0}")]
-struct Bz2Error(String);
-
-impl From<&str> for Bz2Error {
-    fn from(err: &str) -> Self {
-        Self(err.to_string())
-    }
 }
 
 #[cfg(test)]

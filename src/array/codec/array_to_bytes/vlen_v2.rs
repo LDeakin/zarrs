@@ -12,6 +12,7 @@ pub use crate::metadata::v3::codec::vlen_v2::{
 };
 use crate::{
     array::{codec::CodecError, RawBytes},
+    config::global_config,
     metadata::v3::codec::vlen_v2,
 };
 
@@ -30,6 +31,11 @@ inventory::submit! {
 
 fn is_name_vlen_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
+        || name
+            == global_config()
+                .experimental_codec_names()
+                .get(IDENTIFIER)
+                .expect("experimental codec identifier in global map")
 }
 
 pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

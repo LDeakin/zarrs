@@ -11,6 +11,7 @@ use crate::{
         },
         ArrayMetadataOptions, BytesRepresentation, RawBytes,
     },
+    config::global_config,
     metadata::v3::MetadataV3,
 };
 
@@ -19,7 +20,6 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     bz2_partial_decoder, Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
-    IDENTIFIER,
 };
 
 /// A `bz2` codec implementation.
@@ -50,7 +50,16 @@ impl CodecTraits for Bz2Codec {
             level: Bz2CompressionLevel::try_from(self.compression.level())
                 .expect("checked on init"),
         };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(
+            MetadataV3::new_with_serializable_configuration(
+                global_config()
+                    .experimental_codec_names()
+                    .get(super::IDENTIFIER)
+                    .expect("experimental codec identifier in global map"),
+                &configuration,
+            )
+            .unwrap(),
+        )
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::metadata::MetadataV3;
 
 /// The identifier for the `vlen` codec.
-pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/vlen";
+pub const IDENTIFIER: &str = "vlen";
 
 /// A wrapper to handle various versions of `vlen` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
