@@ -12,6 +12,7 @@ use crate::{
         ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
         RawBytes,
     },
+    config::global_config,
     metadata::v3::MetadataV3,
 };
 
@@ -43,8 +44,14 @@ impl CodecTraits for VlenV2Codec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
         let configuration = VlenV2CodecConfigurationV1 {};
         Some(
-            MetadataV3::new_with_serializable_configuration(super::IDENTIFIER, &configuration)
-                .unwrap(),
+            MetadataV3::new_with_serializable_configuration(
+                global_config()
+                    .experimental_codec_names()
+                    .get(super::IDENTIFIER)
+                    .expect("experimental codec identifier in global map"),
+                &configuration,
+            )
+            .unwrap(),
         )
     }
 

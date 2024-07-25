@@ -15,6 +15,7 @@ use crate::{
         convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
         RawBytes, NATIVE_ENDIAN,
     },
+    config::global_config,
     metadata::v3::codec::vlen,
 };
 
@@ -35,6 +36,11 @@ inventory::submit! {
 
 fn is_name_vlen(name: &str) -> bool {
     name.eq(IDENTIFIER)
+        || name
+            == global_config()
+                .experimental_codec_names()
+                .get(IDENTIFIER)
+                .expect("experimental codec identifier in global map")
 }
 
 pub(crate) fn create_codec_vlen(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

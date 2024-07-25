@@ -2,11 +2,14 @@
 //!
 //! See [`Config`] for the list of options.
 
-use std::sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{
+    collections::HashMap,
+    sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
-use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
+use crate::metadata::{v3::codec, MetadataConvertVersion, MetadataEraseVersion};
 
 /// Global configuration options for the `zarrs` crate.
 ///
@@ -88,6 +91,12 @@ use crate::metadata::{MetadataConvertVersion, MetadataEraseVersion};
 ///    "version": "0.15.0"
 ///  }
 /// ```
+///
+/// ### Experimental Codec Names
+/// > default: See [crate root documentation](crate#arrays-zarr-v3-and-zarr-v2).
+///
+/// Sets the names used when serialising and deserialising the names of experimental codecs.
+/// Deserialisation also accepts the standard `IDENTIFIER` of the codec.
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -99,11 +108,29 @@ pub struct Config {
     metadata_convert_version: MetadataConvertVersion,
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
+    experimental_codec_names: HashMap<&'static str, String>,
 }
 
 #[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
+        #[rustfmt::skip]
+        let experimental_codec_names = HashMap::from([
+            // Array to array
+            #[cfg(feature = "bitround")]
+            (codec::bitround::IDENTIFIER, "https://codec.zarrs.dev/array_to_array/bitround".to_string()),
+            // Array to bytes
+            #[cfg(feature = "zfp")]
+            (codec::zfp::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/zfp".to_string()),
+            #[cfg(feature = "pcodec")]
+            (codec::pcodec::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/pcodec".to_string()),
+            (codec::vlen::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/vlen".to_string()),
+            (codec::vlen_v2::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/vlen_v2".to_string()),
+            // Bytes to bytes
+            #[cfg(feature = "bz2")]
+            (codec::bz2::IDENTIFIER, "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
+        ]);
+
         let concurrency_multiply = 1;
         let concurrency_add = 0;
         Self {
@@ -117,6 +144,7 @@ impl Default for Config {
             metadata_convert_version: MetadataConvertVersion::Default,
             metadata_erase_version: MetadataEraseVersion::Default,
             include_zarrs_metadata: true,
+            experimental_codec_names,
         }
     }
 }
@@ -209,16 +237,27 @@ impl Config {
         self
     }
 
-    /// Get the [include zarrs metadata](include-zarrs-metadata) configuration.
+    /// Get the [include zarrs metadata](#include-zarrs-metadata) configuration.
     #[must_use]
     pub fn include_zarrs_metadata(&self) -> bool {
         self.include_zarrs_metadata
     }
 
-    /// Set the [include zarrs metadata](include-zarrs-metadata) configuration.
+    /// Set the [include zarrs metadata](#include-zarrs-metadata) configuration.
     pub fn set_include_zarrs_metadata(&mut self, include_zarrs_metadata: bool) -> &mut Self {
         self.include_zarrs_metadata = include_zarrs_metadata;
         self
+    }
+
+    /// Get the [experimental codec names](#experimental-codec-names) configuration.
+    #[must_use]
+    pub fn experimental_codec_names(&self) -> &HashMap<&'static str, String> {
+        &self.experimental_codec_names
+    }
+
+    /// Get a mutable reference to the [experimental codec names](#experimental-codec-names) configuration.
+    pub fn experimental_codec_names_mut(&mut self) -> &mut HashMap<&'static str, String> {
+        &mut self.experimental_codec_names
     }
 }
 

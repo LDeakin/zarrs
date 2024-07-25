@@ -10,6 +10,7 @@ use crate::{
         transmute_to_bytes_vec, ArrayBytes, ArrayMetadataOptions, BytesRepresentation,
         ChunkRepresentation, CodecChain, DataType, DataTypeSize, Endianness, FillValue, RawBytes,
     },
+    config::global_config,
     metadata::v3::{codec::vlen::VlenIndexDataType, MetadataV3},
     plugin::PluginCreateError,
 };
@@ -84,8 +85,14 @@ impl CodecTraits for VlenCodec {
             index_data_type: self.index_data_type,
         };
         Some(
-            MetadataV3::new_with_serializable_configuration(super::IDENTIFIER, &configuration)
-                .unwrap(),
+            MetadataV3::new_with_serializable_configuration(
+                global_config()
+                    .experimental_codec_names()
+                    .get(super::IDENTIFIER)
+                    .expect("experimental codec identifier in global map"),
+                &configuration,
+            )
+            .unwrap(),
         )
     }
 

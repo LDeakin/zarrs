@@ -2,7 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
 /// The identifier for the `vlen_v2` codec.
-pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/vlen_v2";
+pub const IDENTIFIER: &str = "vlen_v2";
 
 /// A wrapper to handle various versions of `vlen_v2` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]

@@ -35,6 +35,7 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
+    config::global_config,
     metadata::v3::{codec::zfp, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -51,7 +52,12 @@ inventory::submit! {
 }
 
 fn is_name_zfp(name: &str) -> bool {
-    name.eq(IDENTIFIER) || name == "zfp"
+    name.eq(IDENTIFIER)
+        || name
+            == global_config()
+                .experimental_codec_names()
+                .get(IDENTIFIER)
+                .expect("experimental codec identifier in global map")
 }
 
 pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

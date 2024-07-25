@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 /// The identifier for the `bitround` codec.
 // TODO: ZEP for bitround
-pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_array/bitround";
+pub const IDENTIFIER: &str = "bitround";
 
 /// A wrapper to handle various versions of `bitround` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]

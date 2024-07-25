@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 /// The identifier for the `zfp` codec.
 // TODO: ZEP for zfp
-pub const IDENTIFIER: &str = "https://codec.zarrs.dev/array_to_bytes/zfp";
+pub const IDENTIFIER: &str = "zfp";
 
 /// A wrapper to handle various versions of `zfp` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]

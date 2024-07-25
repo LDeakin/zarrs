@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ArrayError::IncompatibleElementType` (replaces `ArrayError::IncompatibleElementSize`)
  - Add `ArrayError::InvalidElementValue`
  - Add `ChunkShape::num_elements_u64`
+ - Add global `Config` option for manipulating experimental codec names
 
 ### Changed
  - Use `[async_]retrieve_array_subset_opt` internally in `Array::[async_]retrieve_chunks_opt`

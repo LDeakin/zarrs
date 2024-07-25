@@ -24,6 +24,7 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         DataType,
     },
+    config::global_config,
     metadata::v3::{codec::bitround, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -36,7 +37,12 @@ inventory::submit! {
 }
 
 fn is_name_bitround(name: &str) -> bool {
-    name.eq(IDENTIFIER) || name == "bitround"
+    name.eq(IDENTIFIER)
+        || name
+            == global_config()
+                .experimental_codec_names()
+                .get(IDENTIFIER)
+                .expect("experimental codec identifier in global map")
 }
 
 pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
