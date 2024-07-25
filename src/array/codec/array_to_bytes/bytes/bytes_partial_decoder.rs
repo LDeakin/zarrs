@@ -6,7 +6,7 @@ use crate::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ChunkRepresentation, DataType,
+        ArrayBytes, ChunkRepresentation, DataType, DataTypeSize,
     },
     array_subset::IncompatibleArraySubsetAndShapeError,
 };
@@ -47,47 +47,57 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
-            // Get byte ranges
-            let byte_ranges = array_subset
-                .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
-                .map_err(|_| {
-                    IncompatibleArraySubsetAndShapeError::from((
-                        array_subset.clone(),
-                        self.decoded_representation.shape_u64(),
+            match self.decoded_representation.data_type().size() {
+                DataTypeSize::Variable => {
+                    return Err(CodecError::UnsupportedDataType(
+                        self.data_type().clone(),
+                        super::IDENTIFIER.to_string(),
                     ))
-                })?;
+                }
+                DataTypeSize::Fixed(data_type_size) => {
+                    // Get byte ranges
+                    let byte_ranges = array_subset
+                        .byte_ranges(&chunk_shape, data_type_size)
+                        .map_err(|_| {
+                            IncompatibleArraySubsetAndShapeError::from((
+                                array_subset.clone(),
+                                self.decoded_representation.shape_u64(),
+                            ))
+                        })?;
 
-            // Decode
-            let decoded = self
-                .input_handle
-                .partial_decode_concat(&byte_ranges, options)?
-                .map_or_else(
-                    || {
-                        Cow::Owned(
-                            self.decoded_representation
-                                .fill_value()
-                                .as_ne_bytes()
-                                .repeat(array_subset.num_elements_usize()),
-                        )
-                    },
-                    |mut decoded| {
-                        if let Some(endian) = &self.endian {
-                            if !endian.is_native() {
-                                reverse_endianness(
-                                    decoded.to_mut(),
-                                    self.decoded_representation.data_type(),
-                                );
-                            }
-                        }
-                        decoded
-                    },
-                );
+                    // Decode
+                    let decoded = self
+                        .input_handle
+                        .partial_decode_concat(&byte_ranges, options)?
+                        .map_or_else(
+                            || {
+                                Cow::Owned(
+                                    self.decoded_representation
+                                        .fill_value()
+                                        .as_ne_bytes()
+                                        .repeat(array_subset.num_elements_usize()),
+                                )
+                            },
+                            |mut decoded| {
+                                if let Some(endian) = &self.endian {
+                                    if !endian.is_native() {
+                                        reverse_endianness(
+                                            decoded.to_mut(),
+                                            self.decoded_representation.data_type(),
+                                        );
+                                    }
+                                }
+                                decoded
+                            },
+                        );
 
-            bytes.push(decoded);
+                    bytes.push(ArrayBytes::from(decoded));
+                }
+            }
         }
         Ok(bytes)
     }
@@ -128,7 +138,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -149,14 +159,22 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
             }
 
             // Get byte ranges
-            let byte_ranges = array_subset
-                .byte_ranges(&chunk_shape, self.decoded_representation.element_size())
-                .map_err(|_| {
-                    IncompatibleArraySubsetAndShapeError::from((
-                        array_subset.clone(),
-                        self.decoded_representation.shape_u64(),
+            let byte_ranges = match self.decoded_representation.element_size() {
+                DataTypeSize::Variable => {
+                    return Err(CodecError::UnsupportedDataType(
+                        self.data_type().clone(),
+                        super::IDENTIFIER.to_string(),
                     ))
-                })?;
+                }
+                DataTypeSize::Fixed(data_type_size) => array_subset
+                    .byte_ranges(&chunk_shape, data_type_size)
+                    .map_err(|_| {
+                        IncompatibleArraySubsetAndShapeError::from((
+                            array_subset.clone(),
+                            self.decoded_representation.shape_u64(),
+                        ))
+                    })?,
+            };
 
             // Decode
             let decoded = self
@@ -185,7 +203,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
                     },
                 );
 
-            bytes.push(decoded);
+            bytes.push(ArrayBytes::from(decoded));
         }
         Ok(bytes)
     }

@@ -1,8 +1,6 @@
-use std::borrow::Cow;
-
 use super::{calculate_order_decode, permute, transpose_array, TransposeOrder};
 use crate::array::{
-    codec::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
+    codec::{ArrayBytes, ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions},
     ChunkRepresentation, DataType,
 };
 
@@ -31,6 +29,77 @@ impl<'a> TransposePartialDecoder<'a> {
     }
 }
 
+fn validate_regions(
+    decoded_regions: &[ArraySubset],
+    dimensionality: usize,
+) -> Result<(), CodecError> {
+    for array_subset in decoded_regions {
+        if array_subset.dimensionality() != dimensionality {
+            return Err(CodecError::InvalidArraySubsetDimensionalityError(
+                array_subset.clone(),
+                dimensionality,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn get_decoded_regions_transposed(
+    order: &TransposeOrder,
+    decoded_regions: &[ArraySubset],
+) -> Vec<ArraySubset> {
+    let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
+    for decoded_region in decoded_regions {
+        let start = permute(decoded_region.start(), order);
+        let size = permute(decoded_region.shape(), order);
+        let decoded_region_transpose =
+            unsafe { ArraySubset::new_with_start_shape_unchecked(start, size) };
+        decoded_regions_transposed.push(decoded_region_transpose);
+    }
+    decoded_regions_transposed
+}
+
+/// Reverse the transpose on each subset
+fn do_transpose<'a>(
+    encoded_value: Vec<ArrayBytes<'a>>,
+    decoded_regions: &[ArraySubset],
+    order: &TransposeOrder,
+    decoded_representation: &ChunkRepresentation,
+) -> Result<Vec<ArrayBytes<'a>>, CodecError> {
+    let order_decode = calculate_order_decode(order, decoded_representation.shape().len());
+    let data_type_size = decoded_representation.data_type().size();
+    std::iter::zip(decoded_regions, encoded_value)
+        .map(|(subset, bytes)| {
+            bytes.validate(subset.num_elements(), data_type_size)?;
+            match bytes {
+                ArrayBytes::Variable(bytes, offsets) => {
+                    let mut order_decode = vec![0; decoded_representation.shape().len()];
+                    for (i, val) in order.0.iter().enumerate() {
+                        order_decode[*val] = i;
+                    }
+                    Ok(super::transpose_vlen(
+                        &bytes,
+                        &offsets,
+                        &subset.shape_usize(),
+                        order_decode,
+                    ))
+                }
+                ArrayBytes::Fixed(bytes) => {
+                    let data_type_size = decoded_representation.data_type().fixed_size().unwrap();
+                    let bytes = transpose_array(
+                        &order_decode,
+                        &permute(subset.shape(), order),
+                        data_type_size,
+                        &bytes,
+                    )
+                    .map_err(|_| CodecError::Other("transpose_array error".to_string()))?;
+                    Ok(ArrayBytes::from(bytes))
+                }
+            }
+        })
+        .collect::<Result<Vec<_>, CodecError>>()
+}
+
 impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
@@ -40,57 +109,22 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
-        for array_subset in decoded_regions {
-            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
-                return Err(CodecError::InvalidArraySubsetDimensionalityError(
-                    array_subset.clone(),
-                    self.decoded_representation.dimensionality(),
-                ));
-            }
-        }
-
-        // Get transposed array subsets
-        let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
-        for decoded_region in decoded_regions {
-            let start = permute(decoded_region.start(), &self.order);
-            let size = permute(decoded_region.shape(), &self.order);
-            let decoded_region_transpose =
-                unsafe { ArraySubset::new_with_start_shape_unchecked(start, size) };
-            decoded_regions_transposed.push(decoded_region_transpose);
-        }
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
+        validate_regions(
+            decoded_regions,
+            self.decoded_representation.dimensionality(),
+        )?;
+        let decoded_regions_transposed =
+            get_decoded_regions_transposed(&self.order, decoded_regions);
         let encoded_value = self
             .input_handle
             .partial_decode_opt(&decoded_regions_transposed, options)?;
-
-        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
-            // Fast path for identity transform
-            Ok(encoded_value)
-        } else {
-            // Reverse the transpose on each subset
-            let order_decode =
-                calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-            let decoded_value = std::iter::zip(decoded_regions, encoded_value)
-                .map(|(subset, bytes)| {
-                    let len = bytes.len();
-                    transpose_array(
-                        &order_decode,
-                        &permute(subset.shape(), &self.order),
-                        self.decoded_representation.element_size(),
-                        &bytes,
-                    )
-                    .map_err(|_| {
-                        CodecError::UnexpectedChunkDecodedSize(
-                            len,
-                            subset.num_elements()
-                                * self.decoded_representation.element_size() as u64,
-                        )
-                    })
-                    .map(Cow::Owned)
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            Ok(decoded_value)
-        }
+        do_transpose(
+            encoded_value,
+            decoded_regions,
+            &self.order,
+            &self.decoded_representation,
+        )
     }
 }
 
@@ -129,57 +163,22 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
-        for array_subset in decoded_regions {
-            if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
-                return Err(CodecError::InvalidArraySubsetDimensionalityError(
-                    array_subset.clone(),
-                    self.decoded_representation.dimensionality(),
-                ));
-            }
-        }
-
-        // Get transposed array subsets
-        let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
-        for decoded_region in decoded_regions {
-            let start = permute(decoded_region.start(), &self.order);
-            let size = permute(decoded_region.shape(), &self.order);
-            let decoded_region_transpose =
-                unsafe { ArraySubset::new_with_start_shape_unchecked(start, size) };
-            decoded_regions_transposed.push(decoded_region_transpose);
-        }
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
+        validate_regions(
+            decoded_regions,
+            self.decoded_representation.dimensionality(),
+        )?;
+        let decoded_regions_transposed =
+            get_decoded_regions_transposed(&self.order, decoded_regions);
         let encoded_value = self
             .input_handle
             .partial_decode_opt(&decoded_regions_transposed, options)
             .await?;
-
-        if self.order.0.iter().copied().eq(0..self.order.0.len()) {
-            // Fast path for identity transform
-            Ok(encoded_value)
-        } else {
-            // Reverse the transpose on each subset
-            let order_decode =
-                calculate_order_decode(&self.order, self.decoded_representation.shape().len());
-            let decoded_value = std::iter::zip(decoded_regions, encoded_value)
-                .map(|(subset, bytes)| {
-                    let len = bytes.len();
-                    transpose_array(
-                        &order_decode,
-                        &permute(subset.shape(), &self.order),
-                        self.decoded_representation.element_size(),
-                        &bytes,
-                    )
-                    .map(Cow::Owned)
-                    .map_err(|_| {
-                        CodecError::UnexpectedChunkDecodedSize(
-                            len,
-                            subset.num_elements()
-                                * self.decoded_representation.element_size() as u64,
-                        )
-                    })
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            Ok(decoded_value)
-        }
+        do_transpose(
+            encoded_value,
+            decoded_regions,
+            &self.order,
+            &self.decoded_representation,
+        )
     }
 }

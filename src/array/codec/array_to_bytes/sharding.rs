@@ -105,6 +105,7 @@ fn decode_shard_index(
         index_array_representation,
         options,
     )?;
+    let decoded_shard_index = decoded_shard_index.into_fixed()?;
     Ok(decoded_shard_index
         .chunks_exact(core::mem::size_of::<u64>())
         .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
@@ -114,9 +115,12 @@ fn decode_shard_index(
 #[cfg(test)]
 mod tests {
     use crate::{
-        array::codec::{
-            bytes_to_bytes::test_unbounded::TestUnboundedCodec, ArrayCodecTraits,
-            BytesToBytesCodecTraits, CodecOptionsBuilder,
+        array::{
+            codec::{
+                bytes_to_bytes::test_unbounded::TestUnboundedCodec, BytesToBytesCodecTraits,
+                CodecOptionsBuilder,
+            },
+            ArrayBytes,
         },
         array_subset::ArraySubset,
         config::global_config,
@@ -199,6 +203,7 @@ mod tests {
             (0..chunk_representation.num_elements() as u16).collect()
         };
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         if unbounded {
             bytes_to_bytes_codecs.push(Box::new(TestUnboundedCodec::new()))
@@ -213,13 +218,13 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &chunk_representation, options)
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded = codec
             .decode(encoded.clone(), &chunk_representation, options)
             .unwrap();
-        assert_ne!(encoded, decoded);
-        assert_eq!(bytes, decoded.to_vec());
+        assert_eq!(bytes, decoded);
+        assert_ne!(encoded, decoded.into_fixed().unwrap());
     }
 
     #[test]
@@ -293,6 +298,7 @@ mod tests {
             (0..chunk_representation.num_elements() as u16).collect()
         };
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         if unbounded {
             bytes_to_bytes_codecs.push(Box::new(TestUnboundedCodec::new()))
@@ -307,13 +313,13 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &chunk_representation, options)
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded = codec
             .decode(encoded.clone(), &chunk_representation, options)
             .unwrap();
-        assert_ne!(encoded, decoded);
-        assert_eq!(bytes, decoded.to_vec());
+        assert_eq!(bytes, decoded);
+        assert_ne!(encoded, decoded.into_fixed().unwrap());
     }
 
     #[cfg(feature = "async")]
@@ -361,7 +367,7 @@ mod tests {
             vec![4, 8]
         };
 
-        let bytes = elements;
+        let bytes: ArrayBytes = elements.into();
 
         let bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>> = if unbounded {
             vec![Box::new(TestUnboundedCodec::new())]
@@ -378,7 +384,7 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &chunk_representation, options)
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -391,7 +397,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())
@@ -442,8 +448,7 @@ mod tests {
         } else {
             vec![4, 8]
         };
-
-        let bytes = elements;
+        let bytes: ArrayBytes = elements.into();
 
         let bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>> = if unbounded {
             vec![Box::new(TestUnboundedCodec::new())]
@@ -460,7 +465,7 @@ mod tests {
             .build();
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &chunk_representation, options)
+            .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -475,7 +480,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())
@@ -511,8 +516,6 @@ mod tests {
     #[cfg(feature = "crc32c")]
     #[test]
     fn codec_sharding_partial_decode2() {
-        use crate::array::codec::ArrayCodecTraits;
-
         let chunk_shape: ChunkShape = vec![2, 4, 4].try_into().unwrap();
         let chunk_representation = ChunkRepresentation::new(
             chunk_shape.to_vec(),
@@ -522,17 +525,14 @@ mod tests {
         .unwrap();
         let elements: Vec<u16> = (0..chunk_representation.num_elements() as u16).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID2).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
-            .encode(
-                Cow::Borrowed(&bytes),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..2, 0..2, 0..3])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -549,7 +549,7 @@ mod tests {
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u16>())
@@ -567,18 +567,14 @@ mod tests {
             ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
                 .unwrap();
         let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
-        let bytes = elements;
+        let bytes: ArrayBytes = elements.into();
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID3).unwrap();
         let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
-            .encode(
-                Cow::Borrowed(&bytes),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
         let input_handle = Box::new(std::io::Cursor::new(encoded));
@@ -595,7 +591,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())

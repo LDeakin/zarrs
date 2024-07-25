@@ -2,6 +2,8 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#fill-value>.
 
+use num::Integer;
+
 /// The fill value of the Zarr array.
 ///
 /// Provides an element value to use for uninitialised portions of the Zarr array.
@@ -16,6 +18,18 @@ impl core::fmt::Display for FillValue {
 
 impl From<&[u8]> for FillValue {
     fn from(value: &[u8]) -> Self {
+        Self(value.to_vec())
+    }
+}
+
+impl<const N: usize> From<[u8; N]> for FillValue {
+    fn from(value: [u8; N]) -> Self {
+        Self(value.to_vec())
+    }
+}
+
+impl<const N: usize> From<&[u8; N]> for FillValue {
+    fn from(value: &[u8; N]) -> Self {
         Self(value.to_vec())
     }
 }
@@ -122,6 +136,18 @@ impl From<num::complex::Complex64> for FillValue {
     }
 }
 
+impl From<String> for FillValue {
+    fn from(value: String) -> Self {
+        Self(value.into_bytes())
+    }
+}
+
+impl From<&str> for FillValue {
+    fn from(value: &str) -> Self {
+        Self(value.as_bytes().to_vec())
+    }
+}
+
 impl FillValue {
     /// Create a new fill value composed of `bytes`.
     #[must_use]
@@ -145,7 +171,13 @@ impl FillValue {
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn equals_all(&self, bytes: &[u8]) -> bool {
+        // Special cases for variable length data
+        if !bytes.len().is_multiple_of(&self.0.len()) || bytes.len() < self.0.len() {
+            return false;
+        }
+
         match self.0.len() {
+            0 => bytes.is_empty(),
             1 => {
                 let fill_value = self.0[0];
                 let fill_value_128 = u128::from_ne_bytes([self.0[0]; 16]);

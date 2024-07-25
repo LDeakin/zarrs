@@ -8,7 +8,7 @@ use crate::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation, RawBytes,
     },
     metadata::v3::MetadataV3,
 };
@@ -76,9 +76,9 @@ impl BytesToBytesCodecTraits for ZstdCodec {
 
     fn encode<'a>(
         &self,
-        decoded_value: Cow<'a, [u8]>,
+        decoded_value: RawBytes<'a>,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<RawBytes<'a>, CodecError> {
         let mut result = Vec::<u8>::new();
         let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
         encoder.include_checksum(self.checksum)?;
@@ -93,10 +93,10 @@ impl BytesToBytesCodecTraits for ZstdCodec {
 
     fn decode<'a>(
         &self,
-        encoded_value: Cow<'a, [u8]>,
+        encoded_value: RawBytes<'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<RawBytes<'a>, CodecError> {
         zstd::decode_all(std::io::Cursor::new(&encoded_value))
             .map_err(CodecError::IOError)
             .map(Cow::Owned)

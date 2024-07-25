@@ -137,15 +137,15 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         ArraySubset::new_with_start_shape(vec![0, 4], inner_chunk_shape.clone())?,
     ];
     let decoded_inner_chunks_bytes = partial_decoder.partial_decode(&inner_chunks_to_decode)?;
-    let decoded_inner_chunks_ndarray = decoded_inner_chunks_bytes
-        .into_iter()
-        .map(|bytes| bytes_to_ndarray::<u16>(&inner_chunk_shape, bytes.to_vec()))
-        .collect::<Result<Vec<_>, _>>()?;
     println!("Decoded inner chunks:");
     for (inner_chunk_subset, decoded_inner_chunk) in
-        std::iter::zip(inner_chunks_to_decode, decoded_inner_chunks_ndarray)
+        std::iter::zip(inner_chunks_to_decode, decoded_inner_chunks_bytes)
     {
-        println!("{inner_chunk_subset}\n{decoded_inner_chunk}\n");
+        let ndarray = bytes_to_ndarray::<u16>(
+            &inner_chunk_shape,
+            decoded_inner_chunk.into_fixed()?.into_owned(),
+        )?;
+        println!("{inner_chunk_subset}\n{ndarray}\n");
     }
 
     // Show the hierarchy

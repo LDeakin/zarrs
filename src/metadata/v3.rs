@@ -27,6 +27,10 @@ pub mod codec {
     pub mod sharding;
     /// `transpose` codec metadata.
     pub mod transpose;
+    /// `vlen` codec metadata.
+    pub mod vlen;
+    /// `vlen_v2` codec metadata.
+    pub mod vlen_v2;
     #[cfg(feature = "zfp")]
     /// `zfp` codec metadata.
     pub mod zfp;

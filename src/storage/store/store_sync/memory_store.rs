@@ -66,6 +66,8 @@ impl MemoryStore {
             let length = usize::try_from(offset + value.len() as u64).unwrap();
             if data.len() < length {
                 data.resize(length, 0);
+            } else {
+                data.truncate(length);
             }
             let offset = usize::try_from(offset).unwrap();
             data[offset..offset + value.len()].copy_from_slice(value);

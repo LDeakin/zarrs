@@ -1,7 +1,10 @@
 use std::borrow::Cow;
 
 use crate::{
-    array::codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
+    array::{
+        codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
+        RawBytes,
+    },
     byte_range::ByteRange,
 };
 
@@ -27,7 +30,7 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         let bytes = self.input_handle.partial_decode(decoded_regions, options)?;
         let Some(bytes) = bytes else {
             return Ok(None);
@@ -80,7 +83,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         let bytes = self
             .input_handle
             .partial_decode(decoded_regions, options)

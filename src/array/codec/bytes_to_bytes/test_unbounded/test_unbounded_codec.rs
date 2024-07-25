@@ -1,12 +1,10 @@
-use std::borrow::Cow;
-
 use crate::{
     array::{
         codec::{
             BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
             CodecTraits, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation,
+        ArrayMetadataOptions, BytesRepresentation, RawBytes,
     },
     metadata::v3::MetadataV3,
 };
@@ -56,18 +54,18 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
 
     fn encode<'a>(
         &self,
-        decoded_value: Cow<'a, [u8]>,
+        decoded_value: RawBytes<'a>,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<RawBytes<'a>, CodecError> {
         Ok(decoded_value)
     }
 
     fn decode<'a>(
         &self,
-        encoded_value: Cow<'a, [u8]>,
+        encoded_value: RawBytes<'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<RawBytes<'a>, CodecError> {
         Ok(encoded_value)
     }
 

@@ -1,9 +1,7 @@
-use std::borrow::Cow;
-
 use crate::{
     array::{
         codec::{
-            options::CodecOptions, ArrayCodecTraits, ArrayPartialDecoderTraits,
+            options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
         ArrayMetadataOptions, ChunkRepresentation, DataType,
@@ -76,33 +74,34 @@ impl ArrayCodecTraits for BitroundCodec {
         // TODO: bitround is well suited to multithread, when is it optimal to kick in?
         Ok(RecommendedConcurrency::new_maximum(1))
     }
-
-    fn encode<'a>(
-        &self,
-        mut decoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        round_bytes(
-            decoded_value.to_mut(),
-            decoded_representation.data_type(),
-            self.keepbits,
-        )?;
-        Ok(decoded_value)
-    }
-
-    fn decode<'a>(
-        &self,
-        encoded_value: Cow<'a, [u8]>,
-        _decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        Ok(encoded_value)
-    }
 }
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for BitroundCodec {
+    fn encode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError> {
+        let mut bytes = bytes.into_fixed()?;
+        round_bytes(
+            bytes.to_mut(),
+            decoded_representation.data_type(),
+            self.keepbits,
+        )?;
+        Ok(ArrayBytes::from(bytes))
+    }
+
+    fn decode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        _decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError> {
+        Ok(bytes)
+    }
+
     fn partial_decoder<'a>(
         &'a self,
         input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,

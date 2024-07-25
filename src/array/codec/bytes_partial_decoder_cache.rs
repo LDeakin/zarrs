@@ -2,7 +2,10 @@
 
 use std::{borrow::Cow, marker::PhantomData};
 
-use crate::byte_range::{extract_byte_ranges, ByteRange};
+use crate::{
+    array::RawBytes,
+    byte_range::{extract_byte_ranges, ByteRange},
+};
 
 use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};
 
@@ -58,7 +61,7 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
         &self,
         decoded_regions: &[ByteRange],
         _options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(match &self.cache {
             Some(bytes) => Some(
                 extract_byte_ranges(bytes, decoded_regions)
@@ -79,7 +82,7 @@ impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         BytesPartialDecoderTraits::partial_decode(self, decoded_regions, options)
     }
 }

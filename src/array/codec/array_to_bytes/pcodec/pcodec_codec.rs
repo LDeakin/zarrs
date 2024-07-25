@@ -5,8 +5,8 @@ use pco::{standalone::guarantee::file_size, ChunkConfig, ModeSpec, PagingSpec};
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits, RawBytes,
             RecommendedConcurrency,
         },
         convert_from_bytes_slice, transmute_to_bytes_vec, ArrayMetadataOptions,
@@ -108,18 +108,22 @@ impl ArrayCodecTraits for PcodecCodec {
         // pcodec does not support parallel decode
         Ok(RecommendedConcurrency::new_maximum(1))
     }
+}
 
+#[cfg_attr(feature = "async", async_trait::async_trait)]
+impl ArrayToBytesCodecTraits for PcodecCodec {
     fn encode<'a>(
         &self,
-        decoded_value: Cow<'a, [u8]>,
+        bytes: ArrayBytes<'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<RawBytes<'a>, CodecError> {
         let data_type = decoded_representation.data_type();
+        let bytes = bytes.into_fixed()?;
         macro_rules! pcodec_encode {
             ( $t:ty ) => {
                 pco::standalone::simple_compress(
-                    &convert_from_bytes_slice::<$t>(&decoded_value),
+                    &convert_from_bytes_slice::<$t>(&bytes),
                     &self.chunk_config,
                 )
                 .map(Cow::Owned)
@@ -164,20 +168,20 @@ impl ArrayCodecTraits for PcodecCodec {
 
     fn decode<'a>(
         &self,
-        encoded_value: Cow<'a, [u8]>,
+        bytes: RawBytes<'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
+    ) -> Result<ArrayBytes<'a>, CodecError> {
         let data_type = decoded_representation.data_type();
         macro_rules! pcodec_decode {
             ( $t:ty ) => {
-                pco::standalone::simple_decompress(&encoded_value)
+                pco::standalone::simple_decompress(&bytes)
                     .map(|bytes| Cow::Owned(transmute_to_bytes_vec::<$t>(bytes)))
                     .map_err(|err| CodecError::Other(err.to_string()))
             };
         }
 
-        match data_type {
+        let bytes = match data_type {
             DataType::UInt16 => {
                 pcodec_decode!(u16)
             }
@@ -209,12 +213,10 @@ impl ArrayCodecTraits for PcodecCodec {
                 data_type.clone(),
                 IDENTIFIER.to_string(),
             )),
-        }
+        }?;
+        Ok(ArrayBytes::from(bytes))
     }
-}
 
-#[cfg_attr(feature = "async", async_trait::async_trait)]
-impl ArrayToBytesCodecTraits for PcodecCodec {
     fn partial_decoder<'a>(
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,

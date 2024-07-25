@@ -3,7 +3,10 @@ use std::{borrow::Cow, io::Read};
 use bytes::Buf;
 
 use crate::{
-    array::codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
+    array::{
+        codec::{BytesPartialDecoderTraits, CodecError, CodecOptions},
+        RawBytes,
+    },
     byte_range::{extract_byte_ranges, ByteRange},
 };
 
@@ -26,7 +29,7 @@ impl BytesPartialDecoderTraits for Bz2PartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options)?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);
@@ -66,7 +69,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncBz2PartialDecoder<'_> {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         let encoded_value = self.input_handle.decode(options).await?;
         let Some(encoded_value) = encoded_value else {
             return Ok(None);

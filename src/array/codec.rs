@@ -90,6 +90,7 @@ use super::{
     concurrency::RecommendedConcurrency, ArrayMetadataOptions, BytesRepresentation,
     ChunkRepresentation, ChunkShape, DataType,
 };
+use super::{ArrayBytes, RawBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -208,28 +209,6 @@ pub trait ArrayCodecTraits: CodecTraits {
         decoded_representation: &ChunkRepresentation,
     ) -> Result<RecommendedConcurrency, CodecError>;
 
-    /// Encode a chunk.
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or `decoded_value` is incompatible with `decoded_representation`.
-    fn encode<'a>(
-        &self,
-        decoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError>;
-
-    /// Decode a chunk.
-    ///
-    /// # Errors
-    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    fn decode<'a>(
-        &self,
-        encoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError>;
-
     /// Return the partial decode granularity.
     ///
     /// This represents the shape of the smallest subset of a chunk that can be efficiently decoded if the chunk were subdivided into a regular grid.
@@ -255,7 +234,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError>;
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError>;
 
     /// Partially decode bytes and concatenate.
     ///
@@ -269,7 +248,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Option<RawBytes<'_>>, CodecError> {
         Ok(self
             .partial_decode(decoded_regions, options)?
             .map(|vecs| Cow::Owned(vecs.concat())))
@@ -281,7 +260,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
-    fn decode(&self, options: &CodecOptions) -> Result<Option<Cow<'_, [u8]>>, CodecError> {
+    fn decode(&self, options: &CodecOptions) -> Result<Option<RawBytes<'_>>, CodecError> {
         Ok(self
             .partial_decode(&[ByteRange::FromStart(0, None)], options)?
             .map(|mut v| v.remove(0)))
@@ -302,7 +281,7 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError>;
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError>;
 
     /// Partially decode bytes and concatenate.
     ///
@@ -314,8 +293,7 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
         &self,
         decoded_regions: &[ByteRange],
         options: &CodecOptions,
-    ) -> Result<Option<Cow<'_, [u8]>>, CodecError> {
-        // FIXME: Remove default implementation in the next major release and implement for each codec to reduce internal allocations
+    ) -> Result<Option<RawBytes<'_>>, CodecError> {
         Ok(self
             .partial_decode(decoded_regions, options)
             .await?
@@ -328,7 +306,7 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails.
-    async fn decode(&self, options: &CodecOptions) -> Result<Option<Cow<'_, [u8]>>, CodecError> {
+    async fn decode(&self, options: &CodecOptions) -> Result<Option<RawBytes<'_>>, CodecError> {
         Ok(self
             .partial_decode(&[ByteRange::FromStart(0, None)], options)
             .await?
@@ -351,7 +329,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         self.partial_decode_opt(array_subsets, &CodecOptions::default())
     }
 
@@ -361,7 +339,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError>;
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError>;
 }
 
 #[cfg(feature = "async")]
@@ -378,7 +356,7 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     async fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         self.partial_decode_opt(array_subsets, &CodecOptions::default())
             .await
     }
@@ -388,7 +366,7 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError>;
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError>;
 }
 
 /// A [`ReadableStorage`] store value partial decoder.
@@ -409,7 +387,7 @@ impl BytesPartialDecoderTraits for StoragePartialDecoder {
         &self,
         decoded_regions: &[ByteRange],
         _options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(self
             .storage
             .get_partial_values_key(&self.key, decoded_regions)?
@@ -444,7 +422,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder {
         &self,
         decoded_regions: &[ByteRange],
         _options: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(self
             .storage
             .get_partial_values_key(&self.key, decoded_regions)
@@ -472,6 +450,28 @@ pub trait ArrayToArrayCodecTraits:
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<ChunkRepresentation, CodecError>;
+
+    /// Encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or `bytes` is incompatible with `decoded_representation`.
+    fn encode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError>;
+
+    /// Decode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
+    fn decode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError>;
 
     /// Initialise a partial decoder.
     ///
@@ -518,6 +518,28 @@ pub trait ArrayToBytesCodecTraits:
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError>;
+
+    /// Encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or `bytes` is incompatible with `decoded_representation`.
+    fn encode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<RawBytes<'a>, CodecError>;
+
+    /// Decode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
+    fn decode<'a>(
+        &self,
+        bytes: RawBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError>;
 
     /// Initialise a partial decoder.
     ///
@@ -569,9 +591,9 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     /// Returns [`CodecError`] if a codec fails.
     fn encode<'a>(
         &self,
-        decoded_value: Cow<'a, [u8]>,
+        decoded_value: RawBytes<'a>,
         options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError>;
+    ) -> Result<RawBytes<'a>, CodecError>;
 
     /// Decode chunk bytes.
     //
@@ -579,10 +601,10 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     /// Returns [`CodecError`] if a codec fails.
     fn decode<'a>(
         &self,
-        encoded_value: Cow<'a, [u8]>,
+        encoded_value: RawBytes<'a>,
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError>;
+    ) -> Result<RawBytes<'a>, CodecError>;
 
     /// Initialises a partial decoder.
     ///
@@ -615,7 +637,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(Some(
             extract_byte_ranges_read_seek(&mut self.clone(), decoded_regions)?
                 .into_iter()
@@ -625,12 +647,12 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
     }
 }
 
-impl BytesPartialDecoderTraits for std::io::Cursor<Cow<'_, [u8]>> {
+impl BytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(Some(
             extract_byte_ranges_read_seek(&mut self.clone(), decoded_regions)?
                 .into_iter()
@@ -645,7 +667,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(Some(
             extract_byte_ranges_read_seek(&mut self.clone(), decoded_regions)?
                 .into_iter()
@@ -662,7 +684,7 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(Some(
             extract_byte_ranges_read_seek(&mut self.clone(), decoded_regions)?
                 .into_iter()
@@ -674,12 +696,12 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for std::io::Cursor<Cow<'_, [u8]>> {
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(Some(
             extract_byte_ranges_read_seek(&mut self.clone(), decoded_regions)?
                 .into_iter()
@@ -696,7 +718,7 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
         &self,
         decoded_regions: &[ByteRange],
         _parallel: &CodecOptions,
-    ) -> Result<Option<Vec<Cow<'_, [u8]>>>, CodecError> {
+    ) -> Result<Option<Vec<RawBytes<'_>>>, CodecError> {
         Ok(Some(
             extract_byte_ranges_read_seek(&mut self.clone(), decoded_regions)?
                 .into_iter()
@@ -733,9 +755,21 @@ pub enum CodecError {
     /// Unsupported data type
     #[error("Unsupported data type {0} for codec {1}")]
     UnsupportedDataType(DataType, String),
+    /// Offsets are not [`None`] with a fixed length data type.
+    #[error("Offsets are invalid or are not compatible with the data type (e.g. fixed-sized data types)")]
+    InvalidOffsets,
     /// Other
     #[error("{_0}")]
     Other(String),
+    /// Invalid variable sized array offsets.
+    #[error("Invalid variable sized array offsets")]
+    InvalidVariableSizedArrayOffsets,
+    /// Expected fixed length bytes.
+    #[error("Expected fixed length array bytes")]
+    ExpectedFixedLengthBytes,
+    /// Expected variable length bytes.
+    #[error("Expected variable length array bytes")]
+    ExpectedVariableLengthBytes,
 }
 
 impl From<&str> for CodecError {

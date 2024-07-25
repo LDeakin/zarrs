@@ -1,10 +1,10 @@
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
 
 use crate::{
-    array::validate_element_size,
+    array::ArrayBytes,
     array_subset::ArraySubset,
     metadata::MetadataEraseVersion,
     storage::{
@@ -14,9 +14,9 @@ use crate::{
 };
 
 use super::{
-    codec::{options::CodecOptions, ArrayCodecTraits},
+    codec::{options::CodecOptions, ArrayToBytesCodecTraits},
     concurrency::concurrency_chunks_and_codec,
-    Array, ArrayError, ArrayMetadata, ArrayMetadataOptions,
+    Array, ArrayError, ArrayMetadata, ArrayMetadataOptions, Element,
 };
 
 impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
@@ -58,7 +58,11 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the length of `chunk_bytes` is not equal to the expected length (the product of the number of elements in the chunk and the data type size in bytes),
     ///  - there is a codec encoding error, or
     ///  - an underlying store error.
-    pub fn store_chunk(&self, chunk_indices: &[u64], chunk_bytes: &[u8]) -> Result<(), ArrayError> {
+    pub fn store_chunk<'a>(
+        &self,
+        chunk_indices: &[u64],
+        chunk_bytes: impl Into<ArrayBytes<'a>>,
+    ) -> Result<(), ArrayError> {
         self.store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
     }
 
@@ -71,7 +75,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     /// Returns an [`ArrayError`] if
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunk`](Array::store_chunk) error condition is met.
-    pub fn store_chunk_elements<T: bytemuck::Pod>(
+    pub fn store_chunk_elements<T: Element>(
         &self,
         chunk_indices: &[u64],
         chunk_elements: &[T],
@@ -90,7 +94,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_chunk_ndarray<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -114,10 +118,10 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - an underlying store error.
     #[allow(clippy::similar_names)]
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunks(
+    pub fn store_chunks<'a>(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: &[u8],
+        chunks_bytes: impl Into<ArrayBytes<'a>>,
     ) -> Result<(), ArrayError> {
         self.store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
     }
@@ -129,7 +133,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the size of  `T` does not match the data type size, or
     ///  - a [`store_chunks`](Array::store_chunks) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunks_elements<T: bytemuck::Pod>(
+    pub fn store_chunks_elements<T: Element>(
         &self,
         chunks: &ArraySubset,
         chunks_elements: &[T],
@@ -146,7 +150,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - a [`store_chunks_elements`](Array::store_chunks_elements) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub fn store_chunks_ndarray<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -242,24 +246,25 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
 
     /// Explicit options version of [`store_chunk`](Array::store_chunk).
     #[allow(clippy::missing_errors_doc)]
-    pub fn store_chunk_opt(
+    pub fn store_chunk_opt<'a>(
         &self,
         chunk_indices: &[u64],
-        chunk_bytes: &[u8],
+        chunk_bytes: impl Into<ArrayBytes<'a>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
+        let chunk_bytes = chunk_bytes.into();
+
         // Validation
         let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
-        if chunk_bytes.len() as u64 != chunk_array_representation.size() {
-            return Err(ArrayError::InvalidBytesInputSize(
-                chunk_bytes.len(),
-                chunk_array_representation.size(),
-            ));
-        }
+        chunk_bytes.validate(
+            chunk_array_representation.num_elements(),
+            chunk_array_representation.data_type().size(),
+        )?;
 
-        if !options.store_empty_chunks() && self.fill_value().equals_all(chunk_bytes) {
+        let is_fill_value =
+            !options.store_empty_chunks() && chunk_bytes.is_fill_value(self.fill_value());
+        if is_fill_value {
             self.erase_chunk(chunk_indices)?;
-            Ok(())
         } else {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
@@ -267,11 +272,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 .create_writable_transformer(storage_handle);
             let chunk_encoded = self
                 .codecs()
-                .encode(
-                    Cow::Borrowed(chunk_bytes),
-                    &chunk_array_representation,
-                    options,
-                )
+                .encode(chunk_bytes, &chunk_array_representation, options)
                 .map_err(ArrayError::CodecError)?;
             crate::storage::store_chunk(
                 &*storage_transformer,
@@ -279,29 +280,28 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 chunk_indices,
                 self.chunk_key_encoding(),
                 Bytes::from(chunk_encoded.into_owned()),
-            )
-            .map_err(ArrayError::StorageError)
+            )?;
         }
+        Ok(())
     }
 
     /// Explicit options version of [`store_chunk_elements`](Array::store_chunk_elements).
     #[allow(clippy::missing_errors_doc)]
-    pub fn store_chunk_elements_opt<T: bytemuck::Pod>(
+    pub fn store_chunk_elements_opt<T: Element>(
         &self,
         chunk_indices: &[u64],
         chunk_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let chunk_elements = crate::array::transmute_to_bytes(chunk_elements);
-        self.store_chunk_opt(chunk_indices, chunk_elements, options)
+        let chunk_bytes = T::into_array_bytes(self.data_type(), chunk_elements)?;
+        self.store_chunk_opt(chunk_indices, chunk_bytes, options)
     }
 
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_chunk_ndarray`](Array::store_chunk_ndarray).
     #[allow(clippy::missing_errors_doc)]
     pub fn store_chunk_ndarray_opt<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -310,12 +310,11 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunk_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
         let chunk_array: ndarray::Array<T, D> = chunk_array.into();
         let chunk_shape = self.chunk_shape_usize(chunk_indices)?;
         if chunk_array.shape() == chunk_shape {
             let chunk_array = super::ndarray_into_vec(chunk_array);
-            self.store_chunk_elements_opt(chunk_indices, &chunk_array, options)
+            self.store_chunk_elements_opt(chunk_indices, chunk_array.as_slice(), options)
         } else {
             Err(ArrayError::InvalidDataShape(
                 chunk_array.shape().to_vec(),
@@ -326,30 +325,27 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
 
     /// Explicit options version of [`store_chunks`](Array::store_chunks).
     #[allow(clippy::similar_names)]
-    #[allow(clippy::missing_errors_doc)]
-    pub fn store_chunks_opt(
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+    pub fn store_chunks_opt<'a>(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: &[u8],
+        chunks_bytes: impl Into<ArrayBytes<'a>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let num_chunks = chunks.num_elements_usize();
         match num_chunks {
-            0 => {}
+            0 => {
+                let chunks_bytes = chunks_bytes.into();
+                chunks_bytes.validate(0, self.data_type().size())?;
+            }
             1 => {
                 let chunk_indices = chunks.start();
                 self.store_chunk_opt(chunk_indices, chunks_bytes, options)?;
             }
             _ => {
+                let chunks_bytes = chunks_bytes.into();
                 let array_subset = self.chunks_subset(chunks)?;
-                let element_size = self.data_type().size();
-                let expected_size = element_size as u64 * array_subset.num_elements();
-                if chunks_bytes.len() as u64 != expected_size {
-                    return Err(ArrayError::InvalidBytesInputSize(
-                        chunks_bytes.len(),
-                        expected_size,
-                    ));
-                }
+                chunks_bytes.validate(array_subset.num_elements(), self.data_type().size())?;
 
                 // Calculate chunk/codec concurrency
                 let chunk_representation =
@@ -364,32 +360,15 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
                 );
 
                 let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
-                    let chunk_subset_in_array = unsafe {
-                        self.chunk_grid()
-                            .subset_unchecked(&chunk_indices, self.shape())
-                            .ok_or_else(|| {
-                                ArrayError::InvalidChunkGridIndicesError(chunk_indices.clone())
-                            })?
-                    };
-                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset_in_array) };
-                    let chunk_subset_in_array_subset =
-                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    #[allow(clippy::similar_names)]
-                    let chunk_bytes = unsafe {
-                        chunk_subset_in_array_subset.extract_bytes_unchecked(
-                            chunks_bytes,
-                            array_subset.shape(),
-                            element_size,
-                        )
-                    };
-
-                    debug_assert_eq!(
-                        chunk_subset_in_array.num_elements(),
-                        chunk_subset_in_array_subset.num_elements()
-                    );
-
-                    self.store_chunk_opt(&chunk_indices, &chunk_bytes, &options)
+                    let chunk_subset = self.chunk_subset(&chunk_indices)?;
+                    let chunk_bytes = chunks_bytes.extract_array_subset(
+                        &chunk_subset.relative_to(array_subset.start())?,
+                        array_subset.shape(),
+                        self.data_type(),
+                    )?;
+                    self.store_chunk_opt(&chunk_indices, chunk_bytes, &options)
                 };
+
                 let indices = chunks.indices();
                 iter_concurrent_limit!(chunk_concurrent_limit, indices, try_for_each, store_chunk)?;
             }
@@ -400,22 +379,21 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
 
     /// Explicit options version of [`store_chunks_elements`](Array::store_chunks_elements).
     #[allow(clippy::missing_errors_doc)]
-    pub fn store_chunks_elements_opt<T: bytemuck::Pod>(
+    pub fn store_chunks_elements_opt<T: Element>(
         &self,
         chunks: &ArraySubset,
         chunks_elements: &[T],
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
-        let chunks_elements = crate::array::transmute_to_bytes(chunks_elements);
-        self.store_chunks_opt(chunks, chunks_elements, options)
+        let chunks_bytes = T::into_array_bytes(self.data_type(), chunks_elements)?;
+        self.store_chunks_opt(chunks, chunks_bytes, options)
     }
 
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_chunks_ndarray`](Array::store_chunks_ndarray).
     #[allow(clippy::missing_errors_doc)]
     pub fn store_chunks_ndarray_opt<
-        T: bytemuck::Pod,
+        T: Element,
         TArray: Into<ndarray::Array<T, D>>,
         D: ndarray::Dimension,
     >(
@@ -424,13 +402,12 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunks_array: TArray,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
-        validate_element_size::<T>(self.data_type())?;
         let chunks_array: ndarray::Array<T, D> = chunks_array.into();
         let chunks_subset = self.chunks_subset(chunks)?;
         let chunks_shape = chunks_subset.shape_usize();
         if chunks_array.shape() == chunks_shape {
             let chunks_array = super::ndarray_into_vec(chunks_array);
-            self.store_chunks_elements_opt(chunks, &chunks_array, options)
+            self.store_chunks_elements_opt(chunks, chunks_array.as_slice(), options)
         } else {
             Err(ArrayError::InvalidDataShape(
                 chunks_array.shape().to_vec(),

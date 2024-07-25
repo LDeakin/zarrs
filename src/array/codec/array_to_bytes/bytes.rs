@@ -66,17 +66,19 @@ pub fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
             };
             v.chunks_exact_mut(8).for_each(swap);
         }
+        // Variable-sized data types are not supported and are rejected outside of this function
+        DataType::String | DataType::Binary => unreachable!(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{borrow::Cow, num::NonZeroU64};
+    use std::num::NonZeroU64;
 
     use crate::{
         array::{
-            codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions, CodecTraits},
-            ChunkRepresentation, ChunkShape, Endianness, FillValue,
+            codec::{ArrayToBytesCodecTraits, CodecOptions, CodecTraits},
+            ArrayBytes, ChunkRepresentation, ChunkShape, FillValue,
         },
         array_subset::ArraySubset,
     };
@@ -126,19 +128,21 @@ mod tests {
         let chunk_shape = vec![NonZeroU64::new(10).unwrap(), NonZeroU64::new(10).unwrap()];
         let chunk_representation =
             ChunkRepresentation::new(chunk_shape, data_type, fill_value).unwrap();
-        let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
+        let size = chunk_representation.num_elements_usize()
+            * chunk_representation.data_type().fixed_size().unwrap();
+        let bytes: ArrayBytes = (0..size).map(|s| s as u8).collect::<Vec<_>>().into();
 
         let codec = BytesCodec::new(endianness);
 
         let encoded = codec.encode(
-            Cow::Borrowed(&bytes),
+            bytes.clone(),
             &chunk_representation,
             &CodecOptions::default(),
         )?;
         let decoded = codec
             .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();
-        assert_eq!(bytes, decoded.to_vec());
+        assert_eq!(bytes, decoded);
         Ok(())
     }
 
@@ -259,13 +263,13 @@ mod tests {
             ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
                 .unwrap();
         let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
-        let bytes = elements;
+        let bytes: ArrayBytes = elements.into();
 
         let codec = BytesCodec::new(None);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -285,7 +289,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())
@@ -303,13 +307,13 @@ mod tests {
             ChunkRepresentation::new(chunk_shape.to_vec(), DataType::UInt8, FillValue::from(0u8))
                 .unwrap();
         let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
-        let bytes = elements;
+        let bytes: ArrayBytes = elements.into();
 
         let codec = BytesCodec::new(None);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -331,7 +335,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<u8>())

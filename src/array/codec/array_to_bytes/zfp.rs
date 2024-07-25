@@ -271,10 +271,14 @@ fn zfp_decode(
 #[cfg(test)]
 mod tests {
     use num::traits::AsPrimitive;
-    use std::{borrow::Cow, num::NonZeroU64};
+    use std::num::NonZeroU64;
 
     use crate::{
-        array::codec::{ArrayCodecTraits, ArrayToBytesCodecTraits, CodecOptions},
+        array::{
+            codec::{ArrayToBytesCodecTraits, CodecOptions},
+            element::ElementOwned,
+            ArrayBytes,
+        },
         array_subset::ArraySubset,
     };
 
@@ -304,21 +308,23 @@ mod tests {
         ]
     }
 
-    fn codec_zfp_round_trip<T: core::fmt::Debug + std::cmp::PartialEq + bytemuck::Pod>(
+    fn codec_zfp_round_trip<
+        T: core::fmt::Debug + std::cmp::PartialEq + ElementOwned + Copy + 'static,
+    >(
         chunk_representation: &ChunkRepresentation,
         configuration: &str,
     ) where
         i32: num::traits::AsPrimitive<T>,
     {
         let elements: Vec<T> = (0..27).map(|i: i32| i.as_()).collect();
-        let bytes = crate::array::transmute_to_bytes_vec(elements.clone());
+        let bytes = T::into_array_bytes(chunk_representation.data_type(), &elements).unwrap();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(configuration).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -329,9 +335,10 @@ mod tests {
                 &chunk_representation,
                 &CodecOptions::default(),
             )
-            .unwrap();
-
-        let decoded_elements = crate::array::convert_from_bytes_slice::<T>(&decoded);
+            .unwrap()
+            .into_owned();
+        let decoded_elements =
+            T::from_array_bytes(chunk_representation.data_type(), decoded).unwrap();
         assert_eq!(elements, decoded_elements);
     }
 
@@ -493,13 +500,14 @@ mod tests {
             ChunkRepresentation::new(chunk_shape, DataType::Float32, 0.0f32.into()).unwrap();
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -523,7 +531,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())
@@ -548,6 +556,7 @@ mod tests {
             ChunkRepresentation::new(chunk_shape, DataType::Float32, 0.0f32.into()).unwrap();
         let elements: Vec<f32> = (0..27).map(|i| i as f32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
         let codec = ZfpCodec::new_with_configuration(&configuration);
@@ -555,7 +564,7 @@ mod tests {
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -582,7 +591,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
             .into_iter()
-            .map(|v| v.to_vec())
+            .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
             .chunks(std::mem::size_of::<f32>())

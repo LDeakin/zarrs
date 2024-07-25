@@ -58,7 +58,7 @@ impl ReadableStorageTraits for OpendalStore {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Bytes>>, StorageError> {
-        // FIXME: Get OpenDAL to return an error if byte range is OOB instead of panic
+        // TODO: Get OpenDAL to return an error if byte range is OOB instead of panic
         let size = self.size_key(key)?;
         if let Some(size) = size {
             let reader = self.operator.reader(key.as_str())?;

@@ -1,7 +1,5 @@
 // Note: No validation that this codec is created *without* a specified endianness for multi-byte data types.
 
-use std::borrow::Cow;
-
 use crate::{
     array::{
         codec::{
@@ -9,7 +7,8 @@ use crate::{
             BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation,
+        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
+        RawBytes,
     },
     metadata::v3::MetadataV3,
 };
@@ -19,7 +18,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{
     bytes_partial_decoder, reverse_endianness, BytesCodecConfiguration, BytesCodecConfigurationV1,
-    Endianness, IDENTIFIER, NATIVE_ENDIAN,
+    Endianness, NATIVE_ENDIAN,
 };
 
 /// A `bytes` codec implementation.
@@ -64,20 +63,30 @@ impl BytesCodec {
 
     fn do_encode_or_decode<'a>(
         &self,
-        mut value: Cow<'a, [u8]>,
+        mut value: RawBytes<'a>,
         decoded_representation: &ChunkRepresentation,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        if value.len() as u64 != decoded_representation.size() {
-            return Err(CodecError::UnexpectedChunkDecodedSize(
-                value.len(),
-                decoded_representation.size(),
-            ));
-        } else if decoded_representation.element_size() > 1 && self.endian.is_none() {
-            return Err(CodecError::Other(format!(
-                "tried to encode an array with element size {} with endianness None",
-                decoded_representation.size()
-            )));
-        }
+    ) -> Result<RawBytes<'a>, CodecError> {
+        match decoded_representation.data_type().size() {
+            DataTypeSize::Variable => {
+                return Err(CodecError::UnsupportedDataType(
+                    decoded_representation.data_type().clone(),
+                    super::IDENTIFIER.to_string(),
+                ))
+            }
+            DataTypeSize::Fixed(data_type_size) => {
+                let array_size = decoded_representation.num_elements() * data_type_size as u64;
+                if value.len() as u64 != array_size {
+                    return Err(CodecError::UnexpectedChunkDecodedSize(
+                        value.len(),
+                        array_size,
+                    ));
+                } else if data_type_size > 1 && self.endian.is_none() {
+                    return Err(CodecError::Other(format!(
+                        "tried to encode an array with element size {data_type_size} with endianness None"
+                    )));
+                }
+            }
+        };
 
         if let Some(endian) = &self.endian {
             if !endian.is_native() {
@@ -93,7 +102,10 @@ impl CodecTraits for BytesCodec {
         let configuration = BytesCodecConfigurationV1 {
             endian: self.endian,
         };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        Some(
+            MetadataV3::new_with_serializable_configuration(super::IDENTIFIER, &configuration)
+                .unwrap(),
+        )
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -124,28 +136,35 @@ impl ArrayCodecTraits for BytesCodec {
         // }
         Ok(RecommendedConcurrency::new_maximum(1))
     }
-
-    fn encode<'a>(
-        &self,
-        decoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        self.do_encode_or_decode(decoded_value, decoded_representation)
-    }
-
-    fn decode<'a>(
-        &self,
-        encoded_value: Cow<'a, [u8]>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Cow<'a, [u8]>, CodecError> {
-        self.do_encode_or_decode(encoded_value, decoded_representation)
-    }
 }
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for BytesCodec {
+    fn encode<'a>(
+        &self,
+        bytes: ArrayBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<RawBytes<'a>, CodecError> {
+        bytes.validate(
+            decoded_representation.num_elements(),
+            decoded_representation.data_type().size(),
+        )?;
+        let bytes = bytes.into_fixed()?;
+        self.do_encode_or_decode(bytes, decoded_representation)
+    }
+
+    fn decode<'a>(
+        &self,
+        bytes: RawBytes<'a>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<ArrayBytes<'a>, CodecError> {
+        Ok(ArrayBytes::from(
+            self.do_encode_or_decode(bytes, decoded_representation)?,
+        ))
+    }
+
     fn partial_decoder<'a>(
         &self,
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
@@ -179,8 +198,16 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
-        Ok(BytesRepresentation::FixedSize(
-            decoded_representation.num_elements() * decoded_representation.element_size() as u64,
-        ))
+        match decoded_representation.data_type().size() {
+            DataTypeSize::Variable => {
+                return Err(CodecError::UnsupportedDataType(
+                    decoded_representation.data_type().clone(),
+                    super::IDENTIFIER.to_string(),
+                ))
+            }
+            DataTypeSize::Fixed(data_type_size) => Ok(BytesRepresentation::FixedSize(
+                decoded_representation.num_elements() * data_type_size as u64,
+            )),
+        }
     }
 }

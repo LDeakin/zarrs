@@ -46,22 +46,42 @@ pub fn codec_blosc_v2_numcodecs_to_v3(
     blosc: &BloscCodecConfigurationNumcodecs,
     data_type: &DataType,
 ) -> BloscCodecConfiguration {
+    let (shuffle, typesize) = match (&blosc.shuffle, data_type.fixed_size()) {
+        (BloscShuffleModeNumCodecs::NoShuffle, _) => (BloscShuffleMode::NoShuffle, None),
+        // Fixed
+        (BloscShuffleModeNumCodecs::Shuffle, Some(data_type_size)) => {
+            (BloscShuffleMode::Shuffle, Some(data_type_size))
+        }
+        (BloscShuffleModeNumCodecs::BitShuffle, Some(data_type_size)) => {
+            (BloscShuffleMode::BitShuffle, Some(data_type_size))
+        }
+        (BloscShuffleModeNumCodecs::AutoShuffle, Some(data_type_size)) => {
+            if data_type_size == 1 {
+                (BloscShuffleMode::BitShuffle, Some(data_type_size))
+            } else {
+                (BloscShuffleMode::Shuffle, Some(data_type_size))
+            }
+        }
+        // Variable
+        (
+            BloscShuffleModeNumCodecs::Shuffle
+            | BloscShuffleModeNumCodecs::BitShuffle
+            | BloscShuffleModeNumCodecs::AutoShuffle,
+            None,
+        ) => {
+            // FIXME: Check blosc auto behaviour with variable sized data type
+            //        Currently defaulting to "bitshuffle"
+            //        What do other implementations do for a variable sized data type?
+            //        May need to make this function fallible
+            (BloscShuffleMode::NoShuffle, None)
+        }
+    };
+
     BloscCodecConfiguration::V1(BloscCodecConfigurationV1 {
         cname: blosc.cname,
         clevel: blosc.clevel,
-        shuffle: match blosc.shuffle {
-            BloscShuffleModeNumCodecs::NoShuffle => BloscShuffleMode::NoShuffle,
-            BloscShuffleModeNumCodecs::Shuffle => BloscShuffleMode::Shuffle,
-            BloscShuffleModeNumCodecs::BitShuffle => BloscShuffleMode::BitShuffle,
-            BloscShuffleModeNumCodecs::AutoShuffle => {
-                if data_type.size() == 1 {
-                    BloscShuffleMode::BitShuffle
-                } else {
-                    BloscShuffleMode::Shuffle
-                }
-            }
-        },
-        typesize: Some(data_type.size()),
+        shuffle,
+        typesize,
         blocksize: blosc.blocksize,
     })
 }

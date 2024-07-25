@@ -97,9 +97,16 @@ pub enum ArrayError {
     #[error("got chunk decoded shape {_0:?}, expected {_1:?}")]
     UnexpectedChunkDecodedShape(ArrayShape, ArrayShape),
     /// Incompatible element size.
-    #[error("got element size {_0}, expected {_1}")]
-    IncompatibleElementSize(usize, usize),
+    #[error("the element types does not match the data type")]
+    IncompatibleElementType,
     /// Invalid data shape.
     #[error("data has shape {_0:?}, expected {_1:?}")]
     InvalidDataShape(Vec<usize>, Vec<usize>),
+    /// Invalid element value.
+    ///
+    /// For example
+    ///  - a bool array with a value not equal to 0 (false) or 1 (true).
+    ///  - a string with invalid utf-8 encoding.
+    #[error("Invalid element value")]
+    InvalidElementValue,
 }

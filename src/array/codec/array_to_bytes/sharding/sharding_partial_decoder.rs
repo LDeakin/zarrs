@@ -1,9 +1,10 @@
-use std::{borrow::Cow, num::NonZeroU64};
+use std::num::NonZeroU64;
 
 use rayon::prelude::*;
 
 use crate::{
     array::{
+        array_bytes::{merge_chunks_vlen, update_bytes_flen},
         chunk_grid::RegularChunkGrid,
         chunk_shape_to_array_shape,
         codec::{
@@ -14,7 +15,7 @@ use crate::{
         concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
         ravel_indices,
         unsafe_cell_slice::UnsafeCellSlice,
-        ChunkRepresentation, ChunkShape, DataType,
+        ArrayBytes, ArraySize, ChunkRepresentation, ChunkShape, DataType, DataTypeSize,
     },
     byte_range::ByteRange,
 };
@@ -128,7 +129,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         for array_subset in array_subsets {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -142,7 +143,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             return Ok(array_subsets
                 .iter()
                 .map(|decoded_region| {
-                    Cow::Owned(
+                    ArrayBytes::from(
                         self.decoded_representation
                             .fill_value()
                             .as_ne_bytes()
@@ -167,9 +168,6 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
         let num_chunks = usize::try_from(chunks_per_shard.iter().product::<u64>()).unwrap();
 
-        let element_size = self.decoded_representation.element_size();
-        let fill_value = chunk_representation.fill_value().as_ne_bytes();
-
         // Calculate inner chunk/codec concurrency
         let (inner_chunk_concurrent_limit, concurrency_limit_codec) = calc_concurrency_outer_inner(
             options.concurrent_target(),
@@ -188,79 +186,165 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
 
         let mut out = Vec::with_capacity(array_subsets.len());
         for array_subset in array_subsets {
-            let array_subset_size = array_subset.num_elements_usize() * element_size;
-            let mut out_array_subset = vec![0; array_subset_size];
-            let out_array_subset_slice = UnsafeCellSlice::new(out_array_subset.as_mut_slice());
-
             let chunks = unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
-            rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                inner_chunk_concurrent_limit,
-                chunks,
-                try_for_each,
-                |(chunk_indices, chunk_subset): (Vec<u64>, _)| {
-                    let out_array_subset_slice = unsafe { out_array_subset_slice.get() };
 
-                    let shard_index_idx: usize =
-                        usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
-                            .unwrap();
-                    let offset = shard_index[shard_index_idx];
-                    let size = shard_index[shard_index_idx + 1];
+            match self.decoded_representation.element_size() {
+                DataTypeSize::Variable => {
+                    let decode_inner_chunk_subset = |(chunk_indices, chunk_subset): (
+                        Vec<u64>,
+                        _,
+                    )| {
+                        let shard_index_idx: usize =
+                            usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
+                                .unwrap();
+                        let offset = shard_index[shard_index_idx];
+                        let size = shard_index[shard_index_idx + 1];
 
-                    // Get the subset of bytes from the chunk which intersect the array
-                    let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
-                    let array_subset_in_chunk_subset =
-                        unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
+                        // Get the subset of bytes from the chunk which intersect the array
+                        let chunk_subset_overlap =
+                            unsafe { array_subset.overlap_unchecked(&chunk_subset) };
 
-                    let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
-                        // The chunk is just the fill value
-                        fill_value.repeat(array_subset_in_chunk_subset.num_elements_usize())
-                    } else {
-                        // Partially decode the inner chunk
-                        let partial_decoder = self.inner_codecs.partial_decoder(
-                            Box::new(ByteIntervalPartialDecoder::new(
-                                &*self.input_handle,
-                                offset,
-                                size,
-                            )),
-                            &chunk_representation,
-                            &options,
-                        )
-                        .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
-                            CodecError::Other(
-                                "The shard index references out-of-bounds bytes. The chunk may be corrupted."
-                                    .to_string(),
+                        let chunk_subset_bytes = if offset == u64::MAX && size == u64::MAX {
+                            let array_size = ArraySize::new(
+                                chunk_representation.data_type().size(),
+                                chunk_subset_overlap.num_elements(),
+                            );
+                            ArrayBytes::new_fill_value(
+                                array_size,
+                                chunk_representation.fill_value(),
                             )
                         } else {
-                            err
-                        })?;
-                        let decoded_bytes = partial_decoder
-                            .partial_decode_opt(&[array_subset_in_chunk_subset], &options)?
-                            .remove(0);
-                        decoded_bytes.to_vec()
+                            // Partially decode the inner chunk
+                            let partial_decoder = self.inner_codecs.partial_decoder(
+                                Box::new(ByteIntervalPartialDecoder::new(
+                                    &*self.input_handle,
+                                    offset,
+                                    size,
+                                )),
+                                &chunk_representation,
+                                &options,
+                            )
+                            .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
+                                CodecError::Other(
+                                    "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                                        .to_string(),
+                                )
+                            } else {
+                                err
+                            })?;
+                            partial_decoder
+                                .partial_decode_opt(
+                                    &[chunk_subset_overlap
+                                        .relative_to(chunk_subset.start())
+                                        .unwrap()],
+                                    &options,
+                                )?
+                                .remove(0)
+                                .into_owned()
+                        };
+                        Ok::<_, CodecError>((
+                            chunk_subset_bytes,
+                            chunk_subset_overlap
+                                .relative_to(array_subset.start())
+                                .unwrap(),
+                        ))
                     };
 
-                    // Copy decoded bytes to the output
-                    let chunk_subset_in_array_subset =
-                        unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                    let mut decoded_offset = 0;
-                    let contiguous_iterator = unsafe {
-                        chunk_subset_in_array_subset
-                            .contiguous_linearised_indices_unchecked(array_subset.shape())
-                    };
-                    let length = contiguous_iterator.contiguous_elements_usize() * element_size;
-                    for (array_subset_element_index, _num_elements) in &contiguous_iterator {
-                        let output_offset =
-                            usize::try_from(array_subset_element_index).unwrap() * element_size;
-                        out_array_subset_slice[output_offset..output_offset + length]
-                            .copy_from_slice(
-                                &decoded_bytes[decoded_offset..decoded_offset + length],
-                            );
-                        decoded_offset += length;
-                    }
-                    Ok::<_, CodecError>(())
+                    // Decode the inner chunk subsets
+                    let chunk_bytes_and_subsets =
+                        rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                            inner_chunk_concurrent_limit,
+                            chunks,
+                            map,
+                            decode_inner_chunk_subset
+                        )
+                        .collect::<Result<Vec<_>, _>>()?;
+
+                    // Convert into an array
+                    let out_array_subset =
+                        merge_chunks_vlen(chunk_bytes_and_subsets, array_subset.shape())?;
+                    out.push(out_array_subset);
                 }
-            )?;
-            out.push(Cow::Owned(out_array_subset));
+                DataTypeSize::Fixed(data_type_size) => {
+                    let array_subset_size = array_subset.num_elements_usize() * data_type_size;
+                    let mut out_array_subset = vec![0; array_subset_size];
+                    let out_array_subset_slice =
+                        UnsafeCellSlice::new(out_array_subset.as_mut_slice());
+
+                    let decode_inner_chunk_subset_into_slice = |(chunk_indices, chunk_subset): (
+                        Vec<u64>,
+                        _,
+                    )| {
+                        let shard_index_idx: usize =
+                            usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
+                                .unwrap();
+                        let offset = shard_index[shard_index_idx];
+                        let size = shard_index[shard_index_idx + 1];
+
+                        // Get the subset of bytes from the chunk which intersect the array
+                        let chunk_subset_overlap =
+                            unsafe { array_subset.overlap_unchecked(&chunk_subset) };
+
+                        let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
+                            let array_size = ArraySize::new(
+                                chunk_representation.data_type().size(),
+                                chunk_subset_overlap.num_elements(),
+                            );
+                            ArrayBytes::new_fill_value(
+                                array_size,
+                                chunk_representation.fill_value(),
+                            )
+                        } else {
+                            // Partially decode the inner chunk
+                            let partial_decoder = self.inner_codecs.partial_decoder(
+                                Box::new(ByteIntervalPartialDecoder::new(
+                                    &*self.input_handle,
+                                    offset,
+                                    size,
+                                )),
+                                &chunk_representation,
+                                &options,
+                            )
+                            .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
+                                CodecError::Other(
+                                    "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                                        .to_string(),
+                                )
+                            } else {
+                                err
+                            })?;
+                            partial_decoder
+                                .partial_decode_opt(
+                                    &[chunk_subset_overlap
+                                        .relative_to(chunk_subset.start())
+                                        .unwrap()],
+                                    &options,
+                                )?
+                                .remove(0)
+                                .into_owned()
+                        };
+                        let decoded_bytes = decoded_bytes.into_fixed()?;
+                        update_bytes_flen(
+                            unsafe { out_array_subset_slice.get() },
+                            array_subset.shape(),
+                            &decoded_bytes,
+                            &chunk_subset_overlap
+                                .relative_to(array_subset.start())
+                                .unwrap(),
+                            data_type_size,
+                        );
+                        Ok::<_, CodecError>(())
+                    };
+
+                    rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                        inner_chunk_concurrent_limit,
+                        chunks,
+                        try_for_each,
+                        decode_inner_chunk_subset_into_slice
+                    )?;
+                    out.push(ArrayBytes::from(out_array_subset));
+                }
+            }
         }
         Ok(out)
     }
@@ -370,7 +454,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
-    ) -> Result<Vec<Cow<'_, [u8]>>, CodecError> {
+    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         for array_subset in array_subsets {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -384,7 +468,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
             return Ok(array_subsets
                 .iter()
                 .map(|decoded_region| {
-                    Cow::Owned(
+                    ArrayBytes::from(
                         self.decoded_representation
                             .fill_value()
                             .as_ne_bytes()
@@ -400,180 +484,246 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
         )?;
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
 
-        let element_size = self.decoded_representation.element_size();
+        let chunk_representation = unsafe {
+            ChunkRepresentation::new_unchecked(
+                self.chunk_grid.chunk_shape().to_vec(),
+                self.decoded_representation.data_type().clone(),
+                self.decoded_representation.fill_value().clone(),
+            )
+        };
+
         let mut out = Vec::with_capacity(array_subsets.len());
-        // FIXME: Could go parallel here
+        // TODO: Could go parallel here?
         for array_subset in array_subsets {
-            // shard (subset)
-            let shard_size = array_subset.num_elements_usize() * element_size;
-            let mut shard = Vec::with_capacity(shard_size);
-            let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
+            match self.decoded_representation.element_size() {
+                DataTypeSize::Variable => {
+                    let chunks =
+                        unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
 
-            // Find filled / non filled chunks
-            let chunk_info =
-                unsafe { array_subset.chunks_unchecked(self.chunk_grid.chunk_shape()) }
-                    .into_iter()
-                    .map(|(chunk_indices, chunk_subset)| {
-                        let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
-                        let chunk_index = usize::try_from(chunk_index).unwrap();
+                    let decode_inner_chunk_subset = |(chunk_indices, chunk_subset): (
+                        Vec<u64>,
+                        _,
+                    )| {
+                        let shard_index_idx: usize =
+                            usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
+                                .unwrap();
+                        let chunk_representation = chunk_representation.clone();
+                        async move {
+                            let offset = shard_index[shard_index_idx];
+                            let size = shard_index[shard_index_idx + 1];
 
-                        // Read the offset/size
-                        let offset = shard_index[chunk_index * 2];
-                        let size = shard_index[chunk_index * 2 + 1];
-                        if offset == u64::MAX && size == u64::MAX {
-                            (chunk_subset, None)
-                        } else {
-                            let offset: usize = offset.try_into().unwrap();
-                            let size: usize = size.try_into().unwrap();
-                            (chunk_subset, Some((offset, size)))
-                        }
-                    })
-                    .collect::<Vec<_>>();
+                            // Get the subset of bytes from the chunk which intersect the array
+                            let chunk_subset_overlap =
+                                unsafe { array_subset.overlap_unchecked(&chunk_subset) };
 
-            // Decode unfilled chunks
-            let results = futures::future::join_all(
-                chunk_info
-                    .iter()
-                    .filter_map(|(chunk_subset, offset_size)| {
-                        offset_size
-                            .as_ref()
-                            .map(|offset_size| (chunk_subset, offset_size))
-                    })
-                    .map(|(chunk_subset, (offset, size))| async move {
-                        let chunk_representation = unsafe {
-                            ChunkRepresentation::new_unchecked(
-                                self.chunk_grid.chunk_shape().to_vec(),
-                                self.decoded_representation.data_type().clone(),
-                                self.decoded_representation.fill_value().clone(),
-                            )
-                        };
-                        let partial_decoder = self
-                            .inner_codecs
-                            .async_partial_decoder(
-                                Box::new(AsyncByteIntervalPartialDecoder::new(
-                                    &*self.input_handle,
-                                    u64::try_from(*offset).unwrap(),
-                                    u64::try_from(*size).unwrap(),
-                                )),
-                                &chunk_representation,
-                                options, // FIXME: Adjust options for partial decoding
-                            )
-                            .await
-                            .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
-                                CodecError::Other(
-                                    "The shard index references out-of-bounds bytes. The chunk may be corrupted."
-                                        .to_string(),
+                            let chunk_subset_bytes = if offset == u64::MAX && size == u64::MAX {
+                                let array_size = ArraySize::new(
+                                    self.data_type().size(),
+                                    chunk_subset_overlap.num_elements(),
+                                );
+                                ArrayBytes::new_fill_value(
+                                    array_size,
+                                    chunk_representation.fill_value(),
                                 )
                             } else {
-                                err
-                            })?;
-                        let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
-                        let array_subset_in_chunk_subset =
-                            unsafe { overlap.relative_to_unchecked(chunk_subset.start()) };
-                        // Partial decoding is actually really slow with the blosc codec! Assume sharded chunks are small, and just decode the whole thing and extract bytes
-                        // TODO: Investigate further
-                        // let decoded_chunk = partial_decoder
-                        //     .partial_decode(&[array_subset_in_chunk_subset])
-                        //     .await?
-                        //     .remove(0);
-                        let decoded_chunk = partial_decoder
-                            .partial_decode_opt(
-                                &[ArraySubset::new_with_shape(chunk_subset.shape().to_vec())],
-                                options,
-                            ) // FIXME: Adjust options for partial decoding
-                            .await?
-                            .remove(0);
-                        let decoded_chunk = array_subset_in_chunk_subset
-                            .extract_bytes(&decoded_chunk, chunk_subset.shape(), element_size)
-                            .unwrap();
-                        let chunk_subset_in_array_subset =
-                            unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                        Ok::<_, CodecError>((chunk_subset_in_array_subset, decoded_chunk))
-                    }),
-            )
-            .await;
-            // FIXME: Concurrency limit for futures
-
-            if !results.is_empty() {
-                rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                    options.concurrent_target(),
-                    results,
-                    try_for_each,
-                    |subset_and_decoded_chunk| {
-                        let (chunk_subset_in_array_subset, decoded_chunk): (ArraySubset, Vec<u8>) =
-                            subset_and_decoded_chunk?;
-                        let mut data_idx = 0;
-                        let element_size = element_size as u64;
-                        let shard_slice = unsafe { shard_slice.get() };
-                        let contiguous_iterator = unsafe {
-                            chunk_subset_in_array_subset
-                                .contiguous_linearised_indices_unchecked(array_subset.shape())
-                        };
-                        let length = usize::try_from(
-                            contiguous_iterator.contiguous_elements() * element_size,
-                        )
-                        .unwrap();
-                        for (index, _num_elements) in &contiguous_iterator {
-                            let shard_offset = usize::try_from(index * element_size).unwrap();
-                            shard_slice[shard_offset..shard_offset + length]
-                                .copy_from_slice(&decoded_chunk[data_idx..data_idx + length]);
-                            data_idx += length;
+                                // Partially decode the inner chunk
+                                let partial_decoder = self.inner_codecs.async_partial_decoder(
+                                    Box::new(AsyncByteIntervalPartialDecoder::new(
+                                        &*self.input_handle,
+                                        offset,
+                                        size,
+                                    )),
+                                    &chunk_representation,
+                                    options,
+                                ).await
+                                .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
+                                    CodecError::Other(
+                                        "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                                            .to_string(),
+                                    )
+                                } else {
+                                    err
+                                })?;
+                                partial_decoder
+                                    .partial_decode_opt(
+                                        &[chunk_subset_overlap
+                                            .relative_to(chunk_subset.start())
+                                            .unwrap()],
+                                        options,
+                                    )
+                                    .await?
+                                    .remove(0)
+                                    .into_owned()
+                            };
+                            Ok::<_, CodecError>((
+                                chunk_subset_bytes,
+                                chunk_subset_overlap
+                                    .relative_to(array_subset.start())
+                                    .unwrap(),
+                            ))
                         }
-                        Ok::<_, CodecError>(())
+                    };
+
+                    // Decode the inner chunk subsets
+                    let futures = chunks.iter().map(decode_inner_chunk_subset);
+                    let chunk_bytes_and_subsets = futures::future::try_join_all(futures).await?;
+
+                    // Convert into an array
+                    let out_array_subset =
+                        merge_chunks_vlen(chunk_bytes_and_subsets, array_subset.shape())?;
+                    out.push(out_array_subset);
+                }
+                DataTypeSize::Fixed(data_type_size) => {
+                    // Find filled / non filled chunks
+                    let chunk_info =
+                        unsafe { array_subset.chunks_unchecked(self.chunk_grid.chunk_shape()) }
+                            .into_iter()
+                            .map(|(chunk_indices, chunk_subset)| {
+                                let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
+                                let chunk_index = usize::try_from(chunk_index).unwrap();
+
+                                // Read the offset/size
+                                let offset = shard_index[chunk_index * 2];
+                                let size = shard_index[chunk_index * 2 + 1];
+                                if offset == u64::MAX && size == u64::MAX {
+                                    (chunk_subset, None)
+                                } else {
+                                    let offset: usize = offset.try_into().unwrap();
+                                    let size: usize = size.try_into().unwrap();
+                                    (chunk_subset, Some((offset, size)))
+                                }
+                            })
+                            .collect::<Vec<_>>();
+
+                    let shard_size = array_subset.num_elements_usize() * data_type_size;
+                    let mut shard = Vec::with_capacity(shard_size);
+                    let shard_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut shard);
+
+                    // Decode unfilled chunks
+                    let results = futures::future::join_all(
+                        chunk_info
+                            .iter()
+                            .filter_map(|(chunk_subset, offset_size)| {
+                                offset_size
+                                    .as_ref()
+                                    .map(|offset_size| (chunk_subset, offset_size))
+                            })
+                            .map(|(chunk_subset, (offset, size))| {
+                                let chunk_representation = chunk_representation.clone();
+                                async move {
+                                let partial_decoder = self
+                                    .inner_codecs
+                                    .async_partial_decoder(
+                                        Box::new(AsyncByteIntervalPartialDecoder::new(
+                                            &*self.input_handle,
+                                            u64::try_from(*offset).unwrap(),
+                                            u64::try_from(*size).unwrap(),
+                                        )),
+                                        &chunk_representation,
+                                        options, // TODO: Adjust options for partial decoding?
+                                    )
+                                    .await
+                                    .map_err(|err| if let CodecError::InvalidByteRangeError(_) = err {
+                                        CodecError::Other(
+                                            "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                                                .to_string(),
+                                        )
+                                    } else {
+                                        err
+                                    })?;
+                                let chunk_subset_overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
+                                // Partial decoding is actually really slow with the blosc codec! Assume sharded chunks are small, and just decode the whole thing and extract bytes
+                                // TODO: Investigate further
+                                // let decoded_chunk = partial_decoder
+                                //     .partial_decode(&[chunk_subset_overlap.relative_to(chunk_subset.start())?])
+                                //     .await?
+                                //     .remove(0);
+                                let decoded_chunk = partial_decoder
+                                    .partial_decode_opt(
+                                        &[ArraySubset::new_with_shape(chunk_subset.shape().to_vec())],
+                                        options,
+                                    ) // TODO: Adjust options for partial decoding
+                                    .await?
+                                    .remove(0).into_owned();
+                                let decoded_chunk = decoded_chunk
+                                    .extract_array_subset(
+                                        &chunk_subset_overlap.relative_to(chunk_subset.start()).unwrap(),
+                                        chunk_subset.shape(),
+                                        self.decoded_representation.data_type()
+                                    )?
+                                    .into_fixed()?
+                                    .into_owned();
+                                Ok::<_, CodecError>((decoded_chunk, chunk_subset_overlap))
+                            }}),
+                        )
+                        .await;
+                    // FIXME: Concurrency limit for futures
+
+                    if !results.is_empty() {
+                        rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                            options.concurrent_target(),
+                            results,
+                            try_for_each,
+                            |subset_and_decoded_chunk| {
+                                let (chunk_subset_bytes, chunk_subset_overlap): (
+                                    Vec<u8>,
+                                    ArraySubset,
+                                ) = subset_and_decoded_chunk?;
+                                update_bytes_flen(
+                                    unsafe { shard_slice.get() },
+                                    array_subset.shape(),
+                                    &chunk_subset_bytes.into(),
+                                    &chunk_subset_overlap
+                                        .relative_to(array_subset.start())
+                                        .unwrap(),
+                                    data_type_size,
+                                );
+                                Ok::<_, CodecError>(())
+                            }
+                        )?;
                     }
-                )?;
+
+                    // Write filled chunks
+                    let filled_chunks = chunk_info
+                        .iter()
+                        .filter_map(|(chunk_subset, offset_size)| {
+                            if offset_size.is_none() {
+                                Some(chunk_subset)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    if !filled_chunks.is_empty() {
+                        // Write filled chunks
+                        rayon_iter_concurrent_limit::iter_concurrent_limit!(
+                            options.concurrent_target(),
+                            filled_chunks,
+                            for_each,
+                            |chunk_subset: &ArraySubset| {
+                                let chunk_subset_overlap =
+                                    unsafe { array_subset.overlap_unchecked(chunk_subset) };
+                                let filled_chunk = self
+                                    .decoded_representation
+                                    .fill_value()
+                                    .as_ne_bytes()
+                                    .repeat(chunk_subset_overlap.num_elements_usize());
+                                update_bytes_flen(
+                                    unsafe { shard_slice.get() },
+                                    array_subset.shape(),
+                                    &filled_chunk.into(),
+                                    &chunk_subset_overlap
+                                        .relative_to(array_subset.start())
+                                        .unwrap(),
+                                    data_type_size,
+                                );
+                            }
+                        );
+                    };
+                    unsafe { shard.set_len(shard_size) };
+                    out.push(ArrayBytes::from(shard));
+                }
             }
-
-            // Write filled chunks
-            let filled_chunks = chunk_info
-                .iter()
-                .filter_map(|(chunk_subset, offset_size)| {
-                    if offset_size.is_none() {
-                        Some(chunk_subset)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
-            if !filled_chunks.is_empty() {
-                let chunk_array_ss = ArraySubset::new_with_shape(self.chunk_grid.chunk_shape_u64());
-                let filled_chunk = self
-                    .decoded_representation
-                    .fill_value()
-                    .as_ne_bytes()
-                    .repeat(chunk_array_ss.num_elements_usize());
-
-                // Write filled chunks
-                rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                    options.concurrent_target(),
-                    filled_chunks,
-                    for_each,
-                    |chunk_subset: &ArraySubset| {
-                        let overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
-                        let chunk_subset_in_array_subset =
-                            unsafe { overlap.relative_to_unchecked(array_subset.start()) };
-                        let mut data_idx = 0;
-                        let element_size = self.decoded_representation.element_size() as u64;
-                        let shard_slice = unsafe { shard_slice.get() };
-                        let contiguous_iterator = unsafe {
-                            chunk_subset_in_array_subset
-                                .contiguous_linearised_indices_unchecked(array_subset.shape())
-                        };
-                        let length = usize::try_from(
-                            contiguous_iterator.contiguous_elements() * element_size,
-                        )
-                        .unwrap();
-                        for (index, _num_elements) in &contiguous_iterator {
-                            let shard_offset = usize::try_from(index * element_size).unwrap();
-                            shard_slice[shard_offset..shard_offset + length]
-                                .copy_from_slice(&filled_chunk[data_idx..data_idx + length]);
-                            data_idx += length;
-                        }
-                    }
-                );
-            };
-            unsafe { shard.set_len(shard_size) };
-            out.push(Cow::Owned(shard));
         }
         Ok(out)
     }

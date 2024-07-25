@@ -14,7 +14,11 @@ pub use crate::metadata::v3::codec::transpose::{
 pub use transpose_codec::TransposeCodec;
 
 use crate::{
-    array::codec::{Codec, CodecPlugin},
+    array::{
+        array_bytes::RawBytesOffsets,
+        codec::{Codec, CodecPlugin},
+        ArrayBytes, RawBytes,
+    },
     metadata::v3::{codec::transpose, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -90,17 +94,41 @@ fn permute<T: Copy>(v: &[T], order: &TransposeOrder) -> Vec<T> {
     vec
 }
 
+fn transpose_vlen<'a>(
+    bytes: &RawBytes,
+    offsets: &RawBytesOffsets,
+    shape: &[usize],
+    order: Vec<usize>,
+) -> ArrayBytes<'a> {
+    debug_assert_eq!(shape.len(), order.len());
+
+    // Get the transposed element indices
+    let ndarray_indices =
+        ndarray::ArrayD::from_shape_vec(shape, (0..shape.iter().product()).collect()).unwrap();
+    let ndarray_indices_transposed = ndarray_indices.permuted_axes(order);
+
+    // Collect the new bytes/offsets
+    let mut bytes_new = Vec::with_capacity(bytes.len());
+    let mut offsets_new = Vec::with_capacity(offsets.len());
+    for idx in &ndarray_indices_transposed {
+        offsets_new.push(bytes_new.len());
+        let curr = offsets[*idx];
+        let next = offsets[idx + 1];
+        bytes_new.extend_from_slice(&bytes[curr..next]);
+    }
+    offsets_new.push(bytes_new.len());
+
+    ArrayBytes::new_vlen(bytes_new, offsets_new)
+}
+
 #[cfg(test)]
 mod tests {
-    use std::{borrow::Cow, num::NonZeroU64};
+    use std::num::NonZeroU64;
 
     use crate::{
         array::{
-            codec::{
-                ArrayCodecTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec,
-                CodecOptions,
-            },
-            ChunkRepresentation, DataType, FillValue,
+            codec::{ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, CodecOptions},
+            ArrayBytes, ChunkRepresentation, DataType, FillValue,
         },
         array_subset::ArraySubset,
     };
@@ -118,26 +146,25 @@ mod tests {
             fill_value,
         )
         .unwrap();
-        let bytes: Vec<u8> = (0..chunk_representation.size()).map(|s| s as u8).collect();
+        let size = chunk_representation.num_elements_usize()
+            * chunk_representation.data_type().fixed_size().unwrap();
+        let bytes: Vec<u8> = (0..size).map(|s| s as u8).collect();
+        let bytes: ArrayBytes = bytes.into();
 
         let configuration: TransposeCodecConfiguration = serde_json::from_str(json).unwrap();
         let codec = TransposeCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
             .unwrap();
         let decoded = codec
-            .decode(
-                Cow::Borrowed(&encoded),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
+            .decode(encoded, &chunk_representation, &CodecOptions::default())
             .unwrap();
-        assert_eq!(bytes, decoded.to_vec());
+        assert_eq!(bytes, decoded);
 
         // let array = ndarray::ArrayViewD::from_shape(array_representation.shape(), &bytes).unwrap();
         // let array_representation_transpose =
@@ -179,20 +206,17 @@ mod tests {
         )
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         let encoded = codec
-            .encode(
-                Cow::Borrowed(&bytes),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
+            .encode(bytes, &chunk_representation, &CodecOptions::default())
             .unwrap();
         let decoded_regions = [
             ArraySubset::new_with_ranges(&[0..4, 0..4]),
             ArraySubset::new_with_ranges(&[1..3, 1..4]),
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Box::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .partial_decoder(
@@ -213,7 +237,9 @@ mod tests {
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
-            .map(|bytes| crate::array::convert_from_bytes_slice::<f32>(&bytes))
+            .map(|bytes| {
+                crate::array::convert_from_bytes_slice::<f32>(&bytes.into_fixed().unwrap())
+            })
             .collect::<Vec<_>>();
         let answer: &[Vec<f32>] = &[
             vec![
@@ -239,10 +265,11 @@ mod tests {
         )
         .unwrap();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
+        let bytes: ArrayBytes = bytes.into();
 
         let encoded = codec
             .encode(
-                Cow::Borrowed(&bytes),
+                bytes.clone(),
                 &chunk_representation,
                 &CodecOptions::default(),
             )
@@ -252,7 +279,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[1..3, 1..4]),
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Box::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .async_partial_decoder(
@@ -276,7 +303,11 @@ mod tests {
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
-            .map(|bytes| crate::array::convert_from_bytes_slice::<f32>(&bytes))
+            .map(|bytes| {
+                crate::array::transmute_from_bytes_vec::<f32>(
+                    bytes.into_fixed().unwrap().into_owned(),
+                )
+            })
             .collect::<Vec<_>>();
         let answer: &[Vec<f32>] = &[
             vec![
