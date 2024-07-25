@@ -18,13 +18,13 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-use super::{VlenInterleavedCodecConfiguration, VlenInterleavedCodecConfigurationV1};
+use super::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1};
 
-/// The `vlen_interleaved` codec implementation.
+/// The `vlen_v2` codec implementation.
 #[derive(Debug, Clone, Default)]
-pub struct VlenInterleavedCodec {}
+pub struct VlenV2Codec {}
 
-impl VlenInterleavedCodec {
+impl VlenV2Codec {
     /// Create a new `vlen` codec.
     #[must_use]
     pub fn new() -> Self {
@@ -33,15 +33,15 @@ impl VlenInterleavedCodec {
 
     /// Create a new `vlen` codec from configuration.
     #[must_use]
-    pub fn new_with_configuration(_configuration: &VlenInterleavedCodecConfiguration) -> Self {
-        // let VlenInterleavedCodecConfiguration::V1(configuration) = configuration;
+    pub fn new_with_configuration(_configuration: &VlenV2CodecConfiguration) -> Self {
+        // let VlenV2CodecConfiguration::V1(configuration) = configuration;
         Self {}
     }
 }
 
-impl CodecTraits for VlenInterleavedCodec {
+impl CodecTraits for VlenV2Codec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
-        let configuration = VlenInterleavedCodecConfigurationV1 {};
+        let configuration = VlenV2CodecConfigurationV1 {};
         Some(
             MetadataV3::new_with_serializable_configuration(super::IDENTIFIER, &configuration)
                 .unwrap(),
@@ -57,7 +57,7 @@ impl CodecTraits for VlenInterleavedCodec {
     }
 }
 
-impl ArrayCodecTraits for VlenInterleavedCodec {
+impl ArrayCodecTraits for VlenV2Codec {
     fn recommended_concurrency(
         &self,
         _decoded_representation: &ChunkRepresentation,
@@ -67,7 +67,7 @@ impl ArrayCodecTraits for VlenInterleavedCodec {
 }
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
-impl ArrayToBytesCodecTraits for VlenInterleavedCodec {
+impl ArrayToBytesCodecTraits for VlenV2Codec {
     fn encode<'a>(
         &self,
         bytes: ArrayBytes<'a>,
@@ -118,7 +118,7 @@ impl ArrayToBytesCodecTraits for VlenInterleavedCodec {
         _options: &CodecOptions,
     ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
-            super::vlen_interleaved_partial_decoder::VlenInterleavedPartialDecoder::new(
+            super::vlen_v2_partial_decoder::VlenV2PartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
             ),
@@ -133,7 +133,7 @@ impl ArrayToBytesCodecTraits for VlenInterleavedCodec {
         _options: &CodecOptions,
     ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         Ok(Box::new(
-            super::vlen_interleaved_partial_decoder::AsyncVlenInterleavedPartialDecoder::new(
+            super::vlen_v2_partial_decoder::AsyncVlenV2PartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
             ),

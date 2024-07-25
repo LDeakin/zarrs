@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `array::Element[Owned]` traits representing array elements
     - Supports conversion to and from `ArrayBytes`
  - Add `array::ElementFixedLength` marker trait
- - Add experimental `vlen` and `vlen_interleaved` codec for variable length data types
-    - `vlen_interleaved` is for legacy support of Zarr V2 `vlen-utf8`/`vlen-bytes`/`vlen-array` codecs
+ - Add experimental `vlen` and `vlen_v2` codec for variable length data types
+    - `vlen_v2` is for legacy support of Zarr V2 `vlen-utf8`/`vlen-bytes`/`vlen-array` codecs
  - Add `DataType::{String,Binary}` data types
     - These are likely to become standardised in the future and are not feature gated
  - Add `ArraySubset::contains()`

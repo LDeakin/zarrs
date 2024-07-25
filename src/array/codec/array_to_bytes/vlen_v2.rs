@@ -1,21 +1,21 @@
-//! The `vlen_interleaved` array to bytes codec.
+//! The `vlen_v2` array to bytes codec.
 
-mod vlen_interleaved_codec;
-mod vlen_interleaved_partial_decoder;
+mod vlen_v2_codec;
+mod vlen_v2_partial_decoder;
 
 use std::mem::size_of;
 
-pub use vlen_interleaved::IDENTIFIER;
+pub use vlen_v2::IDENTIFIER;
 
-pub use crate::metadata::v3::codec::vlen_interleaved::{
-    VlenInterleavedCodecConfiguration, VlenInterleavedCodecConfigurationV1,
+pub use crate::metadata::v3::codec::vlen_v2::{
+    VlenV2CodecConfiguration, VlenV2CodecConfigurationV1,
 };
 use crate::{
     array::{codec::CodecError, RawBytes},
-    metadata::v3::codec::vlen_interleaved,
+    metadata::v3::codec::vlen_v2,
 };
 
-pub use vlen_interleaved_codec::VlenInterleavedCodec;
+pub use vlen_v2_codec::VlenV2Codec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
@@ -25,20 +25,20 @@ use crate::{
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_vlen_interleaved, create_codec_vlen_interleaved)
+    CodecPlugin::new(IDENTIFIER, is_name_vlen_v2, create_codec_vlen_v2)
 }
 
-fn is_name_vlen_interleaved(name: &str) -> bool {
+fn is_name_vlen_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_vlen_interleaved(
+pub(crate) fn create_codec_vlen_v2(
     metadata: &MetadataV3,
 ) -> Result<Codec, PluginCreateError> {
-    let configuration: VlenInterleavedCodecConfiguration = metadata
+    let configuration: VlenV2CodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(VlenInterleavedCodec::new_with_configuration(&configuration));
+    let codec = Box::new(VlenV2Codec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }
 

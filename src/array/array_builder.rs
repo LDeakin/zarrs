@@ -106,7 +106,7 @@ impl ArrayBuilder {
                 Box::<BytesCodec>::default()
             } else {
                 Box::<VlenCodec>::default()
-                // Box::<VlenInterleavedCodec>::default()
+                // Box::<VlenV2Codec>::default()
             },
             bytes_to_bytes_codecs: Vec::default(),
             attributes: serde_json::Map::default(),

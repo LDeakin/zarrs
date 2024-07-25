@@ -12,7 +12,7 @@ use super::{
         },
         codec::blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
     },
-    v3::codec::vlen_interleaved::VlenInterleavedCodecConfigurationV1,
+    v3::codec::vlen_v2::VlenV2CodecConfigurationV1,
 };
 use thiserror::Error;
 
@@ -148,12 +148,12 @@ pub fn array_metadata_v2_to_v3(
             match filter.id() {
                 "vlen-utf8" | "vlen-bytes" | "vlen-array" => {
                     is_vlen = true;
-                    let vlen_interleaved_metadata =
+                    let vlen_v2_metadata =
                         MetadataV3::new_with_serializable_configuration(
-                            super::v3::codec::vlen_interleaved::IDENTIFIER,
-                            &VlenInterleavedCodecConfigurationV1 {},
+                            super::v3::codec::vlen_v2::IDENTIFIER,
+                            &VlenV2CodecConfigurationV1 {},
                         )?;
-                    codecs.push(vlen_interleaved_metadata);
+                    codecs.push(vlen_v2_metadata);
                 }
                 _ => {
                     codecs.push(MetadataV3::new_with_configuration(

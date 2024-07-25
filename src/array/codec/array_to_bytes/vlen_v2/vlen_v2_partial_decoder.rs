@@ -12,12 +12,12 @@ use crate::array::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// Partial decoder for the `bytes` codec.
-pub struct VlenInterleavedPartialDecoder<'a> {
+pub struct VlenV2PartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
 }
 
-impl<'a> VlenInterleavedPartialDecoder<'a> {
+impl<'a> VlenV2PartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
@@ -52,7 +52,7 @@ fn decode_vlen_bytes<'a>(
     }
 }
 
-impl ArrayPartialDecoderTraits for VlenInterleavedPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for VlenV2PartialDecoder<'_> {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
@@ -76,13 +76,13 @@ impl ArrayPartialDecoderTraits for VlenInterleavedPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncVlenInterleavedPartialDecoder<'a> {
+pub struct AsyncVlenV2PartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncVlenInterleavedPartialDecoder<'a> {
+impl<'a> AsyncVlenV2PartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
@@ -97,7 +97,7 @@ impl<'a> AsyncVlenInterleavedPartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for AsyncVlenInterleavedPartialDecoder<'_> {
+impl AsyncArrayPartialDecoderTraits for AsyncVlenV2PartialDecoder<'_> {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
