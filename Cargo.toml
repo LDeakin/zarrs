@@ -98,6 +98,11 @@ required-features = ["ndarray"]
 doc-scrape-examples = true
 
 [[example]]
+name = "array_write_read_string"
+required-features = ["ndarray"]
+doc-scrape-examples = true
+
+[[example]]
 name = "async_array_write_read"
 required-features = ["ndarray", "async", "object_store"]
 doc-scrape-examples = true
