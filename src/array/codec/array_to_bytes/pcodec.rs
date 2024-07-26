@@ -70,7 +70,7 @@ mod tests {
         "level": 8,
         "delta_encoding_order": 2,
         "mode_spec": "auto",
-        "max_page_n": 262144
+        "equal_pages_up_to": 262144
     }"#;
 
     #[test]

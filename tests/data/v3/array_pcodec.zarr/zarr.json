@@ -1,0 +1,39 @@
+{
+  "zarr_format": 3,
+  "node_type": "array",
+  "shape": [
+    10,
+    10
+  ],
+  "data_type": "float32",
+  "chunk_grid": {
+    "name": "regular",
+    "configuration": {
+      "chunk_shape": [
+        5,
+        5
+      ]
+    }
+  },
+  "chunk_key_encoding": {
+    "name": "v2",
+    "configuration": {
+      "separator": "."
+    }
+  },
+  "fill_value": 0.0,
+  "codecs": [
+    {
+      "name": "pcodec",
+      "configuration": {
+        "delta_encoding_order": null,
+        "equal_pages_up_to": 262144,
+        "level": 8,
+        "mode_spec": "auto"
+      }
+    }
+  ],
+  "attributes": {
+    "key": "value"
+  }
+}
