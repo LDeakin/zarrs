@@ -1,4 +1,4 @@
-use derive_more::{Display, From};
+use derive_more::From;
 use serde::{Deserialize, Serialize};
 
 /// The identifier for the `zfp` codec.
@@ -23,7 +23,7 @@ pub enum ZfpCodecConfiguration {
 /// ```rust
 /// # let JSON = r#"
 /// {
-///     "mode": "fixedrate",
+///     "mode": "fixed_rate",
 ///     "rate": 10.5
 /// }
 /// # "#;
@@ -35,7 +35,7 @@ pub enum ZfpCodecConfiguration {
 /// ```rust
 /// # let JSON = r#"
 /// {
-///     "mode": "fixedprecision",
+///     "mode": "fixed_precision",
 ///     "precision": 19
 /// }
 /// # "#;
@@ -47,7 +47,7 @@ pub enum ZfpCodecConfiguration {
 /// ```rust
 /// # let JSON = r#"
 /// {
-///     "mode": "fixedaccuracy",
+///     "mode": "fixed_accuracy",
 ///     "tolerance": 0.05
 /// }
 /// # "#;
@@ -81,80 +81,63 @@ pub enum ZfpCodecConfiguration {
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(tag = "mode", rename_all = "lowercase")]
-pub enum ZfpCodecConfigurationV1 {
-    /// Expert mode.
-    Expert(ZfpExpertConfiguration),
-    /// Fixed rate mode.
-    FixedRate(ZfpFixedRateConfiguration),
-    /// Fixed precision mode.
-    FixedPrecision(ZfpFixedPrecisionConfiguration),
-    /// Fixed accuracy mode.
-    FixedAccuracy(ZfpFixedAccuracyConfiguration),
-    /// Reversible mode.
-    Reversible,
+pub struct ZfpCodecConfigurationV1 {
+    /// Whether or not to write headers.
+    ///
+    /// This is retained for compatibility with the zfpy numcodecs codec, which redundantly writes headers.
+    /// Prefer to set this to false or [`None`].
+    #[serde(default)]
+    pub write_header: Option<bool>,
+    /// The zfp mode.
+    #[serde(flatten)]
+    pub mode: ZfpMode,
 }
 
-/// The `zfp` mode.
-#[derive(Clone, Copy, Debug)]
+/// The zfp mode.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
+#[serde(tag = "mode", rename_all = "snake_case")]
 pub enum ZfpMode {
     /// Expert mode.
-    Expert(ZfpExpertConfiguration),
+    Expert {
+        /// The minimum number of compressed bits used to represent a block.
+        ///
+        /// Usually this parameter equals one bit, unless each and every block is to be stored using a fixed number of bits to facilitate random access, in which case it should be set to the same value as `maxbits`.
+        minbits: u32,
+        /// The maximum number of bits used to represent a block.
+        ///
+        /// This parameter sets a hard upper bound on compressed block size and governs the rate in fixed-rate mode. It may also be used as an upper storage limit to guard against buffer overruns in combination with the accuracy constraints given by `zfp_stream.maxprec` and `zfp_stream.minexp`.
+        /// `maxbits` must be large enough to allow the common block exponent and any control bits to be encoded. This implies `maxbits` ≥ 9 for single-precision data and `maxbits` ≥ 12 for double-precision data.
+        maxbits: u32,
+        /// The maximum number of bit planes encoded.
+        ///
+        /// This parameter governs the number of most significant uncompressed bits encoded per transform coefficient.
+        /// It does not directly correspond to the number of uncompressed mantissa bits for the floating-point or integer values being compressed, but is closely related.
+        /// This is the parameter that specifies the precision in fixed-precision mode, and it provides a mechanism for controlling the relative error.
+        /// Note that this parameter selects how many bits planes to encode regardless of the magnitude of the common floating-point exponent within the block.
+        maxprec: u32,
+        /// The smallest absolute bit plane number encoded (applies to floating-point data only; this parameter is ignored for integer data).
+        ///
+        /// The place value of each transform coefficient bit depends on the common floating-point exponent, $e$, that scales the integer coefficients. If the most significant coefficient bit has place value $2^e$, then the number of bit planes encoded is (one plus) the difference between e and `zfp_stream.minexp`.
+        /// This parameter governs the absolute error in fixed-accuracy mode.
+        minexp: i32,
+    },
     /// Fixed rate mode.
-    FixedRate(f64),
+    FixedRate {
+        /// The rate is the number of compressed bits per value.
+        rate: f64,
+    },
     /// Fixed precision mode.
-    FixedPrecision(u32),
+    FixedPrecision {
+        /// The precision specifies how many uncompressed bits per value to store, and indirectly governs the relative error.
+        precision: u32,
+    },
     /// Fixed accuracy mode.
-    FixedAccuracy(f64),
+    FixedAccuracy {
+        /// The tolerance ensures that values in the decompressed array differ from the input array by no more than this tolerance.
+        tolerance: f64,
+    },
     /// Reversible mode.
     Reversible,
-}
-
-/// `zfp` expert parameters.
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ZfpExpertConfiguration {
-    /// The minimum number of compressed bits used to represent a block.
-    ///
-    /// Usually this parameter equals one bit, unless each and every block is to be stored using a fixed number of bits to facilitate random access, in which case it should be set to the same value as `maxbits`.
-    pub minbits: u32,
-    /// The maximum number of bits used to represent a block.
-    ///
-    /// This parameter sets a hard upper bound on compressed block size and governs the rate in fixed-rate mode. It may also be used as an upper storage limit to guard against buffer overruns in combination with the accuracy constraints given by `zfp_stream.maxprec` and `zfp_stream.minexp`.
-    /// `maxbits` must be large enough to allow the common block exponent and any control bits to be encoded. This implies `maxbits` ≥ 9 for single-precision data and `maxbits` ≥ 12 for double-precision data.
-    pub maxbits: u32,
-    /// The maximum number of bit planes encoded.
-    ///
-    /// This parameter governs the number of most significant uncompressed bits encoded per transform coefficient.
-    /// It does not directly correspond to the number of uncompressed mantissa bits for the floating-point or integer values being compressed, but is closely related.
-    /// This is the parameter that specifies the precision in fixed-precision mode, and it provides a mechanism for controlling the relative error.
-    /// Note that this parameter selects how many bits planes to encode regardless of the magnitude of the common floating-point exponent within the block.
-    pub maxprec: u32,
-    /// The smallest absolute bit plane number encoded (applies to floating-point data only; this parameter is ignored for integer data).
-    ///
-    /// The place value of each transform coefficient bit depends on the common floating-point exponent, $e$, that scales the integer coefficients. If the most significant coefficient bit has place value $2^e$, then the number of bit planes encoded is (one plus) the difference between e and `zfp_stream.minexp`.
-    /// This parameter governs the absolute error in fixed-accuracy mode.
-    pub minexp: i32,
-}
-
-/// The `zfp` configuration for fixed rate mode.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display)]
-pub struct ZfpFixedRateConfiguration {
-    /// The rate is the number of compressed bits per value.
-    pub rate: f64,
-}
-
-/// The `zfp` configuration for fixed precision mode.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Display)]
-pub struct ZfpFixedPrecisionConfiguration {
-    /// The precision specifies how many uncompressed bits per value to store, and indirectly governs the relative error.
-    pub precision: u32,
-}
-
-/// The `zfp` configuration for fixed accuracy mode.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display)]
-pub struct ZfpFixedAccuracyConfiguration {
-    /// The tolerance ensures that values in the decompressed array differ from the input array by no more than this tolerance.
-    pub tolerance: f64,
 }
 
 #[cfg(test)]
@@ -176,7 +159,7 @@ mod tests {
     #[test]
     fn codec_zfp_configuration_fixed_rate() {
         const JSON: &'static str = r#"{
-        "mode": "fixedrate",
+        "mode": "fixed_rate",
         "rate": 12
     }"#;
         serde_json::from_str::<ZfpCodecConfiguration>(JSON).unwrap();
@@ -185,7 +168,7 @@ mod tests {
     #[test]
     fn codec_zfp_configuration_fixed_precision() {
         const JSON: &'static str = r#"{
-        "mode": "fixedprecision",
+        "mode": "fixed_precision",
         "precision": 12
     }"#;
         serde_json::from_str::<ZfpCodecConfiguration>(JSON).unwrap();
@@ -194,7 +177,7 @@ mod tests {
     #[test]
     fn codec_zfp_configuration_fixed_accuracy() {
         const JSON: &'static str = r#"{
-        "mode": "fixedaccuracy",
+        "mode": "fixed_accuracy",
         "tolerance": 0.001
     }"#;
         serde_json::from_str::<ZfpCodecConfiguration>(JSON).unwrap();

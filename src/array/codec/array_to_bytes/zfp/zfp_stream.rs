@@ -23,24 +23,21 @@ impl ZfpStream {
     pub fn new(mode: &ZfpMode, type_: zfp_type) -> Option<Self> {
         let zfp = unsafe { zfp_stream_open(std::ptr::null_mut()) };
         match mode {
-            ZfpMode::Expert(expert) => {
-                unsafe {
-                    zfp_stream_set_params(
-                        zfp,
-                        expert.minbits,
-                        expert.maxbits,
-                        expert.maxprec,
-                        expert.minexp,
-                    )
-                };
+            ZfpMode::Expert {
+                minbits,
+                maxbits,
+                maxprec,
+                minexp,
+            } => {
+                unsafe { zfp_stream_set_params(zfp, *minbits, *maxbits, *maxprec, *minexp) };
             }
-            ZfpMode::FixedRate(rate) => {
+            ZfpMode::FixedRate { rate } => {
                 unsafe { zfp_stream_set_rate(zfp, *rate, type_, 3, 0) };
             }
-            ZfpMode::FixedPrecision(precision) => unsafe {
+            ZfpMode::FixedPrecision { precision } => unsafe {
                 zfp_stream_set_precision(zfp, *precision);
             },
-            ZfpMode::FixedAccuracy(tolerance) => {
+            ZfpMode::FixedAccuracy { tolerance } => {
                 if type_ == zfp_type_zfp_type_float || type_ == zfp_type_zfp_type_double {
                     unsafe { zfp_stream_set_accuracy(zfp, *tolerance) };
                 } else {

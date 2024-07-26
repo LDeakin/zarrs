@@ -18,16 +18,13 @@ mod zfp_field;
 mod zfp_partial_decoder;
 mod zfp_stream;
 
-pub use crate::metadata::v3::codec::zfp::{
-    ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpExpertConfiguration,
-    ZfpFixedAccuracyConfiguration, ZfpFixedPrecisionConfiguration, ZfpFixedRateConfiguration,
-    ZfpMode,
-};
+pub use crate::metadata::v3::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use zfp_codec::ZfpCodec;
 
 use zfp_sys::{
-    zfp_decompress, zfp_exec_policy_zfp_exec_omp, zfp_stream_rewind, zfp_stream_set_bit_stream,
-    zfp_stream_set_execution,
+    zfp_decompress, zfp_exec_policy_zfp_exec_omp, zfp_field_alloc, zfp_field_free,
+    zfp_field_set_pointer, zfp_read_header, zfp_stream_close, zfp_stream_open, zfp_stream_rewind,
+    zfp_stream_set_bit_stream, zfp_stream_set_execution,
 };
 
 use crate::{
@@ -36,7 +33,10 @@ use crate::{
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
     config::global_config,
-    metadata::v3::{codec::zfp, MetadataV3},
+    metadata::v3::{
+        codec::zfp::{self, ZfpMode},
+        MetadataV3,
+    },
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -230,48 +230,60 @@ fn demote_after_zfp_decoding(
 
 fn zfp_decode(
     zfp_mode: &ZfpMode,
+    write_header: bool,
     encoded_value: &mut [u8],
     decoded_representation: &ChunkRepresentation,
     parallel: bool,
 ) -> Result<Vec<u8>, CodecError> {
     let mut array = init_zfp_decoding_output(decoded_representation)?;
     let zfp_type = array.zfp_type();
-    let Some(field) = ZfpField::new(
-        &mut array,
-        &decoded_representation
-            .shape()
-            .iter()
-            .map(|u| usize::try_from(u.get()).unwrap())
-            .collect::<Vec<usize>>(),
-    ) else {
-        return Err(CodecError::from("failed to create zfp field"));
-    };
-    let Some(zfp) = ZfpStream::new(zfp_mode, zfp_type) else {
+    let Some(stream) = ZfpStream::new(zfp_mode, zfp_type) else {
         return Err(CodecError::from("failed to create zfp stream"));
     };
 
-    let Some(stream) = ZfpBitstream::new(encoded_value) else {
+    let Some(bitstream) = ZfpBitstream::new(encoded_value) else {
         return Err(CodecError::from("failed to create zfp bitstream"));
     };
-    unsafe {
-        zfp_stream_set_bit_stream(zfp.as_zfp_stream(), stream.as_bitstream());
-        zfp_stream_rewind(zfp.as_zfp_stream());
-    }
-
-    if parallel {
-        // Number of threads is set automatically
-        unsafe {
-            zfp_stream_set_execution(zfp.as_zfp_stream(), zfp_exec_policy_zfp_exec_omp);
+    if write_header {
+        let ret = unsafe {
+            let field = zfp_field_alloc();
+            let stream = zfp_stream_open(bitstream.as_bitstream());
+            zfp_stream_open(bitstream.as_bitstream());
+            zfp_read_header(stream, field, zfp_sys::ZFP_HEADER_FULL);
+            zfp_field_set_pointer(field, array.as_mut_ptr());
+            let ret = zfp_decompress(stream, field);
+            zfp_stream_close(stream);
+            zfp_field_free(field);
+            ret
+        };
+        if ret == 0 {
+            return Err(CodecError::from("zfp decompression failed"));
+        }
+    } else {
+        let Some(field) = ZfpField::new(
+            &mut array,
+            &decoded_representation
+                .shape()
+                .iter()
+                .map(|u| usize::try_from(u.get()).unwrap())
+                .collect::<Vec<usize>>(),
+        ) else {
+            return Err(CodecError::from("failed to create zfp field"));
+        };
+        let ret = unsafe {
+            zfp_stream_set_bit_stream(stream.as_zfp_stream(), bitstream.as_bitstream());
+            zfp_stream_rewind(stream.as_zfp_stream());
+            if parallel {
+                zfp_stream_set_execution(stream.as_zfp_stream(), zfp_exec_policy_zfp_exec_omp);
+            }
+            zfp_decompress(stream.as_zfp_stream(), field.as_zfp_field())
+        };
+        if ret == 0 {
+            return Err(CodecError::from("zfp decompression failed"));
         }
     }
 
-    let ret = unsafe { zfp_decompress(zfp.as_zfp_stream(), field.as_zfp_field()) };
-    drop(field);
-    if ret == 0 {
-        Err(CodecError::from("zfp decompression failed"))
-    } else {
-        demote_after_zfp_decoding(array, decoded_representation)
-    }
+    demote_after_zfp_decoding(array, decoded_representation)
 }
 
 #[cfg(test)]
@@ -295,15 +307,15 @@ mod tests {
     }"#;
 
     fn json_fixedrate(rate: f32) -> String {
-        format!(r#"{{ "mode": "fixedrate", "rate": {rate} }}"#)
+        format!(r#"{{ "mode": "fixed_rate", "rate": {rate} }}"#)
     }
 
     fn json_fixedprecision(precision: u32) -> String {
-        format!(r#"{{ "mode": "fixedprecision", "precision": {precision} }}"#)
+        format!(r#"{{ "mode": "fixed_precision", "precision": {precision} }}"#)
     }
 
     fn json_fixedaccuracy(tolerance: f32) -> String {
-        format!(r#"{{ "mode": "fixedaccuracy", "tolerance": {tolerance} }}"#)
+        format!(r#"{{ "mode": "fixed_accuracy", "tolerance": {tolerance} }}"#)
     }
 
     fn chunk_shape() -> Vec<NonZeroU64> {

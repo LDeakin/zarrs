@@ -969,6 +969,15 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "zfp")]
+    #[test]
+    fn array_v2_zfpy_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_zfpy_C.zarr",
+            "tests/data/v3/array_zfp.zarr",
+        )
+    }
+
     // fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {
     //     let store = Arc::new(MemoryStore::new_with_locks(locks));
 

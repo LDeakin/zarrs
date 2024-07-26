@@ -6,17 +6,16 @@ pub mod array;
 
 /// Zarr V2 codec metadata.
 pub mod codec {
-    #[cfg(feature = "bitround")]
     /// `bitround` codec metadata.
     pub mod bitround;
     /// `blosc` codec metadata.
     pub mod blosc;
-    #[cfg(feature = "bz2")]
     /// `bz2` codec metadata.
     pub mod bz2;
     /// `gzip` codec metadata.
     pub mod gzip;
-    #[cfg(feature = "zstd")]
+    /// `zfpy` codec metadata.
+    pub mod zfpy;
     /// `zstd` codec metadata.
     pub mod zstd;
 }

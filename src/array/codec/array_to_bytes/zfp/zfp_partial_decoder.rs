@@ -20,6 +20,7 @@ pub struct ZfpPartialDecoder<'a> {
     input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
+    write_header: bool,
 }
 
 impl<'a> ZfpPartialDecoder<'a> {
@@ -28,12 +29,14 @@ impl<'a> ZfpPartialDecoder<'a> {
         input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
+        write_header: bool,
     ) -> Result<Self, CodecError> {
         if zarr_to_zfp_data_type(decoded_representation.data_type()).is_some() {
             Ok(Self {
                 input_handle,
                 decoded_representation: decoded_representation.clone(),
                 mode,
+                write_header,
             })
         } else {
             Err(CodecError::from(
@@ -72,6 +75,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
             Some(mut encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
+                    self.write_header,
                     encoded_value.to_mut(), // FIXME: Does zfp **really** need the encoded value as mutable?
                     &self.decoded_representation,
                     false, // FIXME
@@ -106,6 +110,7 @@ pub struct AsyncZfpPartialDecoder<'a> {
     input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
+    write_header: bool,
 }
 
 #[cfg(feature = "async")]
@@ -115,12 +120,14 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
         input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
+        write_header: bool,
     ) -> Result<Self, CodecError> {
         if zarr_to_zfp_data_type(decoded_representation.data_type()).is_some() {
             Ok(Self {
                 input_handle,
                 decoded_representation: decoded_representation.clone(),
                 mode,
+                write_header,
             })
         } else {
             Err(CodecError::from(
@@ -161,6 +168,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
             Some(mut encoded_value) => {
                 let decoded_value = zfp_decode(
                     &self.mode,
+                    self.write_header,
                     encoded_value.to_mut(), // FIXME: Does zfp **really** need the encoded value as mutable?
                     &self.decoded_representation,
                     false, // FIXME
