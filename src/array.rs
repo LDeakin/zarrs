@@ -62,7 +62,7 @@ pub use self::{
     concurrency::RecommendedConcurrency,
     data_type::{DataType, DataTypeSize},
     dimension_name::DimensionName,
-    element::{Element, ElementFixedLength},
+    element::{Element, ElementFixedLength, ElementOwned},
     endianness::{Endianness, NATIVE_ENDIAN},
     fill_value::FillValue,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
