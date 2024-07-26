@@ -9,37 +9,37 @@ pub enum ZfpArray {
 impl ZfpArray {
     pub fn len(&self) -> usize {
         match self {
-            ZfpArray::Int32(v) => v.len(),
-            ZfpArray::Int64(v) => v.len(),
-            ZfpArray::Float(v) => v.len(),
-            ZfpArray::Double(v) => v.len(),
+            Self::Int32(v) => v.len(),
+            Self::Int64(v) => v.len(),
+            Self::Float(v) => v.len(),
+            Self::Double(v) => v.len(),
         }
     }
 
     pub fn zfp_type(&self) -> zfp_sys::zfp_type {
         match self {
-            ZfpArray::Int32(_) => zfp_sys::zfp_type_zfp_type_int32,
-            ZfpArray::Int64(_) => zfp_sys::zfp_type_zfp_type_int64,
-            ZfpArray::Float(_) => zfp_sys::zfp_type_zfp_type_float,
-            ZfpArray::Double(_) => zfp_sys::zfp_type_zfp_type_double,
+            Self::Int32(_) => zfp_sys::zfp_type_zfp_type_int32,
+            Self::Int64(_) => zfp_sys::zfp_type_zfp_type_int64,
+            Self::Float(_) => zfp_sys::zfp_type_zfp_type_float,
+            Self::Double(_) => zfp_sys::zfp_type_zfp_type_double,
         }
     }
 
     // pub fn as_ptr(&self) -> *const std::ffi::c_void {
     //     match self {
-    //         ZfpArray::Int32(v) => v.as_ptr().cast::<std::ffi::c_void>(),
-    //         ZfpArray::Int64(v) => v.as_ptr().cast::<std::ffi::c_void>(),
-    //         ZfpArray::Float(v) => v.as_ptr().cast::<std::ffi::c_void>(),
-    //         ZfpArray::Double(v) => v.as_ptr().cast::<std::ffi::c_void>(),
+    //         Self::Int32(v) => v.as_ptr().cast::<std::ffi::c_void>(),
+    //         Self::Int64(v) => v.as_ptr().cast::<std::ffi::c_void>(),
+    //         Self::Float(v) => v.as_ptr().cast::<std::ffi::c_void>(),
+    //         Self::Double(v) => v.as_ptr().cast::<std::ffi::c_void>(),
     //     }
     // }
 
     pub fn as_mut_ptr(&mut self) -> *mut std::ffi::c_void {
         match self {
-            ZfpArray::Int32(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
-            ZfpArray::Int64(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
-            ZfpArray::Float(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
-            ZfpArray::Double(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
+            Self::Int32(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
+            Self::Int64(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
+            Self::Float(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
+            Self::Double(v) => v.as_mut_ptr().cast::<std::ffi::c_void>(),
         }
     }
 }

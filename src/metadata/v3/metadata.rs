@@ -268,7 +268,7 @@ impl From<AdditionalField> for serde_json::Map<String, serde_json::Value> {
 
 impl From<serde_json::Map<String, serde_json::Value>> for AdditionalField {
     fn from(value: serde_json::Map<String, serde_json::Value>) -> Self {
-        AdditionalField {
+        Self {
             must_understand: monostate::MustBe!(false),
             fields: value,
         }

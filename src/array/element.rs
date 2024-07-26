@@ -209,7 +209,7 @@ impl ElementOwned for String {
         let mut elements = Vec::with_capacity(offsets.len());
         for (curr, next) in offsets.iter().tuple_windows() {
             elements.push(
-                String::from_utf8(bytes[*curr..*next].to_vec())
+                Self::from_utf8(bytes[*curr..*next].to_vec())
                     .map_err(|_| ArrayError::InvalidElementValue)?,
             );
         }

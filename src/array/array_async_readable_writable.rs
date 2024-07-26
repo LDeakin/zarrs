@@ -16,7 +16,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_bytes: impl Into<ArrayBytes<'a>>,
+        chunk_subset_bytes: impl Into<ArrayBytes<'a>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_subset_opt(
             chunk_indices,
@@ -71,7 +71,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     pub async fn async_store_array_subset<'a>(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: impl Into<ArrayBytes<'a>>,
+        subset_bytes: impl Into<ArrayBytes<'a>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_array_subset_opt(array_subset, subset_bytes, &CodecOptions::default())
             .await
@@ -122,7 +122,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        chunk_subset_bytes: impl Into<ArrayBytes<'a>>,
+        chunk_subset_bytes: impl Into<ArrayBytes<'a>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_shape = self
@@ -224,7 +224,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     pub async fn async_store_array_subset_opt<'a>(
         &self,
         array_subset: &ArraySubset,
-        subset_bytes: impl Into<ArrayBytes<'a>>,
+        subset_bytes: impl Into<ArrayBytes<'a>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         // Validation

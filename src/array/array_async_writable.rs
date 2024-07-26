@@ -47,7 +47,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunk<'a>(
         &self,
         chunk_indices: &[u64],
-        chunk_bytes: impl Into<ArrayBytes<'a>>,
+        chunk_bytes: impl Into<ArrayBytes<'a>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_opt(chunk_indices, chunk_bytes, &CodecOptions::default())
             .await
@@ -86,7 +86,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunks<'a>(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: impl Into<ArrayBytes<'a>>,
+        chunks_bytes: impl Into<ArrayBytes<'a>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_chunks_opt(chunks, chunks_bytes, &CodecOptions::default())
             .await
@@ -216,7 +216,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunk_opt<'a>(
         &self,
         chunk_indices: &[u64],
-        chunk_bytes: impl Into<ArrayBytes<'a>>,
+        chunk_bytes: impl Into<ArrayBytes<'a>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_bytes = chunk_bytes.into();
@@ -300,7 +300,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_store_chunks_opt<'a>(
         &self,
         chunks: &ArraySubset,
-        chunks_bytes: impl Into<ArrayBytes<'a>>,
+        chunks_bytes: impl Into<ArrayBytes<'a>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let num_chunks = chunks.num_elements_usize();

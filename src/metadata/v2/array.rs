@@ -43,7 +43,7 @@ use super::MetadataV2;
 ///     "zarr_format": 2
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Display)]
 #[serde(tag = "node_type", rename = "array")]
 #[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
 pub struct ArrayMetadataV2 {
@@ -77,12 +77,12 @@ pub struct ArrayMetadataV2 {
     pub additional_fields: AdditionalFields,
 }
 
-fn chunk_key_separator_default_zarr_v2() -> ChunkKeySeparator {
+const fn chunk_key_separator_default_zarr_v2() -> ChunkKeySeparator {
     ChunkKeySeparator::Dot
 }
 
 /// Structure data type metadata.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(
     from = "DataTypeMetadataV2StructuredTuple",
     into = "DataTypeMetadataV2StructuredTuple"
@@ -106,7 +106,7 @@ struct DataTypeMetadataV2StructuredTuple(
 impl From<DataTypeMetadataV2StructuredTuple> for DataTypeMetadataV2Structured {
     fn from(value: DataTypeMetadataV2StructuredTuple) -> Self {
         let DataTypeMetadataV2StructuredTuple(fieldname, datatype, shape) = value;
-        DataTypeMetadataV2Structured {
+        Self {
             fieldname,
             datatype,
             shape,
@@ -116,12 +116,12 @@ impl From<DataTypeMetadataV2StructuredTuple> for DataTypeMetadataV2Structured {
 
 impl From<DataTypeMetadataV2Structured> for DataTypeMetadataV2StructuredTuple {
     fn from(value: DataTypeMetadataV2Structured) -> Self {
-        DataTypeMetadataV2StructuredTuple(value.fieldname, value.datatype, value.shape)
+        Self(value.fieldname, value.datatype, value.shape)
     }
 }
 
 /// Zarr V2 data type metadata.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(untagged)]
 pub enum ArrayMetadataV2DataType {
     /// A simple data type.
@@ -207,7 +207,7 @@ pub fn data_type_metadata_v2_to_endianness(
 }
 
 /// A scalar value providing the default value to use for uninitialized portions of the array, or null if no fill value is to be used.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum FillValueMetadataV2 {
     /// No fill value.
     Null,
@@ -233,13 +233,13 @@ impl<'de> serde::Deserialize<'de> for FillValueMetadataV2 {
         let fill_value = FillValueMetadataV2Type::deserialize(d)?;
         match fill_value {
             FillValueMetadataV2Type::String(string) => match string.as_str() {
-                "NaN" => Ok(FillValueMetadataV2::NaN),
-                "Infinity" => Ok(FillValueMetadataV2::Infinity),
-                "-Infinity" => Ok(FillValueMetadataV2::NegInfinity),
+                "NaN" => Ok(Self::NaN),
+                "Infinity" => Ok(Self::Infinity),
+                "-Infinity" => Ok(Self::NegInfinity),
                 _ => Err(serde::de::Error::custom("unsupported fill value")),
             },
-            FillValueMetadataV2Type::Number(number) => Ok(FillValueMetadataV2::Number(number)),
-            FillValueMetadataV2Type::Null => Ok(FillValueMetadataV2::Null),
+            FillValueMetadataV2Type::Number(number) => Ok(Self::Number(number)),
+            FillValueMetadataV2Type::Null => Ok(Self::Null),
         }
     }
 }
@@ -292,7 +292,7 @@ pub fn array_metadata_fill_value_v2_to_v3(
 }
 
 /// The layout of bytes within each chunk of the array.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub enum ArrayMetadataV2Order {
     /// Row-major order. The last dimension varies fastest.
     C,

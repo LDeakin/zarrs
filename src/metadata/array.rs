@@ -115,7 +115,7 @@ pub fn array_metadata_v2_to_v3(
                 fill_value = FillValueMetadata::Bool(true);
             } else {
                 return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedFillValue(
-                    data_type.clone(),
+                    data_type,
                     array_metadata_v2.fill_value.clone(),
                 ));
             }

@@ -21,7 +21,7 @@ pub type RawBytesOffsets<'a> = Cow<'a, [usize]>;
 /// Fixed or variable length array bytes.
 ///
 /// Offsets are [`None`] if bytes are composed of fixed size data types.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ArrayBytes<'a> {
     /// Bytes for a fixed length array.
     Fixed(RawBytes<'a>),
@@ -101,7 +101,7 @@ impl<'a> ArrayBytes<'a> {
 
     /// Returns the size (in bytes) of the underlying element bytes.
     ///
-    /// This only considers the size of the element bytes, and does not include the elemenet offsets for a variable sized array.
+    /// This only considers the size of the element bytes, and does not include the element offsets for a variable sized array.
     #[must_use]
     pub fn size(&self) -> usize {
         match self {
@@ -262,7 +262,7 @@ fn validate_bytes(
 
 /// This function is used internally by various array/codec methods to write the bytes of a chunk subset into an output with an associated array subset.
 /// This approach only works for fixed length data types.
-pub(crate) fn update_bytes_flen(
+pub fn update_bytes_flen(
     output_bytes: &mut [u8],
     output_shape: &[u64],
     subset_bytes: &RawBytes,
@@ -293,7 +293,7 @@ pub(crate) fn update_bytes_flen(
     }
 }
 
-pub(crate) fn update_bytes_vlen<'a>(
+pub fn update_bytes_vlen<'a>(
     output_bytes: &RawBytes,
     output_offsets: &RawBytesOffsets,
     output_shape: ArrayShape,
@@ -358,7 +358,7 @@ pub(crate) fn update_bytes_vlen<'a>(
 
 /// Update the intersecting subset of the chunk
 /// This function is used internally by [`store_chunk_subset_opt`] and [`async_store_chunk_subset_opt`]
-pub(crate) fn update_array_bytes<'a>(
+pub fn update_array_bytes<'a>(
     output_bytes: ArrayBytes,
     output_shape: ArrayShape,
     subset_bytes: ArrayBytes,
@@ -402,7 +402,7 @@ pub(crate) fn update_array_bytes<'a>(
 /// Merge a set of chunks into an array subset.
 ///
 /// This function is used internally by [`retrieve_array_subset_opt`] and [`async_retrieve_array_subset_opt`].
-pub(crate) fn merge_chunks_vlen<'a>(
+pub fn merge_chunks_vlen<'a>(
     chunk_bytes_and_subsets: Vec<(ArrayBytes<'_>, ArraySubset)>,
     array_shape: &[u64],
 ) -> Result<ArrayBytes<'a>, CodecError> {
@@ -466,7 +466,7 @@ pub(crate) fn merge_chunks_vlen<'a>(
     Ok(ArrayBytes::new_vlen(bytes, offsets))
 }
 
-pub(crate) fn extract_decoded_regions_vlen<'a>(
+pub fn extract_decoded_regions_vlen<'a>(
     bytes: &[u8],
     offsets: &[usize],
     decoded_regions: &[ArraySubset],

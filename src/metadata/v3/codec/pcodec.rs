@@ -190,7 +190,7 @@ impl<'de> serde::Deserialize<'de> for PcodecCodecConfigurationV1 {
                 "For requested mode_spec, base or k incompatible/missing",
             )),
         }?;
-        let config = PcodecCodecConfigurationV1 {
+        let config = Self {
             level: config.level,
             delta_encoding_order: config.delta_encoding_order,
             mode_spec,
