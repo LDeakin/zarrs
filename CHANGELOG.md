@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ArrayError::InvalidElementValue`
  - Add `ChunkShape::num_elements_u64`
  - Add global `Config` option for manipulating experimental codec names
+ - Add `metadata::v2::codec::ZfpyCodecConfigurationNumcodecs` and associated structures
 
 ### Changed
  - Use `[async_]retrieve_array_subset_opt` internally in `Array::[async_]retrieve_chunks_opt`
@@ -39,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Relax `ndarray_into_vec` from `T: bytemuck:Pod` to `T: Clone`
  - **Breaking**: `DataType::size()` now returns a `DataTypeSize` instead of `usize`
  - **Breaking**: `ArrayCodecTraits::{encode/decode}` have been specialised into `ArrayTo{Array,Bytes}CodecTraits::{encode/decode}`
+ - Various changes to the experimental `zfp` codec
+   - **Breaking**: Remove `Zfp{Expert,FixedAccuracy,FixedPrecision,FixedRate}Configuration` and just embed these structures directly in `ZfpMode`
+   - **Breaking**: `ZfpCodec::new_expert` now takes `minbits`, `maxbits`, `maxprec`, and `minexp` instead of `ZfpExpertConfiguration`
+   - **Breaking**: All `ZfpCodec::new_*` methods now take a `write_header: bool` parameter
+ - **Breaking**: Add `ArrayMetadataV2ToV3ConversionError::Other`
+ - Make all v2 metadata available even without experimental codec features
 
 ### Removed
  - **Breaking**: Remove `into_array_view` array and codec API

@@ -10,7 +10,10 @@ use super::{
             data_type_metadata_v2_to_v3_data_type, ArrayMetadataV2, ArrayMetadataV2DataType,
             ArrayMetadataV2Order, DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
         },
-        codec::blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
+        codec::{
+            blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
+            zfpy::{codec_zfpy_v2_numcodecs_to_v3, ZfpyCodecConfigurationNumcodecs},
+        },
     },
     v3::codec::vlen_v2::VlenV2CodecConfigurationV1,
 };
@@ -62,6 +65,9 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     /// Serialization/deserialization error.
     #[error("JSON serialization or deserialization error: {_0}")]
     SerdeError(#[from] serde_json::Error),
+    /// Other.
+    #[error("{_0}")]
+    Other(String),
 }
 
 /// Convert Zarr V2 array metadata to V3.
@@ -142,12 +148,13 @@ pub fn array_metadata_v2_to_v3(
     }
 
     // Filters (array to array or array to bytes codecs)
-    let mut is_vlen = false;
+    let mut has_array_to_bytes = false;
     if let Some(filters) = &array_metadata_v2.filters {
         for filter in filters {
+            // TODO: Add a V2 registry with V2 to V3 conversion functions
             match filter.id() {
                 "vlen-utf8" | "vlen-bytes" | "vlen-array" => {
-                    is_vlen = true;
+                    has_array_to_bytes = true;
                     let vlen_v2_metadata = MetadataV3::new_with_serializable_configuration(
                         super::v3::codec::vlen_v2::IDENTIFIER,
                         &VlenV2CodecConfigurationV1 {},
@@ -164,7 +171,27 @@ pub fn array_metadata_v2_to_v3(
         }
     }
 
-    if !is_vlen {
+    // Compressor (array to bytes codec)
+    if let Some(compressor) = &array_metadata_v2.compressor {
+        #[allow(clippy::single_match)]
+        match compressor.id() {
+            super::v2::codec::zfpy::IDENTIFIER => {
+                has_array_to_bytes = true;
+                let zfpy_v2_metadata = serde_json::from_value::<ZfpyCodecConfigurationNumcodecs>(
+                    serde_json::to_value(compressor.configuration())?,
+                )?;
+                let configuration = codec_zfpy_v2_numcodecs_to_v3(&zfpy_v2_metadata)?;
+                let zfp_v3_metadata = MetadataV3::new_with_serializable_configuration(
+                    super::v3::codec::zfp::IDENTIFIER,
+                    &configuration,
+                )?;
+                codecs.push(zfp_v3_metadata);
+            }
+            _ => {}
+        }
+    }
+
+    if !has_array_to_bytes {
         let bytes_metadata = MetadataV3::new_with_serializable_configuration(
             super::v3::codec::bytes::IDENTIFIER,
             &BytesCodecConfigurationV1 { endian: endianness },
@@ -174,23 +201,25 @@ pub fn array_metadata_v2_to_v3(
 
     // Compressor (bytes to bytes codec)
     if let Some(compressor) = &array_metadata_v2.compressor {
-        let metadata = match compressor.id() {
+        match compressor.id() {
+            super::v2::codec::zfpy::IDENTIFIER => {
+                // already handled above
+            }
             super::v3::codec::blosc::IDENTIFIER => {
                 let blosc = serde_json::from_value::<BloscCodecConfigurationNumcodecs>(
                     serde_json::to_value(compressor.configuration())?,
                 )?;
                 let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, &data_type);
-                MetadataV3::new_with_serializable_configuration(
+                codecs.push(MetadataV3::new_with_serializable_configuration(
                     super::v3::codec::blosc::IDENTIFIER,
                     &configuration,
-                )?
+                )?);
             }
-            _ => MetadataV3::new_with_configuration(
+            _ => codecs.push(MetadataV3::new_with_configuration(
                 compressor.id(),
                 compressor.configuration().clone(),
-            ),
+            )),
         };
-        codecs.push(metadata);
     }
 
     let chunk_key_encoding = MetadataV3::new_with_serializable_configuration(

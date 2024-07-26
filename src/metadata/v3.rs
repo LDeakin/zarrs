@@ -6,21 +6,19 @@ pub mod array;
 
 /// Zarr V3 codec metadata.
 pub mod codec {
-    #[cfg(feature = "bitround")]
     /// `bitround` codec metadata.
     pub mod bitround;
     /// `blosc` codec metadata.
     pub mod blosc;
     /// `bytes` codec metadata.
     pub mod bytes;
-    #[cfg(feature = "bz2")]
+
     /// `bz2` codec metadata.
     pub mod bz2;
     /// `crc32c` codec metadata.
     pub mod crc32c;
     /// `gzip` codec metadata.
     pub mod gzip;
-    #[cfg(feature = "pcodec")]
     /// `pcodec` codec metadata.
     pub mod pcodec;
     /// `sharding` codec metadata.
@@ -31,7 +29,6 @@ pub mod codec {
     pub mod vlen;
     /// `vlen_v2` codec metadata.
     pub mod vlen_v2;
-    #[cfg(feature = "zfp")]
     /// `zfp` codec metadata.
     pub mod zfp;
     /// `zstd` codec metadata.

@@ -5,6 +5,7 @@ use zfp_sys::{
     zfp_stream_maximum_size,
     zfp_stream_rewind,
     zfp_stream_set_bit_stream,
+    zfp_write_header,
     // zfp_exec_policy_zfp_exec_omp, zfp_stream_set_execution
 };
 
@@ -18,7 +19,7 @@ use crate::{
         ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataType,
     },
     config::global_config,
-    metadata::v3::MetadataV3,
+    metadata::v3::{codec::zfp::ZfpMode, MetadataV3},
 };
 
 #[cfg(feature = "async")]
@@ -27,88 +28,103 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{
     promote_before_zfp_encoding, zarr_to_zfp_data_type, zfp_bitstream::ZfpBitstream, zfp_decode,
     zfp_field::ZfpField, zfp_partial_decoder, zfp_stream::ZfpStream, ZfpCodecConfiguration,
-    ZfpCodecConfigurationV1, ZfpExpertConfiguration, ZfpFixedAccuracyConfiguration,
-    ZfpFixedPrecisionConfiguration, ZfpFixedRateConfiguration, ZfpMode, IDENTIFIER,
+    ZfpCodecConfigurationV1, IDENTIFIER,
 };
 
 /// A `zfp` codec implementation.
 #[derive(Clone, Copy, Debug)]
 pub struct ZfpCodec {
     mode: ZfpMode,
+    write_header: bool,
 }
 
 impl ZfpCodec {
     /// Create a new `Zfp` codec in expert mode.
     #[must_use]
-    pub const fn new_expert(expert_params: ZfpExpertConfiguration) -> Self {
+    pub const fn new_expert(
+        minbits: u32,
+        maxbits: u32,
+        maxprec: u32,
+        minexp: i32,
+        write_header: bool,
+    ) -> Self {
         Self {
-            mode: ZfpMode::Expert(expert_params),
+            mode: ZfpMode::Expert {
+                minbits,
+                maxbits,
+                maxprec,
+                minexp,
+            },
+            write_header,
         }
     }
 
     /// Create a new `Zfp` codec in fixed rate mode.
     #[must_use]
-    pub const fn new_fixed_rate(rate: f64) -> Self {
+    pub const fn new_fixed_rate(rate: f64, write_header: bool) -> Self {
         Self {
-            mode: ZfpMode::FixedRate(rate),
+            mode: ZfpMode::FixedRate { rate },
+            write_header,
         }
     }
 
     /// Create a new `Zfp` codec in fixed precision mode.
     #[must_use]
-    pub const fn new_fixed_precision(precision: u32) -> Self {
+    pub const fn new_fixed_precision(precision: u32, write_header: bool) -> Self {
         Self {
-            mode: ZfpMode::FixedPrecision(precision),
+            mode: ZfpMode::FixedPrecision { precision },
+            write_header,
         }
     }
 
     /// Create a new `Zfp` codec in fixed accuracy mode.
     #[must_use]
-    pub const fn new_fixed_accuracy(tolerance: f64) -> Self {
+    pub const fn new_fixed_accuracy(tolerance: f64, write_header: bool) -> Self {
         Self {
-            mode: ZfpMode::FixedAccuracy(tolerance),
+            mode: ZfpMode::FixedAccuracy { tolerance },
+            write_header,
         }
     }
 
     /// Create a new `Zfp` codec in reversible mode.
     #[must_use]
-    pub const fn new_reversible() -> Self {
+    pub const fn new_reversible(write_header: bool) -> Self {
         Self {
             mode: ZfpMode::Reversible,
+            write_header,
         }
     }
 
     /// Create a new `Zfp` codec from configuration.
     #[must_use]
-    pub const fn new_with_configuration(configuration: &ZfpCodecConfiguration) -> Self {
-        type V1 = ZfpCodecConfigurationV1;
-        let ZfpCodecConfiguration::V1(configuration) = configuration;
-        match configuration {
-            V1::Expert(cfg) => Self::new_expert(*cfg),
-            V1::FixedRate(cfg) => Self::new_fixed_rate(cfg.rate),
-            V1::FixedPrecision(cfg) => Self::new_fixed_precision(cfg.precision),
-            V1::FixedAccuracy(cfg) => Self::new_fixed_accuracy(cfg.tolerance),
-            V1::Reversible => Self::new_reversible(),
+    pub fn new_with_configuration(configuration: &ZfpCodecConfiguration) -> Self {
+        let ZfpCodecConfiguration::V1(ZfpCodecConfigurationV1 { write_header, mode }) =
+            configuration;
+        let write_header = write_header.unwrap_or(false);
+        match mode {
+            ZfpMode::Expert {
+                minbits,
+                maxbits,
+                maxprec,
+                minexp,
+            } => Self::new_expert(*minbits, *maxbits, *maxprec, *minexp, write_header),
+            ZfpMode::FixedRate { rate } => Self::new_fixed_rate(*rate, write_header),
+            ZfpMode::FixedPrecision { precision } => {
+                Self::new_fixed_precision(*precision, write_header)
+            }
+            ZfpMode::FixedAccuracy { tolerance } => {
+                Self::new_fixed_accuracy(*tolerance, write_header)
+            }
+            ZfpMode::Reversible => Self::new_reversible(write_header),
         }
     }
 }
 
 impl CodecTraits for ZfpCodec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
-        let configuration = match self.mode {
-            ZfpMode::Expert(expert) => ZfpCodecConfigurationV1::Expert(expert),
-            ZfpMode::FixedRate(rate) => {
-                ZfpCodecConfigurationV1::FixedRate(ZfpFixedRateConfiguration { rate })
-            }
-            ZfpMode::FixedPrecision(precision) => {
-                ZfpCodecConfigurationV1::FixedPrecision(ZfpFixedPrecisionConfiguration {
-                    precision,
-                })
-            }
-            ZfpMode::FixedAccuracy(tolerance) => {
-                ZfpCodecConfigurationV1::FixedAccuracy(ZfpFixedAccuracyConfiguration { tolerance })
-            }
-            ZfpMode::Reversible => ZfpCodecConfigurationV1::Reversible,
+        let configuration = ZfpCodecConfigurationV1 {
+            write_header: Some(self.write_header),
+            mode: self.mode,
         };
         Some(
             MetadataV3::new_with_serializable_configuration(
@@ -162,19 +178,29 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         ) else {
             return Err(CodecError::from("failed to create zfp field"));
         };
-        let Some(zfp) = ZfpStream::new(&self.mode, zfp_type) else {
+        let Some(stream) = ZfpStream::new(&self.mode, zfp_type) else {
             return Err(CodecError::from("failed to create zfp stream"));
         };
 
-        let bufsize = unsafe { zfp_stream_maximum_size(zfp.as_zfp_stream(), field.as_zfp_field()) };
+        let bufsize =
+            unsafe { zfp_stream_maximum_size(stream.as_zfp_stream(), field.as_zfp_field()) };
         let mut encoded_value: Vec<u8> = vec![0; bufsize];
 
-        let Some(stream) = ZfpBitstream::new(&mut encoded_value) else {
+        let Some(bitstream) = ZfpBitstream::new(&mut encoded_value) else {
             return Err(CodecError::from("failed to create zfp field"));
         };
         unsafe {
-            zfp_stream_set_bit_stream(zfp.as_zfp_stream(), stream.as_bitstream());
-            zfp_stream_rewind(zfp.as_zfp_stream()); // needed?
+            zfp_stream_set_bit_stream(stream.as_zfp_stream(), bitstream.as_bitstream());
+            zfp_stream_rewind(stream.as_zfp_stream()); // needed?
+        }
+        if self.write_header {
+            unsafe {
+                zfp_write_header(
+                    stream.as_zfp_stream(),
+                    field.as_zfp_field(),
+                    zfp_sys::ZFP_HEADER_FULL,
+                );
+            };
         }
 
         // FIXME
@@ -186,7 +212,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         // }
 
         // Compress array
-        let size = unsafe { zfp_compress(zfp.as_zfp_stream(), field.as_zfp_field()) };
+        let size = unsafe { zfp_compress(stream.as_zfp_stream(), field.as_zfp_field()) };
 
         if size == 0 {
             Err(CodecError::from("zfp compression failed"))
@@ -204,6 +230,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
     ) -> Result<ArrayBytes<'a>, CodecError> {
         zfp_decode(
             &self.mode,
+            self.write_header,
             &mut bytes.to_vec(), // FIXME: Does zfp **really** need the encoded value as mutable?
             decoded_representation,
             false, // FIXME
@@ -221,6 +248,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
             input_handle,
             decoded_representation,
             self.mode,
+            self.write_header,
         )?))
     }
 
@@ -235,6 +263,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
             input_handle,
             decoded_representation,
             self.mode,
+            self.write_header,
         )?))
     }
 

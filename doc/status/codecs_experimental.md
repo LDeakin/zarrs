@@ -1,13 +1,13 @@
 Experimental codecs are recommended for evaluation only.
 
-| Codec Type     | Codec                            | ZEP | V3      | V2      | Feature Flag |
-| -------------- | -------------------------------- | --- | ------- | ------- | ------------ |
-| Array to Array | [bitround]                       |     | &check; | &check; | bitround     |
-| Array to Bytes | [zfp]                            |     | &check; |         | zfp          |
-|                | [pcodec]                         |     | &check; |         | pcodec       |
-|                | [vlen]                           |     | &check; |         |              |
-|                | [vlen_v2]<br>`vlen-*` in Zarr V2 |     | &check; | &check; |              |
-| Bytes to Bytes | [bz2]                            |     | &check; | &check; | bz2          |
+| Codec Type     | Codec                    | ZEP | V3      | V2      | Feature Flag |
+| -------------- | ------------------------ | --- | ------- | ------- | ------------ |
+| Array to Array | [bitround]               |     | &check; | &check; | bitround     |
+| Array to Bytes | [zfp]<br>zfpy (V2)       |     | &check; | &check; | zfp          |
+|                | [pcodec]                 |     | &check; |         | pcodec       |
+|                | [vlen]                   |     | &check; |         |              |
+|                | [vlen_v2]<br>vlen-* (V2) |     | &check; | &check; |              |
+| Bytes to Bytes | [bz2]                    |     | &check; | &check; | bz2          |
 
 [bitround]: (crate::array::codec::array_to_array::bitround)
 [zfp]: crate::array::codec::array_to_bytes::zfp

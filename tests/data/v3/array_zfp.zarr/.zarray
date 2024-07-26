@@ -1,0 +1,27 @@
+{
+  "node_type": "array",
+  "zarr_format": 2,
+  "shape": [
+    10,
+    10
+  ],
+  "chunks": [
+    5,
+    5
+  ],
+  "dtype": "<f4",
+  "compressor": {
+    "id": "zfpy",
+    "compression_kwargs": {
+      "tolerance": 0.01
+    },
+    "mode": 4,
+    "precision": -1,
+    "rate": -1,
+    "tolerance": 0.01
+  },
+  "fill_value": 0.0,
+  "order": "C",
+  "filters": null,
+  "dimension_separator": "."
+}
