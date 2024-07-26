@@ -187,6 +187,14 @@ pub fn array_metadata_v2_to_v3(
                 )?;
                 codecs.push(zfp_v3_metadata);
             }
+            super::v3::codec::pcodec::IDENTIFIER => {
+                // pcodec is v2/v3 compatible
+                has_array_to_bytes = true;
+                codecs.push(MetadataV3::new_with_configuration(
+                    compressor.id(),
+                    compressor.configuration().clone(),
+                ));
+            }
             _ => {}
         }
     }
@@ -202,7 +210,7 @@ pub fn array_metadata_v2_to_v3(
     // Compressor (bytes to bytes codec)
     if let Some(compressor) = &array_metadata_v2.compressor {
         match compressor.id() {
-            super::v2::codec::zfpy::IDENTIFIER => {
+            super::v2::codec::zfpy::IDENTIFIER | super::v3::codec::pcodec::IDENTIFIER => {
                 // already handled above
             }
             super::v3::codec::blosc::IDENTIFIER => {

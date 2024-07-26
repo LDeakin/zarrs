@@ -978,6 +978,15 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "pcodec")]
+    #[test]
+    fn array_v2_pcodec_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_pcodec_C.zarr",
+            "tests/data/v3/array_pcodec.zarr",
+        )
+    }
+
     // fn array_subset_locking(locks: StoreLocks, expect_equal: bool) {
     //     let store = Arc::new(MemoryStore::new_with_locks(locks));
 

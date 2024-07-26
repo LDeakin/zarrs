@@ -61,7 +61,7 @@ fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> 
                 .map(|order| order.as_usize()),
         )
         .with_mode_spec(mode_spec)
-        .with_paging_spec(PagingSpec::EqualPagesUpTo(configuration.max_page_n))
+        .with_paging_spec(PagingSpec::EqualPagesUpTo(configuration.equal_pages_up_to))
 }
 
 impl PcodecCodec {
@@ -76,7 +76,7 @@ impl PcodecCodec {
 
 impl CodecTraits for PcodecCodec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
-        let PagingSpec::EqualPagesUpTo(max_page_n) = self.chunk_config.paging_spec else {
+        let PagingSpec::EqualPagesUpTo(equal_pages_up_to) = self.chunk_config.paging_spec else {
             unreachable!()
         };
         let configuration = PcodecCodecConfiguration::V1(PcodecCodecConfigurationV1 {
@@ -86,7 +86,7 @@ impl CodecTraits for PcodecCodec {
                 .delta_encoding_order
                 .map(|order| PcodecDeltaEncodingOrder::try_from(order).unwrap()),
             mode_spec: mode_spec_pco_to_config(&self.chunk_config.mode_spec),
-            max_page_n,
+            equal_pages_up_to,
         });
 
         Some(

@@ -54,7 +54,7 @@ pub struct PcodecCodecConfigurationV1 {
     /// See <https://docs.rs/pco/latest/pco/enum.PagingSpec.html#variant.EqualPagesUpTo>.
     ///
     /// The default is `1 << 18`.
-    pub max_page_n: usize,
+    pub equal_pages_up_to: usize,
 }
 
 /// Specifies how Pco should choose a [`mode`][pco::Mode] to compress this
@@ -121,8 +121,8 @@ struct PcodecCodecConfigurationIntermediate {
     base: Option<UIntOrFloat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     k: Option<u32>,
-    #[serde(default = "default_max_page_n")]
-    max_page_n: usize,
+    #[serde(default = "default_equal_pages_up_to")]
+    equal_pages_up_to: usize,
 }
 
 impl serde::Serialize for PcodecCodecConfigurationV1 {
@@ -157,7 +157,7 @@ impl serde::Serialize for PcodecCodecConfigurationV1 {
             mode_spec,
             base,
             k,
-            max_page_n: self.max_page_n,
+            equal_pages_up_to: self.equal_pages_up_to,
         };
         config.serialize(s)
     }
@@ -194,7 +194,7 @@ impl<'de> serde::Deserialize<'de> for PcodecCodecConfigurationV1 {
             level: config.level,
             delta_encoding_order: config.delta_encoding_order,
             mode_spec,
-            max_page_n: config.max_page_n,
+            equal_pages_up_to: config.equal_pages_up_to,
         };
         Ok(config)
     }
@@ -206,7 +206,7 @@ impl Default for PcodecCodecConfigurationV1 {
             level: PcodecCompressionLevel::default(),
             delta_encoding_order: None,
             mode_spec: PcodecModeSpecConfiguration::Auto,
-            max_page_n: default_max_page_n(),
+            equal_pages_up_to: default_equal_pages_up_to(),
         }
     }
 }
@@ -359,7 +359,7 @@ impl PcodecDeltaEncodingOrder {
     }
 }
 
-const fn default_max_page_n() -> usize {
+const fn default_equal_pages_up_to() -> usize {
     // pco::constants::DEFAULT_MAX_PAGE_N
     1 << 18
 }
@@ -392,7 +392,7 @@ mod tests {
             "level": 8,
             "delta_encoding_order": 2,
             "mode_spec": "auto",
-            "max_page_n": 262144
+            "equal_pages_up_to": 262144
         }"#,
         )
         .unwrap();
@@ -405,7 +405,7 @@ mod tests {
             "level": 8,
             "delta_encoding_order": 2,
             "mode_spec": "classic",
-            "max_page_n": 262144
+            "equal_pages_up_to": 262144
         }"#,
         )
         .unwrap();
@@ -419,7 +419,7 @@ mod tests {
             "delta_encoding_order": 2,
             "mode_spec": "try_float_mult",
             "base": 0.1,
-            "max_page_n": 262144
+            "equal_pages_up_to": 262144
         }"#,
         )
         .unwrap();
@@ -433,7 +433,7 @@ mod tests {
             "delta_encoding_order": 2,
             "mode_spec": "try_float_quant",
             "k": 1,
-            "max_page_n": 262144
+            "equal_pages_up_to": 262144
         }"#,
         )
         .unwrap();
@@ -447,7 +447,7 @@ mod tests {
             "delta_encoding_order": 2,
             "mode_spec": "try_int_mult",
             "base": 1,
-            "max_page_n": 262144
+            "equal_pages_up_to": 262144
         }"#,
         )
         .unwrap();
@@ -460,7 +460,7 @@ mod tests {
             "level": 13,
             "delta_encoding_order": 2,
             "mode_spec": "auto",
-            "max_page_n": 262144
+            "equal_pages_up_to": 262144
         }"#,
         )
         .is_err());
@@ -473,7 +473,7 @@ mod tests {
             "level": 8,
             "delta_encoding_order": 8,
             "mode_spec": "auto",
-            "max_page_n": 262144
+            "equal_pages_up_to": 262144
         }"#,
         )
         .is_err());

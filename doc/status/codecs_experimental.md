@@ -4,7 +4,7 @@ Experimental codecs are recommended for evaluation only.
 | -------------- | ------------------------ | --- | ------- | ------- | ------------ |
 | Array to Array | [bitround]               |     | &check; | &check; | bitround     |
 | Array to Bytes | [zfp]<br>zfpy (V2)       |     | &check; | &check; | zfp          |
-|                | [pcodec]                 |     | &check; |         | pcodec       |
+|                | [pcodec]                 |     | &check; | &check; | pcodec       |
 |                | [vlen]                   |     | &check; |         |              |
 |                | [vlen_v2]<br>vlen-* (V2) |     | &check; | &check; |              |
 | Bytes to Bytes | [bz2]                    |     | &check; | &check; | bz2          |
