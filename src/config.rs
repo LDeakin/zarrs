@@ -91,7 +91,7 @@ use crate::metadata::{v3::codec, MetadataConvertVersion, MetadataEraseVersion};
 /// ```
 ///
 /// ### Experimental Codec Names
-/// > default: See the [crate root documentation](crate#array-configuration-support).
+/// > default: See the [crate root documentation](crate#array-support).
 ///
 /// Sets the names used when serialising and deserialising the names of experimental codecs.
 /// Deserialisation also accepts the standard `IDENTIFIER` of the codec.

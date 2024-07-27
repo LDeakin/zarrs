@@ -32,7 +32,7 @@
 //! `zarrs` supports forward conversion of Zarr V2 data to V3.
 //! See ["Metadata Convert Version"](crate::config::Config#metadata-convert-version) and ["Metadata Erase Version"](crate::config::Config#metadata-erase-version) for information about manipulating the version of array/group metadata.
 //!
-//! ### Array Configuration Support
+//! ### Array Support
 //!
 //! <details><summary>Data Types</summary>
 //!

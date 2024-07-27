@@ -26,17 +26,75 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
   - Transform arrays: crop, rescale, downsample, gradient magnitude, gaussian, noise filtering, etc.
   - Benchmarking tools and performance benchmarks of `zarrs`.
 
-## Example (Sync API)
+## Implementation Status
+| [Zarr Enhancement Proposal]             | Status                     | Zarrs        |
+| --------------------------------------- | -------------------------- | ------------ |
+| [ZEP0001]: Zarr specification version 3 | Accepted                   | Full support |
+| [ZEP0002]: Sharding codec               | Accepted                   | Full support |
+| [ZEP0003]: Variable chunking            | [zarr-developers #52]      | Full support |
+| Draft ZEP0007: Strings                  | [zarr-developers/zeps #47] | Prototype    |
+
+[Zarr Enhancement Proposal]: https://zarr.dev/zeps/
+[ZEP0001]: https://zarr.dev/zeps/accepted/ZEP0001.html
+[ZEP0002]: https://zarr.dev/zeps/accepted/ZEP0002.html
+[ZEP0003]: https://zarr.dev/zeps/draft/ZEP0003.html
+
+[zarr-developers #52]: https://github.com/orgs/zarr-developers/discussions/52
+[zarr-developers/zeps #47]: https://github.com/zarr-developers/zeps/pull/47#issuecomment-1710505141
+
+## Example
 ```rust
+use zarrs::array::{ArrayBuilder, DataType, FillValue, ZARR_NAN_F32};
+use zarrs::array::codec::GzipCodec; // requires gzip feature
+use zarrs::array_subset::ArraySubset;
+use zarrs::storage::{ReadableWritableListableStorage, store::FilesystemStore};
+
+// Create a filesystem store
 let store_path: PathBuf = "/path/to/store".into();
-let store: zarrs::storage::ReadableWritableListableStorage =
-    Arc::new(zarrs::storage::store::FilesystemStore::new(&store_path)?);
+let store: ReadableWritableListableStorage =
+    Arc::new(FilesystemStore::new(&store_path)?);
 
-let array_path: &str = "/group/array"; // /path/to/store/group/array
-let array = zarrs::array::Array::new(store, array_path)?;
+// Create a new V3 array using the array builder
+let array = ArrayBuilder::new(
+    vec![3, 4], // array shape
+    DataType::Float32,
+    vec![2, 2].try_into()?, // regular chunk shape (non-zero elements)
+    FillValue::from(ZARR_NAN_F32),
+)
+.bytes_to_bytes_codecs(vec![
+    Box::new(GzipCodec::new(5)?),
+])
+.dimension_names(["y", "x"].into())
+.attributes(serde_json::json!({"Zarr V3": "is great"}).as_object().unwrap().clone())
+.build(store.clone(), "/group/array")?; // /path/to/store/group/array
 
-let chunk: ndarray::ArrayD<f32> = array.retrieve_chunk_ndarray(&[1, 0])?;
-println!("Chunk [1,0] is:\n{chunk}");
+// Store the array metadata
+array.store_metadata()?;
+println!("{}", serde_json::to_string_pretty(array.metadata())?);
+// {
+//     "zarr_format": 3,
+//     "node_type": "array",
+//     ...
+// }
+
+// Perform some operations on the chunks
+array.store_chunk_elements::<f32>(
+    &[0, 1], // chunk index
+    &[0.2, 0.3, 1.2, 1.3]
+)?;
+array.store_array_subset_ndarray::<f32, _>(
+    &[1, 1], // array index
+    ndarray::array![[-1.1, -1.2], [-2.1, -2.2]]
+)?;
+array.erase_chunk(&[1, 1])?;
+
+// Retrieve all array elements as an ndarray
+let array_subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+let array_ndarray = array.retrieve_array_subset_ndarray::<f32>(&array_subset_all)?;
+println!("{array_ndarray:4}");
+// [[ NaN,  NaN,  0.2,  0.3],
+//  [ NaN, -1.1, -1.2,  1.3],
+//  [ NaN, -2.1,  NaN,  NaN]]
 ```
 
 ## `zarrs` Ecosystem
