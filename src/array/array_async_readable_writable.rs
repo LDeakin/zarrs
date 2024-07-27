@@ -49,13 +49,12 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_chunk_subset_ndarray<
         T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
-        chunk_subset_array: TArray,
+        chunk_subset_array: impl Into<ndarray::Array<T, D>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_subset_ndarray_opt(
             chunk_indices,
@@ -97,12 +96,11 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_array_subset_ndarray<
         T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,
         subset_start: &[u64],
-        subset_array: TArray,
+        subset_array: impl Into<ndarray::Array<T, D>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_array_subset_ndarray_opt(
             subset_start,
@@ -190,13 +188,12 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_chunk_subset_ndarray_opt<
         T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
-        chunk_subset_array: TArray,
+        chunk_subset_array: impl Into<ndarray::Array<T, D>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_subset_array: ndarray::Array<T, D> = chunk_subset_array.into();
@@ -329,12 +326,11 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_array_subset_ndarray_opt<
         T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
         D: ndarray::Dimension,
     >(
         &self,
         subset_start: &[u64],
-        subset_array: TArray,
+        subset_array: impl Into<ndarray::Array<T, D>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let subset_array: ndarray::Array<T, D> = subset_array.into();

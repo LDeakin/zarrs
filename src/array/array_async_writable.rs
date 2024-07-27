@@ -67,14 +67,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Async variant of [`store_chunk_ndarray`](Array::store_chunk_ndarray).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_store_chunk_ndarray<
-        T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
-        D: ndarray::Dimension,
-    >(
+    pub async fn async_store_chunk_ndarray<T: Element + Send + Sync, D: ndarray::Dimension>(
         &self,
         chunk_indices: &[u64],
-        chunk_array: TArray,
+        chunk_array: impl Into<ndarray::Array<T, D>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_chunk_ndarray_opt(chunk_indices, chunk_array, &CodecOptions::default())
             .await
@@ -106,14 +102,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Async variant of [`store_chunks_ndarray`](Array::store_chunks_ndarray).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_store_chunks_ndarray<
-        T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
-        D: ndarray::Dimension,
-    >(
+    pub async fn async_store_chunks_ndarray<T: Element + Send + Sync, D: ndarray::Dimension>(
         &self,
         chunks: &ArraySubset,
-        chunks_array: TArray,
+        chunks_array: impl Into<ndarray::Array<T, D>> + Send,
     ) -> Result<(), ArrayError> {
         self.async_store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
             .await
@@ -270,14 +262,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Async variant of [`store_chunk_ndarray_opt`](Array::store_chunk_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_store_chunk_ndarray_opt<
-        T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
-        D: ndarray::Dimension,
-    >(
+    pub async fn async_store_chunk_ndarray_opt<T: Element + Send + Sync, D: ndarray::Dimension>(
         &self,
         chunk_indices: &[u64],
-        chunk_array: TArray,
+        chunk_array: impl Into<ndarray::Array<T, D>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_array: ndarray::Array<T, D> = chunk_array.into();
@@ -372,14 +360,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Async variant of [`store_chunks_ndarray_opt`](Array::store_chunks_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_store_chunks_ndarray_opt<
-        T: Element + Send + Sync,
-        TArray: Into<ndarray::Array<T, D>> + Send,
-        D: ndarray::Dimension,
-    >(
+    pub async fn async_store_chunks_ndarray_opt<T: Element + Send + Sync, D: ndarray::Dimension>(
         &self,
         chunks: &ArraySubset,
-        chunks_array: TArray,
+        chunks_array: impl Into<ndarray::Array<T, D>> + Send,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunks_array: ndarray::Array<T, D> = chunks_array.into();

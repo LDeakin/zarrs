@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Add `ArrayMetadataV2ToV3ConversionError::Other`
  - Make all v2 metadata available even without experimental codec features
  - **Breaking**: Change pcodec `max_page_n` to `equal_pages_up_to` to match numcodecs
+ - **Breaking**: Simplify array store `_ndarray` methods to 2 generic type parameters
 
 ### Removed
  - **Breaking**: Remove `into_array_view` array and codec API

@@ -68,15 +68,11 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_chunk_subset_elements`](Array::store_chunk_subset_elements) error condition is met.
-    pub fn store_chunk_subset_ndarray<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_chunk_subset_ndarray<T: Element, D: ndarray::Dimension>(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
-        chunk_subset_array: TArray,
+        chunk_subset_array: impl Into<ndarray::Array<T, D>>,
     ) -> Result<(), ArrayError> {
         self.store_chunk_subset_ndarray_opt(
             chunk_indices,
@@ -137,14 +133,10 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     /// # Errors
     /// Returns an [`ArrayError`] if a [`store_array_subset_elements`](Array::store_array_subset_elements) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_array_subset_ndarray<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_array_subset_ndarray<T: Element, D: ndarray::Dimension>(
         &self,
         subset_start: &[u64],
-        subset_array: TArray,
+        subset_array: impl Into<ndarray::Array<T, D>>,
     ) -> Result<(), ArrayError> {
         self.store_array_subset_ndarray_opt(subset_start, subset_array, &CodecOptions::default())
     }
@@ -222,15 +214,11 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_chunk_subset_ndarray`](Array::store_chunk_subset_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunk_subset_ndarray_opt<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_chunk_subset_ndarray_opt<T: Element, D: ndarray::Dimension>(
         &self,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
-        chunk_subset_array: TArray,
+        chunk_subset_array: impl Into<ndarray::Array<T, D>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_subset_array: ndarray::Array<T, D> = chunk_subset_array.into();
@@ -348,14 +336,10 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_array_subset_ndarray`](Array::store_array_subset_ndarray).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_array_subset_ndarray_opt<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_array_subset_ndarray_opt<T: Element, D: ndarray::Dimension>(
         &self,
         subset_start: &[u64],
-        subset_array: TArray,
+        subset_array: impl Into<ndarray::Array<T, D>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let subset_array: ndarray::Array<T, D> = subset_array.into();

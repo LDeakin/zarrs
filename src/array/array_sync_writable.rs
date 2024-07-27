@@ -93,14 +93,10 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the shape of the array does not match the shape of the chunk,
     ///  - a [`store_chunk_elements`](Array::store_chunk_elements) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunk_ndarray<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_chunk_ndarray<T: Element, D: ndarray::Dimension>(
         &self,
         chunk_indices: &[u64],
-        chunk_array: TArray,
+        chunk_array: impl Into<ndarray::Array<T, D>>,
     ) -> Result<(), ArrayError> {
         self.store_chunk_ndarray_opt(chunk_indices, chunk_array, &CodecOptions::default())
     }
@@ -149,14 +145,10 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///  - the shape of the array does not match the shape of the chunks,
     ///  - a [`store_chunks_elements`](Array::store_chunks_elements) error condition is met.
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub fn store_chunks_ndarray<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_chunks_ndarray<T: Element, D: ndarray::Dimension>(
         &self,
         chunks: &ArraySubset,
-        chunks_array: TArray,
+        chunks_array: impl Into<ndarray::Array<T, D>>,
     ) -> Result<(), ArrayError> {
         self.store_chunks_ndarray_opt(chunks, chunks_array, &CodecOptions::default())
     }
@@ -300,14 +292,10 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_chunk_ndarray`](Array::store_chunk_ndarray).
     #[allow(clippy::missing_errors_doc)]
-    pub fn store_chunk_ndarray_opt<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_chunk_ndarray_opt<T: Element, D: ndarray::Dimension>(
         &self,
         chunk_indices: &[u64],
-        chunk_array: TArray,
+        chunk_array: impl Into<ndarray::Array<T, D>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_array: ndarray::Array<T, D> = chunk_array.into();
@@ -392,14 +380,10 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     #[cfg(feature = "ndarray")]
     /// Explicit options version of [`store_chunks_ndarray`](Array::store_chunks_ndarray).
     #[allow(clippy::missing_errors_doc)]
-    pub fn store_chunks_ndarray_opt<
-        T: Element,
-        TArray: Into<ndarray::Array<T, D>>,
-        D: ndarray::Dimension,
-    >(
+    pub fn store_chunks_ndarray_opt<T: Element, D: ndarray::Dimension>(
         &self,
         chunks: &ArraySubset,
-        chunks_array: TArray,
+        chunks_array: impl Into<ndarray::Array<T, D>>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunks_array: ndarray::Array<T, D> = chunks_array.into();
