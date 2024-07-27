@@ -1,13 +1,13 @@
 ## TODO
 
 ### Features/API
+- Add array methods supporting efficient advanced indexing
+    `Array::{store,retrieve}[_elements](indexer: impl Indexer)`
 - Stabilise the async API
     - Support internal task spawning
         - Prototype in the [async_spawning](https://github.com/LDeakin/zarrs_tools/tree/async_spawning) branch
     - Add `array_sharded_ext::{AsyncArrayShardedExt,AsyncArrayShardedReadableExt}`
     - Async support for `StorageValueIO` to enable `ZipStorageAdapter` with async stores
-- Variable sized data type support [#21](https://github.com/LDeakin/zarrs/issues/21)
-  - **Pending**: [draft ZEP](https://github.com/zarr-developers/zeps/pull/47)
 
 ### Experiments
 - Test an io_uring backed filesystem store
@@ -18,9 +18,11 @@
 - Reduce code duplication in tests
 - Review documentation
 
-### Write ZEPs?
+### Write/Review ZEPs?
 - **Pending**: [the new Zarr ZEP process](https://github.com/zarr-developers/zeps/pull/59)
 - Experimental codecs:
-    - `bitround`: easiest
-    - `zfp`: most valuable
+    - `bz2`
+    - `bitround`
+    - `zfp`
     - `pcodec`: too new/unstable?
+    - `vlen`/`vlen_v2`: ZEP0007
