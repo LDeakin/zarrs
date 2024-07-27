@@ -978,6 +978,15 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "zstd")]
+    #[test]
+    fn array_v2_zstd_c() {
+        array_v2_to_v3(
+            "tests/data/v2/array_zstd_C.zarr",
+            "tests/data/v3/array_zstd.zarr",
+        )
+    }
+
     #[cfg(feature = "pcodec")]
     #[test]
     fn array_v2_pcodec_c() {

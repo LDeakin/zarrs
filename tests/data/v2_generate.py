@@ -1,12 +1,13 @@
 import zarr
 import numpy as np
-from numcodecs import Blosc, GZip, BZ2, ZFPY, PCodec
+from numcodecs import Blosc, GZip, BZ2, ZFPY, PCodec, Zstd
 
 compressor_blosc = Blosc(cname="zstd", clevel=1, shuffle=Blosc.BITSHUFFLE)
 compressor_gzip = GZip(level=9)
 compressor_bz2 = BZ2(level=9)
 compressor_zfpy = ZFPY(mode = 4, tolerance=0.01) # fixed accuracy
 compressor_pcodec = PCodec(level = 8, mode_spec="auto")
+compressor_zstd = Zstd(level=5, checksum=False)
 
 data = np.array(
     [
@@ -30,6 +31,7 @@ for order in ["C", "F"]:
         ("bz2", compressor_bz2),
         ("zfpy", compressor_zfpy),
         ("pcodec", compressor_pcodec),
+        ("zstd", compressor_zstd),
     ]:
         if order == "F" and compressor_name != "blosc":
             continue
