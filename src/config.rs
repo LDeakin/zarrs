@@ -66,15 +66,13 @@ use crate::metadata::{v3::codec, MetadataConvertVersion, MetadataEraseVersion};
 /// ### Metadata Convert Version
 /// > default: [`MetadataConvertVersion::Default`] (keep existing version)
 ///
-/// [`ArrayMetadataOptions::metadata_convert_version`](crate::array::ArrayMetadataOptions::metadata_convert_version) and [`GroupMetadataOptions::metadata_convert_version`](crate::group::GroupMetadataOptions::metadata_convert_version) default to [`Config::metadata_convert_version`].
-///
-/// Determines the Zarr version of metadata created with [`crate::array::Array::metadata_opt`] and [`crate::group::Group::metadata_opt`].
-/// These methods are used internally by `store_metadata` and `store_metadata_opt` methods of [`crate::array::Array`] and [`crate::group::Group`].
+/// Determines the Zarr version of metadata created with [`Array::metadata_opt`](crate::array::Array::metadata_opt) and [`Group::metadata_opt`](crate::group::Group::metadata_opt).
+/// These methods are used internally by the `store_metadata` and `store_metadata_opt` methods of [`crate::array::Array`] and [`crate::group::Group`].
 ///
 /// ### Metadata Erase Version
 /// > default: [`MetadataEraseVersion::Default`] (erase existing version)
 ///
-/// The default behaviour for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata) and async variants.
+/// The default behaviour for the `erase_metadata` methods of [`crate::array::Array`] and [`crate::group::Group`].
 /// Determines whether to erase metadata of a specific Zarr version, the same version as the array/group was created with, or all known versions.
 ///
 /// ### Include `zarrs` Metadata
@@ -93,7 +91,7 @@ use crate::metadata::{v3::codec, MetadataConvertVersion, MetadataEraseVersion};
 /// ```
 ///
 /// ### Experimental Codec Names
-/// > default: See [crate root documentation](crate#arrays-zarr-v3-and-zarr-v2).
+/// > default: See the [crate root documentation](crate#array-configuration-support).
 ///
 /// Sets the names used when serialising and deserialising the names of experimental codecs.
 /// Deserialisation also accepts the standard `IDENTIFIER` of the codec.
