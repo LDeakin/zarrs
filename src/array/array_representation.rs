@@ -56,6 +56,45 @@ impl ArraySize {
             DataTypeSize::Variable => Self::Variable { num_elements },
         }
     }
+
+    /// Return the number of elements.
+    #[must_use]
+    pub fn num_elements(&self) -> u64 {
+        match self {
+            Self::Variable { num_elements }
+            | Self::Fixed {
+                num_elements,
+                data_type_size: _,
+            } => *num_elements,
+        }
+    }
+
+    /// Return the data type size in bytes for fixed size arrays. Returns [`None`] for variable length data.
+    #[must_use]
+    pub fn fixed_data_type_size(&self) -> Option<usize> {
+        match self {
+            Self::Fixed {
+                num_elements: _,
+                data_type_size,
+            } => Some(*data_type_size),
+            Self::Variable { num_elements: _ } => None,
+        }
+    }
+
+    /// Return the total size in bytes for fixed size arrays. Returns [`None`] for variable length data.
+    ///
+    /// # Panics
+    /// Panics if the size exceeds [`usize::MAX`].
+    #[must_use]
+    pub fn fixed_size(&self) -> Option<usize> {
+        match self {
+            Self::Fixed {
+                num_elements,
+                data_type_size,
+            } => Some(usize::try_from(*data_type_size as u64 * num_elements).unwrap()),
+            Self::Variable { num_elements: _ } => None,
+        }
+    }
 }
 
 impl<TDim> ArrayRepresentationBase<TDim>
@@ -188,6 +227,21 @@ where
                 data_type_size,
             },
             DataTypeSize::Variable => ArraySize::Variable { num_elements },
+        }
+    }
+
+    /// Return the array size in bytes with a fixed-size data type, otherwise returns [`None`].
+    ///
+    /// # Panics
+    /// Panics if the size does not fit in [`usize::MAX`].
+    #[must_use]
+    pub fn fixed_size(&self) -> Option<usize> {
+        let num_elements = self.num_elements();
+        match self.element_size() {
+            DataTypeSize::Fixed(data_type_size) => {
+                Some(usize::try_from(num_elements * data_type_size as u64).unwrap())
+            }
+            DataTypeSize::Variable => None,
         }
     }
 }
