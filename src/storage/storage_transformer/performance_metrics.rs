@@ -71,7 +71,7 @@ impl PerformanceMetricsStorageTransformer {
         self.locks.load(Ordering::Relaxed)
     }
 
-    fn create_transformer<TStorage: ?Sized + 'static>(
+    fn create_transformer<TStorage: ?Sized>(
         self: Arc<Self>,
         storage: Arc<TStorage>,
     ) -> Arc<PerformanceMetricsStorageTransformerImpl<TStorage>> {
@@ -163,7 +163,7 @@ impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
 }
 
 #[derive(Debug)]
-struct PerformanceMetricsStorageTransformerImpl<TStorage: ?Sized + 'static> {
+struct PerformanceMetricsStorageTransformerImpl<TStorage: ?Sized> {
     storage: Arc<TStorage>,
     transformer: Arc<PerformanceMetricsStorageTransformer>,
 }

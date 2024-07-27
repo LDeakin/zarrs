@@ -312,7 +312,7 @@ pub enum GroupCreateError {
 
 impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {}
 
-impl<TStorage: ?Sized + WritableStorageTraits + 'static> Group<TStorage> {
+impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
     /// Store metadata with default [`GroupMetadataOptions`].
     ///
     /// # Errors

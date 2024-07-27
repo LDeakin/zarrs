@@ -25,9 +25,7 @@ pub struct ArrayShardedReadableExtCache<'a> {
 impl<'a> ArrayShardedReadableExtCache<'a> {
     /// Create a new cache for an array.
     #[must_use]
-    pub fn new<TStorage: ?Sized + ReadableStorageTraits + 'static>(
-        array: &'a Array<TStorage>,
-    ) -> Self {
+    pub fn new<TStorage: ?Sized + ReadableStorageTraits>(array: &'a Array<TStorage>) -> Self {
         let inner_chunk_grid = array.inner_chunk_grid();
         Self {
             array_is_sharded: array.is_sharded(),

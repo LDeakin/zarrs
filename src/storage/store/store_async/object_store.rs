@@ -36,7 +36,7 @@ fn handle_result<T>(result: Result<T, object_store::Error>) -> Result<Option<T>,
 }
 
 /// An asynchronous store backed by an [`object_store::ObjectStore`].
-pub struct AsyncObjectStore<T: object_store::ObjectStore> {
+pub struct AsyncObjectStore<T> {
     object_store: T,
     // locks: AsyncStoreLocks,
 }
