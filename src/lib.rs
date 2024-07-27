@@ -27,7 +27,7 @@
 //!
 //! An existing V2 or V3 array can be opened with [`Array::open`](crate::array::Array::open).
 //! A new array can be created from V2 or V3 metadata with [`Array::new_with_metadata`](crate::array::Array::new_with_metadata).
-//! The [`ArrayBuilder`](crate::array::ArrayBuilder) exclusively supports V3 arrays.
+//! The [`ArrayBuilder`](crate::array::ArrayBuilder) only supports V3 array creation.
 //!
 //! `zarrs` supports forward conversion of Zarr V2 data to V3.
 //! See ["Metadata Convert Version"](crate::config::Config#metadata-convert-version) and ["Metadata Erase Version"](crate::config::Config#metadata-erase-version) for information about manipulating the version of array/group metadata.
@@ -59,15 +59,20 @@
 #![doc = include_str!("../doc/status/chunk_key_encodings.md")]
 //! </details>
 //!
+//! <details><summary>Storage Transformers</summary>
+//!
+#![doc = include_str!("../doc/status/storage_transformers.md")]
+//! </details>
+//!
+//! ### Storage Support
+//!
+//! `zarrs` supports a huge range of storage backends through the [`opendal`] and [`object_store`] crates.
+//!
 //! <details><summary>Stores and Storage Adapters</summary>
 //!
 #![doc = include_str!("../doc/status/stores.md")]
 //! </details>
 //!
-//! <details><summary>Storage Transformers</summary>
-//!
-#![doc = include_str!("../doc/status/storage_transformers.md")]
-//! </details>
 //!
 //! ## Examples
 //! ```rust
