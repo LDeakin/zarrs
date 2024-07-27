@@ -31,7 +31,7 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 | --------------------------------------- | -------------------------- | ------------ |
 | [ZEP0001]: Zarr specification version 3 | Accepted                   | Full support |
 | [ZEP0002]: Sharding codec               | Accepted                   | Full support |
-| [ZEP0003]: Variable chunking            | [zarr-developers #52]      | Full support |
+| Draft [ZEP0003]: Variable chunking      | [zarr-developers #52]      | Full support |
 | Draft ZEP0007: Strings                  | [zarr-developers/zeps #47] | Prototype    |
 
 [Zarr Enhancement Proposal]: https://zarr.dev/zeps/
