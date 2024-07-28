@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2024-07-28
+
+### Highlights
+ - Add experimental support for the `string` and `binary` data types and the `vlen` and `vlen_v2` codecs
+ - Cleanup the `Array` API for retrieving elements (`Vec<T>`) and `ndarray`s
+ - Support more Zarr V2 array configurations and make various experimental codecs `numcodecs` compatible
+
 ### Added
  - Add `ArrayBytes`, `RawBytes`, `RawBytesOffsets`, and `ArrayBytesError`
     - These can represent array data with fixed and variable length data types
@@ -902,7 +909,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.15.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.0
 [0.15.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.1
 [0.15.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.0
 [0.14.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.14.0
