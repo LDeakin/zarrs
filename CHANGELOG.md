@@ -142,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump `pcodec` to 0.3
    - Adds support for `uint16`, `int16` and `float16` data types to the experimental `pcodec` codec
    - **Breaking**: The schema for `PcodecCodecConfigurationV1` has changed
+ - Exclude integration tests and data from published package
 
 ### Removed
  - **Breaking**: Remove re-exports of public dependencies

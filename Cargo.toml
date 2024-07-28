@@ -10,7 +10,7 @@ repository = "https://github.com/LDeakin/zarrs"
 license = "MIT OR Apache-2.0"
 keywords = ["zarr"]
 categories = ["encoding"]
-exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.sh", "TODO.md"]
+exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.sh", "TODO.md", "tests/"]
 
 [features]
 default = ["ndarray", "blosc", "crc32c", "gzip", "sharding", "transpose", "zstd"]
