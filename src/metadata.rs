@@ -3,7 +3,6 @@
 //! [`ArrayMetadata`] and [`GroupMetadata`] can hold any conformant array/group metadata.
 //!
 //! All known array metadata is defined in this module, even if `zarrs` has not been compiled with the appropriate flags to use it.
-//! An exception is the configuration of experimental codecs, which are feature gated.
 
 mod array;
 mod group;
