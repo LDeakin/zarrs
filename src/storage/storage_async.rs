@@ -50,15 +50,13 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
 
     /// Retrieve partial bytes from a list of [`StoreKeyRange`].
     ///
-    /// # Arguments
+    /// # Parameters
     /// * `key_ranges`: ordered set of ([`StoreKey`], [`ByteRange`]) pairs. A key may occur multiple times with different ranges.
     ///
     /// # Output
-    ///
     /// A a list of values in the order of the `key_ranges`. It will be [`None`] for missing keys.
     ///
     /// # Errors
-    ///
     /// Returns a [`StorageError`] if there is an underlying storage error.
     async fn get_partial_values(
         &self,

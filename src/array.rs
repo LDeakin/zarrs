@@ -105,38 +105,50 @@ pub struct NonZeroError;
 /// A Zarr array.
 ///
 /// ## Initilisation
-/// A *new* array can be initialised with an [`ArrayBuilder`] or [`Array::new_with_metadata`].
+/// The easiest way to create a *new* Zarr V3 array is with an [`ArrayBuilder`].
+/// Alternatively, a new Zarr V2 or Zarr V3 array can be created with [`Array::new_with_metadata`].
 ///
-/// An *existing* array can be initialised with [`Array::open`] or [`Array::open_opt`], its metadata is read from the store.
+/// An *existing* Zarr V2 or Zarr V3 array can be initialised with [`Array::open`] or [`Array::open_opt`] with metadata read from the store.
 ///
 /// [`Array`] initialisation will error if [`ArrayMetadata`] contains:
 ///  - unsupported extension points, including extensions which are supported by `zarrs` but have not been enabled with the appropriate features gates, or
-///  - incompatible codecs (e.g. codecs in wrong order, codecs incompatible with data type, etc.).
-///
-/// The `shape`, `attributes`, and `dimension_names` of an array are mutable and can be updated after construction.
-/// However, array metadata must be written explicitly to the store with [`store_metadata`](Array<WritableStorageTraits>::store_metadata) if an array is newly created or its metadata has been mutated.
+///  - incompatible codecs (e.g. codecs in wrong order, codecs incompatible with data type, etc.),
+///  - a chunk grid incompatible with the array shape,
+///  - a fill value incompatible with the data type, or
+///  - the metadata is in invalid in some other way.
 ///
 /// ## Array Metadata
-///  - Immutable Array Metadata
-///    - [`path`](Array::path) / [`data_type`](Array::data_type) / [`fill_value`](Array::fill_value) / [`chunk_grid`](Array::chunk_grid) / [`chunk_key_encoding`](Array::chunk_key_encoding) / [`codecs`](Array::codecs) / [`storage_transformers`](Array::storage_transformers)
-///    - [`metadata`](Array::metadata): the underlying [`ArrayMetadata`] structure
-///  - Mutable Array Metadata
-///    - [`shape`](Array::shape) / [`set_shape`](Array::set_shape)
-///    - [`attributes`](Array::attributes) / [`attributes_mut`](Array::attributes_mut)
-///    - [`dimension_names`](Array::dimension_names) / [`set_dimension_names`](Array::set_dimension_names)
-///  - [`metadata_opt`](Array::metadata_opt): [`ArrayMetadata`] transformed with [`ArrayMetadataOptions`]
-///    - Used internally by [`store_metadata`](Array::store_metadata) / [`store_metadata_opt`](Array::store_metadata_opt)
+/// Array metadata **must be explicitly stored** with [`store_metadata`](Array::store_metadata) or [`store_metadata_opt`](Array::store_metadata_opt) if an array is newly created or its metadata has been mutated.
 ///
-/// ## Chunk and Array Subset Extents
-///  - [`chunk_origin`](Array::chunk_origin) / [`chunk_shape`](Array::chunk_shape) / [`chunk_subset`](Array::chunk_subset) / [`chunk_subset_bounded`](Array::chunk_subset_bounded)
-///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
-///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
+/// The underlying metadata of an [`Array`] can be accessed with [`metadata`](Array::metadata) or [`metadata_opt`](Array::metadata_opt).
+/// The latter accepts [`ArrayMetadataOptions`] that can be used to convert array metadata from Zarr V2 to V3, for example.
+/// [`metadata_opt`](Array::metadata_opt) is used internally by [`store_metadata`](Array::store_metadata) / [`store_metadata_opt`](Array::store_metadata_opt).
+/// Use [`serde_json::to_string`] or [`serde_json::to_string_pretty`] on [`ArrayMetadata`] to convert it to a JSON string.
 ///
-/// ## Sync API
+/// ### Immutable Array Metadata / Properties
+///  - [`metadata`](Array::metadata): the underlying [`ArrayMetadata`] structure containing all array metadata
+///  - [`data_type`](Array::data_type)
+///  - [`fill_value`](Array::fill_value)
+///  - [`chunk_grid`](Array::chunk_grid)
+///  - [`chunk_key_encoding`](Array::chunk_key_encoding)
+///  - [`codecs`](Array::codecs)
+///  - [`storage_transformers`](Array::storage_transformers)
+///  - [`path`](Array::path)
+///
+/// ### Mutable Array Metadata
+/// Do not forget to store metadata after mutation.
+///  - [`shape`](Array::shape) / [`set_shape`](Array::set_shape)
+///  - [`attributes`](Array::attributes) / [`attributes_mut`](Array::attributes_mut)
+///  - [`dimension_names`](Array::dimension_names) / [`set_dimension_names`](Array::set_dimension_names)
+///
+/// ### `zarrs` Metadata
+/// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata when calling [`store_metadata`](Array::store_metadata).
+/// Override this behaviour globally with [`Config::set_include_zarrs_metadata`](crate::config::Config::set_include_zarrs_metadata) or call [`store_metadata_opt`](Array::store_metadata_opt) with an explicit [`ArrayMetadataOptions`].
+///
+/// ## Array Data
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
 /// The core array methods are:
 ///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
-///    - [`open`](Array::open) / [`open_opt`](Array::open_opt)
 ///    - [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists)
 ///    - [`retrieve_chunk`](Array::retrieve_chunk)
 ///    - [`retrieve_chunks`](Array::retrieve_chunks)
@@ -154,50 +166,79 @@ pub struct NonZeroError;
 ///    - [`store_array_subset`](Array::store_array_subset)
 ///
 /// Many `retrieve` and `store` methods have multiple variants:
-///   - Standard variants store or retrieve data represented as bytes.
+///   - Standard variants store or retrieve data represented as [`ArrayBytes`] (representing fixed or variable length bytes).
 ///   - `_elements` suffix variants can store or retrieve chunks with a known type.
 ///   - `_ndarray` suffix variants can store or retrieve [`ndarray::Array`]s (requires `ndarray` feature).
-///   - Retrieve and store methods have an `_opt` variant with an additional [`CodecOptions`](crate::array::codec::CodecOptions) argument for fine-grained concurrency control.
+///   - `_opt` suffix variants have a [`CodecOptions`](crate::array::codec::CodecOptions) parameter for fine-grained concurrency control.
 ///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
 ///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
+/// ### Optimising Writes
 /// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and [require careful usage if executed in parallel](#parallel-writing-considerations).
+/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and require careful usage if executed in parallel (see below).
 ///
+/// ### Parallel Writing
+/// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
+/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve, update, and store chunks.
+/// It is the responsibility of `zarrs` consumers to ensure:
+///   - [`store_chunk_subset`](Array::store_chunk_subset) is not called concurrently on the same chunk, and
+///   - [`store_array_subset`](Array::store_array_subset) is not called concurrently on array subsets sharing chunks.
+///
+/// Partial writes to a chunk may be lost if these rules are not respected.
+/// `zarrs` does not currently offer a "synchronisation" API for locking chunks or array subsets.
+///
+/// ### Optimising Reads
 /// It is fastest to load arrays using [`retrieve_chunk`](Array::retrieve_chunk) or [`retrieve_chunks`](Array::retrieve_chunks) where possible.
 /// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may use partial decoders which can be less efficient with some codecs/stores.
 ///
-/// ## Sync API Parallelism
-/// Codecs run in parallel using a dedicated threadpool (where possible/efficient).
+/// **Standard [`Array`] retrieve methods do not perform any caching**.
+/// For this reason, retrieving multiple subsets in a chunk with [`retrieve_chunk_subset`](Array::store_chunk_subset) is very inefficient and strongly discouraged.
+/// For example, consider that a compressed chunk may need to be retrieved and decoded in its entirety even if only a small part of the data is needed.
+/// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode) or [`partial_decode_opt`](codec::ArrayPartialDecoderTraits::partial_decode_opt).
+/// The underlying codec chain will use a cache where efficient to optimise multiple partial decoding requests (see [`CodecChain`]).
+///
+/// ### Reading Sharded Arrays
+/// The `sharding_indexed` ([`ShardingCodec`](codec::array_to_bytes::sharding)) codec enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
+/// With a sharded array, the [`chunk_grid`](Array::chunk_grid) and chunk indices in store/retrieve methods reference the chunks ("shards") of an array.
+///
+/// The [`ArrayShardedExt`] trait provides additional methods to [`Array`] to query if an array is sharded and retrieve the inner chunk shape.
+/// Additionally, the *inner chunk grid* can be queried, which is a [`ChunkGrid`](chunk_grid) where chunk indices refer to inner chunks rather than shards.
+///
+/// The [`ArrayShardedReadableExt`] trait adds [`Array`] methods to conveniently and efficiently access the data in a sharded array (with `_elements` and `_ndarray` variants):
+///  - [`retrieve_inner_chunk_opt`](ArrayShardedReadableExt::retrieve_inner_chunk_opt)
+///  - [`retrieve_inner_chunks_opt`](ArrayShardedReadableExt::retrieve_inner_chunks_opt)
+///  - [`retrieve_array_subset_sharded_opt`](ArrayShardedReadableExt::retrieve_array_subset_sharded_opt)
+///
+/// For unsharded arrays, these methods gracefully fallback to referencing standard chunks.
+/// Each method has a `cache` parameter ([`ArrayShardedReadableExtCache`]) that stores shard indexes so that they do not have to be repeatedly retrieved and decoded.
+///
+/// ## Chunk and Array Subset Extents
+/// Several convenience methods are available for querying the underlying chunk grid:
+///  - [`chunk_origin`](Array::chunk_origin)
+///  - [`chunk_shape`](Array::chunk_shape)
+///  - [`chunk_subset`](Array::chunk_subset)
+///  - [`chunk_subset_bounded`](Array::chunk_subset_bounded)
+///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
+///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
+///
+/// ## Parallelism and Concurrency
+/// ### Sync API
+/// Codecs run in parallel using a dedicated threadpool.
 /// Array store and retrieve methods will also run in parallel when they involve multiple chunks.
 /// `zarrs` will automatically choose where to prioritise parallelism between codecs/chunks based on the codecs and number of chunks.
 ///
-/// By default, all available CPU cores will be used (when efficient).
+/// By default, all available CPU cores will be used (where possible/efficient).
 /// Concurrency can be limited globally with [`Config::set_codec_concurrent_target`](crate::config::Config::set_codec_concurrent_target) or as required using `_opt` methods with [`CodecOptions`](crate::array::codec::CodecOptions) manipulated with [`CodecOptions::set_concurrent_target`](crate::array::codec::CodecOptions::set_concurrent_target).
 ///
-/// ## Async API Concurrency/Parallelism
+/// ### Async API
 /// This crate is async runtime-agnostic.
 /// Async methods do not spawn tasks internally, so asynchronous storage calls are concurrent but not parallel.
-/// Some codec encoding and decoding operations may still execute in parallel.
+/// Codec encoding and decoding operations still execute in parallel (where supported) in an asynchronous context.
 ///
 /// Due the lack of parallelism, methods like [`async_retrieve_array_subset`](Array::async_retrieve_array_subset) or [`async_retrieve_chunks`](Array::async_retrieve_chunks) do not parallelise over chunks and can be slow compared to the sync API.
 /// Parallelism over chunks can be achieved by spawning tasks outside of `zarrs`.
 /// A crate like [`async-scoped`](https://crates.io/crates/async-scoped) can enable spawning non-`'static` futures.
 /// If executing many tasks concurrently, consider reducing the codec [`concurrent_target`](crate::array::codec::CodecOptions::set_concurrent_target).
-///
-/// ## Parallel Writing Considerations
-/// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve, update, and store chunks.
-/// It is the responsibility of `zarrs` consumers to ensure:
-///   - [`Array::store_chunk_subset`] is not called concurrently on the same chunk, and
-///   - [`Array::store_array_subset`] is not called concurrently on array subsets sharing chunks.
-///
-/// Partial writes to a chunk may be lost if these rules are not respected.
-/// `zarrs` does not currently offer an API for locking chunks or array subsets.
-///
-/// ## `zarrs` Metadata
-/// By default, the `zarrs` version and a link to its source code is written to the `_zarrs` attribute in array metadata when calling [`store_metadata`](Array::store_metadata).
-/// Override this behaviour globally with [`Config::set_include_zarrs_metadata`](crate::config::Config::set_include_zarrs_metadata) or call [`store_metadata_opt`](Array::store_metadata_opt) with an explicit [`ArrayMetadataOptions`].
 #[derive(Debug)]
 pub struct Array<TStorage: ?Sized> {
     /// The storage (including storage transformers).

@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Array `_store` methods now use `impl Into<ArrayBytes<'a>>` instead of `&[u8]` for the input bytes
  - **Breaking**: Array `_store_{elements,ndarray}` methods now use `T: Element` instead of `T: bytemuck::Pod`
  - **Breaking**: Array `_retrieve_{elements,ndarray}` methods now use `T: ElementOwned` instead of `T: bytemuck::Pod`
+ - **Breaking**: Simplify array store `_ndarray` methods to 2 generic type parameters
  - Optimised `Array::[async_]store_array_subset_opt` when the subset is a subset of a single chunk
  - Make `transmute_to_bytes` public
  - Relax `ndarray_into_vec` from `T: bytemuck:Pod` to `T: Clone`
@@ -46,8 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Breaking**: All `ZfpCodec::new_*` methods now take a `write_header: bool` parameter
  - **Breaking**: Add `ArrayMetadataV2ToV3ConversionError::Other`
  - Make all v2 metadata available even without experimental codec features
- - **Breaking**: Change pcodec `max_page_n` to `equal_pages_up_to` to match numcodecs
- - **Breaking**: Simplify array store `_ndarray` methods to 2 generic type parameters
+ - **Breaking**: Change pcodec `max_page_n` configuration to `equal_pages_up_to` to match numcodecs
+ - Improve the `Array` docs
 
 ### Removed
  - **Breaking**: Remove `into_array_view` array and codec API
