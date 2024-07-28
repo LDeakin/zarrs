@@ -36,8 +36,7 @@ fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
     let block_on = TokioBlockOn(tokio::runtime::Runtime::new()?);
     let mut store: ReadableStorage = match backend {
         Backend::OpenDAL => {
-            let mut builder = opendal::services::Http::default();
-            builder.endpoint(HTTP_URL);
+            let builder = opendal::services::Http::default().endpoint(HTTP_URL);
             let operator = opendal::Operator::new(builder)?.finish();
             let store = Arc::new(store::AsyncOpendalStore::new(operator));
             Arc::new(AsyncToSyncStorageAdapter::new(store, block_on))
