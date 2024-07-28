@@ -32,11 +32,11 @@ pub type Metadata = MetadataV3;
 ///
 /// Used with [`crate::array::Array::open_opt`], [`crate::group::Group::open_opt`].
 pub enum MetadataRetrieveVersion {
-    /// Either V3 or V2. V3 is prioritised over V2 if found.
+    /// Either Zarr V3 or V2. V3 is prioritised over V2 if found.
     Default,
-    /// V3
+    /// Zarr V3.
     V3,
-    /// V2
+    /// Zarr V2.
     V2,
 }
 
@@ -62,9 +62,9 @@ pub enum MetadataEraseVersion {
     Default,
     /// Erase all metadata.
     All,
-    /// Erase V3 metadata.
+    /// Erase Zarr V3 metadata.
     V3,
-    /// Erase V2 metadata.
+    /// Erase Zarr V2 metadata.
     V2,
 }
 
