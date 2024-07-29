@@ -481,9 +481,6 @@ pub trait ArrayToArrayCodecTraits:
 
     /// Initialise a partial decoder.
     ///
-    /// `parallel` only affects parallelism on initialisation, which is irrelevant for most codecs.
-    /// Parallel partial decoding support is independent of how the partial decoder is initialised.
-    ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
     fn partial_decoder<'a>(
@@ -495,9 +492,6 @@ pub trait ArrayToArrayCodecTraits:
 
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
-    ///
-    /// `parallel` only affects parallelism on initialisation, which is irrelevant for most codecs.
-    /// Parallel partial decoding support is independent of how the partial decoder is initialised.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.

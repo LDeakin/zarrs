@@ -364,7 +364,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     /// Read and decode the `array_subset` of array into its bytes.
     ///
     /// Out-of-bounds elements will have the fill value.
-    /// If `parallel` is true, chunks intersecting the array subset are retrieved in parallel.
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if:
