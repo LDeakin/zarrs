@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - Bump maximum supported `opendal` version from 0.47 to 0.48
+
 ## [0.16.0] - 2024-07-28
 
 ### Highlights

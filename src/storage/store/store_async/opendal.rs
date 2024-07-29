@@ -230,8 +230,7 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     async fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
-        let mut builder = opendal::services::Fs::default();
-        builder.root(&path.path().to_string_lossy());
+        let builder = opendal::services::Fs::default().root(&path.path().to_string_lossy());
         let op = Operator::new(builder)?.finish();
         let store = AsyncOpendalStore::new(op);
         super::super::test_util::store_write(&store).await?;

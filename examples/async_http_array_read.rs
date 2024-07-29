@@ -23,8 +23,7 @@ async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Err
     // Create a HTTP store
     let mut store: AsyncReadableStorage = match backend {
         Backend::OpenDAL => {
-            let mut builder = opendal::services::Http::default();
-            builder.endpoint(HTTP_URL);
+            let builder = opendal::services::Http::default().endpoint(HTTP_URL);
             let operator = opendal::Operator::new(builder)?.finish();
             Arc::new(store::AsyncOpendalStore::new(operator))
         }
