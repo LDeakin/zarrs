@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Bump maximum supported `opendal` version from 0.47 to 0.48
 
+### Fixed
+ - Fixed handling of empty shards with a variable length data type with sharding partial decoder
+
 ## [0.16.0] - 2024-07-28
 
 ### Highlights

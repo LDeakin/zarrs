@@ -143,12 +143,11 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             return Ok(array_subsets
                 .iter()
                 .map(|decoded_region| {
-                    ArrayBytes::from(
-                        self.decoded_representation
-                            .fill_value()
-                            .as_ne_bytes()
-                            .repeat(decoded_region.num_elements_usize()),
-                    )
+                    let array_size = ArraySize::new(
+                        self.decoded_representation.data_type().size(),
+                        decoded_region.num_elements(),
+                    );
+                    ArrayBytes::new_fill_value(array_size, self.decoded_representation.fill_value())
                 })
                 .collect());
         };
@@ -468,12 +467,11 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
             return Ok(array_subsets
                 .iter()
                 .map(|decoded_region| {
-                    ArrayBytes::from(
-                        self.decoded_representation
-                            .fill_value()
-                            .as_ne_bytes()
-                            .repeat(decoded_region.num_elements_usize()),
-                    )
+                    let array_size = ArraySize::new(
+                        self.decoded_representation.data_type().size(),
+                        decoded_region.num_elements(),
+                    );
+                    ArrayBytes::new_fill_value(array_size, self.decoded_representation.fill_value())
                 })
                 .collect());
         };
