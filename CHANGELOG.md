@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2024-07-30
+
 ### Changed
  - Bump maximum supported `opendal` version from 0.47 to 0.48
 
@@ -915,7 +917,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.1
 [0.16.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.0
 [0.15.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.1
 [0.15.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.15.0
