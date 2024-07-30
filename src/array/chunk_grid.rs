@@ -456,6 +456,38 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
             None
         }
     }
+
+    /// Return an array subset indicating the chunks intersecting `array_subset`.
+    ///
+    /// Returns [`None`] if the intersecting chunks cannot be determined.
+    ///
+    /// # Errors
+    /// Returns [`IncompatibleDimensionalityError`] if the array subset has an incorrect dimensionality.
+    fn chunks_in_array_subset(
+        &self,
+        array_subset: &ArraySubset,
+        array_shape: &[u64],
+    ) -> Result<Option<ArraySubset>, IncompatibleDimensionalityError> {
+        match array_subset.end_inc() {
+            Some(end) => {
+                let chunks_start = self.chunk_indices(array_subset.start(), array_shape)?;
+                let chunks_end = self
+                    .chunk_indices(&end, array_shape)?
+                    .map_or_else(|| unsafe { self.grid_shape_unchecked(array_shape) }, Some);
+
+                Ok(
+                    if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
+                        Some(unsafe {
+                            ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
+                        })
+                    } else {
+                        None
+                    },
+                )
+            }
+            None => Ok(Some(ArraySubset::new_empty(self.dimensionality()))),
+        }
+    }
 }
 
 dyn_clone::clone_trait_object!(ChunkGridTraits);

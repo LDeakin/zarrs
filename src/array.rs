@@ -655,28 +655,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
         &self,
         array_subset: &ArraySubset,
     ) -> Result<Option<ArraySubset>, IncompatibleDimensionalityError> {
-        match array_subset.end_inc() {
-            Some(end) => {
-                let chunks_start = self
-                    .chunk_grid()
-                    .chunk_indices(array_subset.start(), self.shape())?;
-                let chunks_end = self
-                    .chunk_grid()
-                    .chunk_indices(&end, self.shape())?
-                    .map_or_else(|| self.chunk_grid_shape(), Some);
-
-                Ok(
-                    if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
-                        Some(unsafe {
-                            ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
-                        })
-                    } else {
-                        None
-                    },
-                )
-            }
-            None => Ok(Some(ArraySubset::new_empty(self.dimensionality()))),
-        }
+        self.chunk_grid
+            .chunks_in_array_subset(array_subset, self.shape())
     }
 
     /// Calculate the recommended codec concurrency.
