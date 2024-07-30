@@ -3,7 +3,7 @@ use crate::array::{
         ArrayBytes, ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
         CodecOptions, RawBytes,
     },
-    ChunkRepresentation, DataType,
+    ArraySize, ChunkRepresentation, DataType,
 };
 
 #[cfg(feature = "async")]
@@ -38,11 +38,13 @@ fn do_partial_decode<'a>(
     match decoded {
         None => {
             for array_subset in decoded_regions {
-                let bytes_subset = decoded_representation
-                    .fill_value()
-                    .as_ne_bytes()
-                    .repeat(array_subset.num_elements_usize());
-                decoded_bytes.push(ArrayBytes::from(bytes_subset));
+                let array_size = ArraySize::new(
+                    decoded_representation.data_type().size(),
+                    array_subset.num_elements(),
+                );
+                let fill_value =
+                    ArrayBytes::new_fill_value(array_size, decoded_representation.fill_value());
+                decoded_bytes.push(fill_value);
             }
         }
         Some(decoded_value) => {

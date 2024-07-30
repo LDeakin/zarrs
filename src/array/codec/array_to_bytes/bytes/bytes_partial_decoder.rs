@@ -1,12 +1,10 @@
-use std::borrow::Cow;
-
 use crate::{
     array::{
         codec::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ArrayBytes, ChunkRepresentation, DataType, DataTypeSize,
+        ArrayBytes, ArraySize, ChunkRepresentation, DataType, DataTypeSize,
     },
     array_subset::IncompatibleArraySubsetAndShapeError,
 };
@@ -75,11 +73,13 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                         .partial_decode_concat(&byte_ranges, options)?
                         .map_or_else(
                             || {
-                                Cow::Owned(
-                                    self.decoded_representation
-                                        .fill_value()
-                                        .as_ne_bytes()
-                                        .repeat(array_subset.num_elements_usize()),
+                                let array_size = ArraySize::new(
+                                    self.decoded_representation.data_type().size(),
+                                    array_subset.num_elements(),
+                                );
+                                ArrayBytes::new_fill_value(
+                                    array_size,
+                                    self.decoded_representation.fill_value(),
                                 )
                             },
                             |mut decoded| {
@@ -91,11 +91,11 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                                         );
                                     }
                                 }
-                                decoded
+                                ArrayBytes::from(decoded)
                             },
                         );
 
-                    bytes.push(ArrayBytes::from(decoded));
+                    bytes.push(decoded);
                 }
             }
         }
@@ -183,11 +183,13 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
                 .await?
                 .map_or_else(
                     || {
-                        Cow::Owned(
-                            self.decoded_representation
-                                .fill_value()
-                                .as_ne_bytes()
-                                .repeat(array_subset.num_elements_usize()),
+                        let array_size = ArraySize::new(
+                            self.decoded_representation.data_type().size(),
+                            array_subset.num_elements(),
+                        );
+                        ArrayBytes::new_fill_value(
+                            array_size,
+                            self.decoded_representation.fill_value(),
                         )
                     },
                     |mut decoded| {
@@ -199,11 +201,11 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder<'_> {
                                 );
                             }
                         }
-                        decoded
+                        ArrayBytes::from(decoded)
                     },
                 );
 
-            bytes.push(ArrayBytes::from(decoded));
+            bytes.push(decoded);
         }
         Ok(bytes)
     }

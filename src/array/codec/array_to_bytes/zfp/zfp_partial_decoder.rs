@@ -4,7 +4,7 @@ use crate::{
             ArrayBytes, ArrayPartialDecoderTraits, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ChunkRepresentation, DataType,
+        ArraySize, ChunkRepresentation, DataType,
     },
     array_subset::ArraySubset,
     byte_range::extract_byte_ranges_concat,
@@ -91,12 +91,15 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
             }
             None => {
                 for decoded_region in decoded_regions {
-                    out.push(ArrayBytes::from(
-                        self.decoded_representation
-                            .fill_value()
-                            .as_ne_bytes()
-                            .repeat(decoded_region.num_elements_usize()),
-                    ));
+                    let array_size = ArraySize::new(
+                        self.decoded_representation.data_type().size(),
+                        decoded_region.num_elements(),
+                    );
+                    let fill_value = ArrayBytes::new_fill_value(
+                        array_size,
+                        self.decoded_representation.fill_value(),
+                    );
+                    out.push(fill_value);
                 }
             }
         }
@@ -184,12 +187,15 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
             }
             None => {
                 for decoded_region in decoded_regions {
-                    out.push(ArrayBytes::from(
-                        self.decoded_representation
-                            .fill_value()
-                            .as_ne_bytes()
-                            .repeat(decoded_region.num_elements_usize()),
-                    ));
+                    let array_size = ArraySize::new(
+                        self.decoded_representation.data_type().size(),
+                        decoded_region.num_elements(),
+                    );
+                    let fill_value = ArrayBytes::new_fill_value(
+                        array_size,
+                        self.decoded_representation.fill_value(),
+                    );
+                    out.push(fill_value);
                 }
             }
         }
