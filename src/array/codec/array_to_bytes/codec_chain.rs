@@ -595,6 +595,14 @@ mod tests {
     "name": "pcodec"
 }"#;
 
+    #[cfg(feature = "gdeflate")]
+    const JSON_GDEFLATE: &str = r#"{ 
+    "name": "gdeflate",
+    "configuration": {
+        "level": 5
+    }
+}"#;
+
     fn codec_chain_round_trip_impl(
         chunk_representation: ChunkRepresentation,
         elements: Vec<f32>,
@@ -618,6 +626,8 @@ mod tests {
             serde_json::from_str(JSON_ZSTD).unwrap(),
             #[cfg(feature = "bz2")]
             serde_json::from_str(JSON_BZ2).unwrap(),
+            #[cfg(feature = "gdeflate")]
+            serde_json::from_str(JSON_GDEFLATE).unwrap(),
             #[cfg(feature = "crc32c")]
             serde_json::from_str(JSON_CRC32C).unwrap(),
         ];

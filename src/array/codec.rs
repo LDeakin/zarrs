@@ -163,6 +163,10 @@ impl Codec {
                 bytes_to_bytes::crc32c::IDENTIFIER => {
                     return bytes_to_bytes::crc32c::create_codec_crc32c(metadata);
                 }
+                #[cfg(feature = "gdeflate")]
+                bytes_to_bytes::gdeflate::IDENTIFIER => {
+                    return bytes_to_bytes::gdeflate::create_codec_gdeflate(metadata);
+                }
                 #[cfg(feature = "gzip")]
                 bytes_to_bytes::gzip::IDENTIFIER => {
                     return bytes_to_bytes::gzip::create_codec_gzip(metadata);

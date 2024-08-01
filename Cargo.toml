@@ -1,6 +1,6 @@
 [package]
 name = "zarrs"
-version = "0.16.1"
+version = "0.16.2"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.75"
@@ -18,6 +18,7 @@ bitround = [] # Enable the experimental bitround codec
 blosc = ["dep:blosc-sys"] # Enable the blosc codec
 bz2 = ["dep:bzip2"] # Enable the experimental bz2 codec
 crc32c = ["dep:crc32c"] # Enable the crc32c checksum codec
+gdeflate = ["dep:gdeflate-sys"] # Enable the experimental gdeflate codec
 gzip = ["dep:flate2"] # Enable the gzip codec
 pcodec = ["dep:pco"] # Enable the experimental pcodec codec
 sharding = [] # Enable the sharding codec
@@ -51,6 +52,7 @@ derive_more = "0.99.0"
 dyn-clone = "1.0.0"
 flate2 = { version = "1.0.30", optional = true }
 futures = { version = "0.3.29", optional = true }
+gdeflate-sys = { version = "0.4.1", optional = true }
 half = { version = "2.0.0", features = ["bytemuck"] }
 inventory = "0.3.0"
 itertools = "0.13.0"

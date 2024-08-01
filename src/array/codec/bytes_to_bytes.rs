@@ -6,6 +6,8 @@ pub mod blosc;
 pub mod bz2;
 #[cfg(feature = "crc32c")]
 pub mod crc32c;
+#[cfg(feature = "gdeflate")]
+pub mod gdeflate;
 #[cfg(feature = "gzip")]
 pub mod gzip;
 #[cfg(feature = "zstd")]
