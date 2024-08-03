@@ -18,7 +18,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{
     gdeflate_decode, gdeflate_partial_decoder, GDeflateCodecConfiguration,
     GDeflateCodecConfigurationV1, GDeflateCompressionLevel, GDeflateCompressionLevelError,
-    GDeflateCompressor, GDEFLATE_PAGE_SIZE_UNCOMPRESSED, GDEFLATE_STATIC_HEADER_LENGTH, IDENTIFIER,
+    GDeflateCompressor, GDEFLATE_STATIC_HEADER_LENGTH, IDENTIFIER,
 };
 
 /// A `gdeflate` codec implementation.
@@ -91,9 +91,9 @@ impl BytesToBytesCodecTraits for GDeflateCodec {
 
         // Header
         let decoded_value_len = u64::try_from(decoded_value.len()).unwrap();
-        let page_size_uncompressed = u64::try_from(GDEFLATE_PAGE_SIZE_UNCOMPRESSED).unwrap();
+        let num_pages = u64::try_from(page_sizes.len()).unwrap();
         encoded_value.extend_from_slice(&decoded_value_len.to_le_bytes());
-        encoded_value.extend_from_slice(&page_size_uncompressed.to_le_bytes());
+        encoded_value.extend_from_slice(&num_pages.to_le_bytes());
         for page_size_compressed in page_sizes {
             let page_size_compressed = u64::try_from(page_size_compressed).unwrap();
             encoded_value.extend_from_slice(&page_size_compressed.to_le_bytes());

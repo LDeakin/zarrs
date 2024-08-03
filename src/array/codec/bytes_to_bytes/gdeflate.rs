@@ -6,14 +6,7 @@
 //!
 //! The static header is composed of the following:
 //!  - `UNCOMPRESSED_INPUT_LENGTH`: a little-endian 64-bit unsigned integer holding the total uncompressed length of the input bytes.
-//!  - `UNCOMPRESSED_PAGE_SIZE`: a little-endian 64-bit unsigned integer holding the uncompressed page size (typically 65536).
-//!
-//! From the static header, the number of pages can be calculated as
-//! ```text
-//! NUMBER_OF_PAGES =
-//!   (UNCOMPRESSED_INPUT_LENGTH + UNCOMPRESSED_PAGE_SIZE - 1) /
-//!   UNCOMPRESSED_PAGE_SIZE
-//! ```
+//!  - `NUMBER_OF_PAGES`: a little-endian 64-bit unsigned integer holding the number of compressed pages.
 //!
 //! The dynamic header is composed of the following:
 //!  - `COMPRESSED_PAGE_SIZES`: `NUMBER_OF_PAGES` little-endian 64-bit unsigned integers holding the compressed sizes of each page.
@@ -70,15 +63,14 @@ fn gdeflate_decode(encoded_value: &RawBytes<'_>) -> Result<Vec<u8>, CodecError> 
         ));
     }
 
-    // Decode the header
+    // Decode the static header
     let as_u64 = |bytes: &[u8]| -> u64 { u64::from_le_bytes(bytes.try_into().unwrap()) };
     let decoded_value_len = as_u64(&encoded_value[0..size_of::<u64>()]);
-    let page_size_uncompressed = as_u64(&encoded_value[2 * size_of::<u64>()..3 * size_of::<u64>()]);
     let decoded_value_len = usize::try_from(decoded_value_len).unwrap();
-    let page_size_uncompressed = usize::try_from(page_size_uncompressed).unwrap();
+    let num_pages = as_u64(&encoded_value[size_of::<u64>()..2 * size_of::<u64>()]);
+    let num_pages = usize::try_from(num_pages).unwrap();
 
-    // Get number of pages and check length
-    let num_pages = decoded_value_len.div_ceil(page_size_uncompressed);
+    // Check length of dynamic header
     let dynamic_header_length = num_pages * size_of::<u64>();
     if encoded_value.len() < GDEFLATE_STATIC_HEADER_LENGTH + dynamic_header_length {
         return Err(CodecError::UnexpectedChunkDecodedSize(
@@ -93,29 +85,24 @@ fn gdeflate_decode(encoded_value: &RawBytes<'_>) -> Result<Vec<u8>, CodecError> 
     let mut page_offset = GDEFLATE_STATIC_HEADER_LENGTH + dynamic_header_length;
     for page in 0..num_pages {
         // Get the compressed page length
-        let page_size_compressed = GDEFLATE_STATIC_HEADER_LENGTH + page * size_of::<u64>();
-        let page_size_compressed =
-            as_u64(&encoded_value[page_size_compressed..page_size_compressed + size_of::<u64>()]);
+        let page_size_compressed_offset = GDEFLATE_STATIC_HEADER_LENGTH + page * size_of::<u64>();
+        let page_size_compressed = as_u64(
+            &encoded_value
+                [page_size_compressed_offset..page_size_compressed_offset + size_of::<u64>()],
+        );
         let page_size_compressed = usize::try_from(page_size_compressed).unwrap();
-
-        // Get the uncompressed page length
-        let page_size_uncompressed =
-            page_size_uncompressed.min(decoded_value_len - decoded_value.len());
 
         // Get the compressed page data
         let page_data = &encoded_value[page_offset..page_offset + page_size_compressed];
-        let page = gdeflate_sys::libdeflate_gdeflate_in_page {
+        let in_page = gdeflate_sys::libdeflate_gdeflate_in_page {
             data: page_data.as_ptr().cast(),
-            nbytes: page_size_uncompressed,
+            nbytes: page_data.len(),
         };
 
         // Decompress the page
-        let spare_capacity = decoded_value.spare_capacity_mut();
-        decompressor.decompress_page(
-            page,
-            spare_capacity.as_mut_ptr().cast(),
-            spare_capacity.len(),
-        )?;
+        let data_out = decoded_value.spare_capacity_mut();
+        let page_size_uncompressed =
+            decompressor.decompress_page(in_page, data_out.as_mut_ptr().cast(), data_out.len())?;
 
         unsafe {
             decoded_value.set_len(decoded_value.len() + page_size_uncompressed);
@@ -160,7 +147,7 @@ impl GDeflateCompressor {
             let page_offset = i * GDEFLATE_PAGE_SIZE_UNCOMPRESSED;
 
             let data_out = compressed_bytes.spare_capacity_mut();
-            let mut compressed_page = gdeflate_sys::libdeflate_gdeflate_out_page {
+            let mut out_page = gdeflate_sys::libdeflate_gdeflate_out_page {
                 data: data_out.as_mut_ptr().cast(),
                 nbytes: data_out.len(),
             };
@@ -172,7 +159,7 @@ impl GDeflateCompressor {
                     self.0,
                     data_in.as_ptr().cast(),
                     data_in.len(),
-                    &mut compressed_page,
+                    &mut out_page,
                     1,
                 )
             };
@@ -214,7 +201,7 @@ impl GDeflateDecompressor {
         mut in_page: gdeflate_sys::libdeflate_gdeflate_in_page,
         out: *mut u8,
         out_nbytes_avail: usize,
-    ) -> Result<(), CodecError> {
+    ) -> Result<usize, CodecError> {
         let mut actual_out_nbytes: usize = 0;
         let result = unsafe {
             gdeflate_sys::libdeflate_gdeflate_decompress(
@@ -223,12 +210,12 @@ impl GDeflateDecompressor {
                 1,
                 out.cast(),
                 out_nbytes_avail,
-                &mut actual_out_nbytes, // TODO: Check?
+                &mut actual_out_nbytes,
             )
         };
         assert_eq!(actual_out_nbytes, out_nbytes_avail);
         if result == 0 {
-            Ok(())
+            Ok(actual_out_nbytes)
         } else {
             Err(CodecError::Other(
                 "gdeflate page decompression failed".to_string(),
