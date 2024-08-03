@@ -17,6 +17,8 @@ pub mod codec {
     pub mod bz2;
     /// `crc32c` codec metadata.
     pub mod crc32c;
+    /// `gdeflate` codec metadata.
+    pub mod gdeflate;
     /// `gzip` codec metadata.
     pub mod gzip;
     /// `pcodec` codec metadata.

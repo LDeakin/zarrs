@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add the experimental `gdeflate` bytes-to-bytes codec
+
 ## [0.16.1] - 2024-07-30
 
 ### Changed
