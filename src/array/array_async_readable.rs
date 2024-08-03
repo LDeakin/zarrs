@@ -7,7 +7,7 @@ use crate::{
     metadata::MetadataRetrieveVersion,
     node::NodePath,
     storage::{
-        data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncBytes,
+        meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncBytes,
         AsyncReadableStorageTraits, StorageError, StorageHandle,
     },
 };
@@ -707,7 +707,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .create_async_readable_transformer(storage_handle);
         let input_handle = Box::new(AsyncStoragePartialDecoder::new(
             storage_transformer,
-            data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
+            self.chunk_key(chunk_indices),
         ));
 
         let bytes = self
@@ -765,7 +765,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .create_async_readable_transformer(storage_handle);
         let input_handle = Box::new(AsyncStoragePartialDecoder::new(
             storage_transformer,
-            data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
+            self.chunk_key(chunk_indices),
         ));
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         Ok(self

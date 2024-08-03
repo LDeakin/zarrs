@@ -85,7 +85,7 @@ use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
     metadata::{array_metadata_v2_to_v3, AdditionalFields, MetadataConvertVersion},
     node::NodePath,
-    storage::storage_transformer::StorageTransformerChain,
+    storage::{data_key, storage_transformer::StorageTransformerChain, StoreKey},
 };
 
 /// An ND index to an element in an array.
@@ -527,6 +527,12 @@ impl<TStorage: ?Sized> Array<TStorage> {
     #[must_use]
     pub fn chunk_grid_shape(&self) -> Option<ArrayShape> {
         unsafe { self.chunk_grid().grid_shape_unchecked(self.shape()) }
+    }
+
+    /// Return the [`StoreKey`] of the chunk at `chunk_indices`.
+    #[must_use]
+    pub fn chunk_key(&self, chunk_indices: &[u64]) -> StoreKey {
+        data_key(self.path(), chunk_indices, self.chunk_key_encoding())
     }
 
     /// Return the origin of the chunk at `chunk_indices`.

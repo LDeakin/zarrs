@@ -9,8 +9,8 @@ use crate::{
     metadata::MetadataRetrieveVersion,
     node::NodePath,
     storage::{
-        data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, ReadableStorageTraits,
-        StorageError, StorageHandle,
+        meta_key, meta_key_v2_array, meta_key_v2_attributes, ReadableStorageTraits, StorageError,
+        StorageHandle,
     },
 };
 
@@ -784,7 +784,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 .create_readable_transformer(storage_handle);
             let input_handle = Box::new(StoragePartialDecoder::new(
                 storage_transformer,
-                data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
+                self.chunk_key(chunk_indices),
             ));
 
             self.codecs()
@@ -838,7 +838,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             .create_readable_transformer(storage_handle);
         let input_handle = Box::new(StoragePartialDecoder::new(
             storage_transformer,
-            data_key(self.path(), chunk_indices, self.chunk_key_encoding()),
+            self.chunk_key(chunk_indices),
         ));
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         Ok(self

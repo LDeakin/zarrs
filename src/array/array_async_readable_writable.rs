@@ -146,7 +146,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             chunk_subset_bytes.validate(chunk_subset.num_elements(), self.data_type().size())?;
 
             // Lock the chunk
-            // let key = data_key(self.path(), chunk_indices, self.chunk_key_encoding());
+            // let key = self.chunk_key(chunk_indices);
             // let mutex = self.storage.mutex(&key).await?;
             // let _lock = mutex.lock();
 

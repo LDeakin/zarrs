@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - Add the experimental `gdeflate` bytes-to-bytes codec
+ - Add `Array::chunk_key()`
 
 ## [0.16.1] - 2024-07-30
 
