@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add the experimental `gdeflate` bytes-to-bytes codec
  - Add `Array::chunk_key()`
+ - Add `ArrayShardedExt::inner_chunk_grid_shape()`
 
 ## [0.16.1] - 2024-07-30
 

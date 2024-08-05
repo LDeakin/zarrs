@@ -1,4 +1,4 @@
-use super::{codec::ShardingCodecConfiguration, Array, ChunkGrid, ChunkShape};
+use super::{codec::ShardingCodecConfiguration, Array, ArrayShape, ChunkGrid, ChunkShape};
 
 /// An [`Array`] extension trait to simplify working with arrays using the `sharding_indexed` codec.
 pub trait ArrayShardedExt {
@@ -14,6 +14,11 @@ pub trait ArrayShardedExt {
     ///
     /// Returns the normal chunk grid for an unsharded array.
     fn inner_chunk_grid(&self) -> ChunkGrid;
+
+    /// Return the shape of the inner chunk grid (i.e., the number of inner chunks).
+    ///
+    /// Returns the normal chunk grid shape for an unsharded array.
+    fn inner_chunk_grid_shape(&self) -> Option<ArrayShape>;
 }
 
 impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
@@ -48,6 +53,13 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
             ))
         } else {
             self.chunk_grid().clone()
+        }
+    }
+
+    fn inner_chunk_grid_shape(&self) -> Option<ArrayShape> {
+        unsafe {
+            // SAFETY: The inner chunk grid dimensionality is validated against the array shape on creation
+            self.inner_chunk_grid().grid_shape_unchecked(self.shape())
         }
     }
 }
