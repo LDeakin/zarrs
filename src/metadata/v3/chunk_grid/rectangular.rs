@@ -11,7 +11,7 @@ pub const IDENTIFIER: &str = "rectangular";
 /// Configuration parameters for a `rectangular` chunk grid.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct RectangularChunkGridConfiguration {
     /// The chunk shape.
     pub chunk_shape: Vec<RectangularChunkGridDimensionConfiguration>,

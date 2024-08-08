@@ -8,7 +8,7 @@ use derive_more::Display;
 
 /// The shape, data type, and fill value of an `array`.
 #[derive(Clone, Debug, Display)]
-#[display(fmt = "{array_shape:?} {data_type} {fill_value}")]
+#[display("{array_shape:?} {data_type} {fill_value}")]
 pub struct ArrayRepresentationBase<TDim>
 where
     TDim: Into<u64> + core::fmt::Debug + Copy,

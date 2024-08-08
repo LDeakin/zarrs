@@ -15,7 +15,7 @@ pub enum ZstdCodecConfiguration {
 /// Configuration parameters for the `zstd` codec (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct ZstdCodecConfigurationV1 {
     /// The compression level.
     pub level: ZstdCompressionLevel,

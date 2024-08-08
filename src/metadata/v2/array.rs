@@ -45,7 +45,7 @@ use super::MetadataV2;
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, Display)]
 #[serde(tag = "node_type", rename = "array")]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct ArrayMetadataV2 {
     /// An integer defining the version of the storage specification to which the array adheres. Must be `2`.
     pub zarr_format: monostate::MustBe!(2u64),

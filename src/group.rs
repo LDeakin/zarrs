@@ -49,7 +49,7 @@ pub use group_metadata_options::GroupMetadataOptions;
 /// A group.
 #[derive(Clone, Debug, Display)]
 #[display(
-    fmt = "group at {path} with metadata {}",
+    "group at {path} with metadata {}",
     "serde_json::to_string(metadata).unwrap_or_default()"
 )]
 pub struct Group<TStorage: ?Sized> {

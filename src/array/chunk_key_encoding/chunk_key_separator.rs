@@ -4,10 +4,10 @@ use derive_more::Display;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 pub enum ChunkKeySeparator {
     /// The slash '/' character.
-    #[display(fmt = "/")]
+    #[display("/")]
     Slash,
     /// The dot '.' character.
-    #[display(fmt = ".")]
+    #[display(".")]
     Dot,
 }
 

@@ -42,7 +42,7 @@ pub enum BytesCodecConfiguration {
 /// Configuration parameters for the `bytes` codec (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct BytesCodecConfigurationV1 {
     /// The target endianness. Required if the data type is larger than one byte.
     /// A string equal to either "big" or "little" in JSON.

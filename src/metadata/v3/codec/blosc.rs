@@ -98,7 +98,7 @@ pub enum BloscCodecConfiguration {
 /// Configuration parameters for the `blosc` codec (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct BloscCodecConfigurationV1 {
     /// The compressor.
     pub cname: BloscCompressor,

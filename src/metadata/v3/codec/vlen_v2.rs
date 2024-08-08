@@ -15,7 +15,7 @@ pub enum VlenV2CodecConfiguration {
 /// Configuration parameters for the `vlen_v2` codec (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, Default)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct VlenV2CodecConfigurationV1 {}
 
 impl VlenV2CodecConfigurationV1 {

@@ -26,7 +26,7 @@ pub enum GDeflateCodecConfiguration {
 /// # let configuration: GDeflateCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct GDeflateCodecConfigurationV1 {
     /// The compression level.
     pub level: GDeflateCompressionLevel,

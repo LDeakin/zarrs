@@ -27,10 +27,10 @@ pub enum FillValueMetadata {
     /// A float.
     Float(FillValueFloat),
     /// An array of integers. Suitable for raw (`r<N>`) and `binary` data types.
-    #[display(fmt = "{_0:?}")]
+    #[display("{_0:?}")]
     ByteArray(Vec<u8>),
     /// A complex number.
-    #[display(fmt = "{{re:{_0}, im:{_1}}}")]
+    #[display("{{re:{_0}, im:{_1}}}")]
     Complex(FillValueFloat, FillValueFloat),
     /// A string.
     String(String),

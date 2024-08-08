@@ -7,7 +7,7 @@ use thiserror::Error;
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#path>
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display)]
-#[display(fmt = "{}", "_0.to_string_lossy()")]
+#[display("{}", _0.to_string_lossy())]
 pub struct NodePath(PathBuf);
 
 /// An invalid node path.

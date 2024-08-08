@@ -16,7 +16,7 @@ pub enum TransposeCodecConfiguration {
 /// Configuration parameters for the Transpose codec (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct TransposeCodecConfigurationV1 {
     /// The transpose order defining how to permute the array.
     pub order: TransposeOrder,

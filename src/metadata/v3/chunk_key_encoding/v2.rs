@@ -10,7 +10,7 @@ pub const IDENTIFIER: &str = "v2";
 /// A `v2` chunk key encoding configuration.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct V2ChunkKeyEncodingConfiguration {
     /// The chunk key separator.
     #[serde(default = "v2_separator")]

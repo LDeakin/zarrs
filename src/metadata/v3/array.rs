@@ -41,7 +41,7 @@ use crate::array::{ArrayShape, DimensionName, FillValueMetadata};
 /// }
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct ArrayMetadataV3 {
     /// An integer defining the version of the storage specification to which the array adheres. Must be `3`.
     pub zarr_format: monostate::MustBe!(3u64),

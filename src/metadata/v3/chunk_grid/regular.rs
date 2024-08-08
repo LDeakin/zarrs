@@ -12,8 +12,8 @@ pub const IDENTIFIER: &str = "regular";
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display(
-    fmt = "regular chunk grid {}",
-    "serde_json::to_string(self).unwrap_or_default()"
+    "regular chunk grid {}",
+    serde_json::to_string(self).unwrap_or_default()
 )]
 pub struct RegularChunkGridConfiguration {
     /// The chunk shape.

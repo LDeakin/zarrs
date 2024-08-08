@@ -26,7 +26,7 @@ pub enum Bz2CodecConfiguration {
 /// # let configuration: Bz2CodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct Bz2CodecConfigurationV1 {
     /// The compression level.
     pub level: Bz2CompressionLevel,

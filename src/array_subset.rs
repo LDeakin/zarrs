@@ -29,7 +29,7 @@ use crate::{
 ///
 /// The unsafe `_unchecked methods` are mostly intended for internal use to avoid redundant input validation.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Default)]
-#[display(fmt = "start {start:?} shape {shape:?}")]
+#[display("start {start:?} shape {shape:?}")]
 pub struct ArraySubset {
     /// The start of the array subset.
     start: ArrayIndices,

@@ -35,7 +35,7 @@ impl Default for PcodecCodecConfiguration {
 // TODO: Examples for more advanced configurations
 // TODO: Docs about valid usage with base/k
 #[derive(Clone, PartialEq, Debug, Display)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct PcodecCodecConfigurationV1 {
     /// A compression level from 0-12, where 12 takes the longest and compresses the most.
     ///

@@ -4,13 +4,13 @@ use derive_more::Display;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 pub enum BytesRepresentation {
     /// The output size is fixed.
-    #[display(fmt = "fixed size: {_0}")]
+    #[display("fixed size: {_0}")]
     FixedSize(u64),
     /// The output size is bounded.
-    #[display(fmt = "bounded size: {_0}")]
+    #[display("bounded size: {_0}")]
     BoundedSize(u64),
     /// The output size is unbounded/indeterminate.
-    #[display(fmt = "unbounded size")]
+    #[display("unbounded size")]
     UnboundedSize,
 }
 

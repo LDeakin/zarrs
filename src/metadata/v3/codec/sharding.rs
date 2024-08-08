@@ -53,7 +53,7 @@ pub enum ShardingCodecConfiguration {
 /// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct ShardingCodecConfigurationV1 {
     /// An array of integers specifying the shape of the inner chunks in a shard along each dimension of the outer array.
     pub chunk_shape: ChunkShape,

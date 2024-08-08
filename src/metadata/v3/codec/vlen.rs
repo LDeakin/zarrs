@@ -17,7 +17,7 @@ pub enum VlenCodecConfiguration {
 /// Configuration parameters for the `vlen` codec (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct VlenCodecConfigurationV1 {
     /// Encoding for the variable length data indices (offsets).
     pub index_codecs: Vec<MetadataV3>,

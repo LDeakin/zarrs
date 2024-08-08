@@ -17,7 +17,7 @@ pub enum Crc32cCodecConfiguration {
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html#configuration-parameters>.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
-#[display(fmt = "{}", "serde_json::to_string(self).unwrap_or_default()")]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct Crc32cCodecConfigurationV1 {}
 
 #[cfg(test)]
