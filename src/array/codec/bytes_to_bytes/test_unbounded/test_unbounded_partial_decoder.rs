@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use crate::{
     array::{
@@ -13,12 +13,12 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `test_unbounded` codec.
 pub struct TestUnboundedPartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> TestUnboundedPartialDecoder<'a> {
     /// Create a new partial decoder for the `test_unbounded` codec.
-    pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }
@@ -47,13 +47,13 @@ impl BytesPartialDecoderTraits for TestUnboundedPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `test_unbounded` codec.
 pub struct AsyncTestUnboundedPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
 #[cfg(feature = "async")]
 impl<'a> AsyncTestUnboundedPartialDecoder<'a> {
     /// Create a new partial decoder for the `test_unbounded` codec.
-    pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }

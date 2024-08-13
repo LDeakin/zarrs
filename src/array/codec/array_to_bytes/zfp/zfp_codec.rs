@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use zfp_sys::{
     zfp_compress,
@@ -240,11 +240,11 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
 
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(zfp_partial_decoder::ZfpPartialDecoder::new(
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(zfp_partial_decoder::ZfpPartialDecoder::new(
             input_handle,
             decoded_representation,
             self.mode,
@@ -255,11 +255,11 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(zfp_partial_decoder::AsyncZfpPartialDecoder::new(
             input_handle,
             decoded_representation,
             self.mode,

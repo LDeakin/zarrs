@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     array::{
         codec::{
@@ -16,7 +18,7 @@ use super::{reverse_endianness, Endianness};
 
 /// Partial decoder for the `bytes` codec.
 pub struct BytesPartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
 }
@@ -24,7 +26,7 @@ pub struct BytesPartialDecoder<'a> {
 impl<'a> BytesPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
     ) -> Self {
@@ -106,7 +108,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
 pub struct AsyncBytesPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
 }
@@ -115,7 +117,7 @@ pub struct AsyncBytesPartialDecoder<'a> {
 impl<'a> AsyncBytesPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
     ) -> Self {

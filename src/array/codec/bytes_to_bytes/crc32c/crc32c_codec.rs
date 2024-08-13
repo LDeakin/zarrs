@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use crate::{
     array::{
@@ -98,11 +98,11 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
 
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
             input_handle,
         )))
     }
@@ -110,11 +110,11 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             crc32c_partial_decoder::AsyncCrc32cPartialDecoder::new(input_handle),
         ))
     }

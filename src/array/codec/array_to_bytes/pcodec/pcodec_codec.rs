@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, ModeSpec, PagingSpec};
 
@@ -229,11 +229,11 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
 
     fn partial_decoder<'a>(
         &self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(pcodec_partial_decoder::PcodecPartialDecoder::new(
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(pcodec_partial_decoder::PcodecPartialDecoder::new(
             input_handle,
             decoded_representation.clone(),
         )))
@@ -242,11 +242,11 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             pcodec_partial_decoder::AsyncPCodecPartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),

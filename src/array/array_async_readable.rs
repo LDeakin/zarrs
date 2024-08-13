@@ -283,7 +283,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     pub async fn async_partial_decoder<'a>(
         &'a self,
         chunk_indices: &[u64],
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
         self.async_partial_decoder_opt(chunk_indices, &CodecOptions::default())
             .await
     }
@@ -705,7 +705,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_async_readable_transformer(storage_handle);
-        let input_handle = Box::new(AsyncStoragePartialDecoder::new(
+        let input_handle = Arc::new(AsyncStoragePartialDecoder::new(
             storage_transformer,
             self.chunk_key(chunk_indices),
         ));
@@ -758,12 +758,12 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         &'a self,
         chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_async_readable_transformer(storage_handle);
-        let input_handle = Box::new(AsyncStoragePartialDecoder::new(
+        let input_handle = Arc::new(AsyncStoragePartialDecoder::new(
             storage_transformer,
             self.chunk_key(chunk_indices),
         ));

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     array::{
         codec::{
@@ -17,7 +19,7 @@ use super::{zarr_to_zfp_data_type, zfp_decode, ZfpMode};
 
 /// Partial decoder for the `zfp` codec.
 pub struct ZfpPartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
     write_header: bool,
@@ -26,7 +28,7 @@ pub struct ZfpPartialDecoder<'a> {
 impl<'a> ZfpPartialDecoder<'a> {
     /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
         write_header: bool,
@@ -110,7 +112,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `zfp` codec.
 pub struct AsyncZfpPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
     write_header: bool,
@@ -120,7 +122,7 @@ pub struct AsyncZfpPartialDecoder<'a> {
 impl<'a> AsyncZfpPartialDecoder<'a> {
     /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
         write_header: bool,

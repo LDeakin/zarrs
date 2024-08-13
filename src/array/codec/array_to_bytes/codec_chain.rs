@@ -1,5 +1,7 @@
 //! An array to bytes codec formed by joining an array to array sequence, array to bytes, and bytes to bytes sequence of codecs.
 
+use std::sync::Arc;
+
 use crate::{
     array::{
         codec::{
@@ -301,10 +303,10 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
     fn partial_decoder<'a>(
         &'a self,
-        mut input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        mut input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
         let bytes_representations =
@@ -316,14 +318,14 @@ impl ArrayToBytesCodecTraits for CodecChain {
             bytes_representations.iter().rev().skip(1),
         ) {
             if Some(codec_index) == self.cache_index {
-                input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
+                input_handle = Arc::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
             }
             codec_index += 1;
             input_handle = codec.partial_decoder(input_handle, bytes_representation, options)?;
         }
 
         if Some(codec_index) == self.cache_index {
-            input_handle = Box::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
+            input_handle = Arc::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
         };
 
         let mut input_handle = {
@@ -338,7 +340,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             array_representations.iter().rev().skip(1),
         ) {
             if Some(codec_index) == self.cache_index {
-                input_handle = Box::new(ArrayPartialDecoderCache::new(
+                input_handle = Arc::new(ArrayPartialDecoderCache::new(
                     &*input_handle,
                     array_representation.clone(),
                     options,
@@ -349,7 +351,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         }
 
         if Some(codec_index) == self.cache_index {
-            input_handle = Box::new(ArrayPartialDecoderCache::new(
+            input_handle = Arc::new(ArrayPartialDecoderCache::new(
                 &*input_handle,
                 array_representations.first().unwrap().clone(),
                 options,
@@ -362,10 +364,10 @@ impl ArrayToBytesCodecTraits for CodecChain {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        mut input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
         let bytes_representations =
@@ -378,7 +380,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         ) {
             if Some(codec_index) == self.cache_index {
                 input_handle =
-                    Box::new(BytesPartialDecoderCache::async_new(&*input_handle, options).await?);
+                    Arc::new(BytesPartialDecoderCache::async_new(&*input_handle, options).await?);
             }
             codec_index += 1;
             input_handle = codec
@@ -388,7 +390,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if Some(codec_index) == self.cache_index {
             input_handle =
-                Box::new(BytesPartialDecoderCache::async_new(&*input_handle, options).await?);
+                Arc::new(BytesPartialDecoderCache::async_new(&*input_handle, options).await?);
         };
 
         let mut input_handle = {
@@ -405,7 +407,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             array_representations.iter().rev().skip(1),
         ) {
             if Some(codec_index) == self.cache_index {
-                input_handle = Box::new(
+                input_handle = Arc::new(
                     ArrayPartialDecoderCache::async_new(
                         &*input_handle,
                         array_representation.clone(),
@@ -421,7 +423,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         }
 
         if Some(codec_index) == self.cache_index {
-            input_handle = Box::new(
+            input_handle = Arc::new(
                 ArrayPartialDecoderCache::async_new(
                     &*input_handle,
                     array_representations.first().unwrap().clone(),
@@ -665,7 +667,7 @@ mod tests {
         // }
         // assert_eq!(bytes, decoded);
 
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(
                 input_handle,

@@ -1,4 +1,8 @@
-use std::{borrow::Cow, num::NonZeroU64, sync::atomic::AtomicUsize};
+use std::{
+    borrow::Cow,
+    num::NonZeroU64,
+    sync::{atomic::AtomicUsize, Arc},
+};
 
 use crate::{
     array::{
@@ -343,11 +347,11 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
 
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             sharding_partial_decoder::ShardingPartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
@@ -363,11 +367,11 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             sharding_partial_decoder::AsyncShardingPartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),

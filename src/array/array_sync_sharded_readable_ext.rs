@@ -73,7 +73,7 @@ impl<'a> ArrayShardedReadableExtCache<'a> {
             Ok(partial_decoder.clone())
         } else {
             let partial_decoder: Arc<dyn ArrayPartialDecoderTraits> =
-                array.partial_decoder(shard_indices)?.into();
+                array.partial_decoder(shard_indices)?;
             cache.insert(shard_indices.to_vec(), partial_decoder.clone());
             Ok(partial_decoder)
         }

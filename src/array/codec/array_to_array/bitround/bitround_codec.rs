@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     array::{
         codec::{
@@ -111,11 +113,11 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
 
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             bitround_partial_decoder::BitroundPartialDecoder::new(
                 input_handle,
                 decoded_representation.data_type(),
@@ -127,11 +129,11 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             bitround_partial_decoder::AsyncBitroundPartialDecoder::new(
                 input_handle,
                 decoded_representation.data_type(),

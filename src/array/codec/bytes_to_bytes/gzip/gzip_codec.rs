@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     io::{Cursor, Read},
+    sync::Arc,
 };
 
 use flate2::bufread::{GzDecoder, GzEncoder};
@@ -104,21 +105,21 @@ impl BytesToBytesCodecTraits for GzipCodec {
 
     fn partial_decoder<'a>(
         &self,
-        r: Box<dyn BytesPartialDecoderTraits + 'a>,
+        r: Arc<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(gzip_partial_decoder::GzipPartialDecoder::new(r)))
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(gzip_partial_decoder::GzipPartialDecoder::new(r)))
     }
 
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        r: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             gzip_partial_decoder::AsyncGzipPartialDecoder::new(r),
         ))
     }

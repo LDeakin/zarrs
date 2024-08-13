@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use crate::{
     array::{
@@ -18,11 +18,11 @@ use super::{blosc_decompress_bytes_partial, blosc_typesize, blosc_validate};
 
 /// Partial decoder for the `blosc` codec.
 pub struct BloscPartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> BloscPartialDecoder<'a> {
-    pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }
@@ -67,12 +67,12 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `blosc` codec.
 pub struct AsyncBloscPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
 #[cfg(feature = "async")]
 impl<'a> AsyncBloscPartialDecoder<'a> {
-    pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }

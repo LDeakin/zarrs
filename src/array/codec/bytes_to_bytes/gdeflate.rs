@@ -232,7 +232,7 @@ impl Drop for GDeflateDecompressor {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
+    use std::{borrow::Cow, sync::Arc};
 
     use crate::{
         array::{
@@ -304,7 +304,7 @@ mod tests {
             ByteRange::FromStart(10, Some(2)),
         ];
 
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(
                 input_handle,
@@ -344,7 +344,7 @@ mod tests {
             ByteRange::FromStart(10, Some(2)),
         ];
 
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .async_partial_decoder(
                 input_handle,

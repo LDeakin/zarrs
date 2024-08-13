@@ -81,6 +81,7 @@ use crate::{
 use crate::storage::AsyncReadableStorage;
 
 use std::borrow::Cow;
+use std::sync::Arc;
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Read, Seek, SeekFrom},
@@ -489,10 +490,10 @@ pub trait ArrayToArrayCodecTraits:
     /// Returns a [`CodecError`] if initialisation fails.
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
@@ -501,10 +502,10 @@ pub trait ArrayToArrayCodecTraits:
     /// Returns a [`CodecError`] if initialisation fails.
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
 }
 
 dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
@@ -551,10 +552,10 @@ pub trait ArrayToBytesCodecTraits:
     /// Returns a [`CodecError`] if initialisation fails.
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
@@ -563,10 +564,10 @@ pub trait ArrayToBytesCodecTraits:
     /// Returns a [`CodecError`] if initialisation fails.
     async fn async_partial_decoder<'a>(
         &'a self,
-        mut input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        mut input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
 }
 
 dyn_clone::clone_trait_object!(ArrayToBytesCodecTraits);
@@ -616,10 +617,10 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     /// Returns a [`CodecError`] if initialisation fails.
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Initialises an asynchronous partial decoder.
@@ -628,10 +629,10 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
     /// Returns a [`CodecError`] if initialisation fails.
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError>;
 }
 
 dyn_clone::clone_trait_object!(BytesToBytesCodecTraits);

@@ -1,4 +1,4 @@
-use std::{mem::size_of, num::NonZeroU64};
+use std::{mem::size_of, num::NonZeroU64, sync::Arc};
 
 use crate::{
     array::{
@@ -268,11 +268,11 @@ impl ArrayToBytesCodecTraits for VlenCodec {
 
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(vlen_partial_decoder::VlenPartialDecoder::new(
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(vlen_partial_decoder::VlenPartialDecoder::new(
             input_handle,
             decoded_representation.clone(),
             &self.index_codecs,
@@ -284,11 +284,11 @@ impl ArrayToBytesCodecTraits for VlenCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             vlen_partial_decoder::AsyncVlenPartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),

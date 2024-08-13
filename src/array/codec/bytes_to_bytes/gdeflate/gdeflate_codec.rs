@@ -1,5 +1,5 @@
 use core::mem::size_of;
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use crate::{
     array::{
@@ -116,11 +116,11 @@ impl BytesToBytesCodecTraits for GDeflateCodec {
 
     fn partial_decoder<'a>(
         &self,
-        r: Box<dyn BytesPartialDecoderTraits + 'a>,
+        r: Arc<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             gdeflate_partial_decoder::GDeflatePartialDecoder::new(r),
         ))
     }
@@ -128,11 +128,11 @@ impl BytesToBytesCodecTraits for GDeflateCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        r: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             gdeflate_partial_decoder::AsyncGDeflatePartialDecoder::new(r),
         ))
     }

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     array::{
         codec::{ArrayBytes, ArrayPartialDecoderTraits, CodecError, CodecOptions},
@@ -13,7 +15,7 @@ use super::{round_bytes, IDENTIFIER};
 
 /// Partial decoder for the `bitround` codec.
 pub struct BitroundPartialDecoder<'a> {
-    input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
     data_type: DataType,
     keepbits: u32,
 }
@@ -21,7 +23,7 @@ pub struct BitroundPartialDecoder<'a> {
 impl<'a> BitroundPartialDecoder<'a> {
     /// Create a new partial decoder for the `bitround` codec.
     pub fn new(
-        input_handle: Box<dyn ArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
         data_type: &DataType,
         keepbits: u32,
     ) -> Result<Self, CodecError> {
@@ -78,7 +80,7 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bitround` codec.
 pub struct AsyncBitroundPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
     data_type: DataType,
     keepbits: u32,
 }
@@ -87,7 +89,7 @@ pub struct AsyncBitroundPartialDecoder<'a> {
 impl<'a> AsyncBitroundPartialDecoder<'a> {
     /// Create a new partial decoder for the `bitround` codec.
     pub fn new(
-        input_handle: Box<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
         data_type: &DataType,
         keepbits: u32,
     ) -> Result<Self, CodecError> {
