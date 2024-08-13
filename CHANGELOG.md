@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+ - Bump `derive_more` to 1.0.0
+ - Bump maximum supported `opendal` version from 0.48 to 0.49
+
 ## [0.16.2] - 2024-08-05
 
 ### Added
