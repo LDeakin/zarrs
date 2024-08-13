@@ -29,7 +29,7 @@ pub struct Plugin<TPlugin> {
 pub struct PluginMetadataInvalidError {
     identifier: &'static str,
     plugin_type: &'static str,
-    metadata: MetadataV3,
+    metadata: Box<MetadataV3>,
 }
 
 impl PluginMetadataInvalidError {
@@ -39,7 +39,7 @@ impl PluginMetadataInvalidError {
         Self {
             identifier,
             plugin_type,
-            metadata,
+            metadata: Box::new(metadata),
         }
     }
 }
