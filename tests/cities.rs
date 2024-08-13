@@ -1,3 +1,5 @@
+#![cfg(all(feature = "sharding", feature = "zstd"))]
+
 use std::{
     error::Error,
     fs::File,

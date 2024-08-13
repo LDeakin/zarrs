@@ -75,7 +75,8 @@
 //!
 //!
 //! ## Examples
-//! ```rust
+#![cfg_attr(feature = "ndarray", doc = "```rust")]
+#![cfg_attr(not(feature = "ndarray"), doc = "```rust,ignore")]
 //! # use std::{path::PathBuf, sync::Arc};
 //! use zarrs::array::{ArrayBuilder, DataType, FillValue, ZARR_NAN_F32};
 //! # #[cfg(feature = "gzip")]

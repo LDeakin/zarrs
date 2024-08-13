@@ -86,7 +86,7 @@ pub fn codec_zfpy_v2_numcodecs_to_v3(
 
 #[cfg(test)]
 mod tests {
-    use crate::array::codec::ZfpCodecConfigurationV1;
+    use crate::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
 
     use super::*;
 
