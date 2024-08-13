@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.3] - 2024-08-14
+
 ### Changed
  - Bump `derive_more` to 1.0.0
  - Bump maximum supported `opendal` version from 0.48 to 0.49
+ - Box the metadata in `PluginMetadataInvalidError`
+
+### Fixed
+ - Fix `cargo test` with `--no-default-features`
+ - Fix new clippy warnings in nightly
 
 ## [0.16.2] - 2024-08-05
 
@@ -928,7 +935,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.2...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.3...HEAD
+[0.16.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.3
 [0.16.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.2
 [0.16.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.1
 [0.16.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.0
