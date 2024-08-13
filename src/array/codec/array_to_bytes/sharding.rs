@@ -55,13 +55,11 @@ fn calculate_chunks_per_shard(
     shard_shape: &[NonZeroU64],
     chunk_shape: &[NonZeroU64],
 ) -> Result<ChunkShape, CodecError> {
-    use num::Integer;
-
     Ok(std::iter::zip(shard_shape, chunk_shape)
         .map(|(s, c)| {
             let s = s.get();
             let c = c.get();
-            if s.is_multiple_of(&c) {
+            if num::Integer::is_multiple_of(&s, &c) {
                 Ok(unsafe { NonZeroU64::new_unchecked(s / c) })
             } else {
                 Err(CodecError::Other(
