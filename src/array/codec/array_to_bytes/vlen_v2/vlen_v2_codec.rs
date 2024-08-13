@@ -1,4 +1,4 @@
-use std::mem::size_of;
+use std::{mem::size_of, sync::Arc};
 
 use itertools::Itertools;
 
@@ -120,11 +120,11 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
 
     fn partial_decoder<'a>(
         &self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             super::vlen_v2_partial_decoder::VlenV2PartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
@@ -135,11 +135,11 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             super::vlen_v2_partial_decoder::AsyncVlenV2PartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),

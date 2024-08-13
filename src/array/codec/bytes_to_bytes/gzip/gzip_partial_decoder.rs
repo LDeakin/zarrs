@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     io::{Cursor, Read},
+    sync::Arc,
 };
 
 use flate2::bufread::GzDecoder;
@@ -18,12 +19,12 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `gzip` codec.
 pub struct GzipPartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> GzipPartialDecoder<'a> {
     /// Create a new partial decoder for the `gzip` codec.
-    pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }
@@ -56,13 +57,13 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `gzip` codec.
 pub struct AsyncGzipPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
 #[cfg(feature = "async")]
 impl<'a> AsyncGzipPartialDecoder<'a> {
     /// Create a new partial decoder for the `gzip` codec.
-    pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }

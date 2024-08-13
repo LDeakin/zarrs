@@ -289,7 +289,7 @@ fn zfp_decode(
 #[cfg(test)]
 mod tests {
     use num::traits::AsPrimitive;
-    use std::num::NonZeroU64;
+    use std::{num::NonZeroU64, sync::Arc};
 
     use crate::{
         array::{
@@ -535,7 +535,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[0..3, 1..3, 2..3]),
         ];
 
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(
                 input_handle,
@@ -593,7 +593,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[0..3, 1..3, 2..3]),
         ];
 
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .async_partial_decoder(
                 input_handle,

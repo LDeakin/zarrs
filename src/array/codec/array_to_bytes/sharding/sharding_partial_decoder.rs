@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use std::{num::NonZeroU64, sync::Arc};
 
 use rayon::prelude::*;
 
@@ -33,7 +33,7 @@ use super::{
 
 /// Partial decoder for the sharding codec.
 pub struct ShardingPartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     chunk_grid: RegularChunkGrid,
     inner_codecs: &'a CodecChain,
@@ -43,7 +43,7 @@ pub struct ShardingPartialDecoder<'a> {
 impl<'a> ShardingPartialDecoder<'a> {
     /// Create a new partial decoder for the sharding codec.
     pub fn new(
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         chunk_shape: ChunkShape,
         inner_codecs: &'a CodecChain,
@@ -215,7 +215,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         } else {
                             // Partially decode the inner chunk
                             let partial_decoder = self.inner_codecs.partial_decoder(
-                                Box::new(ByteIntervalPartialDecoder::new(
+                                Arc::new(ByteIntervalPartialDecoder::new(
                                     &*self.input_handle,
                                     offset,
                                     size,
@@ -296,7 +296,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
                         } else {
                             // Partially decode the inner chunk
                             let partial_decoder = self.inner_codecs.partial_decoder(
-                                Box::new(ByteIntervalPartialDecoder::new(
+                                Arc::new(ByteIntervalPartialDecoder::new(
                                     &*self.input_handle,
                                     offset,
                                     size,
@@ -352,7 +352,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the sharding codec.
 pub struct AsyncShardingPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     chunk_grid: RegularChunkGrid,
     inner_codecs: &'a CodecChain,
@@ -363,7 +363,7 @@ pub struct AsyncShardingPartialDecoder<'a> {
 impl<'a> AsyncShardingPartialDecoder<'a> {
     /// Create a new partial decoder for the sharding codec.
     pub async fn new(
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         chunk_shape: ChunkShape,
         inner_codecs: &'a CodecChain,
@@ -526,7 +526,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                             } else {
                                 // Partially decode the inner chunk
                                 let partial_decoder = self.inner_codecs.async_partial_decoder(
-                                    Box::new(AsyncByteIntervalPartialDecoder::new(
+                                    Arc::new(AsyncByteIntervalPartialDecoder::new(
                                         &*self.input_handle,
                                         offset,
                                         size,
@@ -612,7 +612,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
                                 let partial_decoder = self
                                     .inner_codecs
                                     .async_partial_decoder(
-                                        Box::new(AsyncByteIntervalPartialDecoder::new(
+                                        Arc::new(AsyncByteIntervalPartialDecoder::new(
                                             &*self.input_handle,
                                             u64::try_from(*offset).unwrap(),
                                             u64::try_from(*size).unwrap(),

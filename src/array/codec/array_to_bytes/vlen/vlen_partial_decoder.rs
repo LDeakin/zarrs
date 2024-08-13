@@ -1,6 +1,6 @@
 // TODO: Support actual partial decoding, coalescing required
 
-use std::num::NonZeroU64;
+use std::{num::NonZeroU64, sync::Arc};
 
 use crate::{
     array::{
@@ -19,7 +19,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 /// Partial decoder for the `bytes` codec.
 pub struct VlenPartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     index_codecs: &'a CodecChain,
     data_codecs: &'a CodecChain,
@@ -29,7 +29,7 @@ pub struct VlenPartialDecoder<'a> {
 impl<'a> VlenPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         index_codecs: &'a CodecChain,
         data_codecs: &'a CodecChain,
@@ -123,7 +123,7 @@ impl ArrayPartialDecoderTraits for VlenPartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
 pub struct AsyncVlenPartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     index_codecs: &'a CodecChain,
     data_codecs: &'a CodecChain,
@@ -134,7 +134,7 @@ pub struct AsyncVlenPartialDecoder<'a> {
 impl<'a> AsyncVlenPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         index_codecs: &'a CodecChain,
         data_codecs: &'a CodecChain,

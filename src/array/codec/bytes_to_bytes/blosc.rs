@@ -227,7 +227,7 @@ fn blosc_decompress_bytes_partial(
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
+    use std::{borrow::Cow, sync::Arc};
 
     use crate::{
         array::{
@@ -353,7 +353,7 @@ mod tests {
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(array_representation.shape(), data_type_size)
             .unwrap();
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(
                 input_handle,
@@ -400,7 +400,7 @@ mod tests {
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(array_representation.shape(), data_type_size)
             .unwrap();
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .async_partial_decoder(
                 input_handle,

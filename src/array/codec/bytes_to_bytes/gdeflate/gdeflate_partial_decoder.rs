@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use crate::{
     array::{
@@ -15,12 +15,12 @@ use super::gdeflate_decode;
 
 /// Partial decoder for the `gdeflate` codec.
 pub struct GDeflatePartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> GDeflatePartialDecoder<'a> {
     /// Create a new partial decoder for the `gdeflate` codec.
-    pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }
@@ -51,13 +51,13 @@ impl BytesPartialDecoderTraits for GDeflatePartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `gdeflate` codec.
 pub struct AsyncGDeflatePartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
 #[cfg(feature = "async")]
 impl<'a> AsyncGDeflatePartialDecoder<'a> {
     /// Create a new partial decoder for the `gdeflate` codec.
-    pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }

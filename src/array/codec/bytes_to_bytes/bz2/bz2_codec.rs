@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     io::{Cursor, Read},
+    sync::Arc,
 };
 
 use crate::{
@@ -106,11 +107,11 @@ impl BytesToBytesCodecTraits for Bz2Codec {
 
     fn partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(bz2_partial_decoder::Bz2PartialDecoder::new(
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(bz2_partial_decoder::Bz2PartialDecoder::new(
             input_handle,
         )))
     }
@@ -118,11 +119,11 @@ impl BytesToBytesCodecTraits for Bz2Codec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(bz2_partial_decoder::AsyncBz2PartialDecoder::new(
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(bz2_partial_decoder::AsyncBz2PartialDecoder::new(
             input_handle,
         )))
     }

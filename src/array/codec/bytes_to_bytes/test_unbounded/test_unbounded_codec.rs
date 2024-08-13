@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     array::{
         codec::{
@@ -71,11 +73,11 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
 
     fn partial_decoder<'a>(
         &self,
-        r: Box<dyn BytesPartialDecoderTraits + 'a>,
+        r: Arc<dyn BytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             test_unbounded_partial_decoder::TestUnboundedPartialDecoder::new(r),
         ))
     }
@@ -83,11 +85,11 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder<'a>(
         &'a self,
-        r: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        r: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Box<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
-        Ok(Box::new(
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+        Ok(Arc::new(
             test_unbounded_partial_decoder::AsyncTestUnboundedPartialDecoder::new(r),
         ))
     }

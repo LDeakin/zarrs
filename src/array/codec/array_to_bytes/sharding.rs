@@ -112,6 +112,8 @@ fn decode_shard_index(
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::{
         array::{
             codec::{
@@ -385,7 +387,7 @@ mod tests {
             .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(input_handle, &chunk_representation, options)
             .unwrap();
@@ -466,7 +468,7 @@ mod tests {
             .encode(bytes.clone(), &chunk_representation, options)
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .async_partial_decoder(input_handle, &chunk_representation, options)
             .await
@@ -533,7 +535,7 @@ mod tests {
             .encode(bytes, &chunk_representation, &CodecOptions::default())
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..2, 0..2, 0..3])];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(
                 input_handle,
@@ -575,7 +577,7 @@ mod tests {
             .encode(bytes, &chunk_representation, &CodecOptions::default())
             .unwrap();
         let decoded_regions = [ArraySubset::new_with_ranges(&[1..3, 0..1])];
-        let input_handle = Box::new(std::io::Cursor::new(encoded));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
             .partial_decoder(
                 input_handle,

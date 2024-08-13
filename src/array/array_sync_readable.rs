@@ -421,7 +421,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     pub fn partial_decoder<'a>(
         &'a self,
         chunk_indices: &[u64],
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
         self.partial_decoder_opt(chunk_indices, &CodecOptions::default())
     }
 
@@ -782,7 +782,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             let storage_transformer = self
                 .storage_transformers()
                 .create_readable_transformer(storage_handle);
-            let input_handle = Box::new(StoragePartialDecoder::new(
+            let input_handle = Arc::new(StoragePartialDecoder::new(
                 storage_transformer,
                 self.chunk_key(chunk_indices),
             ));
@@ -831,12 +831,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &'a self,
         chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<Box<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
             .create_readable_transformer(storage_handle);
-        let input_handle = Box::new(StoragePartialDecoder::new(
+        let input_handle = Arc::new(StoragePartialDecoder::new(
             storage_transformer,
             self.chunk_key(chunk_indices),
         ));

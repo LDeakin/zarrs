@@ -1,4 +1,4 @@
-use std::{borrow::Cow, io::Read};
+use std::{borrow::Cow, io::Read, sync::Arc};
 
 use bytes::Buf;
 
@@ -15,11 +15,11 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `bz2` codec.
 pub struct Bz2PartialDecoder<'a> {
-    input_handle: Box<dyn BytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> Bz2PartialDecoder<'a> {
-    pub fn new(input_handle: Box<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }
@@ -52,12 +52,12 @@ impl BytesPartialDecoderTraits for Bz2PartialDecoder<'_> {
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bz2` codec.
 pub struct AsyncBz2PartialDecoder<'a> {
-    input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
 }
 
 #[cfg(feature = "async")]
 impl<'a> AsyncBz2PartialDecoder<'a> {
-    pub fn new(input_handle: Box<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }

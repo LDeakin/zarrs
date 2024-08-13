@@ -181,7 +181,7 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU64;
+    use std::{num::NonZeroU64, sync::Arc};
 
     use array_representation::ChunkRepresentation;
     use itertools::Itertools;
@@ -342,7 +342,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .partial_decoder(
@@ -401,7 +401,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[3..5]),
             ArraySubset::new_with_ranges(&[17..21]),
         ];
-        let input_handle = Box::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
+        let input_handle = Arc::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
         let bytes_codec = BytesCodec::default();
         let input_handle = bytes_codec
             .async_partial_decoder(
