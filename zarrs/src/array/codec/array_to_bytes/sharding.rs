@@ -13,6 +13,7 @@
 mod sharding_codec;
 mod sharding_codec_builder;
 mod sharding_partial_decoder;
+mod sharding_partial_encoder;
 
 use std::{borrow::Cow, num::NonZeroU64, sync::Arc};
 
