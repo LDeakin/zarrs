@@ -18,7 +18,7 @@ mod test_util {
 
     /// Create a store with the following data
     /// - a/
-    ///   - b [0, 1, 2]
+    ///   - b [0, 1, 2, 3]
     ///   - c [0]
     ///   - d/
     ///     - e
@@ -33,9 +33,17 @@ mod test_util {
     ) -> Result<(), Box<dyn Error>> {
         store.erase_prefix(&StorePrefix::root()).await?;
 
-        store.set(&"a/b".try_into()?, vec![0, 0, 0].into()).await?;
+        store
+            .set(&"a/b".try_into()?, vec![255, 255, 255].into())
+            .await?;
         store
             .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 1, &[1, 2])])
+            .await?;
+        store
+            .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 3, &[3])])
+            .await?;
+        store
+            .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 0, &[0])])
             .await?;
 
         store.set(&"a/c".try_into()?, vec![0].into()).await?;
@@ -76,9 +84,9 @@ mod test_util {
         assert!(store.size_key(&"notfound".try_into()?).await?.is_none());
         assert_eq!(
             store.get(&"a/b".try_into()?).await?,
-            Some(vec![0, 1, 2].into())
+            Some(vec![0, 1, 2, 3].into())
         );
-        assert_eq!(store.size_key(&"a/b".try_into()?).await?, Some(3));
+        assert_eq!(store.size_key(&"a/b".try_into()?).await?, Some(4));
         assert_eq!(store.size_key(&"a/c".try_into()?).await?, Some(1));
         assert_eq!(store.size_key(&"i/j/k".try_into()?).await?, Some(2));
         assert_eq!(
@@ -91,7 +99,7 @@ mod test_util {
                     ]
                 )
                 .await?,
-            Some(vec![vec![1].into(), vec![2].into()])
+            Some(vec![vec![1].into(), vec![3].into()])
         );
         assert_eq!(
             store
@@ -102,8 +110,8 @@ mod test_util {
                 ])
                 .await?,
             vec![
+                Some(vec![1, 2, 3].into()),
                 Some(vec![1, 2].into()),
-                Some(vec![0, 1].into()),
                 Some(vec![1].into())
             ]
         );
@@ -115,8 +123,8 @@ mod test_util {
             .await
             .is_err());
 
-        assert_eq!(store.size().await?, 6);
-        assert_eq!(store.size_prefix(&"a/".try_into()?).await?, 4);
+        assert_eq!(store.size().await?, 7);
+        assert_eq!(store.size_prefix(&"a/".try_into()?).await?, 5);
         assert_eq!(store.size_prefix(&"i/".try_into()?).await?, 2);
 
         Ok(())

@@ -21,7 +21,7 @@ mod test_util {
 
     /// Create a store with the following data
     /// - a/
-    ///   - b [0, 1, 2]
+    ///   - b [0, 1, 2, 3]
     ///   - c [0]
     ///   - d/
     ///     - e
@@ -34,8 +34,10 @@ mod test_util {
     pub fn store_write<T: WritableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
         store.erase_prefix(&StorePrefix::root())?;
 
-        store.set(&"a/b".try_into()?, vec![0, 0, 0].into())?;
+        store.set(&"a/b".try_into()?, vec![255, 255, 255].into())?;
         store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 1, &[1, 2])])?;
+        store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 3, &[3])])?;
+        store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 0, &[0])])?;
 
         store.set(&"a/c".try_into()?, vec![0].into())?;
         store.set(&"a/d/e".try_into()?, vec![].into())?;
@@ -63,8 +65,11 @@ mod test_util {
     ) -> Result<(), Box<dyn Error>> {
         assert!(store.get(&"notfound".try_into()?)?.is_none());
         assert!(store.size_key(&"notfound".try_into()?)?.is_none());
-        assert_eq!(store.get(&"a/b".try_into()?)?, Some(vec![0, 1, 2].into()));
-        assert_eq!(store.size_key(&"a/b".try_into()?)?, Some(3));
+        assert_eq!(
+            store.get(&"a/b".try_into()?)?,
+            Some(vec![0, 1, 2, 3].into())
+        );
+        assert_eq!(store.size_key(&"a/b".try_into()?)?, Some(4));
         assert_eq!(store.size_key(&"a/c".try_into()?)?, Some(1));
         assert_eq!(store.size_key(&"i/j/k".try_into()?)?, Some(2));
         assert_eq!(
@@ -75,7 +80,7 @@ mod test_util {
                     ByteRange::FromEnd(0, Some(1))
                 ]
             )?,
-            Some(vec![vec![1].into(), vec![2].into()])
+            Some(vec![vec![1].into(), vec![3].into()])
         );
         assert_eq!(
             store.get_partial_values(&[
@@ -84,8 +89,8 @@ mod test_util {
                 StoreKeyRange::new("i/j/k".try_into()?, ByteRange::FromStart(1, Some(1))),
             ])?,
             vec![
+                Some(vec![1, 2, 3].into()),
                 Some(vec![1, 2].into()),
-                Some(vec![0, 1].into()),
                 Some(vec![1].into())
             ]
         );
@@ -96,8 +101,8 @@ mod test_util {
             ),])
             .is_err());
 
-        assert_eq!(store.size()?, 6);
-        assert_eq!(store.size_prefix(&"a/".try_into()?)?, 4);
+        assert_eq!(store.size()?, 7);
+        assert_eq!(store.size_prefix(&"a/".try_into()?)?, 5);
         assert_eq!(store.size_prefix(&"i/".try_into()?)?, 2);
 
         Ok(())

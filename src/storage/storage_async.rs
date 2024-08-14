@@ -171,6 +171,9 @@ pub trait AsyncListableStorageTraits: Send + Sync {
 
 /// Set partial values for an asynchronous store.
 ///
+/// This method reads entire values, updates them, and replaces them.
+/// Stores can use this internally if they do not support updating/appending without replacement.
+///
 /// # Errors
 /// Returns a [`StorageError`] if an underlying store operation fails.
 ///
@@ -179,6 +182,7 @@ pub trait AsyncListableStorageTraits: Send + Sync {
 pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTraits>(
     store: &T,
     key_start_values: &[StoreKeyStartValue<'_>],
+    // truncate: bool
 ) -> Result<(), StorageError> {
     let groups = key_start_values
         .iter()
@@ -202,9 +206,10 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
                 usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
             if vec.len() < end_max {
                 vec.resize_with(end_max, Default::default);
-            } else {
-                vec.truncate(end_max);
-            };
+            }
+            // else if truncate {
+            //     vec.truncate(end_max);
+            // };
 
             // Update the store key
             for key_start_value in group {

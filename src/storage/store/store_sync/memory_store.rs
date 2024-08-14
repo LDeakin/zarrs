@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use crate::{
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     storage::{
-        store_set_partial_values, Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
+        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
         ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
         StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
     },
@@ -49,7 +49,7 @@ impl MemoryStore {
     //     }
     // }
 
-    fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, _truncate: bool) {
+    fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, truncate: bool) {
         let mut data_map = self.data_map.lock().unwrap();
         let data = data_map
             .entry(key.clone())
@@ -66,7 +66,7 @@ impl MemoryStore {
             let length = usize::try_from(offset + value.len() as u64).unwrap();
             if data.len() < length {
                 data.resize(length, 0);
-            } else {
+            } else if truncate {
                 data.truncate(length);
             }
             let offset = usize::try_from(offset).unwrap();
@@ -134,7 +134,26 @@ impl WritableStorageTraits for MemoryStore {
         &self,
         key_start_values: &[StoreKeyStartValue],
     ) -> Result<(), StorageError> {
-        store_set_partial_values(self, key_start_values)
+        use itertools::Itertools;
+
+        // Group by key
+        key_start_values
+            .iter()
+            .chunk_by(|key_start_value| &key_start_value.key)
+            .into_iter()
+            .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
+            .try_for_each(|(key, group)| {
+                for key_start_value in group {
+                    self.set_impl(
+                        &key,
+                        key_start_value.value,
+                        Some(key_start_value.start),
+                        false,
+                    );
+                }
+                Ok::<_, StorageError>(())
+            })?;
+        Ok(())
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
