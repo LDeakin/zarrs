@@ -69,6 +69,38 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 use unsafe_cell_slice::UnsafeCellSlice;
 
+mod array_partial_encoder_default_sync;
+pub use array_partial_encoder_default_sync::ArrayPartialEncoderDefault;
+
+mod storage_partial_encoder_sync;
+pub use storage_partial_encoder_sync::StoragePartialEncoder;
+
+#[cfg(feature = "async")]
+mod storage_partial_encoder_async;
+#[cfg(feature = "async")]
+pub use storage_partial_encoder_async::AsyncStoragePartialEncoder;
+
+#[cfg(feature = "async")]
+mod array_partial_encoder_default_async;
+#[cfg(feature = "async")]
+pub use array_partial_encoder_default_async::AsyncArrayPartialEncoderDefault;
+
+mod array_to_array_partial_encoder_default_sync;
+pub use array_to_array_partial_encoder_default_sync::ArrayToArrayPartialEncoderDefault;
+
+#[cfg(feature = "async")]
+mod array_to_array_partial_encoder_default_async;
+#[cfg(feature = "async")]
+pub use array_to_array_partial_encoder_default_async::AsyncArrayToArrayPartialEncoderDefault;
+
+mod bytes_partial_encoder_default_sync;
+pub use bytes_partial_encoder_default_sync::BytesPartialEncoderDefault;
+
+#[cfg(feature = "async")]
+mod bytes_partial_encoder_default_async;
+#[cfg(feature = "async")]
+pub use bytes_partial_encoder_default_async::AsyncBytesPartialEncoderDefault;
+
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
     byte_range::{extract_byte_ranges_read_seek, ByteRange, InvalidByteRangeError},
@@ -380,6 +412,89 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     }
 }
 
+/// Partial array encoder traits.
+pub trait ArrayPartialEncoderTraits: Send + Sync {
+    /// Erase the chunk.
+    ///
+    /// # Errors
+    /// Returns an error if there is an underlying store error.
+    fn erase(&self) -> Result<(), CodecError>;
+
+    /// Partially encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    fn partial_encode(
+        &self,
+        array_subsets: &[&ArraySubset],
+        array_subset_bytes: Vec<ArrayBytes<'_>>,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError>;
+}
+
+#[cfg(feature = "async")]
+#[async_trait::async_trait]
+/// Partial array encoder traits.
+pub trait AsyncArrayPartialEncoderTraits: Send + Sync {
+    /// Erase the chunk.
+    ///
+    /// # Errors
+    /// Returns an error if there is an underlying store error.
+    async fn erase(&self) -> Result<(), CodecError>;
+
+    /// Partially encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    async fn partial_encode(
+        &self,
+        array_subsets: &[&ArraySubset],
+        array_subset_bytes: Vec<ArrayBytes<'_>>,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError>;
+}
+
+/// Partial bytes encoder traits.
+pub trait BytesPartialEncoderTraits: Send + Sync {
+    /// Erase the chunk.
+    ///
+    /// # Errors
+    /// Returns an error if there is an underlying store error.
+    fn erase(&self) -> Result<(), CodecError>;
+
+    /// Partially encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    fn partial_encode(
+        &self,
+        byte_ranges: &[ByteRange],
+        bytes: Vec<RawBytes<'_>>,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError>;
+}
+#[cfg(feature = "async")]
+/// Asynchronous partial bytes encoder traits.
+#[async_trait::async_trait]
+pub trait AsyncBytesPartialEncoderTraits: Send + Sync {
+    /// Erase the chunk.
+    ///
+    /// # Errors
+    /// Returns an error if there is an underlying store error.
+    async fn erase(&self) -> Result<(), CodecError>;
+
+    /// Partially encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    async fn partial_encode(
+        &self,
+        byte_ranges: &[ByteRange],
+        bytes: Vec<RawBytes<'_>>,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError>;
+}
+
 #[cfg(feature = "async")]
 /// Asynchronous partial array decoder traits.
 #[async_trait::async_trait]
@@ -565,6 +680,47 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError>;
+
+    /// Initialise a partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    #[allow(unused_variables)]
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
+        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(ArrayToArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self.dynamic(),
+        )))
+    }
+
+    #[cfg(feature = "async")]
+    /// Initialise an asynchronous partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    #[allow(unused_variables)]
+    async fn async_partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
+        output_handle: Arc<dyn AsyncArrayPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn AsyncArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(AsyncArrayToArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self.dynamic(),
+        )))
+    }
 }
 
 /// Traits for array to bytes codecs.
@@ -665,6 +821,45 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError>;
+
+    /// Initialise a partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(ArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self.dynamic(),
+        )))
+    }
+
+    #[cfg(feature = "async")]
+    /// Initialise an asynchronous partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    async fn async_partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+        output_handle: Arc<dyn AsyncBytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn AsyncArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(AsyncArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self.dynamic(),
+        )))
+    }
 }
 
 /// Traits for bytes to bytes codecs.
@@ -713,6 +908,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
+    // TODO: Add default implementation?
     fn partial_decoder(
         self: Arc<Self>,
         input_handle: Arc<dyn BytesPartialDecoderTraits>,
@@ -725,12 +921,54 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
+    // TODO: Add default implementation?
     async fn async_partial_decoder(
         self: Arc<Self>,
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError>;
+
+    /// Initialises a partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    #[allow(unused_variables)]
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &BytesRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(BytesPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            *decoded_representation,
+            self.dynamic(),
+        )))
+    }
+
+    #[cfg(feature = "async")]
+    /// Initialises an asynchronous partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    #[allow(unused_variables)]
+    async fn async_partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+        output_handle: Arc<dyn AsyncBytesPartialEncoderTraits>,
+        decoded_representation: &BytesRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn AsyncBytesPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(AsyncBytesPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            *decoded_representation,
+            self.dynamic(),
+        )))
+    }
 }
 
 impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {

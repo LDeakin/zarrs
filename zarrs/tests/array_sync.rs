@@ -96,6 +96,17 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
     assert_eq!(array.partial_decoder(&[5, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])], &options)?, [vec![0, 0].into()]); // OOB -> fill value
     assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])], &options)?, [vec![1, 2].into(), vec![2, 6].into()]);
 
+    assert!(array.partial_encoder(&[0, 0], &options)?.erase().is_ok());
+    assert!(array.retrieve_chunk_if_exists_opt(&[0, 0], &options)?.is_none());
+    assert!(array.partial_encoder(&[0, 0], &options)?.partial_encode(&[&ArraySubset::new_with_ranges(&[0..1, 0..2]), &ArraySubset::new_with_ranges(&[1..2, 0..2])], vec![vec![1, 2].into(), vec![3, 4].into()], &options).is_ok());
+    assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[1..2, 0..2])], &options)?, [vec![1, 2].into(), vec![3, 4].into()]);
+    assert!(array.partial_encoder(&[0, 0], &options)?.partial_encode(&[&ArraySubset::new_with_ranges(&[0..2, 0..1])], vec![vec![5, 6].into()], &options).is_ok());
+    assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..2, 0..2])], &options)?, [vec![5, 2, 6, 4].into()]);
+
+    assert!(array.partial_encoder(&[0, 0], &options)?.erase().is_ok());
+    assert!(array.partial_encoder(&[0, 0], &options)?.partial_encode(&[&ArraySubset::new_with_ranges(&[0..1, 0..2])], vec![vec![0, 0].into()], &options).is_ok());
+    assert!(array.retrieve_chunk_if_exists_opt(&[0, 0], &options)?.is_none());
+
     Ok(())
 }
 

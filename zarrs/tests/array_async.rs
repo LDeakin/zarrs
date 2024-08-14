@@ -123,6 +123,17 @@ async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>>
     assert_eq!(array.async_partial_decoder(&[5, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])], &options).await?, [vec![0, 0].into()]); // OOB -> fill value
     assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])], &options).await?, [vec![1, 2].into(), vec![2, 6].into()]);
 
+    assert!(array.async_partial_encoder(&[0, 0], &options).await?.erase().await.is_ok());
+    assert!(array.async_retrieve_chunk_if_exists_opt(&[0, 0], &options).await?.is_none());
+    assert!(array.async_partial_encoder(&[0, 0], &options).await?.partial_encode(&[&ArraySubset::new_with_ranges(&[0..1, 0..2]), &ArraySubset::new_with_ranges(&[1..2, 0..2])], vec![vec![1, 2].into(), vec![3, 4].into()], &options).await.is_ok());
+    assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[1..2, 0..2])], &options).await?, [vec![1, 2].into(), vec![3, 4].into()]);
+    assert!(array.async_partial_encoder(&[0, 0], &options).await?.partial_encode(&[&ArraySubset::new_with_ranges(&[0..2, 0..1])], vec![vec![5, 6].into()], &options).await.is_ok());
+    assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..2, 0..2])], &options).await?, [vec![5, 2, 6, 4].into()]);
+
+    assert!(array.async_partial_encoder(&[0, 0], &options).await?.erase().await.is_ok());
+    assert!(array.async_partial_encoder(&[0, 0], &options).await?.partial_encode(&[&ArraySubset::new_with_ranges(&[0..1, 0..2])], vec![vec![0, 0].into()], &options).await.is_ok());
+    assert!(array.async_retrieve_chunk_if_exists_opt(&[0, 0], &options).await?.is_none());
+
     Ok(())
 }
 

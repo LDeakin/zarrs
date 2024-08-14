@@ -9,9 +9,9 @@ use crate::{
         array_bytes::update_bytes_flen,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
-            ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesPartialDecoderCache,
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecOptions,
-            CodecTraits,
+            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
+            BytesPartialDecoderCache, BytesPartialDecoderTraits, BytesPartialEncoderTraits,
+            BytesToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecTraits,
         },
         concurrency::RecommendedConcurrency,
         ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
@@ -23,7 +23,10 @@ use crate::{
 };
 
 #[cfg(feature = "async")]
-use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
+use crate::array::codec::{
+    AsyncArrayPartialDecoderTraits, AsyncArrayPartialEncoderTraits, AsyncBytesPartialDecoderTraits,
+    AsyncBytesPartialEncoderTraits,
+};
 
 /// A codec chain is a sequence of array to array, a bytes to bytes, and a sequence of array to bytes codecs.
 ///
@@ -529,6 +532,127 @@ impl ArrayToBytesCodecTraits for CodecChain {
         }
 
         Ok(input_handle)
+    }
+
+    fn partial_encoder(
+        self: Arc<Self>,
+        mut input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        mut output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            output_handle = Arc::clone(codec).partial_encoder(
+                input_handle.clone(),
+                output_handle,
+                bytes_representation,
+                options,
+            )?;
+            input_handle =
+                Arc::clone(codec).partial_decoder(input_handle, bytes_representation, options)?;
+        }
+
+        let mut output_handle = self.array_to_bytes.clone().partial_encoder(
+            input_handle.clone(),
+            output_handle,
+            array_representations.last().unwrap(),
+            options,
+        )?;
+        let mut input_handle = self.array_to_bytes.clone().partial_decoder(
+            input_handle,
+            array_representations.last().unwrap(),
+            options,
+        )?;
+
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            output_handle = Arc::clone(codec).partial_encoder(
+                input_handle.clone(),
+                output_handle,
+                array_representation,
+                options,
+            )?;
+            input_handle =
+                Arc::clone(codec).partial_decoder(input_handle, array_representation, options)?;
+        }
+
+        Ok(output_handle)
+    }
+
+    #[cfg(feature = "async")]
+    async fn async_partial_encoder(
+        self: Arc<Self>,
+        mut input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+        mut output_handle: Arc<dyn AsyncBytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn AsyncArrayPartialEncoderTraits>, CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            output_handle = Arc::clone(codec)
+                .async_partial_encoder(
+                    input_handle.clone(),
+                    output_handle,
+                    bytes_representation,
+                    options,
+                )
+                .await?;
+            input_handle = Arc::clone(codec)
+                .async_partial_decoder(input_handle, bytes_representation, options)
+                .await?;
+        }
+
+        let mut output_handle = self
+            .array_to_bytes
+            .clone()
+            .async_partial_encoder(
+                input_handle.clone(),
+                output_handle,
+                array_representations.last().unwrap(),
+                options,
+            )
+            .await?;
+        let mut input_handle = self
+            .array_to_bytes
+            .clone()
+            .async_partial_decoder(input_handle, array_representations.last().unwrap(), options)
+            .await?;
+
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            output_handle = Arc::clone(codec)
+                .async_partial_encoder(
+                    input_handle.clone(),
+                    output_handle,
+                    array_representation,
+                    options,
+                )
+                .await?;
+            input_handle = Arc::clone(codec)
+                .async_partial_decoder(input_handle, array_representation, options)
+                .await?;
+        }
+
+        Ok(output_handle)
     }
 
     fn compute_encoded_size(
