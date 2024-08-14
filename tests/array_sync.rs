@@ -137,12 +137,12 @@ fn array_sync_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
         zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder::new(
             vec![1, 1].try_into().unwrap(),
         )
+        .bytes_to_bytes_codecs(vec![
+            #[cfg(feature = "gzip")]
+            Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+        ])
         .build(),
     ));
-    builder.bytes_to_bytes_codecs(vec![
-        #[cfg(feature = "gzip")]
-        Box::new(zarrs::array::codec::GzipCodec::new(5)?),
-    ]);
     // .storage_transformers(vec![].into())
 
     let array = builder.build(store, array_path).unwrap();

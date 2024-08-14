@@ -304,12 +304,12 @@ async fn array_str_async_sharded_transpose() -> Result<(), Box<dyn std::error::E
             vec![2, 1].try_into().unwrap(),
         )
         .array_to_bytes_codec(Box::<VlenCodec>::default())
+        .bytes_to_bytes_codecs(vec![
+            #[cfg(feature = "gzip")]
+            Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+        ])
         .build(),
     ));
-    builder.bytes_to_bytes_codecs(vec![
-        #[cfg(feature = "gzip")]
-        Box::new(zarrs::array::codec::GzipCodec::new(5)?),
-    ]);
 
     let array = builder.build(store, array_path).unwrap();
     array_str_impl(array).await
