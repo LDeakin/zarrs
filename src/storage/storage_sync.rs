@@ -152,6 +152,9 @@ pub trait ListableStorageTraits: Send + Sync {
 
 /// Set partial values for a store.
 ///
+/// This method reads entire values, updates them, and replaces them.
+/// Stores can use this internally if they do not support updating/appending without replacement.
+///
 /// # Errors
 /// Returns a [`StorageError`] if an underlying store operation fails.
 ///
@@ -160,6 +163,7 @@ pub trait ListableStorageTraits: Send + Sync {
 pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
     store: &T,
     key_start_values: &[StoreKeyStartValue],
+    // truncate: bool,
 ) -> Result<(), StorageError> {
     // Group by key
     key_start_values
@@ -184,10 +188,12 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
                 vec.extend_from_slice(&bytes);
                 vec.resize_with(end_max, Default::default);
                 vec
+            // } else if truncate {
+            //     let mut bytes = bytes.to_vec();
+            //     bytes.truncate(end_max);
+            //     bytes
             } else {
-                let mut bytes = bytes.to_vec();
-                bytes.truncate(end_max);
-                bytes
+                bytes.to_vec()
             };
 
             // Update the store key
