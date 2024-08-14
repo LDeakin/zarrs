@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
  - Expand `set_partial_values` tests
+ - Specialise `set_partial_values` for `MemoryStore`
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates
