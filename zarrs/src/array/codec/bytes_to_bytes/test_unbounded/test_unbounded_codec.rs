@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
-            CodecTraits, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+            BytesToBytesCodecTraits, CodecError, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         ArrayMetadataOptions, BytesRepresentation, RawBytes,
     },
@@ -84,6 +84,21 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         Ok(Arc::new(
             test_unbounded_partial_decoder::TestUnboundedPartialDecoder::new(r),
         ))
+    }
+
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &BytesRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(BytesPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self,
+        )))
     }
 
     #[cfg(feature = "async")]

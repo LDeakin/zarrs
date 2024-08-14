@@ -206,7 +206,7 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
                 bytes.resize_with(end_max, Default::default);
             }
             // else if truncate {
-            //     vec.truncate(end_max);
+            //     bytes.truncate(end_max);
             // };
 
             // Update the store key

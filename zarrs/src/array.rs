@@ -171,6 +171,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading *and* writing
 ///    - [`store_chunk_subset`](Array::store_chunk_subset)
 ///    - [`store_array_subset`](Array::store_array_subset)
+///    - [`partial_encoder`](Array::partial_encoder)
 ///
 /// Many `retrieve` and `store` methods have multiple variants:
 ///   - Standard variants store or retrieve data represented as [`ArrayBytes`] (representing fixed or variable length bytes).

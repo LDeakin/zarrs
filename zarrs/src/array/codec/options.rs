@@ -10,6 +10,7 @@ pub struct CodecOptions {
     validate_checksums: bool,
     store_empty_chunks: bool,
     concurrent_target: usize,
+    experimental_partial_encoding: bool,
 }
 
 impl Default for CodecOptions {
@@ -18,6 +19,7 @@ impl Default for CodecOptions {
             validate_checksums: global_config().validate_checksums(),
             store_empty_chunks: global_config().store_empty_chunks(),
             concurrent_target: global_config().codec_concurrent_target(),
+            experimental_partial_encoding: global_config().experimental_partial_encoding(),
         }
     }
 }
@@ -36,6 +38,7 @@ impl CodecOptions {
             validate_checksums: self.validate_checksums,
             store_empty_chunks: self.store_empty_chunks,
             concurrent_target: self.concurrent_target,
+            experimental_partial_encoding: self.experimental_partial_encoding,
         }
     }
 
@@ -74,6 +77,21 @@ impl CodecOptions {
         self.concurrent_target = concurrent_target;
         self
     }
+
+    /// Return the experimental partial encoding setting.
+    #[must_use]
+    pub fn experimental_partial_encoding(&self) -> bool {
+        self.experimental_partial_encoding
+    }
+
+    /// Set whether or not to use experimental partial encoding.
+    pub fn set_experimental_partial_encoding(
+        &mut self,
+        experimental_partial_encoding: bool,
+    ) -> &mut Self {
+        self.experimental_partial_encoding = experimental_partial_encoding;
+        self
+    }
 }
 
 /// Builder for [`CodecOptions`].
@@ -84,6 +102,7 @@ pub struct CodecOptionsBuilder {
     validate_checksums: bool,
     store_empty_chunks: bool,
     concurrent_target: usize,
+    experimental_partial_encoding: bool,
 }
 
 impl Default for CodecOptionsBuilder {
@@ -100,6 +119,7 @@ impl CodecOptionsBuilder {
             validate_checksums: global_config().validate_checksums(),
             store_empty_chunks: global_config().store_empty_chunks(),
             concurrent_target: global_config().codec_concurrent_target(),
+            experimental_partial_encoding: global_config().experimental_partial_encoding(),
         }
     }
 
@@ -110,6 +130,7 @@ impl CodecOptionsBuilder {
             validate_checksums: self.validate_checksums,
             store_empty_chunks: self.store_empty_chunks,
             concurrent_target: self.concurrent_target,
+            experimental_partial_encoding: self.experimental_partial_encoding,
         }
     }
 
@@ -131,6 +152,13 @@ impl CodecOptionsBuilder {
     #[must_use]
     pub fn concurrent_target(mut self, concurrent_target: usize) -> Self {
         self.concurrent_target = concurrent_target;
+        self
+    }
+
+    /// Set whether or not to use experimental partial encoding.
+    #[must_use]
+    pub fn experimental_partial_encoding(mut self, experimental_partial_encoding: bool) -> Self {
+        self.experimental_partial_encoding = experimental_partial_encoding;
         self
     }
 }

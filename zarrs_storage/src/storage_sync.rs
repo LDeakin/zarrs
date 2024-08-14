@@ -170,6 +170,7 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
 
             // Read the store key
             let bytes = store.get(&key)?.unwrap_or_default();
+            let mut bytes = Vec::<u8>::from(bytes);
 
             // Convert to a mutable vector of the required length
             let end_max = group
@@ -182,19 +183,12 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
                 })
                 .max()
                 .unwrap();
-            let mut bytes = if bytes.len() < end_max {
-                // Expand the store key if needed
-                let mut vec = Vec::with_capacity(end_max);
-                vec.extend_from_slice(&bytes);
-                vec.resize_with(end_max, Default::default);
-                vec
-            // } else if truncate {
-            //     let mut bytes = bytes.to_vec();
+            if bytes.len() < end_max {
+                bytes.resize_with(end_max, Default::default);
+            }
+            // else if truncate {
             //     bytes.truncate(end_max);
-            //     bytes
-            } else {
-                bytes.to_vec()
-            };
+            // };
 
             // Update the store key
             for key_offset_value in group {

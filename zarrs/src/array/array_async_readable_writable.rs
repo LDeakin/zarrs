@@ -150,6 +150,8 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             // let mutex = self.storage.mutex(&key).await?;
             // let _lock = mutex.lock();
 
+            // TODO: Add async partial encoding
+
             // Decode the entire chunk
             let chunk_bytes_old = self
                 .async_retrieve_chunk_opt(chunk_indices, options)

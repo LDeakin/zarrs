@@ -95,6 +95,14 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///
 /// Sets the names used when serialising and deserialising the names of experimental codecs.
 /// Deserialisation also accepts the standard `IDENTIFIER` of the codec.
+///
+/// ### Experimental Partial Encoding
+/// > default: [`false`]
+///
+/// If `true`, [`Array::store_chunk_subset`](crate::array::Array::store_chunk_subset) and [`Array::store_array_subset`](crate::array::Array::store_array_subset) and variants can use partial encoding.
+/// This is relevant when using the sharding codec, as it enables inner chunks to be written without reading and writing entire shards.
+///
+/// This is an experimental feature for now until it has more comprehensively tested and support is added in the async API.
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -107,6 +115,7 @@ pub struct Config {
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
     experimental_codec_names: HashMap<&'static str, String>,
+    experimental_partial_encoding: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -143,6 +152,7 @@ impl Default for Config {
             metadata_erase_version: MetadataEraseVersion::Default,
             include_zarrs_metadata: true,
             experimental_codec_names,
+            experimental_partial_encoding: false,
         }
     }
 }
@@ -256,6 +266,21 @@ impl Config {
     /// Get a mutable reference to the [experimental codec names](#experimental-codec-names) configuration.
     pub fn experimental_codec_names_mut(&mut self) -> &mut HashMap<&'static str, String> {
         &mut self.experimental_codec_names
+    }
+
+    /// Get the [experimental partial encoding](#experimental-partial-encoding) configuration.
+    #[must_use]
+    pub fn experimental_partial_encoding(&self) -> bool {
+        self.experimental_partial_encoding
+    }
+
+    /// Set the [experimental partial encoding](#experimental-partial-encoding) configuration.
+    pub fn set_experimental_partial_encoding(
+        &mut self,
+        experimental_partial_encoding: bool,
+    ) -> &mut Self {
+        self.experimental_partial_encoding = experimental_partial_encoding;
+        self
     }
 }
 
