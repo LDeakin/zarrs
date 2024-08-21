@@ -76,14 +76,14 @@ fn transpose_array(
 
     // Transpose the data
     let array_transposed = array.permuted_axes(transpose_order);
+    #[allow(deprecated)]
     if array_transposed.is_standard_layout() {
-        Ok(array_transposed.to_owned().into_raw_vec_and_offset().0)
+        Ok(array_transposed.to_owned().into_raw_vec())
     } else {
         Ok(array_transposed
             .as_standard_layout()
             .into_owned()
-            .into_raw_vec_and_offset()
-            .0)
+            .into_raw_vec())
     }
 }
 
