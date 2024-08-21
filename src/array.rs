@@ -678,7 +678,8 @@ fn ndarray_into_vec<T: Clone, D: ndarray::Dimension>(array: ndarray::Array<T, D>
     } else {
         array.as_standard_layout().into_owned()
     }
-    .into_raw_vec()
+    .into_raw_vec_and_offset()
+    .0
 }
 
 mod array_sync_readable;
