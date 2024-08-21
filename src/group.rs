@@ -1,12 +1,16 @@
 //! Zarr groups.
 //!
 //! A Zarr group is a node in a Zarr hierarchy.
-//! It can have associated metadata and may have child nodes (groups or [`arrays`](crate::array)).
+//! It can have associated attributes and may have child nodes (groups or [`arrays`](crate::array)).
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group>.
 //!
 //! Use [`GroupBuilder`] to setup a new group, or use [`Group::open`] to read and/or write an existing group.
 //!
-//! A group can optionally store attributes in metadata in an accompanying `zarr.json` file. For example:
+//! ## Group Metadata
+//! Group metadata **must be explicitly stored** with [`store_metadata`](Group::store_metadata) or [`store_metadata_opt`](Group::store_metadata_opt) if a group is newly created or its metadata has been mutated.
+//! Support for implicit groups was removed from Zarr V3 after provisional acceptance.
+//!
+//! Below is an example of a `zarr.json` file for a group:
 //! ```json
 //! {
 //!     "zarr_format": 3,
@@ -207,20 +211,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
         }
 
         // No metadata has been found
-        match version {
-            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
-                // V3 supports missing metadata
-                Self::new_with_metadata(
-                    storage,
-                    path,
-                    GroupMetadata::V3(GroupMetadataV3::default()),
-                )
-            }
-            MetadataRetrieveVersion::V2 => {
-                // V2 does not support missing metadata
-                Err(GroupCreateError::MissingMetadata)
-            }
-        }
+        Err(GroupCreateError::MissingMetadata)
     }
 }
 
@@ -276,20 +267,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
         }
 
         // No metadata has been found
-        match version {
-            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
-                // V3 supports missing metadata
-                Self::new_with_metadata(
-                    storage,
-                    path,
-                    GroupMetadata::V3(GroupMetadataV3::default()),
-                )
-            }
-            MetadataRetrieveVersion::V2 => {
-                // V2 does not support missing metadata
-                Err(GroupCreateError::MissingMetadata)
-            }
-        }
+        Err(GroupCreateError::MissingMetadata)
     }
 }
 
@@ -305,8 +283,8 @@ pub enum GroupCreateError {
     /// Storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
-    /// Missing metadata (Zarr V2 only).
-    #[error("group metadata is missing (Zarr V2 only)")]
+    /// Missing metadata.
+    #[error("group metadata is missing")]
     MissingMetadata,
 }
 
@@ -603,12 +581,11 @@ mod tests {
         assert_eq!(group_copy.metadata(), group.metadata());
     }
 
+    /// Implicit group support is removed since implicit groups were removed from the Zarr V3 spec
     #[test]
-    fn group_default() {
+    fn group_implicit() {
         let store = std::sync::Arc::new(MemoryStore::new());
         let group_path = "/group";
-        let group = Group::open(store, group_path).unwrap();
-        assert_eq!(group.attributes(), &serde_json::Map::default());
-        assert_eq!(group.additional_fields(), &AdditionalFields::default());
+        assert!(Group::open(store, group_path).is_err());
     }
 }

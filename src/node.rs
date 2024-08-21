@@ -19,7 +19,6 @@ use thiserror::Error;
 
 use crate::{
     array::ArrayMetadata,
-    group::GroupMetadataV3,
     metadata::{ArrayMetadataV2, GroupMetadata, GroupMetadataV2, MetadataRetrieveVersion},
     storage::{
         get_child_nodes, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group,
@@ -59,8 +58,8 @@ pub enum NodeCreateError {
     /// Metadata version mismatch
     #[error("Found V2 metadata in V3 key or vice-versa")]
     MetadataVersionMismatch,
-    /// Missing metadata (Zarr V2 only).
-    #[error("group metadata is missing (Zarr V2 only)")]
+    /// Missing metadata.
+    #[error("Metadata is missing")]
     MissingMetadata,
 }
 
@@ -119,18 +118,7 @@ impl Node {
         }
 
         // No metadata has been found
-        match version {
-            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
-                // V3 supports missing metadata
-                Ok(NodeMetadata::Group(GroupMetadata::V3(
-                    GroupMetadataV3::default(),
-                )))
-            }
-            MetadataRetrieveVersion::V2 => {
-                // V2 does not support missing metadata
-                Err(NodeCreateError::MissingMetadata)
-            }
-        }
+        Err(NodeCreateError::MissingMetadata)
     }
 
     #[cfg(feature = "async")]
@@ -192,18 +180,7 @@ impl Node {
         }
 
         // No metadata has been found
-        match version {
-            MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 => {
-                // V3 supports missing metadata
-                Ok(NodeMetadata::Group(GroupMetadata::V3(
-                    GroupMetadataV3::default(),
-                )))
-            }
-            MetadataRetrieveVersion::V2 => {
-                // V2 does not support missing metadata
-                Err(NodeCreateError::MissingMetadata)
-            }
-        }
+        Err(NodeCreateError::MissingMetadata)
     }
 
     #[deprecated(since = "0.15.0", note = "please use `open` instead")]
@@ -406,7 +383,7 @@ impl Node {
 mod tests {
     use crate::{
         array::{ArrayBuilder, ArrayMetadataOptions, FillValue},
-        group::GroupMetadata,
+        group::{GroupMetadata, GroupMetadataV3},
         storage::{store::MemoryStore, StoreKey, WritableStorageTraits},
     };
 
@@ -483,15 +460,12 @@ mod tests {
         serde_json::from_str::<NodeMetadata>(JSON_GROUP).unwrap();
     }
 
+    /// Implicit node support is removed since implicit groups were removed from the Zarr V3 spec
     #[test]
-    fn node_default() {
+    fn node_implicit() {
         let store = std::sync::Arc::new(MemoryStore::new());
         let node_path = "/node";
-        let node = Node::open(&store, node_path).unwrap();
-        assert_eq!(
-            node.metadata,
-            NodeMetadata::Group(GroupMetadata::V3(GroupMetadataV3::default()))
-        );
+        assert!(Node::open(&store, node_path).is_err());
     }
 
     #[test]
@@ -547,8 +521,12 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            Node::open(&store, "/node").unwrap_err().to_string(),
+            Node::open(&store, "/node/array").unwrap_err().to_string(),
             "error parsing metadata for node/array/zarr.json: expected value at line 1 column 1"
+        );
+        assert_eq!(
+            Node::open(&store, "/node").unwrap_err().to_string(),
+            "Metadata is missing"
         );
     }
 
