@@ -76,6 +76,7 @@ fn transpose_array(
 
     // Transpose the data
     let array_transposed = array.permuted_axes(transpose_order);
+    #[allow(deprecated)]
     if array_transposed.is_standard_layout() {
         Ok(array_transposed.to_owned().into_raw_vec())
     } else {

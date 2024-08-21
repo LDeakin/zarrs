@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: `Arc` instead of `Box` partial decoders
  - Expand `set_partial_values` tests
  - Specialise `set_partial_values` for `MemoryStore`
+ - Bump maximum supported `ndarray` version from 0.15 to 0.16
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates

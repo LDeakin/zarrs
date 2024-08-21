@@ -673,6 +673,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 #[cfg(feature = "ndarray")]
 /// Convert an ndarray into a vec with standard layout
 fn ndarray_into_vec<T: Clone, D: ndarray::Dimension>(array: ndarray::Array<T, D>) -> Vec<T> {
+    #[allow(deprecated)]
     if array.is_standard_layout() {
         array
     } else {
