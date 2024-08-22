@@ -28,7 +28,9 @@ fn is_name_regular(name: &str) -> bool {
 ///
 /// # Errors
 /// Returns a [`PluginCreateError`] if the metadata is invalid for a regular chunk grid.
-pub fn create_chunk_grid_regular(metadata: &MetadataV3) -> Result<ChunkGrid, PluginCreateError> {
+pub(crate) fn create_chunk_grid_regular(
+    metadata: &MetadataV3,
+) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;

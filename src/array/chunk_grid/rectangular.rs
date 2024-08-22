@@ -31,7 +31,9 @@ fn is_name_rectangular(name: &str) -> bool {
 ///
 /// # Errors
 /// Returns a [`PluginCreateError`] if the metadata is invalid for a regular chunk grid.
-fn create_chunk_grid_rectangular(metadata: &MetadataV3) -> Result<ChunkGrid, PluginCreateError> {
+pub(crate) fn create_chunk_grid_rectangular(
+    metadata: &MetadataV3,
+) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RectangularChunkGridConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
