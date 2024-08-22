@@ -20,7 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `[async_]store_set_partial_values` no longer truncates
    - this could corrupt values depending on the order of `set_partial_values` calls
 
+## [0.16.4] - 2024-08-22
+
+### Fixed
+ - Reduce maximum supported `opendal` version from 0.49 to 0.48
+   - This reverts a change in 0.16.3 that was not semver compatible
+
 ## [0.16.3] - 2024-08-14
+
+*This release was yanked.*
 
 ### Changed
  - Bump `derive_more` to 1.0.0
@@ -948,7 +956,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.3...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.4
 [0.16.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.3
 [0.16.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.2
 [0.16.1]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.1
