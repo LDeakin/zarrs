@@ -17,6 +17,7 @@ use super::AdditionalFields;
 ///         "eggs": 42,
 ///     }
 /// }
+#[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct GroupMetadataV3 {
