@@ -30,6 +30,7 @@ use std::sync::Arc;
 
 use derive_more::Display;
 use thiserror::Error;
+use zarrs_metadata::v3::group::ConsolidatedMetadata;
 
 use crate::{
     config::{
@@ -148,6 +149,30 @@ impl<TStorage: ?Sized> Group<TStorage> {
             (GM::V3(metadata), V::Default | V::V3) => GM::V3(metadata),
             (GM::V2(metadata), V::Default) => GM::V2(metadata),
             (GM::V2(metadata), V::V3) => GM::V3(group_metadata_v2_to_v3(&metadata)),
+        }
+    }
+
+    /// Get the consolidated metadata. Returns [`None`] if `consolidated_metadata` is absent.
+    ///
+    /// Consolidated metadata is not currently supported for Zarr V2 groups.
+    #[must_use]
+    pub fn consolidated_metadata(&self) -> Option<&ConsolidatedMetadata> {
+        if let GroupMetadata::V3(group_metadata) = &self.metadata {
+            group_metadata.consolidated_metadata.as_ref()
+        } else {
+            None
+        }
+    }
+
+    /// Set the consolidated metadata.
+    ///
+    /// Consolidated metadata is not currently supported for Zarr V2 groups, and this function is a no-op.
+    pub fn set_consolidated_metadata(
+        &mut self,
+        consolidated_metadata: Option<ConsolidatedMetadata>,
+    ) {
+        if let GroupMetadata::V3(group_metadata) = &mut self.metadata {
+            group_metadata.consolidated_metadata = consolidated_metadata;
         }
     }
 }

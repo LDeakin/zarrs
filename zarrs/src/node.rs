@@ -24,8 +24,9 @@ pub use key::{
 mod node_async;
 #[cfg(feature = "async")]
 pub use node_async::{async_get_child_nodes, async_node_exists, async_node_exists_listable};
+use zarrs_metadata::v3::group::ConsolidatedMetadataMetadata;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub use crate::metadata::NodeMetadata;
 use thiserror::Error;
@@ -388,6 +389,43 @@ impl Node {
         print_metadata("/", &mut string, &self.metadata);
         update_tree(&mut string, &self.children, 1);
         string
+    }
+
+    /// Consolidate metadata. Returns [`None`] for an array.
+    ///
+    /// [`ConsolidatedMetadataMetadata`] can be converted into [`ConsolidatedMetadata`](crate::metadata::v3::group::ConsolidatedMetadata) in [`GroupMetadataV3`](crate::metadata::v3::group::GroupMetadataV3).
+    #[must_use]
+    #[allow(clippy::items_after_statements)]
+    pub fn consolidate_metadata(&self) -> Option<ConsolidatedMetadataMetadata> {
+        if let NodeMetadata::Array(_) = self.metadata {
+            // Arrays cannot have consolidated metadata
+            return None;
+        }
+
+        fn update_consolidated_metadata(
+            node_path: &str,
+            consolidated_metadata: &mut ConsolidatedMetadataMetadata,
+            children: &[Node],
+        ) {
+            for child in children {
+                let relative_path = child
+                    .path()
+                    .as_str()
+                    .strip_prefix(node_path)
+                    .expect("child path should always include the node path");
+                let relative_path = relative_path.strip_prefix('/').unwrap_or(relative_path);
+                let relative_path = relative_path.to_string();
+                consolidated_metadata.insert(relative_path, child.metadata.clone());
+                update_consolidated_metadata(node_path, consolidated_metadata, &child.children);
+            }
+        }
+        let mut consolidated_metadata = HashMap::default();
+        update_consolidated_metadata(
+            self.path().as_str(),
+            &mut consolidated_metadata,
+            &self.children,
+        );
+        Some(consolidated_metadata)
     }
 }
 

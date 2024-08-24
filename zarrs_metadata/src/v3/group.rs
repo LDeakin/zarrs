@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
+
+use crate::NodeMetadata;
 
 use super::AdditionalFields;
 
@@ -18,7 +22,7 @@ use super::AdditionalFields;
 ///     }
 /// }
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
+#[derive(Serialize, Deserialize, Clone, Debug, Display)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct GroupMetadataV3 {
     /// An integer defining the version of the storage specification to which the group adheres. Must be `3`.
@@ -28,10 +32,23 @@ pub struct GroupMetadataV3 {
     /// Optional user metadata.
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub attributes: serde_json::Map<String, serde_json::Value>,
+    /// Consolidated metadata.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub consolidated_metadata: Option<ConsolidatedMetadata>,
     /// Additional fields.
     #[serde(flatten)]
     pub additional_fields: AdditionalFields,
 }
+
+impl std::cmp::PartialEq for GroupMetadataV3 {
+    fn eq(&self, other: &Self) -> bool {
+        self.attributes == other.attributes
+            // && self.consolidated_metadata == other.consolidated_metadata
+            && self.additional_fields == other.additional_fields
+    }
+}
+
+impl Eq for GroupMetadataV3 {}
 
 impl Default for GroupMetadataV3 {
     fn default() -> Self {
@@ -51,6 +68,92 @@ impl GroupMetadataV3 {
             node_type: monostate::MustBe!("group"),
             attributes,
             additional_fields,
+            consolidated_metadata: None,
         }
+    }
+}
+
+/// Consolidated metadata of a Zarr hierarchy.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
+pub struct ConsolidatedMetadata {
+    /// A mapping from node path to Group or Array [`NodeMetadata`] object.
+    pub metadata: ConsolidatedMetadataMetadata,
+    /// The kind of the consolidated metadata. Must be `'inline'`. Reserved for future use.
+    pub kind: ConsolidatedMetadataKind,
+    /// The boolean literal `false`. Indicates that the field is not required to load the Zarr hierarchy.
+    pub must_understand: monostate::MustBe!(false),
+}
+
+/// The `metadata` field of `consolidated_metadata` in [`GroupMetadataV3`].
+pub type ConsolidatedMetadataMetadata = HashMap<String, NodeMetadata>;
+
+impl Default for ConsolidatedMetadata {
+    fn default() -> Self {
+        Self {
+            metadata: HashMap::default(),
+            kind: ConsolidatedMetadataKind::Inline,
+            must_understand: monostate::MustBe!(false),
+        }
+    }
+}
+
+/// The "kind" of consolidated metadata.
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
+pub enum ConsolidatedMetadataKind {
+    /// Indicates that consolidated metadata is stored inline in the root `zarr.json` object.
+    #[serde(rename = "inline")]
+    Inline,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn group_metadata_consolidated() {
+        let group_metadata = serde_json::from_str::<GroupMetadataV3>(
+            r#"{
+            "zarr_format": 3,
+            "node_type": "group",
+            "attributes": {
+                "spam": "ham",
+                "eggs": 42
+            },
+            "consolidated_metadata": {
+                "metadata": {
+                    "/subgroup": {
+                        "zarr_format": 3,
+                        "node_type": "group",
+                        "attributes": {
+                            "consolidated": "attributes"
+                        }
+                    }
+                },
+                "kind": "inline",
+                "must_understand": false
+            }
+        }"#,
+        )
+        .unwrap();
+        assert_eq!(
+            group_metadata
+                .consolidated_metadata
+                .unwrap()
+                .metadata
+                .get("/subgroup")
+                .unwrap(),
+            &serde_json::from_str::<NodeMetadata>(
+                r#"{
+                    "zarr_format": 3,
+                    "node_type": "group",
+                    "attributes": {
+                        "consolidated": "attributes"
+                    }
+                }"#
+            )
+            .unwrap()
+        );
     }
 }
