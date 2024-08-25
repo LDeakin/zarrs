@@ -8,7 +8,7 @@ use crate::{
         array_bytes::{merge_chunks_vlen, update_bytes_flen},
         codec::CodecOptions,
         concurrency::concurrency_chunks_and_codec,
-        Array, ArrayBytes, ArrayError, DataTypeSize, ElementOwned, UnsafeCellSlice,
+        Array, ArrayBytes, ArrayError, ArraySize, DataTypeSize, ElementOwned, UnsafeCellSlice,
     },
     array_subset::ArraySubset,
     storage::ReadableStorageTraits,
@@ -271,6 +271,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
         crate::array::elements_to_ndarray(chunk_subset.shape(), elements)
     }
 
+    #[allow(clippy::too_many_lines)]
     fn retrieve_array_subset_opt_cached(
         &self,
         cache: &impl ChunkCache,
@@ -296,76 +297,120 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
         let chunk_representation0 =
             self.chunk_array_representation(&vec![0; self.dimensionality()])?;
 
-        // Calculate chunk/codec concurrency
         let num_chunks = chunks.num_elements_usize();
-        let codec_concurrency = self.recommended_codec_concurrency(&chunk_representation0)?;
-        let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
-            options.concurrent_target(),
-            num_chunks,
-            options,
-            &codec_concurrency,
-        );
-
-        // Retrieve chunks
-        let indices = chunks.indices();
-        let chunk_bytes_and_subsets =
-            iter_concurrent_limit!(chunk_concurrent_limit, indices, map, |chunk_indices| {
-                let chunk_subset = self.chunk_subset(&chunk_indices)?;
-                self.retrieve_chunk_opt_cached(cache, &chunk_indices, &options)
-                    .map(|bytes| (bytes, chunk_subset))
-            })
-            .collect::<Result<Vec<_>, ArrayError>>()?;
-
-        // Merge
-        match self.data_type().size() {
-            DataTypeSize::Variable => {
-                // Arc<ArrayBytes> -> ArrayBytes (not copied, but a bit wasteful, change merge_chunks_vlen?)
-                let chunk_bytes_and_subsets = chunk_bytes_and_subsets
-                    .iter()
-                    .map(|(chunk_bytes, chunk_subset)| {
-                        (ArrayBytes::clone(chunk_bytes), chunk_subset.clone())
-                    })
-                    .collect();
-                Ok(merge_chunks_vlen(
-                    chunk_bytes_and_subsets,
-                    array_subset.shape(),
-                )?)
+        match num_chunks {
+            0 => {
+                let array_size =
+                    ArraySize::new(self.data_type().size(), array_subset.num_elements());
+                Ok(ArrayBytes::new_fill_value(array_size, self.fill_value()))
             }
-            DataTypeSize::Fixed(data_type_size) => {
-                // Allocate the output
-                let size_output = array_subset.num_elements_usize() * data_type_size;
-                let mut output = Vec::with_capacity(size_output);
-
-                {
-                    let output = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
-                    let update_output =
-                        |(chunk_subset_bytes, chunk_subset): (Arc<ArrayBytes>, ArraySubset)| {
-                            // Extract the overlapping bytes
-                            let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
-                            let chunk_subset_bytes = chunk_subset_bytes.extract_array_subset(
-                                &chunk_subset_overlap.relative_to(chunk_subset.start())?,
-                                chunk_subset.shape(),
-                                self.data_type(),
-                            )?;
-
-                            update_bytes_flen(
-                                unsafe { output.get() },
-                                array_subset.shape(),
-                                &chunk_subset_bytes.into_fixed()?,
-                                &chunk_subset_overlap.relative_to(array_subset.start())?,
-                                data_type_size,
-                            );
-                            Ok::<_, ArrayError>(())
-                        };
-                    iter_concurrent_limit!(
-                        chunk_concurrent_limit,
-                        chunk_bytes_and_subsets,
-                        try_for_each,
-                        update_output
-                    )?;
+            1 => {
+                let chunk_indices = chunks.start();
+                let chunk_subset = self.chunk_subset(chunk_indices)?;
+                if &chunk_subset == array_subset {
+                    // Single chunk fast path if the array subset domain matches the chunk domain
+                    Ok(Arc::unwrap_or_clone(self.retrieve_chunk_opt_cached(
+                        cache,
+                        chunk_indices,
+                        options,
+                    )?))
+                } else {
+                    let array_subset_in_chunk_subset =
+                        unsafe { array_subset.relative_to_unchecked(chunk_subset.start()) };
+                    self.retrieve_chunk_subset_opt_cached(
+                        cache,
+                        chunk_indices,
+                        &array_subset_in_chunk_subset,
+                        options,
+                    )
                 }
-                unsafe { output.set_len(size_output) };
-                Ok(ArrayBytes::from(output))
+            }
+            _ => {
+                // Calculate chunk/codec concurrency
+                let num_chunks = chunks.num_elements_usize();
+                let codec_concurrency =
+                    self.recommended_codec_concurrency(&chunk_representation0)?;
+                let (chunk_concurrent_limit, options) = concurrency_chunks_and_codec(
+                    options.concurrent_target(),
+                    num_chunks,
+                    options,
+                    &codec_concurrency,
+                );
+
+                // Retrieve chunks
+                let indices = chunks.indices();
+                let chunk_bytes_and_subsets =
+                    iter_concurrent_limit!(chunk_concurrent_limit, indices, map, |chunk_indices| {
+                        let chunk_subset = self.chunk_subset(&chunk_indices)?;
+                        self.retrieve_chunk_opt_cached(cache, &chunk_indices, &options)
+                            .map(|bytes| (bytes, chunk_subset))
+                    })
+                    .collect::<Result<Vec<_>, ArrayError>>()?;
+
+                // Merge
+                match self.data_type().size() {
+                    DataTypeSize::Variable => {
+                        // Arc<ArrayBytes> -> ArrayBytes (not copied, but a bit wasteful, change merge_chunks_vlen?)
+                        let chunk_bytes_and_subsets = chunk_bytes_and_subsets
+                            .iter()
+                            .map(|(chunk_bytes, chunk_subset)| {
+                                (ArrayBytes::clone(chunk_bytes), chunk_subset.clone())
+                            })
+                            .collect();
+                        Ok(merge_chunks_vlen(
+                            chunk_bytes_and_subsets,
+                            array_subset.shape(),
+                        )?)
+                    }
+                    DataTypeSize::Fixed(data_type_size) => {
+                        // Allocate the output
+                        let size_output = array_subset.num_elements_usize() * data_type_size;
+                        let mut output = Vec::with_capacity(size_output);
+
+                        {
+                            let output =
+                                UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut output);
+                            let update_output = |(chunk_subset_bytes, chunk_subset): (
+                                Arc<ArrayBytes>,
+                                ArraySubset,
+                            )| {
+                                // Extract the overlapping bytes
+                                let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
+                                let chunk_subset_bytes = if chunk_subset_overlap == chunk_subset {
+                                    chunk_subset_bytes
+                                } else {
+                                    Arc::new(chunk_subset_bytes.extract_array_subset(
+                                        &chunk_subset_overlap.relative_to(chunk_subset.start())?,
+                                        chunk_subset.shape(),
+                                        self.data_type(),
+                                    )?)
+                                };
+
+                                let fixed = match chunk_subset_bytes.as_ref() {
+                                    ArrayBytes::Fixed(fixed) => fixed,
+                                    ArrayBytes::Variable(_, _) => unreachable!(),
+                                };
+
+                                update_bytes_flen(
+                                    unsafe { output.get() },
+                                    array_subset.shape(),
+                                    fixed,
+                                    &chunk_subset_overlap.relative_to(array_subset.start())?,
+                                    data_type_size,
+                                );
+                                Ok::<_, ArrayError>(())
+                            };
+                            iter_concurrent_limit!(
+                                chunk_concurrent_limit,
+                                chunk_bytes_and_subsets,
+                                try_for_each,
+                                update_output
+                            )?;
+                        }
+                        unsafe { output.set_len(size_output) };
+                        Ok(ArrayBytes::from(output))
+                    }
+                }
             }
         }
     }
