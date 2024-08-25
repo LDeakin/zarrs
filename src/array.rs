@@ -27,6 +27,7 @@ mod array_errors;
 mod array_metadata_options;
 mod array_representation;
 mod bytes_representation;
+mod chunk_cache;
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
 mod chunk_shape;
@@ -71,6 +72,12 @@ pub use self::{
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
 pub use crate::metadata::ArrayMetadata;
+
+pub use chunk_cache::array_chunk_cache_sync_readable_ext::ArrayChunkCacheExt;
+pub use chunk_cache::{
+    chunk_cache_lru_chunk_limit::ChunkCacheLruChunkLimit,
+    chunk_cache_lru_size_limit::ChunkCacheLruSizeLimit, ChunkCache,
+};
 
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
@@ -173,6 +180,10 @@ pub struct NonZeroError;
 ///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
 ///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
+/// Additional methods are offered by extension traits:
+///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching)
+///  - [`ArrayShardedExt`], [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
+///
 /// ### Optimising Writes
 /// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
 /// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and require careful usage if executed in parallel (see below).
@@ -196,6 +207,28 @@ pub struct NonZeroError;
 /// For example, consider that a compressed chunk may need to be retrieved and decoded in its entirety even if only a small part of the data is needed.
 /// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode) or [`partial_decode_opt`](codec::ArrayPartialDecoderTraits::partial_decode_opt).
 /// The underlying codec chain will use a cache where efficient to optimise multiple partial decoding requests (see [`CodecChain`]).
+/// Another alternative is to use [Chunk Caching](#chunk-caching).
+///
+/// ### Chunk Caching
+/// The [`ArrayChunkCacheExt`] trait adds [`Array`] retrieve methods that cache decoded chunks:
+///  - [`retrieve_chunk_opt_cached`](ArrayChunkCacheExt::retrieve_chunk_opt_cached)
+///  - [`retrieve_chunks_opt_cached`](ArrayChunkCacheExt::retrieve_chunks_opt_cached)
+///  - [`retrieve_chunk_subset_opt_cached`](ArrayChunkCacheExt::retrieve_chunk_subset_opt_cached)
+///  - [`retrieve_array_subset_opt_cached`](ArrayChunkCacheExt::retrieve_array_subset_opt_cached)
+///
+/// `_elements` and `_ndarray` variants are also available.
+/// Each method has a `cache` parameter that implements the [`ChunkCache`] trait.
+/// Cached retrieve methods do not use partial decoders, so any intersected chunk is fully decoded if not present in the cache.
+/// This can reduce performance for some access patterns.
+/// Prefer not to use a chunk cache if chunks are not accessed repeatedly.
+///
+/// Two chunk caches are provided by `zarrs`:
+///  - [`ChunkCacheLruChunkLimit`]: an LRU (least recently used) cache with a fixed chunk capacity.
+///  - [`ChunkCacheLruSizeLimit`]: an LRU cache with a fixed size in bytes.
+///
+/// These caches use internal locking to support multithreading, which has a performance overhead.
+/// `zarrs` consumers can create custom caches by implementing the [`ChunkCache`] trait.
+/// For example, consider a custom lock-free per-thread cache, or an alternative to LRU.
 ///
 /// ### Reading Sharded Arrays
 /// The `sharding_indexed` ([`ShardingCodec`](codec::array_to_bytes::sharding)) codec enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
