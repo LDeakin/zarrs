@@ -27,6 +27,7 @@ mod array_errors;
 mod array_metadata_options;
 mod array_representation;
 mod bytes_representation;
+mod chunk_cache;
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
 mod chunk_shape;
@@ -71,6 +72,12 @@ pub use self::{
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
 pub use crate::metadata::ArrayMetadata;
+
+pub use chunk_cache::array_chunk_cache_sync_readable_ext::ArrayChunkCacheExt;
+pub use chunk_cache::{
+    chunk_cache_lru_chunks::ChunkCacheLruChunks, chunk_cache_lru_size::ChunkCacheLruSize,
+    ChunkCache,
+};
 
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
