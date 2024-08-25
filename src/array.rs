@@ -75,8 +75,8 @@ pub use crate::metadata::ArrayMetadata;
 
 pub use chunk_cache::array_chunk_cache_sync_readable_ext::ArrayChunkCacheExt;
 pub use chunk_cache::{
-    chunk_cache_lru_chunks::ChunkCacheLruChunks, chunk_cache_lru_size::ChunkCacheLruSize,
-    ChunkCache,
+    chunk_cache_lru_chunk_limit::ChunkCacheLruChunkLimit,
+    chunk_cache_lru_size_limit::ChunkCacheLruSizeLimit, ChunkCache,
 };
 
 #[cfg(feature = "sharding")]

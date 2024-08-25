@@ -59,14 +59,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
         chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Arc<ArrayBytes<'static>>, ArrayError> {
-        if let Some(chunk) = cache.retrieve(chunk_indices) {
+        if let Some(chunk) = cache.get(chunk_indices) {
             Ok(chunk)
         } else {
             let chunk = Arc::new(
                 self.retrieve_chunk_opt(chunk_indices, options)?
                     .into_owned(),
             );
-            cache.insert(chunk_indices, chunk.clone());
+            cache.insert(chunk_indices.to_vec(), chunk.clone());
             Ok(chunk)
         }
     }
@@ -192,10 +192,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
 mod tests {
     use super::*;
 
-    use std::{num::NonZeroUsize, sync::Arc};
+    use std::sync::Arc;
 
     use crate::{
-        array::{ArrayBuilder, ChunkCacheLruChunks, ChunkCacheLruSize, DataType, FillValue},
+        array::{
+            ArrayBuilder, ChunkCacheLruChunkLimit, ChunkCacheLruSizeLimit, DataType, FillValue,
+        },
         array_subset::ArraySubset,
         storage::{storage_transformer::PerformanceMetricsStorageTransformer, store::MemoryStore},
     };
@@ -227,7 +229,7 @@ mod tests {
             )
             .unwrap();
 
-        let cache = ChunkCacheLruChunks::new(NonZeroUsize::new(2).unwrap());
+        let cache = ChunkCacheLruChunkLimit::new(2);
 
         assert_eq!(performance_metrics.reads(), 0);
         assert!(cache.is_empty());
@@ -253,8 +255,8 @@ mod tests {
         );
         assert_eq!(performance_metrics.reads(), 2);
         assert_eq!(cache.len(), 2);
-        assert!(cache.retrieve(&[0, 0]).is_some());
-        assert!(cache.retrieve(&[1, 0]).is_some());
+        assert!(cache.get(&[0, 0]).is_some());
+        assert!(cache.get(&[1, 0]).is_some());
 
         // Retrieve a chunk not in cache
         assert_eq!(
@@ -265,8 +267,8 @@ mod tests {
         );
         assert_eq!(performance_metrics.reads(), 3);
         assert_eq!(cache.len(), 2);
-        assert!(cache.retrieve(&[0, 1]).is_some());
-        assert!(cache.retrieve(&[0, 0]).is_none() || cache.retrieve(&[1, 0]).is_none());
+        assert!(cache.get(&[0, 1]).is_some());
+        assert!(cache.get(&[0, 0]).is_none() || cache.get(&[1, 0]).is_none());
     }
 
     #[test]
@@ -298,7 +300,7 @@ mod tests {
 
         // Create a cache with a size limit equivalent to 2 chunks
         let chunk_size = 4 * 4 * size_of::<u8>();
-        let cache = ChunkCacheLruSize::new(NonZeroUsize::new(2 * chunk_size).unwrap());
+        let cache = ChunkCacheLruSizeLimit::new(2 * chunk_size as u64);
 
         assert_eq!(performance_metrics.reads(), 0);
         assert!(cache.is_empty());
@@ -327,8 +329,8 @@ mod tests {
         assert_eq!(performance_metrics.reads(), 2);
         assert_eq!(cache.len(), 2);
         assert_eq!(cache.size(), chunk_size * 2);
-        assert!(cache.retrieve(&[0, 0]).is_some());
-        assert!(cache.retrieve(&[1, 0]).is_some());
+        assert!(cache.get(&[0, 0]).is_some());
+        assert!(cache.get(&[1, 0]).is_some());
 
         // Retrieve a chunk not in cache
         assert_eq!(
@@ -340,7 +342,7 @@ mod tests {
         assert_eq!(performance_metrics.reads(), 3);
         assert_eq!(cache.len(), 2);
         assert_eq!(cache.size(), chunk_size * 2);
-        assert!(cache.retrieve(&[0, 1]).is_some());
-        assert!(cache.retrieve(&[0, 0]).is_none() || cache.retrieve(&[1, 0]).is_none());
+        assert!(cache.get(&[0, 1]).is_some());
+        assert!(cache.get(&[0, 0]).is_none() || cache.get(&vec![1, 0]).is_none());
     }
 }
