@@ -14,7 +14,7 @@ impl<'a, T: Copy> UnsafeCellSlice<'a, T> {
     /// Create a new [`UnsafeCellSlice`].
     #[must_use]
     pub fn new(slice: &'a mut [T]) -> Self {
-        let ptr = slice as *mut [T] as *const [std::cell::UnsafeCell<T>];
+        let ptr = std::ptr::from_mut::<[T]>(slice) as *const [std::cell::UnsafeCell<T>];
         Self(unsafe { &*ptr })
     }
 
