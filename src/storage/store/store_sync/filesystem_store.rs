@@ -50,12 +50,12 @@ use std::{
 
 /// For `O_DIRECT`, we need a buffer that is aligned to the page size and is a
 /// multiple of the page size.
-struct PageAlinedBuffer {
+struct PageAlignedBuffer {
     buf: *mut u8,
     layout: Layout,
 }
 
-impl PageAlinedBuffer {
+impl PageAlignedBuffer {
     /// Allocate a new page-size aligned buffer of `size` bytes. The actual size
     /// will be rounded up to the next largest multiple of the page size.
     pub fn new(size: usize) -> Self {
@@ -78,7 +78,7 @@ impl PageAlinedBuffer {
     }
 }
 
-impl Deref for PageAlinedBuffer {
+impl Deref for PageAlignedBuffer {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -99,7 +99,7 @@ impl Deref for PageAlinedBuffer {
     }
 }
 
-impl DerefMut for PageAlinedBuffer {
+impl DerefMut for PageAlignedBuffer {
     fn deref_mut(&mut self) -> &mut Self::Target {
         // SAFETY: see `deref` with the following modification:
         // "The memory referenced by the returned slice must not be accessed
@@ -110,7 +110,7 @@ impl DerefMut for PageAlinedBuffer {
     }
 }
 
-impl Drop for PageAlinedBuffer {
+impl Drop for PageAlignedBuffer {
     fn drop(&mut self) {
         // SAFETY: 
         // * "ptr must denote a block of memory currently allocated via this allocator,"
@@ -320,7 +320,7 @@ impl FilesystemStore {
 
         // Write
         if enable_direct {
-            let mut buf = PageAlinedBuffer::new(value.len());
+            let mut buf = PageAlignedBuffer::new(value.len());
             buf[0..value.len()].copy_from_slice(value);
             file.write_all(&buf)?;
             file.set_len(value.len() as u64)?;
