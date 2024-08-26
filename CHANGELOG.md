@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
  - Add `ChunkGridTraits::chunks_in_array_subset()`
- - Add `ArrayChunkCacheExt`, `ChunkCache`, `ChunkCacheLru{Size,Chunk}Limit`
+ - Add chunk cache support
+   - Add `ArrayChunkCacheExt` extension trait for `Array`
+   - Add traits: `ChunkCache`, `ChunkCacheType` (implemented by `ChunkCacheType{Encoded,Decoded}`)
+   - Add chunk cache implementations: `ChunkCache{En,De}codedLru{Size,Chunk}Limit[ThreadLocal]`
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
