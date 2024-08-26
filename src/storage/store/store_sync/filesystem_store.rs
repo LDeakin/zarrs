@@ -11,14 +11,18 @@ use crate::{
     },
 };
 
+use libc::O_DIRECT;
 use parking_lot::RwLock;
 use thiserror::Error;
 use walkdir::WalkDir;
 
 use std::{
+    alloc::{handle_alloc_error, GlobalAlloc, Layout, System},
     collections::HashMap,
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
+    ops::{Deref, DerefMut},
+    os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
@@ -44,6 +48,79 @@ use std::{
 //     FilesystemStore::new(path).map_err(|e| StorePluginCreateError::Other(e.to_string()))
 // }
 
+/// For `O_DIRECT`, we need a buffer that is aligned to the page size and is a
+/// multiple of the page size.
+struct PageAlinedBuffer {
+    buf: *mut u8,
+    layout: Layout,
+}
+
+impl PageAlinedBuffer {
+    /// Allocate a new page-size aligned buffer of `size` bytes. The actual size
+    /// will be rounded up to the next largest multiple of the page size.
+    pub fn new(size: usize) -> Self {
+        let align = page_size::get();
+        // FIXME: unwrap -> `Result`?
+        let layout = Layout::from_size_align(size, align).unwrap().pad_to_align();
+
+        assert!(layout.size() > 0);
+        // SAFETY: `layout` is non-zero, as asserted above.
+        let buf = unsafe { System.alloc_zeroed(layout) };
+
+        // FIXME: buf can be zero when out of memory, or if the allocator
+        // doesn't like our `Layout`; should we return an error and fall back to
+        // buffered I/O instead?
+        if buf.is_null() {
+            handle_alloc_error(layout);
+        }
+
+        Self { buf, layout }
+    }
+}
+
+impl Deref for PageAlinedBuffer {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        // SAFETY:
+        // * "data must be valid for reads for len * mem::size_of::<T>() many bytes, and it must be properly aligned"
+        //      => T is u8 => alignment is trivial
+        //      => `self.buf` is non-null, as per `buf.is_null` check above
+        //      => `self.buf` is a single allocation
+        // * "`data` must point to len consecutive properly initialized values of type T."
+        //      => `self.buf` is zero-initialized
+        // * "The memory referenced by the returned slice must not be mutated for the duration of lifetime 'a, except inside an UnsafeCell"
+        //      => guaranteed by the borrow checker for us
+        // * "The total size len * mem::size_of::<T>() of the slice must be no
+        //    larger than isize::MAX, and adding that size to data must not “wrap
+        //    around” the address space."
+        //      => given from the invariants of `Layout`
+        unsafe { std::slice::from_raw_parts(self.buf, self.layout.size()) }
+    }
+}
+
+impl DerefMut for PageAlinedBuffer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // SAFETY: see `deref` with the following modification:
+        // "The memory referenced by the returned slice must not be accessed
+        // through any other pointer (not derived from the return value) for the
+        // duration of lifetime 'a. Both read and write accesses are forbidden."
+        //      => guaranteed by the mutable borrow
+        unsafe { std::slice::from_raw_parts_mut(self.buf, self.layout.size()) }
+    }
+}
+
+impl Drop for PageAlinedBuffer {
+    fn drop(&mut self) {
+        // SAFETY: 
+        // * "ptr must denote a block of memory currently allocated via this allocator,"
+        //      => we get the pointer from `System.alloc_zeroed`, and it is only free'd here in `drop`
+        // * "layout must be the same layout that was used to allocate that block of memory."
+        //      => we use the `Layout` value previously used for allocation
+        unsafe { System.dealloc(self.buf, self.layout) }
+    }
+}
+
 /// A synchronous file system store.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
@@ -52,6 +129,7 @@ pub struct FilesystemStore {
     base_path: PathBuf,
     sort: bool,
     readonly: bool,
+    direct_io: bool,
     files: Mutex<HashMap<StoreKey, Arc<RwLock<()>>>>,
     // locks: StoreLocks,
 }
@@ -83,10 +161,46 @@ impl FilesystemStore {
         Ok(Self {
             base_path,
             sort: false,
+            direct_io: false,
             readonly,
             files: Mutex::default(),
         })
         // Self::new_with_locks(base_path, Arc::new(DefaultStoreLocks::default()))
+    }
+
+    /// Create a new file system store at a given `base_path` and options.
+    ///
+    /// # Errors
+    /// Returns a [`FilesystemStoreCreateError`] if `base_directory`:
+    ///   - is not valid, or
+    ///   - it points to an existing file rather than a directory.
+    pub fn new_with_options<P: AsRef<Path>>(
+        base_path: P,
+        direct_io: bool,
+    ) -> Result<Self, FilesystemStoreCreateError> {
+        let base_path = base_path.as_ref().to_path_buf();
+        if base_path.to_str().is_none() {
+            return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
+        }
+
+        let readonly = if base_path.exists() {
+            // the path already exists, check if it is read only
+            let md = std::fs::metadata(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
+            md.permissions().readonly()
+        } else {
+            // the path does not exist, so try and create it. If this succeeds, the filesystem is not read only
+            std::fs::create_dir_all(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
+            std::fs::remove_dir(&base_path)?;
+            false
+        };
+
+        Ok(Self {
+            base_path,
+            sort: false,
+            direct_io,
+            readonly,
+            files: Mutex::default(),
+        })
     }
 
     // /// Create a new file system store at a given `base_path` with non-default store locks.
@@ -192,17 +306,31 @@ impl FilesystemStore {
             }
         }
 
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(truncate)
-            .open(key_path)?;
+        let mut flags = OpenOptions::new();
+        flags.write(true).create(true).truncate(truncate);
+
+        // FIXME: for now, only Unix support; also no support for `offset != 0`
+        let enable_direct = cfg!(unix) && self.direct_io && offset.is_none();
+
+        if enable_direct {
+            flags.custom_flags(O_DIRECT);
+        }
+
+        let mut file = flags.open(key_path)?;
 
         // Write
-        if let Some(offset) = offset {
-            file.seek(SeekFrom::Start(offset))?;
+        if enable_direct {
+            let mut buf = PageAlinedBuffer::new(value.len());
+            buf[0..value.len()].copy_from_slice(value);
+            file.write_all(&buf)?;
+            file.set_len(value.len() as u64)?;
+        } else {
+            if let Some(offset) = offset {
+                file.seek(SeekFrom::Start(offset))?;
+            }
+
+            file.write_all(value)?;
         }
-        file.write_all(value)?;
 
         Ok(())
     }
