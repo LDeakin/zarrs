@@ -9,8 +9,8 @@ use super::{
 
 #[cfg(feature = "async")]
 use super::{
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 /// A storage handle.
@@ -102,14 +102,6 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for Storage
     fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<(), super::StorageError> {
         self.0.erase_prefix(prefix)
     }
-}
-
-impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
-    for StorageHandle<TStorage>
-{
-    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-    //     self.0.mutex(key)
-    // }
 }
 
 #[cfg(feature = "async")]

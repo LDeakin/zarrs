@@ -3,9 +3,8 @@ use opendal::BlockingOperator;
 use crate::{
     byte_range::{ByteRange, InvalidByteRangeError},
     storage::{
-        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
-        StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
+        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
     },
 };
 
@@ -102,13 +101,6 @@ impl WritableStorageTraits for OpendalStore {
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         Ok(self.operator.remove_all(prefix.as_str())?)
     }
-}
-
-#[async_trait::async_trait]
-impl ReadableWritableStorageTraits for OpendalStore {
-    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-    //     Ok(self.locks.mutex(key))
-    // }
 }
 
 #[async_trait::async_trait]

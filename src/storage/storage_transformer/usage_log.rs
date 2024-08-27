@@ -13,9 +13,8 @@ use crate::{
     storage::{
         Bytes, ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
         ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
-        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
-        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        WritableStorage, WritableStorageTraits,
+        ReadableWritableStorage, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
+        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
     },
 };
 
@@ -367,21 +366,6 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         )?;
         result
     }
-}
-
-impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
-{
-    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-    //     let result = self.storage.mutex(key);
-    //     writeln!(
-    //         self.handle.lock().unwrap(),
-    //         "{}mutex({key}) -> {:?}",
-    //         (self.prefix_func)(),
-    //         result.as_ref().map_or((), |_| ())
-    //     )?;
-    //     result
-    // }
 }
 
 #[cfg(feature = "async")]
