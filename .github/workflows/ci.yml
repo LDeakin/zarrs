@@ -32,6 +32,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-features
+  build_and_test_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "stable"
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build
+      - run: cargo test
   fmt:
     runs-on: ubuntu-latest
     steps:
