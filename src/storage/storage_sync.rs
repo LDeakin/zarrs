@@ -257,6 +257,8 @@ pub trait ReadableWritableStorageTraits: ReadableStorageTraits + WritableStorage
     // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError>;
 }
 
+impl<T> ReadableWritableStorageTraits for T where T: ReadableStorageTraits + WritableStorageTraits {}
+
 /// A supertrait of [`ReadableStorageTraits`] and [`ListableStorageTraits`].
 pub trait ReadableListableStorageTraits: ReadableStorageTraits + ListableStorageTraits {}
 

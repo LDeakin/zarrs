@@ -6,9 +6,8 @@ use std::sync::Mutex;
 use crate::{
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     storage::{
-        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyStartValue, StoreKeys,
-        StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
+        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
     },
 };
 
@@ -172,12 +171,6 @@ impl WritableStorageTraits for MemoryStore {
         }
         Ok(())
     }
-}
-
-impl ReadableWritableStorageTraits for MemoryStore {
-    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-    //     Ok(self.locks.mutex(key))
-    // }
 }
 
 impl ListableStorageTraits for MemoryStore {

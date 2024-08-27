@@ -5,9 +5,8 @@ use crate::{
     storage::{
         Bytes, ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
         ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
-        ReadableWritableStorage, ReadableWritableStorageTraits, StorageError, StoreKey,
-        StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        WritableStorage, WritableStorageTraits,
+        ReadableWritableStorage, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
+        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
     },
 };
 
@@ -287,15 +286,6 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         self.storage.erase_prefix(prefix)
     }
-}
-
-impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
-{
-    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-    //     self.transformer.locks.fetch_add(1, Ordering::Relaxed);
-    //     self.storage.mutex(key)
-    // }
 }
 
 #[cfg(feature = "async")]

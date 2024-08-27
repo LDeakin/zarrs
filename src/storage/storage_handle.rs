@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::byte_range::ByteRange;
 
 use super::{
-    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, ReadableWritableStorageTraits,
-    StorageError, StoreKey, StorePrefix, WritableStorageTraits,
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+    StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
@@ -102,14 +102,6 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for Storage
     fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<(), super::StorageError> {
         self.0.erase_prefix(prefix)
     }
-}
-
-impl<TStorage: ?Sized + ReadableWritableStorageTraits> ReadableWritableStorageTraits
-    for StorageHandle<TStorage>
-{
-    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-    //     self.0.mutex(key)
-    // }
 }
 
 #[cfg(feature = "async")]

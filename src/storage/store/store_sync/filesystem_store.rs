@@ -6,8 +6,8 @@ use crate::{
     byte_range::{ByteOffset, ByteRange},
     storage::{
         store_set_partial_values, Bytes, ListableStorageTraits, ReadableStorageTraits,
-        ReadableWritableStorageTraits, StorageError, StoreKey, StoreKeyError, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes, WritableStorageTraits,
+        StorageError, StoreKey, StoreKeyError, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+        StorePrefix, StorePrefixes, WritableStorageTraits,
     },
 };
 
@@ -317,12 +317,6 @@ impl WritableStorageTraits for FilesystemStore {
             Ok(())
         }
     }
-}
-
-impl ReadableWritableStorageTraits for FilesystemStore {
-    // fn mutex(&self, key: &StoreKey) -> Result<StoreKeyMutex, StorageError> {
-    //     Ok(self.locks.mutex(key))
-    // }
 }
 
 impl ListableStorageTraits for FilesystemStore {
