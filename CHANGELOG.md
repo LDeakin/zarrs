@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates
    - this could corrupt values depending on the order of `set_partial_values` calls
+ - Fix `FilesystemStore::fspath_to_key` on windows
 
 ## [0.16.4] - 2024-08-22
 

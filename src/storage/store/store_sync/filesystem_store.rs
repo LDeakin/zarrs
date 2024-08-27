@@ -146,7 +146,14 @@ impl FilesystemStore {
         let path = pathdiff::diff_paths(path, &self.base_path)
             .ok_or_else(|| StoreKeyError::from(path.to_str().unwrap_or_default().to_string()))?;
         let path_str = path.to_string_lossy();
-        StoreKey::new(path_str)
+        #[cfg(target_os = "windows")]
+        {
+            StoreKey::new(path_str.replace("\\", "/"))
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            StoreKey::new(path_str)
+        }
     }
 
     /// Maps a store [`StorePrefix`] to a filesystem [`PathBuf`].
