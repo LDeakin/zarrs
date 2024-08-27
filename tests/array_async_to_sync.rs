@@ -1,3 +1,5 @@
+#![cfg(all(feature = "async", feature = "object_store"))]
+
 use serde_json::json;
 use std::sync::Arc;
 use zarrs::storage::{
