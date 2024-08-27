@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Bump maximum supported `ndarray` version from 0.15 to 0.16
  - **Breaking**: Make `create_chunk_grid_{regular,rectangular}` `pub(crate)` in alignment with other internal create from metadata methods
  - **Breaking**: Bump MSRV to 1.76 (8 February, 2024)
+ - [#59](https://github.com/LDeakin/zarrs/pull/59) Add `ReadableWritableStorageTraits` automatically for all implementations by [@dustinlagoy]
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates
@@ -1006,3 +1007,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [@LDeakin]: https://github.com/LDeakin
 [@lorenzocerrone]: https://github.com/lorenzocerrone
+[@dustinlagoy]: https://github.com/dustinlagoy
