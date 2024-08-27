@@ -42,6 +42,20 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build
       - run: cargo test
+  build_and_test_macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["macos-13", "macos-latest"]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "stable"
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build
+      - run: cargo test
   fmt:
     runs-on: ubuntu-latest
     steps:
