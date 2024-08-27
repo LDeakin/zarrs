@@ -10,8 +10,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build_and_test:
     strategy:
+      fail-fast: false
       matrix:
         toolchain: ["stable", "1.76", "beta", "nightly"]
         features: ["--features \"\"", "--all-features", "--no-default-features"]
@@ -24,14 +25,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
       - uses: Swatinem/rust-cache@v2
       - run: cargo build ${{ matrix.features }}
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: sudo apt update && sudo apt install -y cmake clang-15
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test --all-features
+      - run: cargo test ${{ matrix.features }}
   build_and_test_windows:
     runs-on: windows-latest
     steps:
