@@ -3,14 +3,14 @@ use std::sync::Arc;
 use crate::byte_range::ByteRange;
 
 use super::{
-    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, ReadableWritableStorageTraits,
-    StorageError, StoreKey, StorePrefix, WritableStorageTraits,
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+    StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
 use super::{
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
-    MaybeAsyncBytes,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
 };
 
 /// A storage handle.
