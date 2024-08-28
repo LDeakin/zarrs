@@ -17,7 +17,7 @@ use thiserror::Error;
 use walkdir::WalkDir;
 
 use std::{
-    alloc::{handle_alloc_error, GlobalAlloc, Layout, System},
+    alloc::{alloc_zeroed, dealloc, handle_alloc_error, Layout},
     collections::HashMap,
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -65,7 +65,7 @@ impl PageAlignedBuffer {
 
         assert!(layout.size() > 0);
         // SAFETY: `layout` is non-zero, as asserted above.
-        let buf = unsafe { System.alloc_zeroed(layout) };
+        let buf = unsafe { alloc_zeroed(layout) };
 
         // FIXME: buf can be zero when out of memory, or if the allocator
         // doesn't like our `Layout`; should we return an error and fall back to
@@ -112,12 +112,12 @@ impl DerefMut for PageAlignedBuffer {
 
 impl Drop for PageAlignedBuffer {
     fn drop(&mut self) {
-        // SAFETY: 
+        // SAFETY:
         // * "ptr must denote a block of memory currently allocated via this allocator,"
         //      => we get the pointer from `System.alloc_zeroed`, and it is only free'd here in `drop`
         // * "layout must be the same layout that was used to allocate that block of memory."
         //      => we use the `Layout` value previously used for allocation
-        unsafe { System.dealloc(self.buf, self.layout) }
+        unsafe { dealloc(self.buf, self.layout) }
     }
 }
 
