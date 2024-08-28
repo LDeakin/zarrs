@@ -181,6 +181,12 @@ pub struct StoreKeysPrefixes {
 }
 
 impl StoreKeysPrefixes {
+    /// Create a new [`StoreKeysPrefixes`].
+    #[must_use]
+    pub fn new(keys: StoreKeys, prefixes: StorePrefixes) -> Self {
+        Self { keys, prefixes }
+    }
+
     /// Returns the keys.
     #[must_use]
     pub const fn keys(&self) -> &StoreKeys {
