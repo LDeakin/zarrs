@@ -326,7 +326,7 @@ impl FilesystemStore {
         flags.write(true).create(true).truncate(truncate);
 
         // FIXME: for now, only Unix support; also no support for `offset != 0`
-        let enable_direct = cfg!(unix) && self.options.direct_io && offset.is_none();
+        let enable_direct = cfg!(unix) && self.options.direct_io && offset.is_none() && value.len() > 0;
 
         if enable_direct {
             flags.custom_flags(O_DIRECT);
@@ -566,6 +566,20 @@ mod tests {
     fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?.sorted();
+        super::super::test_util::store_write(&store)?;
+        super::super::test_util::store_read(&store)?;
+        super::super::test_util::store_list(&store)?;
+        Ok(())
+    }
+
+    #[test]
+    // #[cfg_attr(miri, ignore)]
+    fn direct_io() -> Result<(), Box<dyn Error>> {
+        let path = tempfile::TempDir::new()?;
+        let mut opts = FilesystemStoreOptions::default();
+        opts.direct_io(true);
+
+        let store = FilesystemStore::new_with_options(path.path(), opts)?.sorted();
         super::super::test_util::store_write(&store)?;
         super::super::test_util::store_read(&store)?;
         super::super::test_util::store_list(&store)?;
