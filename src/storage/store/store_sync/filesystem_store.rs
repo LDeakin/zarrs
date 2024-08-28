@@ -60,16 +60,16 @@ impl PageAlignedBuffer {
     /// will be rounded up to the next largest multiple of the page size.
     pub fn new(size: usize) -> Self {
         let align = page_size::get();
-        // FIXME: unwrap -> `Result`?
-        let layout = Layout::from_size_align(size, align).unwrap().pad_to_align();
+        let layout = Layout::from_size_align(size, align)
+            .expect("size and align are reasonable")
+            .pad_to_align();
 
         assert!(layout.size() > 0);
         // SAFETY: `layout` is non-zero, as asserted above.
         let buf = unsafe { alloc_zeroed(layout) };
 
-        // FIXME: buf can be zero when out of memory, or if the allocator
-        // doesn't like our `Layout`; should we return an error and fall back to
-        // buffered I/O instead?
+        // buf can be zero when out of memory, or if the allocator doesn't like
+        // our `Layout`
         if buf.is_null() {
             handle_alloc_error(layout);
         }
@@ -121,6 +121,22 @@ impl Drop for PageAlignedBuffer {
     }
 }
 
+/// Options for use with [`FilesystemStore`]
+#[non_exhaustive]
+#[derive(Debug, Clone, Default)]
+pub struct FilesystemStoreOptions {
+    direct_io: bool,
+}
+
+impl FilesystemStoreOptions {
+    /// Set whether or not to enable direct I/O. Needs support from the
+    /// operating system (currently only Linux) and file system.
+    pub fn direct_io(&mut self, direct_io: bool) -> &mut Self {
+        self.direct_io = direct_io;
+        self
+    }
+}
+
 /// A synchronous file system store.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
@@ -129,7 +145,7 @@ pub struct FilesystemStore {
     base_path: PathBuf,
     sort: bool,
     readonly: bool,
-    direct_io: bool,
+    options: FilesystemStoreOptions,
     files: Mutex<HashMap<StoreKey, Arc<RwLock<()>>>>,
     // locks: StoreLocks,
 }
@@ -161,14 +177,14 @@ impl FilesystemStore {
         Ok(Self {
             base_path,
             sort: false,
-            direct_io: false,
+            options: FilesystemStoreOptions::default(),
             readonly,
             files: Mutex::default(),
         })
         // Self::new_with_locks(base_path, Arc::new(DefaultStoreLocks::default()))
     }
 
-    /// Create a new file system store at a given `base_path` and options.
+    /// Create a new file system store at a given `base_path` and `options`.
     ///
     /// # Errors
     /// Returns a [`FilesystemStoreCreateError`] if `base_directory`:
@@ -176,7 +192,7 @@ impl FilesystemStore {
     ///   - it points to an existing file rather than a directory.
     pub fn new_with_options<P: AsRef<Path>>(
         base_path: P,
-        direct_io: bool,
+        options: FilesystemStoreOptions,
     ) -> Result<Self, FilesystemStoreCreateError> {
         let base_path = base_path.as_ref().to_path_buf();
         if base_path.to_str().is_none() {
@@ -197,7 +213,7 @@ impl FilesystemStore {
         Ok(Self {
             base_path,
             sort: false,
-            direct_io,
+            options,
             readonly,
             files: Mutex::default(),
         })
@@ -310,7 +326,7 @@ impl FilesystemStore {
         flags.write(true).create(true).truncate(truncate);
 
         // FIXME: for now, only Unix support; also no support for `offset != 0`
-        let enable_direct = cfg!(unix) && self.direct_io && offset.is_none();
+        let enable_direct = cfg!(unix) && self.options.direct_io && offset.is_none();
 
         if enable_direct {
             flags.custom_flags(O_DIRECT);

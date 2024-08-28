@@ -8,7 +8,9 @@ mod store_async;
 mod store_sync;
 // mod store_plugin;
 
-pub use store_sync::filesystem_store::{FilesystemStore, FilesystemStoreCreateError};
+pub use store_sync::filesystem_store::{
+    FilesystemStore, FilesystemStoreCreateError, FilesystemStoreOptions,
+};
 pub use store_sync::memory_store::MemoryStore;
 
 #[cfg(feature = "http")]
