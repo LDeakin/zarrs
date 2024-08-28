@@ -277,6 +277,41 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         Ok(())
     }
 
+    /// Store `encoded_chunk_bytes` at `chunk_indices`
+    ///
+    /// # Safety
+    /// The responsibility is on the caller to ensure the chunk is encoded correctly
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying store error.
+    pub unsafe fn store_encoded_chunk(
+        &self,
+        chunk_indices: &[u64],
+        encoded_chunk_bytes: bytes::Bytes,
+    ) -> Result<(), ArrayError> {
+        // Validation
+        // let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
+
+        // chunk_bytes.validate(
+        //     chunk_array_representation.num_elements(),
+        //     chunk_array_representation.data_type().size(),
+        // )?;
+
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_writable_transformer(storage_handle);
+        crate::storage::store_chunk(
+            &*storage_transformer,
+            self.path(),
+            chunk_indices,
+            self.chunk_key_encoding(),
+            encoded_chunk_bytes,
+        )?;
+
+        Ok(())
+    }
+
     /// Explicit options version of [`store_chunk_elements`](Array::store_chunk_elements).
     #[allow(clippy::missing_errors_doc)]
     pub fn store_chunk_elements_opt<T: Element>(
