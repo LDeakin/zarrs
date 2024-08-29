@@ -158,30 +158,7 @@ impl FilesystemStore {
     ///   - is not valid, or
     ///   - it points to an existing file rather than a directory.
     pub fn new<P: AsRef<Path>>(base_path: P) -> Result<Self, FilesystemStoreCreateError> {
-        let base_path = base_path.as_ref().to_path_buf();
-        if base_path.to_str().is_none() {
-            return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
-        }
-
-        let readonly = if base_path.exists() {
-            // the path already exists, check if it is read only
-            let md = std::fs::metadata(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
-            md.permissions().readonly()
-        } else {
-            // the path does not exist, so try and create it. If this succeeds, the filesystem is not read only
-            std::fs::create_dir_all(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
-            std::fs::remove_dir(&base_path)?;
-            false
-        };
-
-        Ok(Self {
-            base_path,
-            sort: false,
-            options: FilesystemStoreOptions::default(),
-            readonly,
-            files: Mutex::default(),
-        })
-        // Self::new_with_locks(base_path, Arc::new(DefaultStoreLocks::default()))
+        Self::new_with_options(base_path, FilesystemStoreOptions::default())
     }
 
     /// Create a new file system store at a given `base_path` and `options`.
