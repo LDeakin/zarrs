@@ -11,7 +11,6 @@ use crate::{
     },
 };
 
-use libc::O_DIRECT;
 use parking_lot::RwLock;
 use thiserror::Error;
 use walkdir::WalkDir;
@@ -22,10 +21,14 @@ use std::{
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     ops::{Deref, DerefMut},
-    os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
+
+#[cfg(target_os = "linux")]
+use libc::O_DIRECT;
+#[cfg(target_os = "linux")]
+use std::os::unix::fs::OpenOptionsExt;
 
 // // Register the store.
 // inventory::submit! {
@@ -302,9 +305,13 @@ impl FilesystemStore {
         let mut flags = OpenOptions::new();
         flags.write(true).create(true).truncate(truncate);
 
-        // FIXME: for now, only Unix support; also no support for `offset != 0`
-        let enable_direct = cfg!(unix) && self.options.direct_io && offset.is_none() && value.len() > 0;
+        // FIXME: for now, only Linux support; also no support for `offset != 0`
+        let enable_direct = cfg!(target_os = "linux")
+            && self.options.direct_io
+            && offset.is_none()
+            && !value.is_empty();
 
+        #[cfg(target_os = "linux")]
         if enable_direct {
             flags.custom_flags(O_DIRECT);
         }
