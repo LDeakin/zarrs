@@ -235,7 +235,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         Ok(())
     }
 
-    /// Async variant of [`store_encoded_chunk`](Array::store_encoded_chunk)0
+    /// Async variant of [`store_encoded_chunk`](Array::store_encoded_chunk)
     #[allow(clippy::missing_errors_doc)]
     pub async unsafe fn async_store_encoded_chunk(
         &self,
