@@ -225,24 +225,35 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         if is_fill_value {
             self.async_erase_chunk(chunk_indices).await?;
         } else {
-            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-            let storage_transformer = self
-                .storage_transformers()
-                .create_async_writable_transformer(storage_handle);
             let chunk_encoded = self
                 .codecs()
                 .encode(chunk_bytes, &chunk_array_representation, options)
                 .map_err(ArrayError::CodecError)?;
             let chunk_encoded = AsyncBytes::from(chunk_encoded.to_vec());
-            crate::storage::async_store_chunk(
-                &*storage_transformer,
-                self.path(),
-                chunk_indices,
-                self.chunk_key_encoding(),
-                chunk_encoded,
-            )
-            .await?;
+            unsafe { self.async_store_encoded_chunk(chunk_indices, chunk_encoded) }.await?;
         }
+        Ok(())
+    }
+
+    /// Async variant of [`store_encoded_chunk`](Array::store_encoded_chunk)0
+    #[allow(clippy::missing_errors_doc)]
+    pub async unsafe fn async_store_encoded_chunk(
+        &self,
+        chunk_indices: &[u64],
+        encoded_chunk_bytes: AsyncBytes,
+    ) -> Result<(), ArrayError> {
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_async_writable_transformer(storage_handle);
+        crate::storage::async_store_chunk(
+            &*storage_transformer,
+            self.path(),
+            chunk_indices,
+            self.chunk_key_encoding(),
+            encoded_chunk_bytes,
+        )
+        .await?;
         Ok(())
     }
 
