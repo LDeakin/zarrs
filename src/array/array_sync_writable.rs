@@ -258,21 +258,12 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         if is_fill_value {
             self.erase_chunk(chunk_indices)?;
         } else {
-            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-            let storage_transformer = self
-                .storage_transformers()
-                .create_writable_transformer(storage_handle);
             let chunk_encoded = self
                 .codecs()
                 .encode(chunk_bytes, &chunk_array_representation, options)
                 .map_err(ArrayError::CodecError)?;
-            crate::storage::store_chunk(
-                &*storage_transformer,
-                self.path(),
-                chunk_indices,
-                self.chunk_key_encoding(),
-                Bytes::from(chunk_encoded.into_owned()),
-            )?;
+            let chunk_encoded = Bytes::from(chunk_encoded.into_owned());
+            unsafe { self.store_encoded_chunk(chunk_indices, chunk_encoded) }?;
         }
         Ok(())
     }
@@ -289,14 +280,6 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         chunk_indices: &[u64],
         encoded_chunk_bytes: bytes::Bytes,
     ) -> Result<(), ArrayError> {
-        // Validation
-        // let chunk_array_representation = self.chunk_array_representation(chunk_indices)?;
-
-        // chunk_bytes.validate(
-        //     chunk_array_representation.num_elements(),
-        //     chunk_array_representation.data_type().size(),
-        // )?;
-
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
