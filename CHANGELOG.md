@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Make `create_chunk_grid_{regular,rectangular}` `pub(crate)` in alignment with other internal create from metadata methods
  - **Breaking**: Bump MSRV to 1.76 (8 February, 2024)
  - [#59](https://github.com/LDeakin/zarrs/pull/59) Add `ReadableWritableStorageTraits` automatically for all implementations by [@dustinlagoy]
+ - Remove implicit group support
+   - This is a post-acceptance change of Zarr V3: https://github.com/zarr-developers/zarr-specs/pull/292
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates
