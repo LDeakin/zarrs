@@ -13,9 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Add `ArrayChunkCacheExt` extension trait for `Array`
    - Add traits: `ChunkCache`, `ChunkCacheType` (implemented by `ChunkCacheType{Encoded,Decoded}`)
    - Add chunk cache implementations: `ChunkCache{En,De}codedLru{Size,Chunk}Limit[ThreadLocal]`
- - Add direct I/O support in `FilesystemStore` by [@sk1p]
-    - Copy to aligned buffer if not already aligned to page size
-    - Add `Array::{async_,}store_encoded_chunk` for writing already-encoded chunks
+ - [#58](https://github.com/LDeakin/zarrs/pull/58) Add direct I/O support in `FilesystemStore` by [@sk1p]
+   - Adds `FilesystemStoreOptions` and `FilesystemStore::new_with_options`
+ - [#64](https://github.com/LDeakin/zarrs/pull/64) Add `Array::[async_]store_encoded_chunk` for writing already-encoded chunks by [@sk1p]
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - [#59](https://github.com/LDeakin/zarrs/pull/59) Add `ReadableWritableStorageTraits` automatically for all implementations by [@dustinlagoy]
  - Remove implicit group support
    - This is a post-acceptance change of Zarr V3: https://github.com/zarr-developers/zarr-specs/pull/292
+ - [#63](https://github.com/LDeakin/zarrs/pull/63) Make `StoreKeysPrefixes` constructible by [@sk1p]
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates
