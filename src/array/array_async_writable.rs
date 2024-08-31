@@ -236,7 +236,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     }
 
     /// Async variant of [`store_encoded_chunk`](Array::store_encoded_chunk)
-    #[allow(clippy::missing_errors_doc)]
+    #[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
     pub async unsafe fn async_store_encoded_chunk(
         &self,
         chunk_indices: &[u64],
