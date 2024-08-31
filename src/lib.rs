@@ -8,7 +8,7 @@
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
 //! ## Getting Started
-//! - Review the [implementation status](#implementation-status).
+//! - Review the [implementation status](#implementation-status) and detailed [array support](#array-support).
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`], [`storage`], and [`metadata`] are good places to start.
 //! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
