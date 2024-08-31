@@ -246,6 +246,10 @@ impl FilesystemStore {
             && offset.is_none()
             && !value.is_empty();
 
+        // If `value` is already page-size aligned, we don't need to copy.
+        let need_copy = value.as_ptr().align_offset(page_size::get()) != 0
+            || value.len() % page_size::get() != 0;
+
         #[cfg(target_os = "linux")]
         if enable_direct {
             flags.custom_flags(O_DIRECT);
@@ -255,14 +259,18 @@ impl FilesystemStore {
 
         // Write
         if enable_direct {
-            let mut buf = bytes_aligned(value.len());
-            buf.extend_from_slice(value);
+            if need_copy {
+                let mut buf = bytes_aligned(value.len());
+                buf.extend_from_slice(value);
 
-            // Pad to page size
-            let pad_size = buf.len().next_multiple_of(page_size::get()) - buf.len();
-            buf.extend(std::iter::repeat(0).take(pad_size));
+                // Pad to page size
+                let pad_size = buf.len().next_multiple_of(page_size::get()) - buf.len();
+                buf.extend(std::iter::repeat(0).take(pad_size));
 
-            file.write_all(&buf)?;
+                file.write_all(&buf)?;
+            } else {
+                file.write_all(value)?;
+            }
 
             // Truncate again to requested size
             file.set_len(value.len() as u64)?;
