@@ -160,11 +160,13 @@ pub struct NonZeroError;
 ///    - [`retrieve_chunks`](Array::retrieve_chunks)
 ///    - [`retrieve_chunk_subset`](Array::retrieve_chunk_subset)
 ///    - [`retrieve_array_subset`](Array::retrieve_array_subset)
+///    - [`retrieve_encoded_chunk`](Array::retrieve_encoded_chunk)
 ///    - [`partial_decoder`](Array::partial_decoder)
 ///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and store metadata
 ///    - [`store_metadata`](Array::store_metadata)
 ///    - [`store_chunk`](Array::store_chunk)
 ///    - [`store_chunks`](Array::store_chunks)
+///    - [`store_encoded_chunk`](Array::store_encoded_chunk)
 ///    - [`erase_chunk`](Array::erase_chunk)
 ///    - [`erase_chunks`](Array::erase_chunks)
 ///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading *and* writing
@@ -186,6 +188,13 @@ pub struct NonZeroError;
 /// ### Optimising Writes
 /// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
 /// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and require careful usage if executed in parallel (see below).
+///
+/// #### Direct IO (Linux)
+/// If using Linux, enabling direct IO with the [`FilesystemStore`](crate::storage::store::FilesystemStore) may improve write performance.
+///
+/// Currently, the most performant path for uncompressed writing is to reuse page aligned buffers via [`store_encoded_chunk`](Array::store_encoded_chunk).
+/// See [`zarrs` GitHub issue #58](https://github.com/LDeakin/zarrs/pull/58) for a discussion on this method.
+//  TODO: Add example?
 ///
 /// ### Parallel Writing
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
