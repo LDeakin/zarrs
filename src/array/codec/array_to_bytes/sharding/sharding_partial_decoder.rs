@@ -7,7 +7,6 @@ use crate::{
     array::{
         array_bytes::{merge_chunks_vlen, update_bytes_flen},
         chunk_grid::RegularChunkGrid,
-        chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
             ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
@@ -164,7 +163,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder<'_> {
             self.decoded_representation.shape(),
             chunk_representation.shape(),
         )?;
-        let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
+        let chunks_per_shard = chunks_per_shard.to_array_shape();
         let num_chunks = usize::try_from(chunks_per_shard.iter().product::<u64>()).unwrap();
 
         // Calculate inner chunk/codec concurrency
@@ -480,7 +479,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder<'_> {
             self.decoded_representation.shape(),
             self.chunk_grid.chunk_shape(),
         )?;
-        let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard.as_slice());
+        let chunks_per_shard = chunks_per_shard.to_array_shape();
 
         let chunk_representation = unsafe {
             ChunkRepresentation::new_unchecked(

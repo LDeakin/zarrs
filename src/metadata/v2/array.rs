@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    array::{ArrayShape, ChunkShape, DataType, Endianness},
+    array::{DataType, Endianness},
     metadata::{
         v3::{
             fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
             ChunkKeySeparator,
         },
-        AdditionalFields,
+        AdditionalFields, ArrayShape, ChunkShape,
     },
 };
 

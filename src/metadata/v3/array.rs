@@ -2,7 +2,10 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 use super::{AdditionalFields, MetadataV3};
-use crate::array::{ArrayShape, DimensionName, FillValueMetadata};
+use crate::{
+    array::{DimensionName, FillValueMetadata},
+    metadata::ArrayShape,
+};
 
 /// Zarr array metadata (storage specification v3).
 ///

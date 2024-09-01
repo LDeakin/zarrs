@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::array::ChunkShape;
+use crate::metadata::ChunkShape;
 
 /// The identifier for the `rectangular` chunk grid.
 pub const IDENTIFIER: &str = "rectangular";

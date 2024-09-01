@@ -10,6 +10,12 @@ use super::ArrayShape;
 pub struct ChunkShape(Vec<NonZeroU64>);
 
 impl ChunkShape {
+    /// Convert a chunk shape to an array shape.
+    #[must_use]
+    pub fn to_array_shape(&self) -> ArrayShape {
+        chunk_shape_to_array_shape(self)
+    }
+
     /// Return the number of elements.
     ///
     /// Equal to the product of the components of its shape.
@@ -129,7 +135,7 @@ try_from_chunkshape!(&[u64]);
 try_from_chunkshape!([u64; N], N);
 try_from_chunkshape!(&[u64; N], N);
 
-/// Convert a [`ChunkShape`] to an [`ArrayShape`].
+/// Convert a [`ChunkShape`] reference to an [`ArrayShape`].
 #[must_use]
 pub fn chunk_shape_to_array_shape(chunk_shape: &[NonZeroU64]) -> ArrayShape {
     chunk_shape.iter().map(|i| i.get()).collect()

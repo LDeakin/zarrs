@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::{array::ChunkShape, metadata::v3::MetadataV3};
+use crate::{metadata::v3::MetadataV3, metadata::ChunkShape};
 
 /// The identifier for the `sharding_indexed` codec.
 pub const IDENTIFIER: &str = "sharding_indexed";

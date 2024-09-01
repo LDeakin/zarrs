@@ -37,6 +37,12 @@ use crate::{
     },
 };
 
+/// The shape of an array.
+pub type ArrayShape = Vec<u64>;
+
+mod chunk_shape;
+pub use chunk_shape::{chunk_shape_to_array_shape, ChunkShape};
+
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
 #[serde(untagged)]

@@ -7,7 +7,6 @@ use std::{
 use crate::{
     array::{
         array_bytes::{merge_chunks_vlen, update_bytes_flen},
-        chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderTraits, CodecChain, CodecError, CodecOptions, CodecTraits,
@@ -18,7 +17,7 @@ use crate::{
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, FillValue, RawBytes,
     },
     array_subset::ArraySubset,
-    metadata::v3::MetadataV3,
+    metadata::{chunk_shape_to_array_shape, v3::MetadataV3},
     plugin::PluginCreateError,
 };
 
@@ -433,7 +432,7 @@ impl ShardingCodec {
         let chunk_start = std::iter::zip(&chunk_indices, self.chunk_shape.as_slice())
             .map(|(i, c)| i * c.get())
             .collect();
-        let shape = chunk_shape_to_array_shape(self.chunk_shape.as_slice());
+        let shape = self.chunk_shape.to_array_shape();
         unsafe { ArraySubset::new_with_start_shape_unchecked(chunk_start, shape) }
     }
 

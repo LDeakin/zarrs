@@ -30,7 +30,6 @@ mod bytes_representation;
 mod chunk_cache;
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
-mod chunk_shape;
 pub mod codec;
 pub mod concurrency;
 pub mod data_type;
@@ -57,7 +56,6 @@ pub use self::{
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
     chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator},
-    chunk_shape::{chunk_shape_to_array_shape, ChunkShape},
     codec::ArrayCodecTraits,
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
@@ -71,7 +69,7 @@ pub use self::{
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
-pub use crate::metadata::ArrayMetadata;
+pub use crate::metadata::{chunk_shape_to_array_shape, ArrayMetadata, ArrayShape, ChunkShape};
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;
 pub use chunk_cache::{
@@ -95,9 +93,6 @@ use crate::{
 
 /// An ND index to an element in an array.
 pub type ArrayIndices = Vec<u64>;
-
-/// The shape of an array.
-pub type ArrayShape = Vec<u64>;
 
 /// A Zarr array.
 ///

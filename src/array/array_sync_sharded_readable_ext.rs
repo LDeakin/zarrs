@@ -250,7 +250,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
         if let Some(inner_chunk_shape) = self.inner_chunk_shape() {
             super::elements_to_ndarray(
-                &crate::array::chunk_shape_to_array_shape(&inner_chunk_shape),
+                &inner_chunk_shape.to_array_shape(),
                 self.retrieve_inner_chunk_elements_opt::<T>(cache, inner_chunk_indices, options)?,
             )
         } else {

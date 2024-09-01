@@ -32,13 +32,14 @@ mod tests {
 
     use super::*;
     use crate::{
-        array::{chunk_key_encoding::ChunkKeySeparator, ChunkShape, DataType, Endianness},
+        array::{chunk_key_encoding::ChunkKeySeparator, DataType, Endianness},
         metadata::{
             array_metadata_v2_to_v3,
             v3::codec::{
                 blosc::{self, BloscCodecConfigurationV1},
                 transpose::{self, TransposeCodecConfigurationV1},
             },
+            ChunkShape,
         },
     };
 

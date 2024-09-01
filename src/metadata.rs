@@ -13,7 +13,10 @@ pub mod v3;
 /// Zarr V2 metadata.
 pub mod v2;
 
-pub use array::{array_metadata_v2_to_v3, ArrayMetadata, ArrayMetadataV2ToV3ConversionError};
+pub use array::{
+    array_metadata_v2_to_v3, chunk_shape_to_array_shape, ArrayMetadata,
+    ArrayMetadataV2ToV3ConversionError, ArrayShape, ChunkShape,
+};
 pub use group::{group_metadata_v2_to_v3, GroupMetadata};
 pub use v2::{ArrayMetadataV2, GroupMetadataV2, MetadataV2};
 pub use v3::{
