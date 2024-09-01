@@ -2,15 +2,12 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{
-    array::{DataType, Endianness},
-    metadata::{
-        v3::fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
-        AdditionalFields, ArrayShape, ChunkKeySeparator, ChunkShape,
-    },
-};
+use crate::array::DataType;
 
-use super::MetadataV2;
+use crate::metadata::{
+    v3::fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
+    AdditionalFields, ArrayShape, ChunkKeySeparator, ChunkShape, Endianness, MetadataV2,
+};
 
 /// Zarr array metadata (storage specification v2).
 ///

@@ -2,12 +2,11 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::{
-    array::data_type::DataType,
-    metadata::v3::codec::blosc::{
-        BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
-        BloscShuffleMode,
-    },
+use crate::array::DataType;
+
+use crate::metadata::v3::codec::blosc::{
+    BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
+    BloscShuffleMode,
 };
 
 /// Configuration parameters for the `blosc` codec (numcodecs).

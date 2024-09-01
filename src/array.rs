@@ -33,7 +33,6 @@ pub mod chunk_key_encoding;
 pub mod codec;
 pub mod concurrency;
 pub mod data_type;
-mod dimension_name;
 mod element;
 mod fill_value;
 pub mod storage_transformer;
@@ -58,7 +57,6 @@ pub use self::{
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
     data_type::{DataType, DataTypeSize},
-    dimension_name::DimensionName,
     element::{Element, ElementFixedLength, ElementOwned},
     fill_value::FillValue,
     storage_transformer::StorageTransformerChain,
@@ -70,7 +68,8 @@ pub use crate::metadata::v3::{
     ArrayMetadataV3,
 };
 pub use crate::metadata::{
-    chunk_shape_to_array_shape, ArrayMetadata, ArrayShape, ChunkShape, Endianness, NATIVE_ENDIAN,
+    chunk_shape_to_array_shape, ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness,
+    NATIVE_ENDIAN,
 };
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;

@@ -31,16 +31,16 @@ mod tests {
     use array::{data_type_metadata_v2_to_endianness, data_type_metadata_v2_to_v3_data_type};
 
     use super::*;
-    use crate::{
-        array::DataType,
-        metadata::{
-            array_metadata_v2_to_v3,
-            v3::codec::{
-                blosc::{self, BloscCodecConfigurationV1},
-                transpose::{self, TransposeCodecConfigurationV1},
-            },
-            ChunkKeySeparator, ChunkShape, Endianness,
+
+    pub use crate::array::DataType;
+
+    use crate::metadata::{
+        array_metadata_v2_to_v3,
+        v3::codec::{
+            blosc::{self, BloscCodecConfigurationV1},
+            transpose::{self, TransposeCodecConfigurationV1},
         },
+        ChunkKeySeparator, ChunkShape, Endianness,
     };
 
     #[test]

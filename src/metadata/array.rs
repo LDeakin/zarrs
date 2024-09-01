@@ -15,30 +15,29 @@ use super::{
             zfpy::{codec_zfpy_v2_numcodecs_to_v3, ZfpyCodecConfigurationNumcodecs},
         },
     },
-    v3::codec::vlen_v2::VlenV2CodecConfigurationV1,
+    v3::{
+        chunk_grid::regular::RegularChunkGridConfiguration,
+        chunk_key_encoding::v2::V2ChunkKeyEncodingConfiguration,
+        codec::bytes::BytesCodecConfigurationV1,
+        codec::transpose::{TransposeCodecConfigurationV1, TransposeOrder},
+        codec::vlen_v2::VlenV2CodecConfigurationV1,
+        fill_value::FillValueMetadata,
+        MetadataV3,
+    },
+    AdditionalFields,
 };
 
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{
-    array::DataType,
-    metadata::{
-        v3::{
-            chunk_grid::regular::RegularChunkGridConfiguration,
-            chunk_key_encoding::v2::V2ChunkKeyEncodingConfiguration,
-            codec::bytes::BytesCodecConfigurationV1,
-            codec::transpose::{TransposeCodecConfigurationV1, TransposeOrder},
-            fill_value::FillValueMetadata,
-            MetadataV3,
-        },
-        AdditionalFields,
-    },
-};
+use crate::array::DataType;
 
 mod chunk_key_separator;
 pub use chunk_key_separator::ChunkKeySeparator;
+
+mod dimension_name;
+pub use dimension_name::DimensionName;
 
 /// The shape of an array.
 pub type ArrayShape = Vec<u64>;

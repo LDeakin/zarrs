@@ -358,7 +358,8 @@ impl FillValueMetadata {
 
 #[cfg(test)]
 mod tests {
-    use crate::array::{DataType, FillValue};
+    use crate::array::DataType;
+    use crate::array::FillValue;
 
     use super::*;
 
