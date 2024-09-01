@@ -60,9 +60,7 @@ mod test_util {
         Ok(())
     }
 
-    pub fn store_read<T: ReadableStorageTraits + ListableStorageTraits>(
-        store: &T,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
         assert!(store.get(&"notfound".try_into()?)?.is_none());
         assert!(store.size_key(&"notfound".try_into()?)?.is_none());
         assert_eq!(
@@ -101,14 +99,14 @@ mod test_util {
             ),])
             .is_err());
 
-        assert_eq!(store.size()?, 7);
-        assert_eq!(store.size_prefix(&"a/".try_into()?)?, 5);
-        assert_eq!(store.size_prefix(&"i/".try_into()?)?, 2);
-
         Ok(())
     }
 
     pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
+        assert_eq!(store.size()?, 7);
+        assert_eq!(store.size_prefix(&"a/".try_into()?)?, 5);
+        assert_eq!(store.size_prefix(&"i/".try_into()?)?, 2);
+
         assert_eq!(
             store.list()?,
             &[

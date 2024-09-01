@@ -77,7 +77,7 @@ mod test_util {
         Ok(())
     }
 
-    pub async fn store_read<T: AsyncReadableStorageTraits + AsyncListableStorageTraits>(
+    pub async fn store_read<T: AsyncReadableStorageTraits>(
         store: &T,
     ) -> Result<(), Box<dyn Error>> {
         assert!(store.get(&"notfound".try_into()?).await?.is_none());
@@ -123,16 +123,16 @@ mod test_util {
             .await
             .is_err());
 
-        assert_eq!(store.size().await?, 7);
-        assert_eq!(store.size_prefix(&"a/".try_into()?).await?, 5);
-        assert_eq!(store.size_prefix(&"i/".try_into()?).await?, 2);
-
         Ok(())
     }
 
     pub async fn store_list<T: AsyncListableStorageTraits>(
         store: &T,
     ) -> Result<(), Box<dyn Error>> {
+        assert_eq!(store.size().await?, 7);
+        assert_eq!(store.size_prefix(&"a/".try_into()?).await?, 5);
+        assert_eq!(store.size_prefix(&"i/".try_into()?).await?, 2);
+
         assert_eq!(
             store.list().await?,
             &[

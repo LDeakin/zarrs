@@ -500,12 +500,14 @@ mod tests {
     fn filesystem() -> Result<(), Box<dyn Error>> {
         let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?.sorted();
+        // let store = FilesystemStore::new("tests/data/store")?.sorted();
         super::super::test_util::store_write(&store)?;
         super::super::test_util::store_read(&store)?;
         super::super::test_util::store_list(&store)?;
         Ok(())
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     // #[cfg_attr(miri, ignore)]
     fn direct_io() -> Result<(), Box<dyn Error>> {
