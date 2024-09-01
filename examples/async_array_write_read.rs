@@ -1,7 +1,7 @@
 use futures::TryStreamExt;
-use zarrs::storage::{
-    storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-    AsyncReadableWritableListableStorage,
+use zarrs::{
+    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+    storage::AsyncReadableWritableListableStorage,
 };
 
 async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {

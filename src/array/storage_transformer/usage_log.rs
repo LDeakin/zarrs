@@ -37,7 +37,7 @@ use super::StorageTransformerExtension;
 /// ```rust
 /// # use std::sync::{Arc, Mutex};
 /// # use zarrs::storage::store::MemoryStore;
-/// # use zarrs::storage::storage_transformer::{UsageLogStorageTransformer, StorageTransformerExtension};
+/// # use zarrs::array::storage_transformer::{UsageLogStorageTransformer, StorageTransformerExtension};
 /// let store = Arc::new(MemoryStore::new());
 /// let log_writer = Arc::new(Mutex::new(
 ///     // std::io::BufWriter::new(

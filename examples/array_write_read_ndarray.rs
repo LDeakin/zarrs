@@ -1,8 +1,8 @@
 use ndarray::{array, Array2, ArrayD};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use zarrs::storage::{
-    storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-    ReadableWritableListableStorage,
+use zarrs::{
+    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+    storage::ReadableWritableListableStorage,
 };
 
 fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {

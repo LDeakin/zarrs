@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
+ - **Breaking**: Move storage transformers from the `storage` to the `array` namespace
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates

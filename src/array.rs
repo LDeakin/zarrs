@@ -39,6 +39,7 @@ mod element;
 mod endianness;
 mod fill_value;
 mod nan_representations;
+pub mod storage_transformer;
 mod unsafe_cell_slice;
 
 #[cfg(feature = "sharding")]
@@ -67,6 +68,7 @@ pub use self::{
     endianness::{Endianness, NATIVE_ENDIAN},
     fill_value::FillValue,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
+    storage_transformer::StorageTransformerChain,
     unsafe_cell_slice::UnsafeCellSlice,
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
@@ -90,7 +92,7 @@ use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
     metadata::{array_metadata_v2_to_v3, AdditionalFields, MetadataConvertVersion},
     node::NodePath,
-    storage::{data_key, storage_transformer::StorageTransformerChain, StoreKey},
+    storage::{data_key, StoreKey},
 };
 
 /// An ND index to an element in an array.

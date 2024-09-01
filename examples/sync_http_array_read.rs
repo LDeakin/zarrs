@@ -19,12 +19,10 @@ enum Backend {
 fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
     use std::sync::Arc;
     use zarrs::{
+        array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
         array::Array,
         array_subset::ArraySubset,
-        storage::{
-            storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-            store,
-        },
+        storage::store,
     };
 
     const HTTP_URL: &str =

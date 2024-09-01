@@ -264,7 +264,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     ) -> Result<(), StorageError> {
         let bytes_written = key_start_values
             .iter()
-            .map(|ksv| ksv.value.len())
+            .map(|ksv| ksv.value().len())
             .sum::<usize>();
         self.transformer
             .bytes_written
@@ -394,7 +394,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     ) -> Result<(), StorageError> {
         let bytes_written = key_start_values
             .iter()
-            .map(|ksv| ksv.value.len())
+            .map(|ksv| ksv.value().len())
             .sum::<usize>();
         self.transformer
             .bytes_written

@@ -6,10 +6,10 @@ use std::{
 };
 
 use zarrs::{
+    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
     array::{Array, ZARR_NAN_F32},
     array_subset::ArraySubset,
     storage::{
-        storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
         ReadableStorageTraits, ReadableWritableListableStorage, ReadableWritableStorageTraits,
         StoreKey,
     },
