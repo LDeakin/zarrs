@@ -6,13 +6,13 @@ cargo build --release
 ## Testing
 ```bash
 # Must have no warnings/errors to pass CI
-cargo build --all-features && \
-cargo test --all-features && \
-RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features && \
-cargo fmt --all -- --check && \
+cargo +nightly build --all-features && \
+cargo +nightly test --all-features && \
+RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo +nightly doc --all-features && \
+cargo +nightly fmt --all -- --check && \
 cargo +nightly clippy --all-features -- -D warnings && \
-cargo check && \
-cargo check --no-default-features
+cargo +nightly check && \
+cargo +nightly check --no-default-features
 ```
 
 ```bash
