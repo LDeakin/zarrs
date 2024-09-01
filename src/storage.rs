@@ -1,20 +1,15 @@
-//! Zarr storage ([stores](store) and [storage transformers](storage_transformer)).
+//! Zarr storage.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#storage>.
 //!
 //! A Zarr [store] is a system that can be used to store and retrieve data from a Zarr hierarchy.
 //! For example: a filesystem, HTTP server, FTP server, Amazon S3 bucket, ZIP file, etc.
 //!
-//! A Zarr [storage transformer](storage_transformer) modifies a request to read or write data before passing that request to a following storage transformer or store.
-//! A [`StorageTransformerChain`] represents a sequence of storage transformers.
-//! A storage transformer chain and individual storage transformers all have the same interface as a [store].
-//!
-//! This module defines abstract store interfaces, includes various store and storage transformers, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
+//! This module defines abstract store interfaces, includes various store implementations, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
 
 pub mod storage_adapter;
 mod storage_handle;
 mod storage_sync;
-pub mod storage_transformer;
 mod storage_value_io;
 pub mod store;
 mod store_key;
@@ -55,7 +50,6 @@ pub use self::storage_sync::{
     ReadableListableStorageTraits, ReadableStorageTraits, ReadableWritableListableStorageTraits,
     ReadableWritableStorageTraits, WritableStorageTraits,
 };
-pub use self::storage_transformer::StorageTransformerChain;
 
 pub use self::storage_handle::StorageHandle;
 
@@ -351,61 +345,3 @@ pub fn data_key(
 //     };
 //     Ok(Hierarchy { root: root_node })
 // }
-
-#[cfg(test)]
-mod tests {
-    use std::io::Write;
-
-    use self::store::MemoryStore;
-
-    use super::*;
-
-    #[test]
-    fn transformers_multithreaded() {
-        use rayon::prelude::*;
-
-        let store = Arc::new(MemoryStore::default());
-
-        let log_writer = Arc::new(std::sync::Mutex::new(std::io::BufWriter::new(
-            std::io::stdout(),
-        )));
-
-        // let storage_transformer_usage_log = Arc::new(self::storage_transformer::UsageLogStorageTransformer::new(
-        //     || "mt_log: ".to_string(),
-        //     log_writer.clone(),
-        // ));
-        let storage_transformer_performance_metrics =
-            Arc::new(self::storage_transformer::PerformanceMetricsStorageTransformer::new());
-        let storage_transformer_chain = StorageTransformerChain::new(vec![
-            // storage_transformer_usage_log.clone(),
-            storage_transformer_performance_metrics.clone(),
-        ]);
-        let transformer =
-            storage_transformer_chain.create_readable_writable_transformer(store.clone());
-        let transformer_listable = storage_transformer_chain.create_listable_transformer(store);
-
-        (0..10).into_par_iter().for_each(|_| {
-            transformer_listable.list().unwrap();
-        });
-
-        (0..10).into_par_iter().for_each(|i| {
-            transformer
-                .set(&StoreKey::new(&i.to_string()).unwrap(), vec![i; 5].into())
-                .unwrap();
-        });
-
-        for i in 0..10 {
-            let _ = transformer.get(&StoreKey::new(&i.to_string()).unwrap());
-        }
-
-        log_writer.lock().unwrap().flush().unwrap();
-
-        println!(
-            "stats\n\t{}\n\t{}\n\t{}\n\t{}",
-            storage_transformer_performance_metrics.bytes_written(),
-            storage_transformer_performance_metrics.bytes_read(),
-            storage_transformer_performance_metrics.writes(),
-            storage_transformer_performance_metrics.reads()
-        );
-    }
-}

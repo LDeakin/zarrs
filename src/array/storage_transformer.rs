@@ -1,5 +1,9 @@
 //! Zarr storage transformers. Includes [performance metrics](performance_metrics::PerformanceMetricsStorageTransformer) and [usage log](usage_log::UsageLogStorageTransformer) implementations for internal use.
 //!
+//! A Zarr storage transformer modifies a request to read or write data before passing that request to a following storage transformer or store.
+//! A [`StorageTransformerChain`] represents a sequence of storage transformers.
+//! A storage transformer chain and individual storage transformers all have the same interface as a [store](crate::storage::store).
+//!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id23>.
 
 mod performance_metrics;
@@ -15,15 +19,14 @@ use std::sync::Arc;
 use crate::{
     metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
-};
-
-use super::{
-    ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableListableStorage,
-    ReadableWritableStorage, WritableStorage,
+    storage::{
+        ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableListableStorage,
+        ReadableWritableStorage, WritableStorage,
+    },
 };
 
 #[cfg(feature = "async")]
-use super::{
+use crate::storage::{
     AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage,
     AsyncReadableWritableListableStorage, AsyncWritableStorage,
 };
@@ -120,4 +123,62 @@ pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
         self: Arc<Self>,
         storage: AsyncReadableWritableListableStorage,
     ) -> AsyncReadableWritableListableStorage;
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use crate::storage::{store::MemoryStore, StoreKey};
+
+    use super::*;
+
+    #[test]
+    fn transformers_multithreaded() {
+        use rayon::prelude::*;
+
+        let store = Arc::new(MemoryStore::default());
+
+        let log_writer = Arc::new(std::sync::Mutex::new(std::io::BufWriter::new(
+            std::io::stdout(),
+        )));
+
+        // let storage_transformer_usage_log = Arc::new(self::storage_transformer::UsageLogStorageTransformer::new(
+        //     || "mt_log: ".to_string(),
+        //     log_writer.clone(),
+        // ));
+        let storage_transformer_performance_metrics =
+            Arc::new(PerformanceMetricsStorageTransformer::new());
+        let storage_transformer_chain = StorageTransformerChain::new(vec![
+            // storage_transformer_usage_log.clone(),
+            storage_transformer_performance_metrics.clone(),
+        ]);
+        let transformer =
+            storage_transformer_chain.create_readable_writable_transformer(store.clone());
+        let transformer_listable = storage_transformer_chain.create_listable_transformer(store);
+
+        (0..10).into_par_iter().for_each(|_| {
+            transformer_listable.list().unwrap();
+        });
+
+        (0..10).into_par_iter().for_each(|i| {
+            transformer
+                .set(&StoreKey::new(&i.to_string()).unwrap(), vec![i; 5].into())
+                .unwrap();
+        });
+
+        for i in 0..10 {
+            let _ = transformer.get(&StoreKey::new(&i.to_string()).unwrap());
+        }
+
+        log_writer.lock().unwrap().flush().unwrap();
+
+        println!(
+            "stats\n\t{}\n\t{}\n\t{}\n\t{}",
+            storage_transformer_performance_metrics.bytes_written(),
+            storage_transformer_performance_metrics.bytes_read(),
+            storage_transformer_performance_metrics.writes(),
+            storage_transformer_performance_metrics.reads()
+        );
+    }
 }

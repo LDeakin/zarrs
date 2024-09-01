@@ -363,20 +363,22 @@ mod tests {
 
     use crate::{
         array::{
-            codec::CodecOptions, ArrayBuilder, ArrayChunkCacheExt, ChunkCacheDecodedLruChunkLimit,
+            codec::CodecOptions,
+            storage_transformer::{
+                PerformanceMetricsStorageTransformer, StorageTransformerExtension,
+            },
+            ArrayBuilder, ArrayChunkCacheExt, ChunkCacheDecodedLruChunkLimit,
             ChunkCacheDecodedLruSizeLimit, ChunkCacheEncodedLruChunkLimit,
             ChunkCacheEncodedLruSizeLimit, ChunkCacheType, DataType, FillValue,
         },
         array_subset::ArraySubset,
-        storage::{storage_transformer::PerformanceMetricsStorageTransformer, store::MemoryStore},
+        storage::store::MemoryStore,
     };
 
     fn array_chunk_cache_impl<TChunkCache: ChunkCache<CT>, CT: ChunkCacheType>(
         cache: TChunkCache,
         thread_local: bool,
     ) {
-        use crate::storage::storage_transformer::StorageTransformerExtension;
-
         let performance_metrics = Arc::new(PerformanceMetricsStorageTransformer::new());
         let store = Arc::new(MemoryStore::default());
         let store = performance_metrics

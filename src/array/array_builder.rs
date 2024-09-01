@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{metadata::v3::AdditionalFields, node::NodePath, storage::StorageTransformerChain};
+use crate::{metadata::v3::AdditionalFields, node::NodePath};
 
 use super::{
     chunk_key_encoding::{ChunkKeyEncoding, DefaultChunkKeyEncoding},
@@ -10,7 +10,7 @@ use super::{
     },
     data_type::IncompatibleFillValueError,
     Array, ArrayCreateError, ArrayMetadata, ArrayMetadataV3, ArrayShape, ChunkGrid,
-    ChunkKeySeparator, CodecChain, DataType, DimensionName, FillValue,
+    ChunkKeySeparator, CodecChain, DataType, DimensionName, FillValue, StorageTransformerChain,
 };
 
 /// An [`Array`] builder.
@@ -363,8 +363,11 @@ impl ArrayBuilder {
 #[cfg(test)]
 mod tests {
     use crate::{
-        array::{chunk_grid::RegularChunkGrid, chunk_key_encoding::V2ChunkKeyEncoding},
-        storage::{storage_transformer::UsageLogStorageTransformer, store::MemoryStore},
+        array::{
+            chunk_grid::RegularChunkGrid, chunk_key_encoding::V2ChunkKeyEncoding,
+            storage_transformer::UsageLogStorageTransformer,
+        },
+        storage::store::MemoryStore,
     };
 
     use super::*;

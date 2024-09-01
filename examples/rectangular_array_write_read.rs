@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use zarrs::storage::{
-    storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-    ReadableWritableListableStorage,
+use zarrs::{
+    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+    storage::ReadableWritableListableStorage,
 };
 
 fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {

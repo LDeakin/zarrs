@@ -10,7 +10,7 @@ use thiserror::Error;
 ///  - [chunk grid][`crate::array::chunk_grid`]
 ///  - [chunk key encoding](`crate::array::chunk_key_encoding`)
 ///  - [codec](`crate::array::codec`), and
-///  - [storage transformer](`crate::storage::storage_transformer`).
+///  - [storage transformer](`crate::array::storage_transformer`).
 ///
 /// Can be deserialised from a JSON string or name/configuration map.
 /// For example:

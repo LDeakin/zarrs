@@ -1,10 +1,8 @@
 use itertools::Itertools;
 use zarrs::{
     array::bytes_to_ndarray,
-    storage::{
-        storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-        ReadableWritableListableStorage,
-    },
+    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+    storage::ReadableWritableListableStorage,
 };
 
 fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {

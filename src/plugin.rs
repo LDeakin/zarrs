@@ -1,7 +1,7 @@
 //! [Zarr V3 extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points) utilities.
 //!
 //! A [`Plugin`] creates objects from [`MetadataV3`] (consisting of a name and optional configuration).
-//! It is used to implement [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points), such as [chunk grids][`crate::array::chunk_grid`], [chunk key encodings](`crate::array::chunk_key_encoding`), [codecs](`crate::array::codec`), and [storage transformers](`crate::storage::storage_transformer`).
+//! It is used to implement [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points), such as [chunk grids][`crate::array::chunk_grid`], [chunk key encodings](`crate::array::chunk_key_encoding`), [codecs](`crate::array::codec`), and [storage transformers](`crate::array::storage_transformer`).
 //!
 //! [Data types](`crate::array::data_type`) are not currently supported as an extension point.
 //!

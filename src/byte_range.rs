@@ -4,7 +4,7 @@
 //! A byte range has an offset and optional length, which if omitted means to read all remaining bytes.
 //!
 //! A [codec](crate::array::codec) partially decoding from bytes will retrieve byte ranges from an input handle implementing [`BytesPartialDecoderTraits`](crate::array::codec::BytesPartialDecoderTraits) which can be either:
-//! - a [store](crate::storage::store) or [storage transformer](crate::storage::storage_transformer) wrapped by [`StoragePartialDecoder`](crate::array::codec::StoragePartialDecoder), or
+//! - a [store](crate::storage::store) or [storage transformer](crate::array::storage_transformer) wrapped by [`StoragePartialDecoder`](crate::array::codec::StoragePartialDecoder), or
 //! - the bytes partial decoder of the next codec in the [`CodecChain`](crate::array::codec::CodecChain).
 //!
 //! [`extract_byte_ranges`] is a convenience function for extracting byte ranges from a slice of bytes.
