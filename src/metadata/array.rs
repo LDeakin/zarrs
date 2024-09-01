@@ -23,19 +23,22 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    array::{
-        chunk_grid::RegularChunkGridConfiguration,
-        chunk_key_encoding::V2ChunkKeyEncodingConfiguration, codec::BytesCodecConfigurationV1,
-        DataType, FillValueMetadata,
-    },
+    array::DataType,
     metadata::{
         v3::{
+            chunk_grid::regular::RegularChunkGridConfiguration,
+            chunk_key_encoding::v2::V2ChunkKeyEncodingConfiguration,
+            codec::bytes::BytesCodecConfigurationV1,
             codec::transpose::{TransposeCodecConfigurationV1, TransposeOrder},
+            fill_value::FillValueMetadata,
             MetadataV3,
         },
         AdditionalFields,
     },
 };
+
+mod chunk_key_separator;
+pub use chunk_key_separator::ChunkKeySeparator;
 
 /// The shape of an array.
 pub type ArrayShape = Vec<u64>;

@@ -15,7 +15,7 @@ pub mod v2;
 
 pub use array::{
     array_metadata_v2_to_v3, chunk_shape_to_array_shape, ArrayMetadata,
-    ArrayMetadataV2ToV3ConversionError, ArrayShape, ChunkShape,
+    ArrayMetadataV2ToV3ConversionError, ArrayShape, ChunkKeySeparator, ChunkShape,
 };
 pub use group::{group_metadata_v2_to_v3, GroupMetadata};
 pub use v2::{ArrayMetadataV2, GroupMetadataV2, MetadataV2};

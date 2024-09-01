@@ -12,7 +12,7 @@ use half::{bf16, f16};
 use num::traits::float::FloatCore;
 use serde::{Deserialize, Serialize};
 
-use crate::array::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
+use super::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
 
 /// Fill value metadata.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]

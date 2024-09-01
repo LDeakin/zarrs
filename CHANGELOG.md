@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `{Array,Chunk}Shape`
    - `Endianness` and `NATIVE_ENDIAN`
    - `ZARR_NAN_{F16, BF16, F32, F64}`
+   - `ChunkKeySeparator`
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead

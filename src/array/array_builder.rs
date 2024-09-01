@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::{metadata::v3::AdditionalFields, node::NodePath};
+use crate::{
+    metadata::{v3::AdditionalFields, ChunkKeySeparator},
+    node::NodePath,
+};
 
 use super::{
     chunk_key_encoding::{ChunkKeyEncoding, DefaultChunkKeyEncoding},
@@ -9,8 +12,8 @@ use super::{
         BytesCodec, BytesToBytesCodecTraits,
     },
     data_type::IncompatibleFillValueError,
-    Array, ArrayCreateError, ArrayMetadata, ArrayMetadataV3, ArrayShape, ChunkGrid,
-    ChunkKeySeparator, CodecChain, DataType, DimensionName, FillValue, StorageTransformerChain,
+    Array, ArrayCreateError, ArrayMetadata, ArrayMetadataV3, ArrayShape, ChunkGrid, CodecChain,
+    DataType, DimensionName, FillValue, StorageTransformerChain,
 };
 
 /// An [`Array`] builder.

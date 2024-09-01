@@ -59,8 +59,6 @@ pub mod nan_representations;
 pub use array::ArrayMetadataV3;
 pub use group::GroupMetadataV3;
 
-pub use crate::array::ChunkKeySeparator;
-
 mod metadata;
 pub use metadata::{
     AdditionalFields, ConfigurationInvalidError, MetadataV3, UnsupportedAdditionalFieldError,

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use derive_more::Display;
 
-use crate::metadata::v3::ChunkKeySeparator;
+use crate::metadata::ChunkKeySeparator;
 
 /// The identifier for the `v2` chunk key encoding.
 pub const IDENTIFIER: &str = "v2";

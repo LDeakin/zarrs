@@ -5,11 +5,8 @@ use thiserror::Error;
 use crate::{
     array::{DataType, Endianness},
     metadata::{
-        v3::{
-            fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
-            ChunkKeySeparator,
-        },
-        AdditionalFields, ArrayShape, ChunkShape,
+        v3::fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
+        AdditionalFields, ArrayShape, ChunkKeySeparator, ChunkShape,
     },
 };
 
