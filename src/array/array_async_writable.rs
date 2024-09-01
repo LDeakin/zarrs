@@ -7,7 +7,7 @@ use crate::{
     array_subset::ArraySubset,
     metadata::MetadataEraseVersion,
     storage::{
-        meta_key, meta_key_v2_array, meta_key_v2_attributes, AsyncBytes,
+        meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, AsyncBytes,
         AsyncWritableStorageTraits, StorageError, StorageHandle,
     },
 };
@@ -44,7 +44,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let path = self.path();
         match metadata {
             ArrayMetadata::V3(metadata) => {
-                let key = meta_key(path);
+                let key = meta_key_v3(path);
                 let json = serde_json::to_vec_pretty(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
                 storage_transformer.set(&key, json.into()).await
@@ -159,7 +159,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
             MetadataEraseVersion::Default => match self.metadata {
-                ArrayMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())).await,
+                ArrayMetadata::V3(_) => storage_handle.erase(&meta_key_v3(self.path())).await,
                 ArrayMetadata::V2(_) => {
                     storage_handle
                         .erase(&meta_key_v2_array(self.path()))
@@ -170,7 +170,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                 }
             },
             MetadataEraseVersion::All => {
-                storage_handle.erase(&meta_key(self.path())).await?;
+                storage_handle.erase(&meta_key_v3(self.path())).await?;
                 storage_handle
                     .erase(&meta_key_v2_array(self.path()))
                     .await?;
@@ -178,7 +178,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                     .erase(&meta_key_v2_attributes(self.path()))
                     .await
             }
-            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())).await,
+            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key_v3(self.path())).await,
             MetadataEraseVersion::V2 => {
                 storage_handle
                     .erase(&meta_key_v2_array(self.path()))

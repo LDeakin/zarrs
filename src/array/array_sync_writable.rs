@@ -8,7 +8,7 @@ use crate::{
     array_subset::ArraySubset,
     metadata::MetadataEraseVersion,
     storage::{
-        meta_key, meta_key_v2_array, meta_key_v2_attributes, Bytes, StorageError, StorageHandle,
+        meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, Bytes, StorageError, StorageHandle,
         WritableStorageTraits,
     },
 };
@@ -49,7 +49,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let path = self.path();
         match metadata {
             ArrayMetadata::V3(metadata) => {
-                let key = meta_key(path);
+                let key = meta_key_v3(path);
                 let json = serde_json::to_vec_pretty(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
                 storage_transformer.set(&key, json.into())
@@ -203,18 +203,18 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
             MetadataEraseVersion::Default => match self.metadata {
-                ArrayMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())),
+                ArrayMetadata::V3(_) => storage_handle.erase(&meta_key_v3(self.path())),
                 ArrayMetadata::V2(_) => {
                     storage_handle.erase(&meta_key_v2_array(self.path()))?;
                     storage_handle.erase(&meta_key_v2_attributes(self.path()))
                 }
             },
             MetadataEraseVersion::All => {
-                storage_handle.erase(&meta_key(self.path()))?;
+                storage_handle.erase(&meta_key_v3(self.path()))?;
                 storage_handle.erase(&meta_key_v2_array(self.path()))?;
                 storage_handle.erase(&meta_key_v2_attributes(self.path()))
             }
-            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())),
+            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key_v3(self.path())),
             MetadataEraseVersion::V2 => {
                 storage_handle.erase(&meta_key_v2_array(self.path()))?;
                 storage_handle.erase(&meta_key_v2_attributes(self.path()))

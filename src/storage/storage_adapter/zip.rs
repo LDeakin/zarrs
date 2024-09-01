@@ -274,13 +274,14 @@ mod tests {
         let tmp_path = tempfile::TempDir::new()?;
         let tmp_path = tmp_path.path();
         let store = FilesystemStore::new(tmp_path)?.sorted();
-        store.set(&"a/b".try_into()?, vec![0, 1, 2, 3].into())?;
-        store.set(&"a/c".try_into()?, vec![].into())?;
-        store.set(&"a/d/e".try_into()?, vec![].into())?;
-        store.set(&"a/f/g".try_into()?, vec![].into())?;
-        store.set(&"a/f/h".try_into()?, vec![].into())?;
-        store.set(&"b/c/d".try_into()?, vec![].into())?;
-        store.set(&"c".try_into()?, vec![].into())?;
+        store.set(&"a/b/zarr.json".try_into()?, vec![0, 1, 2, 3].into())?;
+        store.set(&"a/c/zarr.json".try_into()?, vec![].into())?;
+        store.set(&"a/d/e/zarr.json".try_into()?, vec![].into())?;
+        store.set(&"a/f/g/zarr.json".try_into()?, vec![].into())?;
+        store.set(&"a/f/h/zarr.json".try_into()?, vec![].into())?;
+        store.set(&"b/zarr.json".try_into()?, vec![].into())?;
+        store.set(&"b/c/d/zarr.json".try_into()?, vec![].into())?;
+        store.set(&"c/zarr.json".try_into()?, vec![].into())?;
 
         let walkdir = WalkDir::new(tmp_path);
 
@@ -313,45 +314,55 @@ mod tests {
         assert_eq!(
             store.list()?,
             &[
-                "a/b".try_into()?,
-                "a/c".try_into()?,
-                "a/d/e".try_into()?,
-                "a/f/g".try_into()?,
-                "a/f/h".try_into()?,
-                "b/c/d".try_into()?,
-                "c".try_into()?,
+                "a/b/zarr.json".try_into()?,
+                "a/c/zarr.json".try_into()?,
+                "a/d/e/zarr.json".try_into()?,
+                "a/f/g/zarr.json".try_into()?,
+                "a/f/h/zarr.json".try_into()?,
+                "b/c/d/zarr.json".try_into()?,
+                "b/zarr.json".try_into()?,
+                "c/zarr.json".try_into()?,
             ]
         );
         assert_eq!(
             store.list_prefix(&"a/".try_into()?)?,
             &[
-                "a/b".try_into()?,
-                "a/c".try_into()?,
-                "a/d/e".try_into()?,
-                "a/f/g".try_into()?,
-                "a/f/h".try_into()?,
+                "a/b/zarr.json".try_into()?,
+                "a/c/zarr.json".try_into()?,
+                "a/d/e/zarr.json".try_into()?,
+                "a/f/g/zarr.json".try_into()?,
+                "a/f/h/zarr.json".try_into()?,
             ]
         );
         assert_eq!(
             store.list_prefix(&"a/d/".try_into()?)?,
-            &["a/d/e".try_into()?]
+            &["a/d/e/zarr.json".try_into()?]
         );
         assert_eq!(
             store.list_prefix(&"".try_into()?)?,
             &[
-                "a/b".try_into()?,
-                "a/c".try_into()?,
-                "a/d/e".try_into()?,
-                "a/f/g".try_into()?,
-                "a/f/h".try_into()?,
-                "b/c/d".try_into()?,
-                "c".try_into()?,
+                "a/b/zarr.json".try_into()?,
+                "a/c/zarr.json".try_into()?,
+                "a/d/e/zarr.json".try_into()?,
+                "a/f/g/zarr.json".try_into()?,
+                "a/f/h/zarr.json".try_into()?,
+                "b/c/d/zarr.json".try_into()?,
+                "b/zarr.json".try_into()?,
+                "c/zarr.json".try_into()?,
             ]
         );
 
         let list = store.list_dir(&"a/".try_into()?)?;
-        assert_eq!(list.keys(), &["a/b".try_into()?, "a/c".try_into()?]);
-        assert_eq!(list.prefixes(), &["a/d/".try_into()?, "a/f/".try_into()?,]);
+        assert_eq!(list.keys(), &[]);
+        assert_eq!(
+            list.prefixes(),
+            &[
+                "a/b/".try_into()?,
+                "a/c/".try_into()?,
+                "a/d/".try_into()?,
+                "a/f/".try_into()?,
+            ]
+        );
 
         assert!(crate::storage::node_exists(&store, &"/a/b".try_into()?)?);
         assert!(crate::storage::node_exists_listable(
@@ -359,9 +370,12 @@ mod tests {
             &"/a/b".try_into()?
         )?);
 
-        assert_eq!(store.get(&"a/b".try_into()?)?.unwrap(), vec![0, 1, 2, 3]);
         assert_eq!(
-            store.get(&"a/c".try_into()?)?.unwrap(),
+            store.get(&"a/b/zarr.json".try_into()?)?.unwrap(),
+            vec![0, 1, 2, 3]
+        );
+        assert_eq!(
+            store.get(&"a/c/zarr.json".try_into()?)?.unwrap(),
             Vec::<u8>::new().as_slice()
         );
 
@@ -386,29 +400,40 @@ mod tests {
         assert_eq!(
             store.list()?,
             &[
-                "b".try_into()?,
-                "c".try_into()?,
-                "d/e".try_into()?,
-                "f/g".try_into()?,
-                "f/h".try_into()?,
+                "b/zarr.json".try_into()?,
+                "c/zarr.json".try_into()?,
+                "d/e/zarr.json".try_into()?,
+                "f/g/zarr.json".try_into()?,
+                "f/h/zarr.json".try_into()?,
             ]
         );
         assert_eq!(store.list_prefix(&"a/".try_into()?)?, &[]);
-        assert_eq!(store.list_prefix(&"d/".try_into()?)?, &["d/e".try_into()?]);
+        assert_eq!(
+            store.list_prefix(&"d/".try_into()?)?,
+            &["d/e/zarr.json".try_into()?]
+        );
         assert_eq!(
             store.list_prefix(&"".try_into()?)?,
             &[
-                "b".try_into()?,
-                "c".try_into()?,
-                "d/e".try_into()?,
-                "f/g".try_into()?,
-                "f/h".try_into()?,
+                "b/zarr.json".try_into()?,
+                "c/zarr.json".try_into()?,
+                "d/e/zarr.json".try_into()?,
+                "f/g/zarr.json".try_into()?,
+                "f/h/zarr.json".try_into()?,
             ]
         );
 
         let list = store.list_dir(&"".try_into()?)?;
-        assert_eq!(list.keys(), &["b".try_into()?, "c".try_into()?]);
-        assert_eq!(list.prefixes(), &["d/".try_into()?, "f/".try_into()?,]);
+        assert_eq!(list.keys(), &[]);
+        assert_eq!(
+            list.prefixes(),
+            &[
+                "b/".try_into()?,
+                "c/".try_into()?,
+                "d/".try_into()?,
+                "f/".try_into()?,
+            ]
+        );
 
         assert!(crate::storage::node_exists(&store, &"/b".try_into()?)?);
         assert!(crate::storage::node_exists_listable(
@@ -416,8 +441,11 @@ mod tests {
             &"/b".try_into()?
         )?);
 
-        assert_eq!(store.get(&"b".try_into()?)?.unwrap(), vec![0, 1, 2, 3]);
-        // assert_eq!(store.get(&"c".try_into()?)?, Vec::<u8>::new().as_slice());
+        assert_eq!(
+            store.get(&"b/zarr.json".try_into()?)?.unwrap(),
+            vec![0, 1, 2, 3]
+        );
+        // assert_eq!(store.get(&"c/zarr.json".try_into()?)?, Vec::<u8>::new().as_slice());
 
         Ok(())
     }

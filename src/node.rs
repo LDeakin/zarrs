@@ -21,7 +21,7 @@ use crate::{
     array::ArrayMetadata,
     metadata::{ArrayMetadataV2, GroupMetadata, GroupMetadataV2, MetadataRetrieveVersion},
     storage::{
-        get_child_nodes, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group,
+        get_child_nodes, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3,
         ListableStorageTraits, ReadableStorageTraits, StorageError,
     },
 };
@@ -71,7 +71,7 @@ impl Node {
     ) -> Result<NodeMetadata, NodeCreateError> {
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
             // Try a Zarr V3 group/array
-            let key_v3 = meta_key(path);
+            let key_v3 = meta_key_v3(path);
             if let Some(metadata) = storage.get(&key_v3)? {
                 let metadata: NodeMetadata = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
@@ -133,7 +133,7 @@ impl Node {
     ) -> Result<NodeMetadata, NodeCreateError> {
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
             // Try a Zarr V3 group/array
-            let key_v3 = meta_key(path);
+            let key_v3 = meta_key_v3(path);
             if let Some(metadata) = storage.get(&key_v3).await? {
                 let metadata: NodeMetadata = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;

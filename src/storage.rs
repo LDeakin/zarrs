@@ -223,6 +223,9 @@ pub enum StorageError {
     /// An error parsing the metadata for a key.
     #[error("error parsing metadata for {0}: {1}")]
     InvalidMetadata(StoreKey, String),
+    #[error("missing metadata for store prefix {0}")]
+    /// Missing metadata.
+    MissingMetadata(StorePrefix),
     /// An invalid store prefix.
     #[error("invalid store prefix {0}")]
     StorePrefixError(#[from] StorePrefixError),
@@ -281,7 +284,7 @@ fn meta_key_any(path: &NodePath, metadata_file_name: &str) -> StoreKey {
 }
 
 /// Return the Zarr V3 metadata key (zarr.json) given a node path.
-// TODO: Deprecate this
+// #[deprecated = "use meta_key_v3 for zarr V3 data"]
 #[must_use]
 pub fn meta_key(path: &NodePath) -> StoreKey {
     meta_key_v3(path)
@@ -322,27 +325,3 @@ pub fn data_key(path: &NodePath, chunk_key: &StoreKey) -> StoreKey {
     key_path.push(chunk_key.as_str());
     unsafe { StoreKey::new_unchecked(key_path.to_string_lossy().to_string()) }
 }
-
-// /// Create a new [`Hierarchy`].
-// ///
-// /// # Errors
-// /// Returns a [`StorageError`] if there is an underlying error with the store.
-// pub fn create_hierarchy<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-//     storage: &Arc<TStorage>,
-// ) -> Result<Hierarchy, StorageError> {
-//     let root_path: NodePath = NodePath::new("/")?;
-//     let root_metadata = storage.get(&meta_key(&root_path));
-//     let root_metadata: NodeMetadata = match root_metadata {
-//         Ok(root_metadata) => serde_json::from_slice(root_metadata.as_slice())?,
-//         Err(..) => NodeMetadata::Group(GroupMetadataV3::default()), // root metadata does not exist, assume implicit group
-//     };
-
-//     let children = get_child_nodes(storage, &root_path)?;
-//     let root_node = Node {
-//         name: NodeName::root(),
-//         path: root_path,
-//         children,
-//         metadata: root_metadata,
-//     };
-//     Ok(Hierarchy { root: root_node })
-// }

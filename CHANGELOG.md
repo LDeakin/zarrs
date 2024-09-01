@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Adds `FilesystemStoreOptions` and `FilesystemStore::new_with_options`
  - [#64](https://github.com/LDeakin/zarrs/pull/64) Add `Array::[async_]store_encoded_chunk` for writing already-encoded chunks by [@sk1p]
  - Add `key()`, `start()`, `value()` to `StoreKeyStartValue`
+ - Add `StorageError::MissingMetadata` now that implicit groups are not supported
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders

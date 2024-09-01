@@ -6,7 +6,7 @@ use zarrs::{
         ChunkKeyEncoding,
     },
     storage::{
-        data_key, meta_key,
+        data_key, meta_key_v3,
         store::{FilesystemStore, MemoryStore},
         ReadableStorageTraits, WritableStorageTraits,
     },
@@ -22,10 +22,12 @@ fn metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
     let store = MemoryStore::new();
     let metadata_in = include_bytes!("data/array_metadata.json");
     store.set(
-        &meta_key(&"/group/array".try_into()?),
+        &meta_key_v3(&"/group/array".try_into()?),
         metadata_in.to_vec().into(),
     )?;
-    let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?.unwrap();
+    let metadata_out = store
+        .get(&meta_key_v3(&"/group/array".try_into()?))?
+        .unwrap();
     assert_eq!(metadata_in.as_slice(), metadata_out);
     Ok(())
 }
@@ -37,10 +39,12 @@ fn metadata_round_trip_filesystem() -> Result<(), Box<dyn Error>> {
     let store = FilesystemStore::new(path.path())?;
     let metadata_in = include_bytes!("data/array_metadata.json");
     store.set(
-        &meta_key(&"/group/array".try_into()?),
+        &meta_key_v3(&"/group/array".try_into()?),
         metadata_in.to_vec().into(),
     )?;
-    let metadata_out = store.get(&meta_key(&"/group/array".try_into()?))?.unwrap();
+    let metadata_out = store
+        .get(&meta_key_v3(&"/group/array".try_into()?))?
+        .unwrap();
     assert_eq!(metadata_in.as_slice(), metadata_out);
     Ok(())
 }

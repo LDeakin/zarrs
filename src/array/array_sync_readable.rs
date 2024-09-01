@@ -9,8 +9,8 @@ use crate::{
     metadata::MetadataRetrieveVersion,
     node::NodePath,
     storage::{
-        meta_key, meta_key_v2_array, meta_key_v2_attributes, ReadableStorageTraits, StorageError,
-        StorageHandle,
+        meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, ReadableStorageTraits,
+        StorageError, StorageHandle,
     },
 };
 
@@ -63,7 +63,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
             // Try V3
-            let key_v3 = meta_key(&node_path);
+            let key_v3 = meta_key_v3(&node_path);
             if let Some(metadata) = storage.get(&key_v3)? {
                 let metadata: ArrayMetadataV3 = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;

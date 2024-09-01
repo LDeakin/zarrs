@@ -192,7 +192,7 @@ mod tests {
         array::{Array, DataType},
         array_subset::ArraySubset,
         node::NodePath,
-        storage::meta_key,
+        storage::meta_key_v3,
     };
 
     use super::*;
@@ -206,7 +206,7 @@ mod tests {
     fn http_store_size() {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let len = store
-            .size_key(&meta_key(&NodePath::new(ARRAY_PATH_REF).unwrap()))
+            .size_key(&meta_key_v3(&NodePath::new(ARRAY_PATH_REF).unwrap()))
             .unwrap();
         assert_eq!(len.unwrap(), 691);
     }
@@ -216,7 +216,7 @@ mod tests {
     fn http_store_get() {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         let metadata = store
-            .get(&meta_key(&NodePath::new(ARRAY_PATH_REF).unwrap()))
+            .get(&meta_key_v3(&NodePath::new(ARRAY_PATH_REF).unwrap()))
             .unwrap()
             .unwrap();
         let metadata: crate::array::ArrayMetadataV3 = serde_json::from_slice(&metadata).unwrap();

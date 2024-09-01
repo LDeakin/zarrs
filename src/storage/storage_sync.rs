@@ -1,16 +1,20 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use crate::{
+    array::{ArrayMetadata, ArrayMetadataV2, ArrayMetadataV3},
     byte_range::ByteRange,
-    group::GroupMetadataV3,
+    group::{GroupMetadata, GroupMetadataV3},
+    metadata::GroupMetadataV2,
     node::{Node, NodeMetadata, NodePath},
 };
 
 use super::{
-    data_key, meta_key, Bytes, MaybeBytes, StorageError, StoreKey, StoreKeyRange,
-    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    data_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Bytes,
+    MaybeBytes, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
+    StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -273,6 +277,73 @@ impl<T> ReadableWritableListableStorageTraits for T where
 {
 }
 
+fn get_metadata_v3<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+    storage: &Arc<TStorage>,
+    prefix: &StorePrefix,
+) -> Result<Option<NodeMetadata>, StorageError> {
+    #[derive(Serialize, Deserialize)]
+    #[serde(untagged)]
+    enum NodeMetadataV3 {
+        Array(ArrayMetadataV3),
+        Group(GroupMetadataV3),
+    }
+
+    let key: StoreKey = meta_key_v3(&prefix.try_into()?);
+    match storage.get(&key)? {
+        Some(metadata) => {
+            let metadata: NodeMetadataV3 = serde_json::from_slice(&metadata)
+                .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
+            Ok(Some(match metadata {
+                NodeMetadataV3::Array(array) => NodeMetadata::Array(ArrayMetadata::V3(array)),
+                NodeMetadataV3::Group(group) => NodeMetadata::Group(GroupMetadata::V3(group)),
+            }))
+        }
+        None => Ok(None),
+    }
+}
+
+fn get_metadata_v2<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+    storage: &Arc<TStorage>,
+    prefix: &StorePrefix,
+) -> Result<Option<NodeMetadata>, StorageError> {
+    let node_path = prefix.try_into()?;
+    let attributes_key = meta_key_v2_attributes(&node_path);
+
+    // Try array
+    let key_array: StoreKey = meta_key_v2_array(&node_path);
+    if let Some(metadata) = storage.get(&key_array)? {
+        let mut metadata: ArrayMetadataV2 = serde_json::from_slice(&metadata)
+            .map_err(|err| StorageError::InvalidMetadata(key_array, err.to_string()))?;
+        let attributes = storage.get(&attributes_key)?;
+        if let Some(attributes) = attributes {
+            let attributes: serde_json::Map<String, serde_json::Value> =
+                serde_json::from_slice(&attributes).map_err(|err| {
+                    StorageError::InvalidMetadata(attributes_key, err.to_string())
+                })?;
+            metadata.attributes = attributes;
+        }
+        return Ok(Some(NodeMetadata::Array(ArrayMetadata::V2(metadata))));
+    }
+
+    // Try group
+    let key_group: StoreKey = meta_key_v2_group(&node_path);
+    if let Some(metadata) = storage.get(&key_group)? {
+        let mut metadata: GroupMetadataV2 = serde_json::from_slice(&metadata)
+            .map_err(|err| StorageError::InvalidMetadata(key_group, err.to_string()))?;
+        let attributes = storage.get(&attributes_key)?;
+        if let Some(attributes) = attributes {
+            let attributes: serde_json::Map<String, serde_json::Value> =
+                serde_json::from_slice(&attributes).map_err(|err| {
+                    StorageError::InvalidMetadata(attributes_key, err.to_string())
+                })?;
+            metadata.attributes = attributes;
+        }
+        return Ok(Some(NodeMetadata::Group(GroupMetadata::V2(metadata))));
+    }
+
+    Ok(None)
+}
+
 /// Get the child nodes.
 ///
 /// # Errors
@@ -284,15 +355,14 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
     let prefixes = discover_children(storage, path)?;
     let mut nodes: Vec<Node> = Vec::new();
     for prefix in &prefixes {
-        let key = meta_key(&prefix.try_into()?);
-        let child_metadata = match storage.get(&key)? {
-            Some(child_metadata) => {
-                let metadata: NodeMetadata = serde_json::from_slice(&child_metadata)
-                    .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
-                metadata
-            }
-            None => NodeMetadata::Group(GroupMetadataV3::default().into()),
+        let mut child_metadata = get_metadata_v3(storage, prefix)?;
+        if child_metadata.is_none() {
+            child_metadata = get_metadata_v2(storage, prefix)?;
+        }
+        let Some(child_metadata) = child_metadata else {
+            return Err(StorageError::MissingMetadata(prefix.clone()));
         };
+
         let path: NodePath = prefix.try_into()?;
         let children = match child_metadata {
             NodeMetadata::Array(_) => Vec::default(),
@@ -373,9 +443,9 @@ pub fn node_exists<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTra
     storage: &Arc<TStorage>,
     path: &NodePath,
 ) -> Result<bool, StorageError> {
-    Ok(storage
-        .get(&meta_key(path))
-        .map_or(storage.list_dir(&path.try_into()?).is_ok(), |_| true))
+    Ok(storage.get(&meta_key_v3(path))?.is_some()
+        || storage.get(&meta_key_v2_array(path))?.is_some()
+        || storage.get(&meta_key_v2_group(path))?.is_some())
 }
 
 /// Check if a node exists.
@@ -387,12 +457,9 @@ pub fn node_exists_listable<TStorage: ?Sized + ListableStorageTraits>(
     path: &NodePath,
 ) -> Result<bool, StorageError> {
     let prefix: StorePrefix = path.try_into()?;
-    prefix.parent().map_or_else(
-        || Ok(false),
-        |parent| {
-            storage.list_dir(&parent).map(|keys_prefixes| {
-                !keys_prefixes.keys().is_empty() || !keys_prefixes.prefixes().is_empty()
-            })
-        },
-    )
+    storage.list_prefix(&prefix).map(|keys| {
+        keys.contains(&meta_key_v3(path))
+            | keys.contains(&meta_key_v2_array(path))
+            | keys.contains(&meta_key_v2_group(path))
+    })
 }

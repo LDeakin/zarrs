@@ -38,8 +38,8 @@ use crate::{
     },
     node::{NodePath, NodePathError},
     storage::{
-        meta_key, meta_key_v2_attributes, meta_key_v2_group, ReadableStorageTraits, StorageError,
-        StorageHandle, WritableStorageTraits,
+        meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, ReadableStorageTraits,
+        StorageError, StorageHandle, WritableStorageTraits,
     },
 };
 
@@ -185,7 +185,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
 
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
             // Try Zarr V3
-            let key_v3 = meta_key(&node_path);
+            let key_v3 = meta_key_v3(&node_path);
             if let Some(metadata) = storage.get(&key_v3)? {
                 let metadata: GroupMetadataV3 = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
@@ -241,7 +241,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
 
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
             // Try Zarr V3
-            let key_v3 = meta_key(&node_path);
+            let key_v3 = meta_key_v3(&node_path);
             if let Some(metadata) = storage.get(&key_v3).await? {
                 let metadata: GroupMetadataV3 = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
@@ -313,10 +313,10 @@ impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
         let path = self.path();
         match metadata {
             GroupMetadata::V3(metadata) => {
-                let key = meta_key(path);
+                let key = meta_key_v3(path);
                 let json = serde_json::to_vec_pretty(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage_handle.set(&meta_key(path), json.into())
+                storage_handle.set(&key, json.into())
             }
             GroupMetadata::V2(metadata) => {
                 let mut metadata = metadata.clone();
@@ -362,18 +362,18 @@ impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
             MetadataEraseVersion::Default => match self.metadata {
-                GroupMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())),
+                GroupMetadata::V3(_) => storage_handle.erase(&meta_key_v3(self.path())),
                 GroupMetadata::V2(_) => {
                     storage_handle.erase(&meta_key_v2_group(self.path()))?;
                     storage_handle.erase(&meta_key_v2_attributes(self.path()))
                 }
             },
             MetadataEraseVersion::All => {
-                storage_handle.erase(&meta_key(self.path()))?;
+                storage_handle.erase(&meta_key_v3(self.path()))?;
                 storage_handle.erase(&meta_key_v2_group(self.path()))?;
                 storage_handle.erase(&meta_key_v2_attributes(self.path()))
             }
-            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())),
+            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key_v3(self.path())),
             MetadataEraseVersion::V2 => {
                 storage_handle.erase(&meta_key_v2_group(self.path()))?;
                 storage_handle.erase(&meta_key_v2_attributes(self.path()))
@@ -406,10 +406,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
         let path = self.path();
         match metadata {
             GroupMetadata::V3(metadata) => {
-                let key = meta_key(path);
+                let key = meta_key_v3(path);
                 let json = serde_json::to_vec_pretty(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage_handle.set(&meta_key(path), json.into()).await
+                storage_handle.set(&key, json.into()).await
             }
             GroupMetadata::V2(metadata) => {
                 let mut metadata = metadata.clone();
@@ -451,7 +451,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
             MetadataEraseVersion::Default => match self.metadata {
-                GroupMetadata::V3(_) => storage_handle.erase(&meta_key(self.path())).await,
+                GroupMetadata::V3(_) => storage_handle.erase(&meta_key_v3(self.path())).await,
                 GroupMetadata::V2(_) => {
                     storage_handle
                         .erase(&meta_key_v2_group(self.path()))
@@ -462,7 +462,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
                 }
             },
             MetadataEraseVersion::All => {
-                storage_handle.erase(&meta_key(self.path())).await?;
+                storage_handle.erase(&meta_key_v3(self.path())).await?;
                 storage_handle
                     .erase(&meta_key_v2_group(self.path()))
                     .await?;
@@ -470,7 +470,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
                     .erase(&meta_key_v2_attributes(self.path()))
                     .await
             }
-            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key(self.path())).await,
+            MetadataEraseVersion::V3 => storage_handle.erase(&meta_key_v3(self.path())).await,
             MetadataEraseVersion::V2 => {
                 storage_handle
                     .erase(&meta_key_v2_group(self.path()))

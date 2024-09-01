@@ -865,10 +865,6 @@ mod tests {
         array.store_metadata().unwrap();
         let stored_metadata = array.metadata_opt(&ArrayMetadataOptions::default());
 
-        // let metadata: ArrayMetadata =
-        //     serde_json::from_slice(&store.get(&meta_key(&array_path))?)?;
-        // println!("{:?}", metadata);
-
         let array_other = Array::open(store, array_path).unwrap();
         assert_eq!(array_other.metadata(), &stored_metadata);
     }
