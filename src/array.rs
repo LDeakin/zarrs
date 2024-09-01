@@ -85,7 +85,6 @@ pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedR
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use serde::Serialize;
-use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
@@ -99,14 +98,6 @@ pub type ArrayIndices = Vec<u64>;
 
 /// The shape of an array.
 pub type ArrayShape = Vec<u64>;
-
-/// A non zero error.
-///
-/// This is used in cases where a non-zero type cannot be converted to its equivalent integer type (e.g. [`NonZeroU64`](std::num::NonZeroU64) to [`u64`]).
-/// It is used in the [`ChunkShape`] `try_from` methods.
-#[derive(Debug, Error)]
-#[error("value must be non-zero")]
-pub struct NonZeroError;
 
 /// A Zarr array.
 ///

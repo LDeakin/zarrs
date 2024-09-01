@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::array::{ChunkShape, NonZeroError};
+use crate::array::ChunkShape;
 
 /// The identifier for the `rectangular` chunk grid.
 pub const IDENTIFIER: &str = "rectangular";
@@ -28,9 +28,9 @@ pub enum RectangularChunkGridDimensionConfiguration {
 }
 
 impl TryFrom<u64> for RectangularChunkGridDimensionConfiguration {
-    type Error = NonZeroError;
+    type Error = std::num::TryFromIntError;
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        let value = NonZeroU64::new(value).ok_or(NonZeroError)?;
+        let value = NonZeroU64::try_from(value)?;
         Ok(Self::Fixed(value))
     }
 }
@@ -55,7 +55,7 @@ macro_rules! from_chunkgrid_rectangular {
 macro_rules! try_from_chunkgrid_rectangular_configuration {
     ( $t:ty ) => {
         impl TryFrom<$t> for RectangularChunkGridDimensionConfiguration {
-            type Error = NonZeroError;
+            type Error = std::num::TryFromIntError;
             fn try_from(value: $t) -> Result<Self, Self::Error> {
                 let vec = value.try_into()?;
                 Ok(Self::Varying(vec))
@@ -64,7 +64,7 @@ macro_rules! try_from_chunkgrid_rectangular_configuration {
     };
     ( $t:ty, $g:ident ) => {
         impl<const $g: usize> TryFrom<$t> for RectangularChunkGridDimensionConfiguration {
-            type Error = NonZeroError;
+            type Error = std::num::TryFromIntError;
             fn try_from(value: $t) -> Result<Self, Self::Error> {
                 let vec = value.try_into()?;
                 Ok(Self::Varying(vec))

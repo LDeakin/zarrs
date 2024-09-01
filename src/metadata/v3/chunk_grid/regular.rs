@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
-use crate::array::{ChunkShape, NonZeroError};
+use crate::array::ChunkShape;
 
 /// The identifier for the `regular` chunk grid.
 pub const IDENTIFIER: &str = "regular";
@@ -44,7 +44,7 @@ macro_rules! from_chunkgrid_regular_configuration {
 macro_rules! try_from_chunkgrid_regular_configuration {
     ( $t:ty ) => {
         impl TryFrom<$t> for RegularChunkGridConfiguration {
-            type Error = NonZeroError;
+            type Error = std::num::TryFromIntError;
             fn try_from(value: $t) -> Result<Self, Self::Error> {
                 value.try_into()
             }
@@ -52,7 +52,7 @@ macro_rules! try_from_chunkgrid_regular_configuration {
     };
     ( $t:ty, $g:ident ) => {
         impl<const $g: usize> TryFrom<$t> for RegularChunkGridConfiguration {
-            type Error = NonZeroError;
+            type Error = std::num::TryFromIntError;
             fn try_from(value: $t) -> Result<Self, Self::Error> {
                 value.try_into()
             }

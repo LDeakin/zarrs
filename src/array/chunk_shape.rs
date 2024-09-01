@@ -2,7 +2,7 @@ use std::num::{NonZeroU64, NonZeroUsize};
 
 use serde::{Deserialize, Serialize};
 
-use super::{ArrayShape, NonZeroError};
+use super::ArrayShape;
 
 /// The shape of a chunk. All dimensions must be non-zero.
 #[allow(clippy::unsafe_derive_deserialize)]
@@ -94,12 +94,12 @@ macro_rules! from_chunkshape {
 macro_rules! try_from_chunkshape {
     ( $t:ty ) => {
         impl TryFrom<$t> for ChunkShape {
-            type Error = NonZeroError;
+            type Error = std::num::TryFromIntError;
             fn try_from(value: $t) -> Result<Self, Self::Error> {
                 Ok(ChunkShape(
                     value
                         .iter()
-                        .map(|&i| NonZeroU64::new(i).ok_or(NonZeroError))
+                        .map(|&i| NonZeroU64::try_from(i))
                         .collect::<Result<_, _>>()?,
                 ))
             }
@@ -107,12 +107,12 @@ macro_rules! try_from_chunkshape {
     };
     ( $t:ty, $g:ident ) => {
         impl<const $g: usize> TryFrom<$t> for ChunkShape {
-            type Error = NonZeroError;
+            type Error = std::num::TryFromIntError;
             fn try_from(value: $t) -> Result<Self, Self::Error> {
                 Ok(ChunkShape(
                     value
                         .iter()
-                        .map(|&i| NonZeroU64::new(i).ok_or(NonZeroError))
+                        .map(|&i| NonZeroU64::try_from(i))
                         .collect::<Result<_, _>>()?,
                 ))
             }

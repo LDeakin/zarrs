@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - This is a post-acceptance change of Zarr V3: https://github.com/zarr-developers/zarr-specs/pull/292
  - [#63](https://github.com/LDeakin/zarrs/pull/63) Make `StoreKeysPrefixes` constructible by [@sk1p]
 
+### Removed
+ - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
+
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates
    - this could corrupt values depending on the order of `set_partial_values` calls
