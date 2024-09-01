@@ -36,7 +36,6 @@ pub mod data_type;
 mod dimension_name;
 mod element;
 mod fill_value;
-mod nan_representations;
 pub mod storage_transformer;
 
 #[cfg(feature = "sharding")]
@@ -62,11 +61,14 @@ pub use self::{
     dimension_name::DimensionName,
     element::{Element, ElementFixedLength, ElementOwned},
     fill_value::FillValue,
-    nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     storage_transformer::StorageTransformerChain,
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
-pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};
+pub use crate::metadata::v3::{
+    fill_value::FillValueMetadata,
+    nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
+    ArrayMetadataV3,
+};
 pub use crate::metadata::{
     chunk_shape_to_array_shape, ArrayMetadata, ArrayShape, ChunkShape, Endianness, NATIVE_ENDIAN,
 };

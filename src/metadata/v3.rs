@@ -54,6 +54,7 @@ pub mod chunk_key_encoding {
 }
 
 pub mod fill_value;
+pub mod nan_representations;
 
 pub use array::ArrayMetadataV3;
 pub use group::GroupMetadataV3;

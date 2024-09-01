@@ -86,7 +86,7 @@ pub fn array_metadata_v2_to_v3(
 ) -> Result<ArrayMetadataV3, ArrayMetadataV2ToV3ConversionError> {
     let shape = array_metadata_v2.shape.clone();
     let chunk_grid = MetadataV3::new_with_serializable_configuration(
-        crate::array::chunk_grid::regular::IDENTIFIER,
+        crate::metadata::v3::chunk_grid::regular::IDENTIFIER,
         &RegularChunkGridConfiguration {
             chunk_shape: array_metadata_v2.chunks.clone(),
         },
@@ -237,7 +237,7 @@ pub fn array_metadata_v2_to_v3(
     }
 
     let chunk_key_encoding = MetadataV3::new_with_serializable_configuration(
-        crate::array::chunk_key_encoding::v2::IDENTIFIER,
+        crate::metadata::v3::chunk_key_encoding::v2::IDENTIFIER,
         &V2ChunkKeyEncodingConfiguration {
             separator: array_metadata_v2.dimension_separator,
         },

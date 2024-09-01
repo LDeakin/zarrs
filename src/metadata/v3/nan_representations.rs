@@ -1,3 +1,7 @@
+//! NaN representations for Zarr data.
+//!
+//! Zarr uses the not-a-number (NaN) value where the sign bit is 0 (positive), the most significant bit (MSB) of the mantissa is 1, and all other bits of the mantissa are zero.
+
 use std::mem::transmute;
 
 use half::{bf16, f16};

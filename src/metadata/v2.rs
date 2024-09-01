@@ -32,14 +32,14 @@ mod tests {
 
     use super::*;
     use crate::{
-        array::{chunk_key_encoding::ChunkKeySeparator, DataType, Endianness},
+        array::{chunk_key_encoding::ChunkKeySeparator, DataType},
         metadata::{
             array_metadata_v2_to_v3,
             v3::codec::{
                 blosc::{self, BloscCodecConfigurationV1},
                 transpose::{self, TransposeCodecConfigurationV1},
             },
-            ChunkShape,
+            ChunkShape, Endianness,
         },
     };
 
@@ -69,7 +69,8 @@ mod tests {
                 ],
                 "zarr_format": 2
             }"#;
-        let array_metadata_v2: crate::array::ArrayMetadataV2 = serde_json::from_str(&json).unwrap();
+        let array_metadata_v2: crate::metadata::ArrayMetadataV2 =
+            serde_json::from_str(&json).unwrap();
         assert_eq!(
             array_metadata_v2.chunks,
             ChunkShape::try_from(vec![1000, 1000]).unwrap()
