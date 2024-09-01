@@ -17,10 +17,10 @@ use super::{
     },
     v3::codec::vlen_v2::VlenV2CodecConfigurationV1,
 };
-use thiserror::Error;
 
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::{
     array::{

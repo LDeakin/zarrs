@@ -7,9 +7,10 @@
 mod bytes_codec;
 mod bytes_partial_decoder;
 
-pub use crate::array::endianness::{Endianness, NATIVE_ENDIAN};
 use crate::metadata::v3::codec::bytes;
-pub use crate::metadata::v3::codec::bytes::{BytesCodecConfiguration, BytesCodecConfigurationV1};
+pub use crate::metadata::v3::codec::bytes::{
+    BytesCodecConfiguration, BytesCodecConfigurationV1, Endianness, NATIVE_ENDIAN,
+};
 
 pub use bytes_codec::BytesCodec;
 

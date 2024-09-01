@@ -1,35 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::array::Endianness;
-
 /// The identifier for the `bytes` codec.
 pub const IDENTIFIER: &str = "bytes";
-
-impl serde::Serialize for Endianness {
-    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Little => s.serialize_str("little"),
-            Self::Big => s.serialize_str("big"),
-        }
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Endianness {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let value = serde_json::Value::deserialize(d)?;
-        if let serde_json::Value::String(string) = value {
-            if string == "little" {
-                return Ok(Self::Little);
-            } else if string == "big" {
-                return Ok(Self::Big);
-            }
-        }
-        Err(serde::de::Error::custom(
-            "endian: A string equal to either \"big\" or \"little\"",
-        ))
-    }
-}
 
 /// A wrapper to handle various versions of `bytes` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -57,6 +30,32 @@ impl BytesCodecConfigurationV1 {
         Self { endian }
     }
 }
+
+/// The endianness of each element in an array, either `big` or `little`.
+#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug, Display)]
+#[serde(rename_all = "lowercase")]
+pub enum Endianness {
+    /// Little endian.
+    Little,
+
+    /// Big endian.
+    Big,
+}
+
+impl Endianness {
+    /// Return true if the endianness matches the endianness of the CPU.
+    #[must_use]
+    pub fn is_native(self) -> bool {
+        self == NATIVE_ENDIAN
+    }
+}
+
+/// The endianness of the CPU.
+pub const NATIVE_ENDIAN: Endianness = if cfg!(target_endian = "big") {
+    Endianness::Big
+} else {
+    Endianness::Little
+};
 
 #[cfg(test)]
 mod tests {

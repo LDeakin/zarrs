@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - This is a post-acceptance change of Zarr V3: https://github.com/zarr-developers/zarr-specs/pull/292
  - [#63](https://github.com/LDeakin/zarrs/pull/63) Make `StoreKeysPrefixes` constructible by [@sk1p]
  - **Breaking**: Use values of `Metadata{Convert,Erase}Version` instead of references in parameters/return values
+ - Move various items to `metadata` namespace, keeping re-export in `array` namespace
+   - `{Array,Chunk}Shape`
+   - `Endianness` and `NATIVE_ENDIAN`
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead

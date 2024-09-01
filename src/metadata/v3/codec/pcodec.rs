@@ -364,14 +364,6 @@ const fn default_equal_pages_up_to() -> usize {
     1 << 18
 }
 
-impl PcodecCodecConfigurationV1 {
-    // /// Create a new `pcodec` codec configuration.
-    // #[must_use]
-    // pub const fn new(endian: Option<Endianness>) -> Self {
-    //     Self { endian }
-    // }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
