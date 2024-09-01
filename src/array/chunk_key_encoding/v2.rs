@@ -108,41 +108,29 @@ mod tests {
 
     #[test]
     fn slash_nd() {
-        let key = data_key(
-            &NodePath::root(),
-            &[1, 23, 45],
-            &V2ChunkKeyEncoding::new_slash().into(),
-        );
+        let chunk_key_encoding: ChunkKeyEncoding = V2ChunkKeyEncoding::new_slash().into();
+        let key = data_key(&NodePath::root(), &chunk_key_encoding.encode(&[1, 23, 45]));
         assert_eq!(key, StoreKey::new("1/23/45").unwrap());
     }
 
     #[test]
     fn dot_nd() {
-        let key = data_key(
-            &NodePath::root(),
-            &[1, 23, 45],
-            &V2ChunkKeyEncoding::new_dot().into(),
-        );
+        let chunk_key_encoding: ChunkKeyEncoding = V2ChunkKeyEncoding::new_dot().into();
+        let key = data_key(&NodePath::root(), &chunk_key_encoding.encode(&[1, 23, 45]));
         assert_eq!(key, StoreKey::new("1.23.45").unwrap());
     }
 
     #[test]
     fn slash_scalar() {
-        let key = data_key(
-            &NodePath::root(),
-            &[],
-            &V2ChunkKeyEncoding::new_slash().into(),
-        );
+        let chunk_key_encoding: ChunkKeyEncoding = V2ChunkKeyEncoding::new_slash().into();
+        let key = data_key(&NodePath::root(), &chunk_key_encoding.encode(&[]));
         assert_eq!(key, StoreKey::new("0").unwrap());
     }
 
     #[test]
     fn dot_scalar() {
-        let key = data_key(
-            &NodePath::root(),
-            &[],
-            &V2ChunkKeyEncoding::new_dot().into(),
-        );
+        let chunk_key_encoding: ChunkKeyEncoding = V2ChunkKeyEncoding::new_dot().into();
+        let key = data_key(&NodePath::root(), &chunk_key_encoding.encode(&[]));
         assert_eq!(key, StoreKey::new("0").unwrap());
     }
 }

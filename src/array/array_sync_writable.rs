@@ -44,7 +44,37 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
 
         // Get the metadata with options applied and store
         let metadata = self.metadata_opt(options);
-        crate::storage::create_array(&*storage_transformer, self.path(), &metadata)
+
+        // Store the metadata
+        let path = self.path();
+        match metadata {
+            ArrayMetadata::V3(metadata) => {
+                let key = meta_key(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_transformer.set(&key, json.into())
+            }
+            ArrayMetadata::V2(metadata) => {
+                let mut metadata = metadata.clone();
+
+                if !metadata.attributes.is_empty() {
+                    // Store .zattrs
+                    let key = meta_key_v2_attributes(path);
+                    let json = serde_json::to_vec_pretty(&metadata.attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(key.clone(), err.to_string())
+                    })?;
+                    storage_transformer.set(&meta_key_v2_attributes(path), json.into())?;
+
+                    metadata.attributes = serde_json::Map::default();
+                }
+
+                // Store .zarray
+                let key = meta_key_v2_array(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_transformer.set(&key, json.into())
+            }
+        }
     }
 
     /// Encode `chunk_bytes` and store at `chunk_indices`.
@@ -203,12 +233,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
-        crate::storage::erase_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
+        storage_transformer.erase(&self.chunk_key(chunk_indices))
     }
 
     /// Erase the chunks in `chunks`.
@@ -220,14 +245,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
-        let erase_chunk = |chunk_indices: Vec<u64>| {
-            crate::storage::erase_chunk(
-                &*storage_transformer,
-                self.path(),
-                &chunk_indices,
-                self.chunk_key_encoding(),
-            )
-        };
+        let erase_chunk =
+            |chunk_indices: Vec<u64>| storage_transformer.erase(&self.chunk_key(&chunk_indices));
 
         chunks.indices().into_par_iter().try_for_each(erase_chunk)
     }
@@ -284,13 +303,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_writable_transformer(storage_handle);
-        crate::storage::store_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-            encoded_chunk_bytes,
-        )?;
+        storage_transformer.set(&self.chunk_key(chunk_indices), encoded_chunk_bytes)?;
 
         Ok(())
     }

@@ -3,11 +3,10 @@ use std::{error::Error, path::Path};
 use zarrs::{
     array::{
         chunk_key_encoding::{DefaultChunkKeyEncoding, V2ChunkKeyEncoding},
-        ArrayMetadata, ChunkKeyEncoding,
+        ChunkKeyEncoding,
     },
-    group::GroupMetadata,
     storage::{
-        create_array, create_group, data_key, meta_key,
+        data_key, meta_key,
         store::{FilesystemStore, MemoryStore},
         ReadableStorageTraits, WritableStorageTraits,
     },
@@ -16,39 +15,6 @@ use zarrs::{
 pub fn to_json(data: &[u8]) -> serde_json::Value {
     let data = std::str::from_utf8(data).unwrap();
     serde_json::from_str(data).unwrap()
-}
-
-#[test]
-fn array_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
-    let json = include_str!("data/array_metadata.json");
-    let json: serde_json::Value = serde_json::from_str(json)?;
-
-    let array: ArrayMetadata = serde_json::from_value(json.clone())?;
-    println!("{array:#?}");
-
-    let store = MemoryStore::new();
-
-    create_array(&store, &"/array".try_into()?, &array)?;
-
-    let json_cmp = to_json(&store.get(&meta_key(&"/array".try_into()?))?.unwrap());
-    assert_eq!(json, json_cmp);
-    Ok(())
-}
-
-#[test]
-fn group_metadata_round_trip_memory() -> Result<(), Box<dyn Error>> {
-    let json = include_str!("data/group_metadata.json");
-    let json: serde_json::Value = serde_json::from_str(json)?;
-    let group: GroupMetadata = serde_json::from_value(json.clone())?;
-    println!("{group:#?}");
-
-    let store = MemoryStore::new();
-
-    create_group(&store, &"/group".try_into()?, &group)?;
-
-    let json_cmp = to_json(&store.get(&meta_key(&"/group".try_into()?))?.unwrap());
-    assert_eq!(json, json_cmp);
-    Ok(())
 }
 
 #[test]
@@ -86,14 +52,16 @@ fn filesystem_chunk_round_trip_impl(
     let store = FilesystemStore::new(path)?;
     let data_serialised_in: Vec<u8> = vec![0, 1, 2];
     store.set(
-        &data_key(&"/group/array".try_into()?, &[0, 0, 0], chunk_key_encoding),
+        &data_key(
+            &"/group/array".try_into()?,
+            &chunk_key_encoding.encode(&[0, 0, 0]),
+        ),
         data_serialised_in.clone().into(),
     )?;
     let data_serialised_out = store
         .get(&data_key(
             &"/group/array".try_into()?,
-            &[0, 0, 0],
-            chunk_key_encoding,
+            &chunk_key_encoding.encode(&[0, 0, 0]),
         ))?
         .unwrap()
         .to_vec();

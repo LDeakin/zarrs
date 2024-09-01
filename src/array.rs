@@ -577,7 +577,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Return the [`StoreKey`] of the chunk at `chunk_indices`.
     #[must_use]
     pub fn chunk_key(&self, chunk_indices: &[u64]) -> StoreKey {
-        data_key(self.path(), chunk_indices, self.chunk_key_encoding())
+        data_key(self.path(), &self.chunk_key_encoding.encode(chunk_indices))
     }
 
     /// Return the origin of the chunk at `chunk_indices`.

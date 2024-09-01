@@ -6,16 +6,14 @@ use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 
 use crate::{
-    array::{ArrayMetadata, ChunkKeyEncoding},
     byte_range::ByteRange,
-    group::{GroupMetadata, GroupMetadataV3},
+    group::GroupMetadataV3,
     node::{Node, NodeMetadata, NodePath},
 };
 
 use super::{
-    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, AsyncBytes,
-    MaybeAsyncBytes, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
-    StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    data_key, meta_key, AsyncBytes, MaybeAsyncBytes, StorageError, StoreKey, StoreKeyRange,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Async readable storage traits.
@@ -339,154 +337,6 @@ where
     Ok(nodes)
 }
 
-/// Asynchronously create a group.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub async fn async_create_group(
-    storage: &dyn AsyncWritableStorageTraits,
-    path: &NodePath,
-    group: &GroupMetadata,
-) -> Result<(), StorageError> {
-    match group {
-        GroupMetadata::V3(group) => {
-            let key = meta_key(path);
-            let json = serde_json::to_vec_pretty(group)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&meta_key(path), json.into()).await
-        }
-        GroupMetadata::V2(group) => {
-            let mut group = group.clone();
-
-            if !group.attributes.is_empty() {
-                // Store .zgroup
-                let key = meta_key_v2_attributes(path);
-                let json = serde_json::to_vec_pretty(&group.attributes)
-                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage.set(&key, json.into()).await?;
-
-                group.attributes = serde_json::Map::default();
-            }
-
-            // Store .zarray
-            let key = meta_key_v2_group(path);
-            let json = serde_json::to_vec_pretty(&group)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json.into()).await?;
-            Ok(())
-        }
-    }
-}
-
-/// Asynchronously create an array.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub async fn async_create_array(
-    storage: &dyn AsyncWritableStorageTraits,
-    path: &NodePath,
-    array: &ArrayMetadata,
-) -> Result<(), StorageError> {
-    match array {
-        ArrayMetadata::V3(array) => {
-            let key = meta_key(path);
-            let json = serde_json::to_vec_pretty(array)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json.into()).await
-        }
-        ArrayMetadata::V2(array) => {
-            let mut array = array.clone();
-
-            if !array.attributes.is_empty() {
-                // Store .zattrs
-                let key = meta_key_v2_attributes(path);
-                let json = serde_json::to_vec_pretty(&array.attributes)
-                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage
-                    .set(&meta_key_v2_attributes(path), json.into())
-                    .await?;
-
-                array.attributes = serde_json::Map::default();
-            }
-
-            // Store .zarray
-            let key = meta_key_v2_array(path);
-            let json = serde_json::to_vec_pretty(&array)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json.into()).await
-        }
-    }
-}
-
-/// Asynchronously store a chunk.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub async fn async_store_chunk(
-    storage: &dyn AsyncWritableStorageTraits,
-    array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
-    chunk_serialised: AsyncBytes,
-) -> Result<(), StorageError> {
-    storage
-        .set(
-            &data_key(array_path, chunk_grid_indices, chunk_key_encoding),
-            chunk_serialised,
-        )
-        .await?;
-    Ok(())
-}
-
-/// Asynchronously retrieve a chunk.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub async fn async_retrieve_chunk(
-    storage: &dyn AsyncReadableStorageTraits,
-    array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<MaybeAsyncBytes, StorageError> {
-    storage
-        .get(&data_key(
-            array_path,
-            chunk_grid_indices,
-            chunk_key_encoding,
-        ))
-        .await
-}
-
-/// Asynchronously erase metadata.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub async fn async_erase_metadata(
-    storage: &dyn AsyncWritableStorageTraits,
-    array_path: &NodePath,
-) -> Result<(), StorageError> {
-    storage.erase(&meta_key(array_path)).await
-}
-
-/// Asynchronously erase a chunk.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub async fn async_erase_chunk(
-    storage: &dyn AsyncWritableStorageTraits,
-    array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<(), StorageError> {
-    storage
-        .erase(&data_key(
-            array_path,
-            chunk_grid_indices,
-            chunk_key_encoding,
-        ))
-        .await
-}
-
 /// Asynchronously retrieve byte ranges from a chunk.
 ///
 /// Returns [`None`] where keys are not found.
@@ -496,11 +346,10 @@ pub async fn async_erase_chunk(
 pub async fn async_retrieve_partial_values(
     storage: &dyn AsyncReadableStorageTraits,
     array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
+    chunk_key: &StoreKey,
     bytes_ranges: &[ByteRange],
 ) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
-    let key = data_key(array_path, chunk_grid_indices, chunk_key_encoding);
+    let key = data_key(array_path, chunk_key);
     let key_ranges: Vec<StoreKeyRange> = bytes_ranges
         .iter()
         .map(|byte_range| StoreKeyRange::new(key.clone(), *byte_range))

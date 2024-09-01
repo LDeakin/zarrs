@@ -308,7 +308,38 @@ impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
 
         // Get the metadata with options applied and store
         let metadata = self.metadata_opt(options);
-        crate::storage::create_group(&*storage_handle, self.path(), &metadata)
+
+        // Write the metadata
+        let path = self.path();
+        match metadata {
+            GroupMetadata::V3(metadata) => {
+                let key = meta_key(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_handle.set(&meta_key(path), json.into())
+            }
+            GroupMetadata::V2(metadata) => {
+                let mut metadata = metadata.clone();
+
+                if !metadata.attributes.is_empty() {
+                    // Store .zgroup
+                    let key = meta_key_v2_attributes(path);
+                    let json = serde_json::to_vec_pretty(&metadata.attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(key.clone(), err.to_string())
+                    })?;
+                    storage_handle.set(&key, json.into())?;
+
+                    metadata.attributes = serde_json::Map::default();
+                }
+
+                // Store .zarray
+                let key = meta_key_v2_group(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_handle.set(&key, json.into())?;
+                Ok(())
+            }
+        }
     }
 
     /// Erase the metadata with default [`MetadataEraseVersion`] options.
@@ -370,7 +401,38 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
 
         // Get the metadata with options applied and store
         let metadata = self.metadata_opt(options);
-        crate::storage::async_create_group(&storage_handle, self.path(), &metadata).await
+
+        // Write the metadata
+        let path = self.path();
+        match metadata {
+            GroupMetadata::V3(metadata) => {
+                let key = meta_key(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_handle.set(&meta_key(path), json.into()).await
+            }
+            GroupMetadata::V2(metadata) => {
+                let mut metadata = metadata.clone();
+
+                if !metadata.attributes.is_empty() {
+                    // Store .zgroup
+                    let key = meta_key_v2_attributes(path);
+                    let json = serde_json::to_vec_pretty(&metadata.attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(key.clone(), err.to_string())
+                    })?;
+                    storage_handle.set(&key, json.into()).await?;
+
+                    metadata.attributes = serde_json::Map::default();
+                }
+
+                // Store .zarray
+                let key = meta_key_v2_group(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_handle.set(&key, json.into()).await?;
+                Ok(())
+            }
+        }
     }
 
     /// Async variant of [`erase_metadata`](Group::erase_metadata).

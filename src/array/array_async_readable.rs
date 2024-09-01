@@ -134,13 +134,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .storage_transformers()
             .create_async_readable_transformer(storage_handle);
 
-        crate::storage::async_retrieve_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
-        .await
+        storage_transformer
+            .get(&self.chunk_key(chunk_indices))
+            .await
     }
 
     /// Async variant of [`retrieve_chunk`](Array::retrieve_chunk).
@@ -308,14 +304,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_async_readable_transformer(storage_handle);
-        let chunk_encoded = crate::storage::async_retrieve_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
-        .await
-        .map_err(ArrayError::StorageError)?;
+        let chunk_encoded = storage_transformer
+            .get(&self.chunk_key(chunk_indices))
+            .await
+            .map_err(ArrayError::StorageError)?;
         if let Some(chunk_encoded) = chunk_encoded {
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let bytes = self
@@ -450,13 +442,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
             let storage_transformer = storage_transformer.clone();
             async move {
-                crate::storage::async_retrieve_chunk(
-                    &*storage_transformer,
-                    self.path(),
-                    &chunk_indices,
-                    self.chunk_key_encoding(),
-                )
-                .await
+                storage_transformer
+                    .get(&self.chunk_key(&chunk_indices))
+                    .await
             }
         };
 

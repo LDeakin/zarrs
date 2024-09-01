@@ -3,16 +3,14 @@ use std::sync::Arc;
 use itertools::Itertools;
 
 use crate::{
-    array::{ArrayMetadata, ChunkKeyEncoding},
     byte_range::ByteRange,
-    group::{GroupMetadata, GroupMetadataV3},
+    group::GroupMetadataV3,
     node::{Node, NodeMetadata, NodePath},
 };
 
 use super::{
-    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, Bytes,
-    MaybeBytes, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
-    StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    data_key, meta_key, Bytes, MaybeBytes, StorageError, StoreKey, StoreKeyRange,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -305,150 +303,6 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
     Ok(nodes)
 }
 
-/// Create a group.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn create_group(
-    storage: &dyn WritableStorageTraits,
-    path: &NodePath,
-    group: &GroupMetadata,
-) -> Result<(), StorageError> {
-    match group {
-        GroupMetadata::V3(group) => {
-            let key = meta_key(path);
-            let json = serde_json::to_vec_pretty(group)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&meta_key(path), json.into())
-        }
-        GroupMetadata::V2(group) => {
-            let mut group = group.clone();
-
-            if !group.attributes.is_empty() {
-                // Store .zgroup
-                let key = meta_key_v2_attributes(path);
-                let json = serde_json::to_vec_pretty(&group.attributes)
-                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage.set(&key, json.into())?;
-
-                group.attributes = serde_json::Map::default();
-            }
-
-            // Store .zarray
-            let key = meta_key_v2_group(path);
-            let json = serde_json::to_vec_pretty(&group)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json.into())?;
-            Ok(())
-        }
-    }
-}
-
-/// Create an array.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn create_array(
-    storage: &dyn WritableStorageTraits,
-    path: &NodePath,
-    array: &ArrayMetadata,
-) -> Result<(), StorageError> {
-    match array {
-        ArrayMetadata::V3(array) => {
-            let key = meta_key(path);
-            let json = serde_json::to_vec_pretty(array)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json.into())
-        }
-        ArrayMetadata::V2(array) => {
-            let mut array = array.clone();
-
-            if !array.attributes.is_empty() {
-                // Store .zattrs
-                let key = meta_key_v2_attributes(path);
-                let json = serde_json::to_vec_pretty(&array.attributes)
-                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-                storage.set(&meta_key_v2_attributes(path), json.into())?;
-
-                array.attributes = serde_json::Map::default();
-            }
-
-            // Store .zarray
-            let key = meta_key_v2_array(path);
-            let json = serde_json::to_vec_pretty(&array)
-                .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
-            storage.set(&key, json.into())
-        }
-    }
-}
-
-/// Store a chunk.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn store_chunk(
-    storage: &dyn WritableStorageTraits,
-    array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
-    chunk_serialised: Bytes,
-) -> Result<(), StorageError> {
-    storage.set(
-        &data_key(array_path, chunk_grid_indices, chunk_key_encoding),
-        chunk_serialised,
-    )?;
-    Ok(())
-}
-
-/// Retrieve a chunk.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn retrieve_chunk(
-    storage: &dyn ReadableStorageTraits,
-    array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<MaybeBytes, StorageError> {
-    storage.get(&data_key(
-        array_path,
-        chunk_grid_indices,
-        chunk_key_encoding,
-    ))
-}
-
-/// Erase a chunk.
-///
-/// Succeeds if the chunk does not exist.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn erase_chunk(
-    storage: &dyn WritableStorageTraits,
-    array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
-) -> Result<(), StorageError> {
-    storage.erase(&data_key(
-        array_path,
-        chunk_grid_indices,
-        chunk_key_encoding,
-    ))
-}
-
-/// Erase metadata.
-///
-/// Succeeds if the metadata does not exist.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn erase_metadata(
-    storage: &dyn WritableStorageTraits,
-    array_path: &NodePath,
-) -> Result<(), StorageError> {
-    storage.erase(&meta_key(array_path))
-}
-
 /// Retrieve byte ranges from a chunk.
 ///
 /// Returns [`None`] where keys are not found.
@@ -458,11 +312,10 @@ pub fn erase_metadata(
 pub fn retrieve_partial_values(
     storage: &dyn ReadableStorageTraits,
     array_path: &NodePath,
-    chunk_grid_indices: &[u64],
-    chunk_key_encoding: &ChunkKeyEncoding,
+    chunk_key: &StoreKey,
     bytes_ranges: &[ByteRange],
 ) -> Result<Vec<MaybeBytes>, StorageError> {
-    let key = data_key(array_path, chunk_grid_indices, chunk_key_encoding);
+    let key = data_key(array_path, chunk_key);
     let key_ranges: Vec<StoreKeyRange> = bytes_ranges
         .iter()
         .map(|byte_range| StoreKeyRange::new(key.clone(), *byte_range))

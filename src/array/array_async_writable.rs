@@ -39,7 +39,39 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
 
         // Get the metadata with options applied and store
         let metadata = self.metadata_opt(options);
-        crate::storage::async_create_array(&*storage_transformer, self.path(), &metadata).await
+
+        // Store the metadata
+        let path = self.path();
+        match metadata {
+            ArrayMetadata::V3(metadata) => {
+                let key = meta_key(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_transformer.set(&key, json.into()).await
+            }
+            ArrayMetadata::V2(metadata) => {
+                let mut metadata = metadata.clone();
+
+                if !metadata.attributes.is_empty() {
+                    // Store .zattrs
+                    let key = meta_key_v2_attributes(path);
+                    let json = serde_json::to_vec_pretty(&metadata.attributes).map_err(|err| {
+                        StorageError::InvalidMetadata(key.clone(), err.to_string())
+                    })?;
+                    storage_transformer
+                        .set(&meta_key_v2_attributes(path), json.into())
+                        .await?;
+
+                    metadata.attributes = serde_json::Map::default();
+                }
+
+                // Store .zarray
+                let key = meta_key_v2_array(path);
+                let json = serde_json::to_vec_pretty(&metadata)
+                    .map_err(|err| StorageError::InvalidMetadata(key.clone(), err.to_string()))?;
+                storage_transformer.set(&key, json.into()).await
+            }
+        }
     }
 
     /// Async variant of [`store_chunk`](Array::store_chunk).
@@ -165,13 +197,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_async_writable_transformer(storage_handle);
-        crate::storage::async_erase_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
-        .await
+        storage_transformer
+            .erase(&self.chunk_key(chunk_indices))
+            .await
     }
 
     /// Async variant of [`erase_chunks`](Array::erase_chunks).
@@ -184,13 +212,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let erase_chunk = |chunk_indices: Vec<u64>| {
             let storage_transformer = storage_transformer.clone();
             async move {
-                crate::storage::async_erase_chunk(
-                    &*storage_transformer,
-                    self.path(),
-                    &chunk_indices,
-                    self.chunk_key_encoding(),
-                )
-                .await
+                storage_transformer
+                    .erase(&self.chunk_key(&chunk_indices))
+                    .await
             }
         };
         futures::stream::iter(chunks.indices().into_iter())
@@ -246,14 +270,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_async_writable_transformer(storage_handle);
-        crate::storage::async_store_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-            encoded_chunk_bytes,
-        )
-        .await?;
+        storage_transformer
+            .set(&self.chunk_key(chunk_indices), encoded_chunk_bytes)
+            .await?;
         Ok(())
     }
 

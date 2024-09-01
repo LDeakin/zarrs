@@ -160,13 +160,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             .storage_transformers()
             .create_readable_transformer(storage_handle);
 
-        crate::storage::retrieve_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
-        .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
+        storage_transformer
+            .get(&self.chunk_key(chunk_indices))
+            .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
     }
 
     /// Read and decode the chunk at `chunk_indices` into its bytes or the fill value if it does not exist with default codec options.
@@ -236,13 +232,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             .create_readable_transformer(storage_handle);
 
         let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
-            crate::storage::retrieve_chunk(
-                &*storage_transformer,
-                self.path(),
-                &chunk_indices,
-                self.chunk_key_encoding(),
-            )
-            .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
+            storage_transformer
+                .get(&self.chunk_key(&chunk_indices))
+                .map(|maybe_bytes| maybe_bytes.map(|bytes| bytes.to_vec()))
         };
 
         let indices = chunks.indices();
@@ -445,13 +437,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let storage_transformer = self
             .storage_transformers()
             .create_readable_transformer(storage_handle);
-        let chunk_encoded = crate::storage::retrieve_chunk(
-            &*storage_transformer,
-            self.path(),
-            chunk_indices,
-            self.chunk_key_encoding(),
-        )
-        .map_err(ArrayError::StorageError)?;
+        let chunk_encoded = storage_transformer
+            .get(&self.chunk_key(chunk_indices))
+            .map_err(ArrayError::StorageError)?;
         if let Some(chunk_encoded) = chunk_encoded {
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let bytes = self
