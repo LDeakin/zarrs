@@ -12,7 +12,7 @@ impl Default for ArrayMetadataOptions {
     fn default() -> Self {
         Self {
             experimental_codec_store_metadata_if_encode_only: false,
-            convert_version: MetadataConvertVersion::default(),
+            convert_version: global_config().metadata_convert_version(),
             include_zarrs_metadata: global_config().include_zarrs_metadata(),
         }
     }
@@ -36,8 +36,8 @@ impl ArrayMetadataOptions {
 
     /// Get the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.
     #[must_use]
-    pub fn metadata_convert_version(&self) -> &MetadataConvertVersion {
-        &self.convert_version
+    pub fn metadata_convert_version(&self) -> MetadataConvertVersion {
+        self.convert_version
     }
 
     /// Set the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.

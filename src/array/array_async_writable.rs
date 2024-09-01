@@ -5,6 +5,7 @@ use futures::{StreamExt, TryStreamExt};
 use crate::{
     array::ArrayBytes,
     array_subset::ArraySubset,
+    config::global_config,
     metadata::MetadataEraseVersion,
     storage::{
         meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, AsyncBytes,
@@ -146,15 +147,15 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`erase_metadata`](Array::erase_metadata).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
-        self.async_erase_metadata_opt(&MetadataEraseVersion::default())
-            .await
+        let erase_version = global_config().metadata_erase_version();
+        self.async_erase_metadata_opt(erase_version).await
     }
 
     /// Async variant of [`erase_metadata_opt`](Array::erase_metadata_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata_opt(
         &self,
-        options: &MetadataEraseVersion,
+        options: MetadataEraseVersion,
     ) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {

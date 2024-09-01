@@ -21,8 +21,6 @@ pub use v3::{
     UnsupportedAdditionalFieldError,
 };
 
-use crate::config::global_config;
-
 /// A type alias for [`MetadataV3`].
 ///
 /// Kept for backwards compatibility with `zarrs` < 0.15.
@@ -49,12 +47,6 @@ pub enum MetadataConvertVersion {
     V3,
 }
 
-impl Default for MetadataConvertVersion {
-    fn default() -> Self {
-        *global_config().metadata_convert_version()
-    }
-}
-
 /// Version options for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata), and their async variants.
 #[derive(Debug, Clone, Copy)]
 pub enum MetadataEraseVersion {
@@ -66,12 +58,6 @@ pub enum MetadataEraseVersion {
     V3,
     /// Erase Zarr V2 metadata.
     V2,
-}
-
-impl Default for MetadataEraseVersion {
-    fn default() -> Self {
-        *global_config().metadata_erase_version()
-    }
 }
 
 #[cfg(test)]

@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Remove implicit group support
    - This is a post-acceptance change of Zarr V3: https://github.com/zarr-developers/zarr-specs/pull/292
  - [#63](https://github.com/LDeakin/zarrs/pull/63) Make `StoreKeysPrefixes` constructible by [@sk1p]
+ - **Breaking**: Use values of `Metadata{Convert,Erase}Version` instead of references in parameters/return values
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
@@ -37,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Remove many functions in the storage namespace:
     - `[async_]create_{array, group}`
     - `[async_]erase_{chunk,metadata}`, `[async_]{retrieve,store}_chunk`
+ - **Breaking**: Remove `Default` implementation for `Metadata{Convert,Erase}Version`
+    - Explicitly use `global_config()` instead
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates

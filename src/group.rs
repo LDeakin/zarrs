@@ -32,6 +32,7 @@ use derive_more::Display;
 use thiserror::Error;
 
 use crate::{
+    config::global_config,
     metadata::{
         group_metadata_v2_to_v3, v3::UnsupportedAdditionalFieldError, AdditionalFields,
         GroupMetadataV2, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
@@ -349,7 +350,8 @@ impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub fn erase_metadata(&self) -> Result<(), StorageError> {
-        self.erase_metadata_opt(&MetadataEraseVersion::default())
+        let erase_version = global_config().metadata_erase_version();
+        self.erase_metadata_opt(erase_version)
     }
 
     /// Erase the metadata with non-default [`MetadataEraseVersion`] options.
@@ -358,7 +360,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> Group<TStorage> {
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
-    pub fn erase_metadata_opt(&self, options: &MetadataEraseVersion) -> Result<(), StorageError> {
+    pub fn erase_metadata_opt(&self, options: MetadataEraseVersion) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
             MetadataEraseVersion::Default => match self.metadata {
@@ -438,15 +440,15 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> Group<TStorage> {
     /// Async variant of [`erase_metadata`](Group::erase_metadata).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
-        self.async_erase_metadata_opt(&MetadataEraseVersion::default())
-            .await
+        let erase_version = global_config().metadata_erase_version();
+        self.async_erase_metadata_opt(erase_version).await
     }
 
     /// Async variant of [`erase_metadata_opt`](Group::erase_metadata_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata_opt(
         &self,
-        options: &MetadataEraseVersion,
+        options: MetadataEraseVersion,
     ) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {

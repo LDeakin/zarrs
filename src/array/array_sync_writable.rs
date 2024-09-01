@@ -6,6 +6,7 @@ use rayon_iter_concurrent_limit::iter_concurrent_limit;
 use crate::{
     array::ArrayBytes,
     array_subset::ArraySubset,
+    config::global_config,
     metadata::MetadataEraseVersion,
     storage::{
         meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, Bytes, StorageError, StorageHandle,
@@ -190,7 +191,8 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
     pub fn erase_metadata(&self) -> Result<(), StorageError> {
-        self.erase_metadata_opt(&MetadataEraseVersion::default())
+        let erase_version = global_config().metadata_erase_version();
+        self.erase_metadata_opt(erase_version)
     }
 
     /// Erase the metadata with non-default [`MetadataEraseVersion`] options.
@@ -199,7 +201,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Errors
     /// Returns a [`StorageError`] if there is an underlying store error.
-    pub fn erase_metadata_opt(&self, options: &MetadataEraseVersion) -> Result<(), StorageError> {
+    pub fn erase_metadata_opt(&self, options: MetadataEraseVersion) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
         match options {
             MetadataEraseVersion::Default => match self.metadata {

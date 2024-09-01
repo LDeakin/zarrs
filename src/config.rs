@@ -213,8 +213,8 @@ impl Config {
 
     /// Get the [metadata convert version](#metadata-convert-version) configuration.
     #[must_use]
-    pub fn metadata_convert_version(&self) -> &MetadataConvertVersion {
-        &self.metadata_convert_version
+    pub fn metadata_convert_version(&self) -> MetadataConvertVersion {
+        self.metadata_convert_version
     }
 
     /// Set the [metadata convert version](#metadata-convert-version) configuration.
@@ -225,8 +225,8 @@ impl Config {
 
     /// Get the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
     #[must_use]
-    pub fn metadata_erase_version(&self) -> &MetadataEraseVersion {
-        &self.metadata_erase_version
+    pub fn metadata_erase_version(&self) -> MetadataEraseVersion {
+        self.metadata_erase_version
     }
 
     /// Set the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
