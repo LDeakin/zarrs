@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - [#58](https://github.com/LDeakin/zarrs/pull/58) Add direct I/O support in `FilesystemStore` by [@sk1p]
    - Adds `FilesystemStoreOptions` and `FilesystemStore::new_with_options`
  - [#64](https://github.com/LDeakin/zarrs/pull/64) Add `Array::[async_]store_encoded_chunk` for writing already-encoded chunks by [@sk1p]
+ - Add `key()`, `start()`, `value()` to `StoreKeyStartValue`
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
