@@ -14,10 +14,8 @@ use crate::{
             RecommendedConcurrency,
         },
         concurrency::calc_concurrency_outer_inner,
-        transmute_to_bytes_vec, unravel_index,
-        unsafe_cell_slice::UnsafeCellSlice,
-        ArrayBytes, ArrayMetadataOptions, ArraySize, BytesRepresentation, ChunkRepresentation,
-        ChunkShape, DataTypeSize, FillValue, RawBytes,
+        transmute_to_bytes_vec, unravel_index, ArrayBytes, ArrayMetadataOptions, ArraySize,
+        BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, FillValue, RawBytes,
     },
     array_subset::ArraySubset,
     metadata::v3::MetadataV3,
@@ -34,6 +32,7 @@ use super::{
 };
 
 use rayon::prelude::*;
+use unsafe_cell_slice::UnsafeCellSlice;
 
 /// A `sharding` codec implementation.
 #[derive(Clone, Debug)]
@@ -282,7 +281,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                     let decode_chunk = |chunk_index: usize| {
                         let chunk_subset = self
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
-                        let output = unsafe { output.get() };
+                        let output = unsafe { output.as_mut_slice() };
 
                         // Read the offset/size
                         let offset = shard_index[chunk_index * 2];
@@ -543,13 +542,13 @@ impl ShardingCodec {
                         }
 
                         unsafe {
-                            let shard_index_unsafe = shard_index_slice.get();
+                            let shard_index_unsafe = shard_index_slice.as_mut_slice();
                             shard_index_unsafe[chunk_index * 2] =
                                 u64::try_from(chunk_offset).unwrap();
                             shard_index_unsafe[chunk_index * 2 + 1] =
                                 u64::try_from(chunk_encoded.len()).unwrap();
 
-                            let shard_unsafe = shard_slice.get();
+                            let shard_unsafe = shard_slice.as_mut_slice();
                             shard_unsafe[chunk_offset..chunk_offset + chunk_encoded.len()]
                                 .copy_from_slice(&chunk_encoded);
                         }
@@ -700,12 +699,12 @@ impl ShardingCodec {
                     let chunk_offset = encoded_shard_offset
                         .fetch_add(chunk_encoded.len(), std::sync::atomic::Ordering::Relaxed);
                     unsafe {
-                        let shard_index_unsafe = shard_index_slice.get();
+                        let shard_index_unsafe = shard_index_slice.as_mut_slice();
                         shard_index_unsafe[chunk_index * 2] = u64::try_from(chunk_offset).unwrap();
                         shard_index_unsafe[chunk_index * 2 + 1] =
                             u64::try_from(chunk_encoded.len()).unwrap();
 
-                        let shard_unsafe = shard_slice.get();
+                        let shard_unsafe = shard_slice.as_mut_slice();
                         shard_unsafe[chunk_offset..chunk_offset + chunk_encoded.len()]
                             .copy_from_slice(&chunk_encoded);
                     }

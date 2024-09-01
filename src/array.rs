@@ -40,7 +40,6 @@ mod endianness;
 mod fill_value;
 mod nan_representations;
 pub mod storage_transformer;
-mod unsafe_cell_slice;
 
 #[cfg(feature = "sharding")]
 mod array_sharded_ext;
@@ -69,7 +68,6 @@ pub use self::{
     fill_value::FillValue,
     nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     storage_transformer::StorageTransformerChain,
-    unsafe_cell_slice::UnsafeCellSlice,
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{fill_value::FillValueMetadata, ArrayMetadataV3};

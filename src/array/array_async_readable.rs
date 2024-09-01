@@ -1,6 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use futures::{StreamExt, TryStreamExt};
+use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
     array_subset::ArraySubset,
@@ -20,7 +21,6 @@ use super::{
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,
-    unsafe_cell_slice::UnsafeCellSlice,
     Array, ArrayBytes, ArrayCreateError, ArrayError, ArrayMetadata, ArrayMetadataV2,
     ArrayMetadataV3, ArraySize, DataTypeSize,
 };
@@ -617,7 +617,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                         )
                                         .await?;
                                     let chunk_subset_bytes = chunk_subset_bytes.into_fixed()?;
-                                    let output = unsafe { output.get() };
+                                    let output = unsafe { output.as_mut_slice() };
                                     update_bytes_flen(
                                         output,
                                         array_subset.shape(),

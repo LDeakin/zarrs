@@ -2,12 +2,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
+use unsafe_cell_slice::UnsafeCellSlice;
 
 use super::array_bytes::{merge_chunks_vlen, update_bytes_flen};
 use super::element::ElementOwned;
 use super::{
     codec::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
-    ArrayShardedExt, ChunkGrid, UnsafeCellSlice,
+    ArrayShardedExt, ChunkGrid,
 };
 use super::{ArrayBytes, ArraySize, DataTypeSize};
 use crate::storage::ReadableStorageTraits;
@@ -414,7 +415,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                                     .remove(0)
                                     .into_owned();
                                 update_bytes_flen(
-                                    unsafe { output.get() },
+                                    unsafe { output.as_mut_slice() },
                                     array_subset.shape(),
                                     &bytes.into_fixed()?,
                                     &shard_subset_overlap.relative_to(array_subset.start())?,

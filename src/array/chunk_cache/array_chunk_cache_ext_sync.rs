@@ -2,13 +2,14 @@ use std::sync::Arc;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
+use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
     array::{
         array_bytes::{merge_chunks_vlen, update_bytes_flen},
         codec::CodecOptions,
         concurrency::concurrency_chunks_and_codec,
-        Array, ArrayBytes, ArrayError, ArraySize, DataTypeSize, ElementOwned, UnsafeCellSlice,
+        Array, ArrayBytes, ArrayError, ArraySize, DataTypeSize, ElementOwned,
     },
     array_subset::ArraySubset,
     storage::ReadableStorageTraits,
@@ -403,7 +404,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
                                 };
 
                                 update_bytes_flen(
-                                    unsafe { output.get() },
+                                    unsafe { output.as_mut_slice() },
                                     array_subset.shape(),
                                     fixed,
                                     &chunk_subset_overlap.relative_to(array_subset.start())?,

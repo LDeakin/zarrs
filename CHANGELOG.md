@@ -40,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `[async_]erase_{chunk,metadata}`, `[async_]{retrieve,store}_chunk`
  - **Breaking**: Remove `Default` implementation for `Metadata{Convert,Erase}Version`
     - Explicitly use `global_config()` instead
+ - **Breaking**: Remove `array::UnsafeCellSlice`
+    - Replaced by `UnsafeCellSlice` in the `unsafe_cell_slice` crate
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates

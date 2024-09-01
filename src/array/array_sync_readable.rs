@@ -2,6 +2,7 @@ use std::{borrow::Cow, sync::Arc};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
+use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
     array::{ArrayBytes, ArrayMetadataV2},
@@ -22,7 +23,6 @@ use super::{
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,
-    unsafe_cell_slice::UnsafeCellSlice,
     Array, ArrayCreateError, ArrayError, ArrayMetadata, ArrayMetadataV3, ArraySize, DataTypeSize,
 };
 
@@ -695,7 +695,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                     &options,
                                 )?;
                                 update_bytes_flen(
-                                    unsafe { output.get() },
+                                    unsafe { output.as_mut_slice() },
                                     array_subset.shape(),
                                     &chunk_subset_bytes.into_fixed()?,
                                     &chunk_subset_overlap.relative_to(array_subset.start())?,

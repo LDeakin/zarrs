@@ -76,6 +76,7 @@ serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_orde
 serde_repr = "0.1.19"
 thiserror = "1.0.61"
 thread_local = "1.1.8"
+unsafe_cell_slice = "0.1.0"
 url = { version = "2.2.0", optional = true }
 walkdir = "2.3.2"
 zfp-sys = {version = "0.1.15", features = ["static"], optional = true }

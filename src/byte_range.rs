@@ -12,8 +12,7 @@
 use std::ops::Range;
 
 use thiserror::Error;
-
-use crate::array::UnsafeCellSlice;
+use unsafe_cell_slice::UnsafeCellSlice;
 
 /// A byte offset.
 pub type ByteOffset = u64;
@@ -215,7 +214,7 @@ pub unsafe fn extract_byte_ranges_concat_unchecked(
     .unwrap();
     let mut out = Vec::with_capacity(out_size);
     let out_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut out);
-    let out_slice = out_slice.get();
+    let out_slice = out_slice.as_mut_slice();
     let mut offset: usize = 0;
     for byte_range in byte_ranges {
         let start = usize::try_from(byte_range.start(bytes.len() as u64)).unwrap();
