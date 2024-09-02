@@ -7,7 +7,7 @@ use crate::metadata::{
                 blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
                 zfpy::{codec_zfpy_v2_numcodecs_to_v3, ZfpyCodecConfigurationNumcodecs},
             },
-            data_type_metadata_v2_to_endianness, DataTypeMetadataV2, ArrayMetadataV2Order,
+            data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
             DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
         },
         ArrayMetadataV2, GroupMetadataV2,
@@ -21,7 +21,7 @@ use crate::metadata::{
                 transpose::{TransposeCodecConfigurationV1, TransposeOrder},
                 vlen_v2::VlenV2CodecConfigurationV1,
             },
-            fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
+            fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadataV3},
         },
         AdditionalFields, ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
@@ -108,9 +108,9 @@ pub fn array_metadata_v2_to_v3(
         // Map a 0/1 scalar fill value to a bool
         if let Some(fill_value_uint) = fill_value.try_as_uint::<u64>() {
             if fill_value_uint == 0 {
-                fill_value = FillValueMetadata::Bool(false);
+                fill_value = FillValueMetadataV3::Bool(false);
             } else if fill_value_uint == 1 {
-                fill_value = FillValueMetadata::Bool(true);
+                fill_value = FillValueMetadataV3::Bool(true);
             } else {
                 return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedFillValue(
                     data_type.to_string(),
@@ -292,31 +292,31 @@ pub fn data_type_metadata_v2_to_v3_data_type(
     }
 }
 
-/// Convert Zarr V2 fill value metadata to [`FillValueMetadata`].
+/// Convert Zarr V2 fill value metadata to [`FillValueMetadataV3`].
 ///
 /// Returns [`None`] for [`FillValueMetadataV2::Null`].
 #[must_use]
 pub fn array_metadata_fill_value_v2_to_v3(
     fill_value: &FillValueMetadataV2,
-) -> Option<FillValueMetadata> {
+) -> Option<FillValueMetadataV3> {
     match fill_value {
         FillValueMetadataV2::Null => None,
-        FillValueMetadataV2::NaN => Some(FillValueMetadata::Float(FillValueFloat::NonFinite(
+        FillValueMetadataV2::NaN => Some(FillValueMetadataV3::Float(FillValueFloat::NonFinite(
             FillValueFloatStringNonFinite::NaN,
         ))),
-        FillValueMetadataV2::Infinity => Some(FillValueMetadata::Float(FillValueFloat::NonFinite(
-            FillValueFloatStringNonFinite::PosInfinity,
-        ))),
-        FillValueMetadataV2::NegInfinity => Some(FillValueMetadata::Float(
+        FillValueMetadataV2::Infinity => Some(FillValueMetadataV3::Float(
+            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::PosInfinity),
+        )),
+        FillValueMetadataV2::NegInfinity => Some(FillValueMetadataV3::Float(
             FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity),
         )),
         FillValueMetadataV2::Number(number) => {
             if let Some(u) = number.as_u64() {
-                Some(FillValueMetadata::UInt(u))
+                Some(FillValueMetadataV3::UInt(u))
             } else if let Some(i) = number.as_i64() {
-                Some(FillValueMetadata::Int(i))
+                Some(FillValueMetadataV3::Int(i))
             } else if let Some(f) = number.as_f64() {
-                Some(FillValueMetadata::Float(FillValueFloat::Float(f)))
+                Some(FillValueMetadataV3::Float(FillValueFloat::Float(f)))
             } else {
                 unreachable!("number must be convertible to u64, i64 or f64")
             }

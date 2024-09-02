@@ -64,7 +64,7 @@ pub use self::{
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{
     array::data_type::DataTypeSize,
-    array::fill_value::FillValueMetadata,
+    array::fill_value::FillValueMetadataV3,
     array::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     ArrayMetadataV3,
 };

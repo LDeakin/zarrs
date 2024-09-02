@@ -1,6 +1,6 @@
 use data_type::DataTypeMetadataV3;
 use derive_more::Display;
-use fill_value::FillValueMetadata;
+use fill_value::FillValueMetadataV3;
 use serde::{Deserialize, Serialize};
 
 use crate::metadata::{v3::MetadataV3, ArrayShape, DimensionName};
@@ -135,7 +135,7 @@ pub struct ArrayMetadataV3 {
     ///
     /// Raw data types (`r<N>`)
     /// *An array of integers, with length equal to `<N>`, where each integer is in the range `[0, 255]`.*
-    pub fill_value: FillValueMetadata,
+    pub fill_value: FillValueMetadataV3,
     /// Specifies a list of codecs to be used for encoding and decoding chunks.
     pub codecs: Vec<MetadataV3>,
     /// Optional user defined attributes.
@@ -161,7 +161,7 @@ impl ArrayMetadataV3 {
         data_type: DataTypeMetadataV3,
         chunk_grid: MetadataV3,
         chunk_key_encoding: MetadataV3,
-        fill_value: FillValueMetadata,
+        fill_value: FillValueMetadataV3,
         codecs: Vec<MetadataV3>,
         attributes: serde_json::Map<String, serde_json::Value>,
         storage_transformers: Vec<MetadataV3>,

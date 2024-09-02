@@ -2,7 +2,7 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#fill-value>.
 //!
-//! Fill values metadata is serialised/deserialised into [`FillValueMetadata`].
+//! Fill values metadata is serialised/deserialised into [`FillValueMetadataV3`].
 //!
 //! The interpretation of fill values is data type dependent.
 
@@ -16,7 +16,7 @@ use super::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR
 /// Fill value metadata.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
 #[serde(untagged)]
-pub enum FillValueMetadata {
+pub enum FillValueMetadataV3 {
     /// A boolean value.
     Bool(bool),
     /// An unsigned integer.
@@ -37,7 +37,7 @@ pub enum FillValueMetadata {
     Unsupported(serde_json::Value),
 }
 
-impl TryFrom<&str> for FillValueMetadata {
+impl TryFrom<&str> for FillValueMetadataV3 {
     type Error = serde_json::Error;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
@@ -182,7 +182,7 @@ impl From<&FillValueFloatStringNonFinite> for String {
     }
 }
 
-impl FillValueMetadata {
+impl FillValueMetadataV3 {
     /// Convert the fill value to a [`bool`].
     #[must_use]
     pub const fn try_as_bool(&self) -> Option<bool> {
@@ -426,10 +426,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_bool_false() {
         let json = r#"false"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Bool(fill_value) => {
+            FillValueMetadataV3::Bool(fill_value) => {
                 assert!(!fill_value);
             }
             _ => unreachable!(),
@@ -439,10 +439,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_bool_true() {
         let json = r#"true"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Bool(fill_value) => {
+            FillValueMetadataV3::Bool(fill_value) => {
                 assert!(fill_value);
             }
             _ => unreachable!(),
@@ -452,10 +452,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_uint() {
         let json = r#"7"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::UInt(fill_value) => {
+            FillValueMetadataV3::UInt(fill_value) => {
                 assert_eq!(fill_value, 7);
             }
             _ => unreachable!(),
@@ -465,10 +465,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_int() {
         let json = r#"-7"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Int(fill_value) => {
+            FillValueMetadataV3::Int(fill_value) => {
                 assert_eq!(fill_value, -7);
             }
             _ => unreachable!(),
@@ -478,10 +478,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_number() {
         let json = r#"7.5"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Float(FillValueFloat::Float(fill_value)) => {
+            FillValueMetadataV3::Float(FillValueFloat::Float(fill_value)) => {
                 assert_eq!(fill_value, 7.5);
             }
             _ => unreachable!(),
@@ -491,10 +491,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_infinity() {
         let json = r#""Infinity""#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Float(FillValueFloat::NonFinite(fill_value)) => {
+            FillValueMetadataV3::Float(FillValueFloat::NonFinite(fill_value)) => {
                 assert_eq!(fill_value, FillValueFloatStringNonFinite::PosInfinity);
             }
             _ => unreachable!(),
@@ -509,10 +509,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_neg_infinity() {
         let json = r#""-Infinity""#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Float(FillValueFloat::NonFinite(fill_value)) => {
+            FillValueMetadataV3::Float(FillValueFloat::NonFinite(fill_value)) => {
                 assert_eq!(fill_value, FillValueFloatStringNonFinite::NegInfinity);
             }
             _ => unreachable!(),
@@ -527,10 +527,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_nan() {
         let json = r#""NaN""#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Float(FillValueFloat::NonFinite(fill_value)) => {
+            FillValueMetadataV3::Float(FillValueFloat::NonFinite(fill_value)) => {
                 assert_eq!(fill_value, FillValueFloatStringNonFinite::NaN);
             }
             _ => unreachable!(),
@@ -540,8 +540,8 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_nan_standard() {
         let json = r#""0x7fc00000""#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
-        let FillValueMetadata::Float(FillValueFloat::HexString(hex_string)) = metadata else {
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
+        let FillValueMetadataV3::Float(FillValueFloat::HexString(hex_string)) = metadata else {
             unreachable!()
         };
         let fill_value: f32 = f32::from_be_bytes(hex_string.as_be_bytes().try_into().unwrap());
@@ -558,8 +558,8 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_nan_nonstandard() {
         let json = r#""0x7fc00001""#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
-        let FillValueMetadata::Float(FillValueFloat::HexString(hex_string)) = metadata else {
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
+        let FillValueMetadataV3::Float(FillValueFloat::HexString(hex_string)) = metadata else {
             unreachable!()
         };
         let fill_value: f32 = f32::from_be_bytes(hex_string.as_be_bytes().try_into().unwrap());
@@ -569,10 +569,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_hex_string() {
         let json = r#""0x7fc00000""#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Float(FillValueFloat::HexString(fill_value)) => {
+            FillValueMetadataV3::Float(FillValueFloat::HexString(fill_value)) => {
                 assert_eq!(fill_value.0, f32::NAN.to_be_bytes());
             }
             _ => unreachable!(),
@@ -582,10 +582,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_float_complex() {
         let json = r#"["0x7fc00000","NaN"]"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Complex(re, im) => {
+            FillValueMetadataV3::Complex(re, im) => {
                 match re {
                     FillValueFloat::HexString(fill_value) => {
                         assert_eq!(fill_value.0, f32::NAN.to_be_bytes());
@@ -606,10 +606,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_raw_bytes() {
         let json = r#"[0,1,2,3]"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::ByteArray(fill_value) => {
+            FillValueMetadataV3::ByteArray(fill_value) => {
                 assert_eq!(fill_value, [0, 1, 2, 3]);
             }
             _ => unreachable!(),
@@ -620,10 +620,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_null() {
         let json = r#"null"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Unsupported(fill_value) => {
+            FillValueMetadataV3::Unsupported(fill_value) => {
                 assert!(fill_value.is_null())
             }
             _ => unreachable!(),
@@ -634,10 +634,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_neg_array1() {
         let json = r#"[-5]"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Unsupported(fill_value) => {
+            FillValueMetadataV3::Unsupported(fill_value) => {
                 assert!(fill_value.is_array())
             }
             _ => unreachable!(),
@@ -648,10 +648,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_neg_array2() {
         let json = r#"[-5, -5]"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_ne!(json, serde_json::to_string(&metadata).unwrap()); // [-5.0, -5.0]
         match metadata {
-            FillValueMetadata::Complex(_re, _im) => {}
+            FillValueMetadataV3::Complex(_re, _im) => {}
             _ => unreachable!(),
         }
     }
@@ -660,10 +660,10 @@ mod tests {
     #[test]
     fn fill_value_metadata_large_array() {
         let json = r#"[256]"#;
-        let metadata: FillValueMetadata = json.try_into().unwrap();
+        let metadata: FillValueMetadataV3 = json.try_into().unwrap();
         assert_eq!(json, serde_json::to_string(&metadata).unwrap());
         match metadata {
-            FillValueMetadata::Unsupported(fill_value) => {
+            FillValueMetadataV3::Unsupported(fill_value) => {
                 assert!(fill_value.is_array())
             }
             _ => unreachable!(),
