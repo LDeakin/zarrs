@@ -1,4 +1,6 @@
-//! Zarr metadata.
+//! [Zarr](https://zarr-specs.readthedocs.io/) metadata support for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
+//!
+//! This crate supports serialisation and deserialisation of Zarr V2 and V3 metadata.
 //!
 //! [`ArrayMetadata`] and [`GroupMetadata`] can hold any conformant array/group metadata.
 //!

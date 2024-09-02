@@ -1,11 +1,16 @@
-//! Zarr storage.
+//! The storage API and default stores for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#storage>.
 //!
 //! A Zarr [store] is a system that can be used to store and retrieve data from a Zarr hierarchy.
 //! For example: a filesystem, HTTP server, FTP server, Amazon S3 bucket, ZIP file, etc.
 //!
-//! This module defines abstract store interfaces, includes various store implementations, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
+//! This crate defines abstract store interfaces, includes various store implementations, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
+//!
+//! ## Licence
+//! `zarrs_storage` is licensed under either of
+//! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_storage/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
+//! - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs_storage/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 
 pub mod storage_adapter;
 mod storage_handle;
@@ -22,7 +27,8 @@ use byte_range::{ByteOffset, ByteRange, InvalidByteRangeError};
 #[cfg(feature = "async")]
 mod storage_async;
 
-#[cfg(feature = "test")]
+#[cfg(feature = "tests")]
+/// Store test utilities (for external store development).
 pub mod store_test;
 
 use std::sync::Arc;

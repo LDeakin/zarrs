@@ -4,17 +4,17 @@ version = "0.1.0"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.76"
-description = "The storage API for the zarr crate"
+description = "The storage API and default stores for the zarrs crate"
 documentation = "https://docs.rs/zarrs_storage"
 repository = "https://github.com/LDeakin/zarrs"
 license = "MIT OR Apache-2.0"
-keywords = ["zarr"]
+keywords = ["zarr", "zarrs", "storage", "store"]
 categories = ["encoding"]
 
 [features]
 async = ["dep:async-trait", "dep:futures"] # Enable the experimental async API
 http = ["dep:reqwest", "dep:url"] # Enable the sync HTTP store
-test = [] # Enable testing functions
+tests = [] # Enable testing functions
 zip = ["dep:zip"] # Enable the zip storage adapter
 
 [dependencies]

@@ -1,7 +1,15 @@
 [package]
 name = "zarrs_opendal"
 version = "0.1.0"
+authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
+rust-version = "1.76"
+description = "opendal store support for the zarrs crate"
+documentation = "https://docs.rs/zarrs_opendal"
+repository = "https://github.com/LDeakin/zarrs"
+license = "MIT OR Apache-2.0"
+keywords = ["zarr", "zarrs", "storage", "store"]
+categories = ["encoding"]
 
 [dependencies]
 async-trait = "0.1.74"
@@ -13,4 +21,4 @@ zarrs_storage = { workspace = true, features = ["async"] }
 opendal = { version = "0.49", features = ["services-fs", "services-http"] }
 tempfile = "3"
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
-zarrs_storage = { workspace = true, features = ["async", "test"] }
+zarrs_storage = { workspace = true, features = ["async", "tests"] }
