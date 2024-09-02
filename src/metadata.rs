@@ -19,6 +19,10 @@ pub mod v2;
 /// Zarr V2 to V3 conversion.
 pub mod v2_to_v3;
 
+/// An alias for [`v3::MetadataV3`].
+#[deprecated = "use v3::MetadataV3 explicitly"]
+pub type Metadata = v3::MetadataV3;
+
 pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
 
 /// A wrapper to handle various versions of Zarr array metadata.
