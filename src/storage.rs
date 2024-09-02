@@ -33,16 +33,14 @@ pub use store_prefix::{StorePrefix, StorePrefixError, StorePrefixes};
 
 #[cfg(feature = "async")]
 pub use self::storage_async::{
-    async_discover_children, async_discover_nodes, async_erase_node, async_get_child_nodes,
-    async_node_exists, async_node_exists_listable, async_store_set_partial_values,
-    AsyncListableStorageTraits, AsyncReadableListableStorageTraits, AsyncReadableStorageTraits,
+    async_discover_children, async_store_set_partial_values, AsyncListableStorageTraits,
+    AsyncReadableListableStorageTraits, AsyncReadableStorageTraits,
     AsyncReadableWritableListableStorageTraits, AsyncReadableWritableStorageTraits,
     AsyncWritableStorageTraits,
 };
 
 pub use self::storage_sync::{
-    discover_children, discover_nodes, erase_node, get_child_nodes, node_exists,
-    node_exists_listable, store_set_partial_values, ListableStorageTraits,
+    discover_children, store_set_partial_values, ListableStorageTraits,
     ReadableListableStorageTraits, ReadableStorageTraits, ReadableWritableListableStorageTraits,
     ReadableWritableStorageTraits, WritableStorageTraits,
 };

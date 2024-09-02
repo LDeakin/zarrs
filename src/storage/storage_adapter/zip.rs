@@ -362,12 +362,6 @@ mod tests {
             ]
         );
 
-        assert!(crate::storage::node_exists(&store, &"/a/b".try_into()?)?);
-        assert!(crate::storage::node_exists_listable(
-            &store,
-            &"/a/b".try_into()?
-        )?);
-
         assert_eq!(
             store.get(&"a/b/zarr.json".try_into()?)?.unwrap(),
             vec![0, 1, 2, 3]
@@ -432,12 +426,6 @@ mod tests {
                 "f/".try_into()?,
             ]
         );
-
-        assert!(crate::storage::node_exists(&store, &"/b".try_into()?)?);
-        assert!(crate::storage::node_exists_listable(
-            &store,
-            &"/b".try_into()?
-        )?);
 
         assert_eq!(
             store.get(&"b/zarr.json".try_into()?)?.unwrap(),
