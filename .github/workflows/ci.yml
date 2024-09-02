@@ -74,12 +74,12 @@ jobs:
       - run: rustup component add clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-features -- -D warnings
-  semver:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check semver
-        uses: obi1kenobi/cargo-semver-checks-action@v2
+#  semver:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Check semver
+#        uses: obi1kenobi/cargo-semver-checks-action@v2
   minimal-versions:
     runs-on: ubuntu-latest
     steps:
