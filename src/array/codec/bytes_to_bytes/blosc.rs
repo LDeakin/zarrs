@@ -67,6 +67,17 @@ impl From<&str> for BloscError {
     }
 }
 
+const fn compressor_as_cstr(compressor: BloscCompressor) -> *const u8 {
+    match compressor {
+        BloscCompressor::BloscLZ => blosc_sys::BLOSC_BLOSCLZ_COMPNAME.as_ptr(),
+        BloscCompressor::LZ4 => blosc_sys::BLOSC_LZ4_COMPNAME.as_ptr(),
+        BloscCompressor::LZ4HC => blosc_sys::BLOSC_LZ4HC_COMPNAME.as_ptr(),
+        BloscCompressor::Snappy => blosc_sys::BLOSC_SNAPPY_COMPNAME.as_ptr(),
+        BloscCompressor::Zlib => blosc_sys::BLOSC_ZLIB_COMPNAME.as_ptr(),
+        BloscCompressor::Zstd => blosc_sys::BLOSC_ZSTD_COMPNAME.as_ptr(),
+    }
+}
+
 fn blosc_compress_bytes(
     src: &[u8],
     clevel: BloscCompressionLevel,
@@ -95,7 +106,7 @@ fn blosc_compress_bytes(
             src.as_ptr().cast::<c_void>(),
             dest.as_mut_ptr().cast::<c_void>(),
             destsize,
-            compressor.as_cstr().cast::<c_char>(),
+            compressor_as_cstr(compressor).cast::<c_char>(),
             blocksize,
             i32::try_from(numinternalthreads).unwrap(),
         )

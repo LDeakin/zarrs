@@ -19,8 +19,8 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     blosc_compress_bytes, blosc_decompress_bytes, blosc_partial_decoder, blosc_validate,
-    BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
-    BloscError, BloscShuffleMode, IDENTIFIER,
+    compressor_as_cstr, BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel,
+    BloscCompressor, BloscError, BloscShuffleMode, IDENTIFIER,
 };
 
 /// A `blosc` codec implementation.
@@ -62,7 +62,7 @@ impl BloscCodec {
         // Check that the compressor is available
         let support = unsafe {
             blosc_get_complib_info(
-                cname.as_cstr().cast::<c_char>(),
+                compressor_as_cstr(cname).cast::<c_char>(),
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
             )

@@ -73,20 +73,6 @@ pub enum BloscCompressor {
     Zstd,
 }
 
-#[cfg(feature = "blosc")]
-impl BloscCompressor {
-    pub(crate) const fn as_cstr(&self) -> *const u8 {
-        match self {
-            Self::BloscLZ => blosc_sys::BLOSC_BLOSCLZ_COMPNAME.as_ptr(),
-            Self::LZ4 => blosc_sys::BLOSC_LZ4_COMPNAME.as_ptr(),
-            Self::LZ4HC => blosc_sys::BLOSC_LZ4HC_COMPNAME.as_ptr(),
-            Self::Snappy => blosc_sys::BLOSC_SNAPPY_COMPNAME.as_ptr(),
-            Self::Zlib => blosc_sys::BLOSC_ZLIB_COMPNAME.as_ptr(),
-            Self::Zstd => blosc_sys::BLOSC_ZSTD_COMPNAME.as_ptr(),
-        }
-    }
-}
-
 /// A wrapper to handle various versions of `blosc` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
