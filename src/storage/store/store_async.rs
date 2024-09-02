@@ -8,12 +8,10 @@ pub mod opendal;
 mod test_util {
     use std::error::Error;
 
-    use crate::{
-        byte_range::ByteRange,
-        storage::{
-            async_discover_nodes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-            AsyncWritableStorageTraits, StoreKeyRange, StoreKeyStartValue, StorePrefix,
-        },
+    use crate::storage::{
+        async_discover_nodes, byte_range::ByteRange, AsyncListableStorageTraits,
+        AsyncReadableStorageTraits, AsyncWritableStorageTraits, StoreKeyRange, StoreKeyStartValue,
+        StorePrefix,
     };
 
     /// Create a store with the following data

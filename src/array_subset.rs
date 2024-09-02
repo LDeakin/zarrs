@@ -22,7 +22,7 @@ use thiserror::Error;
 
 use crate::{
     array::{ArrayIndices, ArrayShape},
-    byte_range::ByteRange,
+    storage::byte_range::ByteRange,
 };
 
 /// An array subset.

@@ -3,12 +3,10 @@
 use parking_lot::RwLock;
 use std::sync::Mutex;
 
-use crate::{
+use crate::storage::{
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
-    storage::{
-        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
-    },
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
 };
 
 use std::{

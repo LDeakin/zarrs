@@ -187,7 +187,6 @@
 
 pub mod array;
 pub mod array_subset;
-pub mod byte_range;
 pub mod config;
 pub mod group;
 pub mod metadata;
@@ -195,6 +194,9 @@ pub mod node;
 pub mod plugin;
 pub mod storage;
 pub mod version;
+
+// Re-export byte_range for compat with <17.0.0
+pub use crate::storage::byte_range;
 
 /// Get a mutable slice of the spare capacity in a vector.
 unsafe fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {

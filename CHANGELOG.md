@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Move `metadata::{v2,v3}::{codec,chunk_grid,chunk_key_encoding}` to `metadata::{v2,v3}::array::
  - **Breaking**: Rename `ArrayMetadataV2DataType` to `DataTypeMetadataV2`
  - **Breaking**: Rename `FillValueMetadata` to `FillValueMetadataV3`
+ - Move `crate::byte_range` into `crate::storage::byte_range` module, add re-export
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead

@@ -16,6 +16,9 @@ mod store_key;
 // pub mod store_lock;
 mod store_prefix;
 
+pub mod byte_range;
+use byte_range::{ByteOffset, ByteRange, InvalidByteRangeError};
+
 #[cfg(feature = "async")]
 mod storage_async;
 
@@ -23,10 +26,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use thiserror::Error;
 
-use crate::{
-    byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
-    node::{NodeNameError, NodePath, NodePathError},
-};
+use crate::node::{NodeNameError, NodePath, NodePathError};
 
 pub use store_key::{StoreKey, StoreKeyError, StoreKeys};
 pub use store_prefix::{StorePrefix, StorePrefixError, StorePrefixes};

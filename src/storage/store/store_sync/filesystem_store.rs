@@ -2,13 +2,11 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
 
-use crate::{
+use crate::storage::{
     byte_range::{ByteOffset, ByteRange},
-    storage::{
-        store_set_partial_values, Bytes, ListableStorageTraits, ReadableStorageTraits,
-        StorageError, StoreKey, StoreKeyError, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-        StorePrefix, StorePrefixes, WritableStorageTraits,
-    },
+    store_set_partial_values, Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError,
+    StoreKey, StoreKeyError, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    StorePrefixes, WritableStorageTraits,
 };
 
 use bytes::BytesMut;

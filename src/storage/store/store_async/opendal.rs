@@ -1,12 +1,10 @@
 use opendal::Operator;
 
-use crate::{
+use crate::storage::{
     byte_range::{ByteRange, InvalidByteRangeError},
-    storage::{
-        AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-        AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
-        StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-    },
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes, StorageError,
+    StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
 };
 
 /// An asynchronous store backed by an [`opendal::Operator`].

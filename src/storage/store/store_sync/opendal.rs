@@ -1,11 +1,9 @@
 use opendal::BlockingOperator;
 
-use crate::{
+use crate::storage::{
     byte_range::{ByteRange, InvalidByteRangeError},
-    storage::{
-        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
-    },
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
 };
 
 /// An asynchronous store backed by an [`opendal::BlockingOperator`].
