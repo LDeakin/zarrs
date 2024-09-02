@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2024-09-03
+
 ### Changed
  - Build with all features on [docs.rs](https://docs.rs/)
 
@@ -16,5 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `storage` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.1.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.1.1...HEAD
+[0.1.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.1.1
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.1.0
