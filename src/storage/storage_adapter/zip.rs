@@ -1,12 +1,10 @@
 //! A zip storage adapter.
 
-use crate::{
-    array::codec::extract_byte_ranges_read,
-    storage::{
-        byte_range::ByteRange, storage_value_io::StorageValueIO, Bytes, ListableStorageTraits,
-        ReadableStorageTraits, StorageError, StoreKey, StoreKeys, StoreKeysPrefixes, StorePrefix,
-        StorePrefixes,
-    },
+use crate::storage::{
+    byte_range::{extract_byte_ranges_read, ByteRange},
+    storage_value_io::StorageValueIO,
+    Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StoreKeys,
+    StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 use itertools::Itertools;

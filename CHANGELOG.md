@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Move `crate::byte_range` into `crate::storage::byte_range` module, add re-export
  - Add `impl TryInto<StorePrefix> for &NodePath`
    - Removes `TryFrom<&NodePath> for StorePrefix`
+ - **Breaking**: Move `extract_byte_ranges_read[_seek]` from `array::codec` to `storage::byte_range`
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
