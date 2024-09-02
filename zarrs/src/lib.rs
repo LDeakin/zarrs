@@ -8,7 +8,7 @@
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
 //! ## Getting Started
-//! - Review the [implementation status](#implementation-status) and detailed [array support](#array-support).
+//! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`], [`storage`], and [`metadata`] are good places to start.
 //! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
@@ -163,9 +163,12 @@
 //!    - The async API is runtime-agnostic. This has some limitations that are detailed in the [`Array`](crate::array::Array) docs.
 //!    - The async API is not as performant as the sync API.
 //!  - Codecs: `bitround`, `bz2`, `pcodec`, `zfp`, `zstd`.
-//!  - Stores: `http`, `object_store`, `opendal`, `zip`.
 //!
 //! ## `zarrs` Ecosystem
+//! - [zarrs_storage](https://docs.rs/zarrs_storage/latest/zarrs_storage/): The storage API and default stores for `zarrs`.
+//!   - [zarrs_object_store](https://docs.rs/zarrs_object_store/latest/zarrs_object_store/): [`object_store`](https://docs.rs/object_store/latest/object_store/) store support for `zarrs`.
+//!   - [zarrs_opendal](https://docs.rs/zarrs_opendal/latest/zarrs_opendal/): [`opendal`](https://docs.rs/opendal/latest/opendal/) store support for `zarrs`.
+//! - [zarrs_metadata](https://docs.rs/zarrs_storage/latest/zarrs_metadata/): Zarr metadata support for `zarrs`.
 //! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
 //! - [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C API.
 //!

@@ -17,7 +17,7 @@ Correctness issues with past versions are [detailed here](https://github.com/LDe
 Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 
 ## Getting Started
-- Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status) and detailed [array support](https://docs.rs/zarrs/latest/zarrs/#array-support).
+- Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status), [array support](https://docs.rs/zarrs/latest/zarrs/#array-support), and [storage support](https://docs.rs/zarrs/latest/zarrs/#storage-support).
 - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
 - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html), [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html), and [`metadata`](https://docs.rs/zarrs/latest/zarrs/metadata/index.html) are good places to start.
 - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
@@ -98,6 +98,10 @@ println!("{array_ndarray:4}");
 ```
 
 ## `zarrs` Ecosystem
+- [zarrs_storage](https://github.com/LDeakin/zarrs/tree/main/zarrs_storage): The storage API and default stores for `zarrs`.
+  - [zarrs_object_store](https://github.com/LDeakin/zarrs/tree/main/zarrs_object_store): [`object_store`](https://docs.rs/object_store/latest/object_store/) store support for `zarrs`.
+  - [zarrs_opendal](https://github.com/LDeakin/zarrs/tree/main/zarrs_opendal): [`opendal`](https://docs.rs/opendal/latest/opendal/) store support for `zarrs`.
+- [zarrs_metadata](https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata): Zarr metadata support for `zarrs`.
 - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
 - [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C API.
 
