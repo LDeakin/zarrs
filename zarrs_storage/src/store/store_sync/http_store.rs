@@ -191,7 +191,7 @@ mod tests {
     use std::error::Error;
 
     const HTTP_TEST_PATH_REF: &str =
-        "https://raw.githubusercontent.com/LDeakin/zarrs/main/tests/data/store";
+        "https://raw.githubusercontent.com/LDeakin/zarrs/main/zarrs/tests/data/store";
 
     #[test]
     #[cfg_attr(miri, ignore)]
