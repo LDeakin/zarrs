@@ -12,7 +12,7 @@
  - (New in 0.15) A [V3 compatible subset](https://docs.rs/zarrs/latest/zarrs/#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
 
 A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
-Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
+Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/zarrs/doc/correctness_issues.md).
 
 Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 
