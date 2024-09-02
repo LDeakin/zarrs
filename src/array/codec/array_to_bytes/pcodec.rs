@@ -13,7 +13,7 @@
 mod pcodec_codec;
 mod pcodec_partial_decoder;
 
-pub use crate::metadata::v3::codec::pcodec::{
+pub use crate::metadata::v3::array::codec::pcodec::{
     PcodecCodecConfiguration, PcodecCodecConfigurationV1, PcodecCompressionLevel,
     PcodecDeltaEncodingOrder,
 };
@@ -23,7 +23,7 @@ pub use pcodec_codec::PcodecCodec;
 use crate::{
     array::codec::{Codec, CodecPlugin},
     config::global_config,
-    metadata::v3::{codec::pcodec, MetadataV3},
+    metadata::v3::{array::codec::pcodec, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

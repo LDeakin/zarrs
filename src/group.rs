@@ -32,10 +32,13 @@ use derive_more::Display;
 use thiserror::Error;
 
 use crate::{
-    config::global_config,
+    config::{
+        global_config, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
+    },
     metadata::{
-        group_metadata_v2_to_v3, v3::UnsupportedAdditionalFieldError, AdditionalFields,
-        GroupMetadataV2, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
+        v2::GroupMetadataV2,
+        v2_to_v3::group_metadata_v2_to_v3,
+        v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     },
     node::{NodePath, NodePathError},
     storage::{

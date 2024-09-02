@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `key()`, `start()`, `value()` to `StoreKeyStartValue`
  - Add `StorageError::MissingMetadata` now that implicit groups are not supported
  - Add `ChunkShape::to_array_shape()`
+ - Add `DataTypeMetadataV3`
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
@@ -32,21 +33,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - This is a post-acceptance change of Zarr V3: https://github.com/zarr-developers/zarr-specs/pull/292
  - [#63](https://github.com/LDeakin/zarrs/pull/63) Make `StoreKeysPrefixes` constructible by [@sk1p]
  - **Breaking**: Use values of `Metadata{Convert,Erase}Version` instead of references in parameters/return values
- - Move various items to the `metadata` namespace, keeping re-exports in the `array` namespace
-   - `{Array,Chunk}Shape`
-   - `Endianness` and `NATIVE_ENDIAN`
-   - `ZARR_NAN_{F16, BF16, F32, F64}`
+ - Restructure `metadata` module
+    - Move conversion to `metadata::v2_to_v3`
+    - **Breaking**: Remove many re-exports to the root of `metadata`
+    - Move various items to the `metadata` module, keeping re-exports in the `array` module
+        - `{Array,Chunk}Shape`
+        - `Endianness`
+        - `ZARR_NAN_{F16, BF16, F32, F64}`
+        - `ChunkKeySeparator`
+        - `DimensionName`
+    - Split `DataType` into `array::DataType` and `metadata::_::DataTypeMetadataV3`
+ - **Breaking**: `data_key` in `zarrs::storage` now take a `chunk_key` instead of a `chunk_key_encoding` and `chunk_indices`
+ - **Breaking**: Move `metadata::{v2,v3}::{codec,chunk_grid,chunk_key_encoding}` to `metadata::{v2,v3}::array::
+ - **Breaking**: Rename `ArrayMetadataV2DataType` to `DataTypeMetadataV2`
+ - **Breaking**: Rename `FillValueMetadata` to `FillValueMetadataV3`
+ - Move `crate::byte_range` into `crate::storage::byte_range` module, add re-export
+ - Add `impl TryInto<StorePrefix> for &NodePath`
+   - Removes `TryFrom<&NodePath> for StorePrefix`
+ - **Breaking**: Move `extract_byte_ranges_read[_seek]` from `array::codec` to `storage::byte_range`
+ - **Breaking**: Move `storage::[async_]{get_child_nodes,node_exists,node_exists,listable}` to `node` module
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
- - **Breaking**: Move storage transformers from the `storage` to the `array` namespace
- - **Breaking**: Remove many functions in the storage namespace:
+ - **Breaking**: Move storage transformers from the `storage` to the `array` module
+ - **Breaking**: Remove many functions in the storage module:
     - `[async_]create_{array, group}`
     - `[async_]erase_{chunk,metadata}`, `[async_]{retrieve,store}_chunk`
+    - `[async_]retrieve_partial_values`
+    - `[async_]discover_nodes`
  - **Breaking**: Remove `Default` implementation for `Metadata{Convert,Erase}Version`
     - Explicitly use `global_config()` instead
  - **Breaking**: Remove `array::UnsafeCellSlice`
     - Replaced by `UnsafeCellSlice` in the `unsafe_cell_slice` crate
+ - **Breaking**: Remove `NATIVE_ENDIAN`, use `Endianness::native()`
+ - **Breaking**: Remove unused `DataTypeExtension`
+ - Remove remnants of old synchronisation API
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates

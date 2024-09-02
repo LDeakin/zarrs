@@ -1,12 +1,10 @@
 //! A zip storage adapter.
 
-use crate::{
-    array::codec::extract_byte_ranges_read,
-    byte_range::ByteRange,
-    storage::{
-        storage_value_io::StorageValueIO, Bytes, ListableStorageTraits, ReadableStorageTraits,
-        StorageError, StoreKey, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
-    },
+use crate::storage::{
+    byte_range::{extract_byte_ranges_read, ByteRange},
+    storage_value_io::StorageValueIO,
+    Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StoreKeys,
+    StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 use itertools::Itertools;
@@ -364,12 +362,6 @@ mod tests {
             ]
         );
 
-        assert!(crate::storage::node_exists(&store, &"/a/b".try_into()?)?);
-        assert!(crate::storage::node_exists_listable(
-            &store,
-            &"/a/b".try_into()?
-        )?);
-
         assert_eq!(
             store.get(&"a/b/zarr.json".try_into()?)?.unwrap(),
             vec![0, 1, 2, 3]
@@ -434,12 +426,6 @@ mod tests {
                 "f/".try_into()?,
             ]
         );
-
-        assert!(crate::storage::node_exists(&store, &"/b".try_into()?)?);
-        assert!(crate::storage::node_exists_listable(
-            &store,
-            &"/b".try_into()?
-        )?);
 
         assert_eq!(
             store.get(&"b/zarr.json".try_into()?)?.unwrap(),

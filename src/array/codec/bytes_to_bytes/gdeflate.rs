@@ -16,7 +16,7 @@
 mod gdeflate_codec;
 mod gdeflate_partial_decoder;
 
-pub use crate::metadata::v3::codec::gdeflate::{
+pub use crate::metadata::v3::array::codec::gdeflate::{
     GDeflateCodecConfiguration, GDeflateCodecConfigurationV1, GDeflateCompressionLevel,
     GDeflateCompressionLevelError,
 };
@@ -27,7 +27,7 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         RawBytes,
     },
-    metadata::v3::{codec::gdeflate, MetadataV3},
+    metadata::v3::{array::codec::gdeflate, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

@@ -6,30 +6,40 @@
 //!
 //! The [`Node::hierarchy_tree`] function can be used to create a string representation of a the hierarchy below a node.
 
-mod node_metadata;
 mod node_name;
+pub use node_name::{NodeName, NodeNameError};
+
 mod node_path;
+pub use node_path::{NodePath, NodePathError};
+
+mod node_sync;
+pub use node_sync::{get_child_nodes, node_exists, node_exists_listable};
+
+#[cfg(feature = "async")]
+mod node_async;
+#[cfg(feature = "async")]
+pub use node_async::{async_get_child_nodes, async_node_exists, async_node_exists_listable};
 
 use std::sync::Arc;
 
-pub use node_metadata::NodeMetadata;
-pub use node_name::{NodeName, NodeNameError};
-pub use node_path::{NodePath, NodePathError};
+pub use crate::metadata::NodeMetadata;
 use thiserror::Error;
 
 use crate::{
     array::ArrayMetadata,
-    metadata::{ArrayMetadataV2, GroupMetadata, GroupMetadataV2, MetadataRetrieveVersion},
+    config::MetadataRetrieveVersion,
+    metadata::{
+        v2::{ArrayMetadataV2, GroupMetadataV2},
+        GroupMetadata,
+    },
     storage::{
-        get_child_nodes, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3,
+        meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3,
         ListableStorageTraits, ReadableStorageTraits, StorageError,
     },
 };
 
 #[cfg(feature = "async")]
-use crate::storage::{
-    async_get_child_nodes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-};
+use crate::storage::{AsyncListableStorageTraits, AsyncReadableStorageTraits};
 
 /// A Zarr hierarchy node.
 ///

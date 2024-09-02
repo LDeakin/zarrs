@@ -14,11 +14,11 @@ mod bz2_partial_decoder;
 use crate::{
     array::codec::{Codec, CodecPlugin},
     config::global_config,
-    metadata::v3::{codec::bz2, MetadataV3},
+    metadata::v3::{array::codec::bz2, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use crate::metadata::v3::codec::bz2::{
+pub use crate::metadata::v3::array::codec::bz2::{
     Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
 };
 

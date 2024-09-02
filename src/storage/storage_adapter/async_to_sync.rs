@@ -4,13 +4,10 @@
 //!
 //! The docs for the [`AsyncToSyncBlockOn`] trait include an example implementation for the `tokio` runtime.
 
-use crate::{
-    byte_range::ByteRange,
-    storage::{
-        AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits, Bytes,
-        ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StoreKeys,
-        StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
-    },
+use crate::storage::{
+    byte_range::ByteRange, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncWritableStorageTraits, Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError,
+    StoreKey, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
 };
 
 use std::sync::Arc;

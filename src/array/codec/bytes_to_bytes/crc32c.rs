@@ -7,14 +7,14 @@
 mod crc32c_codec;
 mod crc32c_partial_decoder;
 
-pub use crate::metadata::v3::codec::crc32c::{
+pub use crate::metadata::v3::array::codec::crc32c::{
     Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
 };
 pub use crc32c_codec::Crc32cCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{codec::crc32c, MetadataV3},
+    metadata::v3::{array::codec::crc32c, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

@@ -1,9 +1,6 @@
 use std::num::NonZeroU64;
 
-use super::{
-    data_type::{DataTypeSize, IncompatibleFillValueError},
-    ArrayShape, DataType, FillValue,
-};
+use super::{data_type::IncompatibleFillValueError, ArrayShape, DataType, DataTypeSize, FillValue};
 use derive_more::Display;
 
 /// The shape, data type, and fill value of an `array`.

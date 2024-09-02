@@ -13,7 +13,7 @@ use crate::{
         BytesRepresentation, ChunkRepresentation, DataType,
     },
     config::global_config,
-    metadata::v3::{codec::pcodec::PcodecModeSpecConfiguration, MetadataV3},
+    metadata::v3::{array::codec::pcodec::PcodecModeSpecConfiguration, MetadataV3},
 };
 
 #[cfg(feature = "async")]

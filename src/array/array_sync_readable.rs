@@ -7,7 +7,7 @@ use unsafe_cell_slice::UnsafeCellSlice;
 use crate::{
     array::{ArrayBytes, ArrayMetadataV2},
     array_subset::ArraySubset,
-    metadata::MetadataRetrieveVersion,
+    config::MetadataRetrieveVersion,
     node::NodePath,
     storage::{
         meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, ReadableStorageTraits,

@@ -14,7 +14,7 @@
 mod bitround_codec;
 mod bitround_partial_decoder;
 
-pub use crate::metadata::v3::codec::bitround::{
+pub use crate::metadata::v3::array::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
 pub use bitround_codec::BitroundCodec;
@@ -25,7 +25,7 @@ use crate::{
         DataType,
     },
     config::global_config,
-    metadata::v3::{codec::bitround, MetadataV3},
+    metadata::v3::{array::codec::bitround, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

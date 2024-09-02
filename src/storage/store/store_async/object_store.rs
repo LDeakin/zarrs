@@ -1,13 +1,10 @@
 use futures::{StreamExt, TryStreamExt};
 use object_store::path::Path;
 
-use crate::{
-    byte_range::ByteRange,
-    storage::{
-        AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-        AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
-        StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
-    },
+use crate::storage::{
+    byte_range::ByteRange, AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes, StorageError,
+    StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
 };
 
 impl From<object_store::Error> for StorageError {
@@ -46,17 +43,7 @@ impl<T: object_store::ObjectStore> AsyncObjectStore<T> {
     #[must_use]
     pub fn new(object_store: T) -> Self {
         Self { object_store }
-        // Self::new_with_locks(object_store, Arc::new(AsyncDefaultStoreLocks::default()))
     }
-
-    // /// Create a new [`AsyncObjectStore`] with non-default store locks.
-    // #[must_use]
-    // pub fn new_with_locks(object_store: T, store_locks: AsyncStoreLocks) -> Self {
-    //     Self {
-    //         object_store,
-    //         locks: store_locks,
-    //     }
-    // }
 }
 
 #[async_trait::async_trait]

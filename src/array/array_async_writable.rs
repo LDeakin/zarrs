@@ -5,8 +5,7 @@ use futures::{StreamExt, TryStreamExt};
 use crate::{
     array::ArrayBytes,
     array_subset::ArraySubset,
-    config::global_config,
-    metadata::MetadataEraseVersion,
+    config::{global_config, MetadataEraseVersion},
     storage::{
         meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, AsyncBytes,
         AsyncWritableStorageTraits, StorageError, StorageHandle,

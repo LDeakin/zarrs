@@ -1,11 +1,9 @@
 use opendal::BlockingOperator;
 
-use crate::{
+use crate::storage::{
     byte_range::{ByteRange, InvalidByteRangeError},
-    storage::{
-        Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-        StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
-    },
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
 };
 
 /// An asynchronous store backed by an [`opendal::BlockingOperator`].
@@ -19,17 +17,7 @@ impl OpendalStore {
     #[must_use]
     pub fn new(operator: BlockingOperator) -> Self {
         Self { operator }
-        // Self::new_with_locks(operator, Arc::new(DefaultStoreLocks::default()))
     }
-
-    // /// Create a new [`OpendalStore`] with non-default store locks.
-    // #[must_use]
-    // pub fn new_with_locks(operator: BlockingOperator, store_locks: StoreLocks) -> Self {
-    //     Self {
-    //         operator,
-    //         locks: store_locks,
-    //     }
-    // }
 }
 
 /// Map [`opendal::ErrorKind::NotFound`] to None, pass through other errors

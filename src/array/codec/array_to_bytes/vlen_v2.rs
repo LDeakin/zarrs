@@ -7,20 +7,20 @@ use std::mem::size_of;
 
 pub use vlen_v2::IDENTIFIER;
 
-pub use crate::metadata::v3::codec::vlen_v2::{
+pub use crate::metadata::v3::array::codec::vlen_v2::{
     VlenV2CodecConfiguration, VlenV2CodecConfigurationV1,
 };
 use crate::{
     array::{codec::CodecError, RawBytes},
     config::global_config,
-    metadata::v3::codec::vlen_v2,
+    metadata::v3::array::codec::vlen_v2,
 };
 
 pub use vlen_v2_codec::VlenV2Codec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::MetadataV3,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

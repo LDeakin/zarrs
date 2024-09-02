@@ -14,10 +14,10 @@ pub mod regular;
 
 use std::num::NonZeroU64;
 
-pub use crate::metadata::v3::chunk_grid::rectangular::{
+pub use crate::metadata::v3::array::chunk_grid::rectangular::{
     RectangularChunkGridConfiguration, RectangularChunkGridDimensionConfiguration,
 };
-pub use crate::metadata::v3::chunk_grid::regular::RegularChunkGridConfiguration;
+pub use crate::metadata::v3::array::chunk_grid::regular::RegularChunkGridConfiguration;
 
 pub use rectangular::RectangularChunkGrid;
 pub use regular::RegularChunkGrid;

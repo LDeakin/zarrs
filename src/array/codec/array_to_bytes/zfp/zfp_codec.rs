@@ -19,7 +19,7 @@ use crate::{
         ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataType,
     },
     config::global_config,
-    metadata::v3::{codec::zfp::ZfpMode, MetadataV3},
+    metadata::v3::{array::codec::zfp::ZfpMode, MetadataV3},
 };
 
 #[cfg(feature = "async")]

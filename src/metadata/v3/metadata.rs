@@ -5,12 +5,6 @@ use thiserror::Error;
 /// Metadata with a name and optional configuration.
 ///
 /// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::metadata::v3::ArrayMetadataV3)), which is structured as JSON with a name and optional configuration, or just a string representing the name.
-/// It provides convenience functions for converting metadata to and from a configuration specific to each:
-///  - [data type](`crate::array::data_type`),
-///  - [chunk grid][`crate::array::chunk_grid`]
-///  - [chunk key encoding](`crate::array::chunk_key_encoding`)
-///  - [codec](`crate::array::codec`), and
-///  - [storage transformer](`crate::array::storage_transformer`).
 ///
 /// Can be deserialised from a JSON string or name/configuration map.
 /// For example:

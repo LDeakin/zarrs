@@ -1,11 +1,65 @@
+use data_type::DataTypeMetadataV3;
 use derive_more::Display;
+use fill_value::FillValueMetadataV3;
 use serde::{Deserialize, Serialize};
 
-use super::{AdditionalFields, MetadataV3};
-use crate::{
-    array::{DimensionName, FillValueMetadata},
-    metadata::ArrayShape,
-};
+use crate::metadata::{v3::MetadataV3, ArrayShape, DimensionName};
+
+use super::AdditionalFields;
+
+pub mod data_type;
+
+/// Zarr V3 codec metadata.
+pub mod codec {
+    /// `bitround` codec metadata.
+    pub mod bitround;
+    /// `blosc` codec metadata.
+    pub mod blosc;
+    /// `bytes` codec metadata.
+    pub mod bytes;
+
+    /// `bz2` codec metadata.
+    pub mod bz2;
+    /// `crc32c` codec metadata.
+    pub mod crc32c;
+    /// `gdeflate` codec metadata.
+    pub mod gdeflate;
+    /// `gzip` codec metadata.
+    pub mod gzip;
+    /// `pcodec` codec metadata.
+    pub mod pcodec;
+    /// `sharding` codec metadata.
+    pub mod sharding;
+    /// `transpose` codec metadata.
+    pub mod transpose;
+    /// `vlen` codec metadata.
+    pub mod vlen;
+    /// `vlen_v2` codec metadata.
+    pub mod vlen_v2;
+    /// `zfp` codec metadata.
+    pub mod zfp;
+    /// `zstd` codec metadata.
+    pub mod zstd;
+}
+
+/// Zarr V3 chunk grid metadata.
+pub mod chunk_grid {
+    /// `rectangular` chunk grid metadata.
+    pub mod rectangular;
+    /// `regular` chunk grid metadata.
+    pub mod regular;
+}
+
+/// Zarr V3 chunk key encoding metadata.
+pub mod chunk_key_encoding {
+    /// `default` chunk key encoding metadata.
+    pub mod default;
+    /// `v2` chunk key encoding metadata.
+    pub mod v2;
+}
+
+pub mod fill_value;
+pub mod nan_representations;
 
 /// Zarr array metadata (storage specification v3).
 ///
@@ -53,7 +107,7 @@ pub struct ArrayMetadataV3 {
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
     /// The data type of the Zarr array.
-    pub data_type: MetadataV3,
+    pub data_type: DataTypeMetadataV3,
     /// The chunk grid of the Zarr array.
     pub chunk_grid: MetadataV3,
     /// The mapping from chunk grid cell coordinates to keys in the underlying store.
@@ -81,7 +135,7 @@ pub struct ArrayMetadataV3 {
     ///
     /// Raw data types (`r<N>`)
     /// *An array of integers, with length equal to `<N>`, where each integer is in the range `[0, 255]`.*
-    pub fill_value: FillValueMetadata,
+    pub fill_value: FillValueMetadataV3,
     /// Specifies a list of codecs to be used for encoding and decoding chunks.
     pub codecs: Vec<MetadataV3>,
     /// Optional user defined attributes.
@@ -104,10 +158,10 @@ impl ArrayMetadataV3 {
     #[must_use]
     pub fn new(
         shape: ArrayShape,
-        data_type: MetadataV3,
+        data_type: DataTypeMetadataV3,
         chunk_grid: MetadataV3,
         chunk_key_encoding: MetadataV3,
-        fill_value: FillValueMetadata,
+        fill_value: FillValueMetadataV3,
         codecs: Vec<MetadataV3>,
         attributes: serde_json::Map<String, serde_json::Value>,
         storage_transformers: Vec<MetadataV3>,

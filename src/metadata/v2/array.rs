@@ -2,18 +2,25 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{
-    array::{DataType, Endianness},
-    metadata::{
-        v3::{
-            fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata},
-            ChunkKeySeparator,
-        },
-        AdditionalFields, ArrayShape, ChunkShape,
-    },
+use crate::metadata::{
+    v2::MetadataV2, v3::AdditionalFields, ArrayShape, ChunkKeySeparator, ChunkShape, Endianness,
 };
 
-use super::MetadataV2;
+/// Zarr V2 codec metadata.
+pub mod codec {
+    /// `bitround` codec metadata.
+    pub mod bitround;
+    /// `blosc` codec metadata.
+    pub mod blosc;
+    /// `bz2` codec metadata.
+    pub mod bz2;
+    /// `gzip` codec metadata.
+    pub mod gzip;
+    /// `zfpy` codec metadata.
+    pub mod zfpy;
+    /// `zstd` codec metadata.
+    pub mod zstd;
+}
 
 /// Zarr array metadata (storage specification v2).
 ///
@@ -54,7 +61,7 @@ pub struct ArrayMetadataV2 {
     /// A list of integers defining the length of each dimension of a chunk of the array.
     pub chunks: ChunkShape,
     /// The data type of the Zarr array.
-    pub dtype: ArrayMetadataV2DataType,
+    pub dtype: DataTypeMetadataV2,
     /// A JSON object identifying the primary compression codec and providing configuration parameters, or null if no compressor is to be used.
     pub compressor: Option<MetadataV2>,
     /// A scalar value providing the default value to use for uninitialized portions of the array, or null if no fill value is to be used.
@@ -123,73 +130,27 @@ impl From<DataTypeMetadataV2Structured> for DataTypeMetadataV2StructuredTuple {
 /// Zarr V2 data type metadata.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(untagged)]
-pub enum ArrayMetadataV2DataType {
+pub enum DataTypeMetadataV2 {
     /// A simple data type.
     Simple(String),
     /// A structured data type.
     Structured(Vec<DataTypeMetadataV2Structured>),
 }
 
-/// An unsupported Zarr V2 data type error.
-#[derive(Debug, Error)]
-#[error("V2 data type {_0:?} is not supported")]
-pub struct DataTypeMetadataV2UnsupportedDataTypeError(ArrayMetadataV2DataType);
-
-/// Convert a Zarr V2 data type to a compatible V3 data type.
-///
-/// # Errors
-/// Returns a [`DataTypeMetadataV2UnsupportedDataTypeError`] if the data type is not supported.
-pub fn data_type_metadata_v2_to_v3_data_type(
-    data_type: &ArrayMetadataV2DataType,
-) -> Result<DataType, DataTypeMetadataV2UnsupportedDataTypeError> {
-    match data_type {
-        ArrayMetadataV2DataType::Simple(data_type_str) => {
-            match data_type_str.as_str() {
-                "|b1" => Ok(DataType::Bool),
-                "|i1" => Ok(DataType::Int8),
-                "<i2" | ">i2" => Ok(DataType::Int16),
-                "<i4" | ">i4" => Ok(DataType::Int32),
-                "<i8" | ">i8" => Ok(DataType::Int64),
-                "|u1" => Ok(DataType::UInt8),
-                "<u2" | ">u2" => Ok(DataType::UInt16),
-                "<u4" | ">u4" => Ok(DataType::UInt32),
-                "<u8" | ">u8" => Ok(DataType::UInt64),
-                "<f2" | ">f2" => Ok(DataType::Float16),
-                "<f4" | ">f4" => Ok(DataType::Float32),
-                "<f8" | ">f8" => Ok(DataType::Float64),
-                "<c8" | ">c8" => Ok(DataType::Complex64),
-                "<c16" | ">c16" => Ok(DataType::Complex128),
-                "|O" => Ok(DataType::String), // LEGACY: This is not part of the spec. The dtype for a PyObject, which is what zarr-python 2 uses for string arrays.
-                // TODO "|mX" timedelta
-                // TODO "|MX" datetime
-                // TODO "|SX" string (fixed length sequence of char)
-                // TODO "|UX" string (fixed length sequence of Py_UNICODE)
-                // TODO "|VX" other (void * – each item is a fixed-size chunk of memory)
-                _ => Err(DataTypeMetadataV2UnsupportedDataTypeError(
-                    data_type.clone(),
-                )),
-            }
-        }
-        ArrayMetadataV2DataType::Structured(_) => Err(DataTypeMetadataV2UnsupportedDataTypeError(
-            data_type.clone(),
-        )),
-    }
-}
-
 /// A Zarr V2 invalid data type endianness error.
 #[derive(Debug, Error)]
 #[error("invalid V2 data type for {_0:?} endianness, must begin with |, < or >")]
-pub struct DataTypeMetadataV2InvalidEndiannessError(ArrayMetadataV2DataType);
+pub struct DataTypeMetadataV2InvalidEndiannessError(DataTypeMetadataV2);
 
 /// Get the endianness of a Zarr V2 data type.
 ///
 /// # Errors
 /// Returns a [`DataTypeMetadataV2InvalidEndiannessError`] if the data type is not supported or the endianness prefix is invalid.
 pub fn data_type_metadata_v2_to_endianness(
-    data_type: &ArrayMetadataV2DataType,
+    data_type: &DataTypeMetadataV2,
 ) -> Result<Option<Endianness>, DataTypeMetadataV2InvalidEndiannessError> {
     match data_type {
-        ArrayMetadataV2DataType::Simple(data_type_str) => {
+        DataTypeMetadataV2::Simple(data_type_str) => {
             if data_type_str.starts_with('|') {
                 Ok(None)
             } else if data_type_str.starts_with('<') {
@@ -200,7 +161,7 @@ pub fn data_type_metadata_v2_to_endianness(
                 Err(DataTypeMetadataV2InvalidEndiannessError(data_type.clone()))
             }
         }
-        ArrayMetadataV2DataType::Structured(_) => {
+        DataTypeMetadataV2::Structured(_) => {
             Err(DataTypeMetadataV2InvalidEndiannessError(data_type.clone()))
         }
     }
@@ -255,38 +216,6 @@ impl Serialize for FillValueMetadataV2 {
             Self::Infinity => serializer.serialize_str("Infinity"),
             Self::NegInfinity => serializer.serialize_str("-Infinity"),
             Self::Number(number) => number.serialize(serializer),
-        }
-    }
-}
-
-/// Convert Zarr V2 fill value metadata to [`FillValueMetadata`].
-///
-/// Returns [`None`] for [`FillValueMetadataV2::Null`].
-#[must_use]
-pub fn array_metadata_fill_value_v2_to_v3(
-    fill_value: &FillValueMetadataV2,
-) -> Option<FillValueMetadata> {
-    match fill_value {
-        FillValueMetadataV2::Null => None,
-        FillValueMetadataV2::NaN => Some(FillValueMetadata::Float(FillValueFloat::NonFinite(
-            FillValueFloatStringNonFinite::NaN,
-        ))),
-        FillValueMetadataV2::Infinity => Some(FillValueMetadata::Float(FillValueFloat::NonFinite(
-            FillValueFloatStringNonFinite::PosInfinity,
-        ))),
-        FillValueMetadataV2::NegInfinity => Some(FillValueMetadata::Float(
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity),
-        )),
-        FillValueMetadataV2::Number(number) => {
-            if let Some(u) = number.as_u64() {
-                Some(FillValueMetadata::UInt(u))
-            } else if let Some(i) = number.as_i64() {
-                Some(FillValueMetadata::Int(i))
-            } else if let Some(f) = number.as_f64() {
-                Some(FillValueMetadata::Float(FillValueFloat::Float(f)))
-            } else {
-                unreachable!("number must be convertible to u64, i64 or f64")
-            }
         }
     }
 }

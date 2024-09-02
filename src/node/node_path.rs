@@ -1,4 +1,4 @@
-use crate::storage::StorePrefix;
+use crate::storage::{StorePrefix, StorePrefixError};
 use derive_more::Display;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -73,6 +73,19 @@ impl TryFrom<&StorePrefix> for NodePath {
     fn try_from(prefix: &StorePrefix) -> Result<Self, Self::Error> {
         let path = "/".to_string() + prefix.as_str().strip_suffix('/').unwrap();
         Self::new(&path)
+    }
+}
+
+impl TryInto<StorePrefix> for &NodePath {
+    type Error = StorePrefixError;
+
+    fn try_into(self) -> Result<StorePrefix, StorePrefixError> {
+        let path = self.as_str();
+        if path.eq("/") {
+            StorePrefix::new("")
+        } else {
+            StorePrefix::new(path.strip_prefix('/').unwrap_or(path).to_string() + "/")
+        }
     }
 }
 

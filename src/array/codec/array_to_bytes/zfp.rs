@@ -18,7 +18,7 @@ mod zfp_field;
 mod zfp_partial_decoder;
 mod zfp_stream;
 
-pub use crate::metadata::v3::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
+pub use crate::metadata::v3::array::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use zfp_codec::ZfpCodec;
 
 use zfp_sys::{
@@ -34,7 +34,7 @@ use crate::{
     },
     config::global_config,
     metadata::v3::{
-        codec::zfp::{self, ZfpMode},
+        array::codec::zfp::{self, ZfpMode},
         MetadataV3,
     },
     plugin::{PluginCreateError, PluginMetadataInvalidError},

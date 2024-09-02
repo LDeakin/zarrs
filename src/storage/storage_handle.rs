@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
-use crate::byte_range::ByteRange;
-
 use super::{
-    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-    StorePrefix, WritableStorageTraits,
+    byte_range::ByteRange, Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
+    StorageError, StoreKey, StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]

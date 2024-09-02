@@ -16,6 +16,9 @@ mod store_key;
 // pub mod store_lock;
 mod store_prefix;
 
+pub mod byte_range;
+use byte_range::{ByteOffset, ByteRange, InvalidByteRangeError};
+
 #[cfg(feature = "async")]
 mod storage_async;
 
@@ -23,26 +26,21 @@ use std::{path::PathBuf, sync::Arc};
 
 use thiserror::Error;
 
-use crate::{
-    byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
-    node::{NodeNameError, NodePath, NodePathError},
-};
+use crate::node::{NodeNameError, NodePath, NodePathError};
 
 pub use store_key::{StoreKey, StoreKeyError, StoreKeys};
 pub use store_prefix::{StorePrefix, StorePrefixError, StorePrefixes};
 
 #[cfg(feature = "async")]
 pub use self::storage_async::{
-    async_discover_children, async_discover_nodes, async_erase_node, async_get_child_nodes,
-    async_node_exists, async_node_exists_listable, async_retrieve_partial_values,
-    async_store_set_partial_values, AsyncListableStorageTraits, AsyncReadableListableStorageTraits,
-    AsyncReadableStorageTraits, AsyncReadableWritableListableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits,
+    async_discover_children, async_store_set_partial_values, AsyncListableStorageTraits,
+    AsyncReadableListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableListableStorageTraits, AsyncReadableWritableStorageTraits,
+    AsyncWritableStorageTraits,
 };
 
 pub use self::storage_sync::{
-    discover_children, discover_nodes, erase_node, get_child_nodes, node_exists,
-    node_exists_listable, retrieve_partial_values, store_set_partial_values, ListableStorageTraits,
+    discover_children, store_set_partial_values, ListableStorageTraits,
     ReadableListableStorageTraits, ReadableStorageTraits, ReadableWritableListableStorageTraits,
     ReadableWritableStorageTraits, WritableStorageTraits,
 };

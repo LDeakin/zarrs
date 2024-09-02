@@ -2,14 +2,15 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#chunk-key-encoding>.
 
-mod chunk_key_separator;
 pub mod default;
 pub mod v2;
 
-pub use crate::metadata::v3::chunk_key_encoding::{
-    default::DefaultChunkKeyEncodingConfiguration, v2::V2ChunkKeyEncodingConfiguration,
+pub use crate::metadata::{
+    v3::array::chunk_key_encoding::{
+        default::DefaultChunkKeyEncodingConfiguration, v2::V2ChunkKeyEncodingConfiguration,
+    },
+    ChunkKeySeparator,
 };
-pub use chunk_key_separator::ChunkKeySeparator;
 pub use default::DefaultChunkKeyEncoding;
 pub use v2::V2ChunkKeyEncoding;
 

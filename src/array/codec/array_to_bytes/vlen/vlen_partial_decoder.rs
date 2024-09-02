@@ -11,7 +11,7 @@ use crate::{
         },
         ArrayBytes, ArraySize, ChunkRepresentation, CodecChain, DataType, FillValue, RawBytes,
     },
-    metadata::v3::codec::vlen::VlenIndexDataType,
+    metadata::v3::array::codec::vlen::VlenIndexDataType,
 };
 
 #[cfg(feature = "async")]

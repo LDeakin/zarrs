@@ -2,9 +2,8 @@
 
 #![allow(deprecated)]
 
-use crate::{
-    byte_range::ByteRange,
-    storage::{Bytes, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey},
+use crate::storage::{
+    byte_range::ByteRange, Bytes, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
 };
 
 use itertools::Itertools;

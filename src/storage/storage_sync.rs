@@ -1,20 +1,10 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    array::{ArrayMetadata, ArrayMetadataV2, ArrayMetadataV3},
-    byte_range::ByteRange,
-    group::{GroupMetadata, GroupMetadataV3},
-    metadata::GroupMetadataV2,
-    node::{Node, NodeMetadata, NodePath},
-};
 
 use super::{
-    data_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Bytes,
-    MaybeBytes, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys,
-    StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    byte_range::ByteRange, Bytes, MaybeBytes, StorageError, StoreKey, StoreKeyRange,
+    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -277,189 +267,20 @@ impl<T> ReadableWritableListableStorageTraits for T where
 {
 }
 
-fn get_metadata_v3<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &Arc<TStorage>,
-    prefix: &StorePrefix,
-) -> Result<Option<NodeMetadata>, StorageError> {
-    #[derive(Serialize, Deserialize)]
-    #[serde(untagged)]
-    enum NodeMetadataV3 {
-        Array(ArrayMetadataV3),
-        Group(GroupMetadataV3),
-    }
-
-    let key: StoreKey = meta_key_v3(&prefix.try_into()?);
-    match storage.get(&key)? {
-        Some(metadata) => {
-            let metadata: NodeMetadataV3 = serde_json::from_slice(&metadata)
-                .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
-            Ok(Some(match metadata {
-                NodeMetadataV3::Array(array) => NodeMetadata::Array(ArrayMetadata::V3(array)),
-                NodeMetadataV3::Group(group) => NodeMetadata::Group(GroupMetadata::V3(group)),
-            }))
-        }
-        None => Ok(None),
-    }
-}
-
-fn get_metadata_v2<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &Arc<TStorage>,
-    prefix: &StorePrefix,
-) -> Result<Option<NodeMetadata>, StorageError> {
-    let node_path = prefix.try_into()?;
-    let attributes_key = meta_key_v2_attributes(&node_path);
-
-    // Try array
-    let key_array: StoreKey = meta_key_v2_array(&node_path);
-    if let Some(metadata) = storage.get(&key_array)? {
-        let mut metadata: ArrayMetadataV2 = serde_json::from_slice(&metadata)
-            .map_err(|err| StorageError::InvalidMetadata(key_array, err.to_string()))?;
-        let attributes = storage.get(&attributes_key)?;
-        if let Some(attributes) = attributes {
-            let attributes: serde_json::Map<String, serde_json::Value> =
-                serde_json::from_slice(&attributes).map_err(|err| {
-                    StorageError::InvalidMetadata(attributes_key, err.to_string())
-                })?;
-            metadata.attributes = attributes;
-        }
-        return Ok(Some(NodeMetadata::Array(ArrayMetadata::V2(metadata))));
-    }
-
-    // Try group
-    let key_group: StoreKey = meta_key_v2_group(&node_path);
-    if let Some(metadata) = storage.get(&key_group)? {
-        let mut metadata: GroupMetadataV2 = serde_json::from_slice(&metadata)
-            .map_err(|err| StorageError::InvalidMetadata(key_group, err.to_string()))?;
-        let attributes = storage.get(&attributes_key)?;
-        if let Some(attributes) = attributes {
-            let attributes: serde_json::Map<String, serde_json::Value> =
-                serde_json::from_slice(&attributes).map_err(|err| {
-                    StorageError::InvalidMetadata(attributes_key, err.to_string())
-                })?;
-            metadata.attributes = attributes;
-        }
-        return Ok(Some(NodeMetadata::Group(GroupMetadata::V2(metadata))));
-    }
-
-    Ok(None)
-}
-
-/// Get the child nodes.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &Arc<TStorage>,
-    path: &NodePath,
-) -> Result<Vec<Node>, StorageError> {
-    let prefixes = discover_children(storage, path)?;
-    let mut nodes: Vec<Node> = Vec::new();
-    for prefix in &prefixes {
-        let mut child_metadata = get_metadata_v3(storage, prefix)?;
-        if child_metadata.is_none() {
-            child_metadata = get_metadata_v2(storage, prefix)?;
-        }
-        let Some(child_metadata) = child_metadata else {
-            return Err(StorageError::MissingMetadata(prefix.clone()));
-        };
-
-        let path: NodePath = prefix.try_into()?;
-        let children = match child_metadata {
-            NodeMetadata::Array(_) => Vec::default(),
-            NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
-        };
-        nodes.push(Node::new_with_metadata(path, child_metadata, children));
-    }
-    Ok(nodes)
-}
-
-/// Retrieve byte ranges from a chunk.
-///
-/// Returns [`None`] where keys are not found.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn retrieve_partial_values(
-    storage: &dyn ReadableStorageTraits,
-    array_path: &NodePath,
-    chunk_key: &StoreKey,
-    bytes_ranges: &[ByteRange],
-) -> Result<Vec<MaybeBytes>, StorageError> {
-    let key = data_key(array_path, chunk_key);
-    let key_ranges: Vec<StoreKeyRange> = bytes_ranges
-        .iter()
-        .map(|byte_range| StoreKeyRange::new(key.clone(), *byte_range))
-        .collect();
-    storage.get_partial_values(&key_ranges)
-}
-
-/// Discover the children of a node.
+/// Discover the children of a store prefix.
 ///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
 pub fn discover_children<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
     storage: &Arc<TStorage>,
-    path: &NodePath,
+    prefix: &StorePrefix,
 ) -> Result<StorePrefixes, StorageError> {
-    let prefix: StorePrefix = path.try_into()?;
     let children: Result<Vec<_>, _> = storage
-        .list_dir(&prefix)?
+        .list_dir(prefix)?
         .prefixes()
         .iter()
         .filter(|v| !v.as_str().starts_with("__"))
         .map(|v| StorePrefix::new(v.as_str()))
         .collect();
     Ok(children?)
-}
-
-/// Discover all nodes.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-///
-pub fn discover_nodes(storage: &dyn ListableStorageTraits) -> Result<StoreKeys, StorageError> {
-    storage.list_prefix(&"".try_into()?)
-}
-
-/// Erase a node (group or array) and all of its children.
-///
-/// Succeeds if the node does not exist.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn erase_node(
-    storage: &dyn WritableStorageTraits,
-    path: &NodePath,
-) -> Result<(), StorageError> {
-    let prefix = path.try_into()?;
-    storage.erase_prefix(&prefix)
-}
-
-/// Check if a node exists.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn node_exists<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &Arc<TStorage>,
-    path: &NodePath,
-) -> Result<bool, StorageError> {
-    Ok(storage.get(&meta_key_v3(path))?.is_some()
-        || storage.get(&meta_key_v2_array(path))?.is_some()
-        || storage.get(&meta_key_v2_group(path))?.is_some())
-}
-
-/// Check if a node exists.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub fn node_exists_listable<TStorage: ?Sized + ListableStorageTraits>(
-    storage: &Arc<TStorage>,
-    path: &NodePath,
-) -> Result<bool, StorageError> {
-    let prefix: StorePrefix = path.try_into()?;
-    storage.list_prefix(&prefix).map(|keys| {
-        keys.contains(&meta_key_v3(path))
-            | keys.contains(&meta_key_v2_array(path))
-            | keys.contains(&meta_key_v2_group(path))
-    })
 }

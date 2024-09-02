@@ -16,7 +16,7 @@ mod sharding_partial_decoder;
 
 use std::{borrow::Cow, num::NonZeroU64};
 
-pub use crate::metadata::v3::codec::sharding::{
+pub use crate::metadata::v3::array::codec::sharding::{
     ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
 };
 
@@ -28,7 +28,7 @@ use crate::{
         codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecPlugin},
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
     },
-    metadata::v3::{codec::sharding, MetadataV3},
+    metadata::v3::{array::codec::sharding, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

@@ -13,7 +13,7 @@ impl ChunkShape {
     /// Convert a chunk shape to an array shape.
     #[must_use]
     pub fn to_array_shape(&self) -> ArrayShape {
-        chunk_shape_to_array_shape(self)
+        self.0.iter().map(|i| i.get()).collect()
     }
 
     /// Return the number of elements.
@@ -134,9 +134,3 @@ try_from_chunkshape!(Vec<u64>);
 try_from_chunkshape!(&[u64]);
 try_from_chunkshape!([u64; N], N);
 try_from_chunkshape!(&[u64; N], N);
-
-/// Convert a [`ChunkShape`] reference to an [`ArrayShape`].
-#[must_use]
-pub fn chunk_shape_to_array_shape(chunk_shape: &[NonZeroU64]) -> ArrayShape {
-    chunk_shape.iter().map(|i| i.get()).collect()
-}

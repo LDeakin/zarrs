@@ -7,6 +7,7 @@ use std::{
 use crate::{
     array::{
         array_bytes::{merge_chunks_vlen, update_bytes_flen},
+        chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderTraits, CodecChain, CodecError, CodecOptions, CodecTraits,
@@ -17,7 +18,7 @@ use crate::{
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, FillValue, RawBytes,
     },
     array_subset::ArraySubset,
-    metadata::{chunk_shape_to_array_shape, v3::MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
 
