@@ -4,8 +4,7 @@
 //!
 //! Fill values metadata is serialised/deserialised into [`FillValueMetadata`].
 //!
-//! The interpretation of fill values is data type dependent, so this is handled in [`DataTypeExtension::fill_value_from_metadata`](crate::array::data_type::DataTypeExtension::fill_value_from_metadata).
-//! Fill value metadata is created with [`DataTypeExtension::metadata_fill_value`](crate::array::data_type::DataTypeExtension::metadata_fill_value).
+//! The interpretation of fill values is data type dependent.
 
 use derive_more::{Display, From};
 use half::{bf16, f16};
@@ -356,11 +355,72 @@ impl FillValueMetadata {
     }
 }
 
+/// Convert a [`f32`] to a [`FillValueFloat`].
+#[must_use]
+pub fn float32_to_fill_value(f: f32) -> FillValueFloat {
+    if f.is_infinite() && f.is_sign_positive() {
+        FillValueFloatStringNonFinite::PosInfinity.into()
+    } else if f.is_infinite() && f.is_sign_negative() {
+        FillValueFloatStringNonFinite::NegInfinity.into()
+    } else if f.to_bits() == ZARR_NAN_F32.to_bits() {
+        FillValueFloatStringNonFinite::NaN.into()
+    } else if f.is_nan() {
+        HexString::from(f.to_be_bytes().to_vec()).into()
+    } else {
+        f64::from(f).into()
+    }
+}
+
+/// Convert a [`f64`] to a [`FillValueFloat`].
+#[must_use]
+pub fn float64_to_fill_value(f: f64) -> FillValueFloat {
+    if f.is_infinite() && f.is_sign_positive() {
+        FillValueFloatStringNonFinite::PosInfinity.into()
+    } else if f.is_infinite() && f.is_sign_negative() {
+        FillValueFloatStringNonFinite::NegInfinity.into()
+    } else if f.to_bits() == ZARR_NAN_F64.to_bits() {
+        FillValueFloatStringNonFinite::NaN.into()
+    } else if f.is_nan() {
+        HexString::from(f.to_be_bytes().to_vec()).into()
+    } else {
+        f.into()
+    }
+}
+
+/// Convert a [`half::f16`] to a [`FillValueFloat`].
+#[must_use]
+pub fn float16_to_fill_value(f: f16) -> FillValueFloat {
+    if f.is_infinite() && f.is_sign_positive() {
+        FillValueFloatStringNonFinite::PosInfinity.into()
+    } else if f.is_infinite() && f.is_sign_negative() {
+        FillValueFloatStringNonFinite::NegInfinity.into()
+    } else if f.to_bits() == ZARR_NAN_F16.to_bits() {
+        FillValueFloatStringNonFinite::NaN.into()
+    } else if f.is_nan() {
+        HexString::from(f.to_be_bytes().to_vec()).into()
+    } else {
+        f64::from(f).into()
+    }
+}
+
+/// Convert a [`bf16`] to a [`FillValueFloat`].
+#[must_use]
+pub fn bfloat16_to_fill_value(f: bf16) -> FillValueFloat {
+    if f.is_infinite() && f.is_sign_positive() {
+        FillValueFloatStringNonFinite::PosInfinity.into()
+    } else if f.is_infinite() && f.is_sign_negative() {
+        FillValueFloatStringNonFinite::NegInfinity.into()
+    } else if f.to_bits() == ZARR_NAN_BF16.to_bits() {
+        FillValueFloatStringNonFinite::NaN.into()
+    } else if f.is_nan() {
+        HexString::from(f.to_be_bytes().to_vec()).into()
+    } else {
+        f64::from(f).into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::array::DataType;
-    use crate::array::FillValue;
-
     use super::*;
 
     #[test]
@@ -486,13 +546,6 @@ mod tests {
         };
         let fill_value: f32 = f32::from_be_bytes(hex_string.as_be_bytes().try_into().unwrap());
         assert!(fill_value.is_nan());
-        let fill_value = FillValue::from(fill_value);
-        let fill_value_metadata = DataType::Float32.metadata_fill_value(&fill_value);
-        let FillValueMetadata::Float(FillValueFloat::NonFinite(fill_value)) = fill_value_metadata
-        else {
-            unreachable!()
-        };
-        assert_eq!(fill_value, FillValueFloatStringNonFinite::NaN);
 
         assert!(FillValueFloat::HexString(HexString(
             hex_string_to_be_bytes(&"0x7fc00000").unwrap()
@@ -511,12 +564,6 @@ mod tests {
         };
         let fill_value: f32 = f32::from_be_bytes(hex_string.as_be_bytes().try_into().unwrap());
         assert!(fill_value.is_nan());
-        let fill_value = FillValue::from(fill_value);
-        let fill_value_metadata = DataType::Float32.metadata_fill_value(&fill_value);
-        let FillValueMetadata::Float(FillValueFloat::HexString(_hex_string)) = fill_value_metadata
-        else {
-            unreachable!()
-        };
     }
 
     #[test]

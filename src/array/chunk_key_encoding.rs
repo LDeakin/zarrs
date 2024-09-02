@@ -6,7 +6,7 @@ pub mod default;
 pub mod v2;
 
 pub use crate::metadata::{
-    v3::chunk_key_encoding::{
+    v3::array::chunk_key_encoding::{
         default::DefaultChunkKeyEncodingConfiguration, v2::V2ChunkKeyEncodingConfiguration,
     },
     ChunkKeySeparator,

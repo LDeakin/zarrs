@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `key()`, `start()`, `value()` to `StoreKeyStartValue`
  - Add `StorageError::MissingMetadata` now that implicit groups are not supported
  - Add `ChunkShape::to_array_shape()`
+ - Add `DataTypeMetadata`
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
@@ -32,23 +33,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - This is a post-acceptance change of Zarr V3: https://github.com/zarr-developers/zarr-specs/pull/292
  - [#63](https://github.com/LDeakin/zarrs/pull/63) Make `StoreKeysPrefixes` constructible by [@sk1p]
  - **Breaking**: Use values of `Metadata{Convert,Erase}Version` instead of references in parameters/return values
- - Move various items to the `metadata` namespace, keeping re-exports in the `array` namespace
-   - `{Array,Chunk}Shape`
-   - `Endianness` and `NATIVE_ENDIAN`
-   - `ZARR_NAN_{F16, BF16, F32, F64}`
-   - `ChunkKeySeparator`
-   - `DimensionName`
+ - Restructure `metadata` module
+    - Move conversion to `metadata::v2_to_v3`
+    - **Breaking**: Remove many re-exports to the root of `metadata`
+    - Move various items to the `metadata` module, keeping re-exports in the `array` module
+        - `{Array,Chunk}Shape`
+        - `Endianness`
+        - `ZARR_NAN_{F16, BF16, F32, F64}`
+        - `ChunkKeySeparator`
+        - `DimensionName`
+    - Split `DataType` into `array::DataType` and `metadata::_::DataTypeMetadata`
+ - **Breaking**: `data_key` and `[async_]retrieve_partial_values` in `zarrs::storage` now take a `chunk_key` instead of a `chunk_key_encoding` and `chunk_indices`
+ - **Breaking**: Move `metadata::{v2,v3}::{codec,chunk_grid,chunk_key_encoding}` to `metadata::{v2,v3}::array::`
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
- - **Breaking**: Move storage transformers from the `storage` to the `array` namespace
- - **Breaking**: Remove many functions in the storage namespace:
+ - **Breaking**: Move storage transformers from the `storage` to the `array` module
+ - **Breaking**: Remove many functions in the storage module:
     - `[async_]create_{array, group}`
     - `[async_]erase_{chunk,metadata}`, `[async_]{retrieve,store}_chunk`
  - **Breaking**: Remove `Default` implementation for `Metadata{Convert,Erase}Version`
     - Explicitly use `global_config()` instead
  - **Breaking**: Remove `array::UnsafeCellSlice`
     - Replaced by `UnsafeCellSlice` in the `unsafe_cell_slice` crate
+ - **Breaking**: Remove `NATIVE_ENDIAN`, use `Endianness::native()`
+ - **Breaking**: Remove unused `DataTypeExtension`
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates

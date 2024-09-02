@@ -7,14 +7,14 @@
 mod zstd_codec;
 mod zstd_partial_decoder;
 
-pub use crate::metadata::v3::codec::zstd::{
+pub use crate::metadata::v3::array::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
 pub use zstd_codec::ZstdCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{codec::zstd, MetadataV3},
+    metadata::v3::{array::codec::zstd, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

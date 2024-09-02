@@ -52,7 +52,7 @@ impl From<&String> for DimensionName {
 
 #[cfg(test)]
 mod tests {
-    use crate::array::DimensionName;
+    use crate::metadata::DimensionName;
 
     #[test]
     fn dimension_name() {

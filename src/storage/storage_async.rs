@@ -4,13 +4,12 @@ use async_recursion::async_recursion;
 
 use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
 
 use crate::{
-    array::{ArrayMetadata, ArrayMetadataV2, ArrayMetadataV3},
+    array::{ArrayMetadata, ArrayMetadataV2},
     byte_range::ByteRange,
-    group::{GroupMetadata, GroupMetadataV3},
-    metadata::GroupMetadataV2,
+    group::GroupMetadata,
+    metadata::{v2::GroupMetadataV2, v3::NodeMetadataV3},
     node::{Node, NodeMetadata, NodePath},
     storage::meta_key_v3,
 };
@@ -313,13 +312,6 @@ async fn get_metadata_v3<
     storage: &Arc<TStorage>,
     prefix: &StorePrefix,
 ) -> Result<Option<NodeMetadata>, StorageError> {
-    #[derive(Serialize, Deserialize)]
-    #[serde(untagged)]
-    enum NodeMetadataV3 {
-        Array(ArrayMetadataV3),
-        Group(GroupMetadataV3),
-    }
-
     let key: StoreKey = meta_key_v3(&prefix.try_into()?);
     match storage.get(&key).await? {
         Some(metadata) => {

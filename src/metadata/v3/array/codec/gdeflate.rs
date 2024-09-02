@@ -22,7 +22,7 @@ pub enum GDeflateCodecConfiguration {
 ///     "level": 12
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::gdeflate::GDeflateCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::gdeflate::GDeflateCodecConfigurationV1;
 /// # let configuration: GDeflateCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

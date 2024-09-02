@@ -30,7 +30,7 @@ impl Default for PcodecCodecConfiguration {
 ///     "level": 12
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::pcodec::PcodecCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::pcodec::PcodecCodecConfigurationV1;
 /// # let configuration: PcodecCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 // TODO: Examples for more advanced configurations
 // TODO: Docs about valid usage with base/k

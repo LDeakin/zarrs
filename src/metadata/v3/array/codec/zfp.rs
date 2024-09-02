@@ -27,7 +27,7 @@ pub enum ZfpCodecConfiguration {
 ///     "rate": 10.5
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -39,7 +39,7 @@ pub enum ZfpCodecConfiguration {
 ///     "precision": 19
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -51,7 +51,7 @@ pub enum ZfpCodecConfiguration {
 ///     "tolerance": 0.05
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -62,7 +62,7 @@ pub enum ZfpCodecConfiguration {
 ///     "mode": "reversible"
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -77,7 +77,7 @@ pub enum ZfpCodecConfiguration {
 ///     "minexp": -2
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

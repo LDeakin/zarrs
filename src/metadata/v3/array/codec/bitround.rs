@@ -22,7 +22,7 @@ pub enum BitroundCodecConfiguration {
 ///     "keepbits": 10
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::bitround::BitroundCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::bitround::BitroundCodecConfigurationV1;
 /// # let configuration: BitroundCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

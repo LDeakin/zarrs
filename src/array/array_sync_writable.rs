@@ -6,8 +6,7 @@ use rayon_iter_concurrent_limit::iter_concurrent_limit;
 use crate::{
     array::ArrayBytes,
     array_subset::ArraySubset,
-    config::global_config,
-    metadata::MetadataEraseVersion,
+    config::{global_config, MetadataEraseVersion},
     storage::{
         meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, Bytes, StorageError, StorageHandle,
         WritableStorageTraits,

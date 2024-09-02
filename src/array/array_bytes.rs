@@ -6,11 +6,10 @@ use thiserror::Error;
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
     byte_range::extract_byte_ranges_concat_unchecked,
+    metadata::v3::array::data_type::DataTypeSize,
 };
 
-use super::{
-    codec::CodecError, ravel_indices, ArrayShape, ArraySize, DataType, DataTypeSize, FillValue,
-};
+use super::{codec::CodecError, ravel_indices, ArrayShape, ArraySize, DataType, FillValue};
 
 /// Array element bytes.
 pub type RawBytes<'a> = Cow<'a, [u8]>;

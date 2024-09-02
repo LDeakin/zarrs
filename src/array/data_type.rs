@@ -4,23 +4,20 @@
 
 use derive_more::From;
 use half::{bf16, f16};
-use serde::de::Error;
 use thiserror::Error;
 
-use crate::{
-    array::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
-    metadata::{
-        v3::fill_value::{
-            FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadata, HexString,
-        },
-        v3::MetadataV3,
+use crate::metadata::v3::array::{
+    data_type::{DataTypeMetadata, DataTypeSize},
+    fill_value::{
+        bfloat16_to_fill_value, float16_to_fill_value, float32_to_fill_value,
+        float64_to_fill_value, FillValueFloat, FillValueMetadata,
     },
 };
 
 use super::FillValue;
 
 /// A data type.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 #[rustfmt::skip]
 pub enum DataType {
@@ -60,34 +57,12 @@ pub enum DataType {
     String,
     /// Variable-sized binary data.
     Binary,
-
-    // /// An extension data type.
-    // Extension(Box<dyn DataTypeExtension>),
 }
 
 /// An unsupported data type error.
 #[derive(Debug, Error, From)]
 #[error("unsupported data type {_0}")]
 pub struct UnsupportedDataTypeError(String);
-
-impl PartialEq for DataType {
-    fn eq(&self, other: &Self) -> bool {
-        self.name() == other.name()
-    }
-}
-
-impl Eq for DataType {}
-
-impl<'de> serde::Deserialize<'de> for DataType {
-    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let metadata = MetadataV3::deserialize(d)?;
-        Self::from_metadata(&metadata).map_err(|err| D::Error::custom(err.to_string()))
-    }
-}
-
-// /// A data type plugin.
-// pub type DataTypePlugin = Plugin<Box<dyn DataTypeExtension>>;
-// inventory::collect!(DataTypePlugin);
 
 /// A fill value metadata incompatibility error.
 #[derive(Debug, Error)]
@@ -106,48 +81,6 @@ impl IncompatibleFillValueError {
         Self(data_type_name, fill_value)
     }
 }
-
-/// The size of a data type.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum DataTypeSize {
-    /// Fixed size (in bytes).
-    Fixed(usize),
-    /// Variable sized.
-    ///
-    /// <https://github.com/zarr-developers/zeps/pull/47>
-    Variable,
-}
-
-/// Extension data type traits.
-pub trait DataTypeExtension: dyn_clone::DynClone + core::fmt::Debug + Send + Sync {
-    /// Returns the identifier.
-    fn identifier(&self) -> &'static str;
-
-    /// Returns the name.
-    fn name(&self) -> String;
-
-    /// Returns the data type size in bytes.
-    fn size(&self) -> DataTypeSize;
-
-    /// Returns the data type metadata.
-    fn metadata(&self) -> MetadataV3;
-
-    /// Create a fill value from metadata.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`IncompatibleFillValueMetadataError`] if the fill value is incompatible with the data type.
-    fn fill_value_from_metadata(
-        &self,
-        fill_value: &FillValueMetadata,
-    ) -> Result<FillValue, IncompatibleFillValueMetadataError>;
-
-    /// Return the fill value metadata.
-    #[must_use]
-    fn metadata_fill_value(&self, fill_value: &FillValue) -> FillValueMetadata;
-}
-
-dyn_clone::clone_trait_object!(DataTypeExtension);
 
 impl DataType {
     /// Returns the identifier.
@@ -188,12 +121,27 @@ impl DataType {
 
     /// Returns the metadata.
     #[must_use]
-    pub fn metadata(&self) -> MetadataV3 {
-        MetadataV3::new(&self.name())
-        // match self {
-        //     // Self::Extension(extension) => extension.metadata(),
-        //     _ => MetadataV3::new(&self.name()),
-        // }
+    pub fn metadata(&self) -> DataTypeMetadata {
+        match self {
+            Self::Bool => DataTypeMetadata::Bool,
+            Self::Int8 => DataTypeMetadata::Int8,
+            Self::Int16 => DataTypeMetadata::Int16,
+            Self::Int32 => DataTypeMetadata::Int32,
+            Self::Int64 => DataTypeMetadata::Int64,
+            Self::UInt8 => DataTypeMetadata::UInt8,
+            Self::UInt16 => DataTypeMetadata::UInt16,
+            Self::UInt32 => DataTypeMetadata::UInt32,
+            Self::UInt64 => DataTypeMetadata::UInt64,
+            Self::Float16 => DataTypeMetadata::Float16,
+            Self::Float32 => DataTypeMetadata::Float32,
+            Self::Float64 => DataTypeMetadata::Float64,
+            Self::BFloat16 => DataTypeMetadata::BFloat16,
+            Self::Complex64 => DataTypeMetadata::Complex64,
+            Self::Complex128 => DataTypeMetadata::Complex128,
+            Self::RawBits(size) => DataTypeMetadata::RawBits(*size),
+            Self::String => DataTypeMetadata::String,
+            Self::Binary => DataTypeMetadata::Binary,
+        }
     }
 
     /// Returns the [`DataTypeSize`].
@@ -225,50 +173,30 @@ impl DataType {
     /// # Errors
     ///
     /// Returns [`UnsupportedDataTypeError`] if the metadata is invalid or not associated with a registered data type plugin.
-    pub fn from_metadata(metadata: &MetadataV3) -> Result<Self, UnsupportedDataTypeError> {
-        let name = metadata.name();
-
-        match name {
-            "bool" => return Ok(Self::Bool),
-            "int8" => return Ok(Self::Int8),
-            "int16" => return Ok(Self::Int16),
-            "int32" => return Ok(Self::Int32),
-            "int64" => return Ok(Self::Int64),
-            "uint8" => return Ok(Self::UInt8),
-            "uint16" => return Ok(Self::UInt16),
-            "uint32" => return Ok(Self::UInt32),
-            "uint64" => return Ok(Self::UInt64),
-            "float16" => return Ok(Self::Float16),
-            "float32" => return Ok(Self::Float32),
-            "float64" => return Ok(Self::Float64),
-            "bfloat16" => return Ok(Self::BFloat16),
-            "complex64" => return Ok(Self::Complex64),
-            "complex128" => return Ok(Self::Complex128),
-            "string" => return Ok(Self::String),
-            "binary" => return Ok(Self::Binary),
-            _ => {}
-        };
-
-        if name.starts_with('r') {
-            if let Ok(size_bits) = metadata.name()[1..].parse::<usize>() {
-                if size_bits % 8 == 0 {
-                    let size_bytes = size_bits / 8;
-                    return Ok(Self::RawBits(size_bytes));
-                }
+    pub fn from_metadata(metadata: &DataTypeMetadata) -> Result<Self, UnsupportedDataTypeError> {
+        match metadata {
+            DataTypeMetadata::Bool => Ok(Self::Bool),
+            DataTypeMetadata::Int8 => Ok(Self::Int8),
+            DataTypeMetadata::Int16 => Ok(Self::Int16),
+            DataTypeMetadata::Int32 => Ok(Self::Int32),
+            DataTypeMetadata::Int64 => Ok(Self::Int64),
+            DataTypeMetadata::UInt8 => Ok(Self::UInt8),
+            DataTypeMetadata::UInt16 => Ok(Self::UInt16),
+            DataTypeMetadata::UInt32 => Ok(Self::UInt32),
+            DataTypeMetadata::UInt64 => Ok(Self::UInt64),
+            DataTypeMetadata::Float16 => Ok(Self::Float16),
+            DataTypeMetadata::Float32 => Ok(Self::Float32),
+            DataTypeMetadata::Float64 => Ok(Self::Float64),
+            DataTypeMetadata::BFloat16 => Ok(Self::BFloat16),
+            DataTypeMetadata::Complex64 => Ok(Self::Complex64),
+            DataTypeMetadata::Complex128 => Ok(Self::Complex128),
+            DataTypeMetadata::RawBits(size) => Ok(Self::RawBits(*size)),
+            DataTypeMetadata::String => Ok(Self::String),
+            DataTypeMetadata::Binary => Ok(Self::Binary),
+            DataTypeMetadata::Unknown(metadata) => {
+                Err(UnsupportedDataTypeError(metadata.to_string()))
             }
         }
-
-        Err(UnsupportedDataTypeError(name.to_string()))
-
-        // for plugin in inventory::iter::<DataTypePlugin> {
-        //     if plugin.match_name(metadata.name()) {
-        //         return Ok(DataType::Extension(plugin.create(metadata)?));
-        //     }
-        // }
-        // Err(PluginCreateError::Unsupported {
-        //     name: metadata.name().to_string(),
-        //     plugin_type: "data type".to_string(),
-        // })
     }
 
     /// Create a fill value from metadata.
@@ -401,66 +329,10 @@ impl DataType {
     }
 }
 
-fn float32_to_fill_value(f: f32) -> FillValueFloat {
-    if f.is_infinite() && f.is_sign_positive() {
-        FillValueFloatStringNonFinite::PosInfinity.into()
-    } else if f.is_infinite() && f.is_sign_negative() {
-        FillValueFloatStringNonFinite::NegInfinity.into()
-    } else if f.to_bits() == ZARR_NAN_F32.to_bits() {
-        FillValueFloatStringNonFinite::NaN.into()
-    } else if f.is_nan() {
-        HexString::from(f.to_be_bytes().to_vec()).into()
-    } else {
-        f64::from(f).into()
-    }
-}
-
-fn float64_to_fill_value(f: f64) -> FillValueFloat {
-    if f.is_infinite() && f.is_sign_positive() {
-        FillValueFloatStringNonFinite::PosInfinity.into()
-    } else if f.is_infinite() && f.is_sign_negative() {
-        FillValueFloatStringNonFinite::NegInfinity.into()
-    } else if f.to_bits() == ZARR_NAN_F64.to_bits() {
-        FillValueFloatStringNonFinite::NaN.into()
-    } else if f.is_nan() {
-        HexString::from(f.to_be_bytes().to_vec()).into()
-    } else {
-        f.into()
-    }
-}
-
-fn float16_to_fill_value(f: f16) -> FillValueFloat {
-    if f.is_infinite() && f.is_sign_positive() {
-        FillValueFloatStringNonFinite::PosInfinity.into()
-    } else if f.is_infinite() && f.is_sign_negative() {
-        FillValueFloatStringNonFinite::NegInfinity.into()
-    } else if f.to_bits() == ZARR_NAN_F16.to_bits() {
-        FillValueFloatStringNonFinite::NaN.into()
-    } else if f.is_nan() {
-        HexString::from(f.to_be_bytes().to_vec()).into()
-    } else {
-        f64::from(f).into()
-    }
-}
-
-fn bfloat16_to_fill_value(f: bf16) -> FillValueFloat {
-    if f.is_infinite() && f.is_sign_positive() {
-        FillValueFloatStringNonFinite::PosInfinity.into()
-    } else if f.is_infinite() && f.is_sign_negative() {
-        FillValueFloatStringNonFinite::NegInfinity.into()
-    } else if f.to_bits() == ZARR_NAN_BF16.to_bits() {
-        FillValueFloatStringNonFinite::NaN.into()
-    } else if f.is_nan() {
-        HexString::from(f.to_be_bytes().to_vec()).into()
-    } else {
-        f64::from(f).into()
-    }
-}
-
-impl TryFrom<MetadataV3> for DataType {
+impl TryFrom<DataTypeMetadata> for DataType {
     type Error = UnsupportedDataTypeError;
 
-    fn try_from(metadata: MetadataV3) -> Result<Self, Self::Error> {
+    fn try_from(metadata: DataTypeMetadata) -> Result<Self, Self::Error> {
         Self::from_metadata(&metadata)
     }
 }
@@ -475,10 +347,15 @@ impl core::fmt::Display for DataType {
 mod tests {
     use super::*;
 
+    use crate::metadata::v3::array::{
+        fill_value::{FillValueFloatStringNonFinite, HexString},
+        nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
+    };
+
     #[test]
     fn data_type_unknown() {
         let json = r#""unknown""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         assert_eq!(
             DataType::from_metadata(&metadata).unwrap_err().to_string(),
             "unsupported data type unknown"
@@ -489,7 +366,7 @@ mod tests {
     #[test]
     fn data_type_bool() {
         let json = r#""bool""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(format!("{}", data_type), "bool");
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
@@ -509,7 +386,7 @@ mod tests {
     #[test]
     fn data_type_int8() {
         let json = r#""int8""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Int8);
@@ -531,7 +408,7 @@ mod tests {
     #[test]
     fn data_type_int16() {
         let json = r#""int16""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Int16);
@@ -553,7 +430,7 @@ mod tests {
     #[test]
     fn data_type_int32() {
         let json = r#""int32""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Int32);
@@ -575,7 +452,7 @@ mod tests {
     #[test]
     fn data_type_int64() {
         let json = r#""int64""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Int64);
@@ -597,7 +474,7 @@ mod tests {
     #[test]
     fn data_type_uint8() {
         let json = r#""uint8""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::UInt8);
@@ -611,7 +488,7 @@ mod tests {
     #[test]
     fn data_type_uint16() {
         let json = r#""uint16""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::UInt16);
@@ -625,7 +502,7 @@ mod tests {
     #[test]
     fn data_type_uint32() {
         let json = r#""uint32""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::UInt32);
@@ -639,7 +516,7 @@ mod tests {
     #[test]
     fn data_type_uint64() {
         let json = r#""uint64""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::UInt64);
@@ -653,7 +530,7 @@ mod tests {
     #[test]
     fn data_type_float32() {
         let json = r#""float32""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Float32);
@@ -707,7 +584,7 @@ mod tests {
     #[test]
     fn data_type_float64() {
         let json = r#""float64""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Float64);
@@ -763,7 +640,7 @@ mod tests {
         use half::f16;
 
         let json = r#""float16""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "float16");
@@ -812,7 +689,7 @@ mod tests {
         use half::bf16;
 
         let json = r#""bfloat16""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "bfloat16");
@@ -870,7 +747,7 @@ mod tests {
     #[test]
     fn data_type_complex64() {
         let json = r#""complex64""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Complex64);
@@ -892,7 +769,7 @@ mod tests {
     #[test]
     fn data_type_complex128() {
         let json = r#""complex128""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Complex128);
@@ -914,7 +791,7 @@ mod tests {
     #[test]
     fn data_type_r8() {
         let json = r#""r8""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "r*");
@@ -930,7 +807,7 @@ mod tests {
     #[test]
     fn data_type_r16() {
         let json = r#""r16""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "r*");
@@ -955,7 +832,7 @@ mod tests {
             "unit": "ns"
         }
     }"#;
-        let metadata = serde_json::from_str::<MetadataV3>(json).unwrap();
+        let metadata = serde_json::from_str::<DataTypeMetadata>(json).unwrap();
         println!("{json:?}");
         println!("{metadata:?}");
         assert_eq!(metadata.name(), "datetime");
@@ -965,7 +842,7 @@ mod tests {
     #[test]
     fn data_type_unknown2() {
         let json = r#""datetime""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         println!("{json:?}");
         println!("{metadata:?}");
         assert_eq!(metadata.name(), "datetime");
@@ -975,7 +852,7 @@ mod tests {
     #[test]
     fn data_type_unknown3() {
         let json = r#""ra""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         println!("{json:?}");
         println!("{metadata:?}");
         assert_eq!(metadata.name(), "ra");
@@ -991,13 +868,13 @@ mod tests {
             "unit": "ns"
         }
     }"#;
-        assert!(serde_json::from_str::<MetadataV3>(json).is_err());
+        assert!(serde_json::from_str::<DataTypeMetadata>(json).is_err());
     }
 
     #[test]
     fn data_type_raw_bits1() {
         let json = r#""r16""#;
-        let metadata = serde_json::from_str::<MetadataV3>(json).unwrap();
+        let metadata = serde_json::from_str::<DataTypeMetadata>(json).unwrap();
         let data_type: DataType = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(data_type.size(), DataTypeSize::Fixed(2));
     }
@@ -1008,7 +885,7 @@ mod tests {
     {
         "name": "r16"
     }"#;
-        let metadata = serde_json::from_str::<MetadataV3>(json).unwrap();
+        let metadata = serde_json::from_str::<DataTypeMetadata>(json).unwrap();
         let data_type: DataType = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(data_type.size(), DataTypeSize::Fixed(2));
     }
@@ -1019,14 +896,14 @@ mod tests {
     {
         "name": "r5"
     }"#;
-        let metadata = serde_json::from_str::<MetadataV3>(json).unwrap();
+        let metadata = serde_json::from_str::<DataTypeMetadata>(json).unwrap();
         assert!(DataType::from_metadata(&metadata).is_err());
     }
 
     #[test]
     fn incompatible_fill_value_metadata() {
         let json = r#""bool""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::Bool);
@@ -1044,7 +921,7 @@ mod tests {
     #[test]
     fn incompatible_raw_bits_metadata() {
         let json = r#""r16""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type, DataType::RawBits(2));
@@ -1194,7 +1071,7 @@ mod tests {
     #[test]
     fn data_type_string() {
         let json = r#""string""#;
-        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let metadata: DataTypeMetadata = serde_json::from_str(json).unwrap();
         let data_type = DataType::from_metadata(&metadata).unwrap();
         assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
         assert_eq!(data_type.identifier(), "string");

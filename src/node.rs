@@ -6,20 +6,23 @@
 //!
 //! The [`Node::hierarchy_tree`] function can be used to create a string representation of a the hierarchy below a node.
 
-mod node_metadata;
 mod node_name;
 mod node_path;
 
 use std::sync::Arc;
 
-pub use node_metadata::NodeMetadata;
+pub use crate::metadata::NodeMetadata;
 pub use node_name::{NodeName, NodeNameError};
 pub use node_path::{NodePath, NodePathError};
 use thiserror::Error;
 
 use crate::{
     array::ArrayMetadata,
-    metadata::{ArrayMetadataV2, GroupMetadata, GroupMetadataV2, MetadataRetrieveVersion},
+    config::MetadataRetrieveVersion,
+    metadata::{
+        v2::{ArrayMetadataV2, GroupMetadataV2},
+        GroupMetadata,
+    },
     storage::{
         get_child_nodes, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3,
         ListableStorageTraits, ReadableStorageTraits, StorageError,

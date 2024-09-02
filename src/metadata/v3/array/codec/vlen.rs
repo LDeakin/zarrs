@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::metadata::MetadataV3;
+use crate::metadata::v3::MetadataV3;
 
 /// The identifier for the `vlen` codec.
 pub const IDENTIFIER: &str = "vlen";

@@ -2,10 +2,13 @@
 //!
 //! [`ArrayMetadata`] and [`GroupMetadata`] can hold any conformant array/group metadata.
 //!
-//! All known array metadata is defined in this module, even if `zarrs` has not been compiled with the appropriate flags to use it.
+//! All known array metadata is defined in this module.
+//! This includes experimental data types, codecs, etc. supported by the `zarrs` crate.
+
+use derive_more::derive::{Display, From};
+use serde::{Deserialize, Serialize};
 
 mod array;
-mod group;
 
 /// Zarr V3 metadata.
 pub mod v3;
@@ -13,55 +16,54 @@ pub mod v3;
 /// Zarr V2 metadata.
 pub mod v2;
 
-pub use array::{
-    array_metadata_v2_to_v3, chunk_shape_to_array_shape, ArrayMetadata,
-    ArrayMetadataV2ToV3ConversionError, ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName,
-};
-pub use group::{group_metadata_v2_to_v3, GroupMetadata};
-pub use v2::{ArrayMetadataV2, GroupMetadataV2, MetadataV2};
-pub use v3::{
-    codec::bytes::{Endianness, NATIVE_ENDIAN},
-    AdditionalFields, ArrayMetadataV3, ConfigurationInvalidError, GroupMetadataV3, MetadataV3,
-    UnsupportedAdditionalFieldError,
-};
+/// Zarr V2 to V3 conversion.
+pub mod v2_to_v3;
 
-/// A type alias for [`MetadataV3`].
-///
-/// Kept for backwards compatibility with `zarrs` < 0.15.
-pub type Metadata = MetadataV3;
+pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
 
-/// The metadata version to retrieve.
-///
-/// Used with [`crate::array::Array::open_opt`], [`crate::group::Group::open_opt`].
-pub enum MetadataRetrieveVersion {
-    /// Either Zarr V3 or V2. V3 is prioritised over V2 if found.
-    Default,
-    /// Zarr V3.
-    V3,
-    /// Zarr V2.
-    V2,
+/// A wrapper to handle various versions of Zarr array metadata.
+#[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
+#[serde(untagged)]
+pub enum ArrayMetadata {
+    /// Zarr Version 3.0.
+    V3(v3::ArrayMetadataV3),
+    /// Zarr Version 2.0.
+    V2(v2::ArrayMetadataV2),
 }
 
-/// Version options for [`Array::store_metadata`](crate::array::Array::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata), and their async variants.
-#[derive(Debug, Clone, Copy)]
-pub enum MetadataConvertVersion {
-    /// Write the same version as the input metadata.
-    Default,
-    /// Write Zarr V3 metadata. Zarr V2 metadata will not be automatically removed if it exists.
-    V3,
+impl TryFrom<&str> for ArrayMetadata {
+    type Error = serde_json::Error;
+    fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
+        serde_json::from_str::<Self>(metadata_json)
+    }
 }
 
-/// Version options for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata), and their async variants.
-#[derive(Debug, Clone, Copy)]
-pub enum MetadataEraseVersion {
-    /// Erase the same version as the input metadata.
-    Default,
-    /// Erase all metadata.
-    All,
-    /// Erase Zarr V3 metadata.
-    V3,
-    /// Erase Zarr V2 metadata.
-    V2,
+/// A wrapper to handle various versions of Zarr group metadata.
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[serde(untagged)]
+pub enum GroupMetadata {
+    /// Zarr Version 3.0.
+    V3(v3::GroupMetadataV3),
+    /// Zarr Version 2.0.
+    V2(v2::GroupMetadataV2),
+}
+
+impl TryFrom<&str> for GroupMetadata {
+    type Error = serde_json::Error;
+    fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
+        serde_json::from_str::<Self>(metadata_json)
+    }
+}
+
+/// Node metadata ([`ArrayMetadata`] or [`GroupMetadata`]).
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum NodeMetadata {
+    /// Array metadata.
+    Array(ArrayMetadata),
+
+    /// Group metadata.
+    Group(GroupMetadata),
 }
 
 #[cfg(test)]

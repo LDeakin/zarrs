@@ -20,7 +20,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{
     bytes_partial_decoder, reverse_endianness, BytesCodecConfiguration, BytesCodecConfigurationV1,
-    Endianness, NATIVE_ENDIAN,
+    Endianness,
 };
 
 /// A `bytes` codec implementation.
@@ -31,7 +31,7 @@ pub struct BytesCodec {
 
 impl Default for BytesCodec {
     fn default() -> Self {
-        Self::new(Some(NATIVE_ENDIAN))
+        Self::new(Some(Endianness::native()))
     }
 }
 

@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
+use crate::metadata::Endianness;
+
 /// The identifier for the `bytes` codec.
 pub const IDENTIFIER: &str = "bytes";
 
@@ -30,32 +32,6 @@ impl BytesCodecConfigurationV1 {
         Self { endian }
     }
 }
-
-/// The endianness of each element in an array, either `big` or `little`.
-#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug, Display)]
-#[serde(rename_all = "lowercase")]
-pub enum Endianness {
-    /// Little endian.
-    Little,
-
-    /// Big endian.
-    Big,
-}
-
-impl Endianness {
-    /// Return true if the endianness matches the endianness of the CPU.
-    #[must_use]
-    pub fn is_native(self) -> bool {
-        self == NATIVE_ENDIAN
-    }
-}
-
-/// The endianness of the CPU.
-pub const NATIVE_ENDIAN: Endianness = if cfg!(target_endian = "big") {
-    Endianness::Big
-} else {
-    Endianness::Little
-};
 
 #[cfg(test)]
 mod tests {

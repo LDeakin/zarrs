@@ -7,9 +7,11 @@
 mod bytes_codec;
 mod bytes_partial_decoder;
 
-use crate::metadata::v3::codec::bytes;
-pub use crate::metadata::v3::codec::bytes::{
-    BytesCodecConfiguration, BytesCodecConfigurationV1, Endianness, NATIVE_ENDIAN,
+use crate::metadata::Endianness;
+
+use crate::metadata::v3::array::codec::bytes;
+pub use crate::metadata::v3::array::codec::bytes::{
+    BytesCodecConfiguration, BytesCodecConfigurationV1,
 };
 
 pub use bytes_codec::BytesCodec;
@@ -79,7 +81,7 @@ mod tests {
     use crate::{
         array::{
             codec::{ArrayToBytesCodecTraits, CodecOptions, CodecTraits},
-            ArrayBytes, ChunkRepresentation, ChunkShape, FillValue,
+            ArrayBytes, ChunkRepresentation, ChunkShape, Endianness, FillValue,
         },
         array_subset::ArraySubset,
     };

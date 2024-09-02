@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::{metadata::v3::MetadataV3, metadata::ChunkShape};
+use crate::metadata::{v3::MetadataV3, ChunkShape};
 
 /// The identifier for the `sharding_indexed` codec.
 pub const IDENTIFIER: &str = "sharding_indexed";
@@ -48,7 +48,7 @@ pub enum ShardingCodecConfiguration {
 ///     ]
 /// }
 /// # "#;
-/// # use zarrs::metadata::v3::codec::sharding::ShardingCodecConfigurationV1;
+/// # use zarrs::metadata::v3::array::codec::sharding::ShardingCodecConfigurationV1;
 /// # let configuration: ShardingCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

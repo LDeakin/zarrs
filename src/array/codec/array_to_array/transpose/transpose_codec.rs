@@ -8,7 +8,7 @@ use crate::{
         },
         ArrayMetadataOptions, ChunkRepresentation,
     },
-    metadata::v3::{codec::transpose::TransposeCodecConfigurationV1, MetadataV3},
+    metadata::v3::{array::codec::transpose::TransposeCodecConfigurationV1, MetadataV3},
     plugin::PluginCreateError,
 };
 

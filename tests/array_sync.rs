@@ -280,7 +280,7 @@ fn array_str_sync_simple() -> Result<(), Box<dyn std::error::Error>> {
 fn array_str_sync_sharded_transpose() -> Result<(), Box<dyn std::error::Error>> {
     use zarrs::{
         array::codec::{array_to_bytes::vlen::VlenCodec, TransposeCodec},
-        metadata::v3::codec::transpose::TransposeOrder,
+        metadata::v3::array::codec::transpose::TransposeOrder,
     };
 
     let store = std::sync::Arc::new(MemoryStore::default());

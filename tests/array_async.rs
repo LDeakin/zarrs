@@ -7,7 +7,7 @@ use zarrs::array_subset::ArraySubset;
 
 use object_store::memory::InMemory;
 
-use zarrs::metadata::v3::codec::transpose::TransposeOrder;
+use zarrs::metadata::v3::array::codec::transpose::TransposeOrder;
 use zarrs::storage::store::AsyncObjectStore;
 
 #[rustfmt::skip]

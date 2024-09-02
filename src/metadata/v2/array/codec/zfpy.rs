@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::metadata::{
-    v3::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpMode},
-    ArrayMetadataV2ToV3ConversionError,
+    v2_to_v3::ArrayMetadataV2ToV3ConversionError,
+    v3::array::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpMode},
 };
 
 /// The identifier for the `zfpy` codec.
@@ -86,7 +86,7 @@ pub fn codec_zfpy_v2_numcodecs_to_v3(
 
 #[cfg(test)]
 mod tests {
-    use crate::metadata::v3::codec::zfp::ZfpCodecConfigurationV1;
+    use crate::metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
 
     use super::*;
 

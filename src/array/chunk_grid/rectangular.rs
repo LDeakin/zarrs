@@ -6,7 +6,7 @@ use std::num::NonZeroU64;
 
 use crate::{
     array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape},
-    metadata::v3::{chunk_grid::rectangular, MetadataV3},
+    metadata::v3::{array::chunk_grid::rectangular, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

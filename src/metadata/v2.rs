@@ -4,39 +4,31 @@ pub mod group;
 /// Zarr V2 array metadata.
 pub mod array;
 
-/// Zarr V2 codec metadata.
-pub mod codec {
-    /// `bitround` codec metadata.
-    pub mod bitround;
-    /// `blosc` codec metadata.
-    pub mod blosc;
-    /// `bz2` codec metadata.
-    pub mod bz2;
-    /// `gzip` codec metadata.
-    pub mod gzip;
-    /// `zfpy` codec metadata.
-    pub mod zfpy;
-    /// `zstd` codec metadata.
-    pub mod zstd;
-}
-
 pub use array::ArrayMetadataV2;
 pub use group::GroupMetadataV2;
 
 mod metadata;
 pub use metadata::MetadataV2;
 
+/// V2 node metadata ([`ArrayMetadataV2`] or [`GroupMetadataV2`]).
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+pub enum NodeMetadataV2 {
+    /// Array metadata.
+    Array(ArrayMetadataV2),
+    /// Group metadata.
+    Group(GroupMetadataV2),
+}
+
 #[cfg(test)]
 mod tests {
-    use array::{data_type_metadata_v2_to_endianness, data_type_metadata_v2_to_v3_data_type};
+    use array::data_type_metadata_v2_to_endianness;
 
     use super::*;
 
-    pub use crate::array::DataType;
-
     use crate::metadata::{
-        array_metadata_v2_to_v3,
-        v3::codec::{
+        v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3_data_type},
+        v3::array::codec::{
             blosc::{self, BloscCodecConfigurationV1},
             transpose::{self, TransposeCodecConfigurationV1},
         },
@@ -69,7 +61,7 @@ mod tests {
                 ],
                 "zarr_format": 2
             }"#;
-        let array_metadata_v2: crate::metadata::ArrayMetadataV2 =
+        let array_metadata_v2: crate::metadata::v2::ArrayMetadataV2 =
             serde_json::from_str(&json).unwrap();
         assert_eq!(
             array_metadata_v2.chunks,
@@ -81,8 +73,8 @@ mod tests {
             ChunkKeySeparator::Dot
         );
         assert_eq!(
-            data_type_metadata_v2_to_v3_data_type(&array_metadata_v2.dtype)?,
-            DataType::Float64
+            data_type_metadata_v2_to_v3_data_type(&array_metadata_v2.dtype)?.name(),
+            "float64"
         );
         assert_eq!(
             data_type_metadata_v2_to_endianness(&array_metadata_v2.dtype)?,

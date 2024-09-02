@@ -2,7 +2,7 @@
 
 use crate::{
     array::chunk_key_encoding::ChunkKeyEncodingPlugin,
-    metadata::v3::{chunk_key_encoding::v2, MetadataV3},
+    metadata::v3::{array::chunk_key_encoding::v2, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
     storage::StoreKey,
 };

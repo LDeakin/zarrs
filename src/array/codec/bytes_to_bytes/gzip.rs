@@ -7,7 +7,7 @@
 mod gzip_codec;
 mod gzip_partial_decoder;
 
-pub use crate::metadata::v3::codec::gzip::{
+pub use crate::metadata::v3::array::codec::gzip::{
     GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
     GzipCompressionLevelError,
 };
@@ -15,7 +15,7 @@ pub use gzip_codec::GzipCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{codec::gzip, MetadataV3},
+    metadata::v3::{array::codec::gzip, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

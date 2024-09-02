@@ -2,11 +2,12 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::array::DataType;
-
-use crate::metadata::v3::codec::blosc::{
-    BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
-    BloscShuffleMode,
+use crate::metadata::v3::array::{
+    codec::blosc::{
+        BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
+        BloscShuffleMode,
+    },
+    data_type::DataTypeMetadata,
 };
 
 /// Configuration parameters for the `blosc` codec (numcodecs).
@@ -43,7 +44,7 @@ pub enum BloscShuffleModeNumCodecs {
 #[must_use]
 pub fn codec_blosc_v2_numcodecs_to_v3(
     blosc: &BloscCodecConfigurationNumcodecs,
-    data_type: &DataType,
+    data_type: &DataTypeMetadata,
 ) -> BloscCodecConfiguration {
     let (shuffle, typesize) = match (&blosc.shuffle, data_type.fixed_size()) {
         (BloscShuffleModeNumCodecs::NoShuffle, _) => (BloscShuffleMode::NoShuffle, None),

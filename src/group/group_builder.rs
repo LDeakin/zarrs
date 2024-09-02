@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::metadata::{v3::GroupMetadataV3, AdditionalFields, GroupMetadata};
+use crate::metadata::{
+    v3::{AdditionalFields, GroupMetadataV3},
+    GroupMetadata,
+};
 
 use super::{Group, GroupCreateError};
 

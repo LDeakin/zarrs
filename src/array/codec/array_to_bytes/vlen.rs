@@ -8,22 +8,24 @@ use std::{mem::size_of, num::NonZeroU64};
 use itertools::Itertools;
 pub use vlen::IDENTIFIER;
 
-pub use crate::metadata::v3::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
+pub use crate::metadata::v3::array::codec::vlen::{
+    VlenCodecConfiguration, VlenCodecConfigurationV1,
+};
 use crate::{
     array::{
         codec::{ArrayToBytesCodecTraits, CodecError, CodecOptions},
         convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
-        RawBytes, NATIVE_ENDIAN,
+        RawBytes,
     },
     config::global_config,
-    metadata::v3::codec::vlen,
+    metadata::v3::array::codec::vlen,
 };
 
 pub use vlen_codec::VlenCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::MetadataV3,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -76,7 +78,7 @@ fn get_vlen_bytes_and_offsets(
     let mut index_bytes = index_codecs
         .decode(index.into(), index_chunk_representation, options)?
         .into_fixed()?;
-    if NATIVE_ENDIAN == Endianness::Big {
+    if Endianness::Big.is_native() {
         reverse_endianness(index_bytes.to_mut(), &DataType::UInt64);
     }
     let index = match index_chunk_representation.data_type() {

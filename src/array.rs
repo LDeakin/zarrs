@@ -56,21 +56,19 @@ pub use self::{
     codec::ArrayCodecTraits,
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
-    data_type::{DataType, DataTypeSize},
+    data_type::DataType,
     element::{Element, ElementFixedLength, ElementOwned},
     fill_value::FillValue,
     storage_transformer::StorageTransformerChain,
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{
-    fill_value::FillValueMetadata,
-    nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
+    array::data_type::DataTypeSize,
+    array::fill_value::FillValueMetadata,
+    array::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     ArrayMetadataV3,
 };
-pub use crate::metadata::{
-    chunk_shape_to_array_shape, ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness,
-    NATIVE_ENDIAN,
-};
+pub use crate::metadata::{ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness};
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;
 pub use chunk_cache::{
@@ -83,17 +81,22 @@ pub use array_sharded_ext::ArrayShardedExt;
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
-use serde::Serialize;
-
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    metadata::{array_metadata_v2_to_v3, AdditionalFields, MetadataConvertVersion},
+    config::MetadataConvertVersion,
+    metadata::{v2_to_v3::array_metadata_v2_to_v3, v3::AdditionalFields},
     node::NodePath,
     storage::{data_key, StoreKey},
 };
 
 /// An ND index to an element in an array.
 pub type ArrayIndices = Vec<u64>;
+
+/// Convert a [`ChunkShape`] reference to an [`ArrayShape`].
+#[must_use]
+pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> ArrayShape {
+    chunk_shape.iter().map(|i| i.get()).collect()
+}
 
 /// A Zarr array.
 ///
@@ -514,7 +517,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
         // Attribute manipulation
         if options.include_zarrs_metadata() {
-            #[derive(Serialize)]
+            #[derive(serde::Serialize)]
             struct ZarrsMetadata {
                 description: String,
                 repository: String,

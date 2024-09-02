@@ -2,6 +2,7 @@
 //!
 //! See [`Config`] for the list of options.
 
+use crate::metadata::v3::array::codec;
 use std::{
     collections::HashMap,
     sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard},
@@ -9,7 +10,6 @@ use std::{
 
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
-use crate::metadata::{v3::codec, MetadataConvertVersion, MetadataEraseVersion};
 
 /// Global configuration options for the `zarrs` crate.
 ///
@@ -281,6 +281,40 @@ pub fn global_config_mut() -> RwLockWriteGuard<'static, Config> {
         .get_or_init(|| RwLock::new(Config::default()))
         .write()
         .unwrap()
+}
+
+/// The metadata version to retrieve.
+///
+/// Used with [`crate::array::Array::open_opt`], [`crate::group::Group::open_opt`].
+pub enum MetadataRetrieveVersion {
+    /// Either Zarr V3 or V2. V3 is prioritised over V2 if found.
+    Default,
+    /// Zarr V3.
+    V3,
+    /// Zarr V2.
+    V2,
+}
+
+/// Version options for [`Array::store_metadata`](crate::array::Array::store_metadata) and [`Group::store_metadata`](crate::group::Group::store_metadata), and their async variants.
+#[derive(Debug, Clone, Copy)]
+pub enum MetadataConvertVersion {
+    /// Write the same version as the input metadata.
+    Default,
+    /// Write Zarr V3 metadata. Zarr V2 metadata will not be automatically removed if it exists.
+    V3,
+}
+
+/// Version options for [`Array::erase_metadata`](crate::array::Array::erase_metadata) and [`Group::erase_metadata`](crate::group::Group::erase_metadata), and their async variants.
+#[derive(Debug, Clone, Copy)]
+pub enum MetadataEraseVersion {
+    /// Erase the same version as the input metadata.
+    Default,
+    /// Erase all metadata.
+    All,
+    /// Erase Zarr V3 metadata.
+    V3,
+    /// Erase Zarr V2 metadata.
+    V2,
 }
 
 #[cfg(test)]

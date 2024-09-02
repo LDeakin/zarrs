@@ -11,7 +11,7 @@ use crate::{
         ChunkRepresentation, CodecChain, DataType, DataTypeSize, Endianness, FillValue, RawBytes,
     },
     config::global_config,
-    metadata::v3::{codec::vlen::VlenIndexDataType, MetadataV3},
+    metadata::v3::{array::codec::vlen::VlenIndexDataType, MetadataV3},
     plugin::PluginCreateError,
 };
 

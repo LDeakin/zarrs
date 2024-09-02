@@ -20,7 +20,7 @@ use std::{
     ffi::{c_char, c_void},
 };
 
-pub use crate::metadata::v3::codec::blosc::{
+pub use crate::metadata::v3::array::codec::blosc::{
     BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
     BloscShuffleMode,
 };
@@ -34,7 +34,7 @@ use thiserror::Error;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{codec::blosc, MetadataV3},
+    metadata::v3::{array::codec::blosc, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::metadata::AdditionalFields;
+use crate::metadata::v3::AdditionalFields;
 
 /// Zarr V2 group metadata.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
