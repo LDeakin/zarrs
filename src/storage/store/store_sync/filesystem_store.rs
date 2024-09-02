@@ -132,41 +132,6 @@ impl FilesystemStore {
         })
     }
 
-    // /// Create a new file system store at a given `base_path` with non-default store locks.
-    // ///
-    // /// # Errors
-    // /// Returns a [`FilesystemStoreCreateError`] if `base_directory`:
-    // ///   - is not valid, or
-    // ///   - it points to an existing file rather than a directory.
-    // pub fn new_with_locks<P: AsRef<Path>>(
-    //     base_path: P,
-    //     store_locks: StoreLocks,
-    // ) -> Result<Self, FilesystemStoreCreateError> {
-    //     let base_path = base_path.as_ref().to_path_buf();
-    //     if base_path.to_str().is_none() {
-    //         return Err(FilesystemStoreCreateError::InvalidBasePath(base_path));
-    //     }
-
-    //     let readonly = if base_path.exists() {
-    //         // the path already exists, check if it is read only
-    //         let md = std::fs::metadata(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
-    //         md.permissions().readonly()
-    //     } else {
-    //         // the path does not exist, so try and create it. If this succeeds, the filesystem is not read only
-    //         std::fs::create_dir_all(&base_path).map_err(FilesystemStoreCreateError::IOError)?;
-    //         std::fs::remove_dir(&base_path)?;
-    //         false
-    //     };
-
-    //     Ok(Self {
-    //         base_path,
-    //         sort: false,
-    //         readonly,
-    //         files: Mutex::default(),
-    //         locks: store_locks,
-    //     })
-    // }
-
     /// Makes the store sort directories/files when walking.
     #[must_use]
     pub const fn sorted(mut self) -> Self {

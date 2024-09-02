@@ -34,17 +34,7 @@ impl MemoryStore {
         Self {
             data_map: Mutex::default(),
         }
-        // Self::new_with_locks(Arc::new(DefaultStoreLocks::default()))
     }
-
-    // /// Create a new memory store at a given `base_directory` with a non-default store lock.
-    // #[must_use]
-    // pub fn new_with_locks(store_locks: StoreLocks) -> Self {
-    //     Self {
-    //         data_map: Mutex::default(),
-    //         locks: store_locks,
-    //     }
-    // }
 
     fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, truncate: bool) {
         let mut data_map = self.data_map.lock().unwrap();

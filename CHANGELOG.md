@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Rename `ArrayMetadataV2DataType` to `DataTypeMetadataV2`
  - **Breaking**: Rename `FillValueMetadata` to `FillValueMetadataV3`
  - Move `crate::byte_range` into `crate::storage::byte_range` module, add re-export
+ - Remove remnants of old synchronisation API
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
