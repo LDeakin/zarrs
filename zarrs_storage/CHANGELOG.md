@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2024-09-03
+
 ### Changed
  - Use `doc_auto_cfg` on [docs.rs](https://docs.rs/)
 
@@ -21,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `storage` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.1.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.1.2...HEAD
+[0.1.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.1.2
 [0.1.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.1.1
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.1.0
