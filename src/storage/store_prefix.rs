@@ -2,8 +2,6 @@ use derive_more::{Display, From};
 use std::path::Path;
 use thiserror::Error;
 
-use crate::node::NodePath;
-
 /// A Zarr abstract store prefix.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#abstract-store-interface>.
@@ -82,19 +80,6 @@ impl TryFrom<&str> for StorePrefix {
 
     fn try_from(prefix: &str) -> Result<Self, StorePrefixError> {
         Self::new(prefix)
-    }
-}
-
-impl TryFrom<&NodePath> for StorePrefix {
-    type Error = StorePrefixError;
-
-    fn try_from(path: &NodePath) -> Result<Self, StorePrefixError> {
-        let path = path.as_str();
-        if path.eq("/") {
-            Self::new("")
-        } else {
-            Self::new(path.strip_prefix('/').unwrap_or(path).to_string() + "/")
-        }
     }
 }
 

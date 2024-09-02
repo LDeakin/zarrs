@@ -48,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Rename `ArrayMetadataV2DataType` to `DataTypeMetadataV2`
  - **Breaking**: Rename `FillValueMetadata` to `FillValueMetadataV3`
  - Move `crate::byte_range` into `crate::storage::byte_range` module, add re-export
- - Remove remnants of old synchronisation API
+ - Add `impl TryInto<StorePrefix> for &NodePath`
+   - Removes `TryFrom<&NodePath> for StorePrefix`
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
@@ -62,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Replaced by `UnsafeCellSlice` in the `unsafe_cell_slice` crate
  - **Breaking**: Remove `NATIVE_ENDIAN`, use `Endianness::native()`
  - **Breaking**: Remove unused `DataTypeExtension`
+ - Remove remnants of old synchronisation API
 
 ### Fixed
  - `[async_]store_set_partial_values` no longer truncates
