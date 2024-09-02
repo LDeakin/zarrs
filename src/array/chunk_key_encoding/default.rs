@@ -104,7 +104,7 @@ impl ChunkKeyEncodingTraits for DefaultChunkKeyEncoding {
 
 #[cfg(test)]
 mod tests {
-    use crate::{node::NodePath, storage::data_key};
+    use crate::node::{data_key, NodePath};
 
     use super::*;
 

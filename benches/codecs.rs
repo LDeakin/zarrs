@@ -6,12 +6,10 @@ use criterion::{
 };
 use zarrs::array::{
     codec::{
-        array_to_bytes::bytes::Endianness,
         bytes_to_bytes::blosc::{BloscCompressor, BloscShuffleMode},
-        ArrayCodecTraits, ArrayToBytesCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits,
-        CodecOptions,
+        ArrayToBytesCodecTraits, BloscCodec, BytesCodec, BytesToBytesCodecTraits, CodecOptions,
     },
-    BytesRepresentation, ChunkRepresentation, DataType, Element,
+    BytesRepresentation, ChunkRepresentation, DataType, Element, Endianness,
 };
 
 fn codec_bytes(c: &mut Criterion) {

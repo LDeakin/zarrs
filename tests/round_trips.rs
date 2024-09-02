@@ -5,8 +5,8 @@ use zarrs::{
         chunk_key_encoding::{DefaultChunkKeyEncoding, V2ChunkKeyEncoding},
         ChunkKeyEncoding,
     },
+    node::{data_key, meta_key_v3},
     storage::{
-        data_key, meta_key_v3,
         store::{FilesystemStore, MemoryStore},
         ReadableStorageTraits, WritableStorageTraits,
     },

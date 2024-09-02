@@ -7,13 +7,15 @@ use crate::{
     group::GroupMetadata,
     metadata::{v2::GroupMetadataV2, v3::NodeMetadataV3},
     storage::{
-        async_discover_children, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group,
-        meta_key_v3, AsyncListableStorageTraits, AsyncReadableStorageTraits, StorageError,
-        StoreKey, StorePrefix,
+        async_discover_children, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+        StorageError, StoreKey, StorePrefix,
     },
 };
 
-use super::{Node, NodeMetadata, NodePath};
+use super::{
+    meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node, NodeMetadata,
+    NodePath,
+};
 
 async fn get_metadata_v3<
     TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,

@@ -6,11 +6,8 @@ use unsafe_cell_slice::UnsafeCellSlice;
 use crate::{
     array_subset::ArraySubset,
     config::MetadataRetrieveVersion,
-    node::NodePath,
-    storage::{
-        meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, AsyncBytes,
-        AsyncReadableStorageTraits, StorageError, StorageHandle,
-    },
+    node::{meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, NodePath},
+    storage::{AsyncBytes, AsyncReadableStorageTraits, StorageError, StorageHandle},
 };
 
 use super::{

@@ -89,8 +89,8 @@ use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
     config::MetadataConvertVersion,
     metadata::{v2_to_v3::array_metadata_v2_to_v3, v3::AdditionalFields},
-    node::NodePath,
-    storage::{data_key, StoreKey},
+    node::{data_key, NodePath},
+    storage::StoreKey,
 };
 
 /// An ND index to an element in an array.

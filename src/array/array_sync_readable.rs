@@ -8,11 +8,8 @@ use crate::{
     array::{ArrayBytes, ArrayMetadataV2},
     array_subset::ArraySubset,
     config::MetadataRetrieveVersion,
-    node::NodePath,
-    storage::{
-        meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, ReadableStorageTraits,
-        StorageError, StorageHandle,
-    },
+    node::{meta_key_v2_array, meta_key_v2_attributes, meta_key_v3, NodePath},
+    storage::{ReadableStorageTraits, StorageError, StorageHandle},
 };
 
 use super::{

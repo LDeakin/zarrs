@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Removes `TryFrom<&NodePath> for StorePrefix`
  - **Breaking**: Move `extract_byte_ranges_read[_seek]` from `array::codec` to `storage::byte_range`
  - **Breaking**: Move `storage::[async_]{get_child_nodes,node_exists,node_exists,listable}` to `node` module
+ - **Breaking**: Move `storage::{meta_key*,data_key}` into `node` module
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead

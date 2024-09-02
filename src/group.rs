@@ -40,11 +40,8 @@ use crate::{
         v2_to_v3::group_metadata_v2_to_v3,
         v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     },
-    node::{NodePath, NodePathError},
-    storage::{
-        meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, ReadableStorageTraits,
-        StorageError, StorageHandle, WritableStorageTraits,
-    },
+    node::{meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, NodePath, NodePathError},
+    storage::{ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits},
 };
 
 #[cfg(feature = "async")]

@@ -15,6 +15,11 @@ pub use node_path::{NodePath, NodePathError};
 mod node_sync;
 pub use node_sync::{get_child_nodes, node_exists, node_exists_listable};
 
+mod key;
+pub use key::{
+    data_key, meta_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3,
+};
+
 #[cfg(feature = "async")]
 mod node_async;
 #[cfg(feature = "async")]
@@ -32,10 +37,7 @@ use crate::{
         v2::{ArrayMetadataV2, GroupMetadataV2},
         GroupMetadata,
     },
-    storage::{
-        meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3,
-        ListableStorageTraits, ReadableStorageTraits, StorageError,
-    },
+    storage::{ListableStorageTraits, ReadableStorageTraits, StorageError},
 };
 
 #[cfg(feature = "async")]
