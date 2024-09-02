@@ -1,6 +1,6 @@
 [package]
 name = "zarrs_storage"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.76"
@@ -16,6 +16,9 @@ async = ["dep:async-trait", "dep:futures"] # Enable the experimental async API
 http = ["dep:reqwest", "dep:url"] # Enable the sync HTTP store
 tests = [] # Enable testing functions
 zip = ["dep:zip"] # Enable the zip storage adapter
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
 async-trait = { version = "0.1.74", optional = true }
