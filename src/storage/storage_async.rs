@@ -8,13 +8,13 @@ use itertools::Itertools;
 use crate::{
     array::{ArrayMetadata, ArrayMetadataV2},
     group::GroupMetadata,
-    metadata::{v2::GroupMetadataV2, v3::NodeMetadataV3},
-    node::{Node, NodeMetadata, NodePath},
+    metadata::{v2::GroupMetadataV2, v3::NodeMetadataV3, NodeMetadata},
+    node::{Node, NodePath},
     storage::meta_key_v3,
 };
 
 use super::{
-    byte_range::ByteRange, data_key, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group,
+    byte_range::ByteRange, meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group,
     AsyncBytes, MaybeAsyncBytes, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
     StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
@@ -401,26 +401,6 @@ where
         nodes.push(Node::new_with_metadata(path, child_metadata, children));
     }
     Ok(nodes)
-}
-
-/// Asynchronously retrieve byte ranges from a chunk.
-///
-/// Returns [`None`] where keys are not found.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-pub async fn async_retrieve_partial_values(
-    storage: &dyn AsyncReadableStorageTraits,
-    array_path: &NodePath,
-    chunk_key: &StoreKey,
-    bytes_ranges: &[ByteRange],
-) -> Result<Vec<MaybeAsyncBytes>, StorageError> {
-    let key = data_key(array_path, chunk_key);
-    let key_ranges: Vec<StoreKeyRange> = bytes_ranges
-        .iter()
-        .map(|byte_range| StoreKeyRange::new(key.clone(), *byte_range))
-        .collect();
-    storage.get_partial_values(&key_ranges).await
 }
 
 /// Asynchronously discover the children of a node.

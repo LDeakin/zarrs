@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - `ChunkKeySeparator`
         - `DimensionName`
     - Split `DataType` into `array::DataType` and `metadata::_::DataTypeMetadataV3`
- - **Breaking**: `data_key` and `[async_]retrieve_partial_values` in `zarrs::storage` now take a `chunk_key` instead of a `chunk_key_encoding` and `chunk_indices`
+ - **Breaking**: `data_key` in `zarrs::storage` now take a `chunk_key` instead of a `chunk_key_encoding` and `chunk_indices`
  - **Breaking**: Move `metadata::{v2,v3}::{codec,chunk_grid,chunk_key_encoding}` to `metadata::{v2,v3}::array::
  - **Breaking**: Rename `ArrayMetadataV2DataType` to `DataTypeMetadataV2`
  - **Breaking**: Rename `FillValueMetadata` to `FillValueMetadataV3`
@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Remove many functions in the storage module:
     - `[async_]create_{array, group}`
     - `[async_]erase_{chunk,metadata}`, `[async_]{retrieve,store}_chunk`
+    - `[async_]retrieve_partial_values`
  - **Breaking**: Remove `Default` implementation for `Metadata{Convert,Erase}Version`
     - Explicitly use `global_config()` instead
  - **Breaking**: Remove `array::UnsafeCellSlice`
