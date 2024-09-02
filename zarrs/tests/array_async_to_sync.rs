@@ -1,4 +1,4 @@
-#![cfg(all(feature = "async", feature = "object_store"))]
+#![cfg(all(feature = "async"))]
 
 use serde_json::json;
 use std::sync::Arc;

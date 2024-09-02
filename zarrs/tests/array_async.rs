@@ -1,4 +1,4 @@
-#![cfg(all(feature = "async", feature = "ndarray", feature = "object_store"))]
+#![cfg(all(feature = "async", feature = "ndarray"))]
 
 use zarrs::array::codec::array_to_bytes::vlen::VlenCodec;
 use zarrs::array::codec::TransposeCodec;

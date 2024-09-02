@@ -20,7 +20,7 @@ type PartialDecoderHashMap<'a> = HashMap<Vec<u64>, Arc<dyn ArrayPartialDecoderTr
 pub struct ArrayShardedReadableExtCache<'a> {
     array_is_sharded: bool,
     inner_chunk_grid: ChunkGrid,
-    cache: Arc<parking_lot::Mutex<PartialDecoderHashMap<'a>>>,
+    cache: Arc<std::sync::Mutex<PartialDecoderHashMap<'a>>>,
 }
 
 impl<'a> ArrayShardedReadableExtCache<'a> {
@@ -31,7 +31,7 @@ impl<'a> ArrayShardedReadableExtCache<'a> {
         Self {
             array_is_sharded: array.is_sharded(),
             inner_chunk_grid,
-            cache: Arc::new(parking_lot::Mutex::new(HashMap::default())),
+            cache: Arc::new(std::sync::Mutex::new(HashMap::default())),
         }
     }
 
@@ -49,19 +49,22 @@ impl<'a> ArrayShardedReadableExtCache<'a> {
 
     /// Return the number of shard indexes cached.
     #[must_use]
+    #[allow(clippy::missing_panics_doc)]
     pub fn len(&self) -> usize {
-        self.cache.lock().len()
+        self.cache.lock().unwrap().len()
     }
 
     /// Returns true if the cache contains no cached shard indexes.
     #[must_use]
+    #[allow(clippy::missing_panics_doc)]
     pub fn is_empty(&self) -> bool {
-        self.cache.lock().is_empty()
+        self.cache.lock().unwrap().is_empty()
     }
 
     /// Clear the cache.
+    #[allow(clippy::missing_panics_doc)]
     pub fn clear(&self) {
-        self.cache.lock().clear();
+        self.cache.lock().unwrap().clear();
     }
 
     fn retrieve<TStorage: ?Sized + ReadableStorageTraits + 'static>(
@@ -69,7 +72,7 @@ impl<'a> ArrayShardedReadableExtCache<'a> {
         array: &'a Array<TStorage>,
         shard_indices: &[u64],
     ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
-        let mut cache = self.cache.lock();
+        let mut cache = self.cache.lock().unwrap();
         if let Some(partial_decoder) = cache.get(shard_indices) {
             Ok(partial_decoder.clone())
         } else {

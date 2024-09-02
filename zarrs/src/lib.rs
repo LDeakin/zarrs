@@ -66,7 +66,7 @@
 //!
 //! ### Storage Support
 //!
-//! `zarrs` supports a huge range of storage backends through the [`opendal`] and [`object_store`] crates.
+//! `zarrs` supports a huge range of storage backends through the [`opendal`](https://docs.rs/opendal/latest/opendal/) and [`object_store`](https://docs.rs/opendal/latest/object_store/) crates.
 //!
 //! <details><summary>Stores and Storage Adapters</summary>
 //!
