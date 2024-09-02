@@ -17,7 +17,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // let path = tempfile::TempDir::new()?;
     // let mut store: ReadableWritableListableStorage = Arc::new(store::AsyncFilesystemStore::new(path.path())?);
     // let mut store: ReadableWritableListableStorage = Arc::new(store::AsyncFilesystemStore::new(
-    //     "tests/data/array_write_read.zarr",
+    //     "zarrs/tests/data/array_write_read.zarr",
     // )?);
     let mut store: AsyncReadableWritableListableStorage = Arc::new(
         zarrs_object_store::AsyncObjectStore::new(object_store::memory::InMemory::new()),
@@ -38,16 +38,18 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Create a group
+    // Create the root group
+    zarrs::group::GroupBuilder::new()
+        .build(store.clone(), "/")?
+        .async_store_metadata()
+        .await?;
+
+    // Create a group with attributes
     let group_path = "/group";
     let mut group = zarrs::group::GroupBuilder::new().build(store.clone(), group_path)?;
-
-    // Update group metadata
     group
         .attributes_mut()
         .insert("foo".into(), serde_json::Value::String("bar".into()));
-
-    // Write group metadata to store
     group.async_store_metadata().await?;
 
     println!(

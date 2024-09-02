@@ -38,16 +38,17 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Create a group
+    // Create the root group
+    zarrs::group::GroupBuilder::new()
+        .build(store.clone(), "/")?
+        .store_metadata()?;
+
+    // Create a group with attributes
     let group_path = "/group";
     let mut group = zarrs::group::GroupBuilder::new().build(store.clone(), group_path)?;
-
-    // Update group metadata
     group
         .attributes_mut()
         .insert("foo".into(), serde_json::Value::String("bar".into()));
-
-    // Write group metadata to store
     group.store_metadata()?;
 
     println!(

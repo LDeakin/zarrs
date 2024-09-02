@@ -17,7 +17,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // let path = tempfile::TempDir::new()?;
     // let mut store: ReadableWritableListableStorage = Arc::new(store::FilesystemStore::new(path.path())?);
     // let mut store: ReadableWritableListableStorage = Arc::new(store::FilesystemStore::new(
-    //     "tests/data/array_write_read.zarr",
+    //     "zarrs/tests/data/array_write_read.zarr",
     // )?);
     let mut store: ReadableWritableListableStorage = Arc::new(store::MemoryStore::new());
     if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
@@ -36,16 +36,17 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Create a group
+    // Create the root group
+    zarrs::group::GroupBuilder::new()
+        .build(store.clone(), "/")?
+        .store_metadata()?;
+
+    // Create a group with attributes
     let group_path = "/group";
     let mut group = zarrs::group::GroupBuilder::new().build(store.clone(), group_path)?;
-
-    // Update group metadata
     group
         .attributes_mut()
         .insert("foo".into(), serde_json::Value::String("bar".into()));
-
-    // Write group metadata to store
     group.store_metadata()?;
 
     println!(
