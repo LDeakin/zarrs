@@ -7,7 +7,7 @@ use crate::metadata::{
                 blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
                 zfpy::{codec_zfpy_v2_numcodecs_to_v3, ZfpyCodecConfigurationNumcodecs},
             },
-            data_type_metadata_v2_to_endianness, ArrayMetadataV2DataType, ArrayMetadataV2Order,
+            data_type_metadata_v2_to_endianness, DataTypeMetadataV2, ArrayMetadataV2Order,
             DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
         },
         ArrayMetadataV2, GroupMetadataV2,
@@ -27,7 +27,7 @@ use crate::metadata::{
     },
 };
 
-use super::v3::array::data_type::DataTypeMetadata;
+use super::v3::array::data_type::DataTypeMetadataV3;
 
 /// Convert Zarr V2 group metadata to V3.
 #[allow(clippy::too_many_lines)]
@@ -85,8 +85,8 @@ pub fn array_metadata_v2_to_v3(
     ) else {
         return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedDataType(
             match &array_metadata_v2.dtype {
-                ArrayMetadataV2DataType::Simple(dtype) => dtype.clone(),
-                ArrayMetadataV2DataType::Structured(dtype) => {
+                DataTypeMetadataV2::Simple(dtype) => dtype.clone(),
+                DataTypeMetadataV2::Structured(dtype) => {
                     return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedDataType(
                         format!("{dtype:?}"),
                     ))
@@ -249,33 +249,33 @@ pub fn array_metadata_v2_to_v3(
 /// An unsupported Zarr V2 data type error.
 #[derive(Debug, Error)]
 #[error("V2 data type {_0:?} is not supported")]
-pub struct DataTypeMetadataV2UnsupportedDataTypeError(ArrayMetadataV2DataType);
+pub struct DataTypeMetadataV2UnsupportedDataTypeError(DataTypeMetadataV2);
 
 /// Convert a Zarr V2 data type to a compatible V3 data type.
 ///
 /// # Errors
 /// Returns a [`DataTypeMetadataV2UnsupportedDataTypeError`] if the data type is not supported.
 pub fn data_type_metadata_v2_to_v3_data_type(
-    data_type: &ArrayMetadataV2DataType,
-) -> Result<DataTypeMetadata, DataTypeMetadataV2UnsupportedDataTypeError> {
+    data_type: &DataTypeMetadataV2,
+) -> Result<DataTypeMetadataV3, DataTypeMetadataV2UnsupportedDataTypeError> {
     match data_type {
-        ArrayMetadataV2DataType::Simple(data_type_str) => {
+        DataTypeMetadataV2::Simple(data_type_str) => {
             match data_type_str.as_str() {
-                "|b1" => Ok(DataTypeMetadata::Bool),
-                "|i1" => Ok(DataTypeMetadata::Int8),
-                "<i2" | ">i2" => Ok(DataTypeMetadata::Int16),
-                "<i4" | ">i4" => Ok(DataTypeMetadata::Int32),
-                "<i8" | ">i8" => Ok(DataTypeMetadata::Int64),
-                "|u1" => Ok(DataTypeMetadata::UInt8),
-                "<u2" | ">u2" => Ok(DataTypeMetadata::UInt16),
-                "<u4" | ">u4" => Ok(DataTypeMetadata::UInt32),
-                "<u8" | ">u8" => Ok(DataTypeMetadata::UInt64),
-                "<f2" | ">f2" => Ok(DataTypeMetadata::Float16),
-                "<f4" | ">f4" => Ok(DataTypeMetadata::Float32),
-                "<f8" | ">f8" => Ok(DataTypeMetadata::Float64),
-                "<c8" | ">c8" => Ok(DataTypeMetadata::Complex64),
-                "<c16" | ">c16" => Ok(DataTypeMetadata::Complex128),
-                "|O" => Ok(DataTypeMetadata::String), // LEGACY: This is not part of the spec. The dtype for a PyObject, which is what zarr-python 2 uses for string arrays.
+                "|b1" => Ok(DataTypeMetadataV3::Bool),
+                "|i1" => Ok(DataTypeMetadataV3::Int8),
+                "<i2" | ">i2" => Ok(DataTypeMetadataV3::Int16),
+                "<i4" | ">i4" => Ok(DataTypeMetadataV3::Int32),
+                "<i8" | ">i8" => Ok(DataTypeMetadataV3::Int64),
+                "|u1" => Ok(DataTypeMetadataV3::UInt8),
+                "<u2" | ">u2" => Ok(DataTypeMetadataV3::UInt16),
+                "<u4" | ">u4" => Ok(DataTypeMetadataV3::UInt32),
+                "<u8" | ">u8" => Ok(DataTypeMetadataV3::UInt64),
+                "<f2" | ">f2" => Ok(DataTypeMetadataV3::Float16),
+                "<f4" | ">f4" => Ok(DataTypeMetadataV3::Float32),
+                "<f8" | ">f8" => Ok(DataTypeMetadataV3::Float64),
+                "<c8" | ">c8" => Ok(DataTypeMetadataV3::Complex64),
+                "<c16" | ">c16" => Ok(DataTypeMetadataV3::Complex128),
+                "|O" => Ok(DataTypeMetadataV3::String), // LEGACY: This is not part of the spec. The dtype for a PyObject, which is what zarr-python 2 uses for string arrays.
                 // TODO "|mX" timedelta
                 // TODO "|MX" datetime
                 // TODO "|SX" string (fixed length sequence of char)
@@ -286,7 +286,7 @@ pub fn data_type_metadata_v2_to_v3_data_type(
                 )),
             }
         }
-        ArrayMetadataV2DataType::Structured(_) => Err(DataTypeMetadataV2UnsupportedDataTypeError(
+        DataTypeMetadataV2::Structured(_) => Err(DataTypeMetadataV2UnsupportedDataTypeError(
             data_type.clone(),
         )),
     }

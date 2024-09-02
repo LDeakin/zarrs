@@ -61,7 +61,7 @@ pub struct ArrayMetadataV2 {
     /// A list of integers defining the length of each dimension of a chunk of the array.
     pub chunks: ChunkShape,
     /// The data type of the Zarr array.
-    pub dtype: ArrayMetadataV2DataType,
+    pub dtype: DataTypeMetadataV2,
     /// A JSON object identifying the primary compression codec and providing configuration parameters, or null if no compressor is to be used.
     pub compressor: Option<MetadataV2>,
     /// A scalar value providing the default value to use for uninitialized portions of the array, or null if no fill value is to be used.
@@ -130,7 +130,7 @@ impl From<DataTypeMetadataV2Structured> for DataTypeMetadataV2StructuredTuple {
 /// Zarr V2 data type metadata.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(untagged)]
-pub enum ArrayMetadataV2DataType {
+pub enum DataTypeMetadataV2 {
     /// A simple data type.
     Simple(String),
     /// A structured data type.
@@ -140,17 +140,17 @@ pub enum ArrayMetadataV2DataType {
 /// A Zarr V2 invalid data type endianness error.
 #[derive(Debug, Error)]
 #[error("invalid V2 data type for {_0:?} endianness, must begin with |, < or >")]
-pub struct DataTypeMetadataV2InvalidEndiannessError(ArrayMetadataV2DataType);
+pub struct DataTypeMetadataV2InvalidEndiannessError(DataTypeMetadataV2);
 
 /// Get the endianness of a Zarr V2 data type.
 ///
 /// # Errors
 /// Returns a [`DataTypeMetadataV2InvalidEndiannessError`] if the data type is not supported or the endianness prefix is invalid.
 pub fn data_type_metadata_v2_to_endianness(
-    data_type: &ArrayMetadataV2DataType,
+    data_type: &DataTypeMetadataV2,
 ) -> Result<Option<Endianness>, DataTypeMetadataV2InvalidEndiannessError> {
     match data_type {
-        ArrayMetadataV2DataType::Simple(data_type_str) => {
+        DataTypeMetadataV2::Simple(data_type_str) => {
             if data_type_str.starts_with('|') {
                 Ok(None)
             } else if data_type_str.starts_with('<') {
@@ -161,7 +161,7 @@ pub fn data_type_metadata_v2_to_endianness(
                 Err(DataTypeMetadataV2InvalidEndiannessError(data_type.clone()))
             }
         }
-        ArrayMetadataV2DataType::Structured(_) => {
+        DataTypeMetadataV2::Structured(_) => {
             Err(DataTypeMetadataV2InvalidEndiannessError(data_type.clone()))
         }
     }

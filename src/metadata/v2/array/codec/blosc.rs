@@ -7,7 +7,7 @@ use crate::metadata::v3::array::{
         BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
         BloscShuffleMode,
     },
-    data_type::DataTypeMetadata,
+    data_type::DataTypeMetadataV3,
 };
 
 /// Configuration parameters for the `blosc` codec (numcodecs).
@@ -44,7 +44,7 @@ pub enum BloscShuffleModeNumCodecs {
 #[must_use]
 pub fn codec_blosc_v2_numcodecs_to_v3(
     blosc: &BloscCodecConfigurationNumcodecs,
-    data_type: &DataTypeMetadata,
+    data_type: &DataTypeMetadataV3,
 ) -> BloscCodecConfiguration {
     let (shuffle, typesize) = match (&blosc.shuffle, data_type.fixed_size()) {
         (BloscShuffleModeNumCodecs::NoShuffle, _) => (BloscShuffleMode::NoShuffle, None),

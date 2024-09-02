@@ -10,7 +10,7 @@ use crate::metadata::v3::MetadataV3;
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 #[rustfmt::skip]
-pub enum DataTypeMetadata {
+pub enum DataTypeMetadataV3 {
     /// `bool` Boolean.
     Bool,
     /// `int8` Integer in `[-2^7, 2^7-1]`.
@@ -51,7 +51,7 @@ pub enum DataTypeMetadata {
     Unknown(MetadataV3),
 }
 
-impl serde::Serialize for DataTypeMetadata {
+impl serde::Serialize for DataTypeMetadataV3 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -60,7 +60,7 @@ impl serde::Serialize for DataTypeMetadata {
     }
 }
 
-impl<'de> serde::Deserialize<'de> for DataTypeMetadata {
+impl<'de> serde::Deserialize<'de> for DataTypeMetadataV3 {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let metadata = MetadataV3::deserialize(d)?;
         Ok(Self::from_metadata(&metadata))
@@ -84,7 +84,7 @@ pub enum DataTypeSize {
 
 // dyn_clone::clone_trait_object!(DataTypeExtension);
 
-impl DataTypeMetadata {
+impl DataTypeMetadataV3 {
     /// Returns the name.
     #[must_use]
     pub fn name(&self) -> String {
@@ -187,13 +187,13 @@ impl DataTypeMetadata {
     }
 }
 
-impl From<MetadataV3> for DataTypeMetadata {
+impl From<MetadataV3> for DataTypeMetadataV3 {
     fn from(metadata: MetadataV3) -> Self {
         Self::from_metadata(&metadata)
     }
 }
 
-impl core::fmt::Display for DataTypeMetadata {
+impl core::fmt::Display for DataTypeMetadataV3 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "{}", self.name())
     }

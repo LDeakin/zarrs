@@ -1,4 +1,4 @@
-use data_type::DataTypeMetadata;
+use data_type::DataTypeMetadataV3;
 use derive_more::Display;
 use fill_value::FillValueMetadata;
 use serde::{Deserialize, Serialize};
@@ -107,7 +107,7 @@ pub struct ArrayMetadataV3 {
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
     /// The data type of the Zarr array.
-    pub data_type: DataTypeMetadata,
+    pub data_type: DataTypeMetadataV3,
     /// The chunk grid of the Zarr array.
     pub chunk_grid: MetadataV3,
     /// The mapping from chunk grid cell coordinates to keys in the underlying store.
@@ -158,7 +158,7 @@ impl ArrayMetadataV3 {
     #[must_use]
     pub fn new(
         shape: ArrayShape,
-        data_type: DataTypeMetadata,
+        data_type: DataTypeMetadataV3,
         chunk_grid: MetadataV3,
         chunk_key_encoding: MetadataV3,
         fill_value: FillValueMetadata,
