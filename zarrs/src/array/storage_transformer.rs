@@ -1,4 +1,6 @@
-//! Zarr storage transformers. Includes [performance metrics](performance_metrics::PerformanceMetricsStorageTransformer) and [usage log](usage_log::UsageLogStorageTransformer) implementations for internal use.
+//! Zarr storage transformers.
+//!
+//! Includes [performance metrics](performance_metrics::PerformanceMetricsStorageTransformer) and [usage log](usage_log::UsageLogStorageTransformer) implementations for internal use.
 //!
 //! A Zarr storage transformer modifies a request to read or write data before passing that request to a following storage transformer or store.
 //! A [`StorageTransformerChain`] represents a sequence of storage transformers.
