@@ -98,7 +98,7 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<ArrayBytes, ArrayError>;
+    ) -> Result<ArrayBytes<'a>, ArrayError>;
 
     /// Read and decode the inner chunk at `chunk_indices` into a vector of its elements.
     ///
@@ -132,7 +132,7 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes, ArrayError>;
+    ) -> Result<ArrayBytes<'a>, ArrayError>;
 
     /// Read and decode the inner chunks at `inner_chunks` into a vector of their elements.
     ///
@@ -166,7 +166,7 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
         cache: &ArrayShardedReadableExtCache<'a>,
         array_subset: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes, ArrayError>;
+    ) -> Result<ArrayBytes<'a>, ArrayError>;
 
     /// Read and decode the `array_subset` of array into a vector of its elements.
     ///
@@ -200,7 +200,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<ArrayBytes, ArrayError> {
+    ) -> Result<ArrayBytes<'a>, ArrayError> {
         if cache.array_is_sharded() {
             let array_subset = cache
                 .inner_chunk_grid()
@@ -266,7 +266,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         cache: &ArrayShardedReadableExtCache<'a>,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes, ArrayError> {
+    ) -> Result<ArrayBytes<'a>, ArrayError> {
         if cache.array_is_sharded() {
             let inner_chunk_grid = cache.inner_chunk_grid();
             let array_subset = inner_chunk_grid
@@ -328,7 +328,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         cache: &ArrayShardedReadableExtCache<'a>,
         array_subset: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes, ArrayError> {
+    ) -> Result<ArrayBytes<'a>, ArrayError> {
         if cache.array_is_sharded() {
             // Find the shards intersecting this array subset
             let shards = self.chunks_in_array_subset(array_subset)?;
