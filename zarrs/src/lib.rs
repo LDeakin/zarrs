@@ -153,12 +153,11 @@
 //! [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs),
 //! [`rectangular_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/rectangular_array_write_read.rs),
 //! [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs),
-//! [`http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/http_array_read.rs).
+//! [`sync_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sync_http_array_read.rs).
 //!
 //! #### Async API Examples
 //! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs),
-//! [`async_http_array_read_object_store`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read_object_store.rs),
-//! [`async_http_array_read_opendal`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read_opendal.rs).
+//! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read.rs),
 //!
 //! ## Crate Features
 //! #### Default
