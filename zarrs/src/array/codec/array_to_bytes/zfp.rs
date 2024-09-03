@@ -18,6 +18,8 @@ mod zfp_field;
 mod zfp_partial_decoder;
 mod zfp_stream;
 
+use std::sync::Arc;
+
 pub use crate::metadata::v3::array::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use zfp_codec::ZfpCodec;
 
@@ -64,7 +66,7 @@ pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCre
     let configuration: ZfpCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec: Box<ZfpCodec> = Box::new(ZfpCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }
 

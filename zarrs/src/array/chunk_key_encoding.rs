@@ -5,6 +5,8 @@
 pub mod default;
 pub mod v2;
 
+use std::sync::Arc;
+
 pub use crate::metadata::{
     v3::array::chunk_key_encoding::{
         default::DefaultChunkKeyEncodingConfiguration, v2::V2ChunkKeyEncodingConfiguration,
@@ -24,7 +26,7 @@ use derive_more::{Deref, From};
 
 /// A chunk key encoding.
 #[derive(Debug, Clone, From, Deref)]
-pub struct ChunkKeyEncoding(Box<dyn ChunkKeyEncodingTraits>);
+pub struct ChunkKeyEncoding(Arc<dyn ChunkKeyEncodingTraits>);
 
 /// A chunk key encoding plugin.
 pub type ChunkKeyEncodingPlugin = Plugin<ChunkKeyEncoding>;
@@ -33,7 +35,7 @@ inventory::collect!(ChunkKeyEncodingPlugin);
 impl ChunkKeyEncoding {
     /// Create a chunk key encoding.
     pub fn new<T: ChunkKeyEncodingTraits + 'static>(chunk_key_encoding: T) -> Self {
-        let chunk_key_encoding: Box<dyn ChunkKeyEncodingTraits> = Box::new(chunk_key_encoding);
+        let chunk_key_encoding: Arc<dyn ChunkKeyEncodingTraits> = Arc::new(chunk_key_encoding);
         chunk_key_encoding.into()
     }
 
@@ -78,12 +80,10 @@ where
 }
 
 /// Chunk key encoding traits.
-pub trait ChunkKeyEncodingTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync {
+pub trait ChunkKeyEncodingTraits: core::fmt::Debug + Send + Sync {
     /// Create the metadata of this chunk key encoding.
     fn create_metadata(&self) -> MetadataV3;
 
     /// Encode chunk grid indices (grid cell coordinates) into a store key.
     fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey;
 }
-
-dyn_clone::clone_trait_object!(ChunkKeyEncodingTraits);

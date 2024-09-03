@@ -884,7 +884,7 @@ mod tests {
         )
         .bytes_to_bytes_codecs(vec![
             #[cfg(feature = "gzip")]
-            Box::new(codec::GzipCodec::new(5).unwrap()),
+            Arc::new(codec::GzipCodec::new(5).unwrap()),
         ])
         .build(store.into(), array_path)
         .unwrap();
@@ -916,7 +916,7 @@ mod tests {
         )
         .bytes_to_bytes_codecs(vec![
             #[cfg(feature = "gzip")]
-            Box::new(codec::GzipCodec::new(5).unwrap()),
+            Arc::new(codec::GzipCodec::new(5).unwrap()),
         ])
         // .storage_transformers(vec![].into())
         .build(store, array_path)

@@ -42,7 +42,7 @@ use super::{
 /// )
 /// .bytes_to_bytes_codecs(vec![
 ///     #[cfg(feature = "gzip")]
-///     Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+///     Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
 /// ])
 /// .dimension_names(["y", "x"].into())
 /// .build(store.clone(), "/group/array")?;
@@ -70,11 +70,11 @@ pub struct ArrayBuilder {
     /// Fill value.
     pub fill_value: FillValue,
     /// Array to array codecs.
-    pub array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
+    pub array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
     /// Array to bytes codec.
-    pub array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
+    pub array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
     /// Bytes to bytes codecs.
-    pub bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+    pub bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     /// Storage transformer chain.
     pub storage_transformers: StorageTransformerChain,
     /// Attributes.
@@ -106,10 +106,10 @@ impl ArrayBuilder {
             fill_value,
             array_to_array_codecs: Vec::default(),
             array_to_bytes_codec: if is_fixed_size {
-                Box::<BytesCodec>::default()
+                Arc::<BytesCodec>::default()
             } else {
-                Box::<VlenCodec>::default()
-                // Box::<VlenV2Codec>::default()
+                Arc::<VlenCodec>::default()
+                // Arc::<VlenV2Codec>::default()
             },
             bytes_to_bytes_codecs: Vec::default(),
             attributes: serde_json::Map::default(),
@@ -188,7 +188,7 @@ impl ArrayBuilder {
     /// If left unmodified, the array will have no array to array codecs.
     pub fn array_to_array_codecs(
         &mut self,
-        array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
+        array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
     ) -> &mut Self {
         self.array_to_array_codecs = array_to_array_codecs;
         self
@@ -199,7 +199,7 @@ impl ArrayBuilder {
     /// If left unmodified, the array will default to using the `bytes` codec with native endian encoding.
     pub fn array_to_bytes_codec(
         &mut self,
-        array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
+        array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
     ) -> &mut Self {
         self.array_to_bytes_codec = array_to_bytes_codec;
         self
@@ -210,7 +210,7 @@ impl ArrayBuilder {
     /// If left unmodified, the array will have no bytes to bytes codecs.
     pub fn bytes_to_bytes_codecs(
         &mut self,
-        bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+        bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) -> &mut Self {
         self.bytes_to_bytes_codecs = bytes_to_bytes_codecs;
         self

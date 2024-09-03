@@ -16,8 +16,8 @@ mod blosc_partial_decoder;
 const MIN_PARALLEL_LENGTH: usize = 4_000_000;
 
 use std::{
-    ffi::c_int,
-    ffi::{c_char, c_void},
+    ffi::{c_char, c_int, c_void},
+    sync::Arc,
 };
 
 pub use crate::metadata::v3::array::codec::blosc::{
@@ -53,7 +53,7 @@ pub(crate) fn create_codec_blosc(metadata: &MetadataV3) -> Result<Codec, PluginC
     let configuration: BloscCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(BloscCodec::new_with_configuration(&configuration)?);
+    let codec = Arc::new(BloscCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
 

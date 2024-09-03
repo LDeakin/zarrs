@@ -7,6 +7,8 @@
 mod bytes_codec;
 mod bytes_partial_decoder;
 
+use std::sync::Arc;
+
 use crate::metadata::Endianness;
 
 use crate::metadata::v3::array::codec::bytes;
@@ -40,7 +42,7 @@ pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginC
     let configuration: BytesCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(BytesCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(BytesCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }
 

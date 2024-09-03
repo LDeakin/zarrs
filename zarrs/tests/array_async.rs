@@ -1,5 +1,7 @@
 #![cfg(all(feature = "async", feature = "ndarray"))]
 
+use std::sync::Arc;
+
 use zarrs::array::codec::array_to_bytes::vlen::VlenCodec;
 use zarrs::array::codec::TransposeCodec;
 use zarrs::array::{Array, ArrayBuilder, DataType, FillValue};
@@ -23,11 +25,11 @@ async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>>
     // builder.storage_transformers(vec![].into());
     if shard {
         #[cfg(feature = "sharding")]
-        builder.array_to_bytes_codec(Box::new(
+        builder.array_to_bytes_codec(Arc::new(
             zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder::new(vec![1, 1].try_into().unwrap())
                 .bytes_to_bytes_codecs(vec![
                     #[cfg(feature = "gzip")]
-                    Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+                    Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
                 ])
                 .build(),
         ));
@@ -278,7 +280,7 @@ async fn array_str_async_simple() -> Result<(), Box<dyn std::error::Error>> {
     );
     builder.bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
-        Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+        Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
     ]);
 
     let array = builder.build(store, array_path).unwrap();
@@ -295,17 +297,17 @@ async fn array_str_async_sharded_transpose() -> Result<(), Box<dyn std::error::E
         vec![2, 2].try_into().unwrap(), // regular chunk shape
         FillValue::from(""),
     );
-    builder.array_to_array_codecs(vec![Box::new(TransposeCodec::new(
+    builder.array_to_array_codecs(vec![Arc::new(TransposeCodec::new(
         TransposeOrder::new(&[1, 0]).unwrap(),
     ))]);
-    builder.array_to_bytes_codec(Box::new(
+    builder.array_to_bytes_codec(Arc::new(
         zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder::new(
             vec![2, 1].try_into().unwrap(),
         )
-        .array_to_bytes_codec(Box::<VlenCodec>::default())
+        .array_to_bytes_codec(Arc::<VlenCodec>::default())
         .bytes_to_bytes_codecs(vec![
             #[cfg(feature = "gzip")]
-            Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+            Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
         ])
         .build(),
     ));

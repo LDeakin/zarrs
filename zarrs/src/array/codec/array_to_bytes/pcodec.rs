@@ -13,6 +13,8 @@
 mod pcodec_codec;
 mod pcodec_partial_decoder;
 
+use std::sync::Arc;
+
 pub use crate::metadata::v3::array::codec::pcodec::{
     PcodecCodecConfiguration, PcodecCodecConfigurationV1, PcodecCompressionLevel,
     PcodecDeltaEncodingOrder,
@@ -47,7 +49,7 @@ pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, Plugin
     let configuration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(PcodecCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(PcodecCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToBytes(codec))
 }
 

@@ -97,11 +97,11 @@ inventory::collect!(CodecPlugin);
 #[derive(Debug)]
 pub enum Codec {
     /// An array to array codec.
-    ArrayToArray(Box<dyn ArrayToArrayCodecTraits>),
+    ArrayToArray(Arc<dyn ArrayToArrayCodecTraits>),
     /// An array to bytes codec.
-    ArrayToBytes(Box<dyn ArrayToBytesCodecTraits>),
+    ArrayToBytes(Arc<dyn ArrayToBytesCodecTraits>),
     /// A bytes to bytes codec.
-    BytesToBytes(Box<dyn BytesToBytesCodecTraits>),
+    BytesToBytes(Arc<dyn BytesToBytesCodecTraits>),
 }
 
 impl Codec {
@@ -445,9 +445,7 @@ impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder {
 
 /// Traits for array to array codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
-pub trait ArrayToArrayCodecTraits:
-    ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
-{
+pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
     /// # Errors
@@ -504,13 +502,9 @@ pub trait ArrayToArrayCodecTraits:
     ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
 }
 
-dyn_clone::clone_trait_object!(ArrayToArrayCodecTraits);
-
 /// Traits for array to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
-pub trait ArrayToBytesCodecTraits:
-    ArrayCodecTraits + dyn_clone::DynClone + core::fmt::Debug
-{
+pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
     /// # Errors
@@ -566,11 +560,9 @@ pub trait ArrayToBytesCodecTraits:
     ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
 }
 
-dyn_clone::clone_trait_object!(ArrayToBytesCodecTraits);
-
 /// Traits for bytes to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
-pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt::Debug {
+pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     /// Return the maximum internal concurrency supported for the requested decoded representation.
     ///
     /// # Errors
@@ -630,8 +622,6 @@ pub trait BytesToBytesCodecTraits: CodecTraits + dyn_clone::DynClone + core::fmt
         options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError>;
 }
-
-dyn_clone::clone_trait_object!(BytesToBytesCodecTraits);
 
 impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
     fn partial_decode(

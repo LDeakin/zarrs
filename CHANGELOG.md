@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Highlights
+### Highlights / Major Changes
  - `zarrs` has been split into 5 crates: `zarrs`, `zarrs_metadata`, `zarrs_storage`, `zarrs_opendal`, and `zarrs_object_store`
    - `zarrs_storage` and `zarrs_metadata` are re-exported as the `storage` and `metadata` modules
    - `opendal` and `object_store` support has been moved to the `zarrs_opendal` and `zarrs_object_store` crates
@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Direct IO support for Linux in `FilesystemStore`
  - **Implicit groups are no longer supported**
    - It is the responsibility of the `zarrs` consumer to explicitly write group metadata when creating a hierarchy
- - Check the full release notes for all changes. This release has many breaking changes due to items being moved, renamed, or removed
+ - Codecs must now be `Arc`'d instead of `Box`'d
+ - Check the full release notes for all changes. This release has many breaking changes due to items being removed, moved, renamed, and deprecated.
 
 ### Added
  - Add `ChunkGridTraits::chunks_in_array_subset()`
@@ -69,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `zarrs_metadata` (re-exported as `metadata` module)
    - `zarrs_object_store`
    - `zarrs_opendal`
+ - **Breaking**: Codecs no longer need to implement `Clone` but must be in `Arc` instead of `Box`
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead

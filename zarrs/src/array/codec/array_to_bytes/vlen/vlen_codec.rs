@@ -32,10 +32,10 @@ impl Default for VlenCodec {
     fn default() -> Self {
         let index_codecs = CodecChain::new(
             vec![],
-            Box::new(BytesCodec::new(Some(Endianness::Little))),
+            Arc::new(BytesCodec::new(Some(Endianness::Little))),
             vec![],
         );
-        let data_codecs = CodecChain::new(vec![], Box::new(BytesCodec::new(None)), vec![]);
+        let data_codecs = CodecChain::new(vec![], Arc::new(BytesCodec::new(None)), vec![]);
         Self {
             index_codecs,
             data_codecs,

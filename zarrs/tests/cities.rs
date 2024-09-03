@@ -4,6 +4,7 @@ use std::{
     error::Error,
     fs::File,
     io::{BufRead, BufReader},
+    sync::Arc,
 };
 
 use zarrs::{
@@ -38,13 +39,13 @@ fn cities_impl(
     compression_level: Option<i32>,
     chunk_size: u64,
     shard_size: Option<u64>,
-    vlen_codec: Box<dyn ArrayToBytesCodecTraits>,
+    vlen_codec: Arc<dyn ArrayToBytesCodecTraits>,
     write_to_file: bool,
 ) -> Result<u64, Box<dyn Error>> {
     let store: ReadableWritableListableStorage = if write_to_file {
-        std::sync::Arc::new(FilesystemStore::new("tests/data/v3/cities.zarr")?)
+        Arc::new(FilesystemStore::new("tests/data/v3/cities.zarr")?)
     } else {
-        std::sync::Arc::new(MemoryStore::default())
+        Arc::new(MemoryStore::default())
     };
     store.erase_prefix(&"".try_into().unwrap())?;
 
@@ -55,7 +56,7 @@ fn cities_impl(
         FillValue::from(""),
     );
     if let Some(shard_size) = shard_size {
-        builder.array_to_bytes_codec(Box::new(
+        builder.array_to_bytes_codec(Arc::new(
             ShardingCodecBuilder::new(
                 vec![shard_size].try_into()?, // inner chunk chape
             )
@@ -68,7 +69,7 @@ fn cities_impl(
     if let Some(compression_level) = compression_level {
         builder.bytes_to_bytes_codecs(vec![
             #[cfg(feature = "zstd")]
-            Box::new(ZstdCodec::new(compression_level, false)),
+            Arc::new(ZstdCodec::new(compression_level, false)),
         ]);
     }
 
@@ -96,22 +97,22 @@ fn cities() -> Result<(), Box<dyn Error>> {
     assert_eq!(cities[47862], "Sariwŏn-si");
     assert_eq!(cities[47867], "Charlotte Amalie");
 
-    let vlen_v2 = Box::new(VlenV2Codec::default());
+    let vlen_v2 = Arc::new(VlenV2Codec::default());
 
-    // let vlen = Box::new(VlenCodec::default());
+    // let vlen = Arc::new(VlenCodec::default());
     let vlen_configuration: VlenCodecConfiguration = serde_json::from_str(r#"{
         "data_codecs": [{"name": "bytes"}],
         "index_codecs": [{"name": "bytes","configuration": { "endian": "little" }}],
         "index_data_type": "uint32"
     }"#)?;
-    let vlen = Box::new(VlenCodec::new_with_configuration(&vlen_configuration)?);
+    let vlen = Arc::new(VlenCodec::new_with_configuration(&vlen_configuration)?);
 
     let vlen_compressed_configuration: VlenCodecConfiguration = serde_json::from_str(r#"{
         "data_codecs": [{"name": "bytes"},{"name": "blosc","configuration": {"cname": "zstd", "clevel":5,"shuffle": "bitshuffle", "typesize":1,"blocksize":0}}],
         "index_codecs": [{"name": "bytes","configuration": { "endian": "little" }},{"name": "blosc","configuration":{"cname": "zstd", "clevel":5,"shuffle": "shuffle", "typesize":4,"blocksize":0}}],
         "index_data_type": "uint32"
     }"#)?;
-    let vlen_compressed = Box::new(VlenCodec::new_with_configuration(&vlen_compressed_configuration)?);
+    let vlen_compressed = Arc::new(VlenCodec::new_with_configuration(&vlen_compressed_configuration)?);
 
     print!("| encoding         | compression | size   |\n");
     print!("| ---------------- | ----------- | ------ |\n");

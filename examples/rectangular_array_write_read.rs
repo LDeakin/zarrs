@@ -69,7 +69,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     )
     .bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
-        Box::new(codec::GzipCodec::new(5)?),
+        Arc::new(codec::GzipCodec::new(5)?),
     ])
     .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())

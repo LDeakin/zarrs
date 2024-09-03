@@ -7,6 +7,8 @@
 mod crc32c_codec;
 mod crc32c_partial_decoder;
 
+use std::sync::Arc;
+
 pub use crate::metadata::v3::array::codec::crc32c::{
     Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
 };
@@ -33,7 +35,7 @@ pub(crate) fn create_codec_crc32c(metadata: &MetadataV3) -> Result<Codec, Plugin
     let configuration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(Crc32cCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(Crc32cCodec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }
 

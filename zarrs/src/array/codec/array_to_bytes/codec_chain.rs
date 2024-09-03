@@ -30,9 +30,9 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 ///    - preceding the first codec with [`partial_decoder_should_cache_input`](crate::array::codec::CodecTraits::partial_decoder_should_cache_input), whichever is further.
 #[derive(Debug, Clone)]
 pub struct CodecChain {
-    array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>>,
-    array_to_bytes: Box<dyn ArrayToBytesCodecTraits>,
-    bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>>,
+    array_to_array: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
+    array_to_bytes: Arc<dyn ArrayToBytesCodecTraits>,
+    bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     cache_index: Option<usize>, // for partial decoders
 }
 
@@ -40,9 +40,9 @@ impl CodecChain {
     /// Create a new codec chain.
     #[must_use]
     pub fn new(
-        array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>>,
-        array_to_bytes: Box<dyn ArrayToBytesCodecTraits>,
-        bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>>,
+        array_to_array: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
+        array_to_bytes: Arc<dyn ArrayToBytesCodecTraits>,
+        bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) -> Self {
         let mut cache_index_must = None;
         let mut cache_index_should = None;
@@ -103,9 +103,9 @@ impl CodecChain {
     ///  - no array to bytes codec is supplied, or
     ///  - more than one array to bytes codec is supplied.
     pub fn from_metadata(metadatas: &[MetadataV3]) -> Result<Self, PluginCreateError> {
-        let mut array_to_array: Vec<Box<dyn ArrayToArrayCodecTraits>> = vec![];
-        let mut array_to_bytes: Option<Box<dyn ArrayToBytesCodecTraits>> = None;
-        let mut bytes_to_bytes: Vec<Box<dyn BytesToBytesCodecTraits>> = vec![];
+        let mut array_to_array: Vec<Arc<dyn ArrayToArrayCodecTraits>> = vec![];
+        let mut array_to_bytes: Option<Arc<dyn ArrayToBytesCodecTraits>> = None;
+        let mut bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>> = vec![];
         for metadata in metadatas {
             let codec = Codec::from_metadata(metadata)?;
             match codec {
@@ -160,20 +160,20 @@ impl CodecChain {
 
     /// Get the array to array codecs
     #[must_use]
-    pub fn array_to_array_codecs(&self) -> &[Box<dyn ArrayToArrayCodecTraits>] {
+    pub fn array_to_array_codecs(&self) -> &[Arc<dyn ArrayToArrayCodecTraits>] {
         &self.array_to_array
     }
 
     /// Get the array to bytes codec
     #[allow(clippy::borrowed_box)]
     #[must_use]
-    pub fn array_to_bytes_codec(&self) -> &Box<dyn ArrayToBytesCodecTraits> {
+    pub fn array_to_bytes_codec(&self) -> &Arc<dyn ArrayToBytesCodecTraits> {
         &self.array_to_bytes
     }
 
     /// Get the bytes to bytes codecs
     #[must_use]
-    pub fn bytes_to_bytes_codecs(&self) -> &[Box<dyn BytesToBytesCodecTraits>] {
+    pub fn bytes_to_bytes_codecs(&self) -> &[Arc<dyn BytesToBytesCodecTraits>] {
         &self.bytes_to_bytes
     }
 

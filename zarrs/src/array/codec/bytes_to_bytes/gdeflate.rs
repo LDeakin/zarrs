@@ -34,6 +34,7 @@ use crate::{
 pub use gdeflate::IDENTIFIER;
 
 use core::mem::size_of;
+use std::sync::Arc;
 
 // Register the codec.
 inventory::submit! {
@@ -48,7 +49,7 @@ pub(crate) fn create_codec_gdeflate(metadata: &MetadataV3) -> Result<Codec, Plug
     let configuration: GDeflateCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(GDeflateCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }
 

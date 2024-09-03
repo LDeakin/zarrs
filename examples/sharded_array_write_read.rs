@@ -61,7 +61,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         ShardingCodecBuilder::new(inner_chunk_shape.as_slice().try_into()?);
     sharding_codec_builder.bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
-        Box::new(codec::GzipCodec::new(5)?),
+        Arc::new(codec::GzipCodec::new(5)?),
     ]);
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
@@ -69,7 +69,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         shard_shape.try_into()?,
         FillValue::from(0u16),
     )
-    .array_to_bytes_codec(Box::new(sharding_codec_builder.build()))
+    .array_to_bytes_codec(Arc::new(sharding_codec_builder.build()))
     .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())
     .build(store.clone(), array_path)?;

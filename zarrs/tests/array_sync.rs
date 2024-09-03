@@ -1,5 +1,7 @@
 #![cfg(feature = "ndarray")]
 
+use std::sync::Arc;
+
 use zarrs::array::{Array, ArrayBuilder, ArrayCodecTraits, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 use zarrs::storage::store::MemoryStore;
@@ -133,13 +135,13 @@ fn array_sync_read_shard_compress() -> Result<(), Box<dyn std::error::Error>> {
         vec![2, 2].try_into().unwrap(), // regular chunk shape
         FillValue::from(0u8),
     );
-    builder.array_to_bytes_codec(Box::new(
+    builder.array_to_bytes_codec(Arc::new(
         zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder::new(
             vec![1, 1].try_into().unwrap(),
         )
         .bytes_to_bytes_codecs(vec![
             #[cfg(feature = "gzip")]
-            Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+            Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
         ])
         .build(),
     ));
@@ -267,7 +269,7 @@ fn array_str_sync_simple() -> Result<(), Box<dyn std::error::Error>> {
     );
     builder.bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
-        Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+        Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
     ]);
 
     let array = builder.build(store, array_path).unwrap();
@@ -291,19 +293,19 @@ fn array_str_sync_sharded_transpose() -> Result<(), Box<dyn std::error::Error>> 
         vec![2, 2].try_into().unwrap(), // regular chunk shape
         FillValue::from(""),
     );
-    builder.array_to_array_codecs(vec![Box::new(TransposeCodec::new(
+    builder.array_to_array_codecs(vec![Arc::new(TransposeCodec::new(
         TransposeOrder::new(&[1, 0]).unwrap(),
     ))]);
-    builder.array_to_bytes_codec(Box::new(
+    builder.array_to_bytes_codec(Arc::new(
         zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder::new(
             vec![2, 1].try_into().unwrap(),
         )
-        .array_to_bytes_codec(Box::<VlenCodec>::default())
+        .array_to_bytes_codec(Arc::<VlenCodec>::default())
         .build(),
     ));
     builder.bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
-        Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+        Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
     ]);
 
     let array = builder.build(store, array_path).unwrap();
@@ -324,7 +326,7 @@ fn array_binary() -> Result<(), Box<dyn std::error::Error>> {
     );
     builder.bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
-        Box::new(zarrs::array::codec::GzipCodec::new(5)?),
+        Arc::new(zarrs::array::codec::GzipCodec::new(5)?),
     ]);
 
     let array = builder.build(store, array_path).unwrap();

@@ -44,7 +44,6 @@ bytes = "1.6.0"
 bzip2 = { version = "0.4.4", optional = true, features = ["static"] }
 crc32c = { version = "0.6.5", optional = true }
 derive_more = { version = "1.0.0", features = ["deref", "display", "from"] }
-dyn-clone = "1.0.0"
 flate2 = { version = "1.0.30", optional = true }
 futures = { version = "0.3.29", optional = true }
 gdeflate-sys = { version = "0.4.1", optional = true }

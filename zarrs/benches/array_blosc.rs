@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use zarrs::{
     array::codec::BloscCodec,
@@ -18,7 +20,7 @@ fn array_blosc_write_all(c: &mut Criterion) {
                     vec![32; 3].try_into().unwrap(),
                     zarrs::array::FillValue::from(0u8),
                 )
-                .bytes_to_bytes_codecs(vec![Box::new(
+                .bytes_to_bytes_codecs(vec![Arc::new(
                     BloscCodec::new(
                         BloscCompressor::BloscLZ,
                         BloscCompressionLevel::try_from(9).unwrap(),
@@ -53,7 +55,7 @@ fn array_blosc_read_all(c: &mut Criterion) {
                 vec![32; 3].try_into().unwrap(),
                 zarrs::array::FillValue::from(0u8),
             )
-            .bytes_to_bytes_codecs(vec![Box::new(
+            .bytes_to_bytes_codecs(vec![Arc::new(
                 BloscCodec::new(
                     BloscCompressor::BloscLZ,
                     BloscCompressionLevel::try_from(9).unwrap(),

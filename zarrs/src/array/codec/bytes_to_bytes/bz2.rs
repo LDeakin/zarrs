@@ -11,6 +11,8 @@
 mod bz2_codec;
 mod bz2_partial_decoder;
 
+use std::sync::Arc;
+
 use crate::{
     array::codec::{Codec, CodecPlugin},
     config::global_config,
@@ -44,7 +46,7 @@ pub(crate) fn create_codec_bz2(metadata: &MetadataV3) -> Result<Codec, PluginCre
     let configuration: Bz2CodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(Bz2Codec::new_with_configuration(&configuration));
+    let codec = Arc::new(Bz2Codec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }
 

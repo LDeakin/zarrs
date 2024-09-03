@@ -7,6 +7,8 @@
 mod zstd_codec;
 mod zstd_partial_decoder;
 
+use std::sync::Arc;
+
 pub use crate::metadata::v3::array::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
@@ -33,7 +35,7 @@ pub(crate) fn create_codec_zstd(metadata: &MetadataV3) -> Result<Codec, PluginCr
     let configuration: ZstdCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(ZstdCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }
 

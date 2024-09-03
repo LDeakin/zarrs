@@ -14,7 +14,7 @@ mod sharding_codec;
 mod sharding_codec_builder;
 mod sharding_partial_decoder;
 
-use std::{borrow::Cow, num::NonZeroU64};
+use std::{borrow::Cow, num::NonZeroU64, sync::Arc};
 
 pub use crate::metadata::v3::array::codec::sharding::{
     ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
@@ -47,8 +47,8 @@ pub(crate) fn create_codec_sharding(metadata: &MetadataV3) -> Result<Codec, Plug
     let configuration: ShardingCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = ShardingCodec::new_with_configuration(&configuration)?;
-    Ok(Codec::ArrayToBytes(Box::new(codec)))
+    let codec = Arc::new(ShardingCodec::new_with_configuration(&configuration)?);
+    Ok(Codec::ArrayToBytes(codec))
 }
 
 fn calculate_chunks_per_shard(
@@ -189,7 +189,7 @@ mod tests {
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
-        mut bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+        mut bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) {
         let chunk_representation = ChunkRepresentation::new(
             ChunkShape::try_from(vec![4, 4]).unwrap().into(),
@@ -206,7 +206,7 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         if unbounded {
-            bytes_to_bytes_codecs.push(Box::new(TestUnboundedCodec::new()))
+            bytes_to_bytes_codecs.push(Arc::new(TestUnboundedCodec::new()))
         }
         let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
             .index_location(if index_at_end {
@@ -268,8 +268,8 @@ mod tests {
                             all_fill_value,
                             index_at_end,
                             vec![
-                                Box::new(GzipCodec::new(5).unwrap()),
-                                Box::new(Crc32cCodec::new()),
+                                Arc::new(GzipCodec::new(5).unwrap()),
+                                Arc::new(Crc32cCodec::new()),
                             ],
                         );
                     }
@@ -284,7 +284,7 @@ mod tests {
         unbounded: bool,
         index_at_end: bool,
         all_fill_value: bool,
-        mut bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+        mut bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) {
         let chunk_representation = ChunkRepresentation::new(
             ChunkShape::try_from(vec![4, 4]).unwrap().into(),
@@ -301,7 +301,7 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         if unbounded {
-            bytes_to_bytes_codecs.push(Box::new(TestUnboundedCodec::new()))
+            bytes_to_bytes_codecs.push(Arc::new(TestUnboundedCodec::new()))
         }
         let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
             .index_location(if index_at_end {
@@ -369,8 +369,8 @@ mod tests {
 
         let bytes: ArrayBytes = elements.into();
 
-        let bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>> = if unbounded {
-            vec![Box::new(TestUnboundedCodec::new())]
+        let bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>> = if unbounded {
+            vec![Arc::new(TestUnboundedCodec::new())]
         } else {
             vec![]
         };
@@ -450,8 +450,8 @@ mod tests {
         };
         let bytes: ArrayBytes = elements.into();
 
-        let bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>> = if unbounded {
-            vec![Box::new(TestUnboundedCodec::new())]
+        let bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>> = if unbounded {
+            vec![Arc::new(TestUnboundedCodec::new())]
         } else {
             vec![]
         };

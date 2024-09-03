@@ -14,6 +14,8 @@
 mod bitround_codec;
 mod bitround_partial_decoder;
 
+use std::sync::Arc;
+
 pub use crate::metadata::v3::array::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
@@ -49,7 +51,7 @@ pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, Plug
     let configuration: BitroundCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(BitroundCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(BitroundCodec::new_with_configuration(&configuration));
     Ok(Codec::ArrayToArray(codec))
 }
 
