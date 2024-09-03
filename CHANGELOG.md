@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Highlights
+ - `zarrs` has been split into 5 crates: `zarrs`, `zarrs_metadata`, `zarrs_storage`, `zarrs_opendal`, and `zarrs_object_store`
+   - `zarrs_storage` and `zarrs_metadata` are re-exported as the `storage` and `metadata` modules
+   - `opendal` and `object_store` support has been moved to the `zarrs_opendal` and `zarrs_object_store` crates
+ - Chunk caching support via `ArrayChunkCacheExt`
+ - Direct IO support for Linux in `FilesystemStore`
+ - **Implicit groups are no longer supported**
+   - It is the responsibility of the `zarrs` consumer to explicitly write group metadata when creating a hierarchy
+ - Check the full release notes for all changes. This release has many breaking changes due to items being moved, renamed, or removed
+
 ### Added
  - Add `ChunkGridTraits::chunks_in_array_subset()`
  - Add chunk cache support
@@ -44,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - `DimensionName`
     - Split `DataType` into `array::DataType` and `metadata::_::DataTypeMetadataV3`
  - **Breaking**: `data_key` in `zarrs::storage` now take a `chunk_key` instead of a `chunk_key_encoding` and `chunk_indices`
- - **Breaking**: Move `metadata::{v2,v3}::{codec,chunk_grid,chunk_key_encoding}` to `metadata::{v2,v3}::array::
+ - **Breaking**: Move `metadata::{v2,v3}::{codec,chunk_grid,chunk_key_encoding}` to `metadata::{v2,v3}::array::`
  - **Breaking**: Rename `ArrayMetadataV2DataType` to `DataTypeMetadataV2`
  - **Breaking**: Rename `FillValueMetadata` to `FillValueMetadataV3`
  - Move `crate::byte_range` into `crate::storage::byte_range` module, add re-export
@@ -53,6 +63,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Move `extract_byte_ranges_read[_seek]` from `array::codec` to `storage::byte_range`
  - **Breaking**: Move `storage::[async_]{get_child_nodes,node_exists,node_exists,listable}` to `node` module
  - **Breaking**: Move `storage::{meta_key*,data_key}` into `node` module
+ - Split the crate into multiple crates:
+   - `zarrs`
+   - `zarrs_storage` (re-exported as `storage` module)
+   - `zarrs_metadata` (re-exported as `metadata` module)
+   - `zarrs_object_store`
+   - `zarrs_opendal`
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
