@@ -21,7 +21,7 @@ const ARRAY_PATH: &str = "/";
 fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'static>(
     storage: Arc<TStorage>,
 ) -> Result<Array<TStorage>, Box<dyn std::error::Error>> {
-    use zarrs::array::{chunk_grid::ChunkGridTraits, codec, DataType, FillValue};
+    use zarrs::array::{codec, DataType, FillValue};
 
     // Create an array
     let array = zarrs::array::ArrayBuilder::new(
@@ -32,7 +32,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'st
     )
     .bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
-        Box::new(codec::GzipCodec::new(5)?),
+        Arc::new(codec::GzipCodec::new(5)?),
     ])
     .dimension_names(["y", "x"].into())
     // .storage_transformers(vec![].into())
@@ -45,7 +45,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'st
     let _ = (0..2)
         // .into_par_iter()
         .try_for_each(|i| {
-            let chunk_grid: &Box<dyn ChunkGridTraits> = array.chunk_grid();
+            let chunk_grid = array.chunk_grid();
             let chunk_indices: Vec<u64> = vec![i, 0];
             if let Some(chunk_subset) = chunk_grid.subset(&chunk_indices, array.shape())? {
                 array.store_chunk_elements(

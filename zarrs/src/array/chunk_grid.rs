@@ -13,6 +13,7 @@ pub mod rectangular;
 pub mod regular;
 
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
 pub use crate::metadata::v3::array::chunk_grid::rectangular::{
     RectangularChunkGridConfiguration, RectangularChunkGridDimensionConfiguration,
@@ -34,7 +35,7 @@ use super::{ArrayIndices, ArrayShape, ChunkShape};
 
 /// A chunk grid.
 #[derive(Debug, Clone, Deref, From)]
-pub struct ChunkGrid(Box<dyn ChunkGridTraits>);
+pub struct ChunkGrid(Arc<dyn ChunkGridTraits>);
 
 /// A chunk grid plugin.
 pub type ChunkGridPlugin = Plugin<ChunkGrid>;
@@ -43,7 +44,7 @@ inventory::collect!(ChunkGridPlugin);
 impl ChunkGrid {
     /// Create a chunk grid.
     pub fn new<T: ChunkGridTraits + 'static>(chunk_grid: T) -> Self {
-        let chunk_grid: Box<dyn ChunkGridTraits> = Box::new(chunk_grid);
+        let chunk_grid: Arc<dyn ChunkGridTraits> = Arc::new(chunk_grid);
         chunk_grid.into()
     }
 
@@ -126,7 +127,7 @@ impl TryFrom<ArrayShape> for ChunkGrid {
 }
 
 /// Chunk grid traits.
-pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync {
+pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// Create metadata.
     fn create_metadata(&self) -> MetadataV3;
 
@@ -489,8 +490,6 @@ pub trait ChunkGridTraits: dyn_clone::DynClone + core::fmt::Debug + Send + Sync 
         }
     }
 }
-
-dyn_clone::clone_trait_object!(ChunkGridTraits);
 
 #[cfg(test)]
 mod tests {

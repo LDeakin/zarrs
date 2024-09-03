@@ -7,6 +7,8 @@
 mod gzip_codec;
 mod gzip_partial_decoder;
 
+use std::sync::Arc;
+
 pub use crate::metadata::v3::array::codec::gzip::{
     GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
     GzipCompressionLevelError,
@@ -34,7 +36,7 @@ pub(crate) fn create_codec_gzip(metadata: &MetadataV3) -> Result<Codec, PluginCr
     let configuration: GzipCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(GzipCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(GzipCodec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }
 

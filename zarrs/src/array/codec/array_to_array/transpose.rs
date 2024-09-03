@@ -7,6 +7,8 @@
 mod transpose_codec;
 mod transpose_partial_decoder;
 
+use std::sync::Arc;
+
 pub use crate::metadata::v3::array::codec::transpose::{
     InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
     TransposeOrder,
@@ -38,7 +40,7 @@ pub(crate) fn create_codec_transpose(metadata: &MetadataV3) -> Result<Codec, Plu
     let configuration: TransposeCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(TransposeCodec::new_with_configuration(&configuration)?);
+    let codec = Arc::new(TransposeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }
 

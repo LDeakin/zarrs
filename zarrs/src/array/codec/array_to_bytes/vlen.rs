@@ -3,7 +3,7 @@
 mod vlen_codec;
 mod vlen_partial_decoder;
 
-use std::{mem::size_of, num::NonZeroU64};
+use std::{mem::size_of, num::NonZeroU64, sync::Arc};
 
 use itertools::Itertools;
 pub use vlen::IDENTIFIER;
@@ -49,7 +49,7 @@ pub(crate) fn create_codec_vlen(metadata: &MetadataV3) -> Result<Codec, PluginCr
     let configuration: VlenCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Box::new(VlenCodec::new_with_configuration(&configuration)?);
+    let codec = Arc::new(VlenCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
 

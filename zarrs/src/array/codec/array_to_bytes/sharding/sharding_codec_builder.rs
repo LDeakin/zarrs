@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use codec::CodecChain;
 
 use crate::array::{
@@ -16,11 +18,11 @@ use super::{ShardingCodec, ShardingIndexLocation};
 #[derive(Debug)]
 pub struct ShardingCodecBuilder {
     inner_chunk_shape: ChunkShape,
-    index_array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
-    index_bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
-    array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
-    array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
-    bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+    index_array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
+    index_bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
+    array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
+    array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
+    bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     index_location: ShardingIndexLocation,
 }
 
@@ -30,13 +32,13 @@ impl ShardingCodecBuilder {
     pub fn new(inner_chunk_shape: ChunkShape) -> Self {
         Self {
             inner_chunk_shape,
-            index_array_to_bytes_codec: Box::<codec::BytesCodec>::default(),
+            index_array_to_bytes_codec: Arc::<codec::BytesCodec>::default(),
             index_bytes_to_bytes_codecs: vec![
                 #[cfg(feature = "crc32c")]
-                Box::new(codec::Crc32cCodec::new()),
+                Arc::new(codec::Crc32cCodec::new()),
             ],
             array_to_array_codecs: Vec::default(),
-            array_to_bytes_codec: Box::<codec::BytesCodec>::default(),
+            array_to_bytes_codec: Arc::<codec::BytesCodec>::default(),
             bytes_to_bytes_codecs: Vec::default(),
             index_location: ShardingIndexLocation::default(),
         }
@@ -47,7 +49,7 @@ impl ShardingCodecBuilder {
     /// If left unmodified, the index will be encoded with the `bytes` codec with native endian encoding.
     pub fn index_array_to_bytes_codec(
         &mut self,
-        index_array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
+        index_array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
     ) -> &mut Self {
         self.index_array_to_bytes_codec = index_array_to_bytes_codec;
         self
@@ -58,7 +60,7 @@ impl ShardingCodecBuilder {
     /// If left unmodified, the index will be encoded with the `crc32c checksum` codec (if supported).
     pub fn index_bytes_to_bytes_codecs(
         &mut self,
-        index_bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+        index_bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) -> &mut Self {
         self.index_bytes_to_bytes_codecs = index_bytes_to_bytes_codecs;
         self
@@ -69,7 +71,7 @@ impl ShardingCodecBuilder {
     /// If left unmodified, no array to array codecs will be applied for the inner chunks.
     pub fn array_to_array_codecs(
         &mut self,
-        array_to_array_codecs: Vec<Box<dyn ArrayToArrayCodecTraits>>,
+        array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
     ) -> &mut Self {
         self.array_to_array_codecs = array_to_array_codecs;
         self
@@ -80,7 +82,7 @@ impl ShardingCodecBuilder {
     /// If left unmodified, the inner chunks will be encoded with the `bytes` codec with native endian encoding.
     pub fn array_to_bytes_codec(
         &mut self,
-        array_to_bytes_codec: Box<dyn ArrayToBytesCodecTraits>,
+        array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
     ) -> &mut Self {
         self.array_to_bytes_codec = array_to_bytes_codec;
         self
@@ -91,7 +93,7 @@ impl ShardingCodecBuilder {
     /// If left unmodified, no bytes to bytes codecs will be applied for the inner chunks.
     pub fn bytes_to_bytes_codecs(
         &mut self,
-        bytes_to_bytes_codecs: Vec<Box<dyn BytesToBytesCodecTraits>>,
+        bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) -> &mut Self {
         self.bytes_to_bytes_codecs = bytes_to_bytes_codecs;
         self

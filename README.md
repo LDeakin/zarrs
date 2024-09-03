@@ -69,7 +69,7 @@ let array = ArrayBuilder::new(
     FillValue::from(ZARR_NAN_F32),
 )
 .bytes_to_bytes_codecs(vec![
-    Box::new(GzipCodec::new(5)?),
+    Arc::new(GzipCodec::new(5)?),
 ])
 .dimension_names(["y", "x"].into())
 .attributes(serde_json::json!({"Zarr V3": "is great"}).as_object().unwrap().clone())

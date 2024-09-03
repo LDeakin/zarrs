@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use zarrs::array::codec::array_to_bytes::sharding::ShardingCodecBuilder;
 
@@ -35,7 +37,7 @@ fn array_write_all_sharded(c: &mut Criterion) {
             b.iter(|| {
                 let store = zarrs::storage::store::MemoryStore::new();
                 let sharding_codec =
-                    Box::new(ShardingCodecBuilder::new(vec![32; 3].try_into().unwrap()).build());
+                    Arc::new(ShardingCodecBuilder::new(vec![32; 3].try_into().unwrap()).build());
                 let array = zarrs::array::ArrayBuilder::new(
                     vec![size; 3],
                     zarrs::array::DataType::UInt16,
@@ -92,7 +94,7 @@ fn array_read_all_sharded(c: &mut Criterion) {
             // Write the data
             let store = zarrs::storage::store::MemoryStore::new();
             let sharding_codec =
-                Box::new(ShardingCodecBuilder::new(vec![32; 3].try_into().unwrap()).build());
+                Arc::new(ShardingCodecBuilder::new(vec![32; 3].try_into().unwrap()).build());
             let array = zarrs::array::ArrayBuilder::new(
                 vec![size; 3],
                 zarrs::array::DataType::UInt8,

@@ -494,11 +494,11 @@ mod tests {
             FillValue::from(0u16),
         );
         if sharded {
-            builder.array_to_bytes_codec(Box::new(
+            builder.array_to_bytes_codec(Arc::new(
                 ShardingCodecBuilder::new(vec![2, 2].try_into()?)
                     .bytes_to_bytes_codecs(vec![
                         #[cfg(feature = "gzip")]
-                        Box::new(crate::array::codec::GzipCodec::new(5)?),
+                        Arc::new(crate::array::codec::GzipCodec::new(5)?),
                     ])
                     .build(),
             ));
