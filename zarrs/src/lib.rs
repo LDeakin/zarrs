@@ -78,6 +78,7 @@
 #![cfg_attr(feature = "ndarray", doc = "```rust")]
 #![cfg_attr(not(feature = "ndarray"), doc = "```rust,ignore")]
 //! # use std::{path::PathBuf, sync::Arc};
+//! use zarrs::group::GroupBuilder;
 //! use zarrs::array::{ArrayBuilder, DataType, FillValue, ZARR_NAN_F32};
 //! # #[cfg(feature = "gzip")]
 //! use zarrs::array::codec::GzipCodec; // requires gzip feature
@@ -85,11 +86,17 @@
 //! use zarrs::storage::{ReadableWritableListableStorage, store::FilesystemStore};
 //!
 //! // Create a filesystem store
-//! let store_path: PathBuf = "/path/to/store".into();
+//! let store_path: PathBuf = "/path/to/hierarchy.zarr".into();
 //! # let store_path: PathBuf = "tests/data/array_write_read.zarr".into();
 //! let store: ReadableWritableListableStorage =
 //!     Arc::new(FilesystemStore::new(&store_path)?);
 //! # let store = Arc::new(zarrs::storage::store::MemoryStore::new());
+//!
+//! // Write the root group metadata
+//! GroupBuilder::new()
+//!     .build(store.clone(), "/")?
+//!     // .attributes(...)
+//!     .store_metadata()?;
 //!
 //! // Create a new V3 array using the array builder
 //! let array = ArrayBuilder::new(
@@ -104,7 +111,7 @@
 //! ])
 //! .dimension_names(["y", "x"].into())
 //! .attributes(serde_json::json!({"Zarr V3": "is great"}).as_object().unwrap().clone())
-//! .build(store.clone(), "/group/array")?; // /path/to/store/group/array
+//! .build(store.clone(), "/array")?; // /path/to/hierarchy.zarr/array
 //!
 //! // Store the array metadata
 //! array.store_metadata()?;
