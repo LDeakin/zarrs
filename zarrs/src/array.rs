@@ -49,7 +49,9 @@ pub use self::{
     array_bytes::{ArrayBytes, ArrayBytesError, RawBytes, RawBytesOffsets},
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
-    array_representation::{ArrayRepresentation, ArraySize, ChunkRepresentation},
+    array_representation::{
+        ArrayRepresentation, ArrayRepresentationBase, ArraySize, ChunkRepresentation,
+    },
     bytes_representation::BytesRepresentation,
     chunk_grid::ChunkGrid,
     chunk_key_encoding::{ChunkKeyEncoding, ChunkKeySeparator},
