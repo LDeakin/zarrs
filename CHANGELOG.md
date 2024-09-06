@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0-beta.0] - 2024-09-06
+
 ### Highlights / Major Changes
  - `zarrs` has been split into 5 crates: `zarrs`, `zarrs_metadata`, `zarrs_storage`, `zarrs_opendal`, and `zarrs_object_store`
    - `zarrs_storage` and `zarrs_metadata` are re-exported as the `storage` and `metadata` modules
@@ -1031,6 +1033,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial public release
 
 [unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.4...HEAD
+[0.17.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.0
 [0.16.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.4
 [0.16.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.3
 [0.16.2]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.2
