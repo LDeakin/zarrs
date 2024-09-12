@@ -456,6 +456,16 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         decoded_representation: &ChunkRepresentation,
     ) -> Result<ChunkRepresentation, CodecError>;
 
+    /// Returns the size of the decoded representation given a size of the encoded representation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CodecError`] if the encoded representation is not supported by this codec.
+    fn compute_decoded_shape(
+        &self,
+        encoded_representation: ChunkShape,
+    ) -> Result<ChunkShape, CodecError>;
+
     /// Encode a chunk.
     ///
     /// # Errors

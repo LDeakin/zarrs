@@ -89,9 +89,9 @@ fn transpose_array(
     }
 }
 
-fn permute<T: Copy>(v: &[T], order: &TransposeOrder) -> Vec<T> {
+fn permute<T: Copy>(v: &[T], order: &[usize]) -> Vec<T> {
     let mut vec = Vec::<T>::with_capacity(v.len());
-    for axis in &order.0 {
+    for axis in order {
         vec.push(v[*axis]);
     }
     vec

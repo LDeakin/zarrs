@@ -52,8 +52,8 @@ fn get_decoded_regions_transposed(
 ) -> Vec<ArraySubset> {
     let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
     for decoded_region in decoded_regions {
-        let start = permute(decoded_region.start(), order);
-        let size = permute(decoded_region.shape(), order);
+        let start = permute(decoded_region.start(), &order.0);
+        let size = permute(decoded_region.shape(), &order.0);
         let decoded_region_transpose =
             unsafe { ArraySubset::new_with_start_shape_unchecked(start, size) };
         decoded_regions_transposed.push(decoded_region_transpose);
@@ -90,7 +90,7 @@ fn do_transpose<'a>(
                     let data_type_size = decoded_representation.data_type().fixed_size().unwrap();
                     let bytes = transpose_array(
                         &order_decode,
-                        &permute(subset.shape(), order),
+                        &permute(subset.shape(), &order.0),
                         data_type_size,
                         &bytes,
                     )

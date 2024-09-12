@@ -473,10 +473,15 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
 mod tests {
     use std::sync::Arc;
 
+    use zarrs_metadata::v3::array::codec::transpose::TransposeOrder;
+
     use crate::{
         array::{
-            codec::array_to_bytes::sharding::ShardingCodecBuilder, ArrayBuilder, DataType,
-            FillValue,
+            codec::{array_to_bytes::sharding::ShardingCodecBuilder, TransposeCodec},
+            storage_transformer::{
+                PerformanceMetricsStorageTransformer, StorageTransformerExtension,
+            },
+            ArrayBuilder, DataType, FillValue,
         },
         array_subset::ArraySubset,
         storage::store::MemoryStore,
@@ -640,5 +645,97 @@ mod tests {
     #[test]
     fn array_sharded_ext_unsharded() -> Result<(), Box<dyn std::error::Error>> {
         array_sharded_ext_impl(false)
+    }
+
+    fn array_sharded_ext_impl_transpose(
+        valid_inner_chunk_shape: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let store = Arc::new(MemoryStore::default());
+        let performance_metrics = Arc::new(PerformanceMetricsStorageTransformer::new());
+        let store = performance_metrics
+            .clone()
+            .create_readable_writable_transformer(store);
+
+        let array_path = "/array";
+        let mut builder = ArrayBuilder::new(
+            vec![16, 16, 9], // array shape
+            DataType::UInt32,
+            vec![8, 4, 3].try_into()?, // regular chunk shape
+            FillValue::from(0u32),
+        );
+        builder.array_to_array_codecs(vec![Arc::new(TransposeCodec::new(TransposeOrder::new(
+            &[1, 0, 2],
+        )?))]);
+        builder.array_to_bytes_codec(Arc::new(
+            ShardingCodecBuilder::new(
+                vec![1, if valid_inner_chunk_shape { 2 } else { 3 }, 3].try_into()?,
+            )
+            .bytes_to_bytes_codecs(vec![
+                #[cfg(feature = "gzip")]
+                Arc::new(crate::array::codec::GzipCodec::new(5)?),
+            ])
+            .build(),
+        ));
+        let array = builder.build(store, array_path)?;
+
+        let inner_chunk_grid = array.inner_chunk_grid();
+        if valid_inner_chunk_shape {
+            //  Config:
+            //  16 x 16 x 9 Array shape
+            //   8 x  4 x 3 Chunk (shard) shape
+            //   1 x  2 x 3 Inner chunk shape
+            //      [1,0,2] Transpose order
+            //  Calculations:
+            //   2 x  4 x 3 Number of shards (chunk grid shape)
+            //   4 x  8 x 3 Transposed shard shape
+            //   4 x  4 x 1 Inner chunks per (transposed) shard
+            //   8 x 16 x 3 Inner grid shape
+            //   2 x  1 x 3 Effective inner chunk shape (read granularity)
+
+            assert_eq!(array.chunk_grid_shape(), Some(vec![2, 4, 3]));
+            assert_eq!(array.inner_chunk_shape(), Some(vec![1, 2, 3].try_into()?));
+            assert_eq!(
+                array.effective_inner_chunk_shape(),
+                Some(vec![2, 1, 3].try_into()?)
+            ); // NOTE: transposed
+            assert_eq!(
+                inner_chunk_grid.grid_shape(array.shape())?,
+                Some(vec![8, 16, 3])
+            );
+        } else {
+            // skip above tests if the inner chunk shape is invalid, below calls fail with
+            // CodecError(Other("invalid inner chunk shape [1, 3, 3], it must evenly divide [4, 8, 3]"))
+        }
+
+        let data: Vec<u32> = (0..array.shape().into_iter().product())
+            .map(|i| i as u32)
+            .collect();
+        array.store_array_subset_elements(
+            &ArraySubset::new_with_shape(array.shape().to_vec()),
+            &data,
+        )?;
+
+        // Retrieving an inner chunk should be exactly 2 reads: index + chunk
+        let inner_chunk_subset = inner_chunk_grid.subset(&[0, 0, 0], array.shape())?.unwrap();
+        let inner_chunk_data = array.retrieve_array_subset_elements::<u32>(&inner_chunk_subset)?;
+        assert_eq!(inner_chunk_data, &[0, 1, 2, 144, 145, 146]);
+        assert_eq!(performance_metrics.reads(), 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn array_sharded_ext_impl_transpose_valid_inner_chunk_shape() {
+        assert!(array_sharded_ext_impl_transpose(true).is_ok())
+    }
+
+    #[test]
+    fn array_sharded_ext_impl_transpose_invalid_inner_chunk_shape() {
+        assert_eq!(
+            array_sharded_ext_impl_transpose(false)
+                .unwrap_err()
+                .to_string(),
+            "invalid inner chunk shape [1, 3, 3], it must evenly divide [4, 8, 3]"
+        )
     }
 }

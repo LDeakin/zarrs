@@ -6,7 +6,7 @@ use crate::{
             options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, ChunkRepresentation,
+        ArrayMetadataOptions, ChunkRepresentation, ChunkShape,
     },
     metadata::v3::{array::codec::transpose::TransposeCodecConfigurationV1, MetadataV3},
     plugin::PluginCreateError,
@@ -65,6 +65,18 @@ impl CodecTraits for TransposeCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for TransposeCodec {
+    fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
+        if self.order.0.len() != encoded_shape.len() {
+            return Err(CodecError::Other("Invalid shape".to_string()));
+        }
+        let mut permutation_decode = vec![0; self.order.0.len()];
+        for (i, val) in self.order.0.iter().enumerate() {
+            permutation_decode[*val] = i;
+        }
+        let transposed_shape = permute(&encoded_shape, &permutation_decode);
+        Ok(transposed_shape.into())
+    }
+
     fn encode<'a>(
         &self,
         bytes: ArrayBytes<'a>,
@@ -139,7 +151,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
             ArrayBytes::Fixed(bytes) => {
                 let order_decode =
                     calculate_order_decode(&self.order, decoded_representation.shape().len());
-                let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order);
+                let transposed_shape = permute(&decoded_representation.shape_u64(), &self.order.0);
                 let data_type_size = decoded_representation.data_type().fixed_size().unwrap();
                 let bytes =
                     transpose_array(&order_decode, &transposed_shape, data_type_size, &bytes)
@@ -184,7 +196,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<ChunkRepresentation, CodecError> {
-        let transposed_shape = permute(decoded_representation.shape(), &self.order);
+        let transposed_shape = permute(decoded_representation.shape(), &self.order.0);
         Ok(unsafe {
             ChunkRepresentation::new_unchecked(
                 transposed_shape,
