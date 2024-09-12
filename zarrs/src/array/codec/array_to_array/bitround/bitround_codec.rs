@@ -6,7 +6,7 @@ use crate::{
             options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, ChunkRepresentation, DataType,
+        ArrayMetadataOptions, ChunkRepresentation, ChunkShape, DataType,
     },
     config::global_config,
     metadata::v3::MetadataV3,
@@ -167,5 +167,9 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
                 IDENTIFIER.to_string(),
             )),
         }
+    }
+
+    fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
+        Ok(encoded_shape)
     }
 }

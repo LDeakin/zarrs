@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `ArrayShardedExt::effective_inner_chunk_shape`
+   - This is the effective inner chunk shape (i.e. read granularity) of a sharded array
+   - It is equal to the inner chunk shape unless the `transpose` codec precedes `sharding_indexed`
+ - **Breaking**: Add `ArrayToArrayCodecTraits::compute_decoded_shape()`
+   - Needed for `ArrayShardedExt::effective_inner_chunk_shape`
+
+### Fixed
+ - Fix `ArrayShardedExt::inner_chunk_grid` when applied on a sharded array with the `transpose` codec preceding `sharding_indexed`
+
 ## [0.17.0-beta.0] - 2024-09-06
 
 ### Highlights / Major Changes
