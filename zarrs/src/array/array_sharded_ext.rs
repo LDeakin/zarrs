@@ -7,7 +7,7 @@ pub trait ArrayShardedExt {
 
     /// Return the inner chunk shape as defined in the `sharding_indexed` codec metadata.
     ///
-    /// Returns [`None`] for an unsharded array or an array.
+    /// Returns [`None`] for an unsharded array.
     fn inner_chunk_shape(&self) -> Option<ChunkShape>;
 
     /// The effective inner chunk shape.
