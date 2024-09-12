@@ -62,17 +62,25 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         })
     }
 
+    fn key_str_to_zip_path(&self, key: &str) -> String {
+        let mut zip_name = self.zip_path.clone();
+        zip_name.push(key);
+
+        let mut zip_name = zip_name.to_string_lossy();
+        if cfg!(windows) {
+            zip_name = zip_name.replace("\\", "/").into();
+        }
+        zip_name.to_string()
+    }
+
     fn get_impl(
         &self,
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Bytes>>, StorageError> {
         let mut zip_archive = self.zip_archive.lock();
-        let mut zip_name = self.zip_path.clone();
-        zip_name.push(key.as_str());
-
         let mut file = {
-            let zip_file = zip_archive.by_name(&zip_name.to_string_lossy());
+            let zip_file = zip_archive.by_name(&self.key_str_to_zip_path(key.as_str()));
             match zip_file {
                 Ok(zip_file) => zip_file,
                 Err(err) => match err {
@@ -145,9 +153,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
             .into_iter()
             .filter_map(|name| {
                 if name.starts_with(prefix.as_str()) {
-                    let mut zip_name = self.zip_path.clone();
-                    zip_name.push(&name);
-                    if let Ok(file) = zip_archive.by_name(&zip_name.to_string_lossy()) {
+                    if let Ok(file) = zip_archive.by_name(&self.key_str_to_zip_path(&name)) {
                         if file.is_file() {
                             let name = name.strip_suffix('/').unwrap_or(&name);
                             if let Ok(store_key) = StoreKey::try_from(name) {
