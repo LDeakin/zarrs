@@ -8,6 +8,19 @@
 
 [`object_store`](https://crates.io/crates/object_store) store support for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 
+```rust
+use zarrs_storage::AsyncReadableWritableListableStorage;
+use zarrs_object_store::AsyncObjectStore;
+
+let options = object_store::ClientOptions::new().with_allow_http(true);
+let store = object_store::http::HttpBuilder::new()
+    .with_url("http://...")
+    .with_client_options(options)
+    .build()?;
+let store: AsyncReadableWritableListableStorage =
+    Arc::new(AsyncObjectStore::new(store));
+```
+
 ## Licence
 `zarrs_object_store` is licensed under either of
  - the Apache License, Version 2.0 [LICENSE-APACHE](./LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or

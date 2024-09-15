@@ -41,5 +41,8 @@ path = "zarrs_opendal"
 version = "0.1.0"
 path = "zarrs_zip"
 
+[workspace.dependencies.object_store]
+version = "0.11"
+
 [workspace.dependencies.zip]
 version = "2.1.3"

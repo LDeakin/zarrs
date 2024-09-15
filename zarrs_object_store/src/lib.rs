@@ -1,5 +1,20 @@
 //! [`object_store`] store support for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 //!
+//! ```
+//! # use std::sync::Arc;
+//! use zarrs_storage::AsyncReadableWritableListableStorage;
+//! use zarrs_object_store::AsyncObjectStore;
+//!
+//! let options = object_store::ClientOptions::new().with_allow_http(true);
+//! let store = object_store::http::HttpBuilder::new()
+//!     .with_url("http://...")
+//!     .with_client_options(options)
+//!     .build()?;
+//! let store: AsyncReadableWritableListableStorage =
+//!     Arc::new(AsyncObjectStore::new(store));
+//! # Ok::<_, Box<dyn std::error::Error>>(())
+//! ```
+//!
 //! ## Licence
 //! `zarrs_object_store` is licensed under either of
 //! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_object_store/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
