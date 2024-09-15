@@ -1,8 +1,20 @@
-//! A synchronous HTTP store.
+//! A synchronous `http` store for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
+//!
+//! ```rust
+//! # use std::sync::Arc;
+//! use zarrs_storage::ReadableStorage;
+//! use zarrs_http::HTTPStore;
+//!
+//! let http_store: ReadableStorage = Arc::new(HTTPStore::new("http://...")?);
+//! # Ok::<_, Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ## Licence
+//! `zarrs_http` is licensed under either of
+//! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_http/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
+//! - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs_http/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 
-#![allow(deprecated)]
-
-use crate::{
+use zarrs_storage::{
     byte_range::ByteRange, Bytes, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
 };
 
@@ -15,10 +27,6 @@ use std::str::FromStr;
 use thiserror::Error;
 
 /// A synchronous HTTP store.
-#[deprecated(
-    since = "0.15.0",
-    note = "Use an opendal or object_store HTTP store with AsyncToSyncStorageAdapter instead, or write a new sync HTTP store."
-)]
 #[derive(Debug)]
 pub struct HTTPStore {
     base_url: Url,
@@ -26,16 +34,12 @@ pub struct HTTPStore {
     client: reqwest::blocking::Client,
 }
 
-impl From<reqwest::Error> for StorageError {
-    fn from(err: reqwest::Error) -> Self {
-        Self::Other(err.to_string())
-    }
+fn handle_reqwest_error(err: reqwest::Error) -> StorageError {
+    StorageError::Other(err.to_string())
 }
 
-impl From<url::ParseError> for StorageError {
-    fn from(err: url::ParseError) -> Self {
-        Self::Other(err.to_string())
-    }
+fn handle_url_error(err: url::ParseError) -> StorageError {
+    StorageError::Other(err.to_string())
 }
 
 impl HTTPStore {
@@ -81,10 +85,10 @@ impl HTTPStore {
 
 impl ReadableStorageTraits for HTTPStore {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
-        let url = self.key_to_url(key)?;
-        let response = self.client.get(url).send()?;
+        let url = self.key_to_url(key).map_err(handle_url_error)?;
+        let response = self.client.get(url).send().map_err(handle_reqwest_error)?;
         match response.status() {
-            StatusCode::OK => Ok(Some(response.bytes()?)),
+            StatusCode::OK => Ok(Some(response.bytes().map_err(handle_reqwest_error)?)),
             StatusCode::NOT_FOUND => Ok(None),
             _ => Err(StorageError::from(format!(
                 "http unexpected status code: {}",
@@ -98,7 +102,7 @@ impl ReadableStorageTraits for HTTPStore {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Bytes>>, StorageError> {
-        let url = self.key_to_url(key)?;
+        let url = self.key_to_url(key).map_err(handle_url_error)?;
         let Some(size) = self.size_key(key)? else {
             return Ok(None);
         };
@@ -108,13 +112,18 @@ impl ReadableStorageTraits for HTTPStore {
             .join(", ");
 
         let range = HeaderValue::from_str(&format!("bytes={bytes_strs}")).unwrap();
-        let response = self.client.get(url).header(RANGE, range).send()?;
+        let response = self
+            .client
+            .get(url)
+            .header(RANGE, range)
+            .send()
+            .map_err(handle_reqwest_error)?;
 
         match response.status() {
             StatusCode::NOT_FOUND => Err(StorageError::from("the http server returned a NOT FOUND status for the byte range request, but returned a non zero size for CONTENT_LENGTH")),
             StatusCode::PARTIAL_CONTENT => {
                 // TODO: Gracefully handle a response from the server which does not include all requested by ranges
-                let mut bytes = response.bytes()?;
+                let mut bytes = response.bytes().map_err(handle_reqwest_error)?;
                 if bytes.len() as u64
                     == byte_ranges
                         .iter()
@@ -136,7 +145,7 @@ impl ReadableStorageTraits for HTTPStore {
             }
             StatusCode::OK => {
                 // Received all bytes
-                let bytes = response.bytes()?;
+                let bytes = response.bytes().map_err(handle_reqwest_error)?;
                 let mut out = Vec::with_capacity(byte_ranges.len());
                 for byte_range in byte_ranges {
                     let start = usize::try_from(byte_range.start(size)).unwrap();
@@ -153,8 +162,8 @@ impl ReadableStorageTraits for HTTPStore {
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
-        let url = self.key_to_url(key)?;
-        let response = self.client.head(url).send()?;
+        let url = self.key_to_url(key).map_err(handle_url_error)?;
+        let response = self.client.head(url).send().map_err(handle_reqwest_error)?;
         match response.status() {
             StatusCode::OK => {
                 let length = response
@@ -197,7 +206,7 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     fn http_store() -> Result<(), Box<dyn Error>> {
         let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
-        crate::store_test::store_read(&store)?;
+        zarrs_storage::store_test::store_read(&store)?;
         Ok(())
     }
 }

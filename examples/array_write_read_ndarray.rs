@@ -16,10 +16,11 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a store
     // let path = tempfile::TempDir::new()?;
-    // let mut store: ReadableWritableListableStorage = Arc::new(store::FilesystemStore::new(path.path())?);
-    // let mut store: ReadableWritableListableStorage = Arc::new(store::FilesystemStore::new(
-    //     "zarrs/tests/data/array_write_read.zarr",
-    // )?);
+    // let mut store: ReadableWritableListableStorage =
+    //     Arc::new(zarrs_filesystem::FilesystemStore::new(path.path())?);
+    // let mut store: ReadableWritableListableStorage = Arc::new(
+    //     zarrs_filesystem::FilesystemStore::new("zarrs/tests/data/array_write_read.zarr")?,
+    // );
     let mut store: ReadableWritableListableStorage = Arc::new(store::MemoryStore::new());
     if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
         if arg1 == "--usage-log" {

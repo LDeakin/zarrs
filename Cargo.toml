@@ -6,8 +6,11 @@ members = [
     "zarrs",
     "zarrs_metadata",
     "zarrs_storage",
+    "zarrs_filesystem",
+    "zarrs_http",
     "zarrs_object_store",
     "zarrs_opendal",
+    "zarrs_zip",
 ]
 
 [workspace.dependencies.zarrs_metadata]
@@ -18,6 +21,14 @@ path = "zarrs_metadata"
 version = "0.2.0"
 path = "zarrs_storage"
 
+[workspace.dependencies.zarrs_filesystem]
+version = "0.1.0"
+path = "zarrs_filesystem"
+
+[workspace.dependencies.zarrs_http]
+version = "0.1.0"
+path = "zarrs_http"
+
 [workspace.dependencies.zarrs_object_store]
 version = "0.1.0"
 path = "zarrs_object_store"
@@ -25,3 +36,10 @@ path = "zarrs_object_store"
 [workspace.dependencies.zarrs_opendal]
 version = "0.1.0"
 path = "zarrs_opendal"
+
+[workspace.dependencies.zarrs_zip]
+version = "0.1.0"
+path = "zarrs_zip"
+
+[workspace.dependencies.zip]
+version = "2.1.3"

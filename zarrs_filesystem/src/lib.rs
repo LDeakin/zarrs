@@ -1,8 +1,13 @@
-//! A filesystem store.
+//! A filesystem store for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
+//! This implementation is conformant with the filesystem store defined in the Zarr V3 specification: <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
+//!
+//! ## Licence
+//! `zarrs_filesystem` is licensed under either of
+//! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_filesystem/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
+//! - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs_filesystem/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 
-use crate::{
+use zarrs_storage::{
     byte_range::{ByteOffset, ByteRange},
     store_set_partial_values, Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError,
     StoreKey, StoreKeyError, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
@@ -414,7 +419,7 @@ impl ListableStorageTraits for FilesystemStore {
             prefixes.sort();
         }
 
-        Ok(StoreKeysPrefixes { keys, prefixes })
+        Ok(StoreKeysPrefixes::new(keys, prefixes))
     }
 
     fn size(&self) -> Result<u64, StorageError> {
@@ -464,9 +469,9 @@ mod tests {
         let path = tempfile::TempDir::new()?;
         let store = FilesystemStore::new(path.path())?.sorted();
         // let store = FilesystemStore::new("tests/data/store")?.sorted();
-        crate::store_test::store_write(&store)?;
-        crate::store_test::store_read(&store)?;
-        crate::store_test::store_list(&store)?;
+        zarrs_storage::store_test::store_write(&store)?;
+        zarrs_storage::store_test::store_read(&store)?;
+        zarrs_storage::store_test::store_list(&store)?;
         Ok(())
     }
 
@@ -479,9 +484,9 @@ mod tests {
         opts.direct_io(true);
 
         let store = FilesystemStore::new_with_options(path.path(), opts)?.sorted();
-        crate::store_test::store_write(&store)?;
-        crate::store_test::store_read(&store)?;
-        crate::store_test::store_list(&store)?;
+        zarrs_storage::store_test::store_write(&store)?;
+        zarrs_storage::store_test::store_read(&store)?;
+        zarrs_storage::store_test::store_list(&store)?;
         Ok(())
     }
 }

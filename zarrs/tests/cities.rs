@@ -19,11 +19,9 @@ use zarrs::{
     },
     array_subset::ArraySubset,
     metadata::v3::array::codec::vlen::VlenCodecConfiguration,
-    storage::{
-        store::{FilesystemStore, MemoryStore},
-        ReadableWritableListableStorage,
-    },
+    storage::{store::MemoryStore, ReadableWritableListableStorage},
 };
+use zarrs_filesystem::FilesystemStore;
 
 fn read_cities() -> std::io::Result<Vec<String>> {
     let reader = BufReader::new(File::open("tests/data/cities.csv")?);

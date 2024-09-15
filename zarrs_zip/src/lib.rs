@@ -1,14 +1,33 @@
-//! A zip storage adapter.
+//! A storage adapter for `zip` files for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
+//!
+//! ```
+//! # use std::path::PathBuf;
+//! # use std::sync::Arc;
+//! use zarrs_storage::StoreKey;
+//! use zarrs_filesystem::FilesystemStore;
+//! use zarrs_zip::ZipStorageAdapter;
+//!
+//! let fs_root = PathBuf::from("/path/to/a/directory");
+//! # let fs_root = PathBuf::from("tests/");
+//! let fs_store = Arc::new(FilesystemStore::new(&fs_root)?);
+//! let zip_key = StoreKey::new("zarr.zip")?;
+//! let zip_store = Arc::new(ZipStorageAdapter::new(fs_store, zip_key)?);
+//! # Ok::<_, Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ## Licence
+//! `zarrs_zip` is licensed under either of
+//! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_zip/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
+//! - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs_zip/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 
-use crate::{
+use zarrs_storage::{
     byte_range::{extract_byte_ranges_read, ByteRange},
-    storage_value_io::StorageValueIO,
-    Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError, StoreKey, StoreKeys,
-    StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError, StorageValueIO, StoreKey,
+    StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 use itertools::Itertools;
-use parking_lot::Mutex;
+use std::sync::Mutex;
 use thiserror::Error;
 use zip::{result::ZipError, ZipArchive};
 
@@ -78,7 +97,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
         key: &StoreKey,
         byte_ranges: &[ByteRange],
     ) -> Result<Option<Vec<Bytes>>, StorageError> {
-        let mut zip_archive = self.zip_archive.lock();
+        let mut zip_archive = self.zip_archive.lock().unwrap();
         let mut file = {
             let zip_file = zip_archive.by_name(&self.key_str_to_zip_path(key.as_str()));
             match zip_file {
@@ -116,7 +135,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
     }
 
     fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
-        let mut zip_archive = self.zip_archive.lock();
+        let mut zip_archive = self.zip_archive.lock().unwrap();
         let file = zip_archive.by_name(key.as_str());
         match file {
             Ok(file) => Ok(Some(file.compressed_size())),
@@ -135,6 +154,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
         Ok(self
             .zip_archive
             .lock()
+            .unwrap()
             .file_names()
             .filter_map(|name| self.zip_file_strip_prefix(name))
             .filter_map(|v| StoreKey::try_from(v).ok())
@@ -143,7 +163,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
     }
 
     fn list_prefix(&self, prefix: &StorePrefix) -> Result<StoreKeys, StorageError> {
-        let mut zip_archive = self.zip_archive.lock();
+        let mut zip_archive = self.zip_archive.lock().unwrap();
         let file_names: Vec<String> = zip_archive
             .file_names()
             .filter_map(|name| self.zip_file_strip_prefix(name))
@@ -169,7 +189,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
     }
 
     fn list_dir(&self, prefix: &StorePrefix) -> Result<StoreKeysPrefixes, StorageError> {
-        let zip_archive = self.zip_archive.lock();
+        let zip_archive = self.zip_archive.lock().unwrap();
         let mut keys: StoreKeys = vec![];
         let mut prefixes: StorePrefixes = vec![];
         for name in zip_archive
@@ -196,7 +216,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ListableStorageTraits
         keys.sort();
         prefixes.sort();
 
-        Ok(StoreKeysPrefixes { keys, prefixes })
+        Ok(StoreKeysPrefixes::new(keys, prefixes))
     }
 
     fn size(&self) -> Result<u64, StorageError> {
@@ -235,7 +255,8 @@ pub enum ZipStorageAdapterCreateError {
 mod tests {
     use walkdir::WalkDir;
 
-    use crate::{store::FilesystemStore, WritableStorageTraits};
+    use zarrs_filesystem::FilesystemStore;
+    use zarrs_storage::WritableStorageTraits;
 
     use super::*;
     use std::{

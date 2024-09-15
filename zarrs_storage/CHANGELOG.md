@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed 
  - Remove unused code related to store plugins
+ - **Breaking**: Move filesystem/http/zip store implementations into separate crates:
+   - `zarrs_filesystem`
+   - `zarrs_http`
+   - `zarrs_zip`
+
+### Removed
+ - **Breaking**: remove `http` and `zip` features
 
 ## [0.1.2] - 2024-09-03
 

@@ -28,7 +28,7 @@ impl Default for MemoryStore {
 }
 
 impl MemoryStore {
-    /// Create a new memory store at a given `base_directory`.
+    /// Create a new memory store.
     #[must_use]
     pub fn new() -> Self {
         Self {

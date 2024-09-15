@@ -1,11 +1,10 @@
-//! The storage API and default stores for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
+//! The storage API for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#storage>.
-//!
-//! A Zarr [store] is a system that can be used to store and retrieve data from a Zarr hierarchy.
+//! A Zarr store is a system that can be used to store and retrieve data from a Zarr hierarchy.
 //! For example: a filesystem, HTTP server, FTP server, Amazon S3 bucket, ZIP file, etc.
+//! The Zarr V3 storage API is detailed here: <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#storage>.
 //!
-//! This crate defines abstract store interfaces, includes various store implementations, and has functions for performing the store operations defined at <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#operations>.
+//! This crate includes an in-memory store implementation. See [`zarrs` storage support](https://docs.rs/zarrs/latest/zarrs/index.html#storage-support) for a list of stores that implement the `zarrs_storage` API.
 //!
 //! ## Licence
 //! `zarrs_storage` is licensed under either of
@@ -19,7 +18,6 @@ mod storage_sync;
 mod storage_value_io;
 pub mod store;
 mod store_key;
-// pub mod store_lock;
 mod store_prefix;
 
 pub mod byte_range;

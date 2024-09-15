@@ -14,6 +14,7 @@ use zarrs::{
         StoreKey,
     },
 };
+use zarrs_filesystem::FilesystemStore;
 
 // const ARRAY_PATH: &'static str = "/array";
 const ARRAY_PATH: &str = "/";
@@ -145,17 +146,14 @@ fn zip_dir(
 
 fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     use walkdir::WalkDir;
-    use zarrs::{
-        node::Node,
-        storage::{storage_adapter::zip::ZipStorageAdapter, store},
-    };
+    use zarrs::node::Node;
+    use zarrs_zip::ZipStorageAdapter;
 
     // Create a store
     let path = tempfile::TempDir::new()?;
     let mut zarr_dir = path.path().to_path_buf();
     zarr_dir.push("hierarchy.zarr");
-    let mut store: ReadableWritableListableStorage =
-        Arc::new(store::FilesystemStore::new(&zarr_dir)?);
+    let mut store: ReadableWritableListableStorage = Arc::new(FilesystemStore::new(&zarr_dir)?);
     if let Some(arg1) = std::env::args().collect::<Vec<_>>().get(1) {
         if arg1 == "--usage-log" {
             let log_writer = Arc::new(std::sync::Mutex::new(
@@ -193,7 +191,7 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         path.path(),
         zip_key
     );
-    let store = Arc::new(store::FilesystemStore::new(&path.path())?);
+    let store = Arc::new(FilesystemStore::new(&path.path())?);
     let store = Arc::new(ZipStorageAdapter::new(store, zip_key)?);
     let array = Array::open(store.clone(), ARRAY_PATH)?;
     read_array_from_store(array)?;

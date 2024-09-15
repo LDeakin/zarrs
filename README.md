@@ -48,7 +48,8 @@ use zarrs::group::GroupBuilder;
 use zarrs::array::{ArrayBuilder, DataType, FillValue, ZARR_NAN_F32};
 use zarrs::array::codec::GzipCodec; // requires gzip feature
 use zarrs::array_subset::ArraySubset;
-use zarrs::storage::{ReadableWritableListableStorage, store::FilesystemStore};
+use zarrs::storage::ReadableWritableListableStorage;
+use zarrs_filesystem::FilesystemStore;
 
 // Create a filesystem store
 let store_path: PathBuf = "/path/to/hierarchy.zarr".into();
@@ -105,12 +106,15 @@ println!("{array_ndarray:4}");
 ```
 
 ## `zarrs` Ecosystem
-- [zarrs_storage](https://github.com/LDeakin/zarrs/tree/main/zarrs_storage): The storage API and default stores for `zarrs`.
-  - [zarrs_object_store](https://github.com/LDeakin/zarrs/tree/main/zarrs_object_store): [`object_store`](https://docs.rs/object_store/latest/object_store/) store support for `zarrs`.
-  - [zarrs_opendal](https://github.com/LDeakin/zarrs/tree/main/zarrs_opendal): [`opendal`](https://docs.rs/opendal/latest/opendal/) store support for `zarrs`.
-- [zarrs_metadata](https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata): Zarr metadata support for `zarrs`.
+- [zarrs_storage](https://github.com/LDeakin/zarrs/tree/main/zarrs_storage): The storage API for `zarrs`.
+  - [zarrs_filesystem](https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem/): A filesystem store.
+  - [zarrs_http](https://github.com/LDeakin/zarrs/tree/main/zarrs_http/): A synchronous http store.
+  - [zarrs_object_store](https://github.com/LDeakin/zarrs/tree/main/zarrs_object_store): [`object_store`](https://docs.rs/object_store/latest/object_store/) store support.
+  - [zarrs_opendal](https://github.com/LDeakin/zarrs/tree/main/zarrs_opendal): [`opendal`](https://docs.rs/opendal/latest/opendal/) store support.
+  - [zarrs_zip](https://github.com/LDeakin/zarrs/tree/main/zarrs_zip/): A storage adapter for zip files.
+- [zarrs_metadata](https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata): Zarr metadata support.
 - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
-- [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C API.
+- [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C/C++ API.
 
 ## Licence
 `zarrs` is licensed under either of

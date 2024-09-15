@@ -66,13 +66,11 @@
 //!
 //! ### Storage Support
 //!
-//! `zarrs` supports a huge range of storage backends through the [`opendal`](https://docs.rs/opendal/latest/opendal/) and [`object_store`](https://docs.rs/opendal/latest/object_store/) crates.
-//!
-//! <details><summary>Stores and Storage Adapters</summary>
+//! `zarrs` supports stores (filesystem, HTTP, S3, etc.) via crates implementing the [`zarrs_storage`] API.
 //!
 #![doc = include_str!("../doc/status/stores.md")]
-//! </details>
 //!
+//! A huge range of storage backends are supported via the [`opendal`](https://docs.rs/opendal/latest/opendal/) and [`object_store`](https://docs.rs/opendal/latest/object_store/) crates and asynchronous stores can be used in a synchronous context with the [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter).
 //!
 //! ## Examples
 #![cfg_attr(feature = "ndarray", doc = "```rust")]
@@ -83,7 +81,8 @@
 //! # #[cfg(feature = "gzip")]
 //! use zarrs::array::codec::GzipCodec; // requires gzip feature
 //! use zarrs::array_subset::ArraySubset;
-//! use zarrs::storage::{ReadableWritableListableStorage, store::FilesystemStore};
+//! use zarrs::storage::ReadableWritableListableStorage;
+//! use zarrs_filesystem::FilesystemStore;
 //!
 //! // Create a filesystem store
 //! let store_path: PathBuf = "/path/to/hierarchy.zarr".into();
@@ -171,12 +170,15 @@
 //!  - Codecs: `bitround`, `bz2`, `pcodec`, `zfp`, `zstd`.
 //!
 //! ## `zarrs` Ecosystem
-//! - [zarrs_storage](https://docs.rs/zarrs_storage/latest/zarrs_storage/): The storage API and default stores for `zarrs`.
-//!   - [zarrs_object_store](https://docs.rs/zarrs_object_store/latest/zarrs_object_store/): [`object_store`](https://docs.rs/object_store/latest/object_store/) store support for `zarrs`.
-//!   - [zarrs_opendal](https://docs.rs/zarrs_opendal/latest/zarrs_opendal/): [`opendal`](https://docs.rs/opendal/latest/opendal/) store support for `zarrs`.
-//! - [zarrs_metadata](https://docs.rs/zarrs_storage/latest/zarrs_metadata/): Zarr metadata support for `zarrs`.
+//! - [zarrs_storage](https://docs.rs/zarrs_storage/latest/zarrs_storage/): The storage API for `zarrs`.
+//!   - [zarrs_filesystem](https://docs.rs/zarrs_filesystem/latest/zarrs_filesystem/): A filesystem store.
+//!   - [zarrs_http](https://docs.rs/zarrs_http/latest/zarrs_http/): A synchronous http store.
+//!   - [zarrs_object_store](https://docs.rs/zarrs_object_store/latest/zarrs_object_store/): [`object_store`](https://docs.rs/object_store/latest/object_store/) store support.
+//!   - [zarrs_opendal](https://docs.rs/zarrs_opendal/latest/zarrs_opendal/): [`opendal`](https://docs.rs/opendal/latest/opendal/) store support.
+//!   - [zarrs_zip](https://docs.rs/zarrs_zip/latest/zarrs_zip/): A storage adapter for zip files.
+//! - [zarrs_metadata](https://docs.rs/zarrs_storage/latest/zarrs_metadata/): Zarr metadata support.
 //! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
-//! - [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C API.
+//! - [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C/C++ API.
 //!
 //! ## Licence
 //! `zarrs` is licensed under either of

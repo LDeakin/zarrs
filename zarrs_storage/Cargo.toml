@@ -13,9 +13,7 @@ categories = ["encoding"]
 
 [features]
 async = ["dep:async-trait", "dep:futures"] # Enable the experimental async API
-http = ["dep:reqwest", "dep:url"] # Enable the sync HTTP store
 tests = [] # Enable testing functions
-zip = ["dep:zip"] # Enable the zip storage adapter
 
 [package.metadata.docs.rs]
 all-features = true
@@ -25,17 +23,10 @@ async-trait = { version = "0.1.74", optional = true }
 bytes = "1.6.0"
 derive_more = { version = "1.0.0", features = ["deref", "display", "from"] }
 futures = { version = "0.3.29", optional = true }
-libc = "0.2.158"
 itertools = "0.13.0"
-page_size = "0.6.0"
 parking_lot = "0.12.0"
-pathdiff = "0.2.0"
-reqwest = { version = ">=0.11.8,<0.13", features = ["blocking"], optional = true }
 thiserror = "1.0.61"
 unsafe_cell_slice = "0.1.0"
-url = { version = "2.2.0", optional = true }
-walkdir = "2.3.2"
-zip = { version = "2.1.3", optional = true }
 
 [dev-dependencies]
 tempfile = "3"

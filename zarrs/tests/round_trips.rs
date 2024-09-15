@@ -6,11 +6,9 @@ use zarrs::{
         ChunkKeyEncoding,
     },
     node::{data_key, meta_key_v3},
-    storage::{
-        store::{FilesystemStore, MemoryStore},
-        ReadableStorageTraits, WritableStorageTraits,
-    },
+    storage::{store::MemoryStore, ReadableStorageTraits, WritableStorageTraits},
 };
+use zarrs_filesystem::FilesystemStore;
 
 pub fn to_json(data: &[u8]) -> serde_json::Value {
     let data = std::str::from_utf8(data).unwrap();
