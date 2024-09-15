@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Add `ArrayToArrayCodecTraits::compute_decoded_shape()`
    - Needed for `ArrayShardedExt::effective_inner_chunk_shape`
 
+### Changed
+ - **Breaking**: Move store implementations into separate crates
+   - `zarrs::storage::store::filesystem` module -> `zarrs_filesystem` crate
+   - `zarrs::storage::store::http` module -> `zarrs_http` crate
+   - `zarrs::storage::store::zip` module -> `zarrs_zip` crate
+
 ### Fixed
  - Fix `ArrayShardedExt::inner_chunk_grid` when applied on a sharded array with the `transpose` codec preceding `sharding_indexed`
  - Fix `ZipStorageAdapter` on windows

@@ -14,11 +14,6 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Create a store
-    // let path = tempfile::TempDir::new()?;
-    // let mut store: ReadableWritableListableStorage = Arc::new(store::AsyncFilesystemStore::new(path.path())?);
-    // let mut store: ReadableWritableListableStorage = Arc::new(store::AsyncFilesystemStore::new(
-    //     "zarrs/tests/data/array_write_read.zarr",
-    // )?);
     let mut store: AsyncReadableWritableListableStorage = Arc::new(
         zarrs_object_store::AsyncObjectStore::new(object_store::memory::InMemory::new()),
     );

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use zarrs::{node::Node, storage::store::FilesystemStore};
+use zarrs::node::Node;
+use zarrs_filesystem::FilesystemStore;
 
 #[test]
 fn hierarchy_tree() {

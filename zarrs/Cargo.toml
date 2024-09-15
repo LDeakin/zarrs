@@ -79,9 +79,11 @@ opendal = { version = "0.49", features = ["services-fs", "services-http"] }
 tempfile = "3"
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
 walkdir = "2.3.2"
-zarrs_storage = { workspace = true, features = ["zip"] }
+zarrs_storage = { workspace = true }
 zarrs_opendal = { workspace = true }
 zarrs_object_store = { workspace = true }
+zarrs_filesystem = { workspace = true }
+zarrs_zip = { workspace = true }
 zip = { version = "2.1.3" }
 
 [[example]]

@@ -1,0 +1,24 @@
+[package]
+name = "zarrs_zip"
+version = "0.1.0"
+authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
+edition = "2021"
+rust-version = "1.76"
+description = "A storage adapter for zip files for the zarrs crate"
+documentation = "https://docs.rs/zarrs_zip"
+repository = "https://github.com/LDeakin/zarrs"
+license = "MIT OR Apache-2.0"
+keywords = ["zarr", "zarrs", "storage", "store", "zip"]
+categories = ["encoding"]
+
+[dependencies]
+derive_more = { version = "1.0.0", features = ["from"] }
+itertools = "0.13.0"
+thiserror = "1.0.61"
+zarrs_storage = { workspace = true }
+zip = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+walkdir = "2.3.2"
+zarrs_filesystem = { workspace = true }
