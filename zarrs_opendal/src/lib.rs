@@ -1,5 +1,16 @@
 //! [`opendal`] store support for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 //!
+//! ```
+//! # use std::sync::Arc;
+//! use zarrs_storage::AsyncReadableStorage;
+//! use zarrs_opendal::AsyncOpendalStore;
+//!
+//! let builder = opendal::services::Http::default().endpoint("http://...");
+//! let operator = opendal::Operator::new(builder)?.finish();
+//! let store: AsyncReadableStorage = Arc::new(AsyncOpendalStore::new(operator));
+//! # Ok::<_, Box<dyn std::error::Error>>(())
+//! ```
+//!
 //! ## Licence
 //! `zarrs_opendal` is licensed under either of
 //! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_opendal/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or

@@ -8,6 +8,15 @@
 
 [`opendal`](https://crates.io/crates/opendal) store support for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 
+```rust
+use zarrs_storage::AsyncReadableStorage;
+use zarrs_opendal::AsyncOpendalStore;
+
+let builder = opendal::services::Http::default().endpoint("http://...");
+let operator = opendal::Operator::new(builder)?.finish();
+let store: AsyncReadableStorage = Arc::new(AsyncOpendalStore::new(operator));
+```
+
 ## Licence
 `zarrs_opendal` is licensed under either of
  - the Apache License, Version 2.0 [LICENSE-APACHE](./LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
