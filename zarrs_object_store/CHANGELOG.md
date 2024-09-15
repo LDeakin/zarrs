@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add example to readme and root docs
 
+### Changed
+ - **Breaking**: Bump `zarrs_storage` to 0.2.0
+
 ## [0.1.0] - 2024-09-02
 
 ### Added

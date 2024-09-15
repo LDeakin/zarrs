@@ -30,11 +30,11 @@ version = "0.1.0"
 path = "zarrs_http"
 
 [workspace.dependencies.zarrs_object_store]
-version = "0.1.0"
+version = "0.2.0"
 path = "zarrs_object_store"
 
 [workspace.dependencies.zarrs_opendal]
-version = "0.1.0"
+version = "0.2.0"
 path = "zarrs_opendal"
 
 [workspace.dependencies.zarrs_zip]
