@@ -7,29 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
- - Add `ArrayShardedExt::effective_inner_chunk_shape`
-   - This is the effective inner chunk shape (i.e. read granularity) of a sharded array
-   - It is equal to the inner chunk shape unless the `transpose` codec precedes `sharding_indexed`
- - **Breaking**: Add `ArrayToArrayCodecTraits::compute_decoded_shape()`
-   - Needed for `ArrayShardedExt::effective_inner_chunk_shape`
-
-### Changed
- - **Breaking**: Move store implementations into separate crates
-   - `zarrs::storage::store::filesystem` module -> `zarrs_filesystem` crate
-   - `zarrs::storage::store::http` module -> `zarrs_http` crate
-   - `zarrs::storage::store::zip` module -> `zarrs_zip` crate
-
-### Fixed
- - Fix `ArrayShardedExt::inner_chunk_grid` when applied on a sharded array with the `transpose` codec preceding `sharding_indexed`
- - Fix `ZipStorageAdapter` on windows
-
-## [0.17.0-beta.0] - 2024-09-06
+## [0.17.0-beta.1] - 2024-09-16
 
 ### Highlights / Major Changes
- - `zarrs` has been split into 5 crates: `zarrs`, `zarrs_metadata`, `zarrs_storage`, `zarrs_opendal`, and `zarrs_object_store`
+ - `zarrs` has been split into 3 core crates: `zarrs`, `zarrs_metadata`, and `zarrs_storage`
    - `zarrs_storage` and `zarrs_metadata` are re-exported as the `storage` and `metadata` modules
-   - `opendal` and `object_store` support has been moved to the `zarrs_opendal` and `zarrs_object_store` crates
+ - Store implementations have been moved into separate crates: `zarrs_filesystem`, `zarrs_http`, `zarrs_object_store`, `zarrs_opendal`, `zarrs_zip`
  - Chunk caching support via `ArrayChunkCacheExt`
  - Direct IO support for Linux in `FilesystemStore`
  - **Implicit groups are no longer supported**
@@ -50,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `StorageError::MissingMetadata` now that implicit groups are not supported
  - Add `ChunkShape::to_array_shape()`
  - Add `DataTypeMetadataV3`
+ - Add `ArrayShardedExt::effective_inner_chunk_shape`
+   - This is the effective inner chunk shape (i.e. read granularity) of a sharded array
+   - It is equal to the inner chunk shape unless the `transpose` codec precedes `sharding_indexed`
+ - **Breaking**: Add `ArrayToArrayCodecTraits::compute_decoded_shape()`
+   - Needed for `ArrayShardedExt::effective_inner_chunk_shape`
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
@@ -87,8 +75,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `zarrs`
    - `zarrs_storage` (re-exported as `storage` module)
    - `zarrs_metadata` (re-exported as `metadata` module)
+   - `zarrs_filesystem`
+   - `zarrs_http`
    - `zarrs_object_store`
    - `zarrs_opendal`
+   - `zarrs_zip`
  - **Breaking**: Codecs no longer need to implement `Clone` but must be in `Arc` instead of `Box`
 
 ### Removed
@@ -112,6 +103,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - this could corrupt values depending on the order of `set_partial_values` calls
  - Fix `FilesystemStore::fspath_to_key` on windows
  - Make `ArrayRepresentationBase` pub so that `{Array,Chunk}Representation` are not opaque
+ - Fix `ArrayShardedExt::inner_chunk_grid` when applied on a sharded array with the `transpose` codec preceding `sharding_indexed`
+ - Fix `ZipStorageAdapter` on windows
+
+## [0.17.0-beta.0] - 2024-09-06
 
 ## [0.16.4] - 2024-08-22
 
@@ -1050,6 +1045,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial public release
 
 [unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.4...HEAD
+[0.17.0-beta.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.1
 [0.17.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.0
 [0.16.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.4
 [0.16.3]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.3
