@@ -18,8 +18,8 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 
 ## Getting Started
 - Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status), [array support](https://docs.rs/zarrs/latest/zarrs/#array-support), and [storage support](https://docs.rs/zarrs/latest/zarrs/#storage-support).
-- View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
-- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html), [`storage`](https://docs.rs/zarrs/latest/zarrs/storage/index.html), and [`metadata`](https://docs.rs/zarrs/latest/zarrs/metadata/index.html) are good places to start.
+- View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples) and [the example below](#example).
+- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html) is a good place to start.
 - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
   - A reencoder that can change codecs, chunk shape, convert Zarr V2 to V3, etc.
   - Create an [OME-Zarr](https://ngff.openmicroscopy.org/latest/) hierarchy from a Zarr array.

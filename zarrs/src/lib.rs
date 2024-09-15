@@ -9,8 +9,8 @@
 //!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
-//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples).
-//! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`], [`storage`], and [`metadata`] are good places to start.
+//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples) and [the example below](#example).
+//! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] is a good place to start.
 //! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
 //!   - A reencoder that can change codecs, chunk shape, convert Zarr V2 to V3, etc.
 //!   - Create a Zarr V3 [OME-Zarr](https://ngff.openmicroscopy.org/latest/) hierarchy from a Zarr array.
