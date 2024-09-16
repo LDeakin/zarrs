@@ -116,7 +116,7 @@ println!("{array_ndarray:4}");
 | `zarrs_opendal` | [`opendal`](https://docs.rs/opendal/latest/opendal/) store support | [![zarrs_opendal_ver]](https://crates.io/crates/zarrs_opendal) | [![zarrs_opendal_doc]](https://docs.rs/zarrs_opendal) |
 | `zarrs_zip` | A storage adapter for zip files | [![zarrs_zip_ver]](https://crates.io/crates/zarrs_zip) | [![zarrs_zip_doc]](https://docs.rs/zarrs_zip) |
 | **Bindings** |
-| `zarrs_ffi` | A subset of `zarrs` exposed as a C/C++ API | [![zarrs_ffi_ver]](https://crates.io/crates/zarrs_ffi) | [![zarrs_ffi_doc]](https://docs.rs/zarrs_ffi) |
+| [zarrs_ffi] | A subset of `zarrs` exposed as a C/C++ API | [![zarrs_ffi_ver]](https://crates.io/crates/zarrs_ffi) | [![zarrs_ffi_doc]](https://docs.rs/zarrs_ffi) |
 
 [zarrs_ver]: https://img.shields.io/crates/v/zarrs.svg
 [zarrs_doc]: https://docs.rs/zarrs/badge.svg
@@ -134,11 +134,13 @@ println!("{array_ndarray:4}");
 [zarrs_opendal_doc]: https://docs.rs/zarrs_opendal/badge.svg
 [zarrs_zip_ver]: https://img.shields.io/crates/v/zarrs_zip.svg
 [zarrs_zip_doc]: https://docs.rs/zarrs_zip/badge.svg
+[zarrs_ffi]: https://github.com/LDeakin/zarrs_ffi
 [zarrs_ffi_ver]: https://img.shields.io/crates/v/zarrs_ffi.svg
 [zarrs_ffi_doc]: https://docs.rs/zarrs_ffi/badge.svg
 
-#### `zarrs_tools` [![zarrs_tools_ver]](https://crates.io/crates/zarrs_tools) [![zarrs_tools_doc]](https://docs.rs/zarrs_tools)
+#### [zarrs_tools] [![zarrs_tools_ver]](https://crates.io/crates/zarrs_tools) [![zarrs_tools_doc]](https://docs.rs/zarrs_tools)
 
+[zarrs_tools]: https://github.com/LDeakin/zarrs_tools
 [zarrs_tools_ver]: https://img.shields.io/crates/v/zarrs_tools.svg
 [zarrs_tools_doc]: https://docs.rs/zarrs_tools/badge.svg
 
