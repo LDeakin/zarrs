@@ -11,11 +11,7 @@
 //! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples) and [the example below](#examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] is a good place to start.
-//! - Check out [zarrs_tools](https://github.com/LDeakin/zarrs_tools) for various tools built upon this crate. Includes:
-//!   - A reencoder that can change codecs, chunk shape, convert Zarr V2 to V3, etc.
-//!   - Create a Zarr V3 [OME-Zarr](https://ngff.openmicroscopy.org/latest/) hierarchy from a Zarr array.
-//!   - Transform arrays: crop, rescale, downsample, gradient magnitude, gaussian, noise filtering, etc.
-//!   - Benchmarking tools and performance benchmarks of `zarrs`.
+//! - Check out [`zarrs` ecosystem](#zarrs-ecosystem).
 //!
 //! ## Implementation Status
 //!
@@ -170,15 +166,7 @@
 //!  - Codecs: `bitround`, `bz2`, `pcodec`, `zfp`, `zstd`.
 //!
 //! ## `zarrs` Ecosystem
-//! - [zarrs_storage](https://docs.rs/zarrs_storage/latest/zarrs_storage/): The storage API for `zarrs`.
-//!   - [zarrs_filesystem](https://docs.rs/zarrs_filesystem/latest/zarrs_filesystem/): A filesystem store.
-//!   - [zarrs_http](https://docs.rs/zarrs_http/latest/zarrs_http/): A synchronous http store.
-//!   - [zarrs_object_store](https://docs.rs/zarrs_object_store/latest/zarrs_object_store/): [`object_store`](https://docs.rs/object_store/latest/object_store/) store support.
-//!   - [zarrs_opendal](https://docs.rs/zarrs_opendal/latest/zarrs_opendal/): [`opendal`](https://docs.rs/opendal/latest/opendal/) store support.
-//!   - [zarrs_zip](https://docs.rs/zarrs_zip/latest/zarrs_zip/): A storage adapter for zip files.
-//! - [zarrs_metadata](https://docs.rs/zarrs_storage/latest/zarrs_metadata/): Zarr metadata support.
-//! - [zarrs_tools](https://github.com/LDeakin/zarrs_tools): Various tools for creating and manipulating Zarr V3 data.
-//! - [zarrs_ffi](https://github.com/LDeakin/zarrs_ffi): A subset of `zarrs` exposed as a C/C++ API.
+#![doc = include_str!("../doc/ecosystem.md")]
 //!
 //! ## Licence
 //! `zarrs` is licensed under either of
