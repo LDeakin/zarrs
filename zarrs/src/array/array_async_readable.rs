@@ -683,23 +683,29 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             ));
         }
 
-        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
-        let storage_transformer = self
-            .storage_transformers()
-            .create_async_readable_transformer(storage_handle);
-        let input_handle = Arc::new(AsyncStoragePartialDecoder::new(
-            storage_transformer,
-            self.chunk_key(chunk_indices),
-        ));
-
-        let bytes = self
-            .codecs()
-            .async_partial_decoder(input_handle, &chunk_representation, options)
-            .await?
-            .partial_decode_opt(&[chunk_subset.clone()], options)
-            .await?
-            .remove(0)
-            .into_owned();
+        let bytes = if chunk_subset.start().iter().all(|&o| o == 0)
+            && chunk_subset.shape() == chunk_representation.shape_u64()
+        {
+            // Fast path if `chunk_subset` encompasses the whole chunk
+            self.async_retrieve_chunk_opt(chunk_indices, options)
+                .await?
+        } else {
+            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+            let storage_transformer = self
+                .storage_transformers()
+                .create_async_readable_transformer(storage_handle);
+            let input_handle = Arc::new(AsyncStoragePartialDecoder::new(
+                storage_transformer,
+                self.chunk_key(chunk_indices),
+            ));
+            self.codecs()
+                .async_partial_decoder(input_handle, &chunk_representation, options)
+                .await?
+                .partial_decode_opt(&[chunk_subset.clone()], options)
+                .await?
+                .remove(0)
+                .into_owned()
+        };
         bytes.validate(chunk_subset.num_elements(), self.data_type().size())?;
         Ok(bytes)
     }
