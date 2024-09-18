@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.17.0-beta.1] - 2024-09-16
+## [0.17.0] - 2024-09-18
 
 ### Highlights / Major Changes
  - `zarrs` has been split into 3 core crates: `zarrs`, `zarrs_metadata`, and `zarrs_storage`
@@ -105,6 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Make `ArrayRepresentationBase` pub so that `{Array,Chunk}Representation` are not opaque
  - Fix `ArrayShardedExt::inner_chunk_grid` when applied on a sharded array with the `transpose` codec preceding `sharding_indexed`
  - Fix `ZipStorageAdapter` on windows
+
+## [0.17.0-beta.1] - 2024-09-16
 
 ## [0.17.0-beta.0] - 2024-09-06
 
@@ -1044,7 +1046,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.4...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.17.0...HEAD
+[0.17.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0
 [0.17.0-beta.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.1
 [0.17.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.0
 [0.16.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.4
