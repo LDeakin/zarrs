@@ -447,10 +447,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     options,
                 )
                 .map_err(ArrayError::CodecError)?;
-            bytes.validate(
-                chunk_representation.num_elements(),
-                chunk_representation.data_type().size(),
-            )?;
             Ok(Some(bytes.into_owned()))
         } else {
             Ok(None)
