@@ -132,7 +132,6 @@ impl<'a> ArrayBytes<'a> {
     ///
     /// For a fixed-length array, check it matches the expected size.
     /// For a variable-length array, check that the offsets are monotonically increasing and the largest offset is equal to the array length.
-    /// Always returns without error for an array with fixed-length data.
     ///
     /// # Errors
     /// Returns an error if the array is not valid.
