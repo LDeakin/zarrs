@@ -438,16 +438,13 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             .get(&self.chunk_key(chunk_indices))
             .map_err(ArrayError::StorageError)?;
         if let Some(chunk_encoded) = chunk_encoded {
+            let chunk_encoded: Vec<u8> = chunk_encoded.into();
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let bytes = self
                 .codecs()
-                .decode(
-                    Cow::Borrowed(&chunk_encoded),
-                    &chunk_representation,
-                    options,
-                )
+                .decode(Cow::Owned(chunk_encoded), &chunk_representation, options)
                 .map_err(ArrayError::CodecError)?;
-            Ok(Some(bytes.into_owned()))
+            Ok(Some(bytes))
         } else {
             Ok(None)
         }

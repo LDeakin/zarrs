@@ -306,20 +306,17 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             .await
             .map_err(ArrayError::StorageError)?;
         if let Some(chunk_encoded) = chunk_encoded {
+            let chunk_encoded: Vec<u8> = chunk_encoded.into();
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
             let bytes = self
                 .codecs()
-                .decode(
-                    Cow::Borrowed(&chunk_encoded),
-                    &chunk_representation,
-                    options,
-                )
+                .decode(Cow::Owned(chunk_encoded), &chunk_representation, options)
                 .map_err(ArrayError::CodecError)?;
             bytes.validate(
                 chunk_representation.num_elements(),
                 chunk_representation.data_type().size(),
             )?;
-            Ok(Some(bytes.into_owned()))
+            Ok(Some(bytes))
         } else {
             Ok(None)
         }

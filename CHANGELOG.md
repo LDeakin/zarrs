@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed an unnecessary copy in `Array::[async_]retrieve_chunk_if_exists_opt`
+
 ## [0.17.0-beta.1] - 2024-09-16
 
 ### Highlights / Major Changes
