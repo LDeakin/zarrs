@@ -129,7 +129,10 @@ impl ListableStorageTraits for OpendalStore {
                             keys.push(StoreKey::try_from(entry.path())?);
                         }
                         opendal::EntryMode::DIR => {
-                            prefixes.push(StorePrefix::try_from(entry.path())?);
+                            let prefix_entry = StorePrefix::try_from(entry.path())?;
+                            if &prefix_entry != prefix {
+                                prefixes.push(prefix_entry);
+                            }
                         }
                         opendal::EntryMode::Unknown => {}
                     }

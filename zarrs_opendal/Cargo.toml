@@ -14,7 +14,7 @@ categories = ["encoding"]
 [dependencies]
 async-trait = "0.1.74"
 futures = "0.3.29"
-opendal = { version = ">=0.46,<0.50", default-features = false }
+opendal = { version = ">=0.46,<0.51", default-features = false }
 zarrs_storage = { workspace = true, features = ["async"] }
 
 [dev-dependencies]

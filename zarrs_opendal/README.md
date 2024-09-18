@@ -1,7 +1,7 @@
 # zarrs_opendal
 
 [![Latest Version](https://img.shields.io/crates/v/zarrs_opendal.svg)](https://crates.io/crates/zarrs_opendal)
-[![opendal 0.49](https://img.shields.io/badge/opendal-0.49-blue)](https://crates.io/crates/opendal)
+[![opendal 0.50](https://img.shields.io/badge/opendal-0.50-blue)](https://crates.io/crates/opendal)
 [![zarrs_opendal documentation](https://docs.rs/zarrs_opendal/badge.svg)](https://docs.rs/zarrs_opendal)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_opendal)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)

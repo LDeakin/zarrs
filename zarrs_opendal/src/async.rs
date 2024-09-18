@@ -148,7 +148,10 @@ impl AsyncListableStorageTraits for AsyncOpendalStore {
                             keys.push(StoreKey::try_from(entry.path())?);
                         }
                         opendal::EntryMode::DIR => {
-                            prefixes.push(StorePrefix::try_from(entry.path())?);
+                            let prefix_entry = StorePrefix::try_from(entry.path())?;
+                            if &prefix_entry != prefix {
+                                prefixes.push(StorePrefix::try_from(entry.path())?);
+                            }
                         }
                         opendal::EntryMode::Unknown => {}
                     }
