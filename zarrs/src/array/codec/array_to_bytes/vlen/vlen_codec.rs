@@ -23,19 +23,23 @@ use super::{vlen_partial_decoder, VlenCodecConfiguration, VlenCodecConfiguration
 /// A `bytes` codec implementation.
 #[derive(Debug, Clone)]
 pub struct VlenCodec {
-    index_codecs: CodecChain,
-    data_codecs: CodecChain,
+    index_codecs: Arc<CodecChain>,
+    data_codecs: Arc<CodecChain>,
     index_data_type: VlenIndexDataType,
 }
 
 impl Default for VlenCodec {
     fn default() -> Self {
-        let index_codecs = CodecChain::new(
+        let index_codecs = Arc::new(CodecChain::new(
             vec![],
             Arc::new(BytesCodec::new(Some(Endianness::Little))),
             vec![],
-        );
-        let data_codecs = CodecChain::new(vec![], Arc::new(BytesCodec::new(None)), vec![]);
+        ));
+        let data_codecs = Arc::new(CodecChain::new(
+            vec![],
+            Arc::new(BytesCodec::new(None)),
+            vec![],
+        ));
         Self {
             index_codecs,
             data_codecs,
@@ -48,8 +52,8 @@ impl VlenCodec {
     /// Create a new `vlen` codec.
     #[must_use]
     pub fn new(
-        index_codecs: CodecChain,
-        data_codecs: CodecChain,
+        index_codecs: Arc<CodecChain>,
+        data_codecs: Arc<CodecChain>,
         index_data_type: VlenIndexDataType,
     ) -> Self {
         Self {
@@ -67,8 +71,8 @@ impl VlenCodec {
         configuration: &VlenCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         let VlenCodecConfiguration::V1(configuration) = configuration;
-        let index_codecs = CodecChain::from_metadata(&configuration.index_codecs)?;
-        let data_codecs = CodecChain::from_metadata(&configuration.data_codecs)?;
+        let index_codecs = Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
+        let data_codecs = Arc::new(CodecChain::from_metadata(&configuration.data_codecs)?);
         Ok(Self::new(
             index_codecs,
             data_codecs,
@@ -266,34 +270,34 @@ impl ArrayToBytesCodecTraits for VlenCodec {
         Ok(ArrayBytes::new_vlen(data, index))
     }
 
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(vlen_partial_decoder::VlenPartialDecoder::new(
             input_handle,
             decoded_representation.clone(),
-            &self.index_codecs,
-            &self.data_codecs,
+            self.index_codecs.clone(),
+            self.data_codecs.clone(),
             self.index_data_type,
         )))
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             vlen_partial_decoder::AsyncVlenPartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
-                &self.index_codecs,
-                &self.data_codecs,
+                self.index_codecs.clone(),
+                self.data_codecs.clone(),
                 self.index_data_type,
             ),
         ))

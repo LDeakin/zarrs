@@ -273,10 +273,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
     /// Async variant of [`partial_decoder`](Array::partial_decoder).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    pub async fn async_partial_decoder<'a>(
-        &'a self,
+    pub async fn async_partial_decoder(
+        &self,
         chunk_indices: &[u64],
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, ArrayError> {
         self.async_partial_decoder_opt(chunk_indices, &CodecOptions::default())
             .await
     }
@@ -768,7 +768,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 storage_transformer,
                 self.chunk_key(chunk_indices),
             ));
-            self.codecs()
+            self.codecs
+                .clone()
                 .async_partial_decoder(input_handle, &chunk_representation, options)
                 .await?
                 .partial_decode_opt(&[chunk_subset.clone()], options)
@@ -820,7 +821,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             ));
 
             Ok(self
-                .codecs()
+                .codecs
+                .clone()
                 .async_partial_decoder(input_handle, &chunk_representation, options)
                 .await?
                 .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)
@@ -860,11 +862,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
     /// Async variant of [`partial_decoder_opt`](Array::partial_decoder_opt).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_partial_decoder_opt<'a>(
-        &'a self,
+    pub async fn async_partial_decoder_opt(
+        &self,
         chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
@@ -875,7 +877,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         ));
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         Ok(self
-            .codecs()
+            .codecs
+            .clone()
             .async_partial_decoder(input_handle, &chunk_representation, options)
             .await?)
     }

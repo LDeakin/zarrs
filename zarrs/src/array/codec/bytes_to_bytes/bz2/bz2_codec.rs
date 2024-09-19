@@ -105,24 +105,24 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         Ok(Cow::Owned(out))
     }
 
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(bz2_partial_decoder::Bz2PartialDecoder::new(
             input_handle,
         )))
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(bz2_partial_decoder::AsyncBz2PartialDecoder::new(
             input_handle,
         )))

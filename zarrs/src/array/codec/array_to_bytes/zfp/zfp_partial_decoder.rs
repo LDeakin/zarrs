@@ -111,18 +111,18 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `zfp` codec.
-pub struct AsyncZfpPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncZfpPartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
     write_header: bool,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncZfpPartialDecoder<'a> {
+impl AsyncZfpPartialDecoder {
     /// Create a new partial decoder for the `zfp` codec.
     pub fn new(
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
         write_header: bool,
@@ -144,7 +144,7 @@ impl<'a> AsyncZfpPartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder<'_> {
+impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }

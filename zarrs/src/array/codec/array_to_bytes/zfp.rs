@@ -523,7 +523,7 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
-        let codec = ZfpCodec::new_with_configuration(&configuration);
+        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
 
         let encoded = codec
             .encode(
@@ -579,7 +579,7 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
-        let codec = ZfpCodec::new_with_configuration(&configuration);
+        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
 
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
         let encoded = codec

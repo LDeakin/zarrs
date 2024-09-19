@@ -161,12 +161,12 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         }
     }
 
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             super::transpose_partial_decoder::TransposePartialDecoder::new(
                 input_handle,
@@ -177,12 +177,12 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             super::transpose_partial_decoder::AsyncTransposePartialDecoder::new(
                 input_handle,

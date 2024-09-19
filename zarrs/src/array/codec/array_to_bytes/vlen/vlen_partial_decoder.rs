@@ -21,8 +21,8 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 pub struct VlenPartialDecoder<'a> {
     input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
-    index_codecs: &'a CodecChain,
-    data_codecs: &'a CodecChain,
+    index_codecs: Arc<CodecChain>,
+    data_codecs: Arc<CodecChain>,
     index_data_type: VlenIndexDataType,
 }
 
@@ -31,8 +31,8 @@ impl<'a> VlenPartialDecoder<'a> {
     pub fn new(
         input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
-        index_codecs: &'a CodecChain,
-        data_codecs: &'a CodecChain,
+        index_codecs: Arc<CodecChain>,
+        data_codecs: Arc<CodecChain>,
         index_data_type: VlenIndexDataType,
     ) -> Self {
         Self {
@@ -108,8 +108,8 @@ impl ArrayPartialDecoderTraits for VlenPartialDecoder<'_> {
         // Get all of the input bytes (cached due to CodecTraits::partial_decoder_decodes_all() == true)
         let bytes = self.input_handle.decode(options)?;
         decode_vlen_bytes(
-            self.index_codecs,
-            self.data_codecs,
+            &self.index_codecs,
+            &self.data_codecs,
             self.index_data_type,
             bytes,
             decoded_regions,
@@ -122,22 +122,22 @@ impl ArrayPartialDecoderTraits for VlenPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncVlenPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncVlenPartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
-    index_codecs: &'a CodecChain,
-    data_codecs: &'a CodecChain,
+    index_codecs: Arc<CodecChain>,
+    data_codecs: Arc<CodecChain>,
     index_data_type: VlenIndexDataType,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncVlenPartialDecoder<'a> {
+impl AsyncVlenPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
-        index_codecs: &'a CodecChain,
-        data_codecs: &'a CodecChain,
+        index_codecs: Arc<CodecChain>,
+        data_codecs: Arc<CodecChain>,
         index_data_type: VlenIndexDataType,
     ) -> Self {
         Self {
@@ -152,7 +152,7 @@ impl<'a> AsyncVlenPartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for AsyncVlenPartialDecoder<'_> {
+impl AsyncArrayPartialDecoderTraits for AsyncVlenPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
@@ -165,8 +165,8 @@ impl AsyncArrayPartialDecoderTraits for AsyncVlenPartialDecoder<'_> {
         // Get all of the input bytes (cached due to CodecTraits::partial_decoder_decodes_all() == true)
         let bytes = self.input_handle.decode(options).await?;
         decode_vlen_bytes(
-            self.index_codecs,
-            self.data_codecs,
+            &self.index_codecs,
+            &self.data_codecs,
             self.index_data_type,
             bytes,
             decoded_regions,

@@ -381,12 +381,12 @@ impl ArrayToBytesCodecTraits for CodecChain {
         Ok(())
     }
 
-    fn partial_decoder<'a>(
-        &'a self,
-        mut input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        mut input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
         let bytes_representations =
@@ -401,7 +401,8 @@ impl ArrayToBytesCodecTraits for CodecChain {
                 input_handle = Arc::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
             }
             codec_index += 1;
-            input_handle = codec.partial_decoder(input_handle, bytes_representation, options)?;
+            input_handle =
+                Arc::clone(codec).partial_decoder(input_handle, bytes_representation, options)?;
         }
 
         if Some(codec_index) == self.cache_index {
@@ -412,7 +413,9 @@ impl ArrayToBytesCodecTraits for CodecChain {
             let array_representation = array_representations.last().unwrap();
             let codec = &self.array_to_bytes;
             codec_index += 1;
-            codec.partial_decoder(input_handle, array_representation, options)?
+            codec
+                .clone()
+                .partial_decoder(input_handle, array_representation, options)?
         };
 
         for (codec, array_representation) in std::iter::zip(
@@ -427,7 +430,10 @@ impl ArrayToBytesCodecTraits for CodecChain {
                 )?);
             }
             codec_index += 1;
-            input_handle = codec.partial_decoder(input_handle, array_representation, options)?;
+            input_handle =
+                codec
+                    .clone()
+                    .partial_decoder(input_handle, array_representation, options)?;
         }
 
         if Some(codec_index) == self.cache_index {
@@ -442,12 +448,12 @@ impl ArrayToBytesCodecTraits for CodecChain {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        mut input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        mut input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError> {
         let array_representations =
             self.get_array_representations(decoded_representation.clone())?;
         let bytes_representations =
@@ -464,6 +470,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             }
             codec_index += 1;
             input_handle = codec
+                .clone()
                 .async_partial_decoder(input_handle, bytes_representation, options)
                 .await?;
         }
@@ -478,6 +485,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             let codec = &self.array_to_bytes;
             codec_index += 1;
             codec
+                .clone()
                 .async_partial_decoder(input_handle, array_representation, options)
                 .await?
         };
@@ -498,6 +506,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             }
             codec_index += 1;
             input_handle = codec
+                .clone()
                 .async_partial_decoder(input_handle, array_representation, options)
                 .await?;
         }
@@ -715,7 +724,7 @@ mod tests {
         ];
         println!("{codec_configurations:?}");
         let not_just_bytes = codec_configurations.len() > 1;
-        let codec = CodecChain::from_metadata(&codec_configurations).unwrap();
+        let codec = Arc::new(CodecChain::from_metadata(&codec_configurations).unwrap());
 
         let encoded = codec
             .encode(
@@ -749,6 +758,7 @@ mod tests {
 
         let input_handle = Arc::new(std::io::Cursor::new(encoded));
         let partial_decoder = codec
+            .clone()
             .partial_decoder(
                 input_handle,
                 &chunk_representation,

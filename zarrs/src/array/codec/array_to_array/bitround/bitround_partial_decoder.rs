@@ -14,16 +14,16 @@ use crate::array::codec::AsyncArrayPartialDecoderTraits;
 use super::{round_bytes, IDENTIFIER};
 
 /// Partial decoder for the `bitround` codec.
-pub struct BitroundPartialDecoder<'a> {
-    input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
+pub struct BitroundPartialDecoder {
+    input_handle: Arc<dyn ArrayPartialDecoderTraits>,
     data_type: DataType,
     keepbits: u32,
 }
 
-impl<'a> BitroundPartialDecoder<'a> {
+impl BitroundPartialDecoder {
     /// Create a new partial decoder for the `bitround` codec.
     pub fn new(
-        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         data_type: &DataType,
         keepbits: u32,
     ) -> Result<Self, CodecError> {
@@ -52,7 +52,7 @@ impl<'a> BitroundPartialDecoder<'a> {
     }
 }
 
-impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for BitroundPartialDecoder {
     fn data_type(&self) -> &DataType {
         &self.data_type
     }
@@ -79,17 +79,17 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bitround` codec.
-pub struct AsyncBitroundPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
+pub struct AsyncBitroundPartialDecoder {
+    input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
     data_type: DataType,
     keepbits: u32,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncBitroundPartialDecoder<'a> {
+impl AsyncBitroundPartialDecoder {
     /// Create a new partial decoder for the `bitround` codec.
     pub fn new(
-        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         data_type: &DataType,
         keepbits: u32,
     ) -> Result<Self, CodecError> {
@@ -120,7 +120,7 @@ impl<'a> AsyncBitroundPartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder<'_> {
+impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder {
     fn data_type(&self) -> &DataType {
         &self.data_type
     }

@@ -105,10 +105,10 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
-        let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
+        let codec = Arc::new(Crc32cCodec::new_with_configuration(&codec_configuration));
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Arc::new(std::io::Cursor::new(encoded));
@@ -141,10 +141,10 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
-        let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
+        let codec = Arc::new(Crc32cCodec::new_with_configuration(&codec_configuration));
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions = [ByteRange::FromStart(3, Some(2))];
         let input_handle = Arc::new(std::io::Cursor::new(encoded));

@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn codec_transpose_partial_decode() {
-        let codec = TransposeCodec::new(TransposeOrder::new(&[1, 0]).unwrap());
+        let codec = Arc::new(TransposeCodec::new(TransposeOrder::new(&[1, 0]).unwrap()));
 
         let elements: Vec<f32> = (0..16).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(
@@ -220,7 +220,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
         ];
         let input_handle = Arc::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
-        let bytes_codec = BytesCodec::default();
+        let bytes_codec = Arc::new(BytesCodec::default());
         let input_handle = bytes_codec
             .partial_decoder(
                 input_handle,
@@ -258,7 +258,7 @@ mod tests {
     #[cfg(feature = "async")]
     #[tokio::test]
     async fn codec_transpose_async_partial_decode() {
-        let codec = TransposeCodec::new(TransposeOrder::new(&[1, 0]).unwrap());
+        let codec = Arc::new(TransposeCodec::new(TransposeOrder::new(&[1, 0]).unwrap()));
 
         let elements: Vec<f32> = (0..16).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(
@@ -283,7 +283,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[2..4, 0..2]),
         ];
         let input_handle = Arc::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
-        let bytes_codec = BytesCodec::default();
+        let bytes_codec = Arc::new(BytesCodec::default());
         let input_handle = bytes_codec
             .async_partial_decoder(
                 input_handle,

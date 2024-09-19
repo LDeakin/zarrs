@@ -304,7 +304,7 @@ pub struct Array<TStorage: ?Sized> {
     /// Provides an element value to use for uninitialised portions of the Zarr array. It encodes the underlying data type.
     fill_value: FillValue,
     /// Specifies a list of codecs to be used for encoding and decoding chunks.
-    codecs: CodecChain,
+    codecs: Arc<CodecChain>,
     // /// Optional user defined attributes.
     // attributes: serde_json::Map<String, serde_json::Value>,
     /// An optional list of storage transformers.
@@ -352,8 +352,10 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let fill_value = data_type
             .fill_value_from_metadata(&metadata_v3.fill_value)
             .map_err(ArrayCreateError::InvalidFillValueMetadata)?;
-        let codecs = CodecChain::from_metadata(&metadata_v3.codecs)
-            .map_err(ArrayCreateError::CodecsCreateError)?;
+        let codecs = Arc::new(
+            CodecChain::from_metadata(&metadata_v3.codecs)
+                .map_err(ArrayCreateError::CodecsCreateError)?,
+        );
         let storage_transformers =
             StorageTransformerChain::from_metadata(&metadata_v3.storage_transformers)
                 .map_err(ArrayCreateError::StorageTransformersCreateError)?;
@@ -432,7 +434,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
 
     /// Get the codecs.
     #[must_use]
-    pub const fn codecs(&self) -> &CodecChain {
+    pub fn codecs(&self) -> &CodecChain {
         &self.codecs
     }
 

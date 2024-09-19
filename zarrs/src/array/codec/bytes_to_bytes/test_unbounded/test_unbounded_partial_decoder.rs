@@ -46,21 +46,21 @@ impl BytesPartialDecoderTraits for TestUnboundedPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `test_unbounded` codec.
-pub struct AsyncTestUnboundedPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncTestUnboundedPartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncTestUnboundedPartialDecoder<'a> {
+impl AsyncTestUnboundedPartialDecoder {
     /// Create a new partial decoder for the `test_unbounded` codec.
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for AsyncTestUnboundedPartialDecoder<'_> {
+impl AsyncBytesPartialDecoderTraits for AsyncTestUnboundedPartialDecoder {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

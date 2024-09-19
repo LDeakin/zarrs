@@ -196,24 +196,24 @@ impl BytesToBytesCodecTraits for BloscCodec {
         Ok(Cow::Owned(Self::do_decode(&encoded_value, n_threads)?))
     }
 
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         _decoded_representation: &BytesRepresentation,
         _parallel: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(blosc_partial_decoder::BloscPartialDecoder::new(
             input_handle,
         )))
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         _decoded_representation: &BytesRepresentation,
         _parallel: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             blosc_partial_decoder::AsyncBloscPartialDecoder::new(input_handle),
         ))

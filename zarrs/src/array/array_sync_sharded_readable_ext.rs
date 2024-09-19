@@ -14,19 +14,19 @@ use super::{ArrayBytes, ArraySize, DataTypeSize};
 use crate::storage::ReadableStorageTraits;
 use crate::{array::codec::ArrayPartialDecoderTraits, array_subset::ArraySubset};
 
-type PartialDecoderHashMap<'a> = HashMap<Vec<u64>, Arc<dyn ArrayPartialDecoderTraits + 'a>>;
+type PartialDecoderHashMap = HashMap<Vec<u64>, Arc<dyn ArrayPartialDecoderTraits>>;
 
 /// A cache used for methods in the [`ArrayShardedReadableExt`] trait.
-pub struct ArrayShardedReadableExtCache<'a> {
+pub struct ArrayShardedReadableExtCache {
     array_is_sharded: bool,
     inner_chunk_grid: ChunkGrid,
-    cache: Arc<std::sync::Mutex<PartialDecoderHashMap<'a>>>,
+    cache: Arc<std::sync::Mutex<PartialDecoderHashMap>>,
 }
 
-impl<'a> ArrayShardedReadableExtCache<'a> {
+impl ArrayShardedReadableExtCache {
     /// Create a new cache for an array.
     #[must_use]
-    pub fn new<TStorage: ?Sized + ReadableStorageTraits>(array: &'a Array<TStorage>) -> Self {
+    pub fn new<TStorage: ?Sized + ReadableStorageTraits>(array: &Array<TStorage>) -> Self {
         let inner_chunk_grid = array.inner_chunk_grid();
         Self {
             array_is_sharded: array.is_sharded(),
@@ -69,9 +69,9 @@ impl<'a> ArrayShardedReadableExtCache<'a> {
 
     fn retrieve<TStorage: ?Sized + ReadableStorageTraits + 'static>(
         &self,
-        array: &'a Array<TStorage>,
+        array: &Array<TStorage>,
         shard_indices: &[u64],
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, ArrayError> {
         let mut cache = self.cache.lock().unwrap();
         if let Some(partial_decoder) = cache.get(shard_indices) {
             Ok(partial_decoder.clone())
@@ -93,20 +93,20 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ///
     /// See [`Array::retrieve_chunk_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunk_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunk_opt(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<ArrayBytes<'a>, ArrayError>;
+    ) -> Result<ArrayBytes<'_>, ArrayError>;
 
     /// Read and decode the inner chunk at `chunk_indices` into a vector of its elements.
     ///
     /// See [`Array::retrieve_chunk_elements_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunk_elements_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunk_elements_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError>;
@@ -116,9 +116,9 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ///
     /// See [`Array::retrieve_chunk_ndarray_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunk_ndarray_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunk_ndarray_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError>;
@@ -127,20 +127,20 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ///
     /// See [`Array::retrieve_chunks_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunks_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunks_opt(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes<'a>, ArrayError>;
+    ) -> Result<ArrayBytes<'_>, ArrayError>;
 
     /// Read and decode the inner chunks at `inner_chunks` into a vector of their elements.
     ///
     /// See [`Array::retrieve_chunks_elements_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunks_elements_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunks_elements_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError>;
@@ -150,9 +150,9 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     /// See [`Array::retrieve_chunks_ndarray_opt`].
     #[cfg(feature = "ndarray")]
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_inner_chunks_ndarray_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunks_ndarray_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError>;
@@ -161,20 +161,20 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ///
     /// See [`Array::retrieve_array_subset_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_array_subset_sharded_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_array_subset_sharded_opt(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         array_subset: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes<'a>, ArrayError>;
+    ) -> Result<ArrayBytes<'_>, ArrayError>;
 
     /// Read and decode the `array_subset` of array into a vector of its elements.
     ///
     /// See [`Array::retrieve_array_subset_elements_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_array_subset_elements_sharded_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_array_subset_elements_sharded_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError>;
@@ -184,9 +184,9 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ///
     /// See [`Array::retrieve_array_subset_ndarray_opt`].
     #[allow(clippy::missing_errors_doc)]
-    fn retrieve_array_subset_ndarray_sharded_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_array_subset_ndarray_sharded_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError>;
@@ -195,12 +195,12 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
 impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt<TStorage>
     for Array<TStorage>
 {
-    fn retrieve_inner_chunk_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunk_opt(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<ArrayBytes<'a>, ArrayError> {
+    ) -> Result<ArrayBytes<'_>, ArrayError> {
         if cache.array_is_sharded() {
             let array_subset = cache
                 .inner_chunk_grid()
@@ -232,9 +232,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         }
     }
 
-    fn retrieve_inner_chunk_elements_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunk_elements_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
@@ -245,9 +245,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
     }
 
     #[cfg(feature = "ndarray")]
-    fn retrieve_inner_chunk_ndarray_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunk_ndarray_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunk_indices: &[u64],
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -261,12 +261,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         }
     }
 
-    fn retrieve_inner_chunks_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunks_opt(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes<'a>, ArrayError> {
+    ) -> Result<ArrayBytes<'_>, ArrayError> {
         if cache.array_is_sharded() {
             let inner_chunk_grid = cache.inner_chunk_grid();
             let array_subset = inner_chunk_grid
@@ -286,9 +286,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         }
     }
 
-    fn retrieve_inner_chunks_elements_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunks_elements_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
@@ -299,9 +299,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
     }
 
     #[cfg(feature = "ndarray")]
-    fn retrieve_inner_chunks_ndarray_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_inner_chunks_ndarray_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         inner_chunks: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {
@@ -323,12 +323,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
     }
 
     #[allow(clippy::too_many_lines)]
-    fn retrieve_array_subset_sharded_opt<'a>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_array_subset_sharded_opt(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         array_subset: &ArraySubset,
         options: &CodecOptions,
-    ) -> Result<ArrayBytes<'a>, ArrayError> {
+    ) -> Result<ArrayBytes<'_>, ArrayError> {
         if cache.array_is_sharded() {
             // Find the shards intersecting this array subset
             let shards = self.chunks_in_array_subset(array_subset)?;
@@ -444,9 +444,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         }
     }
 
-    fn retrieve_array_subset_elements_sharded_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_array_subset_elements_sharded_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<Vec<T>, ArrayError> {
@@ -457,9 +457,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
     }
 
     #[cfg(feature = "ndarray")]
-    fn retrieve_array_subset_ndarray_sharded_opt<'a, T: ElementOwned>(
-        &'a self,
-        cache: &ArrayShardedReadableExtCache<'a>,
+    fn retrieve_array_subset_ndarray_sharded_opt<T: ElementOwned>(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
         array_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<ndarray::ArrayD<T>, ArrayError> {

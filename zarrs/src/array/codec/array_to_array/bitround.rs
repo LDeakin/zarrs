@@ -321,7 +321,7 @@ mod tests {
     fn codec_bitround_partial_decode() {
         const JSON: &'static str = r#"{ "keepbits": 2 }"#;
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration));
 
         let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(
@@ -345,7 +345,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[17..21]),
         ];
         let input_handle = Arc::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
-        let bytes_codec = BytesCodec::default();
+        let bytes_codec = Arc::new(BytesCodec::default());
         let input_handle = bytes_codec
             .partial_decoder(
                 input_handle,
@@ -380,7 +380,7 @@ mod tests {
     async fn codec_bitround_async_partial_decode() {
         const JSON: &'static str = r#"{ "keepbits": 2 }"#;
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration));
 
         let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(
@@ -404,7 +404,7 @@ mod tests {
             ArraySubset::new_with_ranges(&[17..21]),
         ];
         let input_handle = Arc::new(std::io::Cursor::new(encoded.into_fixed().unwrap()));
-        let bytes_codec = BytesCodec::default();
+        let bytes_codec = Arc::new(BytesCodec::default());
         let input_handle = bytes_codec
             .async_partial_decoder(
                 input_handle,

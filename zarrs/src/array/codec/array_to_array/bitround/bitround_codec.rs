@@ -111,12 +111,12 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         Ok(bytes)
     }
 
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             bitround_partial_decoder::BitroundPartialDecoder::new(
                 input_handle,
@@ -127,12 +127,12 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             bitround_partial_decoder::AsyncBitroundPartialDecoder::new(
                 input_handle,

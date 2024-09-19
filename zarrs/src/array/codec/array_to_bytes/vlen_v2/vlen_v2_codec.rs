@@ -118,12 +118,12 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
         Ok(ArrayBytes::new_vlen(bytes, offsets))
     }
 
-    fn partial_decoder<'a>(
-        &self,
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             super::vlen_v2_partial_decoder::VlenV2PartialDecoder::new(
                 input_handle,
@@ -133,12 +133,12 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             super::vlen_v2_partial_decoder::AsyncVlenV2PartialDecoder::new(
                 input_handle,
