@@ -68,10 +68,9 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 #[cfg(feature = "async")]
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 
-use crate::byte_range::extract_byte_ranges_read_seek;
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
-    byte_range::{ByteRange, InvalidByteRangeError},
+    byte_range::{extract_byte_ranges_read_seek, ByteRange, InvalidByteRangeError},
     metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
     storage::{ReadableStorage, StorageError, StoreKey},
@@ -563,24 +562,24 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError>;
 }
 
 /// Traits for array to bytes codecs.
@@ -660,24 +659,24 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        mut input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        mut input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError>;
 }
 
 /// Traits for bytes to bytes codecs.
@@ -723,24 +722,24 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError>;
 
     #[cfg(feature = "async")]
     /// Initialises an asynchronous partial decoder.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation fails.
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError>;
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError>;
 }
 
 impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {

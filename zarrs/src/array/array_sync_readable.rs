@@ -407,10 +407,10 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     ///
     /// # Errors
     /// Returns an [`ArrayError`] if initialisation of the partial decoder fails.
-    pub fn partial_decoder<'a>(
-        &'a self,
+    pub fn partial_decoder(
+        &self,
         chunk_indices: &[u64],
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, ArrayError> {
         self.partial_decoder_opt(chunk_indices, &CodecOptions::default())
     }
 
@@ -830,7 +830,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 self.chunk_key(chunk_indices),
             ));
 
-            self.codecs()
+            self.codecs
+                .clone()
                 .partial_decoder(input_handle, &chunk_representation, options)?
                 .partial_decode_opt(&[chunk_subset.clone()], options)?
                 .remove(0)
@@ -873,7 +874,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             ));
 
             Ok(self
-                .codecs()
+                .codecs
+                .clone()
                 .partial_decoder(input_handle, &chunk_representation, options)?
                 .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)?)
         }
@@ -909,11 +911,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
 
     /// Explicit options version of [`partial_decoder`](Array::partial_decoder).
     #[allow(clippy::missing_errors_doc)]
-    pub fn partial_decoder_opt<'a>(
-        &'a self,
+    pub fn partial_decoder_opt(
+        &self,
         chunk_indices: &[u64],
         options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, ArrayError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, ArrayError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
@@ -924,7 +926,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         ));
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
         Ok(self
-            .codecs()
+            .codecs
+            .clone()
             .partial_decoder(input_handle, &chunk_representation, options)?)
     }
 }

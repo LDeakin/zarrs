@@ -40,9 +40,9 @@ pub struct ShardingCodec {
     /// An array of integers specifying the shape of the inner chunks in a shard along each dimension of the outer array.
     chunk_shape: ChunkShape,
     /// The codecs used to encode and decode inner chunks.
-    inner_codecs: CodecChain,
+    inner_codecs: Arc<CodecChain>,
     /// The codecs used to encode and decode the shard index.
-    index_codecs: CodecChain,
+    index_codecs: Arc<CodecChain>,
     /// Specifies whether the shard index is located at the beginning or end of the file.
     index_location: ShardingIndexLocation,
 }
@@ -52,8 +52,8 @@ impl ShardingCodec {
     #[must_use]
     pub fn new(
         chunk_shape: ChunkShape,
-        inner_codecs: CodecChain,
-        index_codecs: CodecChain,
+        inner_codecs: Arc<CodecChain>,
+        index_codecs: Arc<CodecChain>,
         index_location: ShardingIndexLocation,
     ) -> Self {
         Self {
@@ -73,8 +73,8 @@ impl ShardingCodec {
         configuration: &ShardingCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         let ShardingCodecConfiguration::V1(configuration) = configuration;
-        let inner_codecs = CodecChain::from_metadata(&configuration.codecs)?;
-        let index_codecs = CodecChain::from_metadata(&configuration.index_codecs)?;
+        let inner_codecs = Arc::new(CodecChain::from_metadata(&configuration.codecs)?);
+        let index_codecs = Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
         Ok(Self::new(
             configuration.chunk_shape.clone(),
             inner_codecs,
@@ -480,18 +480,18 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         }
     }
 
-    fn partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             sharding_partial_decoder::ShardingPartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
                 self.chunk_shape.clone(),
-                &self.inner_codecs,
+                self.inner_codecs.clone(),
                 &self.index_codecs,
                 self.index_location,
                 options,
@@ -500,18 +500,18 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             sharding_partial_decoder::AsyncShardingPartialDecoder::new(
                 input_handle,
                 decoded_representation.clone(),
                 self.chunk_shape.clone(),
-                &self.inner_codecs,
+                self.inner_codecs.clone(),
                 &self.index_codecs,
                 self.index_location,
                 options,
@@ -544,8 +544,10 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                 )?;
                 let index_decoded_representation =
                     sharding_index_decoded_representation(chunks_per_shard.as_slice());
-                let index_encoded_size =
-                    compute_index_encoded_size(&self.index_codecs, &index_decoded_representation)?;
+                let index_encoded_size = compute_index_encoded_size(
+                    self.index_codecs.as_ref(),
+                    &index_decoded_representation,
+                )?;
                 let shard_size = Self::encoded_shard_bounded_size(
                     index_encoded_size,
                     size,
@@ -608,7 +610,7 @@ impl ShardingCodec {
         let index_decoded_representation =
             sharding_index_decoded_representation(chunks_per_shard.as_slice());
         let index_encoded_size =
-            compute_index_encoded_size(&self.index_codecs, &index_decoded_representation)?;
+            compute_index_encoded_size(self.index_codecs.as_ref(), &index_decoded_representation)?;
         let shard_size_bounded = Self::encoded_shard_bounded_size(
             index_encoded_size,
             chunk_size_bounded,
@@ -747,7 +749,7 @@ impl ShardingCodec {
         let index_decoded_representation =
             sharding_index_decoded_representation(chunks_per_shard.as_slice());
         let index_encoded_size =
-            compute_index_encoded_size(&self.index_codecs, &index_decoded_representation)?;
+            compute_index_encoded_size(self.index_codecs.as_ref(), &index_decoded_representation)?;
         let index_encoded_size = usize::try_from(index_encoded_size).unwrap();
 
         // Find chunks that are not entirely the fill value and collect their decoded bytes
@@ -879,7 +881,7 @@ impl ShardingCodec {
         // Get index array representation and encoded size
         let index_array_representation = sharding_index_decoded_representation(chunks_per_shard);
         let index_encoded_size =
-            compute_index_encoded_size(&self.index_codecs, &index_array_representation)?;
+            compute_index_encoded_size(self.index_codecs.as_ref(), &index_array_representation)?;
 
         // Get encoded shard index
         if (encoded_shard.len() as u64) < index_encoded_size {
@@ -903,7 +905,7 @@ impl ShardingCodec {
         decode_shard_index(
             encoded_shard_index,
             &index_array_representation,
-            &self.index_codecs,
+            self.index_codecs.as_ref(),
             options,
         )
     }

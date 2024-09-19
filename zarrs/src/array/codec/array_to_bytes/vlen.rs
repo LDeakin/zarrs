@@ -71,7 +71,6 @@ fn get_vlen_bytes_and_offsets(
     let index_len = usize::try_from(index_len)
         .map_err(|_| CodecError::Other("index length exceeds usize::MAX".to_string()))?;
     let data_start = size_of::<u64>() + index_len;
-    let data_compressed_len = bytes.len() - data_start;
 
     // Decode the index
     let index = &bytes[size_of::<u64>()..data_start];
@@ -109,25 +108,26 @@ fn get_vlen_bytes_and_offsets(
     };
 
     // Decode the data
-    let data = &bytes[data_start..data_start + data_compressed_len];
+    let data = &bytes[data_start..];
     let data = if let Ok(data_len_expected) = NonZeroU64::try_from(data_len_expected as u64) {
-        data_codecs.decode(
-            data.into(),
-            &unsafe {
-                // SAFETY: data type and fill value are compatible
-                ChunkRepresentation::new_unchecked(
-                    vec![data_len_expected],
-                    DataType::UInt8,
-                    FillValue::from(0u8),
-                )
-            },
-            options,
-        )?
+        data_codecs
+            .decode(
+                data.into(),
+                &unsafe {
+                    // SAFETY: data type and fill value are compatible
+                    ChunkRepresentation::new_unchecked(
+                        vec![data_len_expected],
+                        DataType::UInt8,
+                        FillValue::from(0u8),
+                    )
+                },
+                options,
+            )?
+            .into_fixed()?
+            .into_owned()
     } else {
-        vec![].into()
-    }
-    .into_fixed()?
-    .into_owned();
+        vec![]
+    };
     let data_len = data.len();
 
     // Check the data length is as expected

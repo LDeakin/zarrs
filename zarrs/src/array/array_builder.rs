@@ -335,11 +335,11 @@ impl ArrayBuilder {
             chunk_grid: self.chunk_grid.clone(),
             chunk_key_encoding: self.chunk_key_encoding.clone(),
             fill_value: self.fill_value.clone(),
-            codecs: CodecChain::new(
+            codecs: Arc::new(CodecChain::new(
                 self.array_to_array_codecs.clone(),
                 self.array_to_bytes_codec.clone(),
                 self.bytes_to_bytes_codecs.clone(),
-            ),
+            )),
             storage_transformers: self.storage_transformers.clone(),
             // attributes: self.attributes.clone(),
             dimension_names: self.dimension_names.clone(),

@@ -270,7 +270,7 @@ mod tests {
         let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
         let bytes: ArrayBytes = elements.into();
 
-        let codec = BytesCodec::new(None);
+        let codec = Arc::new(BytesCodec::new(None));
 
         let encoded = codec
             .encode(
@@ -314,7 +314,7 @@ mod tests {
         let elements: Vec<u8> = (0..chunk_representation.num_elements() as u8).collect();
         let bytes: ArrayBytes = elements.into();
 
-        let codec = BytesCodec::new(None);
+        let codec = Arc::new(BytesCodec::new(None));
 
         let encoded = codec
             .encode(

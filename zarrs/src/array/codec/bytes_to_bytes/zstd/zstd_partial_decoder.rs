@@ -50,21 +50,21 @@ impl BytesPartialDecoderTraits for ZstdPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `zstd` codec.
-pub struct AsyncZstdPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncZstdPartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncZstdPartialDecoder<'a> {
+impl AsyncZstdPartialDecoder {
     /// Create a new partial decoder for the `zstd` codec.
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for AsyncZstdPartialDecoder<'_> {
+impl AsyncBytesPartialDecoderTraits for AsyncZstdPartialDecoder {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

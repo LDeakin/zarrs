@@ -64,21 +64,21 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `crc32c` (CRC32C checksum) codec.
-pub struct AsyncCrc32cPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncCrc32cPartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncCrc32cPartialDecoder<'a> {
+impl AsyncCrc32cPartialDecoder {
     /// Create a new partial decoder for the `crc32c` codec.
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder<'_> {
+impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

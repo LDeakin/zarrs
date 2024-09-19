@@ -103,22 +103,22 @@ impl BytesToBytesCodecTraits for GzipCodec {
         Ok(Cow::Owned(out))
     }
 
-    fn partial_decoder<'a>(
-        &self,
-        r: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    fn partial_decoder(
+        self: Arc<Self>,
+        r: Arc<dyn BytesPartialDecoderTraits>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(gzip_partial_decoder::GzipPartialDecoder::new(r)))
     }
 
     #[cfg(feature = "async")]
-    async fn async_partial_decoder<'a>(
-        &'a self,
-        r: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+    async fn async_partial_decoder(
+        self: Arc<Self>,
+        r: Arc<dyn AsyncBytesPartialDecoderTraits>,
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits + 'a>, CodecError> {
+    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(
             gzip_partial_decoder::AsyncGzipPartialDecoder::new(r),
         ))

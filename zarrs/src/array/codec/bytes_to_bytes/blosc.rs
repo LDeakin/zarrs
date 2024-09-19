@@ -356,10 +356,10 @@ mod tests {
 
         let codec_configuration: BloscCodecConfiguration =
             serde_json::from_str(JSON_VALID2).unwrap();
-        let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
+        let codec = Arc::new(BloscCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(array_representation.shape(), data_type_size)
@@ -403,10 +403,10 @@ mod tests {
 
         let codec_configuration: BloscCodecConfiguration =
             serde_json::from_str(JSON_VALID2).unwrap();
-        let codec = BloscCodec::new_with_configuration(&codec_configuration).unwrap();
+        let codec = Arc::new(BloscCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(array_representation.shape(), data_type_size)

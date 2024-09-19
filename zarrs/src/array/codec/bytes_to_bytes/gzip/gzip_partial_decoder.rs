@@ -56,21 +56,21 @@ impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `gzip` codec.
-pub struct AsyncGzipPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncGzipPartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncGzipPartialDecoder<'a> {
+impl AsyncGzipPartialDecoder {
     /// Create a new partial decoder for the `gzip` codec.
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for AsyncGzipPartialDecoder<'_> {
+impl AsyncBytesPartialDecoderTraits for AsyncGzipPartialDecoder {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

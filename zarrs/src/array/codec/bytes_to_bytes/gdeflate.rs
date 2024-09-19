@@ -295,10 +295,10 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = GDeflateCodec::new_with_configuration(&configuration);
+        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
@@ -335,10 +335,10 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = GDeflateCodec::new_with_configuration(&configuration);
+        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),

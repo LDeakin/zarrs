@@ -118,16 +118,16 @@ impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncPCodecPartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncPCodecPartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncPCodecPartialDecoder<'a> {
+impl AsyncPCodecPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
     ) -> Self {
         Self {
@@ -139,7 +139,7 @@ impl<'a> AsyncPCodecPartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder<'_> {
+impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }

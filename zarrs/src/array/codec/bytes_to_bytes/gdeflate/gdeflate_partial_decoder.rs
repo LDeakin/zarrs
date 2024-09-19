@@ -50,21 +50,21 @@ impl BytesPartialDecoderTraits for GDeflatePartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `gdeflate` codec.
-pub struct AsyncGDeflatePartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncGDeflatePartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncGDeflatePartialDecoder<'a> {
+impl AsyncGDeflatePartialDecoder {
     /// Create a new partial decoder for the `gdeflate` codec.
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>) -> Self {
+    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for AsyncGDeflatePartialDecoder<'_> {
+impl AsyncBytesPartialDecoderTraits for AsyncGDeflatePartialDecoder {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

@@ -78,16 +78,16 @@ impl ArrayPartialDecoderTraits for VlenV2PartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncVlenV2PartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+pub struct AsyncVlenV2PartialDecoder {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncVlenV2PartialDecoder<'a> {
+impl AsyncVlenV2PartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
     pub fn new(
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
     ) -> Self {
         Self {
@@ -99,7 +99,7 @@ impl<'a> AsyncVlenV2PartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for AsyncVlenV2PartialDecoder<'_> {
+impl AsyncArrayPartialDecoderTraits for AsyncVlenV2PartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }

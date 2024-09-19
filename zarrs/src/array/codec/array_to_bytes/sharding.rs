@@ -25,9 +25,13 @@ pub use sharding_codec_builder::ShardingCodecBuilder;
 
 use crate::{
     array::{
-        codec::{ArrayToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecPlugin},
-        BytesRepresentation, ChunkRepresentation, ChunkShape, DataType, FillValue,
+        codec::{
+            ArrayToBytesCodecTraits, BytesPartialDecoderTraits, Codec, CodecError, CodecOptions,
+            CodecPlugin,
+        },
+        BytesRepresentation, ChunkRepresentation, ChunkShape, CodecChain, DataType, FillValue,
     },
+    byte_range::ByteRange,
     metadata::v3::{array::codec::sharding, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -108,6 +112,97 @@ fn decode_shard_index(
         .chunks_exact(core::mem::size_of::<u64>())
         .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
         .collect())
+}
+
+fn get_index_array_representation(
+    chunk_shape: &[NonZeroU64],
+    decoded_representation: &ChunkRepresentation,
+) -> Result<ChunkRepresentation, CodecError> {
+    let shard_shape = decoded_representation.shape();
+    let chunk_representation = unsafe {
+        ChunkRepresentation::new_unchecked(
+            chunk_shape.to_vec(),
+            decoded_representation.data_type().clone(),
+            decoded_representation.fill_value().clone(),
+        )
+    };
+
+    // Calculate chunks per shard
+    let chunks_per_shard = calculate_chunks_per_shard(shard_shape, chunk_representation.shape())?;
+
+    // Get index array representation and encoded size
+    Ok(sharding_index_decoded_representation(
+        chunks_per_shard.as_slice(),
+    ))
+}
+
+fn get_index_byte_range(
+    index_array_representation: &ChunkRepresentation,
+    index_codecs: &CodecChain,
+    index_location: ShardingIndexLocation,
+) -> Result<ByteRange, CodecError> {
+    let index_encoded_size = compute_index_encoded_size(index_codecs, index_array_representation)
+        .map_err(|e| CodecError::Other(e.to_string()))?;
+    Ok(match index_location {
+        ShardingIndexLocation::Start => ByteRange::FromStart(0, Some(index_encoded_size)),
+        ShardingIndexLocation::End => ByteRange::FromEnd(0, Some(index_encoded_size)),
+    })
+}
+
+/// Returns `None` if there is no shard.
+fn decode_shard_index_partial_decoder(
+    input_handle: &dyn BytesPartialDecoderTraits,
+    index_codecs: &CodecChain,
+    index_location: ShardingIndexLocation,
+    chunk_shape: &[NonZeroU64],
+    decoded_representation: &ChunkRepresentation,
+    options: &CodecOptions,
+) -> Result<Option<Vec<u64>>, CodecError> {
+    let index_array_representation =
+        get_index_array_representation(chunk_shape, decoded_representation)?;
+    let index_byte_range =
+        get_index_byte_range(&index_array_representation, index_codecs, index_location)?;
+    let encoded_shard_index = input_handle
+        .partial_decode(&[index_byte_range], options)?
+        .map(|mut v| v.remove(0));
+    Ok(match encoded_shard_index {
+        Some(encoded_shard_index) => Some(decode_shard_index(
+            &encoded_shard_index,
+            &index_array_representation,
+            index_codecs,
+            options,
+        )?),
+        None => None,
+    })
+}
+
+#[cfg(feature = "async")]
+/// Returns `None` if there is no shard.
+async fn decode_shard_index_async_partial_decoder(
+    input_handle: &dyn crate::array::codec::AsyncBytesPartialDecoderTraits,
+    index_codecs: &CodecChain,
+    index_location: ShardingIndexLocation,
+    chunk_shape: &[NonZeroU64],
+    decoded_representation: &ChunkRepresentation,
+    options: &CodecOptions,
+) -> Result<Option<Vec<u64>>, CodecError> {
+    let index_array_representation =
+        get_index_array_representation(chunk_shape, decoded_representation)?;
+    let index_byte_range =
+        get_index_byte_range(&index_array_representation, index_codecs, index_location)?;
+    let encoded_shard_index = input_handle
+        .partial_decode(&[index_byte_range], options)
+        .await?
+        .map(|mut v| v.remove(0));
+    Ok(match encoded_shard_index {
+        Some(encoded_shard_index) => Some(decode_shard_index(
+            &encoded_shard_index,
+            &index_array_representation,
+            index_codecs,
+            options,
+        )?),
+        None => None,
+    })
 }
 
 #[cfg(test)]
@@ -374,14 +469,16 @@ mod tests {
         } else {
             vec![]
         };
-        let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
-            .index_location(if index_at_end {
-                ShardingIndexLocation::End
-            } else {
-                ShardingIndexLocation::Start
-            })
-            .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
-            .build();
+        let codec = Arc::new(
+            ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
+                .index_location(if index_at_end {
+                    ShardingIndexLocation::End
+                } else {
+                    ShardingIndexLocation::Start
+                })
+                .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
+                .build(),
+        );
 
         let encoded = codec
             .encode(bytes.clone(), &chunk_representation, options)
@@ -455,14 +552,16 @@ mod tests {
         } else {
             vec![]
         };
-        let codec = ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
-            .index_location(if index_at_end {
-                ShardingIndexLocation::End
-            } else {
-                ShardingIndexLocation::Start
-            })
-            .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
-            .build();
+        let codec = Arc::new(
+            ShardingCodecBuilder::new(vec![2, 2].try_into().unwrap())
+                .index_location(if index_at_end {
+                    ShardingIndexLocation::End
+                } else {
+                    ShardingIndexLocation::Start
+                })
+                .bytes_to_bytes_codecs(bytes_to_bytes_codecs)
+                .build(),
+        );
 
         let encoded = codec
             .encode(bytes.clone(), &chunk_representation, options)
@@ -529,7 +628,7 @@ mod tests {
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID2).unwrap();
-        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
+        let codec = Arc::new(ShardingCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
             .encode(bytes, &chunk_representation, &CodecOptions::default())
@@ -571,7 +670,7 @@ mod tests {
 
         let codec_configuration: ShardingCodecConfiguration =
             serde_json::from_str(JSON_VALID3).unwrap();
-        let codec = ShardingCodec::new_with_configuration(&codec_configuration).unwrap();
+        let codec = Arc::new(ShardingCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
             .encode(bytes, &chunk_representation, &CodecOptions::default())

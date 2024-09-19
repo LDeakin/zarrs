@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     array::RawBytes,
     byte_range::{ByteLength, ByteOffset, ByteRange},
@@ -11,16 +13,16 @@ use super::AsyncBytesPartialDecoderTraits;
 /// A partial decoder for a byte interval of a [`BytesPartialDecoderTraits`] partial decoder.
 ///
 /// Modifies byte range requests to a specific byte interval in an inner bytes partial decoder.
-pub struct ByteIntervalPartialDecoder<'a> {
-    inner: &'a dyn BytesPartialDecoderTraits,
+pub struct ByteIntervalPartialDecoder {
+    inner: Arc<dyn BytesPartialDecoderTraits>,
     byte_offset: ByteOffset,
     byte_length: ByteLength,
 }
 
-impl<'a> ByteIntervalPartialDecoder<'a> {
+impl ByteIntervalPartialDecoder {
     /// Create a new byte interval partial decoder.
     pub fn new(
-        inner: &'a dyn BytesPartialDecoderTraits,
+        inner: Arc<dyn BytesPartialDecoderTraits>,
         byte_offset: ByteOffset,
         byte_length: ByteLength,
     ) -> Self {
@@ -32,7 +34,7 @@ impl<'a> ByteIntervalPartialDecoder<'a> {
     }
 }
 
-impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
+impl BytesPartialDecoderTraits for ByteIntervalPartialDecoder {
     fn partial_decode(
         &self,
         byte_ranges: &[ByteRange],
@@ -64,17 +66,17 @@ impl<'a> BytesPartialDecoderTraits for ByteIntervalPartialDecoder<'a> {
 /// A partial decoder for a byte interval of a [`AsyncBytesPartialDecoderTraits`] partial decoder.
 ///
 /// Modifies byte range requests to a specific byte interval in an inner bytes partial decoder.
-pub struct AsyncByteIntervalPartialDecoder<'a> {
-    inner: &'a dyn AsyncBytesPartialDecoderTraits,
+pub struct AsyncByteIntervalPartialDecoder {
+    inner: Arc<dyn AsyncBytesPartialDecoderTraits>,
     byte_offset: ByteOffset,
     byte_length: ByteLength,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncByteIntervalPartialDecoder<'a> {
+impl AsyncByteIntervalPartialDecoder {
     /// Create a new byte interval partial decoder.
     pub fn new(
-        inner: &'a dyn AsyncBytesPartialDecoderTraits,
+        inner: Arc<dyn AsyncBytesPartialDecoderTraits>,
         byte_offset: ByteOffset,
         byte_length: ByteLength,
     ) -> Self {
@@ -88,7 +90,7 @@ impl<'a> AsyncByteIntervalPartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl<'a> AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder<'a> {
+impl AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder {
     async fn partial_decode(
         &self,
         byte_ranges: &[ByteRange],

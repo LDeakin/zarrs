@@ -110,16 +110,16 @@ impl ShardingCodecBuilder {
     /// Build into a [`ShardingCodec`].
     #[must_use]
     pub fn build(&self) -> ShardingCodec {
-        let inner_codecs = CodecChain::new(
+        let inner_codecs = Arc::new(CodecChain::new(
             self.array_to_array_codecs.clone(),
             self.array_to_bytes_codec.clone(),
             self.bytes_to_bytes_codecs.clone(),
-        );
-        let index_codecs = CodecChain::new(
+        ));
+        let index_codecs = Arc::new(CodecChain::new(
             vec![],
             self.index_array_to_bytes_codec.clone(),
             self.index_bytes_to_bytes_codecs.clone(),
-        );
+        ));
         ShardingCodec::new(
             self.inner_chunk_shape.clone(),
             inner_codecs,

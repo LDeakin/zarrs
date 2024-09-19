@@ -44,10 +44,10 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
-        let codec: TestUnboundedCodec = TestUnboundedCodec::new();
+        let codec = Arc::new(TestUnboundedCodec::new());
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),
@@ -85,10 +85,10 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
-        let codec: TestUnboundedCodec = TestUnboundedCodec::new();
+        let codec = Arc::new(TestUnboundedCodec::new());
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions = [
             ByteRange::FromStart(4, Some(4)),

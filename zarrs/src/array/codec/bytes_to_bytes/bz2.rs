@@ -103,10 +103,10 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Bz2Codec::new_with_configuration(&codec_configuration);
+        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration));
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(array_representation.shape(), data_type_size)
@@ -149,10 +149,10 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Bz2Codec::new_with_configuration(&codec_configuration);
+        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration));
 
         let encoded = codec
-            .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
+            .encode(Cow::Owned(bytes), &CodecOptions::default())
             .unwrap();
         let decoded_regions: Vec<ByteRange> = ArraySubset::new_with_ranges(&[0..2, 1..2, 0..1])
             .byte_ranges(array_representation.shape(), data_type_size)

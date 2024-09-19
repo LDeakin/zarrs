@@ -242,7 +242,9 @@ mod tests {
         let bytes = transmute_to_bytes_vec(elements);
         let bytes: ArrayBytes = bytes.into();
 
-        let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
+        let codec = Arc::new(PcodecCodec::new_with_configuration(
+            &serde_json::from_str(JSON_VALID).unwrap(),
+        ));
 
         let encoded = codec
             .encode(
@@ -290,7 +292,9 @@ mod tests {
         let bytes = transmute_to_bytes_vec(elements);
         let bytes: ArrayBytes = bytes.into();
 
-        let codec = PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap());
+        let codec = Arc::new(PcodecCodec::new_with_configuration(
+            &serde_json::from_str(JSON_VALID).unwrap(),
+        ));
 
         let encoded = codec
             .encode(

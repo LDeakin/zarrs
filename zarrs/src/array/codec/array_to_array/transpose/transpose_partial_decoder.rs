@@ -10,16 +10,16 @@ use crate::array::{
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 /// Partial decoder for the Transpose codec.
-pub struct TransposePartialDecoder<'a> {
-    input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
+pub struct TransposePartialDecoder {
+    input_handle: Arc<dyn ArrayPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     order: TransposeOrder,
 }
 
-impl<'a> TransposePartialDecoder<'a> {
+impl TransposePartialDecoder {
     /// Create a new partial decoder for the Transpose codec.
     pub fn new(
-        input_handle: Arc<dyn ArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         order: TransposeOrder,
     ) -> Self {
@@ -102,7 +102,7 @@ fn do_transpose<'a>(
         .collect::<Result<Vec<_>, CodecError>>()
 }
 
-impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for TransposePartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
@@ -132,17 +132,17 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the Transpose codec.
-pub struct AsyncTransposePartialDecoder<'a> {
-    input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
+pub struct AsyncTransposePartialDecoder {
+    input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     order: TransposeOrder,
 }
 
 #[cfg(feature = "async")]
-impl<'a> AsyncTransposePartialDecoder<'a> {
+impl AsyncTransposePartialDecoder {
     /// Create a new partial decoder for the Transpose codec.
     pub fn new(
-        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         order: TransposeOrder,
     ) -> Self {
@@ -156,7 +156,7 @@ impl<'a> AsyncTransposePartialDecoder<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder<'_> {
+impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
