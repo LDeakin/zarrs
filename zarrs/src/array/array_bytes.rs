@@ -281,7 +281,7 @@ pub fn update_bytes_flen(
     let length = contiguous_indices.contiguous_elements_usize() * data_type_size;
     let mut decoded_offset = 0;
     // TODO: Par iteration?
-    for (array_subset_element_index, _num_elements) in &contiguous_indices {
+    for array_subset_element_index in &contiguous_indices {
         let output_offset = usize::try_from(array_subset_element_index).unwrap() * data_type_size;
         debug_assert!((output_offset + length) <= output_bytes.len());
         debug_assert!((decoded_offset + length) <= subset_bytes.len());

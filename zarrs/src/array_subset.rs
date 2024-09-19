@@ -285,7 +285,7 @@ impl ArraySubset {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
         let contiguous_indices = self.contiguous_linearised_indices(array_shape)?;
         let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
-        for (array_index, _contiguous_elements) in &contiguous_indices {
+        for array_index in &contiguous_indices {
             let byte_index = array_index * element_size as u64;
             byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length as u64)));
         }
@@ -305,7 +305,7 @@ impl ArraySubset {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
         let contiguous_indices = self.contiguous_linearised_indices_unchecked(array_shape);
         let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
-        for (array_index, _contiguous_elements) in &contiguous_indices {
+        for array_index in &contiguous_indices {
             let byte_index = array_index * element_size as u64;
             byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length as u64)));
         }

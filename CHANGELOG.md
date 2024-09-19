@@ -7,13 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Breaking**: Change `Contiguous[Linearised]Indices` iterators to return indices only
+
 ### Fixed
 - Fixed an unnecessary copy in `Array::[async_]retrieve_chunk_if_exists_opt`
 - Fixed `CodecOptions` not being forwarded in `Array::retrieve_chunk_subset_opt` on the fast path
 - Fixed missing fast path in `Array::[async_]retrieve_chunk_subset_opt`
 
 ### Removed
-- Removed `ArraySubset::extract_elements[_unchecked]` which were unused and incorrect
+- **Breaking**: Removed `ArraySubset::extract_elements[_unchecked]` which were unused and incorrect
 
 ## [0.17.0-beta.1] - 2024-09-16
 

@@ -292,7 +292,8 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                                     chunk_subset
                                         .contiguous_linearised_indices_unchecked(&shard_shape)
                                 };
-                                for (index, elements) in &contiguous_iterator {
+                                let elements = contiguous_iterator.contiguous_elements();
+                                for index in &contiguous_iterator {
                                     debug_assert_eq!(
                                         fv.len() as u64,
                                         elements * data_type_size as u64
