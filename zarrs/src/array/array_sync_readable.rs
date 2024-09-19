@@ -15,7 +15,7 @@ use crate::{
 use super::{
     array_bytes::{merge_chunks_vlen, update_bytes_flen},
     codec::{
-        options::CodecOptions, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+        options::CodecOptions, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, CodecError,
         StoragePartialDecoder,
     },
     concurrency::concurrency_chunks_and_codec,
@@ -468,6 +468,60 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         }
     }
 
+    unsafe fn retrieve_chunk_into(
+        &self,
+        chunk_indices: &[u64],
+        output: &mut [u8],
+        output_shape: &[u64],
+        output_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<(), ArrayError> {
+        if chunk_indices.len() != self.dimensionality() {
+            return Err(ArrayError::InvalidChunkGridIndicesError(
+                chunk_indices.to_vec(),
+            ));
+        }
+        let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+        let storage_transformer = self
+            .storage_transformers()
+            .create_readable_transformer(storage_handle);
+        let chunk_encoded = storage_transformer
+            .get(&self.chunk_key(chunk_indices))
+            .map_err(ArrayError::StorageError)?;
+        if let Some(chunk_encoded) = chunk_encoded {
+            let chunk_encoded: Vec<u8> = chunk_encoded.into();
+            let chunk_representation = self.chunk_array_representation(chunk_indices)?;
+            self.codecs()
+                .decode_into(
+                    Cow::Owned(chunk_encoded),
+                    &chunk_representation,
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+                .map_err(ArrayError::CodecError)
+        } else {
+            // Fill with the fill value
+            let array_size = ArraySize::new(self.data_type().size(), output_subset.num_elements());
+            if let ArrayBytes::Fixed(fill_value_bytes) =
+                ArrayBytes::new_fill_value(array_size, self.fill_value())
+            {
+                update_bytes_flen(
+                    output,
+                    output_shape,
+                    &fill_value_bytes,
+                    output_subset,
+                    self.data_type().fixed_size().unwrap(),
+                );
+                Ok(())
+            } else {
+                // TODO: Variable length data type support?
+                Err(ArrayError::CodecError(CodecError::ExpectedFixedLengthBytes))
+            }
+        }
+    }
+
     /// Explicit options version of [`retrieve_chunk_elements_if_exists`](Array::retrieve_chunk_elements_if_exists).
     #[allow(clippy::missing_errors_doc)]
     pub fn retrieve_chunk_elements_if_exists_opt<T: ElementOwned>(
@@ -679,18 +733,29 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                             let retrieve_chunk = |chunk_indices: Vec<u64>| {
                                 let chunk_subset = self.chunk_subset(&chunk_indices)?;
                                 let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
-                                let chunk_subset_bytes = self.retrieve_chunk_subset_opt(
-                                    &chunk_indices,
-                                    &chunk_subset_overlap.relative_to(chunk_subset.start())?,
-                                    &options,
-                                )?;
-                                update_bytes_flen(
-                                    unsafe { output.as_mut_slice() },
-                                    array_subset.shape(),
-                                    &chunk_subset_bytes.into_fixed()?,
-                                    &chunk_subset_overlap.relative_to(array_subset.start())?,
-                                    data_type_size,
-                                );
+                                let output = unsafe { output.as_mut_slice() };
+                                unsafe {
+                                    self.retrieve_chunk_subset_into(
+                                        &chunk_indices,
+                                        &chunk_subset_overlap.relative_to(chunk_subset.start())?,
+                                        output,
+                                        array_subset.shape(),
+                                        &chunk_subset_overlap.relative_to(array_subset.start())?,
+                                        &options,
+                                    )?;
+                                }
+                                // let chunk_subset_bytes = self.retrieve_chunk_subset_opt(
+                                //     &chunk_indices,
+                                //     &chunk_subset_overlap.relative_to(chunk_subset.start())?,
+                                //     &options,
+                                // )?;
+                                // update_bytes_flen(
+                                //     unsafe { output.as_mut_slice() },
+                                //     array_subset.shape(),
+                                //     &chunk_subset_bytes.into_fixed()?,
+                                //     &chunk_subset_overlap.relative_to(array_subset.start())?,
+                                //     data_type_size,
+                                // );
                                 Ok::<_, ArrayError>(())
                             };
                             let indices = chunks.indices();
@@ -773,6 +838,45 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         };
         bytes.validate(chunk_subset.num_elements(), self.data_type().size())?;
         Ok(bytes)
+    }
+
+    unsafe fn retrieve_chunk_subset_into(
+        &self,
+        chunk_indices: &[u64],
+        chunk_subset: &ArraySubset,
+        output: &mut [u8],
+        output_shape: &[u64],
+        output_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<(), ArrayError> {
+        let chunk_representation = self.chunk_array_representation(chunk_indices)?;
+        if !chunk_subset.inbounds(&chunk_representation.shape_u64()) {
+            return Err(ArrayError::InvalidArraySubset(
+                chunk_subset.clone(),
+                self.shape().to_vec(),
+            ));
+        }
+
+        if chunk_subset.start().iter().all(|&o| o == 0)
+            && chunk_subset.shape() == chunk_representation.shape_u64()
+        {
+            // Fast path if `chunk_subset` encompasses the whole chunk
+            self.retrieve_chunk_into(chunk_indices, output, output_shape, output_subset, options)
+        } else {
+            let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
+            let storage_transformer = self
+                .storage_transformers()
+                .create_readable_transformer(storage_handle);
+            let input_handle = Arc::new(StoragePartialDecoder::new(
+                storage_transformer,
+                self.chunk_key(chunk_indices),
+            ));
+
+            Ok(self
+                .codecs()
+                .partial_decoder(input_handle, &chunk_representation, options)?
+                .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)?)
+        }
     }
 
     /// Explicit options version of [`retrieve_chunk_subset_elements`](Array::retrieve_chunk_subset_elements).

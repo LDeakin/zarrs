@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `ArrayToBytesCodecTraits::decode_into` and `[Async]ArrayPartialDecoderTraits::partial_decode_into`
+  - This revisits the array view API that was removed in 0.16 [#39](https://github.com/LDeakin/zarrs/pull/39), but simpler and less public
+  - Resolves a performance regression introduced in 0.16 when decoding sharded arrays with `Array::[async_]retrieve_array_subset_opt`.
+
 ### Changed
 - **Breaking**: Change `Contiguous[Linearised]Indices` iterators to return indices only
 

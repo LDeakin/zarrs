@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use crate::{
     array::{
+        array_bytes::update_bytes_flen,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
             ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesPartialDecoderCache,
@@ -14,6 +15,7 @@ use crate::{
         ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
         RawBytes,
     },
+    array_subset::ArraySubset,
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
@@ -299,6 +301,84 @@ impl ArrayToBytesCodecTraits for CodecChain {
             decoded_representation.data_type().size(),
         )?;
         Ok(bytes)
+    }
+
+    unsafe fn decode_into(
+        &self,
+        mut bytes: RawBytes<'_>,
+        decoded_representation: &ChunkRepresentation,
+        output: &mut [u8],
+        output_shape: &[u64],
+        output_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
+            // Fast path if no bytes to bytes or array to array codecs
+            return self.array_to_bytes.decode_into(
+                bytes,
+                array_representations.last().unwrap(),
+                output,
+                output_shape,
+                output_subset,
+                options,
+            );
+        }
+
+        // bytes->bytes
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            bytes = codec.decode(bytes, bytes_representation, options)?;
+        }
+
+        if self.array_to_array.is_empty() {
+            // Fast path if no array to array codecs
+            return self.array_to_bytes.decode_into(
+                bytes,
+                array_representations.last().unwrap(),
+                output,
+                output_shape,
+                output_subset,
+                options,
+            );
+        }
+
+        // bytes->array
+        let mut bytes =
+            self.array_to_bytes
+                .decode(bytes, array_representations.last().unwrap(), options)?;
+
+        // array->array
+        for (codec, array_representation) in std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        ) {
+            bytes = codec.decode(bytes, array_representation, options)?;
+        }
+        bytes.validate(
+            decoded_representation.num_elements(),
+            decoded_representation.data_type().size(),
+        )?;
+
+        if let ArrayBytes::Fixed(decoded_value) = bytes {
+            update_bytes_flen(
+                output,
+                output_shape,
+                &decoded_value,
+                output_subset,
+                decoded_representation.data_type().fixed_size().unwrap(),
+            );
+        } else {
+            // TODO: Variable length data type support?
+            return Err(CodecError::ExpectedFixedLengthBytes);
+        }
+        Ok(())
     }
 
     fn partial_decoder<'a>(
