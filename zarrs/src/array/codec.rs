@@ -83,6 +83,7 @@ use crate::storage::AsyncReadableStorage;
 use std::borrow::Cow;
 use std::sync::Arc;
 
+use super::array_bytes::update_bytes_flen;
 use super::{
     concurrency::RecommendedConcurrency, ArrayMetadataOptions, BytesRepresentation,
     ChunkRepresentation, ChunkShape, DataType,
@@ -347,6 +348,46 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError>;
+
+    /// Partially decode into a preallocated output.
+    ///
+    /// This method is intended for internal use by Array.
+    /// It currently only works for fixed length data types.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    ///
+    /// # Safety
+    /// The caller must ensure that:
+    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
+    ///  - `output_subset` is within the bounds of `output_shape`, and
+    ///  - `array_subset` has the same shape as the `output_subset`.
+    unsafe fn partial_decode_into(
+        &self,
+        array_subset: &ArraySubset,
+        output: &mut [u8],
+        output_shape: &[u64],
+        output_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError> {
+        debug_assert!(output_subset.inbounds(output_shape));
+        debug_assert_eq!(array_subset.shape(), output_subset.shape());
+        let decoded_value = self
+            .partial_decode_opt(&[array_subset.clone()], options)?
+            .remove(0);
+        if let ArrayBytes::Fixed(decoded_value) = decoded_value {
+            update_bytes_flen(
+                output,
+                output_shape,
+                &decoded_value,
+                output_subset,
+                self.data_type().fixed_size().unwrap(),
+            );
+            Ok(())
+        } else {
+            Err(CodecError::ExpectedFixedLengthBytes)
+        }
+    }
 }
 
 #[cfg(feature = "async")]
@@ -374,6 +415,36 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError>;
+
+    /// Async variant of [`ArrayPartialDecoderTraits::partial_decode_into`].
+    #[allow(clippy::missing_safety_doc)]
+    async unsafe fn partial_decode_into(
+        &self,
+        array_subset: &ArraySubset,
+        output: &mut [u8],
+        output_shape: &[u64],
+        output_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError> {
+        debug_assert!(output_subset.inbounds(output_shape));
+        debug_assert_eq!(array_subset.shape(), output_subset.shape());
+        let decoded_value = self
+            .partial_decode_opt(&[array_subset.clone()], options)
+            .await?
+            .remove(0);
+        if let ArrayBytes::Fixed(decoded_value) = decoded_value {
+            update_bytes_flen(
+                output,
+                output_shape,
+                &decoded_value,
+                output_subset,
+                self.data_type().fixed_size().unwrap(),
+            );
+            Ok(())
+        } else {
+            Err(CodecError::ExpectedFixedLengthBytes)
+        }
+    }
 }
 
 /// A [`ReadableStorage`] store value partial decoder.
@@ -545,6 +616,45 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<ArrayBytes<'a>, CodecError>;
+
+    /// Decode into a subset of a preallocated output.
+    ///
+    /// This method is intended for internal use by Array.
+    /// It currently only works for fixed length data types.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
+    ///
+    /// # Safety
+    /// The caller must ensure that:
+    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
+    ///  - `output_subset` is within the bounds of `output_shape`, and
+    ///  - `array_subset` has the same shape as the `output_subset`.
+    unsafe fn decode_into(
+        &self,
+        bytes: RawBytes<'_>,
+        decoded_representation: &ChunkRepresentation,
+        output: &mut [u8],
+        output_shape: &[u64],
+        output_subset: &ArraySubset,
+        options: &CodecOptions,
+    ) -> Result<(), CodecError> {
+        debug_assert!(output_subset.inbounds(output_shape));
+        debug_assert_eq!(decoded_representation.shape_u64(), output_subset.shape());
+        let decoded_value = self.decode(bytes, decoded_representation, options)?;
+        if let ArrayBytes::Fixed(decoded_value) = decoded_value {
+            update_bytes_flen(
+                output,
+                output_shape,
+                &decoded_value,
+                output_subset,
+                decoded_representation.data_type().fixed_size().unwrap(),
+            );
+        } else {
+            return Err(CodecError::ExpectedFixedLengthBytes);
+        }
+        Ok(())
+    }
 
     /// Initialise a partial decoder.
     ///
