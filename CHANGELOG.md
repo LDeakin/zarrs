@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `CodecOptions` not being forwarded in `Array::retrieve_chunk_subset_opt` on the fast path
 - Fixed missing fast path in `Array::[async_]retrieve_chunk_subset_opt`
 
+### Removed
+- Removed `ArraySubset::extract_elements[_unchecked]` which were unused and incorrect
+
 ## [0.17.0-beta.1] - 2024-09-16
 
 ### Highlights / Major Changes

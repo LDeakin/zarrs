@@ -199,6 +199,7 @@ pub use zarrs_storage as storage;
 pub use storage::byte_range;
 
 /// Get a mutable slice of the spare capacity in a vector.
+#[allow(dead_code)]
 unsafe fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {
     let spare_capacity = vec.spare_capacity_mut();
     unsafe {
