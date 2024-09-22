@@ -1,4 +1,9 @@
-use zarrs::storage::AsyncReadableStorage;
+use std::sync::Arc;
+use zarrs::{
+    array::Array,
+    array_subset::ArraySubset,
+    storage::{storage_adapter::usage_log::UsageLogStorageAdapter, AsyncReadableStorage},
+};
 
 enum Backend {
     OpenDAL,
@@ -6,13 +11,6 @@ enum Backend {
 }
 
 async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
-    use std::sync::Arc;
-    use zarrs::{
-        array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-        array::Array,
-        array_subset::ArraySubset,
-    };
-
     const HTTP_URL: &str =
         "https://raw.githubusercontent.com/LDeakin/zarrs/main/zarrs/tests/data/array_write_read.zarr";
     const ARRAY_PATH: &str = "/group/array";
@@ -40,10 +38,9 @@ async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Err
                 std::io::stdout(),
                 //    )
             ));
-            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+            store = Arc::new(UsageLogStorageAdapter::new(store, log_writer, || {
                 chrono::Utc::now().format("[%T%.3f] ").to_string()
             }));
-            store = usage_log.clone().create_async_readable_transformer(store);
         }
     }
 

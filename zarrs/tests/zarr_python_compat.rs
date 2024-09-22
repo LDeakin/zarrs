@@ -1,8 +1,7 @@
 use std::{error::Error, path::PathBuf, sync::Arc};
 
-use zarrs::{array::Array, array_subset::ArraySubset};
+use zarrs::{array::Array, array_subset::ArraySubset, storage::StoreKey};
 use zarrs_filesystem::FilesystemStore;
-use zarrs_storage::StoreKey;
 use zarrs_zip::ZipStorageAdapter;
 
 #[test]

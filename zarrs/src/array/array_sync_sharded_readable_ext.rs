@@ -478,13 +478,13 @@ mod tests {
     use crate::{
         array::{
             codec::{array_to_bytes::sharding::ShardingCodecBuilder, TransposeCodec},
-            storage_transformer::{
-                PerformanceMetricsStorageTransformer, StorageTransformerExtension,
-            },
             ArrayBuilder, DataType, FillValue,
         },
         array_subset::ArraySubset,
-        storage::store::MemoryStore,
+        storage::{
+            storage_adapter::performance_metrics::PerformanceMetricsStorageAdapter,
+            store::MemoryStore,
+        },
     };
 
     use super::*;
@@ -651,10 +651,7 @@ mod tests {
         valid_inner_chunk_shape: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MemoryStore::default());
-        let performance_metrics = Arc::new(PerformanceMetricsStorageTransformer::new());
-        let store = performance_metrics
-            .clone()
-            .create_readable_writable_transformer(store);
+        let store = Arc::new(PerformanceMetricsStorageAdapter::new(store));
 
         let array_path = "/array";
         let mut builder = ArrayBuilder::new(
@@ -676,7 +673,7 @@ mod tests {
             ])
             .build(),
         ));
-        let array = builder.build(store, array_path)?;
+        let array = builder.build(store.clone(), array_path)?;
 
         let inner_chunk_grid = array.inner_chunk_grid();
         if valid_inner_chunk_shape {
@@ -719,7 +716,7 @@ mod tests {
         let inner_chunk_subset = inner_chunk_grid.subset(&[0, 0, 0], array.shape())?.unwrap();
         let inner_chunk_data = array.retrieve_array_subset_elements::<u32>(&inner_chunk_subset)?;
         assert_eq!(inner_chunk_data, &[0, 1, 2, 144, 145, 146]);
-        assert_eq!(performance_metrics.reads(), 2);
+        assert_eq!(store.reads(), 2);
 
         Ok(())
     }

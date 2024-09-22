@@ -8,49 +8,38 @@ use std::{
 use itertools::Itertools;
 
 use crate::{
-    byte_range::ByteRange,
-    metadata::v3::MetadataV3,
-    storage::{
-        Bytes, ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
-        ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
-        ReadableWritableStorage, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
-    },
+    byte_range::ByteRange, Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
+    StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+    StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
-use crate::storage::{
-    AsyncBytes, AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
-    AsyncReadableStorage, AsyncReadableStorageTraits, AsyncReadableWritableListableStorage,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorage, AsyncWritableStorageTraits,
-    MaybeAsyncBytes,
+use crate::{
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
 };
-
-use super::StorageTransformerExtension;
 
 /// The usage log storage transformer. Logs storage method calls.
 ///
-/// This storage transformer is for internal use and will not to be included in `storage_transformers` array metadata.
 /// It is intended to aid in debugging and optimising performance by revealing storage access patterns.
 ///
 /// ### Example (log to stdout)
 /// ```rust
 /// # use std::sync::{Arc, Mutex};
-/// # use zarrs::storage::store::MemoryStore;
-/// # use zarrs::array::storage_transformer::{UsageLogStorageTransformer, StorageTransformerExtension};
+/// # use zarrs_storage::store::MemoryStore;
+/// # use zarrs_storage::storage_adapter::usage_log::UsageLogStorageAdapter;
 /// let store = Arc::new(MemoryStore::new());
 /// let log_writer = Arc::new(Mutex::new(
 ///     // std::io::BufWriter::new(
 ///     std::io::stdout(),
 ///     //    )
 /// ));
-/// let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+/// let store = Arc::new(UsageLogStorageAdapter::new(store, log_writer, || {
 ///     chrono::Utc::now().format("[%T%.3f] ").to_string()
 /// }));
-/// let store = usage_log.create_readable_writable_transformer(store);
 /// ````
 ///
-/// Applying array methods with the above [`UsageLogStorageTransformer`] prints outputs like:
+/// Applying array methods with the above [`UsageLogStorageAdapter`] prints outputs like:
 /// ```text
 /// [23:41:19.885] set(group/array/c/1/0, len=140) -> Ok(())
 /// [23:41:19.885] get_partial_values_key(group/array/c/0/0, [-36..-0]) -> len=Ok([36])
@@ -63,126 +52,35 @@ use super::StorageTransformerExtension;
 /// [23:41:19.891] get(group/array/zarr.json) -> len=Ok(1315)
 /// [23:41:19.892] list() -> [group/array/c/0/0, group/array/c/1/0, group/array/zarr.json, group/zarr.json]
 /// ```
-pub struct UsageLogStorageTransformer {
+pub struct UsageLogStorageAdapter<TStorage: ?Sized> {
+    storage: Arc<TStorage>,
     handle: Arc<Mutex<dyn Write + Send + Sync>>,
     prefix_func: fn() -> String,
 }
 
-impl core::fmt::Debug for UsageLogStorageTransformer {
+impl<TStorage: ?Sized> core::fmt::Debug for UsageLogStorageAdapter<TStorage> {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         writeln!(f, "usage log")
     }
 }
 
-impl UsageLogStorageTransformer {
-    /// Create a new usage log storage transformer.
-    pub fn new(handle: Arc<Mutex<dyn Write + Send + Sync>>, prefix_func: fn() -> String) -> Self {
+impl<TStorage: ?Sized> UsageLogStorageAdapter<TStorage> {
+    /// Create a new usage log storage adapter.
+    pub fn new(
+        storage: Arc<TStorage>,
+        handle: Arc<Mutex<dyn Write + Send + Sync>>,
+        prefix_func: fn() -> String,
+    ) -> Self {
         Self {
+            storage,
             handle,
             prefix_func,
         }
     }
-
-    fn create_transformer<TStorage: ?Sized>(
-        &self,
-        storage: Arc<TStorage>,
-    ) -> Arc<UsageLogStorageTransformerImpl<TStorage>> {
-        Arc::new(UsageLogStorageTransformerImpl {
-            storage,
-            prefix_func: self.prefix_func,
-            handle: self.handle.clone(),
-        })
-    }
-}
-
-impl StorageTransformerExtension for UsageLogStorageTransformer {
-    /// Returns [`None`], since this storage transformer is not intended to be included in array `storage_transformers` metadata.
-    fn create_metadata(&self) -> Option<MetadataV3> {
-        None
-    }
-
-    fn create_readable_transformer(self: Arc<Self>, storage: ReadableStorage) -> ReadableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_readable_writable_transformer(
-        self: Arc<Self>,
-        storage: ReadableWritableStorage,
-    ) -> ReadableWritableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_writable_transformer(self: Arc<Self>, storage: WritableStorage) -> WritableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_listable_transformer(self: Arc<Self>, storage: ListableStorage) -> ListableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_readable_listable_transformer(
-        self: Arc<Self>,
-        storage: ReadableListableStorage,
-    ) -> ReadableListableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_readable_writable_listable_transformer(
-        self: Arc<Self>,
-        storage: ReadableWritableListableStorage,
-    ) -> ReadableWritableListableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_readable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableStorage,
-    ) -> AsyncReadableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_writable_transformer(
-        self: Arc<Self>,
-        storage: AsyncWritableStorage,
-    ) -> AsyncWritableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncListableStorage,
-    ) -> AsyncListableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_readable_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableListableStorage,
-    ) -> AsyncReadableListableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_readable_writable_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableWritableListableStorage,
-    ) -> AsyncReadableWritableListableStorage {
-        self.create_transformer(storage)
-    }
-}
-
-struct UsageLogStorageTransformerImpl<TStorage: ?Sized> {
-    storage: Arc<TStorage>,
-    prefix_func: fn() -> String,
-    handle: Arc<Mutex<dyn Write + Send + Sync>>,
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
+    for UsageLogStorageAdapter<TStorage>
 {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let result = self.storage.get(key);
@@ -243,7 +141,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
 }
 
 impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
+    for UsageLogStorageAdapter<TStorage>
 {
     fn list(&self) -> Result<StoreKeys, StorageError> {
         let result = self.storage.list();
@@ -309,7 +207,7 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
 }
 
 impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
+    for UsageLogStorageAdapter<TStorage>
 {
     fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
         let len = value.len();
@@ -371,7 +269,7 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
+    for UsageLogStorageAdapter<TStorage>
 {
     async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
         let result = self.storage.get(key).await;
@@ -437,7 +335,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
+    for UsageLogStorageAdapter<TStorage>
 {
     async fn list(&self) -> Result<StoreKeys, StorageError> {
         let keys = self.storage.list().await;
@@ -505,7 +403,7 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
+    for UsageLogStorageAdapter<TStorage>
 {
     async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError> {
         let len = value.len();
@@ -566,16 +464,6 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for UsageLogStorageTransformerImpl<TStorage>
+    for UsageLogStorageAdapter<TStorage>
 {
-    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-    //     let result = self.storage.mutex(key).await;
-    //     writeln!(
-    //         self.handle.lock().unwrap(),
-    //         "{}mutex({key}) -> {:?}",
-    //         (self.prefix_func)(),
-    //         result.as_ref().map_or((), |_| ())
-    //     )?;
-    //     result
-    // }
 }

@@ -1,21 +1,15 @@
 //! A storage transformer which records performance metrics.
 
 use crate::{
-    metadata::v3::MetadataV3,
-    storage::{
-        Bytes, ListableStorage, ListableStorageTraits, MaybeBytes, ReadableListableStorage,
-        ReadableStorage, ReadableStorageTraits, ReadableWritableListableStorage,
-        ReadableWritableStorage, StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue,
-        StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorage, WritableStorageTraits,
-    },
+    Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
+    StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
-use crate::storage::{
-    AsyncBytes, AsyncListableStorage, AsyncListableStorageTraits, AsyncReadableListableStorage,
-    AsyncReadableStorage, AsyncReadableStorageTraits, AsyncReadableWritableListableStorage,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorage, AsyncWritableStorageTraits,
-    MaybeAsyncBytes,
+use crate::{
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
+    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
 };
 
 use std::sync::{
@@ -23,26 +17,29 @@ use std::sync::{
     Arc,
 };
 
-use super::StorageTransformerExtension;
-
 /// The performance metrics storage transformer. Accumulates metrics, such as bytes read and written.
 ///
-/// This storage transformer is for internal use and will not to be included in `storage_transformers` array metadata.
-/// It is intended to aid in testing by allowing the application to validate that metrics (e.g., bytes read/written, total read/write operations, lock requests) match expected values for specific operations.
-#[derive(Debug, Default)]
-pub struct PerformanceMetricsStorageTransformer {
+/// It is intended to aid in testing by allowing the application to validate that metrics (e.g., bytes read/written, total read/write operations) match expected values for specific operations.
+#[derive(Debug)]
+pub struct PerformanceMetricsStorageAdapter<TStorage: ?Sized> {
+    storage: Arc<TStorage>,
     bytes_read: AtomicUsize,
     bytes_written: AtomicUsize,
     reads: AtomicUsize,
     writes: AtomicUsize,
-    locks: AtomicUsize,
 }
 
-impl PerformanceMetricsStorageTransformer {
+impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
     /// Create a new performance metrics storage transformer.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(storage: Arc<TStorage>) -> Self {
+        Self {
+            storage,
+            bytes_read: AtomicUsize::default(),
+            bytes_written: AtomicUsize::default(),
+            reads: AtomicUsize::default(),
+            writes: AtomicUsize::default(),
+        }
     }
 
     /// Returns the number of bytes read.
@@ -64,121 +61,18 @@ impl PerformanceMetricsStorageTransformer {
     pub fn writes(&self) -> usize {
         self.writes.load(Ordering::Relaxed)
     }
-
-    /// Returns the number of lock requests.
-    pub fn locks(&self) -> usize {
-        self.locks.load(Ordering::Relaxed)
-    }
-
-    fn create_transformer<TStorage: ?Sized>(
-        self: Arc<Self>,
-        storage: Arc<TStorage>,
-    ) -> Arc<PerformanceMetricsStorageTransformerImpl<TStorage>> {
-        Arc::new(PerformanceMetricsStorageTransformerImpl {
-            storage,
-            transformer: self,
-        })
-    }
-}
-
-impl StorageTransformerExtension for PerformanceMetricsStorageTransformer {
-    /// Returns [`None`], since this storage transformer is not intended to be included in array `storage_transformers` metadata.
-    fn create_metadata(&self) -> Option<MetadataV3> {
-        None
-    }
-
-    fn create_readable_transformer(self: Arc<Self>, storage: ReadableStorage) -> ReadableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_writable_transformer(self: Arc<Self>, storage: WritableStorage) -> WritableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_readable_writable_transformer(
-        self: Arc<Self>,
-        storage: ReadableWritableStorage,
-    ) -> ReadableWritableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_listable_transformer(self: Arc<Self>, storage: ListableStorage) -> ListableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_readable_listable_transformer(
-        self: Arc<Self>,
-        storage: ReadableListableStorage,
-    ) -> ReadableListableStorage {
-        self.create_transformer(storage)
-    }
-
-    fn create_readable_writable_listable_transformer(
-        self: Arc<Self>,
-        storage: ReadableWritableListableStorage,
-    ) -> ReadableWritableListableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_readable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableStorage,
-    ) -> AsyncReadableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_writable_transformer(
-        self: Arc<Self>,
-        storage: AsyncWritableStorage,
-    ) -> AsyncWritableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncListableStorage,
-    ) -> AsyncListableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_readable_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableListableStorage,
-    ) -> AsyncReadableListableStorage {
-        self.create_transformer(storage)
-    }
-
-    #[cfg(feature = "async")]
-    fn create_async_readable_writable_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableWritableListableStorage,
-    ) -> AsyncReadableWritableListableStorage {
-        self.create_transformer(storage)
-    }
-}
-
-#[derive(Debug)]
-struct PerformanceMetricsStorageTransformerImpl<TStorage: ?Sized> {
-    storage: Arc<TStorage>,
-    transformer: Arc<PerformanceMetricsStorageTransformer>,
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
+    for PerformanceMetricsStorageAdapter<TStorage>
 {
     fn get(&self, key: &StoreKey) -> Result<MaybeBytes, StorageError> {
         let value = self.storage.get(key);
         let bytes_read = value
             .as_ref()
             .map_or(0, |v| v.as_ref().map_or(0, Bytes::len));
-        self.transformer
-            .bytes_read
-            .fetch_add(bytes_read, Ordering::Relaxed);
-        self.transformer.reads.fetch_add(1, Ordering::Relaxed);
+        self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
+        self.reads.fetch_add(1, Ordering::Relaxed);
         value
     }
 
@@ -190,12 +84,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         let values = self.storage.get_partial_values_key(key, byte_ranges)?;
         if let Some(values) = &values {
             let bytes_read = values.iter().map(Bytes::len).sum();
-            self.transformer
-                .bytes_read
-                .fetch_add(bytes_read, Ordering::Relaxed);
-            self.transformer
-                .reads
-                .fetch_add(byte_ranges.len(), Ordering::Relaxed);
+            self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
+            self.reads.fetch_add(byte_ranges.len(), Ordering::Relaxed);
         }
         Ok(values)
     }
@@ -209,12 +99,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
             .iter()
             .map(|value| value.as_ref().map_or(0, Bytes::len))
             .sum::<usize>();
-        self.transformer
-            .bytes_read
-            .fetch_add(bytes_read, Ordering::Relaxed);
-        self.transformer
-            .reads
-            .fetch_add(key_ranges.len(), Ordering::Relaxed);
+        self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
+        self.reads.fetch_add(key_ranges.len(), Ordering::Relaxed);
         Ok(values)
     }
 
@@ -224,7 +110,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
 }
 
 impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
+    for PerformanceMetricsStorageAdapter<TStorage>
 {
     fn list(&self) -> Result<StoreKeys, StorageError> {
         self.storage.list()
@@ -248,13 +134,11 @@ impl<TStorage: ?Sized + ListableStorageTraits> ListableStorageTraits
 }
 
 impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
+    for PerformanceMetricsStorageAdapter<TStorage>
 {
     fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
-        self.transformer
-            .bytes_written
-            .fetch_add(value.len(), Ordering::Relaxed);
-        self.transformer.writes.fetch_add(1, Ordering::Relaxed);
+        self.bytes_written.fetch_add(value.len(), Ordering::Relaxed);
+        self.writes.fetch_add(1, Ordering::Relaxed);
         self.storage.set(key, value)
     }
 
@@ -266,11 +150,9 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
             .iter()
             .map(|ksv| ksv.value().len())
             .sum::<usize>();
-        self.transformer
-            .bytes_written
+        self.bytes_written
             .fetch_add(bytes_written, Ordering::Relaxed);
-        self.transformer
-            .writes
+        self.writes
             .fetch_add(key_start_values.len(), Ordering::Relaxed);
         self.storage.set_partial_values(key_start_values)
     }
@@ -291,17 +173,15 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
+    for PerformanceMetricsStorageAdapter<TStorage>
 {
     async fn get(&self, key: &StoreKey) -> Result<MaybeAsyncBytes, StorageError> {
         let value = self.storage.get(key).await;
         let bytes_read = value
             .as_ref()
             .map_or(0, |v| v.as_ref().map_or(0, AsyncBytes::len));
-        self.transformer
-            .bytes_read
-            .fetch_add(bytes_read, Ordering::Relaxed);
-        self.transformer.reads.fetch_add(1, Ordering::Relaxed);
+        self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
+        self.reads.fetch_add(1, Ordering::Relaxed);
         value
     }
 
@@ -316,12 +196,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
             .await?;
         if let Some(values) = &values {
             let bytes_read = values.iter().map(AsyncBytes::len).sum();
-            self.transformer
-                .bytes_read
-                .fetch_add(bytes_read, Ordering::Relaxed);
-            self.transformer
-                .reads
-                .fetch_add(byte_ranges.len(), Ordering::Relaxed);
+            self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
+            self.reads.fetch_add(byte_ranges.len(), Ordering::Relaxed);
         }
         Ok(values)
     }
@@ -335,12 +211,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
             .iter()
             .map(|value| value.as_ref().map_or(0, AsyncBytes::len))
             .sum::<usize>();
-        self.transformer
-            .bytes_read
-            .fetch_add(bytes_read, Ordering::Relaxed);
-        self.transformer
-            .reads
-            .fetch_add(key_ranges.len(), Ordering::Relaxed);
+        self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
+        self.reads.fetch_add(key_ranges.len(), Ordering::Relaxed);
         Ok(values)
     }
 
@@ -352,7 +224,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> AsyncReadableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
+    for PerformanceMetricsStorageAdapter<TStorage>
 {
     async fn list(&self) -> Result<StoreKeys, StorageError> {
         self.storage.list().await
@@ -378,13 +250,11 @@ impl<TStorage: ?Sized + AsyncListableStorageTraits> AsyncListableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
+    for PerformanceMetricsStorageAdapter<TStorage>
 {
     async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError> {
-        self.transformer
-            .bytes_written
-            .fetch_add(value.len(), Ordering::Relaxed);
-        self.transformer.writes.fetch_add(1, Ordering::Relaxed);
+        self.bytes_written.fetch_add(value.len(), Ordering::Relaxed);
+        self.writes.fetch_add(1, Ordering::Relaxed);
         self.storage.set(key, value).await
     }
 
@@ -396,11 +266,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
             .iter()
             .map(|ksv| ksv.value().len())
             .sum::<usize>();
-        self.transformer
-            .bytes_written
+        self.bytes_written
             .fetch_add(bytes_written, Ordering::Relaxed);
-        self.transformer
-            .writes
+        self.writes
             .fetch_add(key_start_values.len(), Ordering::Relaxed);
         self.storage.set_partial_values(key_start_values).await
     }
@@ -421,10 +289,6 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
 impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for PerformanceMetricsStorageTransformerImpl<TStorage>
+    for PerformanceMetricsStorageAdapter<TStorage>
 {
-    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-    //     self.transformer.locks.fetch_add(1, Ordering::Relaxed);
-    //     self.storage.mutex(key).await
-    // }
 }

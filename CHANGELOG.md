@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Change `Contiguous[Linearised]Indices` iterators to return indices only
 - **Breaking**: Remove lifetime constraints in partial decoder API by utilising `Arc`'d codecs
 - **Breaking**: `ShardingCodec::new` `CodecChain` parameters now must be in an `Arc`
+- **Breaking**: Change `UsageLogStorageTransformer` to `UsageLogStorageAdapter` and move to `zarrs_storage`
+- **Breaking**: Change `PerformanceMetricsStorageTransformer` to `PerformanceMetricsStorageAdapter` and move to `zarrs_storage`
 
 ### Fixed
 - Fixed an unnecessary copy in `Array::[async_]retrieve_chunk_if_exists_opt`

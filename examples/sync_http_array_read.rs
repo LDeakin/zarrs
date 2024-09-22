@@ -1,6 +1,15 @@
-use zarrs::storage::{
-    storage_adapter::async_to_sync::{AsyncToSyncBlockOn, AsyncToSyncStorageAdapter},
-    ReadableStorage,
+use std::sync::Arc;
+
+use zarrs::{
+    array::Array,
+    array_subset::ArraySubset,
+    storage::{
+        storage_adapter::{
+            async_to_sync::{AsyncToSyncBlockOn, AsyncToSyncStorageAdapter},
+            usage_log::UsageLogStorageAdapter,
+        },
+        ReadableStorage,
+    },
 };
 
 struct TokioBlockOn(tokio::runtime::Runtime);
@@ -17,13 +26,6 @@ enum Backend {
 }
 
 fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
-    use std::sync::Arc;
-    use zarrs::{
-        array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-        array::Array,
-        array_subset::ArraySubset,
-    };
-
     const HTTP_URL: &str =
         "https://raw.githubusercontent.com/LDeakin/zarrs/main/zarrs/tests/data/array_write_read.zarr";
     const ARRAY_PATH: &str = "/group/array";
@@ -55,10 +57,9 @@ fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
                 std::io::stdout(),
                 //    )
             ));
-            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+            store = Arc::new(UsageLogStorageAdapter::new(store, log_writer, || {
                 chrono::Utc::now().format("[%T%.3f] ").to_string()
             }));
-            store = usage_log.clone().create_readable_transformer(store);
         }
     }
 

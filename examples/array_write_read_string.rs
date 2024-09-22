@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ndarray::{array, Array2, ArrayD};
 use zarrs::{
-    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
+    storage::storage_adapter::usage_log::UsageLogStorageAdapter,
     storage::ReadableWritableListableStorage,
 };
 
@@ -28,12 +28,9 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
                 std::io::stdout(),
                 //    )
             ));
-            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+            store = Arc::new(UsageLogStorageAdapter::new(store, log_writer, || {
                 chrono::Utc::now().format("[%T%.3f] ").to_string()
             }));
-            store = usage_log
-                .clone()
-                .create_readable_writable_listable_transformer(store);
         }
     }
 

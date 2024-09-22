@@ -265,12 +265,13 @@ pub trait AsyncWritableStorageTraits: Send + Sync {
 pub trait AsyncReadableWritableStorageTraits:
     AsyncReadableStorageTraits + AsyncWritableStorageTraits
 {
-    // /// Returns the mutex for the store value at `key`.
-    // ///
-    // /// # Errors
-    // /// Returns a [`StorageError`] if the mutex cannot be retrieved.
-    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError>;
 }
+
+// FIXME: Enable this in the next major release
+// impl<T> AsyncReadableWritableStorageTraits for T where
+//     T: AsyncReadableStorageTraits + AsyncWritableStorageTraits
+// {
+// }
 
 /// A supertrait of [`AsyncReadableStorageTraits`] and [`AsyncListableStorageTraits`].
 pub trait AsyncReadableListableStorageTraits:

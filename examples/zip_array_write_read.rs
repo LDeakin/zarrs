@@ -6,9 +6,9 @@ use std::{
 };
 
 use zarrs::{
-    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
     array::{Array, ZARR_NAN_F32},
     array_subset::ArraySubset,
+    storage::storage_adapter::usage_log::UsageLogStorageAdapter,
     storage::{
         ReadableStorageTraits, ReadableWritableListableStorage, ReadableWritableStorageTraits,
         StoreKey,
@@ -161,12 +161,9 @@ fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
                 std::io::stdout(),
                 //    )
             ));
-            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+            store = Arc::new(UsageLogStorageAdapter::new(store, log_writer, || {
                 chrono::Utc::now().format("[%T%.3f] ").to_string()
             }));
-            store = usage_log
-                .clone()
-                .create_readable_writable_listable_transformer(store);
         }
     }
 
