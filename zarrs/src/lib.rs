@@ -66,7 +66,11 @@
 //!
 #![doc = include_str!("../doc/status/stores.md")]
 //!
-//! A huge range of storage backends are supported via the [`opendal`](https://docs.rs/opendal/latest/opendal/) and [`object_store`](https://docs.rs/opendal/latest/object_store/) crates and asynchronous stores can be used in a synchronous context with the [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter).
+//! A huge range of storage backends are supported via the [`opendal`](https://docs.rs/opendal/latest/opendal/) and [`object_store`](https://docs.rs/opendal/latest/object_store/) crates.
+//! The documentation for the [zarrs_opendal] and [zarrs_object_store] crates includes version compatibility matrices with `zarrs` and the associated storage backends.
+//! These backends provide more feature complete HTTP stores than [zarrs_http].
+//!
+//! Asynchronous stores can be used in a synchronous context with the [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter).
 //!
 //! ## Examples
 #![cfg_attr(feature = "ndarray", doc = "```rust")]
@@ -194,6 +198,9 @@ pub mod version;
 
 pub use zarrs_metadata as metadata;
 pub use zarrs_storage as storage;
+
+#[cfg(feature = "filesystem")]
+pub use zarrs_filesystem as filesystem;
 
 // Re-export byte_range for compat with <17.0.0
 pub use storage::byte_range;
