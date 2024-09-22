@@ -38,7 +38,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_writable_transformer(storage_handle);
+            .create_writable_transformer(storage_handle)?;
 
         // Get the metadata with options applied and store
         let metadata = self.metadata_opt(options);
@@ -231,7 +231,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_writable_transformer(storage_handle);
+            .create_writable_transformer(storage_handle)?;
         storage_transformer.erase(&self.chunk_key(chunk_indices))
     }
 
@@ -243,7 +243,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_writable_transformer(storage_handle);
+            .create_writable_transformer(storage_handle)?;
         let erase_chunk =
             |chunk_indices: Vec<u64>| storage_transformer.erase(&self.chunk_key(&chunk_indices));
 
@@ -301,7 +301,7 @@ impl<TStorage: ?Sized + WritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_writable_transformer(storage_handle);
+            .create_writable_transformer(storage_handle)?;
         storage_transformer.set(&self.chunk_key(chunk_indices), encoded_chunk_bytes)?;
 
         Ok(())

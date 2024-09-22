@@ -9,29 +9,23 @@
 mod storage_transformer_chain;
 pub use storage_transformer_chain::StorageTransformerChain;
 
+mod storage_transformer_plugin;
+pub use storage_transformer_plugin::StorageTransformerPlugin;
+
 use std::sync::Arc;
 
 use crate::{
     metadata::v3::MetadataV3,
-    plugin::{Plugin, PluginCreateError},
-    storage::{
-        ListableStorage, ReadableListableStorage, ReadableStorage, ReadableWritableListableStorage,
-        ReadableWritableStorage, WritableStorage,
-    },
+    node::NodePath,
+    plugin::PluginCreateError,
+    storage::{ListableStorage, ReadableStorage, StorageError, WritableStorage},
 };
 
 #[cfg(feature = "async")]
-use crate::storage::{
-    AsyncListableStorage, AsyncReadableListableStorage, AsyncReadableStorage,
-    AsyncReadableWritableListableStorage, AsyncWritableStorage,
-};
+use crate::storage::{AsyncListableStorage, AsyncReadableStorage, AsyncWritableStorage};
 
 /// An [`Arc`] wrapped storage transformer.
 pub type StorageTransformer = Arc<dyn StorageTransformerExtension>;
-
-/// A storage transformer plugin.
-type StorageTransformerPlugin = Plugin<StorageTransformer>;
-inventory::collect!(StorageTransformerPlugin);
 
 /// Create a storage transformer from metadata.
 ///
@@ -40,10 +34,11 @@ inventory::collect!(StorageTransformerPlugin);
 /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered storage transformer plugin.
 pub fn try_create_storage_transformer(
     metadata: &MetadataV3,
+    path: &NodePath,
 ) -> Result<StorageTransformer, PluginCreateError> {
     for plugin in inventory::iter::<StorageTransformerPlugin> {
         if plugin.match_name(metadata.name()) {
-            return plugin.create(metadata);
+            return plugin.create(metadata, path);
         }
     }
     Err(PluginCreateError::Unsupported {
@@ -53,69 +48,65 @@ pub fn try_create_storage_transformer(
 }
 
 /// A storage transformer extension.
+#[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait StorageTransformerExtension: core::fmt::Debug + Send + Sync {
     /// Create metadata.
-    fn create_metadata(&self) -> Option<MetadataV3>;
+    fn create_metadata(&self) -> MetadataV3;
 
     /// Create a readable transformer.
-    fn create_readable_transformer(self: Arc<Self>, storage: ReadableStorage) -> ReadableStorage;
+    ///
+    /// # Errors
+    /// Returns an error if creation fails.
+    fn create_readable_transformer(
+        self: Arc<Self>,
+        storage: ReadableStorage,
+    ) -> Result<ReadableStorage, StorageError>;
 
     /// Create a writable transformer.
-    fn create_writable_transformer(self: Arc<Self>, storage: WritableStorage) -> WritableStorage;
-
-    /// Create a readable and writable transformer.
-    fn create_readable_writable_transformer(
+    ///
+    /// # Errors
+    /// Returns an error if creation fails.
+    fn create_writable_transformer(
         self: Arc<Self>,
-        storage: ReadableWritableStorage,
-    ) -> ReadableWritableStorage;
+        storage: WritableStorage,
+    ) -> Result<WritableStorage, StorageError>;
 
     /// Create a listable transformer.
-    fn create_listable_transformer(self: Arc<Self>, storage: ListableStorage) -> ListableStorage;
-
-    /// Create a readable and listable transformer.
-    fn create_readable_listable_transformer(
+    ///
+    /// # Errors
+    /// Returns an error if creation fails.
+    fn create_listable_transformer(
         self: Arc<Self>,
-        storage: ReadableListableStorage,
-    ) -> ReadableListableStorage;
-
-    /// Create a readable, writable, and listable transformer.
-    fn create_readable_writable_listable_transformer(
-        self: Arc<Self>,
-        storage: ReadableWritableListableStorage,
-    ) -> ReadableWritableListableStorage;
+        storage: ListableStorage,
+    ) -> Result<ListableStorage, StorageError>;
 
     #[cfg(feature = "async")]
     /// Create an asynchronous readable transformer.
-    fn create_async_readable_transformer(
+    ///
+    /// # Errors
+    /// Returns an error if creation fails.
+    async fn create_async_readable_transformer(
         self: Arc<Self>,
         storage: AsyncReadableStorage,
-    ) -> AsyncReadableStorage;
+    ) -> Result<AsyncReadableStorage, StorageError>;
 
     #[cfg(feature = "async")]
     /// Create an asynchronous writable transformer.
-    fn create_async_writable_transformer(
+    ///
+    /// # Errors
+    /// Returns an error if creation fails.
+    async fn create_async_writable_transformer(
         self: Arc<Self>,
         storage: AsyncWritableStorage,
-    ) -> AsyncWritableStorage;
+    ) -> Result<AsyncWritableStorage, StorageError>;
 
     #[cfg(feature = "async")]
     /// Create an asynchronous listable transformer.
-    fn create_async_listable_transformer(
+    ///
+    /// # Errors
+    /// Returns an error if creation fails.
+    async fn create_async_listable_transformer(
         self: Arc<Self>,
         storage: AsyncListableStorage,
-    ) -> AsyncListableStorage;
-
-    #[cfg(feature = "async")]
-    /// Create an asynchronous readable and listable transformer.
-    fn create_async_readable_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableListableStorage,
-    ) -> AsyncReadableListableStorage;
-
-    #[cfg(feature = "async")]
-    /// Create an asynchronous readable, writable, and listable transformer.
-    fn create_async_readable_writable_listable_transformer(
-        self: Arc<Self>,
-        storage: AsyncReadableWritableListableStorage,
-    ) -> AsyncReadableWritableListableStorage;
+    ) -> Result<AsyncListableStorage, StorageError>;
 }
