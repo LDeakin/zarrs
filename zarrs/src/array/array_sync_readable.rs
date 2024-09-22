@@ -155,7 +155,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(storage_handle);
+            .create_readable_transformer(storage_handle)?;
 
         storage_transformer
             .get(&self.chunk_key(chunk_indices))
@@ -226,7 +226,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(storage_handle);
+            .create_readable_transformer(storage_handle)?;
 
         let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
             storage_transformer
@@ -433,7 +433,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(storage_handle);
+            .create_readable_transformer(storage_handle)?;
         let chunk_encoded = storage_transformer
             .get(&self.chunk_key(chunk_indices))
             .map_err(ArrayError::StorageError)?;
@@ -484,7 +484,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(storage_handle);
+            .create_readable_transformer(storage_handle)?;
         let chunk_encoded = storage_transformer
             .get(&self.chunk_key(chunk_indices))
             .map_err(ArrayError::StorageError)?;
@@ -824,7 +824,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
                 .storage_transformers()
-                .create_readable_transformer(storage_handle);
+                .create_readable_transformer(storage_handle)?;
             let input_handle = Arc::new(StoragePartialDecoder::new(
                 storage_transformer,
                 self.chunk_key(chunk_indices),
@@ -867,7 +867,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
                 .storage_transformers()
-                .create_readable_transformer(storage_handle);
+                .create_readable_transformer(storage_handle)?;
             let input_handle = Arc::new(StoragePartialDecoder::new(
                 storage_transformer,
                 self.chunk_key(chunk_indices),
@@ -919,7 +919,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_readable_transformer(storage_handle);
+            .create_readable_transformer(storage_handle)?;
         let input_handle = Arc::new(StoragePartialDecoder::new(
             storage_transformer,
             self.chunk_key(chunk_indices),

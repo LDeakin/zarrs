@@ -33,7 +33,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_writable_transformer(storage_handle);
+            .create_async_writable_transformer(storage_handle)
+            .await?;
 
         // Get the metadata with options applied and store
         let metadata = self.metadata_opt(options);
@@ -194,7 +195,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_writable_transformer(storage_handle);
+            .create_async_writable_transformer(storage_handle)
+            .await?;
         storage_transformer
             .erase(&self.chunk_key(chunk_indices))
             .await
@@ -206,7 +208,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_writable_transformer(storage_handle);
+            .create_async_writable_transformer(storage_handle)
+            .await?;
         let erase_chunk = |chunk_indices: Vec<u64>| {
             let storage_transformer = storage_transformer.clone();
             async move {
@@ -267,7 +270,8 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_writable_transformer(storage_handle);
+            .create_async_writable_transformer(storage_handle)
+            .await?;
         storage_transformer
             .set(&self.chunk_key(chunk_indices), encoded_chunk_bytes)
             .await?;

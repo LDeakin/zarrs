@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `ShardingCodec::new` `CodecChain` parameters now must be in an `Arc`
 - **Breaking**: Change `UsageLogStorageTransformer` to `UsageLogStorageAdapter` and move to `zarrs_storage`
 - **Breaking**: Change `PerformanceMetricsStorageTransformer` to `PerformanceMetricsStorageAdapter` and move to `zarrs_storage`
+- **Breaking**: Storage transformer refactor:
+  - Add `StorageTransformerPlugin` for storage transformer registration instead of generic `Plugin`
+  - Remove several `StorageTransformerExtension` trait methods no longer needed
+  - Change `StorageTransformerExtension::create_metadata` to return `MetadataV3` instead of an `Option`
+  - `StorageTransformerExtension::[async_]create_*_transformer` methods are now fallible
+  - `StorageTransformerExtension::async_create_*_transformer` methods are now async
+  - `StorageTransformerChain::from_metadata` and `try_create_storage_transformer` now has a `path: &NodePath` parameter
 
 ### Fixed
 - Fixed an unnecessary copy in `Array::[async_]retrieve_chunk_if_exists_opt`

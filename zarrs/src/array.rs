@@ -357,7 +357,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 .map_err(ArrayCreateError::CodecsCreateError)?,
         );
         let storage_transformers =
-            StorageTransformerChain::from_metadata(&metadata_v3.storage_transformers)
+            StorageTransformerChain::from_metadata(&metadata_v3.storage_transformers, &path)
                 .map_err(ArrayCreateError::StorageTransformersCreateError)?;
         let chunk_key_encoding = ChunkKeyEncoding::from_metadata(&metadata_v3.chunk_key_encoding)
             .map_err(ArrayCreateError::ChunkKeyEncodingCreateError)?;

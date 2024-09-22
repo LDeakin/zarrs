@@ -129,7 +129,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_readable_transformer(storage_handle);
+            .create_async_readable_transformer(storage_handle)
+            .await?;
 
         storage_transformer
             .get(&self.chunk_key(chunk_indices))
@@ -300,7 +301,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_readable_transformer(storage_handle);
+            .create_async_readable_transformer(storage_handle)
+            .await?;
         let chunk_encoded = storage_transformer
             .get(&self.chunk_key(chunk_indices))
             .await
@@ -359,7 +361,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_readable_transformer(storage_handle);
+            .create_async_readable_transformer(storage_handle)
+            .await?;
         let chunk_encoded = storage_transformer
             .get(&self.chunk_key(chunk_indices))
             .await
@@ -487,7 +490,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_readable_transformer(storage_handle);
+            .create_async_readable_transformer(storage_handle)
+            .await?;
 
         let retrieve_encoded_chunk = |chunk_indices: Vec<u64>| {
             let storage_transformer = storage_transformer.clone();
@@ -763,7 +767,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
                 .storage_transformers()
-                .create_async_readable_transformer(storage_handle);
+                .create_async_readable_transformer(storage_handle)
+                .await?;
             let input_handle = Arc::new(AsyncStoragePartialDecoder::new(
                 storage_transformer,
                 self.chunk_key(chunk_indices),
@@ -814,7 +819,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
                 .storage_transformers()
-                .create_async_readable_transformer(storage_handle);
+                .create_async_readable_transformer(storage_handle)
+                .await?;
             let input_handle = Arc::new(AsyncStoragePartialDecoder::new(
                 storage_transformer,
                 self.chunk_key(chunk_indices),
@@ -870,7 +876,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
-            .create_async_readable_transformer(storage_handle);
+            .create_async_readable_transformer(storage_handle)
+            .await?;
         let input_handle = Arc::new(AsyncStoragePartialDecoder::new(
             storage_transformer,
             self.chunk_key(chunk_indices),
