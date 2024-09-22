@@ -4,17 +4,20 @@ use std::{
     path::Path,
     sync::Arc,
 };
+use walkdir::WalkDir;
 
 use zarrs::{
-    array::{Array, ZARR_NAN_F32},
+    array::{codec, Array, DataType, FillValue, ZARR_NAN_F32},
     array_subset::ArraySubset,
+    filesystem::FilesystemStore,
+    node::Node,
     storage::storage_adapter::usage_log::UsageLogStorageAdapter,
     storage::{
         ReadableStorageTraits, ReadableWritableListableStorage, ReadableWritableStorageTraits,
         StoreKey,
     },
 };
-use zarrs_filesystem::FilesystemStore;
+use zarrs_zip::ZipStorageAdapter;
 
 // const ARRAY_PATH: &'static str = "/array";
 const ARRAY_PATH: &str = "/";
@@ -22,8 +25,6 @@ const ARRAY_PATH: &str = "/";
 fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'static>(
     storage: Arc<TStorage>,
 ) -> Result<Array<TStorage>, Box<dyn std::error::Error>> {
-    use zarrs::array::{codec, DataType, FillValue};
-
     // Create an array
     let array = zarrs::array::ArrayBuilder::new(
         vec![8, 8], // array shape
@@ -145,10 +146,6 @@ fn zip_dir(
 }
 
 fn zip_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
-    use walkdir::WalkDir;
-    use zarrs::node::Node;
-    use zarrs_zip::ZipStorageAdapter;
-
     // Create a store
     let path = tempfile::TempDir::new()?;
     let mut zarr_dir = path.path().to_path_buf();

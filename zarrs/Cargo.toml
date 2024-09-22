@@ -13,7 +13,8 @@ categories = ["encoding"]
 exclude = [".dockerignore", ".github", ".editorconfig", "Dockerfile", "coverage.sh", "TODO.md", "tests/"]
 
 [features]
-default = ["ndarray", "blosc", "crc32c", "gzip", "sharding", "transpose", "zstd"]
+default = ["filesystem", "ndarray", "blosc", "crc32c", "gzip", "sharding", "transpose", "zstd"]
+filesystem = ["dep:zarrs_filesystem"] # Re-export zarrs_filesystem as zarrs::filesystem
 bitround = [] # Enable the experimental bitround codec
 blosc = ["dep:blosc-sys"] # Enable the blosc codec
 bz2 = ["dep:bzip2"] # Enable the experimental bz2 codec
@@ -62,6 +63,7 @@ serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_orde
 thiserror = "1.0.61"
 thread_local = "1.1.8"
 unsafe_cell_slice = "0.1.0"
+zarrs_filesystem = { workspace = true, optional = true }
 zarrs_metadata = { workspace = true }
 zarrs_storage = { workspace = true }
 zfp-sys = {version = "0.1.15", features = ["static"], optional = true }
@@ -84,21 +86,21 @@ zarrs_opendal = { workspace = true }
 zarrs_object_store = { workspace = true }
 zarrs_filesystem = { workspace = true }
 zarrs_zip = { workspace = true }
-zip = { version = "2.1.3" }
+zip = { workspace = true }
 
 [[example]]
 name = "array_write_read"
-required-features = ["ndarray"]
+required-features = ["filesystem", "ndarray"]
 doc-scrape-examples = true
 
 [[example]]
 name = "array_write_read_ndarray"
-required-features = ["ndarray"]
+required-features = ["filesystem", "ndarray"]
 doc-scrape-examples = true
 
 [[example]]
 name = "array_write_read_string"
-required-features = ["ndarray"]
+required-features = ["filesystem", "ndarray"]
 doc-scrape-examples = true
 
 [[example]]
@@ -118,16 +120,16 @@ doc-scrape-examples = true
 
 [[example]]
 name = "rectangular_array_write_read"
-required-features = ["ndarray"]
+required-features = ["filesystem", "ndarray"]
 doc-scrape-examples = true
 
 [[example]]
 name = "sharded_array_write_read"
-required-features = ["ndarray", "sharding"]
+required-features = ["filesystem", "ndarray", "sharding"]
 
 [[example]]
 name = "zip_array_write_read"
-required-features = ["ndarray"]
+required-features = ["filesystem", "ndarray"]
 doc-scrape-examples = false
 
 [[bench]]
