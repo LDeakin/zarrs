@@ -1,0 +1,12 @@
+{
+    "0.0": {
+        "path": "virtualizarr.nc", 
+        "offset": 8760, 
+        "length": 128
+    }, 
+    "1.0": {
+        "path": "virtualizarr.nc", 
+        "offset": 8888, 
+        "length": 128
+    }
+}

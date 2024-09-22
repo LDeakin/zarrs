@@ -12,6 +12,8 @@ pub use storage_transformer_chain::StorageTransformerChain;
 mod storage_transformer_plugin;
 pub use storage_transformer_plugin::StorageTransformerPlugin;
 
+mod chunk_manifest_json; // NOTE: Intentionally private (but registered)
+
 use std::sync::Arc;
 
 use crate::{
