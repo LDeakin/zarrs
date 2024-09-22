@@ -366,11 +366,8 @@ impl ArrayBuilder {
 #[cfg(test)]
 mod tests {
     use crate::{
-        array::{
-            chunk_grid::RegularChunkGrid, chunk_key_encoding::V2ChunkKeyEncoding,
-            storage_transformer::UsageLogStorageTransformer,
-        },
-        storage::store::MemoryStore,
+        array::{chunk_grid::RegularChunkGrid, chunk_key_encoding::V2ChunkKeyEncoding},
+        storage::{storage_adapter::usage_log::UsageLogStorageAdapter, store::MemoryStore},
     };
 
     use super::*;
@@ -407,13 +404,11 @@ mod tests {
         builder.chunk_key_encoding(V2ChunkKeyEncoding::new_dot().into());
         builder.chunk_key_encoding_default_separator(ChunkKeySeparator::Dot); // overrides previous
         let log_writer = Arc::new(std::sync::Mutex::new(std::io::stdout()));
-        let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
-            chrono::Utc::now().format("[%T%.3f] ").to_string()
-        }));
-
-        builder.storage_transformers(StorageTransformerChain::new(vec![usage_log]));
 
         let storage = Arc::new(MemoryStore::new());
+        let storage = Arc::new(UsageLogStorageAdapter::new(storage, log_writer, || {
+            chrono::Utc::now().format("[%T%.3f] ").to_string()
+        }));
         println!("{:?}", builder.build(storage.clone(), "/"));
         let array = builder.build(storage, "/").unwrap();
         assert_eq!(array.shape(), &[8, 8]);

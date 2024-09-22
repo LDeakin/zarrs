@@ -363,34 +363,30 @@ mod tests {
 
     use crate::{
         array::{
-            codec::CodecOptions,
-            storage_transformer::{
-                PerformanceMetricsStorageTransformer, StorageTransformerExtension,
-            },
-            ArrayBuilder, ArrayChunkCacheExt, ChunkCacheDecodedLruChunkLimit,
+            codec::CodecOptions, ArrayBuilder, ArrayChunkCacheExt, ChunkCacheDecodedLruChunkLimit,
             ChunkCacheDecodedLruSizeLimit, ChunkCacheEncodedLruChunkLimit,
             ChunkCacheEncodedLruSizeLimit, ChunkCacheType, DataType, FillValue,
         },
         array_subset::ArraySubset,
-        storage::store::MemoryStore,
+        storage::{
+            storage_adapter::performance_metrics::PerformanceMetricsStorageAdapter,
+            store::MemoryStore,
+        },
     };
 
     fn array_chunk_cache_impl<TChunkCache: ChunkCache<CT>, CT: ChunkCacheType>(
         cache: TChunkCache,
         thread_local: bool,
     ) {
-        let performance_metrics = Arc::new(PerformanceMetricsStorageTransformer::new());
         let store = Arc::new(MemoryStore::default());
-        let store = performance_metrics
-            .clone()
-            .create_readable_writable_transformer(store);
+        let store = Arc::new(PerformanceMetricsStorageAdapter::new(store));
         let builder = ArrayBuilder::new(
             vec![8, 8], // array shape
             DataType::UInt8,
             vec![4, 4].try_into().unwrap(), // regular chunk shape
             FillValue::from(0u8),
         );
-        let array = builder.build(store, "/").unwrap();
+        let array = builder.build(store.clone(), "/").unwrap();
 
         let data: Vec<u8> = (0..array.shape().into_iter().product())
             .map(|i| i as u8)
@@ -402,7 +398,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(performance_metrics.reads(), 0);
+        assert_eq!(store.reads(), 0);
         assert!(cache.is_empty());
         assert_eq!(
             array
@@ -414,7 +410,7 @@ mod tests {
                 .unwrap(),
             ndarray::array![[24, 25, 26, 27], [32, 33, 34, 35]].into_dyn()
         );
-        assert_eq!(performance_metrics.reads(), 2);
+        assert_eq!(store.reads(), 2);
         if !thread_local {
             assert_eq!(cache.len(), 2);
         }
@@ -437,7 +433,7 @@ mod tests {
             .into_dyn()
         );
         if !thread_local {
-            assert_eq!(performance_metrics.reads(), 2);
+            assert_eq!(store.reads(), 2);
             assert_eq!(cache.len(), 2);
             assert!(cache.get(&[0, 0]).is_some());
             assert!(cache.get(&[1, 0]).is_some());
@@ -455,7 +451,7 @@ mod tests {
             ndarray::array![[9, 10], [17, 18],].into_dyn()
         );
         if !thread_local {
-            assert_eq!(performance_metrics.reads(), 2);
+            assert_eq!(store.reads(), 2);
             assert_eq!(cache.len(), 2);
             assert!(cache.get(&[0, 0]).is_some());
             assert!(cache.get(&[1, 0]).is_some());
@@ -483,7 +479,7 @@ mod tests {
             .into_dyn()
         );
         if !thread_local {
-            assert_eq!(performance_metrics.reads(), 2);
+            assert_eq!(store.reads(), 2);
             assert_eq!(cache.len(), 2);
             assert!(cache.get(&[0, 0]).is_some());
             assert!(cache.get(&[1, 0]).is_some());
@@ -497,7 +493,7 @@ mod tests {
             Arc::new(vec![4, 5, 6, 7, 12, 13, 14, 15, 20, 21, 22, 23, 28, 29, 30, 31].into())
         );
         if !thread_local {
-            assert_eq!(performance_metrics.reads(), 3);
+            assert_eq!(store.reads(), 3);
             assert_eq!(cache.len(), 2);
             assert!(cache.get(&[0, 1]).is_some());
             assert!(cache.get(&[0, 0]).is_none() || cache.get(&[1, 0]).is_none());

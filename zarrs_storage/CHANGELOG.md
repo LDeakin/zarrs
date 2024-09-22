@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `storage_adapter::usage_log::UsageLogStorageAdapter`
+ - Add `storage_adapter::performance_metrics::PerformanceMetricsStorageAdapter`
+
 ## [0.2.0] - 2024-09-15
 
 ### Changed 

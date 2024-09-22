@@ -1,7 +1,6 @@
 use futures::TryStreamExt;
-use zarrs::{
-    array::storage_transformer::{StorageTransformerExtension, UsageLogStorageTransformer},
-    storage::AsyncReadableWritableListableStorage,
+use zarrs::storage::{
+    storage_adapter::usage_log::UsageLogStorageAdapter, AsyncReadableWritableListableStorage,
 };
 
 async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,12 +23,9 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
                 std::io::stdout(),
                 //    )
             ));
-            let usage_log = Arc::new(UsageLogStorageTransformer::new(log_writer, || {
+            store = Arc::new(UsageLogStorageAdapter::new(store, log_writer, || {
                 chrono::Utc::now().format("[%T%.3f] ").to_string()
             }));
-            store = usage_log
-                .clone()
-                .create_async_readable_writable_listable_transformer(store);
         }
     }
 
