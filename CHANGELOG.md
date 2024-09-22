@@ -12,12 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Highlights / Major Changes
  - `zarrs` has been split into 3 core crates: `zarrs`, `zarrs_metadata`, and `zarrs_storage`
    - `zarrs_storage` and `zarrs_metadata` are re-exported as the `storage` and `metadata` modules
- - Store implementations have been moved into separate crates: `zarrs_filesystem`, `zarrs_http`, `zarrs_object_store`, `zarrs_opendal`, `zarrs_zip`
- - Chunk caching support via `ArrayChunkCacheExt`
+ - Store implementations have been moved into separate crates: `zarrs_{filesystem,http,object_store,opendal,zip}`
+   - `zarrs_filesystem` is re-exported as the `filesystem` module with the `filesystem` feature (enabled by default)
  - Direct IO support for Linux in `FilesystemStore`
  - **Implicit groups are no longer supported**
    - It is the responsibility of the `zarrs` consumer to explicitly write group metadata when creating a hierarchy
  - Codecs must now be `Arc`'d instead of `Box`'d
+ - Fixes a performance regression introduced in 0.16 when reading sharded arrays
  - Check the full release notes for all changes. This release has many breaking changes due to items being removed, moved, renamed, and deprecated.
 
 ### Added
