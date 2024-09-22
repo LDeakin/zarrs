@@ -7,31 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Add `ArrayToBytesCodecTraits::decode_into` and `[Async]ArrayPartialDecoderTraits::partial_decode_into`
-  - This revisits the array view API that was removed in 0.16 [#39](https://github.com/LDeakin/zarrs/pull/39), but simpler and less public
-  - Resolves a performance regression introduced in 0.16 when decoding sharded arrays with `Array::[async_]retrieve_array_subset_opt`.
-
-### Changed
-- **Breaking**: Change `Contiguous[Linearised]Indices` iterators to return indices only
-- **Breaking**: Remove lifetime constraints in partial decoder API by utilising `Arc`'d codecs
-- **Breaking**: `ShardingCodec::new` `CodecChain` parameters now must be in an `Arc`
-- **Breaking**: Change `UsageLogStorageTransformer` to `UsageLogStorageAdapter` and move to `zarrs_storage`
-- **Breaking**: Change `PerformanceMetricsStorageTransformer` to `PerformanceMetricsStorageAdapter` and move to `zarrs_storage`
-- **Breaking**: Storage transformer refactor:
-  - Add `StorageTransformerPlugin` for storage transformer registration instead of generic `Plugin`
-  - Remove several `StorageTransformerExtension` trait methods no longer needed
-  - Change `StorageTransformerExtension::create_metadata` to return `MetadataV3` instead of an `Option`
-  - `StorageTransformerExtension::[async_]create_*_transformer` methods are now fallible
-  - `StorageTransformerExtension::async_create_*_transformer` methods are now async
-  - `StorageTransformerChain::from_metadata` and `try_create_storage_transformer` now has a `path: &NodePath` parameter
-
-### Fixed
-- Fixed an unnecessary copy in `Array::[async_]retrieve_chunk_if_exists_opt`
-- Fixed `CodecOptions` not being forwarded in `Array::retrieve_chunk_subset_opt` on the fast path
-- Fixed missing fast path in `Array::[async_]retrieve_chunk_subset_opt`
-
-## [0.17.0-beta.1] - 2024-09-16
+## [0.17.0-beta.2] - 2024-09-23
 
 ### Highlights / Major Changes
  - `zarrs` has been split into 3 core crates: `zarrs`, `zarrs_metadata`, and `zarrs_storage`
@@ -62,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - It is equal to the inner chunk shape unless the `transpose` codec precedes `sharding_indexed`
  - **Breaking**: Add `ArrayToArrayCodecTraits::compute_decoded_shape()`
    - Needed for `ArrayShardedExt::effective_inner_chunk_shape`
+ - Add `ArrayToBytesCodecTraits::decode_into` and `[Async]ArrayPartialDecoderTraits::partial_decode_into`
+   - This revisits the array view API that was removed in 0.16 [#39](https://github.com/LDeakin/zarrs/pull/39), but simpler and less public
+   - Resolves a performance regression introduced in 0.16 when decoding sharded arrays with `Array::[async_]retrieve_array_subset_opt`.
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
@@ -99,12 +78,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - `zarrs`
    - `zarrs_storage` (re-exported as `storage` module)
    - `zarrs_metadata` (re-exported as `metadata` module)
-   - `zarrs_filesystem`
+   - `zarrs_filesystem` (re-exported as `filesystem` module with `filesystem` feature, enabled by default)
    - `zarrs_http`
    - `zarrs_object_store`
    - `zarrs_opendal`
    - `zarrs_zip`
  - **Breaking**: Codecs no longer need to implement `Clone` but must be in `Arc` instead of `Box`
+ - **Breaking**: Change `Contiguous[Linearised]Indices` iterators to return indices only
+ - **Breaking**: Remove lifetime constraints in partial decoder API by utilising `Arc`'d codecs
+ - **Breaking**: `ShardingCodec::new` `CodecChain` parameters now must be in an `Arc`
+ - **Breaking**: Change `UsageLogStorageTransformer` to `UsageLogStorageAdapter` and move to `zarrs_storage`
+ - **Breaking**: Change `PerformanceMetricsStorageTransformer` to `PerformanceMetricsStorageAdapter` and move to `zarrs_storage`
+ - **Breaking**: Storage transformer refactor:
+   - Add `StorageTransformerPlugin` for storage transformer registration instead of generic `Plugin`
+   - Remove several `StorageTransformerExtension` trait methods no longer needed
+   - Change `StorageTransformerExtension::create_metadata` to return `MetadataV3` instead of an `Option`
+   - `StorageTransformerExtension::[async_]create_*_transformer` methods are now fallible
+   - `StorageTransformerExtension::async_create_*_transformer` methods are now async
+   - `StorageTransformerChain::from_metadata` and `try_create_storage_transformer` now has a `path: &NodePath` parameter
 
 ### Removed
  - **Breaking**: Remove `array::NonZeroError`, use `std::num::TryFromIntError` instead
@@ -129,6 +120,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Make `ArrayRepresentationBase` pub so that `{Array,Chunk}Representation` are not opaque
  - Fix `ArrayShardedExt::inner_chunk_grid` when applied on a sharded array with the `transpose` codec preceding `sharding_indexed`
  - Fix `ZipStorageAdapter` on windows
+ - Fixed an unnecessary copy in `Array::[async_]retrieve_chunk_if_exists_opt`
+ - Fixed `CodecOptions` not being forwarded in `Array::retrieve_chunk_subset_opt` on the fast path
+ - Fixed missing fast path in `Array::[async_]retrieve_chunk_subset_opt`
+
+## [0.17.0-beta.1] - 2024-09-16
 
 ## [0.17.0-beta.0] - 2024-09-06
 
@@ -1069,6 +1065,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial public release
 
 [unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.4...HEAD
+[0.17.0-beta.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.2
 [0.17.0-beta.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.1
 [0.17.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.0
 [0.16.4]: https://github.com/LDeakin/zarrs/releases/tag/v0.16.4
