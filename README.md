@@ -29,7 +29,7 @@ use zarrs::array::{ArrayBuilder, DataType, FillValue, ZARR_NAN_F32};
 use zarrs::array::codec::GzipCodec; // requires gzip feature
 use zarrs::array_subset::ArraySubset;
 use zarrs::storage::ReadableWritableListableStorage;
-use zarrs_filesystem::FilesystemStore;
+use zarrs::filesystem::FilesystemStore; // requires filesystem feature
 
 // Create a filesystem store
 let store_path: PathBuf = "/path/to/hierarchy.zarr".into();
@@ -122,7 +122,8 @@ println!("{array_ndarray:4}");
 [zarrs_ffi_doc]: https://img.shields.io/docsrs/zarrs_ffi?label=
 [zarrs_ffi]: https://github.com/LDeakin/zarrs_ffi
 
-#### [zarrs_tools] [![zarrs_tools_ver]](https://crates.io/crates/zarrs_tools) [![zarrs_tools_doc]](https://docs.rs/zarrs_tools)
+#### [zarrs_tools]
+[![zarrs_tools_ver]](https://crates.io/crates/zarrs_tools) [![zarrs_tools_doc]](https://docs.rs/zarrs_tools)
 
 [zarrs_tools]: https://github.com/LDeakin/zarrs_tools
 [zarrs_tools_ver]: https://img.shields.io/crates/v/zarrs_tools.svg

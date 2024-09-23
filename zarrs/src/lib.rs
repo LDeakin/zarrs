@@ -82,7 +82,7 @@
 //! use zarrs::array::codec::GzipCodec; // requires gzip feature
 //! use zarrs::array_subset::ArraySubset;
 //! use zarrs::storage::ReadableWritableListableStorage;
-//! use zarrs_filesystem::FilesystemStore;
+//! use zarrs::filesystem::FilesystemStore; // requires filesystem feature
 //!
 //! // Create a filesystem store
 //! let store_path: PathBuf = "/path/to/hierarchy.zarr".into();
