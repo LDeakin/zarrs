@@ -160,6 +160,7 @@
 //!
 //! ## Crate Features
 //! #### Default
+//!  - `filesystem`: Re-export `zarrs_filesystem` as `zarrs::filesystem`
 //!  - `ndarray`: [`ndarray`] utility functions for [`Array`](crate::array::Array).
 //!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
 //!
