@@ -11,6 +11,10 @@
 //! # Ok::<_, Box<dyn std::error::Error>>(())
 //! ```
 //!
+//! ## Version Compatibility Matrix
+//!
+#![doc = include_str!("../doc/version_compatibility_matrix.md")]
+//!
 //! ## Licence
 //! `zarrs_opendal` is licensed under either of
 //! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_opendal/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or

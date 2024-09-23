@@ -17,6 +17,9 @@ let operator = opendal::Operator::new(builder)?.finish();
 let store: AsyncReadableStorage = Arc::new(AsyncOpendalStore::new(operator));
 ```
 
+## Version Compatibility Matrix
+See [doc/version_compatibility_matrix.md](./doc/version_compatibility_matrix.md).
+
 ## Licence
 `zarrs_opendal` is licensed under either of
  - the Apache License, Version 2.0 [LICENSE-APACHE](./LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
