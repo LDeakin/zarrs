@@ -87,7 +87,7 @@ fn array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         )
     })?;
 
-    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+    let subset_all = array.subset_all();
     let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
     println!("store_chunk [0, 0] and [0, 1]:\n{data_all:+4.1}\n");
 

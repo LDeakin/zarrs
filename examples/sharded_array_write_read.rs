@@ -109,8 +109,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     // Read the whole array
-    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec()); // the center 4x2 region
-    let data_all = array.retrieve_array_subset_ndarray::<u16>(&subset_all)?;
+    let data_all = array.retrieve_array_subset_ndarray::<u16>(&array.subset_all())?;
     println!("The whole array is:\n{data_all}\n");
 
     // Read a shard back from the store

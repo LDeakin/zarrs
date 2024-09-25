@@ -53,9 +53,8 @@ async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Err
     );
 
     // Read the whole array
-    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
     let data_all = array
-        .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
+        .async_retrieve_array_subset_ndarray::<f32>(&array.subset_all())
         .await?;
     println!("The whole array is:\n{data_all}\n");
 

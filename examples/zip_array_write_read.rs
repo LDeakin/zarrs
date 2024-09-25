@@ -97,8 +97,7 @@ fn read_array_from_store<TStorage: ReadableStorageTraits + 'static>(
     array: Array<TStorage>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Read the whole array
-    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
-    let data_all = array.retrieve_array_subset_ndarray::<f32>(&subset_all)?;
+    let data_all = array.retrieve_array_subset_ndarray::<f32>(&array.subset_all())?;
     println!("The whole array is:\n{data_all}\n");
 
     // Read a chunk back from the store

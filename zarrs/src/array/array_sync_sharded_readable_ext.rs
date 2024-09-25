@@ -514,10 +514,7 @@ mod tests {
             .map(|i| i as u16)
             .collect();
 
-        array.store_array_subset_elements(
-            &ArraySubset::new_with_shape(array.shape().to_vec()),
-            &data,
-        )?;
+        array.store_array_subset_elements(&array.subset_all(), &data)?;
 
         let cache = ArrayShardedReadableExtCache::new(&array);
         assert_eq!(array.is_sharded(), sharded);
@@ -707,10 +704,7 @@ mod tests {
         let data: Vec<u32> = (0..array.shape().into_iter().product())
             .map(|i| i as u32)
             .collect();
-        array.store_array_subset_elements(
-            &ArraySubset::new_with_shape(array.shape().to_vec()),
-            &data,
-        )?;
+        array.store_array_subset_elements(&array.subset_all(), &data)?;
 
         // Retrieving an inner chunk should be exactly 2 reads: index + chunk
         let inner_chunk_subset = inner_chunk_grid.subset(&[0, 0, 0], array.shape())?.unwrap();

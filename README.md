@@ -71,14 +71,13 @@ array.store_chunk_elements::<f32>(
     &[0.2, 0.3, 1.2, 1.3]
 )?;
 array.store_array_subset_ndarray::<f32, _>(
-    &[1, 1], // array index
+    &[1, 1], // array index (start of subset)
     ndarray::array![[-1.1, -1.2], [-2.1, -2.2]]
 )?;
 array.erase_chunk(&[1, 1])?;
 
 // Retrieve all array elements as an ndarray
-let array_subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
-let array_ndarray = array.retrieve_array_subset_ndarray::<f32>(&array_subset_all)?;
+let array_ndarray = array.retrieve_array_subset_ndarray::<f32>(&array.subset_all())?;
 println!("{array_ndarray:4}");
 // [[ NaN,  NaN,  0.2,  0.3],
 //  [ NaN, -1.1, -1.2,  1.3],

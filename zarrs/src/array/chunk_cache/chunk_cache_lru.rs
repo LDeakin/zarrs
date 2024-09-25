@@ -392,10 +392,7 @@ mod tests {
             .map(|i| i as u8)
             .collect();
         array
-            .store_array_subset_elements(
-                &ArraySubset::new_with_shape(array.shape().to_vec()),
-                &data,
-            )
+            .store_array_subset_elements(&array.subset_all(), &data)
             .unwrap();
 
         assert_eq!(store.reads(), 0);

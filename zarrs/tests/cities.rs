@@ -17,7 +17,6 @@ use zarrs::{
         },
         ArrayBuilder, ArrayMetadataOptions, DataType, FillValue,
     },
-    array_subset::ArraySubset,
     metadata::v3::array::codec::vlen::VlenCodecConfiguration,
     storage::{store::MemoryStore, ReadableWritableListableStorage},
 };
@@ -74,7 +73,7 @@ fn cities_impl(
     let array = builder.build(store.clone(), "/")?;
     array.store_metadata_opt(&ArrayMetadataOptions::default().set_include_zarrs_metadata(false))?;
 
-    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+    let subset_all = array.subset_all();
     array.store_array_subset_elements(&subset_all, &cities)?;
     let cities_out = array.retrieve_array_subset_elements::<String>(&subset_all)?;
     assert_eq!(cities, cities_out);

@@ -269,6 +269,8 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
 ///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
 ///
+/// An [`ArraySubset`] spanning the entire array can be retrieved with [`subset_all`](Array::subset_all).
+///
 /// ## Parallelism and Concurrency
 /// ### Sync API
 /// Codecs run in parallel using a dedicated threadpool.
@@ -607,6 +609,12 @@ impl<TStorage: ?Sized> Array<TStorage> {
             .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec()))
     }
 
+    /// Return an array subset that spans the entire array.
+    #[must_use]
+    pub fn subset_all(&self) -> ArraySubset {
+        ArraySubset::new_with_shape(self.shape().to_vec())
+    }
+
     /// Return the shape of the chunk at `chunk_indices`.
     ///
     /// # Errors
@@ -932,7 +940,7 @@ mod tests {
             )
             .unwrap();
 
-        let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+        let subset_all = array.subset_all();
         let data_all = array
             .retrieve_array_subset_elements::<f32>(&subset_all)
             .unwrap();
@@ -1090,7 +1098,7 @@ mod tests {
     //             let subset = ArraySubset::new_with_ranges(&[i..i + 1, 0..4]);
     //             array.store_array_subset(&subset, vec![j; 4]).unwrap();
     //         });
-    //         let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+    //         let subset_all = array.subset_all();
     //         let data_all = array.retrieve_array_subset(&subset_all).unwrap();
     //         let all_equal = data_all.iter().all_equal_value() == Ok(&j);
     //         if expect_equal {

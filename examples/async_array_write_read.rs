@@ -93,7 +93,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         .try_for_each_concurrent(None, store_chunk)
         .await?;
 
-    let subset_all = ArraySubset::new_with_shape(array.shape().to_vec());
+    let subset_all = array.subset_all();
     let data_all = array
         .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
         .await?;
