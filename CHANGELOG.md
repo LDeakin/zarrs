@@ -7,10 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
- - Add `Array::subset_all()`
-
-## [0.17.0-beta.2] - 2024-09-23
+## [0.17.0-beta.3] - 2024-09-26
 
 ### Highlights / Major Changes
  - `zarrs` has been split into 3 core crates: `zarrs`, `zarrs_metadata`, and `zarrs_storage`
@@ -45,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add `ArrayToBytesCodecTraits::decode_into` and `[Async]ArrayPartialDecoderTraits::partial_decode_into`
    - This revisits the array view API that was removed in 0.16 [#39](https://github.com/LDeakin/zarrs/pull/39), but simpler and less public
    - Resolves a performance regression introduced in 0.16 when decoding sharded arrays with `Array::[async_]retrieve_array_subset_opt`.
+ - Add `Array::subset_all()`
 
 ### Changed
  - **Breaking**: `Arc` instead of `Box` partial decoders
@@ -127,6 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Fixed an unnecessary copy in `Array::[async_]retrieve_chunk_if_exists_opt`
  - Fixed `CodecOptions` not being forwarded in `Array::retrieve_chunk_subset_opt` on the fast path
  - Fixed missing fast path in `Array::[async_]retrieve_chunk_subset_opt`
+
+## [0.17.0-beta.2] - 2024-09-23
 
 ## [0.17.0-beta.1] - 2024-09-16
 
@@ -1069,6 +1069,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial public release
 
 [unreleased]: https://github.com/LDeakin/zarrs/compare/v0.16.4...HEAD
+[0.17.0-beta.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.3
 [0.17.0-beta.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.2
 [0.17.0-beta.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.1
 [0.17.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.0
