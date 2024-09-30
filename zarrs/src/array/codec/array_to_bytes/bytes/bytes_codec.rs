@@ -201,12 +201,10 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         match decoded_representation.data_type().size() {
-            DataTypeSize::Variable => {
-                return Err(CodecError::UnsupportedDataType(
-                    decoded_representation.data_type().clone(),
-                    super::IDENTIFIER.to_string(),
-                ))
-            }
+            DataTypeSize::Variable => Err(CodecError::UnsupportedDataType(
+                decoded_representation.data_type().clone(),
+                super::IDENTIFIER.to_string(),
+            )),
             DataTypeSize::Fixed(data_type_size) => Ok(BytesRepresentation::FixedSize(
                 decoded_representation.num_elements() * data_type_size as u64,
             )),

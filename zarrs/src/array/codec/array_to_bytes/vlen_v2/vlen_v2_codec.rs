@@ -153,12 +153,10 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
     ) -> Result<BytesRepresentation, CodecError> {
         match decoded_representation.data_type().size() {
             DataTypeSize::Variable => Ok(BytesRepresentation::UnboundedSize),
-            DataTypeSize::Fixed(_) => {
-                return Err(CodecError::UnsupportedDataType(
-                    decoded_representation.data_type().clone(),
-                    super::IDENTIFIER.to_string(),
-                ))
-            }
+            DataTypeSize::Fixed(_) => Err(CodecError::UnsupportedDataType(
+                decoded_representation.data_type().clone(),
+                super::IDENTIFIER.to_string(),
+            )),
         }
     }
 }
