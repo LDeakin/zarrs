@@ -157,6 +157,14 @@ impl ArraySubset {
         Self { start, shape }
     }
 
+    /// Return the array subset as a vec of ranges.
+    #[must_use]
+    pub fn to_ranges(&self) -> Vec<Range<u64>> {
+        std::iter::zip(&self.start, &self.shape)
+            .map(|(&start, &size)| start..start + size)
+            .collect()
+    }
+
     /// Bound the array subset to the domain within `end` (exclusive).
     ///
     /// # Errors
@@ -628,6 +636,7 @@ mod tests {
         assert!(array_subset0.inbounds(&[10, 10]));
         assert!(!array_subset0.inbounds(&[2, 2]));
         assert!(!array_subset0.inbounds(&[10, 10, 10]));
+        assert_eq!(array_subset0.to_ranges(), vec![1..5, 2..6]);
 
         let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);
         assert!(array_subset0.overlap(&array_subset2).is_err());
