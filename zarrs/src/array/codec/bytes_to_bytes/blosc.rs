@@ -149,7 +149,7 @@ fn blosc_typesize(src: &[u8]) -> Option<usize> {
             std::ptr::addr_of_mut!(flags),
         );
     };
-    (typesize != 0 && flags != 0).then_some(typesize)
+    (typesize != 0).then_some(typesize)
 }
 
 /// Returns the length of the uncompress bytes of a `blosc` buffer.

@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add `ArraySubset::to_ranges()`
 
+### Fixed
+ - Fixed `blosc` codec partial decoding with `noshuffle`
+
 ## [0.17.0-beta.3] - 2024-09-26
 
 ### Highlights / Major Changes
