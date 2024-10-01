@@ -57,7 +57,7 @@ impl StoreKey {
     /// A key cannot be an empty string.
     #[must_use]
     pub fn validate(key: &str) -> bool {
-        !key.starts_with('/') && !key.ends_with('/') && !key.eq("")
+        !key.starts_with('/') && !key.ends_with('/') && !key.is_empty()
     }
 
     /// Returns true if the key has prefix `prefix`.
