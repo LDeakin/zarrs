@@ -16,7 +16,7 @@ derive_more = { version = "1.0.0", features = ["display", "from"] }
 half = { version = "2.0.0", features = ["bytemuck"] }
 monostate = "0.1.0"
 num = { version = "0.4.1" }
-serde = { version = "1.0.184", features = ["derive"] }
+serde = { version = "1.0.185", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
 serde_repr = "0.1.19"
 thiserror = "1.0.61"
