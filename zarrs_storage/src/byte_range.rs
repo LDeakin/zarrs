@@ -215,12 +215,12 @@ pub unsafe fn extract_byte_ranges_concat_unchecked(
     .unwrap();
     let mut out = Vec::with_capacity(out_size);
     let out_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut out);
-    let out_slice = out_slice.as_mut_slice();
     let mut offset: usize = 0;
     for byte_range in byte_ranges {
         let start = usize::try_from(byte_range.start(bytes.len() as u64)).unwrap();
         let byte_range_len = usize::try_from(byte_range.length(bytes.len() as u64)).unwrap();
-        out_slice[offset..offset + byte_range_len]
+        out_slice
+            .index_mut(offset..offset + byte_range_len)
             .copy_from_slice(&bytes[start..start + byte_range_len]);
         offset += byte_range_len;
     }

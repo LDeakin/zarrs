@@ -418,7 +418,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                                     .remove(0)
                                     .into_owned();
                                 update_bytes_flen(
-                                    unsafe { output.as_mut_slice() },
+                                    &output,
                                     array_subset.shape(),
                                     &bytes.into_fixed()?,
                                     &shard_subset_overlap.relative_to(array_subset.start())?,

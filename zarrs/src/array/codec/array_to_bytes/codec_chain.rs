@@ -2,6 +2,8 @@
 
 use std::sync::Arc;
 
+use unsafe_cell_slice::UnsafeCellSlice;
+
 use crate::{
     array::{
         array_bytes::update_bytes_flen,
@@ -307,7 +309,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         &self,
         mut bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output: &mut [u8],
+        output: &UnsafeCellSlice<u8>,
         output_shape: &[u64],
         output_subset: &ArraySubset,
         options: &CodecOptions,

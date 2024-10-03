@@ -67,6 +67,7 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 
 #[cfg(feature = "async")]
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
+use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
@@ -364,7 +365,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     unsafe fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output: &mut [u8],
+        output: &UnsafeCellSlice<u8>,
         output_shape: &[u64],
         output_subset: &ArraySubset,
         options: &CodecOptions,
@@ -420,7 +421,7 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     async unsafe fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output: &mut [u8],
+        output: &UnsafeCellSlice<u8>,
         output_shape: &[u64],
         output_subset: &ArraySubset,
         options: &CodecOptions,
@@ -633,7 +634,7 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         &self,
         bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output: &mut [u8],
+        output: &UnsafeCellSlice<u8>,
         output_shape: &[u64],
         output_subset: &ArraySubset,
         options: &CodecOptions,

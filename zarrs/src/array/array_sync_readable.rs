@@ -471,7 +471,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     unsafe fn retrieve_chunk_into(
         &self,
         chunk_indices: &[u64],
-        output: &mut [u8],
+        output: &UnsafeCellSlice<u8>,
         output_shape: &[u64],
         output_subset: &ArraySubset,
         options: &CodecOptions,
@@ -733,12 +733,11 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                             let retrieve_chunk = |chunk_indices: Vec<u64>| {
                                 let chunk_subset = self.chunk_subset(&chunk_indices)?;
                                 let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
-                                let output = unsafe { output.as_mut_slice() };
                                 unsafe {
                                     self.retrieve_chunk_subset_into(
                                         &chunk_indices,
                                         &chunk_subset_overlap.relative_to(chunk_subset.start())?,
-                                        output,
+                                        &output,
                                         array_subset.shape(),
                                         &chunk_subset_overlap.relative_to(array_subset.start())?,
                                         &options,
@@ -750,7 +749,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 //     &options,
                                 // )?;
                                 // update_bytes_flen(
-                                //     unsafe { output.as_mut_slice() },
+                                //     &output,
                                 //     array_subset.shape(),
                                 //     &chunk_subset_bytes.into_fixed()?,
                                 //     &chunk_subset_overlap.relative_to(array_subset.start())?,
@@ -845,7 +844,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        output: &mut [u8],
+        output: &UnsafeCellSlice<u8>,
         output_shape: &[u64],
         output_subset: &ArraySubset,
         options: &CodecOptions,

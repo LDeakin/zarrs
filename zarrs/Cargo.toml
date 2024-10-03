@@ -1,6 +1,6 @@
 [package]
 name = "zarrs"
-version = "0.17.0"
+version = "0.17.1"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.76"
@@ -62,7 +62,7 @@ serde = { version = "1.0.184", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
 thiserror = "1.0.61"
 thread_local = "1.1.8"
-unsafe_cell_slice = "0.1.0"
+unsafe_cell_slice = "0.2.0"
 zarrs_filesystem = { workspace = true, optional = true }
 zarrs_metadata = { workspace = true }
 zarrs_storage = { workspace = true }
