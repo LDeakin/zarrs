@@ -265,7 +265,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         };
                         let decoded_bytes = decoded_bytes.into_fixed()?;
                         update_bytes_flen(
-                            unsafe { out_array_subset_slice.as_mut_slice() },
+                            &out_array_subset_slice,
                             array_subset.shape(),
                             &decoded_bytes,
                             &chunk_subset_overlap
@@ -557,7 +557,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     ArraySubset,
                                 ) = subset_and_decoded_chunk?;
                                 update_bytes_flen(
-                                    unsafe { shard_slice.as_mut_slice() },
+                                    &shard_slice,
                                     array_subset.shape(),
                                     &chunk_subset_bytes.into(),
                                     &chunk_subset_overlap
@@ -596,7 +596,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     .as_ne_bytes()
                                     .repeat(chunk_subset_overlap.num_elements_usize());
                                 update_bytes_flen(
-                                    unsafe { shard_slice.as_mut_slice() },
+                                    &shard_slice,
                                     array_subset.shape(),
                                     &filled_chunk.into(),
                                     &chunk_subset_overlap

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Bump `unsafe_cell_slice` to 0.2.0
+- **Breaking**: Change `output` parameter of `decode_into` codec trait methods to `&UnsafeCellSlice<u8>`
+
 ## [0.17.0] - 2024-10-02
 
 ### Highlights / Major Changes

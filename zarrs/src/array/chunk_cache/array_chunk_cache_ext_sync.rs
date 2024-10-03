@@ -404,7 +404,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
                                 };
 
                                 update_bytes_flen(
-                                    unsafe { output.as_mut_slice() },
+                                    &output,
                                     array_subset.shape(),
                                     fixed,
                                     &chunk_subset_overlap.relative_to(array_subset.start())?,

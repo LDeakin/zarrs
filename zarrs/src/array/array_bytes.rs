@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use thiserror::Error;
+use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
@@ -261,7 +262,7 @@ fn validate_bytes(
 /// This function is used internally by various array/codec methods to write the bytes of a chunk subset into an output with an associated array subset.
 /// This approach only works for fixed length data types.
 pub fn update_bytes_flen(
-    output_bytes: &mut [u8],
+    output_bytes: &UnsafeCellSlice<u8>,
     output_shape: &[u64],
     subset_bytes: &RawBytes,
     subset: &ArraySubset,
@@ -285,8 +286,11 @@ pub fn update_bytes_flen(
         let output_offset = usize::try_from(array_subset_element_index).unwrap() * data_type_size;
         debug_assert!((output_offset + length) <= output_bytes.len());
         debug_assert!((decoded_offset + length) <= subset_bytes.len());
-        output_bytes[output_offset..output_offset + length]
-            .copy_from_slice(&subset_bytes[decoded_offset..decoded_offset + length]);
+        unsafe {
+            output_bytes
+                .index_mut(output_offset..output_offset + length)
+                .copy_from_slice(&subset_bytes[decoded_offset..decoded_offset + length]);
+        }
         decoded_offset += length;
     }
 }
@@ -382,13 +386,16 @@ pub fn update_array_bytes<'a>(
             DataTypeSize::Fixed(data_type_size),
         ) => {
             let mut chunk_bytes = chunk_bytes.into_owned();
-            update_bytes_flen(
-                &mut chunk_bytes,
-                &output_shape,
-                &chunk_subset_bytes,
-                subset,
-                data_type_size,
-            );
+            {
+                let chunk_bytes = UnsafeCellSlice::new(&mut chunk_bytes);
+                update_bytes_flen(
+                    &chunk_bytes,
+                    &output_shape,
+                    &chunk_subset_bytes,
+                    subset,
+                    data_type_size,
+                );
+            }
             ArrayBytes::new_flen(chunk_bytes)
         }
         (_, _, _) => {
@@ -583,21 +590,24 @@ mod tests {
     #[test]
     fn test_flen_update_subset() {
         let mut bytes_array = vec![0u8; 4 * 4];
-        update_bytes_flen(
-            &mut bytes_array,
-            &vec![4, 4],
-            &vec![1u8, 2].into(),
-            &ArraySubset::new_with_ranges(&[1..2, 1..3]),
-            1,
-        );
+        {
+            let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
+            update_bytes_flen(
+                &bytes_array,
+                &vec![4, 4],
+                &vec![1u8, 2].into(),
+                &ArraySubset::new_with_ranges(&[1..2, 1..3]),
+                1,
+            );
 
-        update_bytes_flen(
-            &mut bytes_array,
-            &vec![4, 4],
-            &vec![3u8, 4].into(),
-            &ArraySubset::new_with_ranges(&[3..4, 0..2]),
-            1,
-        );
+            update_bytes_flen(
+                &bytes_array,
+                &vec![4, 4],
+                &vec![3u8, 4].into(),
+                &ArraySubset::new_with_ranges(&[3..4, 0..2]),
+                1,
+            );
+        }
 
         debug_assert_eq!(
             bytes_array,

@@ -281,7 +281,6 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                     let decode_chunk = |chunk_index: usize| {
                         let chunk_subset = self
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
-                        let output = unsafe { output.as_mut_slice() };
 
                         // Read the offset/size
                         let offset = shard_index[chunk_index * 2];
@@ -300,8 +299,11 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                                     );
                                     let shard_offset =
                                         usize::try_from(index * data_type_size as u64).unwrap();
-                                    output[shard_offset..shard_offset + fv.len()]
-                                        .copy_from_slice(fv);
+                                    unsafe {
+                                        output
+                                            .index_mut(shard_offset..shard_offset + fv.len())
+                                            .copy_from_slice(fv);
+                                    }
                                 }
                             } else {
                                 unreachable!();
@@ -321,7 +323,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                                 &options,
                             )?;
                             update_bytes_flen(
-                                output,
+                                &output,
                                 &shard_representation.shape_u64(),
                                 &decoded_chunk.into_fixed()?,
                                 &chunk_subset,
@@ -350,7 +352,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         &self,
         encoded_shard: RawBytes<'_>,
         shard_representation: &ChunkRepresentation,
-        output: &mut [u8],
+        output: &UnsafeCellSlice<u8>,
         output_shape: &[u64],
         output_subset: &ArraySubset,
         options: &CodecOptions,
@@ -408,11 +410,9 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                 };
 
                 {
-                    let output = UnsafeCellSlice::new(output);
                     let decode_chunk = |chunk_index: usize| {
                         let chunk_subset = self
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
-                        let output = unsafe { output.as_mut_slice() };
 
                         let output_subset_chunk = ArraySubset::new_with_start_shape(
                             std::iter::zip(output_subset.start(), chunk_subset.start())
@@ -439,7 +439,8 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                                     );
                                     let shard_offset =
                                         usize::try_from(index * data_type_size as u64).unwrap();
-                                    output[shard_offset..shard_offset + fv.len()]
+                                    output
+                                        .index_mut(shard_offset..shard_offset + fv.len())
                                         .copy_from_slice(fv);
                                 }
                             } else {
@@ -680,14 +681,13 @@ impl ShardingCodec {
                         }
 
                         unsafe {
-                            let shard_index_unsafe = shard_index_slice.as_mut_slice();
-                            shard_index_unsafe[chunk_index * 2] =
-                                u64::try_from(chunk_offset).unwrap();
-                            shard_index_unsafe[chunk_index * 2 + 1] =
-                                u64::try_from(chunk_encoded.len()).unwrap();
+                            let shard_index_unsafe =
+                                shard_index_slice.index_mut(chunk_index * 2..chunk_index * 2 + 2);
+                            shard_index_unsafe[0] = u64::try_from(chunk_offset).unwrap();
+                            shard_index_unsafe[1] = u64::try_from(chunk_encoded.len()).unwrap();
 
-                            let shard_unsafe = shard_slice.as_mut_slice();
-                            shard_unsafe[chunk_offset..chunk_offset + chunk_encoded.len()]
+                            shard_slice
+                                .index_mut(chunk_offset..chunk_offset + chunk_encoded.len())
                                 .copy_from_slice(&chunk_encoded);
                         }
                     }
@@ -837,13 +837,13 @@ impl ShardingCodec {
                     let chunk_offset = encoded_shard_offset
                         .fetch_add(chunk_encoded.len(), std::sync::atomic::Ordering::Relaxed);
                     unsafe {
-                        let shard_index_unsafe = shard_index_slice.as_mut_slice();
-                        shard_index_unsafe[chunk_index * 2] = u64::try_from(chunk_offset).unwrap();
-                        shard_index_unsafe[chunk_index * 2 + 1] =
-                            u64::try_from(chunk_encoded.len()).unwrap();
+                        let shard_index_unsafe =
+                            shard_index_slice.index_mut(chunk_index * 2..chunk_index * 2 + 2);
+                        shard_index_unsafe[0] = u64::try_from(chunk_offset).unwrap();
+                        shard_index_unsafe[1] = u64::try_from(chunk_encoded.len()).unwrap();
 
-                        let shard_unsafe = shard_slice.as_mut_slice();
-                        shard_unsafe[chunk_offset..chunk_offset + chunk_encoded.len()]
+                        shard_slice
+                            .index_mut(chunk_offset..chunk_offset + chunk_encoded.len())
                             .copy_from_slice(&chunk_encoded);
                     }
                 }
