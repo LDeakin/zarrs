@@ -97,6 +97,7 @@ pub mod nan_representations;
 ///     }
 /// }
 /// ```
+#[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct ArrayMetadataV3 {

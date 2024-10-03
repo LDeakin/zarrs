@@ -14,7 +14,7 @@ members = [
 ]
 
 [workspace.dependencies.zarrs_metadata]
-version = "0.1.0"
+version = "0.2.0"
 path = "zarrs_metadata"
 
 [workspace.dependencies.zarrs_storage]

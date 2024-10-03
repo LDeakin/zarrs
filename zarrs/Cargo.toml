@@ -58,7 +58,7 @@ num = { version = "0.4.1" }
 pco = { version = "0.3.1", optional = true }
 rayon = "1.10.0"
 rayon_iter_concurrent_limit = "0.2.0"
-serde = { version = "1.0.184", features = ["derive"] }
+serde = { version = "1.0.185", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
 thiserror = "1.0.61"
 thread_local = "1.1.8"
