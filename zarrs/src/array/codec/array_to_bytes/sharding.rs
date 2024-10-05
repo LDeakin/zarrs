@@ -489,7 +489,7 @@ mod tests {
             .partial_decoder(input_handle, &chunk_representation, options)
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, options)
+            .partial_decode(&decoded_regions, options)
             .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
@@ -573,7 +573,7 @@ mod tests {
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, options)
+            .partial_decode(&decoded_regions, options)
             .await
             .unwrap();
 
@@ -643,7 +643,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
@@ -685,7 +685,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk

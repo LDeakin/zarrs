@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use zarrs::{
-    array::bytes_to_ndarray,
+    array::{bytes_to_ndarray, codec::CodecOptions},
     storage::{
         storage_adapter::usage_log::UsageLogStorageAdapter, ReadableWritableListableStorage,
     },
@@ -84,6 +84,9 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         serde_json::to_string_pretty(&array.metadata()).unwrap()
     );
 
+    // Use default codec options (concurrency etc)
+    let options = CodecOptions::default();
+
     // Write some shards (in parallel)
     (0..2).into_par_iter().try_for_each(|s| {
         let chunk_grid = array.chunk_grid();
@@ -135,7 +138,8 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         ArraySubset::new_with_start_shape(vec![0, 0], inner_chunk_shape.clone())?,
         ArraySubset::new_with_start_shape(vec![0, 4], inner_chunk_shape.clone())?,
     ];
-    let decoded_inner_chunks_bytes = partial_decoder.partial_decode(&inner_chunks_to_decode)?;
+    let decoded_inner_chunks_bytes =
+        partial_decoder.partial_decode(&inner_chunks_to_decode, &options)?;
     println!("Decoded inner chunks:");
     for (inner_chunk_subset, decoded_inner_chunk) in
         std::iter::zip(inner_chunks_to_decode, decoded_inner_chunks_bytes)

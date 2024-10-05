@@ -106,7 +106,7 @@ impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -144,7 +144,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,

@@ -107,7 +107,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -120,7 +120,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder {
             get_decoded_regions_transposed(&self.order, decoded_regions);
         let encoded_value = self
             .input_handle
-            .partial_decode_opt(&decoded_regions_transposed, options)?;
+            .partial_decode(&decoded_regions_transposed, options)?;
         do_transpose(
             encoded_value,
             decoded_regions,
@@ -161,7 +161,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -174,7 +174,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder {
             get_decoded_regions_transposed(&self.order, decoded_regions);
         let encoded_value = self
             .input_handle
-            .partial_decode_opt(&decoded_regions_transposed, options)
+            .partial_decode(&decoded_regions_transposed, options)
             .await?;
         do_transpose(
             encoded_value,

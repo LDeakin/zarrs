@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use zarrs::array::codec::array_to_bytes::vlen::VlenCodec;
-use zarrs::array::codec::TransposeCodec;
+use zarrs::array::codec::{CodecOptions, TransposeCodec};
 use zarrs::array::{Array, ArrayBuilder, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 
@@ -41,6 +41,8 @@ async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>>
     assert_eq!(array.shape(), &[4, 4]);
     assert_eq!(array.chunk_shape(&[0, 0]).unwrap(), [2, 2].try_into().unwrap());
     assert_eq!(array.chunk_grid_shape().unwrap(), &[2, 2]);
+
+    let options = CodecOptions::default();
 
     // 1  2 | 3  4 
     // 5  6 | 7  8
@@ -116,10 +118,10 @@ async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>>
     assert_eq!(array.async_retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..5, 0..5])).await?, ndarray::array![[1, 2, 3, 4, 0], [5, 6, 7, 8, 0], [9, 10, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]].into_dyn()); // OOB -> fill value
 
     assert!(array.async_partial_decoder(&[0]).await.is_err());
-    assert!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1])]).await.is_err());
-    assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[]).await?, []);
-    assert_eq!(array.async_partial_decoder(&[5, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])]).await?, [vec![0, 0].into()]); // OOB -> fill value
-    assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])]).await?, [vec![1, 2].into(), vec![2, 6].into()]);
+    assert!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1])], &options).await.is_err());
+    assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[], &options).await?, []);
+    assert_eq!(array.async_partial_decoder(&[5, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])], &options).await?, [vec![0, 0].into()]); // OOB -> fill value
+    assert_eq!(array.async_partial_decoder(&[0, 0]).await?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])], &options).await?, [vec![1, 2].into(), vec![2, 6].into()]);
 
     Ok(())
 }

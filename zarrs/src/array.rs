@@ -209,7 +209,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// **Standard [`Array`] retrieve methods do not perform any caching**.
 /// For this reason, retrieving multiple subsets in a chunk with [`retrieve_chunk_subset`](Array::store_chunk_subset) is very inefficient and strongly discouraged.
 /// For example, consider that a compressed chunk may need to be retrieved and decoded in its entirety even if only a small part of the data is needed.
-/// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode) or [`partial_decode_opt`](codec::ArrayPartialDecoderTraits::partial_decode_opt).
+/// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode).
 /// The underlying codec chain will use a cache where efficient to optimise multiple partial decoding requests (see [`CodecChain`]).
 /// Another alternative is to use [Chunk Caching](#chunk-caching).
 ///

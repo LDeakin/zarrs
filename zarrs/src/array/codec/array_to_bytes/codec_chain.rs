@@ -772,7 +772,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk

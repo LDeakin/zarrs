@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use zarrs::array::codec::CodecOptions;
 use zarrs::array::{Array, ArrayBuilder, ArrayCodecTraits, DataType, FillValue};
 use zarrs::array_subset::ArraySubset;
 use zarrs::storage::store::MemoryStore;
@@ -13,6 +14,8 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
     assert_eq!(array.shape(), &[4, 4]);
     assert_eq!(array.chunk_shape(&[0, 0]).unwrap(), [2, 2].try_into().unwrap());
     assert_eq!(array.chunk_grid_shape().unwrap(), &[2, 2]);
+
+    let options = CodecOptions::default();
 
     // 1  2 | 3  4 
     // 5  6 | 7  8
@@ -88,10 +91,10 @@ fn array_sync_read(array: Array<MemoryStore>) -> Result<(), Box<dyn std::error::
     assert_eq!(array.retrieve_array_subset_ndarray::<u8>(&ArraySubset::new_with_ranges(&[0..5, 0..5]))?, ndarray::array![[1, 2, 3, 4, 0], [5, 6, 7, 8, 0], [9, 10, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]].into_dyn()); // OOB -> fill value
 
     assert!(array.partial_decoder(&[0]).is_err());
-    assert!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1])]).is_err());
-    assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[])?, []);
-    assert_eq!(array.partial_decoder(&[5, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])])?, [vec![0, 0].into()]); // OOB -> fill value
-    assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])])?, [vec![1, 2].into(), vec![2, 6].into()]);
+    assert!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1])], &options).is_err());
+    assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[], &options)?, []);
+    assert_eq!(array.partial_decoder(&[5, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2])], &options)?, [vec![0, 0].into()]); // OOB -> fill value
+    assert_eq!(array.partial_decoder(&[0, 0])?.partial_decode(&[ArraySubset::new_with_ranges(&[0..1, 0..2]), ArraySubset::new_with_ranges(&[0..2, 1..2])], &options)?, [vec![1, 2].into(), vec![2, 6].into()]);
 
     Ok(())
 }

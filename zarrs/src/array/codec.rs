@@ -327,23 +327,13 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
-    /// Partially decode a chunk with default codec options.
+    /// Partially decode a chunk.
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
-    /// Use [`partial_decode_opt`](ArrayPartialDecoderTraits::partial_decode_opt) to control codec options.
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
     fn partial_decode(
-        &self,
-        array_subsets: &[ArraySubset],
-    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
-        self.partial_decode_opt(array_subsets, &CodecOptions::default())
-    }
-
-    /// Explicit options version of [`partial_decode`](ArrayPartialDecoderTraits::partial_decode).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -373,7 +363,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         debug_assert!(output_subset.inbounds(output_shape));
         debug_assert_eq!(array_subset.shape(), output_subset.shape());
         let decoded_value = self
-            .partial_decode_opt(&[array_subset.clone()], options)?
+            .partial_decode(&[array_subset.clone()], options)?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
             update_bytes_flen(
@@ -397,20 +387,11 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
-    /// Partially decode a chunk with default codec options.
+    /// Partially decode a chunk.
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails, array subset is invalid, or the array subset shape does not match array view subset shape.
     async fn partial_decode(
-        &self,
-        array_subsets: &[ArraySubset],
-    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
-        self.partial_decode_opt(array_subsets, &CodecOptions::default())
-            .await
-    }
-
-    /// Explicit options variant of [`partial_decode`](AsyncArrayPartialDecoderTraits::partial_decode).
-    async fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -429,7 +410,7 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
         debug_assert!(output_subset.inbounds(output_shape));
         debug_assert_eq!(array_subset.shape(), output_subset.shape());
         let decoded_value = self
-            .partial_decode_opt(&[array_subset.clone()], options)
+            .partial_decode(&[array_subset.clone()], options)
             .await?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {

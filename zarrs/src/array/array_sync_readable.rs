@@ -832,7 +832,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             self.codecs
                 .clone()
                 .partial_decoder(input_handle, &chunk_representation, options)?
-                .partial_decode_opt(&[chunk_subset.clone()], options)?
+                .partial_decode(&[chunk_subset.clone()], options)?
                 .remove(0)
                 .into_owned()
         };
