@@ -87,6 +87,7 @@ fn cities_impl(
 
 #[rustfmt::skip]
 #[test]
+#[cfg_attr(miri, ignore)]
 fn cities() -> Result<(), Box<dyn Error>> {
     let cities = read_cities()?;
     assert_eq!(cities.len(), 47868);

@@ -53,9 +53,9 @@ cargo +nightly llvm-cov --all-features --doctests --lcov --output-path lcov.info
 ```
 
 ## [Miri](https://github.com/rust-lang/miri)
-Tests which call foreign functions or access the filesystem are disabled.
+Tests that call foreign functions or access the filesystem are disabled.
 The [inventory](https://crates.io/crates/inventory) crate does not work in miri, so there are workarounds in place for codecs, chunk key encodings, and chunk grids.
 ```bash
 # `-Zmiri-ignore-leaks` is needed for multi-threaded programs... https://github.com/rust-lang/miri/issues/1371
-MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-permissive-provenance -Zmiri-ignore-leaks -Zmiri-tree-borrows" cargo +nightly miri test --all-features
+MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-ignore-leaks -Zmiri-tree-borrows" cargo +nightly miri test -p zarrs --all-features
 ```

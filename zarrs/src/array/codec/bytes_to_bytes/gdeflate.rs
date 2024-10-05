@@ -271,6 +271,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_gdeflate_round_trip1() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -289,6 +290,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_gdeflate_partial_decode() {
         let elements: Vec<u16> = (0..8).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -329,6 +331,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn codec_gdeflate_async_partial_decode() {
         let elements: Vec<u16> = (0..8).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);

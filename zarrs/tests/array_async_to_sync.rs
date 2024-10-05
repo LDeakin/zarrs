@@ -27,6 +27,7 @@ fn readable_writable_store() -> ReadableWritableStorage {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn array_read_and_write_async_storage_adapter() {
     const GROUP_PATH: &str = "/group";
     const ARRAY_PATH: &str = "/group/array";

@@ -1018,6 +1018,7 @@ mod tests {
 
     #[cfg(feature = "blosc")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_blosc_c() {
         array_v2_to_v3(
             "tests/data/v2/array_blosc_C.zarr",
@@ -1027,6 +1028,7 @@ mod tests {
 
     #[cfg(feature = "blosc")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_blosc_f() {
         array_v2_to_v3(
             "tests/data/v2/array_blosc_F.zarr",
@@ -1036,6 +1038,7 @@ mod tests {
 
     #[cfg(feature = "gzip")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_gzip_c() {
         array_v2_to_v3(
             "tests/data/v2/array_gzip_C.zarr",
@@ -1045,6 +1048,7 @@ mod tests {
 
     #[cfg(feature = "bz2")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_bz2_c() {
         array_v2_to_v3(
             "tests/data/v2/array_bz2_C.zarr",
@@ -1054,6 +1058,7 @@ mod tests {
 
     #[cfg(feature = "zfp")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_zfpy_c() {
         array_v2_to_v3(
             "tests/data/v2/array_zfpy_C.zarr",
@@ -1063,6 +1068,7 @@ mod tests {
 
     #[cfg(feature = "zstd")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_zstd_c() {
         array_v2_to_v3(
             "tests/data/v2/array_zstd_C.zarr",
@@ -1072,6 +1078,7 @@ mod tests {
 
     #[cfg(feature = "pcodec")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_pcodec_c() {
         array_v2_to_v3(
             "tests/data/v2/array_pcodec_C.zarr",
