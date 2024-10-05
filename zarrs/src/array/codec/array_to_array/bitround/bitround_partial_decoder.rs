@@ -57,14 +57,12 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder {
         &self.data_type
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
-        let bytes = self
-            .input_handle
-            .partial_decode_opt(array_subsets, options)?;
+        let bytes = self.input_handle.partial_decode(array_subsets, options)?;
 
         let mut bytes_out = Vec::with_capacity(bytes.len());
         for bytes in bytes {
@@ -125,14 +123,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder {
         &self.data_type
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let bytes = self
             .input_handle
-            .partial_decode_opt(array_subsets, options)
+            .partial_decode(array_subsets, options)
             .await?;
 
         let mut bytes_out = Vec::with_capacity(bytes.len());

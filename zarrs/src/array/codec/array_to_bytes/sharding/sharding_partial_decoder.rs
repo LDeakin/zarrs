@@ -66,7 +66,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -173,7 +173,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                                 err
                             })?;
                             partial_decoder
-                                .partial_decode_opt(
+                                .partial_decode(
                                     &[chunk_subset_overlap
                                         .relative_to(chunk_subset.start())
                                         .unwrap()],
@@ -254,7 +254,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                                 err
                             })?;
                             partial_decoder
-                                .partial_decode_opt(
+                                .partial_decode(
                                     &[chunk_subset_overlap
                                         .relative_to(chunk_subset.start())
                                         .unwrap()],
@@ -339,7 +339,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -431,7 +431,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     err
                                 })?;
                                 partial_decoder
-                                    .partial_decode_opt(
+                                    .partial_decode(
                                         &[chunk_subset_overlap
                                             .relative_to(chunk_subset.start())
                                             .unwrap()],
@@ -526,7 +526,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                 //     .await?
                                 //     .remove(0);
                                 let decoded_chunk = partial_decoder
-                                    .partial_decode_opt(
+                                    .partial_decode(
                                         &[ArraySubset::new_with_shape(chunk_subset.shape().to_vec())],
                                         options,
                                     ) // TODO: Adjust options for partial decoding

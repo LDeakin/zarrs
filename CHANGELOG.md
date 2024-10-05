@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `unsafe_cell_slice` to 0.2.0
 - **Breaking**: Change `output` parameter of `decode_into` codec trait methods to `&UnsafeCellSlice<u8>`
 - **Breaking**: Add `dynamic()` to all `CodecTraits`
+- **Breaking**: Add `options` parameter to `[Async]ArrayPartialDecoderTraits::partial_decode` and remove `partial_decode_opt`
 
 ## [0.17.0] - 2024-10-02
 

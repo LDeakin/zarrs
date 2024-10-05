@@ -223,7 +223,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
 
             let partial_decoder = cache.retrieve(self, shard_indices)?;
             let bytes = partial_decoder
-                .partial_decode_opt(&[shard_subset], options)?
+                .partial_decode(&[shard_subset], options)?
                 .remove(0)
                 .into_owned();
             Ok(bytes)
@@ -368,7 +368,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                             let shard_subset_overlap = shard_subset.overlap(array_subset)?;
                             let bytes = cache
                                 .retrieve(self, &shard_indices)?
-                                .partial_decode_opt(
+                                .partial_decode(
                                     &[shard_subset_overlap.relative_to(shard_subset.start())?],
                                     &options,
                                 )?
@@ -410,7 +410,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                                 // )?;
                                 let bytes = cache
                                     .retrieve(self, &shard_indices)?
-                                    .partial_decode_opt(
+                                    .partial_decode(
                                         &[shard_subset_overlap
                                             .relative_to(shard_subset.start())?],
                                         &options,
