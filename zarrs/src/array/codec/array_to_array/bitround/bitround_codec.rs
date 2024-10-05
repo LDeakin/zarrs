@@ -87,6 +87,10 @@ impl ArrayCodecTraits for BitroundCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for BitroundCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+        self as Arc<dyn ArrayToArrayCodecTraits>
+    }
+
     fn encode<'a>(
         &self,
         bytes: ArrayBytes<'a>,

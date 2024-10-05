@@ -74,6 +74,10 @@ impl CodecTraits for Bz2Codec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Bz2Codec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+        self as Arc<dyn BytesToBytesCodecTraits>
+    }
+
     fn recommended_concurrency(
         &self,
         _decoded_representation: &BytesRepresentation,

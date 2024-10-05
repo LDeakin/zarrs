@@ -70,6 +70,10 @@ impl CodecTraits for GzipCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for GzipCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+        self as Arc<dyn BytesToBytesCodecTraits>
+    }
+
     fn recommended_concurrency(
         &self,
         _decoded_representation: &BytesRepresentation,

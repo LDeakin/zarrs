@@ -46,6 +46,10 @@ impl CodecTraits for TestUnboundedCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for TestUnboundedCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+        self as Arc<dyn BytesToBytesCodecTraits>
+    }
+
     /// Return the maximum internal concurrency supported for the requested decoded representation.
     fn recommended_concurrency(
         &self,
