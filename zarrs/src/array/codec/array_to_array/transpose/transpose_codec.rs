@@ -65,6 +65,10 @@ impl CodecTraits for TransposeCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for TransposeCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+        self as Arc<dyn ArrayToArrayCodecTraits>
+    }
+
     fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
         if self.order.0.len() != encoded_shape.len() {
             return Err(CodecError::Other("Invalid shape".to_string()));

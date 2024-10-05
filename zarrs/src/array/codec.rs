@@ -517,6 +517,9 @@ impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder {
 /// Traits for array to array codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
+    /// Return a dynamic version of the codec.
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits>;
+
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
     /// # Errors
@@ -586,6 +589,9 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
 /// Traits for array to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
+    /// Return a dynamic version of the codec.
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits>;
+
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
     /// # Errors
@@ -683,6 +689,9 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
 /// Traits for bytes to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
+    /// Return a dynamic version of the codec.
+    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits>;
+
     /// Return the maximum internal concurrency supported for the requested decoded representation.
     ///
     /// # Errors

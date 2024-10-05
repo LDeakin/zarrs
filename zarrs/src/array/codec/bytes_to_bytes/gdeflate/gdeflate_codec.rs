@@ -66,6 +66,10 @@ impl CodecTraits for GDeflateCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for GDeflateCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+        self as Arc<dyn BytesToBytesCodecTraits>
+    }
+
     fn recommended_concurrency(
         &self,
         _decoded_representation: &BytesRepresentation,
