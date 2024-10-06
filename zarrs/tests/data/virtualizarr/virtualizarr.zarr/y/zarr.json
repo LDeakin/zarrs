@@ -16,10 +16,18 @@
     },
     "codecs": [
         {
-            "name": "bytes",
+            "configuration": {
+                "order": [
+                    0
+                ]
+            },
+            "name": "transpose"
+        },
+        {
             "configuration": {
                 "endian": "little"
-            }
+            },
+            "name": "bytes"
         }
     ],
     "data_type": "int64",

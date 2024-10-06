@@ -1,0 +1,2 @@
+zarr==2.18.3
+virtualizarr @ git+https://github.com/LDeakin/VirtualiZarr@zarr_v3_fixes
