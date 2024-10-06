@@ -18,7 +18,7 @@ Developed at the [Department of Materials Physics](https://physics.anu.edu.au/re
 
 ## Getting Started
 - Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status), [array support](https://docs.rs/zarrs/latest/zarrs/#array-support), and [storage support](https://docs.rs/zarrs/latest/zarrs/#storage-support).
-- View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples) and [the example below](#example).
+- View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#example).
 - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html) is a good place to start.
 - Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
 

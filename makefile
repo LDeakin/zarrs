@@ -10,7 +10,7 @@ test:
 
 doc: RUSTDOCFLAGS="-D warnings --cfg docsrs"
 doc:
-	cargo +$(TOOLCHAIN) doc -Z unstable-options -Z rustdoc-scrape-examples --all-features
+	cargo +$(TOOLCHAIN) doc -Z unstable-options -Z rustdoc-scrape-examples --all-features --no-deps
 
 clippy:
 	cargo +$(TOOLCHAIN) clippy --all-features -- -D warnings

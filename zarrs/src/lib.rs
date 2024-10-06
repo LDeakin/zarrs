@@ -9,7 +9,7 @@
 //!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
-//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples) and [the example below](#examples).
+//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] is a good place to start.
 //! - Check out [`zarrs` ecosystem](#zarrs-ecosystem).
 //!
@@ -146,16 +146,16 @@
 //!  - Some examples require non-default features, which can be enabled with `--all-features` or `--features <FEATURES>`.
 //!
 //! #### Sync API Examples
-//! [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs),
-//! [`array_write_read_ndarray`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read_ndarray.rs),
-//! [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs),
-//! [`rectangular_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/rectangular_array_write_read.rs),
-//! [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs),
-//! [`sync_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sync_http_array_read.rs).
+//! [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/array_write_read.rs),
+//! [`array_write_read_ndarray`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/array_write_read_ndarray.rs),
+//! [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/sharded_array_write_read.rs),
+//! [`rectangular_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/rectangular_array_write_read.rs),
+//! [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/zip_array_write_read.rs),
+//! [`sync_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/sync_http_array_read.rs).
 //!
 //! #### Async API Examples
-//! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs),
-//! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read.rs),
+//! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/async_array_write_read.rs),
+//! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/async_http_array_read.rs),
 //!
 //! ## Crate Features
 //! #### Default
