@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Bump `unsafe_cell_slice` to 0.2.0
+ - Validate that chunk keys do not contain '//'
 
 ### Fixed
  - Fix new clippy warnings
+ - Fix `data_key` encoding on windows (it contained '//')
 
 ## [0.2.1] - 2024-09-22
 

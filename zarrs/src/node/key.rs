@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::storage::StoreKey;
 
 use super::NodePath;
@@ -54,7 +52,10 @@ pub fn meta_key_v2_attributes(path: &NodePath) -> StoreKey {
 pub fn data_key(path: &NodePath, chunk_key: &StoreKey) -> StoreKey {
     let path = path.as_str();
     let path = path.strip_prefix('/').unwrap_or(path);
-    let mut key_path = PathBuf::from(path);
-    key_path.push(chunk_key.as_str());
-    unsafe { StoreKey::new_unchecked(key_path.to_string_lossy().to_string()) }
+    let key_path = if path.is_empty() {
+        chunk_key.as_str().to_string()
+    } else {
+        format!("{}/{}", path, chunk_key.as_str())
+    };
+    unsafe { StoreKey::new_unchecked(key_path) }
 }
