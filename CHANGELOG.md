@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Fix `data_key` encoding on windows (it contained '//')
+ - Fix `clippy::needless_lifetimes` lint
 
 ## [0.17.0] - 2024-10-02
 
