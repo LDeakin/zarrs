@@ -65,7 +65,7 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     }
 }
 
-impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+impl ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'_> {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
@@ -90,7 +90,7 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+impl AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'_> {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
