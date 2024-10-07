@@ -48,7 +48,7 @@ impl ChunkManifestJsonStorageTransformer {
             let path = strip_root_prefix(
                 &(format!(
                     "{}/{}",
-                    self.path.as_str().to_string(),
+                    self.path,
                     self.configuration.manifest.to_string_lossy()
                 )),
             );
@@ -81,7 +81,7 @@ impl ChunkManifestJsonStorageTransformer {
             let path = strip_root_prefix(
                 &(format!(
                     "{}/{}",
-                    self.path.as_str().to_string(),
+                    self.path,
                     self.configuration.manifest.to_string_lossy()
                 )),
             );
