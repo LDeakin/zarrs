@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Change `output` parameter of `decode_into` codec trait methods to `&UnsafeCellSlice<u8>`
 - **Breaking**: Add `dynamic()` to all `CodecTraits`
 - **Breaking**: Add `options` parameter to `[Async]ArrayPartialDecoderTraits::partial_decode` and remove `partial_decode_opt`
+- Bump `zarrs_storage` to 0.2.2
 
 ## [0.17.0] - 2024-10-02
 
