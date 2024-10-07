@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - Fix new clippy warnings
+ - Fix `data_key` encoding on windows (it contained '//')
 
 ## [0.2.1] - 2024-09-22
 
