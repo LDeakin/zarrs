@@ -1,0 +1,106 @@
+use std::sync::Arc;
+
+use crate::{
+    array::{array_bytes::update_array_bytes, ArrayBytes, ArraySize, ChunkRepresentation},
+    array_subset::ArraySubset,
+    byte_range::ByteRange,
+};
+
+use super::{
+    ArrayToBytesCodecTraits, AsyncArrayPartialEncoderTraits, AsyncBytesPartialDecoderTraits,
+    AsyncBytesPartialEncoderTraits,
+};
+
+/// The default asynchronous array (chunk) partial encoder. Decodes the entire chunk, updates it, and writes the entire chunk.
+pub struct AsyncArrayPartialEncoderDefault {
+    input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+    output_handle: Arc<dyn AsyncBytesPartialEncoderTraits>,
+    decoded_representation: ChunkRepresentation,
+    codec: Arc<dyn ArrayToBytesCodecTraits>,
+}
+
+impl AsyncArrayPartialEncoderDefault {
+    /// Create a new [`AsyncArrayPartialEncoderDefault`].
+    #[must_use]
+    pub fn new(
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+        output_handle: Arc<dyn AsyncBytesPartialEncoderTraits>,
+        decoded_representation: ChunkRepresentation,
+        codec: Arc<dyn ArrayToBytesCodecTraits>,
+    ) -> Self {
+        Self {
+            input_handle,
+            output_handle,
+            decoded_representation,
+            codec,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl AsyncArrayPartialEncoderTraits for AsyncArrayPartialEncoderDefault {
+    async fn erase(&self) -> Result<(), super::CodecError> {
+        self.output_handle.erase().await
+    }
+
+    async fn partial_encode(
+        &self,
+        chunk_subsets: &[&ArraySubset],
+        chunk_subsets_bytes: Vec<crate::array::ArrayBytes<'_>>,
+        options: &super::CodecOptions,
+    ) -> Result<(), super::CodecError> {
+        // Read the entire chunk
+        let chunk_shape = self.decoded_representation.shape_u64();
+        let chunk_bytes = self.input_handle.decode(options).await?;
+
+        // Handle a missing chunk
+        let mut chunk_bytes = if let Some(chunk_bytes) = chunk_bytes {
+            self.codec
+                .decode(chunk_bytes, &self.decoded_representation, options)?
+        } else {
+            let array_size = ArraySize::new(
+                self.decoded_representation.data_type().size(),
+                self.decoded_representation.num_elements(),
+            );
+            ArrayBytes::new_fill_value(array_size, self.decoded_representation.fill_value())
+        };
+
+        // Validate the bytes
+        chunk_bytes.validate(
+            self.decoded_representation.num_elements(),
+            self.decoded_representation.data_type().size(),
+        )?;
+
+        // Update the chunk
+        // FIXME: More efficient update for multiple chunk subsets?
+        for (chunk_subset, chunk_subset_bytes) in std::iter::zip(chunk_subsets, chunk_subsets_bytes)
+        {
+            chunk_bytes = update_array_bytes(
+                chunk_bytes,
+                chunk_shape.clone(), // FIXME
+                chunk_subset_bytes,
+                chunk_subset,
+                self.decoded_representation.data_type().size(),
+            );
+        }
+
+        let is_fill_value = !options.store_empty_chunks()
+            && chunk_bytes.is_fill_value(self.decoded_representation.fill_value());
+        if is_fill_value {
+            self.output_handle.erase().await
+        } else {
+            // Store the updated chunk
+            let chunk_bytes =
+                self.codec
+                    .encode(chunk_bytes, &self.decoded_representation, options)?;
+            self.output_handle.erase().await?; // this is necessary in the absence of a truncation API
+            self.output_handle
+                .partial_encode(
+                    &[ByteRange::FromStart(0, Some(chunk_bytes.len() as u64))],
+                    vec![chunk_bytes],
+                    options,
+                )
+                .await
+        }
+    }
+}
