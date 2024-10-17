@@ -15,7 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Change `output` parameter of `decode_into` codec trait methods to `&UnsafeCellSlice<u8>`
 - **Breaking**: Add `dynamic()` to all `CodecTraits`
 - **Breaking**: Add `options` parameter to `[Async]ArrayPartialDecoderTraits::partial_decode` and remove `partial_decode_opt`
-- Bump `zarrs_storage` to 0.2.2
+
+## [0.17.1] - 2024-10-18
+
+### Added
+ - Add `zarrs_icechunk` to ecosystem docs
+
+### Fixed
+ - Fix `data_key` encoding on windows (it contained '//')
+ - Fix `clippy::needless_lifetimes` lint
 
 ## [0.17.0] - 2024-10-02
 
@@ -1082,7 +1090,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.17.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.17.1...HEAD
+[0.17.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.1
 [0.17.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0
 [0.17.0-beta.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.3
 [0.17.0-beta.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.2

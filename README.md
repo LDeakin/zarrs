@@ -98,6 +98,7 @@ println!("{array_ndarray:4}");
 | [![zarrs_opendal_ver]](https://crates.io/crates/zarrs_opendal) `zarrs_opendal`                | [![docs]](https://docs.rs/zarrs_opendal)      [`opendal`](https://docs.rs/opendal/latest/opendal/) store support                |
 | [![zarrs_http_ver]](https://crates.io/crates/zarrs_http) `zarrs_http`                         | [![docs]](https://docs.rs/zarrs_http)         A synchronous http store                                                          |
 | [![zarrs_zip_ver]](https://crates.io/crates/zarrs_zip) `zarrs_zip`                            | [![docs]](https://docs.rs/zarrs_zip)          A storage adapter for zip files                                                   |
+| [![zarrs_icechunk_ver]](https://crates.io/crates/zarrs_icechunk) `zarrs_icechunk`             | [![docs]](https://docs.rs/zarrs_icechunk) [`icechunk`](https://docs.rs/icechunk/latest/icechunk/) store support                 |
 | **Bindings**                                                                                  |                                                                                                                                 |
 | [![zarrs_ffi_ver]](https://crates.io/crates/zarrs_ffi) [zarrs_ffi]                            | [![docs]](https://docs.rs/zarrs_ffi)          A subset of `zarrs` exposed as a C/C++ API                                        |
 
@@ -110,6 +111,7 @@ println!("{array_ndarray:4}");
 [zarrs_object_store_ver]: https://img.shields.io/crates/v/zarrs_object_store?label=
 [zarrs_opendal_ver]: https://img.shields.io/crates/v/zarrs_opendal?label=
 [zarrs_zip_ver]: https://img.shields.io/crates/v/zarrs_zip?label=
+[zarrs_icechunk_ver]: https://img.shields.io/crates/v/zarrs_icechunk?label=
 [zarrs_ffi_ver]: https://img.shields.io/crates/v/zarrs_ffi?label=
 [zarrs_ffi]: https://github.com/LDeakin/zarrs_ffi
 

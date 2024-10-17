@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Bump `unsafe_cell_slice` to 0.2.0
+
+## [0.2.2] - 2024-10-17
+
+### Changed
  - Validate that chunk keys do not contain '//'
 
 ### Fixed
  - Fix new clippy warnings
- - Fix `data_key` encoding on windows (it contained '//')
 
 ## [0.2.1] - 2024-09-22
 
@@ -49,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `storage` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.2.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.2.2...HEAD
+[0.2.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.2.2
 [0.2.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.2.1
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.2.0
 [0.1.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.1.2
