@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `zarrs_icechunk` to ecosystem docs
+
 ### Fixed
  - Fix `data_key` encoding on windows (it contained '//')
 
