@@ -279,20 +279,19 @@ impl ReadableStorageTraits for FilesystemStore {
                 // Seek
                 match byte_range {
                     ByteRange::FromStart(offset, _) => file.seek(SeekFrom::Start(*offset)),
-                    ByteRange::FromEnd(_, None) => file.seek(SeekFrom::Start(0u64)),
-                    ByteRange::FromEnd(offset, Some(length)) => {
-                        file.seek(SeekFrom::End(-(i64::try_from(*offset + *length).unwrap())))
+                    ByteRange::Suffix(length) => {
+                        file.seek(SeekFrom::End(-(i64::try_from(*length).unwrap())))
                     }
                 }?;
 
                 // Read
                 match byte_range {
-                    ByteRange::FromStart(_, None) | ByteRange::FromEnd(_, None) => {
+                    ByteRange::FromStart(_, None) => {
                         let mut buffer = Vec::new();
                         file.read_to_end(&mut buffer)?;
                         buffer
                     }
-                    ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => {
+                    ByteRange::FromStart(_, Some(length)) | ByteRange::Suffix(length) => {
                         let length = usize::try_from(*length).unwrap();
                         let mut buffer = vec![0; length];
                         file.read_exact(&mut buffer)?;

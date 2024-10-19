@@ -45,14 +45,10 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
                     let length = bytes.len() - CHECKSUM_SIZE;
                     Cow::Owned(bytes[..length].to_vec())
                 }
-                ByteRange::FromEnd(offset, _) => {
-                    if *offset < CHECKSUM_SIZE as u64 {
-                        let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64 - offset);
-                        let length = usize::try_from(length).unwrap();
-                        Cow::Owned(bytes[..length].to_vec())
-                    } else {
-                        bytes
-                    }
+                ByteRange::Suffix(_) => {
+                    let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64);
+                    let length = usize::try_from(length).unwrap();
+                    Cow::Owned(bytes[..length].to_vec())
                 }
             };
             output.push(bytes);
@@ -101,14 +97,10 @@ impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder {
                     let length = bytes.len() - CHECKSUM_SIZE;
                     Cow::Owned(bytes[..length].to_vec())
                 }
-                ByteRange::FromEnd(offset, _) => {
-                    if *offset < CHECKSUM_SIZE as u64 {
-                        let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64 - offset);
-                        let length = usize::try_from(length).unwrap();
-                        Cow::Owned(bytes[..length].to_vec())
-                    } else {
-                        bytes
-                    }
+                ByteRange::Suffix(_) => {
+                    let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64);
+                    let length = usize::try_from(length).unwrap();
+                    Cow::Owned(bytes[..length].to_vec())
                 }
             };
             output.push(bytes);

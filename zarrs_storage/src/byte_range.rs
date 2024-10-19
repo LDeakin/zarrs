@@ -28,10 +28,8 @@ pub enum ByteRange {
     ///
     /// If the byte length is [`None`], reads to the end of the value.
     FromStart(ByteOffset, Option<ByteLength>),
-    /// A byte range from the end.
-    ///
-    /// If the byte length is [`None`], reads to the start of the value.
-    FromEnd(ByteOffset, Option<ByteLength>),
+    /// A suffix byte range.
+    Suffix(ByteLength),
 }
 
 impl ByteRange {
@@ -40,9 +38,7 @@ impl ByteRange {
     pub fn start(&self, size: u64) -> u64 {
         match self {
             Self::FromStart(offset, _) => *offset,
-            Self::FromEnd(offset, length) => {
-                length.as_ref().map_or(0, |length| size - *offset - *length)
-            }
+            Self::Suffix(length) => size - *length,
         }
     }
 
@@ -53,23 +49,16 @@ impl ByteRange {
             Self::FromStart(offset, length) => {
                 length.as_ref().map_or(size, |length| offset + length)
             }
-            Self::FromEnd(offset, _) => size - offset,
+            Self::Suffix(_) => size,
         }
-    }
-
-    /// Return the internal offset of the byte range (which can be at its start or end).
-    #[must_use]
-    pub const fn offset(&self) -> u64 {
-        let (Self::FromStart(offset, _) | Self::FromEnd(offset, _)) = self;
-        *offset
     }
 
     /// Return the length of a byte range. `size` is the size of the entire bytes.
     #[must_use]
     pub fn length(&self, size: u64) -> u64 {
         match self {
-            Self::FromStart(offset, None) | Self::FromEnd(offset, None) => size - offset,
-            Self::FromStart(_, Some(length)) | Self::FromEnd(_, Some(length)) => *length,
+            Self::FromStart(offset, None) => size - offset,
+            Self::FromStart(_, Some(length)) | Self::Suffix(length) => *length,
         }
     }
 
@@ -103,16 +92,7 @@ impl std::fmt::Display for ByteRange {
                 },
                 length.map_or(String::new(), |length| (offset + length).to_string())
             ),
-            Self::FromEnd(offset, length) => write!(
-                f,
-                "{}..{}",
-                length.map_or(String::new(), |length| format!("-{}", offset + length)),
-                if offset == &0 {
-                    String::new()
-                } else {
-                    format!("-{offset}")
-                }
-            ),
+            Self::Suffix(length) => write!(f, "{}..", format!("-{}", length),),
         }
     }
 }
@@ -136,8 +116,11 @@ fn validate_byte_ranges(
 ) -> Result<(), InvalidByteRangeError> {
     for byte_range in byte_ranges {
         let valid = match byte_range {
-            ByteRange::FromStart(offset, length) | ByteRange::FromEnd(offset, length) => {
+            ByteRange::FromStart(offset, length) => {
                 offset + length.unwrap_or(0) <= bytes_len
+            }
+            ByteRange::Suffix(length) => {
+                *length <= bytes_len
             }
         };
         if !valid {
@@ -260,15 +243,8 @@ pub fn extract_byte_ranges_read_seek<T: Read + Seek>(
                 bytes.read_exact(&mut data)?;
                 data
             }
-            ByteRange::FromEnd(offset, None) => {
-                bytes.seek(SeekFrom::Start(0))?;
-                let length = usize::try_from(len - offset).unwrap();
-                let mut data = vec![0; length];
-                bytes.read_exact(&mut data)?;
-                data
-            }
-            ByteRange::FromEnd(offset, Some(length)) => {
-                bytes.seek(SeekFrom::End(-i64::try_from(*offset + *length).unwrap()))?;
+            ByteRange::Suffix(length) => {
+                bytes.seek(SeekFrom::End(-i64::try_from(*length).unwrap()))?;
                 let length = usize::try_from(*length).unwrap();
                 let mut data = vec![0; length];
                 bytes.read_exact(&mut data)?;
@@ -367,12 +343,10 @@ mod tests {
         let byte_range = ByteRange::FromStart(1, None);
         assert_eq!(byte_range.to_range(10), 1..10);
         assert_eq!(byte_range.length(10), 9);
-        assert_eq!(byte_range.offset(), 1);
 
-        let byte_range = ByteRange::FromEnd(1, None);
-        assert_eq!(byte_range.to_range(10), 0..9);
-        assert_eq!(byte_range.length(10), 9);
-        assert_eq!(byte_range.offset(), 1);
+        let byte_range = ByteRange::Suffix(1);
+        assert_eq!(byte_range.to_range(10), 9..10);
+        assert_eq!(byte_range.length(10), 1);
 
         let byte_range = ByteRange::FromStart(1, Some(5));
         assert_eq!(byte_range.to_range(10), 1..6);
@@ -382,8 +356,8 @@ mod tests {
         assert!(validate_byte_ranges(&[ByteRange::FromStart(1, Some(5))], 6).is_ok());
         assert!(validate_byte_ranges(&[ByteRange::FromStart(1, Some(5))], 2).is_err());
 
-        assert!(validate_byte_ranges(&[ByteRange::FromEnd(1, Some(5))], 6).is_ok());
-        assert!(validate_byte_ranges(&[ByteRange::FromEnd(1, Some(5))], 2).is_err());
+        assert!(validate_byte_ranges(&[ByteRange::Suffix(5)], 6).is_ok());
+        assert!(validate_byte_ranges(&[ByteRange::Suffix(5)], 2).is_err());
 
         assert!(extract_byte_ranges(&[1, 2, 3], &[ByteRange::FromStart(1, Some(2))]).is_ok());
         let bytes = extract_byte_ranges(&[1, 2, 3], &[ByteRange::FromStart(1, Some(4))]);
@@ -399,9 +373,7 @@ mod tests {
         assert_eq!(format!("{}", ByteRange::FromStart(0, None)), "..");
         assert_eq!(format!("{}", ByteRange::FromStart(5, None)), "5..");
         assert_eq!(format!("{}", ByteRange::FromStart(5, Some(2))), "5..7");
-        assert_eq!(format!("{}", ByteRange::FromEnd(5, None)), "..-5");
-        assert_eq!(format!("{}", ByteRange::FromEnd(0, Some(2))), "-2..");
-        assert_eq!(format!("{}", ByteRange::FromEnd(5, Some(2))), "-7..-5");
+        assert_eq!(format!("{}", ByteRange::Suffix(2)), "-2..");
     }
 
     #[test]
@@ -413,12 +385,12 @@ mod tests {
             ByteRange::FromStart(3, Some(3)),
             ByteRange::FromStart(4, Some(1)),
             ByteRange::FromStart(1, Some(1)),
-            ByteRange::FromEnd(1, Some(5)),
+            ByteRange::Suffix(5),
         ];
         let out = extract_byte_ranges_read(&mut read, size, &byte_ranges).unwrap();
         assert_eq!(
             out,
-            vec![vec![3, 4, 5], vec![4], vec![1], vec![4, 5, 6, 7, 8]]
+            vec![vec![3, 4, 5], vec![4], vec![1], vec![5, 6, 7, 8, 9]]
         );
     }
 }

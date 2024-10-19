@@ -62,22 +62,19 @@ pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
     assert_eq!(
         store.get_partial_values_key(
             &"a/b".try_into()?,
-            &[
-                ByteRange::FromStart(1, Some(1)),
-                ByteRange::FromEnd(0, Some(1))
-            ]
+            &[ByteRange::FromStart(1, Some(1)), ByteRange::Suffix(1)]
         )?,
         Some(vec![vec![1].into(), vec![3].into()])
     );
     assert_eq!(
         store.get_partial_values(&[
             StoreKeyRange::new("a/b".try_into()?, ByteRange::FromStart(1, None)),
-            StoreKeyRange::new("a/b".try_into()?, ByteRange::FromEnd(1, Some(2))),
+            StoreKeyRange::new("a/b".try_into()?, ByteRange::Suffix(2)),
             StoreKeyRange::new("i/j/k".try_into()?, ByteRange::FromStart(1, Some(1))),
         ])?,
         vec![
             Some(vec![1, 2, 3].into()),
-            Some(vec![1, 2].into()),
+            Some(vec![2, 3].into()),
             Some(vec![1].into())
         ]
     );
@@ -225,10 +222,7 @@ pub async fn async_store_read<T: AsyncReadableStorageTraits>(
         store
             .get_partial_values_key(
                 &"a/b".try_into()?,
-                &[
-                    ByteRange::FromStart(1, Some(1)),
-                    ByteRange::FromEnd(0, Some(1))
-                ]
+                &[ByteRange::FromStart(1, Some(1)), ByteRange::Suffix(1)]
             )
             .await?,
         Some(vec![vec![1].into(), vec![3].into()])
@@ -237,13 +231,13 @@ pub async fn async_store_read<T: AsyncReadableStorageTraits>(
         store
             .get_partial_values(&[
                 StoreKeyRange::new("a/b".try_into()?, ByteRange::FromStart(1, None)),
-                StoreKeyRange::new("a/b".try_into()?, ByteRange::FromEnd(1, Some(2))),
+                StoreKeyRange::new("a/b".try_into()?, ByteRange::Suffix(2)),
                 StoreKeyRange::new("i/j/k".try_into()?, ByteRange::FromStart(1, Some(1))),
             ])
             .await?,
         vec![
             Some(vec![1, 2, 3].into()),
-            Some(vec![1, 2].into()),
+            Some(vec![2, 3].into()),
             Some(vec![1].into())
         ]
     );
