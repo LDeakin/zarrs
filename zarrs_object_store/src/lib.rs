@@ -31,9 +31,8 @@ use object_store::path::Path;
 
 use zarrs_storage::{
     async_store_set_partial_values, byte_range::ByteRange, AsyncBytes, AsyncListableStorageTraits,
-    AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits,
-    MaybeAsyncBytes, StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-    StorePrefix,
+    AsyncReadableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes, StorageError,
+    StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
 };
 
 /// Maps a [`StoreKey`] to an [`object_store`] path.
@@ -171,13 +170,6 @@ impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectSto
         )?;
         Ok(())
     }
-}
-
-#[async_trait::async_trait]
-impl<T: object_store::ObjectStore> AsyncReadableWritableStorageTraits for AsyncObjectStore<T> {
-    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-    //     Ok(self.locks.mutex(key).await)
-    // }
 }
 
 #[async_trait::async_trait]

@@ -267,11 +267,10 @@ pub trait AsyncReadableWritableStorageTraits:
 {
 }
 
-// FIXME: Enable this in the next major release
-// impl<T> AsyncReadableWritableStorageTraits for T where
-//     T: AsyncReadableStorageTraits + AsyncWritableStorageTraits
-// {
-// }
+impl<T> AsyncReadableWritableStorageTraits for T where
+    T: AsyncReadableStorageTraits + AsyncWritableStorageTraits
+{
+}
 
 /// A supertrait of [`AsyncReadableStorageTraits`] and [`AsyncListableStorageTraits`].
 pub trait AsyncReadableListableStorageTraits:

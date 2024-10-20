@@ -15,8 +15,8 @@ use crate::{
 
 #[cfg(feature = "async")]
 use crate::{
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 /// The usage log storage transformer. Logs storage method calls.
@@ -459,11 +459,4 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         )?;
         result
     }
-}
-
-#[cfg(feature = "async")]
-#[async_trait::async_trait]
-impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for UsageLogStorageAdapter<TStorage>
-{
 }
