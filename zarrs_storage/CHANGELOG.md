@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+ - Add `ByteRange::new` and `From` for `RangeBounds<u64>`
+
 ### Changed
  - Bump `unsafe_cell_slice` to 0.2.0
+ - **Breaking**: Change `ByteRange::FromEnd` to `ByteRange::Suffix`
+
+### Removed
+ - **Breaking**: Remove `ByteRange::offset()`
 
 ## [0.2.2] - 2024-10-17
 

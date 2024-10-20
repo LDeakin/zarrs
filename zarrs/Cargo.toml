@@ -66,7 +66,8 @@ unsafe_cell_slice = "0.2.0"
 zarrs_filesystem = { workspace = true, optional = true }
 zarrs_metadata = { workspace = true }
 zarrs_storage = { workspace = true }
-zfp-sys = {version = "0.1.15", features = ["static"], optional = true }
+# zfp-sys is pinned to 0.1.15 to mainain 1.76 MSRV
+zfp-sys = {version = "=0.1.15", features = ["static"], optional = true }
 zstd = { version = "0.13.1", features = ["zstdmt"], optional = true }
 
 [dependencies.num-complex]

@@ -49,11 +49,8 @@ impl BytesPartialDecoderTraits for ByteIntervalPartialDecoder {
                 ByteRange::FromStart(offset, Some(length)) => {
                     ByteRange::FromStart(self.byte_offset + offset, Some(*length))
                 }
-                ByteRange::FromEnd(offset, None) => {
-                    ByteRange::FromStart(self.byte_offset, Some(self.byte_length - *offset))
-                }
-                ByteRange::FromEnd(offset, Some(length)) => ByteRange::FromEnd(
-                    self.byte_offset + self.byte_length - offset - *length,
+                ByteRange::Suffix(length) => ByteRange::FromStart(
+                    self.byte_offset + self.byte_length - *length,
                     Some(*length),
                 ),
             })
@@ -105,11 +102,8 @@ impl AsyncBytesPartialDecoderTraits for AsyncByteIntervalPartialDecoder {
                 ByteRange::FromStart(offset, Some(length)) => {
                     ByteRange::FromStart(self.byte_offset + offset, Some(*length))
                 }
-                ByteRange::FromEnd(offset, None) => {
-                    ByteRange::FromStart(self.byte_offset, Some(self.byte_length - *offset))
-                }
-                ByteRange::FromEnd(offset, Some(length)) => ByteRange::FromEnd(
-                    self.byte_offset + self.byte_length - offset - *length,
+                ByteRange::Suffix(length) => ByteRange::FromStart(
+                    self.byte_offset + self.byte_length - *length,
                     Some(*length),
                 ),
             })

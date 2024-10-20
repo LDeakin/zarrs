@@ -145,7 +145,7 @@ fn get_index_byte_range(
         .map_err(|e| CodecError::Other(e.to_string()))?;
     Ok(match index_location {
         ShardingIndexLocation::Start => ByteRange::FromStart(0, Some(index_encoded_size)),
-        ShardingIndexLocation::End => ByteRange::FromEnd(0, Some(index_encoded_size)),
+        ShardingIndexLocation::End => ByteRange::Suffix(index_encoded_size),
     })
 }
 
