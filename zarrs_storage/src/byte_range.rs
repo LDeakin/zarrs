@@ -8,7 +8,9 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Read, Seek, SeekFrom},
-    ops::Range,
+    ops::{
+        Bound, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+    },
 };
 
 use itertools::Itertools;
@@ -32,7 +34,52 @@ pub enum ByteRange {
     Suffix(ByteLength),
 }
 
+macro_rules! impl_from_rangebounds {
+    ($($t:ty),*) => {
+        $(
+            impl From<$t> for ByteRange {
+                fn from(range: $t) -> Self {
+                    Self::new(range)
+                }
+            }
+        )*
+    };
+}
+
+impl_from_rangebounds!(
+    Range<u64>,
+    RangeFrom<u64>,
+    RangeFull,
+    RangeTo<u64>,
+    RangeInclusive<u64>,
+    RangeToInclusive<u64>
+);
+
 impl ByteRange {
+    pub fn new(bounds: impl RangeBounds<u64>) -> Self {
+        match (bounds.start_bound(), bounds.end_bound()) {
+            (Bound::Included(start), Bound::Included(end)) => {
+                Self::FromStart(*start, Some(end - start + 1))
+            }
+            (Bound::Included(start), Bound::Excluded(end)) => {
+                Self::FromStart(*start, Some(end - start))
+            }
+            (Bound::Included(start), Bound::Unbounded) => Self::FromStart(*start, None),
+            (Bound::Excluded(start), Bound::Included(end)) => {
+                Self::FromStart(start + 1, Some(end - start))
+            }
+            (Bound::Excluded(start), Bound::Excluded(end)) => {
+                Self::FromStart(start + 1, Some(end - start - 1))
+            }
+            (Bound::Excluded(start), Bound::Unbounded) => Self::FromStart(start + 1, None),
+            (Bound::Unbounded, Bound::Included(length)) => Self::FromStart(0, Some(length + 1)),
+            (Bound::Unbounded, Bound::Excluded(length)) => Self::FromStart(0, Some(*length)),
+            // (Bound::Unbounded, Bound::Included(length)) => Self::Suffix(length + 1), // opendal style
+            // (Bound::Unbounded, Bound::Excluded(length)) => Self::Suffix(*length), // opendal style
+            (Bound::Unbounded, Bound::Unbounded) => Self::FromStart(0, None),
+        }
+    }
+
     /// Return the start of a byte range. `size` is the size of the entire bytes.
     #[must_use]
     pub fn start(&self, size: u64) -> u64 {
@@ -92,7 +139,7 @@ impl std::fmt::Display for ByteRange {
                 },
                 length.map_or(String::new(), |length| (offset + length).to_string())
             ),
-            Self::Suffix(length) => write!(f, "{}..", format!("-{}", length),),
+            Self::Suffix(length) => write!(f, "-{}..", length,),
         }
     }
 }
@@ -116,12 +163,8 @@ fn validate_byte_ranges(
 ) -> Result<(), InvalidByteRangeError> {
     for byte_range in byte_ranges {
         let valid = match byte_range {
-            ByteRange::FromStart(offset, length) => {
-                offset + length.unwrap_or(0) <= bytes_len
-            }
-            ByteRange::Suffix(length) => {
-                *length <= bytes_len
-            }
+            ByteRange::FromStart(offset, length) => offset + length.unwrap_or(0) <= bytes_len,
+            ByteRange::Suffix(length) => *length <= bytes_len,
         };
         if !valid {
             return Err(InvalidByteRangeError(*byte_range, bytes_len));
@@ -366,6 +409,16 @@ mod tests {
             bytes.unwrap_err().to_string(),
             "invalid byte range 1..5 for bytes of length 3"
         );
+    }
+
+    #[test]
+    fn byte_range_rangebounds() {
+        assert_eq!(ByteRange::FromStart(0, None), ByteRange::from(..));
+        assert_eq!(ByteRange::FromStart(1, None), ByteRange::from(1..));
+        assert_eq!(ByteRange::FromStart(0, Some(2)), ByteRange::from(0..2));
+        assert_eq!(ByteRange::FromStart(1, Some(2)), ByteRange::from(1..3));
+        assert_eq!(ByteRange::FromStart(0, Some(3)), ByteRange::from(..3));
+        // assert_eq!(ByteRange::Suffix(3), ByteRange::from(..3)); // opendal style
     }
 
     #[test]
