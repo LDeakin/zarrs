@@ -2,9 +2,9 @@ use opendal::Operator;
 
 use zarrs_storage::{
     byte_range::{ByteRange, InvalidByteRangeError},
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes, StorageError,
-    StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    MaybeAsyncBytes, StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+    StorePrefix,
 };
 
 use crate::{handle_result, handle_result_notfound};
@@ -89,13 +89,6 @@ impl AsyncWritableStorageTraits for AsyncOpendalStore {
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         handle_result(self.operator.remove_all(prefix.as_str()).await)
     }
-}
-
-#[async_trait::async_trait]
-impl AsyncReadableWritableStorageTraits for AsyncOpendalStore {
-    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-    //     Ok(self.locks.mutex(key).await)
-    // }
 }
 
 #[async_trait::async_trait]

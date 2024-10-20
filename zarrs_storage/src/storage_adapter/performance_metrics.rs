@@ -8,8 +8,8 @@ use crate::{
 
 #[cfg(feature = "async")]
 use crate::{
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 use std::sync::{
@@ -284,11 +284,4 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         self.storage.erase_prefix(prefix).await
     }
-}
-
-#[cfg(feature = "async")]
-#[async_trait::async_trait]
-impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for PerformanceMetricsStorageAdapter<TStorage>
-{
 }
