@@ -194,7 +194,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///
 /// ## Example: Update an Array Chunk-by-Chunk (in Parallel)
 /// In the below example, an array is updated chunk-by-chunk in parallel.
-/// This makes use of [`chunk_subset_bounded`](Array::chunk_subset_bounded) to retrieve and store only the the subset of chunks that are within the array bounds.
+/// This makes use of [`chunk_subset_bounded`](Array::chunk_subset_bounded) to retrieve and store only the subset of chunks that are within the array bounds.
 /// This can occur when a regular chunk grid does not evenly divide the array shape, for example.
 ///
 /// ```rust
