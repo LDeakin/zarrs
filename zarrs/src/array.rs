@@ -181,11 +181,60 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching)
 ///  - [`ArrayShardedExt`], [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
 ///
-/// ### Optimising Writes
-/// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and require careful usage if executed in parallel (see below).
+/// ### Chunks and Array Subsets
+/// Several convenience methods are available for querying the underlying chunk grid:
+///  - [`chunk_origin`](Array::chunk_origin)
+///  - [`chunk_shape`](Array::chunk_shape)
+///  - [`chunk_subset`](Array::chunk_subset)
+///  - [`chunk_subset_bounded`](Array::chunk_subset_bounded)
+///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
+///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
 ///
-/// #### Direct IO (Linux)
+/// An [`ArraySubset`] spanning the entire array can be retrieved with [`subset_all`](Array::subset_all).
+///
+/// ## Example: Update an Array Chunk-by-Chunk (in Parallel)
+/// In the below example, an array is updated chunk-by-chunk in parallel.
+/// This makes use of [`chunk_subset_bounded`](Array::chunk_subset_bounded) to retrieve and store only the the subset of chunks that are within the array bounds.
+/// This can occur when a regular chunk grid does not evenly divide the array shape, for example.
+///
+/// ```rust
+/// # use std::sync::Arc;
+/// # use zarrs::array::{Array, ArrayBytes};
+/// # use zarrs::array_subset::ArraySubset;
+/// # use zarrs::array_subset::iterators::Indices;
+/// # use rayon::iter::{IntoParallelIterator, ParallelIterator};
+/// # let store = Arc::new(zarrs_filesystem::FilesystemStore::new("tests/data/array_write_read.zarr")?);
+/// # let array = Array::open(store, "/group/array")?;
+/// // Get an iterator over the chunk indices
+/// //   The array shape must have been set (i.e. non-zero), otherwise the
+/// //   iterator will be empty
+/// let chunk_grid_shape = array.chunk_grid_shape().unwrap();
+/// let chunks: Indices = ArraySubset::new_with_shape(chunk_grid_shape).indices();
+///
+/// // Iterate over chunk indices (in parallel)
+/// chunks.into_par_iter().try_for_each(|chunk_indices: Vec<u64>| {
+///     // Retrieve the array subset of the chunk within the array bounds
+///     //   This partially decodes chunks that extend beyond the array end
+///     let subset: ArraySubset = array.chunk_subset_bounded(&chunk_indices)?;
+///     let chunk_bytes: ArrayBytes = array.retrieve_array_subset(&subset)?;
+///
+///     // ... Update the chunk bytes
+///
+///     // Write the updated chunk
+///     //   Elements beyond the array bounds in straddling chunks are left
+///     //   unmodified or set to the fill value if the chunk did not exist.
+///     array.store_array_subset(&subset, chunk_bytes)
+/// })?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// ## Optimising Writes
+/// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
+///
+/// [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) may incur decoding overhead, and they require careful usage if executed in parallel (see [Parallel Writing](#parallel-writing) below).
+/// However, these methods will use a fast path and avoid decoding if the subset covers entire chunks.
+///
+/// ### Direct IO (Linux)
 /// If using Linux, enabling direct IO with the [`FilesystemStore`](https://docs.rs/zarrs_filesystem/latest/zarrs_filesystem/struct.FilesystemStore.html) may improve write performance.
 ///
 /// Currently, the most performant path for uncompressed writing is to reuse page aligned buffers via [`store_encoded_chunk`](Array::store_encoded_chunk).
@@ -202,9 +251,10 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// Partial writes to a chunk may be lost if these rules are not respected.
 /// `zarrs` does not currently offer a "synchronisation" API for locking chunks or array subsets.
 ///
-/// ### Optimising Reads
+/// ## Optimising Reads
 /// It is fastest to load arrays using [`retrieve_chunk`](Array::retrieve_chunk) or [`retrieve_chunks`](Array::retrieve_chunks) where possible.
 /// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may use partial decoders which can be less efficient with some codecs/stores.
+/// Like their write counterparts, these methods will use a fast path if subsets cover entire chunks.
 ///
 /// **Standard [`Array`] retrieve methods do not perform any caching**.
 /// For this reason, retrieving multiple subsets in a chunk with [`retrieve_chunk_subset`](Array::store_chunk_subset) is very inefficient and strongly discouraged.
@@ -245,7 +295,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// For many access patterns, chunk caching may reduce performance.
 /// **Benchmark your algorithm/data.**
 ///
-/// ### Reading Sharded Arrays
+/// ## Reading Sharded Arrays
 /// The `sharding_indexed` ([`ShardingCodec`](codec::array_to_bytes::sharding)) codec enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
 /// With a sharded array, the [`chunk_grid`](Array::chunk_grid) and chunk indices in store/retrieve methods reference the chunks ("shards") of an array.
 ///
@@ -259,17 +309,6 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///
 /// For unsharded arrays, these methods gracefully fallback to referencing standard chunks.
 /// Each method has a `cache` parameter ([`ArrayShardedReadableExtCache`]) that stores shard indexes so that they do not have to be repeatedly retrieved and decoded.
-///
-/// ## Chunk and Array Subset Extents
-/// Several convenience methods are available for querying the underlying chunk grid:
-///  - [`chunk_origin`](Array::chunk_origin)
-///  - [`chunk_shape`](Array::chunk_shape)
-///  - [`chunk_subset`](Array::chunk_subset)
-///  - [`chunk_subset_bounded`](Array::chunk_subset_bounded)
-///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
-///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
-///
-/// An [`ArraySubset`] spanning the entire array can be retrieved with [`subset_all`](Array::subset_all).
 ///
 /// ## Parallelism and Concurrency
 /// ### Sync API
