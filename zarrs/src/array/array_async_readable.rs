@@ -11,10 +11,10 @@ use crate::{
 };
 
 use super::{
-    array_bytes::{merge_chunks_vlen, update_bytes_flen},
+    array_bytes::{copy_fill_value_into, merge_chunks_vlen},
     codec::{
         options::CodecOptions, ArrayToBytesCodecTraits, AsyncArrayPartialDecoderTraits,
-        AsyncStoragePartialDecoder, CodecError,
+        AsyncStoragePartialDecoder,
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,
@@ -381,23 +381,14 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 )
                 .map_err(ArrayError::CodecError)
         } else {
-            // Fill with the fill value
-            let array_size = ArraySize::new(self.data_type().size(), output_subset.num_elements());
-            if let ArrayBytes::Fixed(fill_value_bytes) =
-                ArrayBytes::new_fill_value(array_size, self.fill_value())
-            {
-                update_bytes_flen(
-                    output,
-                    output_shape,
-                    &fill_value_bytes,
-                    output_subset,
-                    self.data_type().fixed_size().unwrap(),
-                );
-                Ok(())
-            } else {
-                // TODO: Variable length data type support?
-                Err(ArrayError::CodecError(CodecError::ExpectedFixedLengthBytes))
-            }
+            copy_fill_value_into(
+                self.data_type(),
+                self.fill_value(),
+                output,
+                output_shape,
+                output_subset,
+            )
+            .map_err(ArrayError::CodecError)
         }
     }
 

@@ -503,6 +503,45 @@ pub fn extract_decoded_regions_vlen<'a>(
     Ok(out)
 }
 
+/// Decode the fill value into a subset of a preallocated output.
+///
+/// This method is intended for internal use by Array.
+/// It currently only works for fixed length data types.
+///
+/// # Errors
+/// Returns [`CodecError::ExpectedFixedLengthBytes`] for variable-sized data.
+///
+/// # Safety
+/// The caller must ensure that:
+///  - `data_type` and `fill_value` are compatible,
+///  - `output` holds enough space for the preallocated bytes of an array with `output_shape` and `data_type`, and
+///  - `output_subset` is within the bounds of `output_shape`.
+pub unsafe fn copy_fill_value_into(
+    data_type: &DataType,
+    fill_value: &FillValue,
+    output: &UnsafeCellSlice<u8>,
+    output_shape: &[u64],
+    output_subset: &ArraySubset,
+) -> Result<(), CodecError> {
+    let array_size = ArraySize::new(data_type.size(), output_subset.num_elements());
+    if let (ArrayBytes::Fixed(fill_value_bytes), Some(data_type_size)) = (
+        ArrayBytes::new_fill_value(array_size, fill_value),
+        data_type.fixed_size(),
+    ) {
+        update_bytes_flen(
+            output,
+            output_shape,
+            &fill_value_bytes,
+            output_subset,
+            data_type_size,
+        );
+        Ok(())
+    } else {
+        // TODO: Variable length data type support?
+        Err(CodecError::ExpectedFixedLengthBytes)
+    }
+}
+
 impl<'a> From<RawBytes<'a>> for ArrayBytes<'a> {
     fn from(bytes: RawBytes<'a>) -> Self {
         Self::new_flen(bytes)

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add a `makefile` and simplify `BUILD.md`
  - Add chunk-by-chunk update example in `Array` docs
+ - Add `array::copy_fill_value_into()`
 
 ### Changed
 - Bump `unsafe_cell_slice` to 0.2.0

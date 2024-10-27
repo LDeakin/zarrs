@@ -46,7 +46,7 @@ use std::sync::Arc;
 
 pub use self::{
     array_builder::ArrayBuilder,
-    array_bytes::{ArrayBytes, ArrayBytesError, RawBytes, RawBytesOffsets},
+    array_bytes::{copy_fill_value_into, ArrayBytes, ArrayBytesError, RawBytes, RawBytesOffsets},
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
     array_representation::{
