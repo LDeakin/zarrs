@@ -185,13 +185,15 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             chunk_bytes_old.validate(chunk_shape.iter().product(), self.data_type().size())?;
 
             // Update the chunk
-            let chunk_bytes_new = update_array_bytes(
-                chunk_bytes_old,
-                chunk_shape,
-                chunk_subset_bytes,
-                chunk_subset,
-                self.data_type().size(),
-            );
+            let chunk_bytes_new = unsafe {
+                update_array_bytes(
+                    chunk_bytes_old,
+                    &chunk_shape,
+                    chunk_subset,
+                    chunk_subset_bytes,
+                    self.data_type().size(),
+                )
+            };
 
             // Store the updated chunk
             self.store_chunk_opt(chunk_indices, chunk_bytes_new, options)
