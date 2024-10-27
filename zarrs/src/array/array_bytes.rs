@@ -10,7 +10,7 @@ use crate::{
     metadata::v3::array::data_type::DataTypeSize,
 };
 
-use super::{codec::CodecError, ravel_indices, ArrayShape, ArraySize, DataType, FillValue};
+use super::{codec::CodecError, ravel_indices, ArraySize, DataType, FillValue};
 
 /// Array element bytes.
 pub type RawBytes<'a> = Cow<'a, [u8]>;
@@ -298,7 +298,7 @@ pub fn update_bytes_flen(
 pub fn update_bytes_vlen<'a>(
     output_bytes: &RawBytes,
     output_offsets: &RawBytesOffsets,
-    output_shape: ArrayShape,
+    output_shape: &[u64],
     subset_bytes: &RawBytes,
     subset_offsets: &RawBytesOffsets,
     subset: &ArraySubset,
@@ -317,7 +317,7 @@ pub fn update_bytes_vlen<'a>(
             .sum::<usize>()
     };
     let size_subset_old = {
-        let chunk_indices = subset.linearised_indices(&output_shape).unwrap();
+        let chunk_indices = subset.linearised_indices(output_shape).unwrap();
         chunk_indices
             .iter()
             .map(|index| {
@@ -333,7 +333,7 @@ pub fn update_bytes_vlen<'a>(
         .checked_sub(size_subset_old)
         .unwrap();
     let mut bytes_new = Vec::with_capacity(bytes_new_len);
-    let indices = ArraySubset::new_with_shape(output_shape).indices();
+    let indices = ArraySubset::new_with_shape(output_shape.to_vec()).indices();
     for (chunk_index, indices) in indices.iter().enumerate() {
         offsets_new.push(bytes_new.len());
         if subset.contains(&indices) {
@@ -358,16 +358,25 @@ pub fn update_bytes_vlen<'a>(
     ArrayBytes::new_vlen(bytes_new, offsets_new)
 }
 
-/// Update the intersecting subset of the chunk
-/// This function is used internally by [`store_chunk_subset_opt`] and [`async_store_chunk_subset_opt`]
-pub fn update_array_bytes<'a>(
+/// Update a subset of an array.
+///
+/// This function is used internally by [`crate::array::Array::store_chunk_subset_opt`] and [`crate::array::Array::async_store_chunk_subset_opt`].
+///
+/// # Safety
+/// The caller must ensure that:
+///  - `output_bytes` is an array with `output_shape` and `data_type_size`,
+///  - `output_subset_bytes` is an array with the shape of `output_subset` and `data_type_size`,
+///  - `output_subset` is within the bounds of `output_shape`, and
+///  - `output_bytes` and `output_subset_bytes` are compatible (e.g. both fixed or both variable sized).
+#[must_use]
+pub unsafe fn update_array_bytes<'a>(
     output_bytes: ArrayBytes,
-    output_shape: ArrayShape,
-    subset_bytes: ArrayBytes,
-    subset: &ArraySubset,
+    output_shape: &[u64],
+    output_subset: &ArraySubset,
+    output_subset_bytes: ArrayBytes,
     data_type_size: DataTypeSize,
 ) -> ArrayBytes<'a> {
-    match (output_bytes, subset_bytes, data_type_size) {
+    match (output_bytes, output_subset_bytes, data_type_size) {
         (
             ArrayBytes::Variable(chunk_bytes, chunk_offsets),
             ArrayBytes::Variable(chunk_subset_bytes, chunk_subset_offsets),
@@ -378,7 +387,7 @@ pub fn update_array_bytes<'a>(
             output_shape,
             &chunk_subset_bytes,
             &chunk_subset_offsets,
-            subset,
+            output_subset,
         ),
         (
             ArrayBytes::Fixed(chunk_bytes),
@@ -390,9 +399,9 @@ pub fn update_array_bytes<'a>(
                 let chunk_bytes = UnsafeCellSlice::new(&mut chunk_bytes);
                 update_bytes_flen(
                     &chunk_bytes,
-                    &output_shape,
+                    output_shape,
                     &chunk_subset_bytes,
-                    subset,
+                    output_subset,
                     data_type_size,
                 );
             }
