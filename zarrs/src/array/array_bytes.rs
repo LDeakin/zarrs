@@ -596,8 +596,7 @@ impl From<Vec<u8>> for ArrayBytes<'_> {
 
 impl<'a, const N: usize> From<&'a [u8; N]> for ArrayBytes<'a> {
     fn from(bytes: &'a [u8; N]) -> Self {
-        // NOTE: as_slice() is needed for rust <1.77
-        ArrayBytes::new_flen(bytes.as_slice())
+        ArrayBytes::new_flen(bytes)
     }
 }
 
