@@ -8,9 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
- - Add a `makefile` and simplify `BUILD.md`
- - Add chunk-by-chunk update example in `Array` docs
- - Add `array::copy_fill_value_into()`
+- Add a `makefile` and simplify `BUILD.md`
+- Add chunk-by-chunk update example in `Array` docs
+- Add `array::copy_fill_value_into()`
 
 ### Changed
 - Bump `unsafe_cell_slice` to 0.2.0
@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Add `dynamic()` to all `CodecTraits`
 - **Breaking**: Add `options` parameter to `[Async]ArrayPartialDecoderTraits::partial_decode` and remove `partial_decode_opt`
 - Make `array::update_array_bytes()` public
+ - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
+- Bump `zfp-sys` to 0.2.0
+
+### Removed
+- Remove `async-recursion` dependency
 
 ## [0.17.1] - 2024-10-18
 

@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use async_recursion::async_recursion;
-
 use crate::{
     array::{ArrayMetadata, ArrayMetadataV2},
     group::GroupMetadata,
@@ -91,7 +89,6 @@ async fn get_metadata_v2<
 ///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
-#[async_recursion]
 pub async fn async_get_child_nodes<TStorage>(
     storage: &Arc<TStorage>,
     path: &NodePath,
@@ -117,7 +114,7 @@ where
             .map_err(|err: NodePathError| StorageError::Other(err.to_string()))?;
         let children = match child_metadata {
             NodeMetadata::Array(_) => Vec::default(),
-            NodeMetadata::Group(_) => async_get_child_nodes(storage, &path).await?,
+            NodeMetadata::Group(_) => Box::pin(async_get_child_nodes(storage, &path)).await?,
         };
         nodes.push(Node::new_with_metadata(path, child_metadata, children));
     }
