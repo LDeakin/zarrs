@@ -36,7 +36,7 @@ impl MemoryStore {
         }
     }
 
-    fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, truncate: bool) {
+    fn set_impl(&self, key: &StoreKey, value: &[u8], offset: ByteOffset, truncate: bool) {
         let mut data_map = self.data_map.lock().unwrap();
         let data = data_map
             .entry(key.clone())
@@ -45,7 +45,6 @@ impl MemoryStore {
         drop(data_map);
         let mut data = data.write();
 
-        let offset = offset.unwrap_or(0);
         if offset == 0 && data.is_empty() {
             // fast path
             *data = value.to_vec();
@@ -113,7 +112,7 @@ impl ReadableStorageTraits for MemoryStore {
 
 impl WritableStorageTraits for MemoryStore {
     fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
-        Self::set_impl(self, key, &value, None, true);
+        Self::set_impl(self, key, &value, 0, true);
         Ok(())
     }
 
@@ -134,7 +133,7 @@ impl WritableStorageTraits for MemoryStore {
                     self.set_impl(
                         &key,
                         key_offset_value.value(),
-                        Some(key_offset_value.offset()),
+                        key_offset_value.offset(),
                         false,
                     );
                 }

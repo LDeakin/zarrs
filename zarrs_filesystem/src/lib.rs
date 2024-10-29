@@ -191,7 +191,7 @@ impl FilesystemStore {
         &self,
         key: &StoreKey,
         value: &[u8],
-        offset: Option<ByteOffset>,
+        offset: ByteOffset,
         truncate: bool,
     ) -> Result<(), StorageError> {
         let file = self.get_file_mutex(key);
@@ -208,11 +208,9 @@ impl FilesystemStore {
         let mut flags = OpenOptions::new();
         flags.write(true).create(true).truncate(truncate);
 
-        // FIXME: for now, only Linux support; also no support for `offset != 0`
-        let enable_direct = cfg!(target_os = "linux")
-            && self.options.direct_io
-            && offset.is_none()
-            && !value.is_empty();
+        // TODO: for now, only Linux support; also no support for `offset != 0`
+        let enable_direct =
+            cfg!(target_os = "linux") && self.options.direct_io && offset == 0 && !value.is_empty();
 
         // If `value` is already page-size aligned, we don't need to copy.
         let need_copy = value.as_ptr().align_offset(page_size::get()) != 0
@@ -243,10 +241,7 @@ impl FilesystemStore {
             // Truncate again to requested size
             file.set_len(value.len() as u64)?;
         } else {
-            if let Some(offset) = offset {
-                file.seek(SeekFrom::Start(offset))?;
-            }
-
+            file.seek(SeekFrom::Start(offset))?;
             file.write_all(value)?;
         }
 
@@ -316,7 +311,7 @@ impl WritableStorageTraits for FilesystemStore {
         if self.readonly {
             Err(StorageError::ReadOnly)
         } else {
-            Self::set_impl(self, key, &value, None, true)
+            Self::set_impl(self, key, &value, 0, true)
         }
     }
 
