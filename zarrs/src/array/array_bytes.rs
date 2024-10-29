@@ -373,7 +373,7 @@ pub unsafe fn update_array_bytes<'a>(
     output_bytes: ArrayBytes,
     output_shape: &[u64],
     output_subset: &ArraySubset,
-    output_subset_bytes: ArrayBytes,
+    output_subset_bytes: &ArrayBytes,
     data_type_size: DataTypeSize,
 ) -> ArrayBytes<'a> {
     match (output_bytes, output_subset_bytes, data_type_size) {
@@ -385,8 +385,8 @@ pub unsafe fn update_array_bytes<'a>(
             &chunk_bytes,
             &chunk_offsets,
             output_shape,
-            &chunk_subset_bytes,
-            &chunk_subset_offsets,
+            chunk_subset_bytes,
+            chunk_subset_offsets,
             output_subset,
         ),
         (
@@ -400,7 +400,7 @@ pub unsafe fn update_array_bytes<'a>(
                 update_bytes_flen(
                     &chunk_bytes,
                     output_shape,
-                    &chunk_subset_bytes,
+                    chunk_subset_bytes,
                     output_subset,
                     data_type_size,
                 );

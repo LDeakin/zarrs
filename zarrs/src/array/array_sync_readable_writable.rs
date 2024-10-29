@@ -190,7 +190,7 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     chunk_bytes_old,
                     &chunk_shape,
                     chunk_subset,
-                    chunk_subset_bytes,
+                    &chunk_subset_bytes,
                     self.data_type().size(),
                 )
             };

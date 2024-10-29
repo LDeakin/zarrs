@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Add `dynamic()` to all `CodecTraits`
 - **Breaking**: Add `options` parameter to `[Async]ArrayPartialDecoderTraits::partial_decode` and remove `partial_decode_opt`
 - Make `array::update_array_bytes()` public
- - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
+- **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
 - Bump `zfp-sys` to 0.2.0
 
 ### Removed
