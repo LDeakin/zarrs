@@ -3,7 +3,7 @@ use opendal::BlockingOperator;
 use zarrs_storage::{
     byte_range::{ByteRange, InvalidByteRangeError},
     Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
+    StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
 };
 
 use crate::{handle_result, handle_result_notfound};
@@ -65,9 +65,9 @@ impl WritableStorageTraits for OpendalStore {
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        zarrs_storage::store_set_partial_values(self, key_start_values)
+        zarrs_storage::store_set_partial_values(self, key_offset_values)
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {

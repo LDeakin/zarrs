@@ -84,9 +84,9 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for Storage
 
     fn set_partial_values(
         &self,
-        key_start_values: &[super::StoreKeyStartValue],
+        key_offset_values: &[super::StoreKeyOffsetValue],
     ) -> Result<(), super::StorageError> {
-        self.0.set_partial_values(key_start_values)
+        self.0.set_partial_values(key_offset_values)
     }
 
     fn erase(&self, key: &super::StoreKey) -> Result<(), super::StorageError> {
@@ -174,9 +174,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[super::StoreKeyStartValue],
+        key_offset_values: &[super::StoreKeyOffsetValue],
     ) -> Result<(), super::StorageError> {
-        self.0.set_partial_values(key_start_values).await
+        self.0.set_partial_values(key_offset_values).await
     }
 
     async fn erase(&self, key: &super::StoreKey) -> Result<(), super::StorageError> {

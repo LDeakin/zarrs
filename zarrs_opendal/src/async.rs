@@ -3,7 +3,7 @@ use opendal::Operator;
 use zarrs_storage::{
     byte_range::{ByteRange, InvalidByteRangeError},
     AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
-    MaybeAsyncBytes, StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+    MaybeAsyncBytes, StorageError, StoreKey, StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes,
     StorePrefix,
 };
 
@@ -77,9 +77,9 @@ impl AsyncWritableStorageTraits for AsyncOpendalStore {
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        zarrs_storage::async_store_set_partial_values(self, key_start_values).await
+        zarrs_storage::async_store_set_partial_values(self, key_offset_values).await
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {

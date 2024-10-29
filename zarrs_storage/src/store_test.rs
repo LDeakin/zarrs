@@ -1,8 +1,8 @@
 use std::error::Error;
 
 use crate::{
-    byte_range::ByteRange, ListableStorageTraits, ReadableStorageTraits, StoreKeyRange,
-    StoreKeyStartValue, StorePrefix, WritableStorageTraits,
+    byte_range::ByteRange, ListableStorageTraits, ReadableStorageTraits, StoreKeyOffsetValue,
+    StoreKeyRange, StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
@@ -24,9 +24,9 @@ pub fn store_write<T: WritableStorageTraits>(store: &T) -> Result<(), Box<dyn Er
     store.erase_prefix(&StorePrefix::root())?;
 
     store.set(&"a/b".try_into()?, vec![255, 255, 255].into())?;
-    store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 1, &[1, 2])])?;
-    store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 3, &[3])])?;
-    store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 0, &[0])])?;
+    store.set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 1, &[1, 2])])?;
+    store.set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 3, &[3])])?;
+    store.set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 0, &[0])])?;
 
     store.set(&"a/c".try_into()?, vec![0].into())?;
     store.set(&"a/d/e".try_into()?, vec![].into())?;
@@ -165,13 +165,13 @@ pub async fn async_store_write<T: AsyncWritableStorageTraits>(
         .set(&"a/b".try_into()?, vec![255, 255, 255].into())
         .await?;
     store
-        .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 1, &[1, 2])])
+        .set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 1, &[1, 2])])
         .await?;
     store
-        .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 3, &[3])])
+        .set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 3, &[3])])
         .await?;
     store
-        .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 0, &[0])])
+        .set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 0, &[0])])
         .await?;
 
     store.set(&"a/c".try_into()?, vec![0].into()).await?;

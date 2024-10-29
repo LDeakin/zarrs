@@ -32,7 +32,7 @@ use object_store::path::Path;
 use zarrs_storage::{
     async_store_set_partial_values, byte_range::ByteRange, AsyncBytes, AsyncListableStorageTraits,
     AsyncReadableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes, StorageError,
-    StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    StoreKey, StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
 };
 
 /// Maps a [`StoreKey`] to an [`object_store`] path.
@@ -145,9 +145,9 @@ impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectSto
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        async_store_set_partial_values(self, key_start_values).await
+        async_store_set_partial_values(self, key_offset_values).await
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
