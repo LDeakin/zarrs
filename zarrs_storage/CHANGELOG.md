@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Change `ByteRange::FromEnd` to `ByteRange::Suffix`
  - **Breaking**: implement `AsyncReadableWritableStorageTraits` for `T: AsyncReadableStorageTraits + AsyncWritableStorageTraits`
  - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
+ - **Breaking**: Rename `StoreKeyStartValue` to `StoreKeyOffsetValue`
+   - Adds `offset` method and removes `start` and `end`
 
 ### Removed
  - **Breaking**: Remove `ByteRange::offset()`

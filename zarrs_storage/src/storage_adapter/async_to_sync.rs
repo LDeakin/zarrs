@@ -98,9 +98,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits, TBlockOn: AsyncToSyncBlockOn
 
     fn set_partial_values(
         &self,
-        key_start_values: &[crate::StoreKeyStartValue],
+        key_offset_values: &[crate::StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        self.block_on(self.storage.set_partial_values(key_start_values))
+        self.block_on(self.storage.set_partial_values(key_offset_values))
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {

@@ -10,7 +10,7 @@
 use zarrs_storage::{
     byte_range::{ByteOffset, ByteRange},
     store_set_partial_values, Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError,
-    StoreKey, StoreKeyError, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    StoreKey, StoreKeyError, StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
     StorePrefixes, WritableStorageTraits,
 };
 
@@ -322,13 +322,13 @@ impl WritableStorageTraits for FilesystemStore {
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);
         }
 
-        store_set_partial_values(self, key_start_values)
+        store_set_partial_values(self, key_offset_values)
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {

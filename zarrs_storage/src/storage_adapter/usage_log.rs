@@ -9,7 +9,7 @@ use itertools::Itertools;
 
 use crate::{
     byte_range::ByteRange, Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
-    StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+    StorageError, StoreKey, StoreKeyOffsetValue, StoreKeyRange, StoreKeys, StoreKeysPrefixes,
     StorePrefix, WritableStorageTraits,
 };
 
@@ -223,12 +223,12 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let result = self.storage.set_partial_values(key_start_values);
+        let result = self.storage.set_partial_values(key_offset_values);
         writeln!(
             self.handle.lock().unwrap(),
-            "{}set_partial_values({key_start_values:?}) -> {result:?}",
+            "{}set_partial_values({key_offset_values:?}) -> {result:?}",
             (self.prefix_func)()
         )?;
         result
@@ -418,12 +418,12 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let result = self.storage.set_partial_values(key_start_values).await;
+        let result = self.storage.set_partial_values(key_offset_values).await;
         writeln!(
             self.handle.lock().unwrap(),
-            "{}set_partial_values({key_start_values:?}) -> {result:?}",
+            "{}set_partial_values({key_offset_values:?}) -> {result:?}",
             (self.prefix_func)()
         )?;
         result

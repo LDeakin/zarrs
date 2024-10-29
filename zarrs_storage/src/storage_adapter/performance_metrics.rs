@@ -2,7 +2,7 @@
 
 use crate::{
     Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-    StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    StoreKeyOffsetValue, StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix,
     WritableStorageTraits,
 };
 
@@ -144,17 +144,17 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let bytes_written = key_start_values
+        let bytes_written = key_offset_values
             .iter()
             .map(|ksv| ksv.value().len())
             .sum::<usize>();
         self.bytes_written
             .fetch_add(bytes_written, Ordering::Relaxed);
         self.writes
-            .fetch_add(key_start_values.len(), Ordering::Relaxed);
-        self.storage.set_partial_values(key_start_values)
+            .fetch_add(key_offset_values.len(), Ordering::Relaxed);
+        self.storage.set_partial_values(key_offset_values)
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
@@ -260,17 +260,17 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let bytes_written = key_start_values
+        let bytes_written = key_offset_values
             .iter()
             .map(|ksv| ksv.value().len())
             .sum::<usize>();
         self.bytes_written
             .fetch_add(bytes_written, Ordering::Relaxed);
         self.writes
-            .fetch_add(key_start_values.len(), Ordering::Relaxed);
-        self.storage.set_partial_values(key_start_values).await
+            .fetch_add(key_offset_values.len(), Ordering::Relaxed);
+        self.storage.set_partial_values(key_offset_values).await
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {

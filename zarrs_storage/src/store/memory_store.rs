@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use crate::{
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
+    StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
 };
 
 use std::{
@@ -119,22 +119,22 @@ impl WritableStorageTraits for MemoryStore {
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
         use itertools::Itertools;
 
         // Group by key
-        key_start_values
+        key_offset_values
             .iter()
-            .chunk_by(|key_start_value| &key_start_value.key)
+            .chunk_by(|key_offset_value| key_offset_value.key())
             .into_iter()
             .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
             .try_for_each(|(key, group)| {
-                for key_start_value in group {
+                for key_offset_value in group {
                     self.set_impl(
                         &key,
-                        key_start_value.value,
-                        Some(key_start_value.start),
+                        key_offset_value.value(),
+                        Some(key_offset_value.offset()),
                         false,
                     );
                 }
