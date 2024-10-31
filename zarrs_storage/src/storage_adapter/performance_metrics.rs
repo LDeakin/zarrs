@@ -42,6 +42,14 @@ impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
         }
     }
 
+    /// Reset the performance metrics.
+    pub fn reset(&self) {
+        self.bytes_read.store(0, Ordering::Relaxed);
+        self.bytes_written.store(0, Ordering::Relaxed);
+        self.reads.store(0, Ordering::Relaxed);
+        self.writes.store(0, Ordering::Relaxed);
+    }
+
     /// Returns the number of bytes read.
     pub fn bytes_read(&self) -> usize {
         self.bytes_read.load(Ordering::Relaxed)
