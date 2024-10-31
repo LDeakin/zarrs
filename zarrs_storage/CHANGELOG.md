@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
  - **Breaking**: Rename `StoreKeyStartValue` to `StoreKeyOffsetValue`
    - Adds `offset` method and removes `start` and `end`
+ - Count missing values as reads in `PerformanceMetricsStorageAdapter`
 
 ### Removed
  - **Breaking**: Remove `ByteRange::offset()`

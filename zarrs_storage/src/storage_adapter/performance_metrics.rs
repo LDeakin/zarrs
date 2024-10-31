@@ -85,8 +85,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         if let Some(values) = &values {
             let bytes_read = values.iter().map(Bytes::len).sum();
             self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
-            self.reads.fetch_add(byte_ranges.len(), Ordering::Relaxed);
         }
+        self.reads.fetch_add(byte_ranges.len(), Ordering::Relaxed);
         Ok(values)
     }
 
