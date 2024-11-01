@@ -215,8 +215,8 @@ impl IndexedParallelIterator for ParIndicesIterator<'_> {
 
 #[derive(Debug)]
 pub(super) struct ParIndicesIteratorProducer<'a> {
-    pub subset: &'a ArraySubset,
-    pub range: std::ops::Range<usize>,
+    pub(super) subset: &'a ArraySubset,
+    pub(super) range: std::ops::Range<usize>,
 }
 
 impl<'a> Producer for ParIndicesIteratorProducer<'a> {
