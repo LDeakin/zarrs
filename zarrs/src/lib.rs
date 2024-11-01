@@ -197,6 +197,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![deny(clippy::missing_panics_doc)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![deny(unreachable_pub)]
 
 pub mod array;
 pub mod array_subset;

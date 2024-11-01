@@ -10,7 +10,7 @@ use crate::array::{
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 /// Partial decoder for the Transpose codec.
-pub struct TransposePartialDecoder {
+pub(crate) struct TransposePartialDecoder {
     input_handle: Arc<dyn ArrayPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     order: TransposeOrder,
@@ -18,7 +18,7 @@ pub struct TransposePartialDecoder {
 
 impl TransposePartialDecoder {
     /// Create a new partial decoder for the Transpose codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         order: TransposeOrder,
@@ -132,7 +132,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the Transpose codec.
-pub struct AsyncTransposePartialDecoder {
+pub(crate) struct AsyncTransposePartialDecoder {
     input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     order: TransposeOrder,
@@ -141,7 +141,7 @@ pub struct AsyncTransposePartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncTransposePartialDecoder {
     /// Create a new partial decoder for the Transpose codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         order: TransposeOrder,

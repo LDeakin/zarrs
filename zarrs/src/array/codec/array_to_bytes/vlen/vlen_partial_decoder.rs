@@ -18,7 +18,7 @@ use crate::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// Partial decoder for the `bytes` codec.
-pub struct VlenPartialDecoder<'a> {
+pub(crate) struct VlenPartialDecoder<'a> {
     input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     index_codecs: Arc<CodecChain>,
@@ -28,7 +28,7 @@ pub struct VlenPartialDecoder<'a> {
 
 impl<'a> VlenPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         index_codecs: Arc<CodecChain>,
@@ -122,7 +122,7 @@ impl ArrayPartialDecoderTraits for VlenPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncVlenPartialDecoder {
+pub(crate) struct AsyncVlenPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     index_codecs: Arc<CodecChain>,
@@ -133,7 +133,7 @@ pub struct AsyncVlenPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncVlenPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         index_codecs: Arc<CodecChain>,

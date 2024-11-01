@@ -23,7 +23,7 @@ use crate::array::codec::{
 use super::{calculate_chunks_per_shard, ShardingIndexLocation};
 
 /// Partial decoder for the sharding codec.
-pub struct ShardingPartialDecoder {
+pub(crate) struct ShardingPartialDecoder {
     input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     chunk_shape: ChunkShape,
@@ -33,7 +33,7 @@ pub struct ShardingPartialDecoder {
 
 impl ShardingPartialDecoder {
     /// Create a new partial decoder for the sharding codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         chunk_shape: ChunkShape,
@@ -292,7 +292,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the sharding codec.
-pub struct AsyncShardingPartialDecoder {
+pub(crate) struct AsyncShardingPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     chunk_shape: ChunkShape,
@@ -303,7 +303,7 @@ pub struct AsyncShardingPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncShardingPartialDecoder {
     /// Create a new partial decoder for the sharding codec.
-    pub async fn new(
+    pub(crate) async fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         chunk_shape: ChunkShape,

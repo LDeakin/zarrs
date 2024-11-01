@@ -17,12 +17,12 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{blosc_decompress_bytes_partial, blosc_typesize, blosc_validate};
 
 /// Partial decoder for the `blosc` codec.
-pub struct BloscPartialDecoder<'a> {
+pub(crate) struct BloscPartialDecoder<'a> {
     input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
 }
 
 impl<'a> BloscPartialDecoder<'a> {
-    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
         Self { input_handle }
     }
 }
@@ -66,13 +66,13 @@ impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `blosc` codec.
-pub struct AsyncBloscPartialDecoder {
+pub(crate) struct AsyncBloscPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
 impl AsyncBloscPartialDecoder {
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }

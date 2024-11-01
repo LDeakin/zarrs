@@ -261,7 +261,7 @@ fn validate_bytes(
 
 /// This function is used internally by various array/codec methods to write the bytes of a chunk subset into an output with an associated array subset.
 /// This approach only works for fixed length data types.
-pub fn update_bytes_flen(
+pub(crate) fn update_bytes_flen(
     output_bytes: &UnsafeCellSlice<u8>,
     output_shape: &[u64],
     subset_bytes: &RawBytes,
@@ -295,7 +295,7 @@ pub fn update_bytes_flen(
     }
 }
 
-pub fn update_bytes_vlen<'a>(
+pub(crate) fn update_bytes_vlen<'a>(
     output_bytes: &RawBytes,
     output_offsets: &RawBytesOffsets,
     output_shape: &[u64],
@@ -416,7 +416,7 @@ pub unsafe fn update_array_bytes<'a>(
 /// Merge a set of chunks into an array subset.
 ///
 /// This function is used internally by [`retrieve_array_subset_opt`] and [`async_retrieve_array_subset_opt`].
-pub fn merge_chunks_vlen<'a>(
+pub(crate) fn merge_chunks_vlen<'a>(
     chunk_bytes_and_subsets: Vec<(ArrayBytes<'_>, ArraySubset)>,
     array_shape: &[u64],
 ) -> Result<ArrayBytes<'a>, CodecError> {
@@ -480,7 +480,7 @@ pub fn merge_chunks_vlen<'a>(
     Ok(ArrayBytes::new_vlen(bytes, offsets))
 }
 
-pub fn extract_decoded_regions_vlen<'a>(
+pub(crate) fn extract_decoded_regions_vlen<'a>(
     bytes: &[u8],
     offsets: &[usize],
     decoded_regions: &[ArraySubset],

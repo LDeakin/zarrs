@@ -14,13 +14,13 @@ impl Drop for ZfpBitstream {
 }
 
 impl ZfpBitstream {
-    pub fn new(buffer: &mut [u8]) -> Option<Self> {
+    pub(super) fn new(buffer: &mut [u8]) -> Option<Self> {
         let stream =
             unsafe { stream_open(buffer.as_mut_ptr().cast::<std::ffi::c_void>(), buffer.len()) };
         NonNull::new(stream).map(Self)
     }
 
-    pub const fn as_bitstream(&self) -> *mut bitstream {
+    pub(super) const fn as_bitstream(&self) -> *mut bitstream {
         self.0.as_ptr()
     }
 }
