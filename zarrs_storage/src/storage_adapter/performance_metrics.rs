@@ -27,6 +27,7 @@ pub struct PerformanceMetricsStorageAdapter<TStorage: ?Sized> {
     bytes_written: AtomicUsize,
     reads: AtomicUsize,
     writes: AtomicUsize,
+    keys_erased: AtomicUsize,
 }
 
 impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
@@ -39,6 +40,7 @@ impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
             bytes_written: AtomicUsize::default(),
             reads: AtomicUsize::default(),
             writes: AtomicUsize::default(),
+            keys_erased: AtomicUsize::default(),
         }
     }
 
@@ -68,6 +70,13 @@ impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
     /// Returns the number of write requests.
     pub fn writes(&self) -> usize {
         self.writes.load(Ordering::Relaxed)
+    }
+
+    /// Returns the number of key erase requests.
+    ///
+    /// Includes keys erased that may not have existed, and excludes prefix erase requests.
+    pub fn keys_erased(&self) -> usize {
+        self.keys_erased.load(Ordering::Relaxed)
     }
 }
 
@@ -166,10 +175,12 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
+        self.keys_erased.fetch_add(1, Ordering::Relaxed);
         self.storage.erase(key)
     }
 
     fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
+        self.keys_erased.fetch_add(keys.len(), Ordering::Relaxed);
         self.storage.erase_values(keys)
     }
 
