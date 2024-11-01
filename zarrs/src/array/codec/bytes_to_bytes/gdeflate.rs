@@ -117,7 +117,7 @@ fn gdeflate_decode(encoded_value: &RawBytes<'_>) -> Result<Vec<u8>, CodecError> 
 struct GDeflateCompressor(*mut gdeflate_sys::libdeflate_gdeflate_compressor);
 
 impl GDeflateCompressor {
-    pub fn new(compression_level: GDeflateCompressionLevel) -> Result<Self, CodecError> {
+    pub(crate) fn new(compression_level: GDeflateCompressionLevel) -> Result<Self, CodecError> {
         let compressor = unsafe {
             gdeflate_sys::libdeflate_alloc_gdeflate_compressor(compression_level.as_i32())
         };
@@ -138,7 +138,10 @@ impl GDeflateCompressor {
         (out_npages, compress_bound)
     }
 
-    pub fn compress(&self, uncompressed_bytes: &[u8]) -> Result<(Vec<usize>, Vec<u8>), CodecError> {
+    pub(crate) fn compress(
+        &self,
+        uncompressed_bytes: &[u8],
+    ) -> Result<(Vec<usize>, Vec<u8>), CodecError> {
         let (out_npages, compress_bound) = self.get_npages_compress_bound(uncompressed_bytes.len());
         // let compress_bound_page = compress_bound / out_npages;
 
@@ -186,7 +189,7 @@ impl Drop for GDeflateCompressor {
 struct GDeflateDecompressor(*mut gdeflate_sys::libdeflate_gdeflate_decompressor);
 
 impl GDeflateDecompressor {
-    pub fn new() -> Result<Self, CodecError> {
+    pub(crate) fn new() -> Result<Self, CodecError> {
         let decompressor = unsafe { gdeflate_sys::libdeflate_alloc_gdeflate_decompressor() };
         if decompressor.is_null() {
             Err(CodecError::Other(
@@ -197,7 +200,7 @@ impl GDeflateDecompressor {
         }
     }
 
-    pub fn decompress_page(
+    pub(crate) fn decompress_page(
         &self,
         mut in_page: gdeflate_sys::libdeflate_gdeflate_in_page,
         out: *mut u8,

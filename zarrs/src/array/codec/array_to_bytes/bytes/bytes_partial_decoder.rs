@@ -17,7 +17,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{reverse_endianness, Endianness};
 
 /// Partial decoder for the `bytes` codec.
-pub struct BytesPartialDecoder<'a> {
+pub(crate) struct BytesPartialDecoder<'a> {
     input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
     decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
@@ -25,7 +25,7 @@ pub struct BytesPartialDecoder<'a> {
 
 impl<'a> BytesPartialDecoder<'a> {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
         decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
@@ -107,7 +107,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncBytesPartialDecoder {
+pub(crate) struct AsyncBytesPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
@@ -116,7 +116,7 @@ pub struct AsyncBytesPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncBytesPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,

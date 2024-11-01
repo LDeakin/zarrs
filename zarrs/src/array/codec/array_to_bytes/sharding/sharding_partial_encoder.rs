@@ -23,7 +23,7 @@ use crate::{
 
 use super::{sharding_index_decoded_representation, ShardingIndexLocation};
 
-pub struct ShardingPartialEncoder {
+pub(crate) struct ShardingPartialEncoder {
     input_handle: Arc<dyn BytesPartialDecoderTraits>,
     output_handle: Arc<dyn BytesPartialEncoderTraits>,
     decoded_representation: ChunkRepresentation,
@@ -39,7 +39,7 @@ pub struct ShardingPartialEncoder {
 impl ShardingPartialEncoder {
     /// Create a new partial encoder for the sharding codec.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn BytesPartialDecoderTraits>,
         output_handle: Arc<dyn BytesPartialEncoderTraits>,
         decoded_representation: ChunkRepresentation,

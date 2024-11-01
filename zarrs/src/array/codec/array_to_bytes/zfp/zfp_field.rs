@@ -20,7 +20,7 @@ impl Drop for ZfpField<'_> {
 }
 
 impl<'a> ZfpField<'a> {
-    pub fn new(array: &'a mut ZfpArray, shape: &[usize]) -> Option<Self> {
+    pub(super) fn new(array: &'a mut ZfpArray, shape: &[usize]) -> Option<Self> {
         match shape.len() {
             1 => Self::new_1d(array, shape[0]),
             2 => Self::new_2d(array, shape[1], shape[0]),
@@ -30,7 +30,7 @@ impl<'a> ZfpField<'a> {
         }
     }
 
-    pub unsafe fn new_empty(zfp_type_: zfp_type, shape: &[usize]) -> Option<Self> {
+    pub(super) unsafe fn new_empty(zfp_type_: zfp_type, shape: &[usize]) -> Option<Self> {
         let pointer = core::ptr::null_mut::<u8>().cast::<std::ffi::c_void>();
         match shape.len() {
             1 => NonNull::new(unsafe { zfp_field_1d(pointer, zfp_type_, shape[0]) }).map(|field| {
@@ -63,7 +63,7 @@ impl<'a> ZfpField<'a> {
         }
     }
 
-    pub fn new_1d(array: &mut ZfpArray, nx: usize) -> Option<Self> {
+    pub(super) fn new_1d(array: &mut ZfpArray, nx: usize) -> Option<Self> {
         if nx != array.len() {
             return None;
         }
@@ -74,7 +74,7 @@ impl<'a> ZfpField<'a> {
         })
     }
 
-    pub fn new_2d(array: &mut ZfpArray, nx: usize, ny: usize) -> Option<Self> {
+    pub(super) fn new_2d(array: &mut ZfpArray, nx: usize, ny: usize) -> Option<Self> {
         if nx * ny != array.len() {
             return None;
         }
@@ -85,7 +85,7 @@ impl<'a> ZfpField<'a> {
         })
     }
 
-    pub fn new_3d(array: &'a mut ZfpArray, nx: usize, ny: usize, nz: usize) -> Option<Self> {
+    pub(super) fn new_3d(array: &'a mut ZfpArray, nx: usize, ny: usize, nz: usize) -> Option<Self> {
         if nx * ny * nz != array.len() {
             return None;
         }
@@ -96,7 +96,7 @@ impl<'a> ZfpField<'a> {
         })
     }
 
-    pub fn new_4d(
+    pub(super) fn new_4d(
         array: &mut ZfpArray,
         nx: usize,
         ny: usize,
@@ -113,7 +113,7 @@ impl<'a> ZfpField<'a> {
         })
     }
 
-    pub const fn as_zfp_field(&self) -> *mut zfp_field {
+    pub(super) const fn as_zfp_field(&self) -> *mut zfp_field {
         self.field.as_ptr()
     }
 }
