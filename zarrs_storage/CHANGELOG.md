@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add `ByteRange::new` and `From` for `RangeBounds<u64>`
  - Add `PerformanceMetricsStorageAdapter::{keys_erased,reset}()`
+ - Implement `Ord` and `PartialOrd` for `ByteRange`
 
 ### Changed
  - Bump `unsafe_cell_slice` to 0.2.0
