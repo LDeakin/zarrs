@@ -34,6 +34,25 @@ pub enum ByteRange {
     Suffix(ByteLength),
 }
 
+impl Ord for ByteRange {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (Self::FromStart(offset1, length1), Self::FromStart(offset2, length2)) => {
+                offset1.cmp(offset2).then_with(|| length1.cmp(length2))
+            }
+            (Self::FromStart(_, _), Self::Suffix(_)) => std::cmp::Ordering::Less,
+            (Self::Suffix(_), Self::FromStart(_, _)) => std::cmp::Ordering::Greater,
+            (Self::Suffix(length1), Self::Suffix(length2)) => length1.cmp(length2),
+        }
+    }
+}
+
+impl PartialOrd for ByteRange {
+    fn partial_cmp(&self, other: &ByteRange) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 macro_rules! impl_from_rangebounds {
     ($($t:ty),*) => {
         $(
