@@ -10,7 +10,7 @@
 
 pub mod iterators;
 
-use std::{num::NonZeroU64, ops::Range};
+use std::{fmt::Debug, num::NonZeroU64, ops::Range};
 
 use iterators::{
     Chunks, ContiguousIndices, ContiguousLinearisedIndices, Indices, LinearisedIndices,
@@ -28,13 +28,18 @@ use crate::{
 /// An array subset.
 ///
 /// The unsafe `_unchecked methods` are mostly intended for internal use to avoid redundant input validation.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Default)]
-#[display("start {start:?} shape {shape:?}")]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct ArraySubset {
     /// The start of the array subset.
     start: ArrayIndices,
     /// The shape of the array subset.
     shape: ArrayShape,
+}
+
+impl Display for ArraySubset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.to_ranges().fmt(f)
+    }
 }
 
 impl ArraySubset {

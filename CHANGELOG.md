@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `array::update_array_bytes()` public
 - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
 - Bump `zfp-sys` to 0.2.0
+- Display `ArraySubset` as a list of ranges
 
 ### Removed
 - Remove `async-recursion` dependency
