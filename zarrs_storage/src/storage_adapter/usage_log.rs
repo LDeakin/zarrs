@@ -225,11 +225,27 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
         &self,
         key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
+        struct DebugStoreKeyOffsetValue<'a>(&'a StoreKeyOffsetValue<'a>);
+        impl core::fmt::Debug for DebugStoreKeyOffsetValue<'_> {
+            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(
+                    f,
+                    "({} offset={} len={})",
+                    self.0.key(),
+                    self.0.offset(),
+                    self.0.value().len()
+                )
+            }
+        }
         let result = self.storage.set_partial_values(key_offset_values);
         writeln!(
             self.handle.lock().unwrap(),
-            "{}set_partial_values({key_offset_values:?}) -> {result:?}",
-            (self.prefix_func)()
+            "{}set_partial_values({:?}) -> {result:?}",
+            (self.prefix_func)(),
+            key_offset_values
+                .iter()
+                .map(DebugStoreKeyOffsetValue)
+                .collect_vec()
         )?;
         result
     }

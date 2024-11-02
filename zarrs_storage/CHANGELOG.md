@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - **Breaking**: Rename `StoreKeyStartValue` to `StoreKeyOffsetValue`
    - Adds `offset` method and removes `start` and `end`
  - Count missing values as reads in `PerformanceMetricsStorageAdapter`
+ - Print value lengths rather than values in `UsageLogStorageAdapter::set_partial_values()`
 
 ### Removed
  - **Breaking**: Remove `ByteRange::offset()`
