@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::{hash_map::Entry, HashMap},
     sync::{Arc, Mutex},
 };
@@ -124,6 +125,7 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
             .expect("shards cannot be empty");
 
         let mut updated_inner_chunks = HashMap::<u64, ArrayBytes>::new();
+        // TODO: Do this in parallel
         for (chunk_subset, chunk_subset_bytes) in subsets_and_bytes {
             // Check the subset is within the chunk shape
             if chunk_subset
@@ -232,12 +234,21 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
             self.index_codecs.as_ref(),
             &self.index_decoded_representation,
         )?;
-        let mut offset_append = match self.index_location {
+        let offset_new_chunks = match self.index_location {
             ShardingIndexLocation::Start => max_data_offset.max(index_encoded_size),
             ShardingIndexLocation::End => max_data_offset,
         };
 
-        // Write the updated chunks
+        // Encode the updated inner chunks, update the shard index, and write to the store
+        let mut encoded_output = Vec::with_capacity(
+            updated_inner_chunks.len()
+                + match self.index_location {
+                    ShardingIndexLocation::Start => 0,
+                    ShardingIndexLocation::End => 1, // include the index at the end
+                },
+        );
+        let mut offset_append = offset_new_chunks;
+        // TODO: Do this in parallel
         for (inner_chunk_index, inner_chunk_decoded) in updated_inner_chunks {
             if inner_chunk_decoded.is_fill_value(self.inner_chunk_representation.fill_value()) {
                 shard_index[usize::try_from(inner_chunk_index * 2).unwrap()] = u64::MAX;
@@ -249,8 +260,7 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
                     options,
                 )?;
                 let len = inner_chunk_encoded.len() as u64;
-                self.output_handle
-                    .partial_encode(&[(offset_append, inner_chunk_encoded)], options)?;
+                encoded_output.push(inner_chunk_encoded);
 
                 shard_index[usize::try_from(inner_chunk_index * 2).unwrap()] = offset_append;
                 shard_index[usize::try_from(inner_chunk_index * 2 + 1).unwrap()] = len;
@@ -261,23 +271,29 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
         if shard_index.iter().all(|&x| x == u64::MAX) {
             self.output_handle.erase()?;
         } else {
-            // Write the updated shard index
             let shard_index_bytes: RawBytes = transmute_to_bytes(shard_index.as_slice()).into();
             let encoded_array_index = self.index_codecs.encode(
                 shard_index_bytes.into(),
                 &self.index_decoded_representation,
                 options,
             )?;
-            {
-                match self.index_location {
-                    ShardingIndexLocation::Start => {
-                        self.output_handle
-                            .partial_encode(&[(0, encoded_array_index)], options)?;
-                    }
-                    ShardingIndexLocation::End => {
-                        self.output_handle
-                            .partial_encode(&[(offset_append, encoded_array_index)], options)?;
-                    }
+
+            match self.index_location {
+                ShardingIndexLocation::Start => {
+                    let encoded_output = Cow::Owned(encoded_output.concat());
+                    self.output_handle.partial_encode(
+                        &[
+                            (0, encoded_array_index),
+                            (offset_new_chunks, encoded_output),
+                        ],
+                        options,
+                    )?;
+                }
+                ShardingIndexLocation::End => {
+                    encoded_output.push(encoded_array_index);
+                    let encoded_output = Cow::Owned(encoded_output.concat());
+                    self.output_handle
+                        .partial_encode(&[(offset_new_chunks, encoded_output)], options)?;
                 }
             }
         }

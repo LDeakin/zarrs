@@ -33,11 +33,13 @@ fn array_partial_encode_sharding(
     //     std::io::stdout(),
     //     //    )
     // ));
-    // let store = Arc::new(zarrs_storage::usage_log::UsageLogStorageAdapter::new(
-    //     store.clone(),
-    //     log_writer,
-    //     || chrono::Utc::now().format("[%T%.3f] ").to_string(),
-    // ));
+    // let store = Arc::new(
+    //     zarrs_storage::storage_adapter::usage_log::UsageLogStorageAdapter::new(
+    //         store.clone(),
+    //         log_writer.clone(),
+    //         || chrono::Utc::now().format("[%T%.3f] ").to_string(),
+    //     ),
+    // );
     let store_perf = Arc::new(PerformanceMetricsStorageAdapter::new(store.clone()));
 
     let array_path = "/";
@@ -65,6 +67,11 @@ fn array_partial_encode_sharding(
         store.get(&key)
     };
 
+    let expected_writes_per_shard = match sharding_index_location {
+        ShardingIndexLocation::Start => 2, // Separate write for inner chunks and index
+        ShardingIndexLocation::End => 1,   // Combined write for inner chunks and index
+    };
+
     let chunks_per_shard = 2 * 2;
     let shard_index_size = size_of::<u64>() * 2 * chunks_per_shard;
     assert!(get_bytes_0_0()?.is_none());
@@ -79,7 +86,7 @@ fn array_partial_encode_sharding(
         &opt,
     )?;
     assert_eq!(store_perf.reads(), 1); // index
-    assert_eq!(store_perf.writes(), 2); // 1x inner chunk + index
+    assert_eq!(store_perf.writes(), expected_writes_per_shard);
     assert_eq!(store_perf.bytes_read(), 0);
     if inner_bytes_to_bytes_codecs.is_empty() {
         assert_eq!(
@@ -97,7 +104,7 @@ fn array_partial_encode_sharding(
         &opt,
     )?;
     assert_eq!(store_perf.reads(), 2); // 1x inner chunk + index
-    assert_eq!(store_perf.writes(), 0); // 1x inner chunk + index
+    assert_eq!(store_perf.writes(), 0);
     if inner_bytes_to_bytes_codecs.is_empty() {
         assert_eq!(
             store_perf.bytes_read(),
@@ -115,7 +122,7 @@ fn array_partial_encode_sharding(
         &opt,
     )?;
     assert_eq!(store_perf.reads(), 1); // index
-    assert_eq!(store_perf.writes(), 3); // 2x inner chunk + index
+    assert_eq!(store_perf.writes(), expected_writes_per_shard);
     if inner_bytes_to_bytes_codecs.is_empty() {
         assert_eq!(
             get_bytes_0_0()?.unwrap().len(),
@@ -138,18 +145,40 @@ fn array_partial_encode_sharding(
         &opt,
     )?;
     assert_eq!(store_perf.reads(), 2); // index + 1x inner chunk
-    assert_eq!(store_perf.writes(), 3); // 2x inner chunk + index
+    assert_eq!(store_perf.writes(), expected_writes_per_shard);
     if inner_bytes_to_bytes_codecs.is_empty() {
         assert_eq!(
             get_bytes_0_0()?.unwrap().len(),
-            shard_index_size + size_of::<u16>() * 4 //1 stale inner chunk + 3 inner chunks
+            shard_index_size + size_of::<u16>() * 4 // 1 stale inner chunk + 3 inner chunks
+        );
+    }
+    assert_eq!(
+        array.retrieve_chunk_elements::<u16>(&[0, 0])?,
+        vec![99, 2, 4, 0]
+    );
+    store_perf.reset();
+
+    // [99, 2]
+    // [4, 100]
+    store_perf.reset();
+    array.store_array_subset_elements_opt::<u16>(
+        &ArraySubset::new_with_ranges(&[1..2, 1..2]),
+        &[100],
+        &opt,
+    )?;
+    assert_eq!(store_perf.reads(), 1); // index
+    assert_eq!(store_perf.writes(), expected_writes_per_shard);
+    if inner_bytes_to_bytes_codecs.is_empty() {
+        assert_eq!(
+            get_bytes_0_0()?.unwrap().len(),
+            shard_index_size + size_of::<u16>() * 5 // 1 stale inner chunk + 4 inner chunks
         );
     }
     store_perf.reset();
 
     assert_eq!(
         array.retrieve_chunk_elements::<u16>(&[0, 0])?,
-        vec![99, 2, 4, 0]
+        vec![99, 2, 4, 100]
     );
 
     Ok(())
