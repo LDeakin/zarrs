@@ -5,6 +5,7 @@ use std::{
 };
 
 use itertools::Itertools;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
     array::{
@@ -125,7 +126,6 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
             .expect("shards cannot be empty");
 
         let mut updated_inner_chunks = HashMap::<u64, ArrayBytes>::new();
-        // TODO: Do this in parallel
         for (chunk_subset, chunk_subset_bytes) in subsets_and_bytes {
             // Check the subset is within the chunk shape
             if chunk_subset
@@ -165,17 +165,16 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
                 ArrayBytes::new_fill_value(array_size, self.inner_chunk_representation.fill_value())
             };
 
+            // TODO: Do this in parallel
             for inner_chunk_indices in &inner_chunks.indices() {
                 let inner_chunk_index = ravel_indices(&inner_chunk_indices, &chunks_per_shard);
                 // Decode the inner chunk (if needed)
                 if let Entry::Vacant(entry) = updated_inner_chunks.entry(inner_chunk_index) {
                     let inner_chunk_index_usize = usize::try_from(inner_chunk_index).unwrap();
 
-                    // Get the offset/size of the chunk and temporarily remove it from the shard index
+                    // Get the offset/size of the chunk
                     let offset = shard_index[inner_chunk_index_usize * 2];
                     let size = shard_index[inner_chunk_index_usize * 2 + 1];
-                    shard_index[inner_chunk_index_usize * 2] = u64::MAX;
-                    shard_index[inner_chunk_index_usize * 2 + 1] = u64::MAX;
 
                     let inner_chunk_decoded = if offset == u64::MAX && size == u64::MAX {
                         inner_chunk_fill_value()
@@ -239,61 +238,93 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
             ShardingIndexLocation::End => max_data_offset,
         };
 
-        // Encode the updated inner chunks, update the shard index, and write to the store
-        let mut encoded_output = Vec::with_capacity(
-            updated_inner_chunks.len()
-                + match self.index_location {
-                    ShardingIndexLocation::Start => 0,
-                    ShardingIndexLocation::End => 1, // include the index at the end
-                },
-        );
-        let mut offset_append = offset_new_chunks;
-        // TODO: Do this in parallel
-        for (inner_chunk_index, inner_chunk_decoded) in updated_inner_chunks {
-            if inner_chunk_decoded.is_fill_value(self.inner_chunk_representation.fill_value()) {
-                shard_index[usize::try_from(inner_chunk_index * 2).unwrap()] = u64::MAX;
-                shard_index[usize::try_from(inner_chunk_index * 2 + 1).unwrap()] = u64::MAX;
-            } else {
-                let inner_chunk_encoded = self.inner_codecs.encode(
-                    inner_chunk_decoded,
-                    &self.inner_chunk_representation,
-                    options,
-                )?;
-                let len = inner_chunk_encoded.len() as u64;
-                encoded_output.push(inner_chunk_encoded);
+        // Encode the updated inner chunks
+        let updated_inner_chunks = updated_inner_chunks
+            .into_par_iter()
+            .map(|(inner_chunk_index, inner_chunk_decoded)| {
+                if inner_chunk_decoded.is_fill_value(self.inner_chunk_representation.fill_value()) {
+                    Ok((inner_chunk_index, None))
+                } else {
+                    let inner_chunk_encoded = self
+                        .inner_codecs
+                        .encode(
+                            inner_chunk_decoded,
+                            &self.inner_chunk_representation,
+                            options,
+                        )?
+                        .into_owned();
+                    Ok((inner_chunk_index, Some(inner_chunk_encoded)))
+                }
+            })
+            .collect::<Result<Vec<_>, CodecError>>()?;
 
-                shard_index[usize::try_from(inner_chunk_index * 2).unwrap()] = offset_append;
-                shard_index[usize::try_from(inner_chunk_index * 2 + 1).unwrap()] = len;
-                offset_append += len;
+        // Update the shard index
+        {
+            let mut offset_append = offset_new_chunks;
+            for (inner_chunk_index, inner_chunk_encoded) in &updated_inner_chunks {
+                if let Some(inner_chunk_encoded) = inner_chunk_encoded {
+                    let len = inner_chunk_encoded.len() as u64;
+                    shard_index[usize::try_from(inner_chunk_index * 2).unwrap()] = offset_append;
+                    shard_index[usize::try_from(inner_chunk_index * 2 + 1).unwrap()] = len;
+                    offset_append += len;
+                } else {
+                    shard_index[usize::try_from(inner_chunk_index * 2).unwrap()] = u64::MAX;
+                    shard_index[usize::try_from(inner_chunk_index * 2 + 1).unwrap()] = u64::MAX;
+                }
             }
         }
 
-        if shard_index.iter().all(|&x| x == u64::MAX) {
+        if shard_index.par_iter().all(|&x| x == u64::MAX) {
             self.output_handle.erase()?;
         } else {
+            // Encode the updated shard index
             let shard_index_bytes: RawBytes = transmute_to_bytes(shard_index.as_slice()).into();
-            let encoded_array_index = self.index_codecs.encode(
-                shard_index_bytes.into(),
-                &self.index_decoded_representation,
-                options,
-            )?;
+            let encoded_array_index = self
+                .index_codecs
+                .encode(
+                    shard_index_bytes.into(),
+                    &self.index_decoded_representation,
+                    options,
+                )?
+                .into_owned();
 
+            // Get the total size of the encoded inner chunks
+            let encoded_inner_chunks_size = updated_inner_chunks
+                .iter()
+                .filter_map(|(_, inner_chunk_encoded)| inner_chunk_encoded.as_ref().map(Vec::len))
+                .sum::<usize>();
+
+            // Get the suffix write size
+            let suffix_write_size = match self.index_location {
+                ShardingIndexLocation::Start => encoded_inner_chunks_size,
+                ShardingIndexLocation::End => encoded_inner_chunks_size + encoded_array_index.len(),
+            };
+
+            // Concatenate the updated inner chunks
+            let mut encoded_output = Vec::with_capacity(suffix_write_size);
+            for (_, inner_chunk_encoded) in updated_inner_chunks {
+                if let Some(inner_chunk_encoded) = inner_chunk_encoded {
+                    encoded_output.extend(inner_chunk_encoded);
+                }
+            }
+
+            // Write the encoded index and updated inner chunks
             match self.index_location {
                 ShardingIndexLocation::Start => {
-                    let encoded_output = Cow::Owned(encoded_output.concat());
                     self.output_handle.partial_encode(
                         &[
-                            (0, encoded_array_index),
-                            (offset_new_chunks, encoded_output),
+                            (0, Cow::Owned(encoded_array_index)),
+                            (offset_new_chunks, Cow::Owned(encoded_output)),
                         ],
                         options,
                     )?;
                 }
                 ShardingIndexLocation::End => {
-                    encoded_output.push(encoded_array_index);
-                    let encoded_output = Cow::Owned(encoded_output.concat());
-                    self.output_handle
-                        .partial_encode(&[(offset_new_chunks, encoded_output)], options)?;
+                    encoded_output.extend(encoded_array_index);
+                    self.output_handle.partial_encode(
+                        &[(offset_new_chunks, Cow::Owned(encoded_output))],
+                        options,
+                    )?;
                 }
             }
         }
