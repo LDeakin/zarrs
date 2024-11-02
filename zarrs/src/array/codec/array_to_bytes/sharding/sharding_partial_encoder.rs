@@ -1,11 +1,13 @@
 use std::{
     borrow::Cow,
-    collections::{hash_map::Entry, HashMap},
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex},
 };
 
 use itertools::Itertools;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
 
 use crate::{
     array::{
@@ -98,6 +100,7 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
     }
 
     #[allow(clippy::too_many_lines)]
+    #[allow(clippy::similar_names)]
     fn partial_encode(
         &self,
         subsets_and_bytes: &[(&ArraySubset, ArrayBytes<'_>)],
@@ -125,25 +128,8 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
             .max()
             .expect("shards cannot be empty");
 
-        let mut updated_inner_chunks = HashMap::<u64, ArrayBytes>::new();
-        for (chunk_subset, chunk_subset_bytes) in subsets_and_bytes {
-            // Check the subset is within the chunk shape
-            if chunk_subset
-                .end_exc()
-                .iter()
-                .zip(self.decoded_representation.shape())
-                .any(|(a, b)| *a > b.get())
-            {
-                return Err(CodecError::InvalidArraySubsetError(
-                    IncompatibleArraySubsetAndShapeError::new(
-                        (*chunk_subset).clone(),
-                        self.decoded_representation.shape_u64(),
-                    ),
-                ));
-            }
-
-            let inner_chunks = self
-                .chunk_grid
+        let get_inner_chunks = |chunk_subset| {
+            self.chunk_grid
                 .chunks_in_array_subset(chunk_subset, &chunks_per_shard)
                 .map_err(|_| {
                     CodecError::InvalidArraySubsetError(IncompatibleArraySubsetAndShapeError::new(
@@ -155,78 +141,186 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
                     CodecError::Other(
                         "Cannot determine the inner chunk of a chunk subset".to_string(),
                     )
-                })?;
+                })
+        };
+        let inner_chunk_fill_value = || {
+            let array_size = ArraySize::new(
+                self.inner_chunk_representation.data_type().size(),
+                self.inner_chunk_representation.num_elements(),
+            );
+            ArrayBytes::new_fill_value(array_size, self.inner_chunk_representation.fill_value())
+        };
 
-            let inner_chunk_fill_value = || {
-                let array_size = ArraySize::new(
-                    self.inner_chunk_representation.data_type().size(),
-                    self.inner_chunk_representation.num_elements(),
-                );
-                ArrayBytes::new_fill_value(array_size, self.inner_chunk_representation.fill_value())
-            };
-
-            // TODO: Do this in parallel
-            for inner_chunk_indices in &inner_chunks.indices() {
-                let inner_chunk_index = ravel_indices(&inner_chunk_indices, &chunks_per_shard);
-                // Decode the inner chunk (if needed)
-                if let Entry::Vacant(entry) = updated_inner_chunks.entry(inner_chunk_index) {
-                    let inner_chunk_index_usize = usize::try_from(inner_chunk_index).unwrap();
-
-                    // Get the offset/size of the chunk
-                    let offset = shard_index[inner_chunk_index_usize * 2];
-                    let size = shard_index[inner_chunk_index_usize * 2 + 1];
-
-                    let inner_chunk_decoded = if offset == u64::MAX && size == u64::MAX {
-                        inner_chunk_fill_value()
-                    } else {
-                        let inner_chunk_encoded = self
-                            .input_handle
-                            .partial_decode(&[ByteRange::FromStart(offset, Some(size))], options)?
-                            .map(|mut bytes| bytes.pop().unwrap());
-                        if let Some(inner_chunk_encoded) = inner_chunk_encoded {
-                            self.inner_codecs.decode(
-                                inner_chunk_encoded,
-                                &self.inner_chunk_representation,
-                                options,
-                            )?
-                        } else {
-                            inner_chunk_fill_value()
-                        }
-                    };
-                    entry.insert(inner_chunk_decoded);
+        // Get all the inner chunks that need to be retrieved
+        //   This only includes chunks that straddle chunk subsets.
+        //   Chunks that are entirely within a chunk subset are entirely replaced and are not read.
+        let shard_shape_u64 = self.decoded_representation.shape_u64();
+        let inner_chunks_indices: HashSet<u64> = subsets_and_bytes
+            .iter()
+            .map(|(chunk_subset, _chunk_subset_bytes)| {
+                // Check the subset is within the chunk shape
+                if chunk_subset
+                    .end_exc()
+                    .iter()
+                    .zip(self.decoded_representation.shape())
+                    .any(|(a, b)| *a > b.get())
+                {
+                    return Err(CodecError::InvalidArraySubsetError(
+                        IncompatibleArraySubsetAndShapeError::new(
+                            (*chunk_subset).clone(),
+                            self.decoded_representation.shape_u64(),
+                        ),
+                    ));
                 }
 
-                let inner_chunk_decoded = updated_inner_chunks.get_mut(&inner_chunk_index).unwrap();
+                // Get all the inner chunks that need to be updated
+                let inner_chunks = get_inner_chunks(chunk_subset)?;
+                Ok(inner_chunks
+                    .indices()
+                    .into_iter()
+                    .filter_map(|inner_chunk_indices| {
+                        let inner_chunk_subset = self
+                            .chunk_grid
+                            .subset(&inner_chunk_indices, &shard_shape_u64)
+                            .expect("already validated")
+                            .expect("regular grid");
 
-                // Update the inner chunk
-                let inner_chunk_subset = self
-                    .chunk_grid
-                    .subset(&inner_chunk_indices, &chunks_per_shard)
-                    .expect("already validated")
-                    .expect("regular grid");
-                let inner_chunk_subset_overlap = chunk_subset.overlap(&inner_chunk_subset).unwrap();
+                        // Check if the inner chunk straddles the chunk subset
+                        if inner_chunk_subset
+                            .start()
+                            .iter()
+                            .zip(chunk_subset.start())
+                            .any(|(a, b)| a < b)
+                            || inner_chunk_subset
+                                .end_exc()
+                                .iter()
+                                .zip(chunk_subset.end_exc())
+                                .any(|(a, b)| *a > b)
+                        {
+                            let inner_chunk_index =
+                                ravel_indices(&inner_chunk_indices, &chunks_per_shard);
+                            Some(inner_chunk_index)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<HashSet<_>>())
+            })
+            .try_fold(
+                HashSet::new(),
+                |mut acc, set: Result<HashSet<u64>, CodecError>| {
+                    acc.extend(set?);
+                    Ok::<_, CodecError>(acc)
+                },
+            )?;
 
-                let inner_chunk_bytes = chunk_subset_bytes.extract_array_subset(
-                    &inner_chunk_subset_overlap
-                        .relative_to(chunk_subset.start())
-                        .unwrap(),
-                    chunk_subset.shape(),
-                    self.inner_chunk_representation.data_type(),
-                )?;
+        // Get the byte ranges of the straddling inner chunk indices
+        //   Sorting byte ranges may improves store retrieve efficiency in some cases
+        let (inner_chunks_indices, byte_ranges): (Vec<_>, Vec<_>) = inner_chunks_indices
+            .into_par_iter()
+            .filter_map(|inner_chunk_index| {
+                let offset = shard_index[usize::try_from(inner_chunk_index * 2).unwrap()];
+                let size = shard_index[usize::try_from(inner_chunk_index * 2 + 1).unwrap()];
+                if offset == u64::MAX && size == u64::MAX {
+                    None
+                } else {
+                    Some((inner_chunk_index, ByteRange::FromStart(offset, Some(size))))
+                }
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .sorted_by_key(|(_, byte_range)| *byte_range)
+            .unzip();
 
-                *inner_chunk_decoded = unsafe {
-                    update_array_bytes(
-                        inner_chunk_decoded.clone(),
-                        &self.inner_chunk_representation.shape_u64(),
+        // Decode the straddling inner chunks
+        let inner_chunks_encoded = self
+            .input_handle
+            .partial_decode(&byte_ranges, options)?
+            .map(|bytes| bytes.into_iter().map(Cow::into_owned).collect::<Vec<_>>());
+        let inner_chunks_decoded: HashMap<_, _> =
+            if let Some(inner_chunks_encoded) = inner_chunks_encoded {
+                let inner_chunks_encoded = inner_chunks_indices
+                    .into_par_iter()
+                    .zip(inner_chunks_encoded)
+                    .map(|(inner_chunk_index, inner_chunk_encoded)| {
+                        Ok((
+                            inner_chunk_index,
+                            self.inner_codecs.decode(
+                                Cow::Owned(inner_chunk_encoded),
+                                &self.inner_chunk_representation,
+                                options,
+                            )?,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>, CodecError>>()?;
+                HashMap::from_iter(inner_chunks_encoded)
+            } else {
+                HashMap::new()
+            };
+
+        // Update all of the intersecting inner chunks
+        //   This loop is intentionally not run in parallel so that overapping subset updates are applied incrementally rather than having a non deterministic output.
+        let inner_chunks_decoded = Arc::new(Mutex::new(inner_chunks_decoded));
+        for (chunk_subset, chunk_subset_bytes) in subsets_and_bytes {
+            let inner_chunks = get_inner_chunks(chunk_subset)?;
+
+            inner_chunks
+                .indices()
+                .into_par_iter()
+                .try_for_each(|inner_chunk_indices| {
+                    // Extract the inner chunk bytes that overlap with the chunk subset
+                    let inner_chunk_index = ravel_indices(&inner_chunk_indices, &chunks_per_shard);
+                    let inner_chunk_subset = self
+                        .chunk_grid
+                        .subset(&inner_chunk_indices, &chunks_per_shard)
+                        .expect("already validated")
+                        .expect("regular grid");
+                    let inner_chunk_subset_overlap =
+                        chunk_subset.overlap(&inner_chunk_subset).unwrap();
+                    let inner_chunk_bytes = chunk_subset_bytes.extract_array_subset(
                         &inner_chunk_subset_overlap
-                            .relative_to(inner_chunk_subset.start())
+                            .relative_to(chunk_subset.start())
                             .unwrap(),
-                        &inner_chunk_bytes,
-                        self.inner_chunk_representation.data_type().size(),
-                    )
-                };
-            }
+                        chunk_subset.shape(),
+                        self.inner_chunk_representation.data_type(),
+                    )?;
+
+                    // Decode the inner chunk
+                    let inner_chunk_decoded = if let Some(inner_chunk_decoded) =
+                        inner_chunks_decoded
+                            .lock()
+                            .unwrap()
+                            .remove(&inner_chunk_index)
+                    {
+                        inner_chunk_decoded.into_owned()
+                    } else {
+                        inner_chunk_fill_value()
+                    };
+
+                    // Update the inner chunk
+                    let inner_chunk_updated = unsafe {
+                        update_array_bytes(
+                            inner_chunk_decoded,
+                            &self.inner_chunk_representation.shape_u64(),
+                            &inner_chunk_subset_overlap
+                                .relative_to(inner_chunk_subset.start())
+                                .unwrap(),
+                            &inner_chunk_bytes,
+                            self.inner_chunk_representation.data_type().size(),
+                        )
+                    };
+                    inner_chunks_decoded
+                        .lock()
+                        .unwrap()
+                        .insert(inner_chunk_index, inner_chunk_updated);
+
+                    Ok::<_, CodecError>(())
+                })?;
         }
+        let inner_chunks_decoded = Arc::try_unwrap(inner_chunks_decoded)
+            .expect("inner_chunks_decoded should have one strong reference")
+            .into_inner()
+            .expect("inner_chunks_decoded should not be poisoned");
 
         // Get the offset for new data
         let index_encoded_size = compute_index_encoded_size(
@@ -239,7 +333,7 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
         };
 
         // Encode the updated inner chunks
-        let updated_inner_chunks = updated_inner_chunks
+        let updated_inner_chunks = inner_chunks_decoded
             .into_par_iter()
             .map(|(inner_chunk_index, inner_chunk_decoded)| {
                 if inner_chunk_decoded.is_fill_value(self.inner_chunk_representation.fill_value()) {
@@ -275,6 +369,7 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
         }
 
         if shard_index.par_iter().all(|&x| x == u64::MAX) {
+            // Erase the shard if all chunks are empty
             self.output_handle.erase()?;
         } else {
             // Encode the updated shard index

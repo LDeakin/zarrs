@@ -103,13 +103,10 @@ fn array_partial_encode_sharding(
         &[0],
         &opt,
     )?;
-    assert_eq!(store_perf.reads(), 2); // 1x inner chunk + index
+    assert_eq!(store_perf.reads(), 1); // index
     assert_eq!(store_perf.writes(), 0);
     if inner_bytes_to_bytes_codecs.is_empty() {
-        assert_eq!(
-            store_perf.bytes_read(),
-            shard_index_size * 1 + size_of::<u16>() * 1
-        );
+        assert_eq!(store_perf.bytes_read(), shard_index_size * 1);
     }
     assert!(get_bytes_0_0()?.is_none());
     store_perf.reset();
@@ -144,7 +141,7 @@ fn array_partial_encode_sharding(
         &[99, 4],
         &opt,
     )?;
-    assert_eq!(store_perf.reads(), 2); // index + 1x inner chunk
+    assert_eq!(store_perf.reads(), 1); // index
     assert_eq!(store_perf.writes(), expected_writes_per_shard);
     if inner_bytes_to_bytes_codecs.is_empty() {
         assert_eq!(
