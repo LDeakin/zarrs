@@ -126,19 +126,42 @@ fn array_partial_encode_sharding(
             shard_index_size + size_of::<u16>() * 2
         );
     }
-    store_perf.reset();
-
     assert_eq!(
         array.retrieve_chunk_elements::<u16>(&[0, 0])?,
         vec![1, 2, 0, 0]
     );
     store_perf.reset();
 
-    // [99, 2]
-    // [4, 0]
+    // Check that the shard is entirely rewritten when possible, rather than appended
+    // [3, 4]
+    // [0, 0]
+    array.store_array_subset_elements_opt::<u16>(
+        &ArraySubset::new_with_ranges(&[0..1, 0..2]),
+        &[3, 4],
+        &opt,
+    )?;
+    assert_eq!(store_perf.reads(), 1); // index + 1x inner chunk
+    assert_eq!(store_perf.writes(), expected_writes_per_shard);
+    if inner_bytes_to_bytes_codecs.is_empty() {
+        assert_eq!(store_perf.bytes_read(), shard_index_size * 1);
+    }
+    if inner_bytes_to_bytes_codecs.is_empty() {
+        assert_eq!(
+            get_bytes_0_0()?.unwrap().len(),
+            shard_index_size + size_of::<u16>() * 2
+        );
+    }
+    assert_eq!(
+        array.retrieve_chunk_elements::<u16>(&[0, 0])?,
+        vec![3, 4, 0, 0]
+    );
+    store_perf.reset();
+
+    // [99, 4]
+    // [5, 0]
     array.store_array_subset_elements_opt::<u16>(
         &ArraySubset::new_with_ranges(&[0..2, 0..1]),
-        &[99, 4],
+        &[99, 5],
         &opt,
     )?;
     assert_eq!(store_perf.reads(), 1); // index
@@ -151,12 +174,12 @@ fn array_partial_encode_sharding(
     }
     assert_eq!(
         array.retrieve_chunk_elements::<u16>(&[0, 0])?,
-        vec![99, 2, 4, 0]
+        vec![99, 4, 5, 0]
     );
     store_perf.reset();
 
-    // [99, 2]
-    // [4, 100]
+    // [99, 4]
+    // [5, 100]
     store_perf.reset();
     array.store_array_subset_elements_opt::<u16>(
         &ArraySubset::new_with_ranges(&[1..2, 1..2]),
@@ -175,7 +198,7 @@ fn array_partial_encode_sharding(
 
     assert_eq!(
         array.retrieve_chunk_elements::<u16>(&[0, 0])?,
-        vec![99, 2, 4, 100]
+        vec![99, 4, 5, 100]
     );
 
     Ok(())

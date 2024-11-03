@@ -155,64 +155,67 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
         //   This only includes chunks that straddle chunk subsets.
         //   Chunks that are entirely within a chunk subset are entirely replaced and are not read.
         let shard_shape_u64 = self.decoded_representation.shape_u64();
-        let inner_chunks_indices: HashSet<u64> = subsets_and_bytes
-            .iter()
-            .map(|(chunk_subset, _chunk_subset_bytes)| {
-                // Check the subset is within the chunk shape
-                if chunk_subset
-                    .end_exc()
-                    .iter()
-                    .zip(self.decoded_representation.shape())
-                    .any(|(a, b)| *a > b.get())
-                {
-                    return Err(CodecError::InvalidArraySubsetError(
-                        IncompatibleArraySubsetAndShapeError::new(
-                            (*chunk_subset).clone(),
-                            self.decoded_representation.shape_u64(),
-                        ),
-                    ));
-                }
 
-                // Get all the inner chunks that need to be updated
-                let inner_chunks = get_inner_chunks(chunk_subset)?;
-                Ok(inner_chunks
-                    .indices()
-                    .into_iter()
-                    .filter_map(|inner_chunk_indices| {
-                        let inner_chunk_subset = self
-                            .chunk_grid
-                            .subset(&inner_chunk_indices, &shard_shape_u64)
-                            .expect("already validated")
-                            .expect("regular grid");
+        let mut inner_chunks_intersected = HashSet::<u64>::new();
+        let mut inner_chunks_indices = HashSet::<u64>::new();
 
-                        // Check if the inner chunk straddles the chunk subset
-                        if inner_chunk_subset
-                            .start()
+        for (chunk_subset, _chunk_subset_bytes) in subsets_and_bytes {
+            // Check the subset is within the chunk shape
+            if chunk_subset
+                .end_exc()
+                .iter()
+                .zip(self.decoded_representation.shape())
+                .any(|(a, b)| *a > b.get())
+            {
+                return Err(CodecError::InvalidArraySubsetError(
+                    IncompatibleArraySubsetAndShapeError::new(
+                        (*chunk_subset).clone(),
+                        self.decoded_representation.shape_u64(),
+                    ),
+                ));
+            }
+
+            // Get the iterator over the inner chunks
+            let inner_chunks = get_inner_chunks(chunk_subset)?;
+            let inner_chunks = inner_chunks.indices();
+
+            // Get all the inner chunks intersected
+            inner_chunks_intersected.extend(
+                inner_chunks.into_iter().map(|inner_chunk_indices| {
+                    ravel_indices(&inner_chunk_indices, &chunks_per_shard)
+                }),
+            );
+
+            // Get all the inner chunks that need to be updated
+            inner_chunks_indices.extend(inner_chunks.into_iter().filter_map(
+                |inner_chunk_indices| {
+                    let inner_chunk_subset = self
+                        .chunk_grid
+                        .subset(&inner_chunk_indices, &shard_shape_u64)
+                        .expect("already validated")
+                        .expect("regular grid");
+
+                    // Check if the inner chunk straddles the chunk subset
+                    if inner_chunk_subset
+                        .start()
+                        .iter()
+                        .zip(chunk_subset.start())
+                        .any(|(a, b)| a < b)
+                        || inner_chunk_subset
+                            .end_exc()
                             .iter()
-                            .zip(chunk_subset.start())
-                            .any(|(a, b)| a < b)
-                            || inner_chunk_subset
-                                .end_exc()
-                                .iter()
-                                .zip(chunk_subset.end_exc())
-                                .any(|(a, b)| *a > b)
-                        {
-                            let inner_chunk_index =
-                                ravel_indices(&inner_chunk_indices, &chunks_per_shard);
-                            Some(inner_chunk_index)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<HashSet<_>>())
-            })
-            .try_fold(
-                HashSet::new(),
-                |mut acc, set: Result<HashSet<u64>, CodecError>| {
-                    acc.extend(set?);
-                    Ok::<_, CodecError>(acc)
+                            .zip(chunk_subset.end_exc())
+                            .any(|(a, b)| *a > b)
+                    {
+                        let inner_chunk_index =
+                            ravel_indices(&inner_chunk_indices, &chunks_per_shard);
+                        Some(inner_chunk_index)
+                    } else {
+                        None
+                    }
                 },
-            )?;
+            ));
+        }
 
         // Get the byte ranges of the straddling inner chunk indices
         //   Sorting byte ranges may improves store retrieve efficiency in some cases
@@ -232,11 +235,13 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
             .sorted_by_key(|(_, byte_range)| *byte_range)
             .unzip();
 
-        // Decode the straddling inner chunks
+        // Read the straddling inner chunks
         let inner_chunks_encoded = self
             .input_handle
             .partial_decode(&byte_ranges, options)?
             .map(|bytes| bytes.into_iter().map(Cow::into_owned).collect::<Vec<_>>());
+
+        // Decode the straddling inner chunks
         let inner_chunks_decoded: HashMap<_, _> =
             if let Some(inner_chunks_encoded) = inner_chunks_encoded {
                 let inner_chunks_encoded = inner_chunks_indices
@@ -322,16 +327,6 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
             .into_inner()
             .expect("inner_chunks_decoded should not be poisoned");
 
-        // Get the offset for new data
-        let index_encoded_size = compute_index_encoded_size(
-            self.index_codecs.as_ref(),
-            &self.index_decoded_representation,
-        )?;
-        let offset_new_chunks = match self.index_location {
-            ShardingIndexLocation::Start => max_data_offset.max(index_encoded_size),
-            ShardingIndexLocation::End => max_data_offset,
-        };
-
         // Encode the updated inner chunks
         let updated_inner_chunks = inner_chunks_decoded
             .into_par_iter()
@@ -351,6 +346,29 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
                 }
             })
             .collect::<Result<Vec<_>, CodecError>>()?;
+
+        // Check if the shard can be entirely rewritten instead of appended
+        //  This occurs if the shard index is empty if all of the intersected inner chunks are removed
+        for inner_chunk_index in &inner_chunks_intersected {
+            shard_index[usize::try_from(inner_chunk_index * 2).unwrap()] = u64::MAX;
+            shard_index[usize::try_from(inner_chunk_index * 2 + 1).unwrap()] = u64::MAX;
+        }
+        let max_data_offset = if shard_index.par_iter().all(|&x| x == u64::MAX) {
+            self.output_handle.erase()?;
+            0
+        } else {
+            max_data_offset
+        };
+
+        // Get the offset for new data
+        let index_encoded_size = compute_index_encoded_size(
+            self.index_codecs.as_ref(),
+            &self.index_decoded_representation,
+        )?;
+        let offset_new_chunks = match self.index_location {
+            ShardingIndexLocation::Start => max_data_offset.max(index_encoded_size),
+            ShardingIndexLocation::End => max_data_offset,
+        };
 
         // Update the shard index
         {
