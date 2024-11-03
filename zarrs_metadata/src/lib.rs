@@ -22,7 +22,7 @@ pub mod v2;
 pub mod v2_to_v3;
 
 /// An alias for [`v3::MetadataV3`].
-#[deprecated = "use v3::MetadataV3 explicitly"]
+#[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]
 pub type Metadata = v3::MetadataV3;
 
 pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};

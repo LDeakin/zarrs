@@ -26,16 +26,6 @@ use super::{
 use super::elements_to_ndarray;
 
 impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
-    /// Async variant of [`new`](Array::open).
-    #[allow(clippy::missing_errors_doc)]
-    #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
-    pub async fn async_new(
-        storage: Arc<TStorage>,
-        path: &str,
-    ) -> Result<Array<TStorage>, ArrayCreateError> {
-        Self::async_open(storage, path).await
-    }
-
     /// Async variant of [`open`](Array::open).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_open(

@@ -195,18 +195,6 @@ impl Node {
         Err(NodeCreateError::MissingMetadata)
     }
 
-    #[deprecated(since = "0.15.0", note = "please use `open` instead")]
-    /// Open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
-    ///
-    /// # Errors
-    /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub fn new<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-        storage: &Arc<TStorage>,
-        path: &str,
-    ) -> Result<Self, NodeCreateError> {
-        Self::open_opt(storage, path, &MetadataRetrieveVersion::Default)
-    }
-
     /// Open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
     ///
     /// # Errors
@@ -239,21 +227,6 @@ impl Node {
             children,
         };
         Ok(node)
-    }
-
-    #[cfg(feature = "async")]
-    #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
-    /// Asynchronously open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
-    ///
-    /// # Errors
-    /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub async fn async_new<
-        TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
-    >(
-        storage: Arc<TStorage>,
-        path: &str,
-    ) -> Result<Self, NodeCreateError> {
-        Self::async_open_opt(storage, path, &MetadataRetrieveVersion::Default).await
     }
 
     #[cfg(feature = "async")]

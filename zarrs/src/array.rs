@@ -76,7 +76,7 @@ pub use crate::metadata::v3::{
 pub use crate::metadata::{ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness};
 
 /// An alias for [`FillValueMetadataV3`].
-#[deprecated = "use FillValueMetadataV3 instead"]
+#[deprecated(since = "0.17.0", note = "use FillValueMetadataV3 instead")]
 pub type FillValueMetadata = crate::metadata::v3::array::fill_value::FillValueMetadataV3;
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;

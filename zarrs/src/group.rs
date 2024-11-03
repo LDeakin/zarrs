@@ -158,16 +158,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     ///
     /// # Errors
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
-    #[deprecated(since = "0.15.0", note = "please use `open` instead")]
-    pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
-        Self::open(storage, path)
-    }
-
-    /// Open a group in `storage` at `path` with [`MetadataRetrieveVersion`].
-    /// The metadata is read from the store.
-    ///
-    /// # Errors
-    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
     pub fn open(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
         Self::open_opt(storage, path, &MetadataRetrieveVersion::Default)
     }
@@ -218,13 +208,6 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
 
 #[cfg(feature = "async")]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
-    /// Async variant of [`new`](Group::open).
-    #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn async_new(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
-        Self::async_open(storage, path).await
-    }
-
     /// Async variant of [`open`](Group::open).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_open(storage: Arc<TStorage>, path: &str) -> Result<Self, GroupCreateError> {
