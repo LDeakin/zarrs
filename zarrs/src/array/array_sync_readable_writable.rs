@@ -371,6 +371,12 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
 
     /// Initialises a partial encoder for the chunk at `chunk_indices`.
     ///
+    /// Only one partial encoder should be created for a chunk at a time because:
+    /// - partial encoders can hold internal state that may become out of sync, and
+    /// - parallel writing to the same chunk [may result in data loss](#parallel-writing).
+    ///
+    /// Partial encoding with [`ArrayPartialEncoderTraits::partial_encode`] will use parallelism internally where possible.
+    ///
     /// # Errors
     /// Returns an [`ArrayError`] if initialisation of the partial encoder fails.
     pub fn partial_encoder(

@@ -246,14 +246,21 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 //  TODO: Add example?
 ///
 /// ### Parallel Writing
+/// `zarrs` does not currently offer a "synchronisation" API for locking chunks or array subsets.
+///
+/// **It is the responsibility of `zarrs` consumers to ensure that chunks are not written to concurrently**.
+///
 /// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
 /// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve, update, and store chunks.
-/// It is the responsibility of `zarrs` consumers to ensure:
-///   - [`store_chunk_subset`](Array::store_chunk_subset) is not called concurrently on the same chunk, and
-///   - [`store_array_subset`](Array::store_array_subset) is not called concurrently on array subsets sharing chunks.
+/// So do [`partial_encoder`](Array::partial_encoder)s, which may used internally by the above methods.
 ///
-/// Partial writes to a chunk may be lost if these rules are not respected.
-/// `zarrs` does not currently offer a "synchronisation" API for locking chunks or array subsets.
+/// It is the responsibility of `zarrs` consumers to ensure that:
+///   - [`store_array_subset`](Array::store_array_subset) is not called concurrently on array subsets sharing chunks,
+///   - [`store_chunk_subset`](Array::store_chunk_subset) is not called concurrently on the same chunk,
+///   - [`partial_encoder`](Array::partial_encoder)s are created or used concurrently for the same chunk,
+///   - or any combination of the above are called concurrently on the same chunk.
+///
+/// **Partial writes to a chunk may be lost if these rules are not respected.**
 ///
 /// ## Optimising Reads
 /// It is fastest to load arrays using [`retrieve_chunk`](Array::retrieve_chunk) or [`retrieve_chunks`](Array::retrieve_chunks) where possible.
