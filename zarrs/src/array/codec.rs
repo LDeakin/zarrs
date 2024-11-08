@@ -354,6 +354,9 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// This method is intended for internal use by Array.
     /// It currently only works for fixed length data types.
     ///
+    /// The `array_subset` shape and dimensionality does not need to match `output_subset`, but the number of elements must match.
+    /// Extracted elements from the `array_subset` are written to the subset of the output in C order.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
     ///
@@ -361,7 +364,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// The caller must ensure that:
     ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
     ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `array_subset` has the same shape as the `output_subset`.
+    ///  - `output_subset` has the same number of elements as `array_subset`.
     unsafe fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
@@ -371,7 +374,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         debug_assert!(output_subset.inbounds(output_shape));
-        debug_assert_eq!(array_subset.shape(), output_subset.shape());
+        debug_assert_eq!(array_subset.num_elements(), output_subset.num_elements());
         let decoded_value = self
             .partial_decode(&[array_subset.clone()], options)?
             .remove(0);

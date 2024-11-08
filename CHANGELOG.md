@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
 - Bump `zfp-sys` to 0.2.0
 - Display `ArraySubset` as a list of ranges
+- Relax `output_subset` requirements on `ArrayPartialDecoderTraits::partial_decode_into`
+  - The subset shape and dimensionality no longer has to match, only the number of elemenets
 
 ### Removed
 - Remove `async-recursion` dependency
