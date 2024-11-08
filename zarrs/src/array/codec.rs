@@ -705,14 +705,17 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// This method is intended for internal use by Array.
     /// It currently only works for fixed length data types.
     ///
+    /// The decoded representation shape and dimensionality does not need to match `output_subset`, but the number of elements must match.
+    /// Chunk elements are written to the subset of the output in C order.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
     ///
     /// # Safety
     /// The caller must ensure that:
-    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
+    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type, and
     ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `array_subset` has the same shape as the `output_subset`.
+    ///  - `output_subset` has the same number of elements as the decoded representation shape.
     unsafe fn decode_into(
         &self,
         bytes: RawBytes<'_>,
@@ -723,7 +726,10 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         debug_assert!(output_subset.inbounds(output_shape));
-        debug_assert_eq!(decoded_representation.shape_u64(), output_subset.shape());
+        debug_assert_eq!(
+            decoded_representation.num_elements(),
+            output_subset.num_elements()
+        );
         let decoded_value = self.decode(bytes, decoded_representation, options)?;
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
             update_bytes_flen(
