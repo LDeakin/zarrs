@@ -1,4 +1,4 @@
-use derive_more::Display;
+use derive_more::{derive::From, Display};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -191,10 +191,11 @@ impl From<DataTypeMetadataV2Structured> for DataTypeMetadataV2StructuredTuple {
 }
 
 /// Zarr V2 data type metadata.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, From)]
 #[serde(untagged)]
 pub enum DataTypeMetadataV2 {
     /// A simple data type.
+    #[from(String, &str)]
     Simple(String),
     /// A structured data type.
     Structured(Vec<DataTypeMetadataV2Structured>),
