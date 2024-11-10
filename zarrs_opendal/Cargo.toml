@@ -11,6 +11,9 @@ license = "MIT OR Apache-2.0"
 keywords = ["zarr", "zarrs", "storage", "store"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 async-trait = "0.1.74"
 futures = "0.3.29"

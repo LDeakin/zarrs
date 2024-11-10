@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![cfg(all(feature = "sharding", feature = "zstd"))]
 
 use std::{

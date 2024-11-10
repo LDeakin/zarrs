@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use itertools::Itertools;
 use zarrs::{
     array::{bytes_to_ndarray, codec::CodecOptions},

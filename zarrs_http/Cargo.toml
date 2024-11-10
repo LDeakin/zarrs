@@ -11,6 +11,9 @@ license = "MIT OR Apache-2.0"
 keywords = ["zarr", "zarrs", "storage", "store"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 itertools = "0.13.0"
 thiserror = "1.0.61"

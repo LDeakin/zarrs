@@ -8,18 +8,21 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::{AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits};
 
-// Create a store with the following data
-// - a/
-//   - b [0, 1, 2, 3]
-//   - c [0]
-//   - d/
-//     - e
-//   - f/
-//     - g
-//     - h
-// - i/
-//   - j/
-//     - k [0, 1]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Create a store with the following data
+/// ```text
+/// - a/
+///   - b [0, 1, 2, 3]
+///   - c [0]
+///   - d/
+///     - e
+///   - f/
+///     - g
+///     - h
+/// - i/
+///   - j/
+///     - k [0, 1]
+/// ```
 pub fn store_write<T: WritableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
     store.erase_prefix(&StorePrefix::root())?;
 
@@ -49,6 +52,8 @@ pub fn store_write<T: WritableStorageTraits>(store: &T) -> Result<(), Box<dyn Er
     Ok(())
 }
 
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Read from the store and check the data matches the expected values after [`store_write`].
 pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
     assert!(store.get(&"notfound".try_into()?)?.is_none());
     assert!(store.size_key(&"notfound".try_into()?)?.is_none());
@@ -88,6 +93,8 @@ pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
     Ok(())
 }
 
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// List the store and check the data matches the expected values after [`store_write`].
 pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
     assert_eq!(store.size()?, 7);
     assert_eq!(store.size_prefix(&"a/".try_into()?)?, 5);
@@ -144,18 +151,21 @@ pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
 }
 
 #[cfg(feature = "async")]
-// Create a store with the following data
-// - a/
-//   - b [0, 1, 2, 3]
-//   - c [0]
-//   - d/
-//     - e
-//   - f/
-//     - g
-//     - h
-// - i/
-//   - j/
-//     - k [0, 1]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Create a store with the following data
+/// ```text
+/// - a/
+///   - b [0, 1, 2, 3]
+///   - c [0]
+///   - d/
+///     - e
+///   - f/
+///     - g
+///     - h
+/// - i/
+///   - j/
+///     - k [0, 1]
+/// ```
 pub async fn async_store_write<T: AsyncWritableStorageTraits>(
     store: &T,
 ) -> Result<(), Box<dyn Error>> {
@@ -206,6 +216,8 @@ pub async fn async_store_write<T: AsyncWritableStorageTraits>(
 }
 
 #[cfg(feature = "async")]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Read from the store and check the data matches the expected values after [`async_store_write`].
 pub async fn async_store_read<T: AsyncReadableStorageTraits>(
     store: &T,
 ) -> Result<(), Box<dyn Error>> {
@@ -253,6 +265,8 @@ pub async fn async_store_read<T: AsyncReadableStorageTraits>(
 }
 
 #[cfg(feature = "async")]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// List the store and check the data matches the expected values after [`async_store_write`].
 pub async fn async_store_list<T: AsyncListableStorageTraits>(
     store: &T,
 ) -> Result<(), Box<dyn Error>> {

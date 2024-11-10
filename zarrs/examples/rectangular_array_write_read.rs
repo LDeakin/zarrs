@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use std::sync::Arc;
 use zarrs::storage::{
     storage_adapter::usage_log::UsageLogStorageAdapter, ReadableWritableListableStorage,

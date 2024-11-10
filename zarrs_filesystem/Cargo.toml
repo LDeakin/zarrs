@@ -11,6 +11,9 @@ license = "MIT OR Apache-2.0"
 keywords = ["zarr", "zarrs", "storage", "store", "filesystem"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 bytes = "1.6.0"
 derive_more = { version = "1.0.0", features = ["from"] }

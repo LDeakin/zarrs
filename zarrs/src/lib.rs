@@ -188,16 +188,7 @@
 //!  - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 //!
 //! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
-
-#![warn(unused_variables)]
-#![warn(dead_code)]
-#![deny(missing_docs)]
-// #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
-#![deny(clippy::missing_panics_doc)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![deny(unreachable_pub)]
 
 pub mod array;
 pub mod array_subset;

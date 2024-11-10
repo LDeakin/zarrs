@@ -11,6 +11,9 @@ license = "MIT OR Apache-2.0"
 keywords = ["zarr", "zarrs", "metadata"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 derive_more = { version = "1.0.0", features = ["display", "from"] }
 half = { version = "2.0.0", features = ["bytemuck"] }

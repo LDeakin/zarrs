@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![cfg(feature = "sharding")]
 
 use std::sync::Arc;

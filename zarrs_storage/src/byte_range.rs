@@ -75,6 +75,7 @@ impl_from_rangebounds!(
 );
 
 impl ByteRange {
+    /// Create a new byte range from a [`RangeBounds<u64>`].
     pub fn new(bounds: impl RangeBounds<u64>) -> Self {
         match (bounds.start_bound(), bounds.end_bound()) {
             (Bound::Included(start), Bound::Included(end)) => {
@@ -158,7 +159,7 @@ impl std::fmt::Display for ByteRange {
                 },
                 length.map_or(String::new(), |length| (offset + length).to_string())
             ),
-            Self::Suffix(length) => write!(f, "-{}..", length,),
+            Self::Suffix(length) => write!(f, "-{length}.."),
         }
     }
 }

@@ -87,7 +87,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ZipStorageAdapter<TStorage> {
 
         let mut zip_name = zip_name.to_string_lossy();
         if cfg!(windows) {
-            zip_name = zip_name.replace("\\", "/").into();
+            zip_name = zip_name.replace('\\', "/").into();
         }
         zip_name.to_string()
     }
