@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use pco::{standalone::guarantee::file_size, ChunkConfig, ModeSpec, PagingSpec};
+use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
 
 use crate::{
     array::{
@@ -56,12 +56,15 @@ fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> 
     let mode_spec = mode_spec_config_to_pco(&configuration.mode_spec);
     ChunkConfig::default()
         .with_compression_level(configuration.level.as_usize())
-        .with_delta_encoding_order(
+        .with_mode_spec(mode_spec)
+        .with_delta_spec(
             configuration
                 .delta_encoding_order
-                .map(|order| order.as_usize()),
+                .map(|delta_encoding_order| {
+                    DeltaSpec::TryConsecutive(delta_encoding_order.as_usize())
+                })
+                .unwrap_or_default(),
         )
-        .with_mode_spec(mode_spec)
         .with_paging_spec(PagingSpec::EqualPagesUpTo(configuration.equal_pages_up_to))
 }
 
@@ -80,12 +83,17 @@ impl CodecTraits for PcodecCodec {
         let PagingSpec::EqualPagesUpTo(equal_pages_up_to) = self.chunk_config.paging_spec else {
             unreachable!()
         };
+        let delta_encoding_order =
+            if let DeltaSpec::TryConsecutive(order) = self.chunk_config.delta_spec {
+                Some(PcodecDeltaEncodingOrder::try_from(order).expect("validated on creation"))
+            } else {
+                None
+            };
+
         let configuration = PcodecCodecConfiguration::V1(PcodecCodecConfigurationV1 {
-            level: PcodecCompressionLevel::try_from(self.chunk_config.compression_level).unwrap(),
-            delta_encoding_order: self
-                .chunk_config
-                .delta_encoding_order
-                .map(|order| PcodecDeltaEncodingOrder::try_from(order).unwrap()),
+            level: PcodecCompressionLevel::try_from(self.chunk_config.compression_level)
+                .expect("validated on creation"),
+            delta_encoding_order,
             mode_spec: mode_spec_pco_to_config(&self.chunk_config.mode_spec),
             equal_pages_up_to,
         });
@@ -98,7 +106,7 @@ impl CodecTraits for PcodecCodec {
                     .expect("experimental codec identifier in global map"),
                 &configuration,
             )
-            .unwrap(),
+            .expect("pcodec configuration is valid json"),
         )
     }
 
@@ -303,6 +311,8 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
                 IDENTIFIER.to_string(),
             )),
         }?;
-        Ok(BytesRepresentation::BoundedSize(size.try_into().unwrap()))
+        Ok(BytesRepresentation::BoundedSize(
+            u64::try_from(size).unwrap(),
+        ))
     }
 }

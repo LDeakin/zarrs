@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display `ArraySubset` as a list of ranges
 - Relax `output_subset` requirements on `ArrayToBytesCodecTraits::decode_into` and `ArrayPartialDecoderTraits::partial_decode_into`
   - The subset shape and dimensionality no longer has to match, only the number of elements
+- Bump `pco` (pcodec) to 0.4
 
 ### Removed
 - Remove `async-recursion` dependency
