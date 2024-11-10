@@ -33,10 +33,9 @@ use super::v3::array::data_type::DataTypeMetadataV3;
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMetadataV3 {
-    GroupMetadataV3::new(
-        group_metadata_v2.attributes.clone(),
-        group_metadata_v2.additional_fields.clone(),
-    )
+    GroupMetadataV3::new()
+        .with_attributes(group_metadata_v2.attributes.clone())
+        .with_additional_fields(group_metadata_v2.additional_fields.clone())
 }
 
 /// An error conerting Zarr V3 array metadata to V3.
