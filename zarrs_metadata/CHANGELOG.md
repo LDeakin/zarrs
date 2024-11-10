@@ -7,13 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `GroupMetadataV2` constructors
+- Add `ArrayMetadataV2` constructors
+
 ### Changed
 - **Breaking**: Mark `GroupMetadataV3` and `ArrayMetadataV3` as non-exhaustive
 - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
-- Refactor `GroupMetadata{V3,V2}` constructors
-  - **Breaking**: `GroupMetadataV3::new()` is now parameter free
-  - Add `GroupMetadataV2::new()`
-  - Add `GroupMetadata{V3,V2}::with_{attributes,additional_fields}()`
+- Refactor `GroupMetadataV3` constructors
+  - **Breaking**: `GroupMetadataV3::new()` is now parameter free in favor of `with_` methods
+  - Add `GroupMetadataV3::with_{attributes,additional_fields}()`
+- Refactor `ArrayMetadataV3` constructors
+  - **Breaking**: `ArrayMetadataV3::new()` takes fewer parameters in favor of `with_` methods
+  - Add `ArrayMetadataV3::with_{attributes,additional_fields,chunk_key_encoding,dimension_names,storage_transformers}`
 
 ## [0.1.0] - 2024-09-02
 

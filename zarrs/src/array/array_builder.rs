@@ -314,18 +314,20 @@ impl ArrayBuilder {
             self.bytes_to_bytes_codecs.clone(),
         );
 
-        let array_metadata = ArrayMetadata::V3(ArrayMetadataV3::new(
-            self.shape.clone(),
-            self.data_type.metadata(),
-            self.chunk_grid.create_metadata(),
-            self.chunk_key_encoding.create_metadata(),
-            self.data_type.metadata_fill_value(&self.fill_value),
-            codec_chain.create_metadatas(),
-            self.attributes.clone(),
-            self.storage_transformers.create_metadatas(),
-            self.dimension_names.clone(),
-            self.additional_fields.clone(),
-        ));
+        let array_metadata = ArrayMetadata::V3(
+            ArrayMetadataV3::new(
+                self.shape.clone(),
+                self.chunk_grid.create_metadata(),
+                self.data_type.metadata(),
+                self.data_type.metadata_fill_value(&self.fill_value),
+                codec_chain.create_metadatas(),
+            )
+            .with_attributes(self.attributes.clone())
+            .with_additional_fields(self.additional_fields.clone())
+            .with_chunk_key_encoding(self.chunk_key_encoding.create_metadata())
+            .with_dimension_names(self.dimension_names.clone())
+            .with_storage_transformers(self.storage_transformers.create_metadatas()),
+        );
 
         Ok(Array {
             storage,
