@@ -9,7 +9,16 @@ use zarrs::metadata::v2::ArrayMetadataV2;
 use zarrs_metadata::v2::array::{ArrayMetadataV2Order, FillValueMetadataV2};
 use zarrs_metadata::v2::GroupMetadataV2;
 use zarrs_metadata::{ChunkKeySeparator, GroupMetadata};
-use zarrs_storage::ListableStorageTraits;
+use zarrs_storage::{ListableStorageTraits, ReadableStorageTraits, StoreKey};
+
+fn key_to_str<T: ReadableStorageTraits>(
+    store: &Arc<T>,
+    key: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    Ok(String::from_utf8(
+        store.get(&StoreKey::new(key)?)?.unwrap().into(),
+    )?)
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let store = Arc::new(zarrs_storage::store::MemoryStore::new());
@@ -33,13 +42,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     group.store_metadata()?;
     group.store_metadata_opt(&convert_group_metadata_to_v3)?;
     println!(
-        "The Zarr V2 group metadata is:\n{}\n",
-        serde_json::to_string_pretty(&group.metadata())?
+        "group/.zgroup (Zarr V2 group metadata):\n{}\n",
+        key_to_str(&store, "group/.zgroup")?
     );
     println!(
-        "The equivalent Zarr V3 group metadata is\n{}\n",
-        serde_json::to_string_pretty(&group.metadata_opt(&convert_group_metadata_to_v3))?
+        "group/.zattrs (Zarr V2 group attributes):\n{}\n",
+        key_to_str(&store, "group/.zattrs")?
     );
+    println!(
+        "group/zarr.json (Zarr V3 equivalent group metadata/attributes):\n{}\n",
+        key_to_str(&store, "group/zarr.json")?
+    );
+    // println!(
+    //     "The equivalent Zarr V3 group metadata is\n{}\n",
+    //     serde_json::to_string_pretty(&group.metadata_opt(&convert_group_metadata_to_v3))?
+    // );
 
     // Create a Zarr V2 array
     let array_metadata = ArrayMetadataV2::new(
@@ -65,13 +82,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     array.store_metadata()?;
     array.store_metadata_opt(&convert_array_metadata_to_v3)?;
     println!(
-        "The Zarr V2 array metadata is:\n{}\n",
-        serde_json::to_string_pretty(&array.metadata())?
+        "group/array/.zarray (Zarr V2 array metadata):\n{}\n",
+        key_to_str(&store, "group/array/.zarray")?
     );
     println!(
-        "The equivalent Zarr V3 array metadata is\n{}\n",
-        serde_json::to_string_pretty(&array.metadata_opt(&convert_array_metadata_to_v3))?
+        "group/array/.zattrs (Zarr V2 array attributes):\n{}\n",
+        key_to_str(&store, "group/array/.zattrs")?
     );
+    println!(
+        "group/array/zarr.json (Zarr V3 equivalent array metadata/attributes):\n{}\n",
+        key_to_str(&store, "group/array/zarr.json")?
+    );
+    // println!(
+    //     "The equivalent Zarr V3 array metadata is\n{}\n",
+    //     serde_json::to_string_pretty(&array.metadata_opt(&convert_array_metadata_to_v3))?
+    // );
 
     array.store_chunk_elements::<f32>(&[0, 1], &[0.0; 5 * 5])?;
 
