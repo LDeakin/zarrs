@@ -26,6 +26,13 @@ impl ArrayMetadataOptions {
     }
 
     /// Set the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
+    #[must_use]
+    pub fn with_experimental_codec_store_metadata_if_encode_only(mut self, enabled: bool) -> Self {
+        self.experimental_codec_store_metadata_if_encode_only = enabled;
+        self
+    }
+
+    /// Set the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
     pub fn set_experimental_codec_store_metadata_if_encode_only(
         &mut self,
         enabled: bool,
@@ -41,6 +48,16 @@ impl ArrayMetadataOptions {
     }
 
     /// Set the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.
+    #[must_use]
+    pub fn with_metadata_convert_version(
+        mut self,
+        convert_version: MetadataConvertVersion,
+    ) -> Self {
+        self.convert_version = convert_version;
+        self
+    }
+
+    /// Set the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.
     pub fn set_metadata_convert_version(
         &mut self,
         convert_version: MetadataConvertVersion,
@@ -53,6 +70,13 @@ impl ArrayMetadataOptions {
     #[must_use]
     pub fn include_zarrs_metadata(&self) -> bool {
         self.include_zarrs_metadata
+    }
+
+    /// Set the [include zarrs metadata](crate::config::Config#include-zarrs-metadata) configuration.
+    #[must_use]
+    pub fn with_include_zarrs_metadata(mut self, include_zarrs_metadata: bool) -> Self {
+        self.include_zarrs_metadata = include_zarrs_metadata;
+        self
     }
 
     /// Set the [include zarrs metadata](crate::config::Config#include-zarrs-metadata) configuration.

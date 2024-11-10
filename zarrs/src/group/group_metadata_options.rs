@@ -22,6 +22,16 @@ impl GroupMetadataOptions {
     }
 
     /// Set the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.
+    #[must_use]
+    pub fn with_metadata_convert_version(
+        mut self,
+        convert_version: MetadataConvertVersion,
+    ) -> Self {
+        self.convert_version = convert_version;
+        self
+    }
+
+    /// Set the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.
     pub fn set_metadata_convert_version(
         &mut self,
         convert_version: MetadataConvertVersion,
