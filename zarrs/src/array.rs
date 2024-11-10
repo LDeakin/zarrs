@@ -67,6 +67,7 @@ pub use self::{
     storage_transformer::StorageTransformerChain,
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
+use crate::metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 pub use crate::metadata::v3::{
     array::data_type::DataTypeSize,
     array::fill_value::FillValueMetadataV3,
@@ -775,6 +776,30 @@ impl<TStorage: ?Sized> Array<TStorage> {
         Ok(self
             .codecs()
             .recommended_concurrency(chunk_representation)?)
+    }
+
+    /// Convert the array to Zarr V3.
+    ///
+    /// # Errors
+    /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is not compatible with Zarr V3 metadata.
+    pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
+        if let ArrayMetadata::V2(metadata) = self.metadata {
+            let metadata: ArrayMetadata = array_metadata_v2_to_v3(&metadata)?.into();
+            Ok(Self {
+                storage: self.storage,
+                path: self.path,
+                data_type: self.data_type,
+                chunk_grid: self.chunk_grid,
+                chunk_key_encoding: self.chunk_key_encoding,
+                fill_value: self.fill_value,
+                codecs: self.codecs,
+                storage_transformers: self.storage_transformers,
+                dimension_names: self.dimension_names,
+                metadata,
+            })
+        } else {
+            Ok(self)
+        }
     }
 }
 

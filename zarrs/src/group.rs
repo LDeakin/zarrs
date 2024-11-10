@@ -150,6 +150,23 @@ impl<TStorage: ?Sized> Group<TStorage> {
             (GM::V2(metadata), V::V3) => GM::V3(group_metadata_v2_to_v3(&metadata)),
         }
     }
+
+    /// Convert the group to Zarr V3.
+    ///
+    /// If the group is already Zarr V3, this is a no-op.
+    #[must_use]
+    pub fn to_v3(self) -> Self {
+        if let GroupMetadata::V2(metadata) = self.metadata {
+            let metadata: GroupMetadata = group_metadata_v2_to_v3(&metadata).into();
+            Self {
+                storage: self.storage,
+                path: self.path,
+                metadata,
+            }
+        } else {
+            self
+        }
+    }
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {

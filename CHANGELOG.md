@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: Add `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::partial_encoder`
 - Add `with_` methods to `{Array,Group}MetadataOptions`
 - Add `zarr_v2_to_v3` example
+- Add `{Array,Group}::to_v3()`
 
 ### Changed
 - Bump `unsafe_cell_slice` to 0.2.0
