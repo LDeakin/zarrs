@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `with_` methods to `{Array,Group}MetadataOptions`
 - Add `zarr_v2_to_v3` example
 - Add `{Array,Group}::to_v3()`
+- Add `ShardingCodecBuilder::build_arc()`
 
 ### Changed
 - Bump `unsafe_cell_slice` to 0.2.0
