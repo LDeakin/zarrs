@@ -23,7 +23,7 @@ use crate::{
             },
             fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadataV3},
         },
-        AdditionalFields, ArrayMetadataV3, GroupMetadataV3, MetadataV3,
+        ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
 };
 
@@ -231,18 +231,12 @@ pub fn array_metadata_v2_to_v3(
 
     let attributes = array_metadata_v2.attributes.clone();
 
-    Ok(ArrayMetadataV3::new(
-        shape,
-        data_type,
-        chunk_grid,
-        chunk_key_encoding,
-        fill_value,
-        codecs,
-        attributes,
-        vec![],
-        None,
-        AdditionalFields::default(),
-    ))
+    Ok(
+        ArrayMetadataV3::new(shape, chunk_grid, data_type, fill_value, codecs)
+            .with_attributes(attributes)
+            .with_additional_fields(array_metadata_v2.additional_fields.clone())
+            .with_chunk_key_encoding(chunk_key_encoding),
+    )
 }
 
 /// An unsupported Zarr V2 data type error.

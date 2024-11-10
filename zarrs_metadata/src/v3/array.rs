@@ -1,3 +1,4 @@
+use chunk_key_encoding::default::DefaultChunkKeyEncodingConfiguration;
 use data_type::DataTypeMetadataV3;
 use derive_more::Display;
 use fill_value::FillValueMetadataV3;
@@ -98,6 +99,7 @@ pub mod nan_representations;
 /// }
 /// ```
 #[non_exhaustive]
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct ArrayMetadataV3 {
@@ -154,21 +156,33 @@ pub struct ArrayMetadataV3 {
 }
 
 impl ArrayMetadataV3 {
-    /// Create a new array metadata.
-    #[allow(clippy::too_many_arguments)]
+    /// Create new Zarr V3 array metadata.
+    ///
+    /// Defaults to:
+    /// - `default` chunk key encoding with the '/' separator,
+    /// - empty attributes,
+    /// - no dimension names,
+    /// - no storage transformers, and
+    /// - no additional fields.
     #[must_use]
     pub fn new(
         shape: ArrayShape,
-        data_type: DataTypeMetadataV3,
         chunk_grid: MetadataV3,
-        chunk_key_encoding: MetadataV3,
+        data_type: DataTypeMetadataV3,
         fill_value: FillValueMetadataV3,
         codecs: Vec<MetadataV3>,
-        attributes: serde_json::Map<String, serde_json::Value>,
-        storage_transformers: Vec<MetadataV3>,
-        dimension_names: Option<Vec<DimensionName>>,
-        additional_fields: AdditionalFields,
     ) -> Self {
+        let chunk_key_encoding = unsafe {
+            // SAFETY: The default chunk key encoding configuration is valid JSON.
+            MetadataV3::new_with_serializable_configuration(
+                crate::v3::array::chunk_key_encoding::default::IDENTIFIER,
+                &DefaultChunkKeyEncodingConfiguration {
+                    separator: crate::ChunkKeySeparator::Slash,
+                },
+            )
+            .unwrap_unchecked()
+        };
+
         Self {
             zarr_format: monostate::MustBe!(3u64),
             node_type: monostate::MustBe!("array"),
@@ -178,10 +192,48 @@ impl ArrayMetadataV3 {
             chunk_key_encoding,
             fill_value,
             codecs,
-            attributes,
-            storage_transformers,
-            dimension_names,
-            additional_fields,
+            attributes: serde_json::Map::default(),
+            storage_transformers: Vec::default(),
+            dimension_names: None,
+            additional_fields: AdditionalFields::default(),
         }
+    }
+
+    /// Set the user attributes.
+    #[must_use]
+    pub fn with_attributes(
+        mut self,
+        attributes: serde_json::Map<String, serde_json::Value>,
+    ) -> Self {
+        self.attributes = attributes;
+        self
+    }
+
+    /// Set the additional fields.
+    #[must_use]
+    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+        self.additional_fields = additional_fields;
+        self
+    }
+
+    /// Set the chunk key encoding.
+    #[must_use]
+    pub fn with_chunk_key_encoding(mut self, chunk_key_encoding: MetadataV3) -> Self {
+        self.chunk_key_encoding = chunk_key_encoding;
+        self
+    }
+
+    /// Set the dimension names.
+    #[must_use]
+    pub fn with_dimension_names(mut self, dimension_names: Option<Vec<DimensionName>>) -> Self {
+        self.dimension_names = dimension_names;
+        self
+    }
+
+    /// Set the storage transformers.
+    #[must_use]
+    pub fn with_storage_transformers(mut self, storage_transformers: Vec<MetadataV3>) -> Self {
+        self.storage_transformers = storage_transformers;
+        self
     }
 }

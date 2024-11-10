@@ -84,6 +84,69 @@ pub struct ArrayMetadataV2 {
     pub additional_fields: AdditionalFields,
 }
 
+impl ArrayMetadataV2 {
+    /// Create Zarr V2 array metadata.
+    ///
+    /// Defaults to:
+    /// - C order,
+    /// - empty attributes, and
+    /// - no additional fields.
+    #[must_use]
+    pub fn new(
+        shape: ArrayShape,
+        chunks: ChunkShape,
+        dtype: DataTypeMetadataV2,
+        fill_value: FillValueMetadataV2,
+        compressor: Option<MetadataV2>,
+        filters: Option<Vec<MetadataV2>>,
+    ) -> Self {
+        Self {
+            zarr_format: monostate::MustBe!(2u64),
+            shape,
+            chunks,
+            dtype,
+            compressor,
+            fill_value,
+            order: ArrayMetadataV2Order::C,
+            filters,
+            dimension_separator: ChunkKeySeparator::Dot,
+            attributes: serde_json::Map::default(),
+            additional_fields: AdditionalFields::default(),
+        }
+    }
+
+    /// Set the dimension separator.
+    #[must_use]
+    pub fn with_dimension_separator(mut self, dimension_separator: ChunkKeySeparator) -> Self {
+        self.dimension_separator = dimension_separator;
+        self
+    }
+
+    /// Set the order.
+    #[must_use]
+    pub fn with_order(mut self, order: ArrayMetadataV2Order) -> Self {
+        self.order = order;
+        self
+    }
+
+    /// Set the user attributes.
+    #[must_use]
+    pub fn with_attributes(
+        mut self,
+        attributes: serde_json::Map<String, serde_json::Value>,
+    ) -> Self {
+        self.attributes = attributes;
+        self
+    }
+
+    /// Set the additional fields.
+    #[must_use]
+    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+        self.additional_fields = additional_fields;
+        self
+    }
+}
+
 const fn chunk_key_separator_default_zarr_v2() -> ChunkKeySeparator {
     ChunkKeySeparator::Dot
 }
