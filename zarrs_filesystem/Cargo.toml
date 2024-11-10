@@ -22,7 +22,7 @@ libc = "0.2.158"
 page_size = "0.6.0"
 parking_lot = "0.12.0"
 pathdiff = "0.2.0"
-thiserror = "1.0.61"
+thiserror = "2.0.0"
 walkdir = "2.3.2"
 zarrs_storage = { workspace = true }
 
