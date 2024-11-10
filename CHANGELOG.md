@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This is an experimental feature for now until it has more comprehensively tested and support is added in the async API
   - Adds `ArrayPartialEncoderTraits`, `BytesPartialEncoderTraits`, `StoragePartialEncoder`, `ArrayPartialEncoderDefault`, `BytesPartialEncoderDefault`
   - **Breaking**: Add `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::partial_encoder`
+- Add `with_` methods to `{Array,Group}MetadataOptions`
 
 ### Changed
 - Bump `unsafe_cell_slice` to 0.2.0

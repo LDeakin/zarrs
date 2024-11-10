@@ -72,7 +72,8 @@ fn cities_impl(
     }
 
     let array = builder.build(store.clone(), "/")?;
-    array.store_metadata_opt(&ArrayMetadataOptions::default().set_include_zarrs_metadata(false))?;
+    array
+        .store_metadata_opt(&ArrayMetadataOptions::default().with_include_zarrs_metadata(false))?;
 
     let subset_all = array.subset_all();
     array.store_array_subset_elements(&subset_all, &cities)?;

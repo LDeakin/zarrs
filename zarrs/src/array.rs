@@ -1059,8 +1059,8 @@ mod tests {
             array_out
                 .store_metadata_opt(
                     &ArrayMetadataOptions::default()
-                        .set_metadata_convert_version(version)
-                        .set_include_zarrs_metadata(false),
+                        .with_metadata_convert_version(version)
+                        .with_include_zarrs_metadata(false),
                 )
                 .unwrap();
         }
