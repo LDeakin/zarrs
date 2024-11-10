@@ -18,3 +18,38 @@ pub struct GroupMetadataV2 {
     #[serde(default, flatten)]
     pub additional_fields: AdditionalFields,
 }
+
+impl Default for GroupMetadataV2 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GroupMetadataV2 {
+    /// Create Zarr V2 group metadata.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            zarr_format: monostate::MustBe!(2u64),
+            attributes: serde_json::Map::new(),
+            additional_fields: AdditionalFields::default(),
+        }
+    }
+
+    /// Set the user attributes.
+    #[must_use]
+    pub fn with_attributes(
+        mut self,
+        attributes: serde_json::Map<String, serde_json::Value>,
+    ) -> Self {
+        self.attributes = attributes;
+        self
+    }
+
+    /// Set the additional fields.
+    #[must_use]
+    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+        self.additional_fields = additional_fields;
+        self
+    }
+}
