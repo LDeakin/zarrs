@@ -151,21 +151,13 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! Examples can be run with `cargo run --example <EXAMPLE_NAME>`.
-//!  - Add `-- --usage-log` to see storage API calls during example execution.
+//! Various examples can be found in [zarrs/examples](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples) that show how to
+//! - create and manipulate zarr hierarchies with various stores (sync and async), codecs, etc.
+//! - convert between Zarr V2 and V3.
+//!
+//! They can be run with `cargo run --example <EXAMPLE_NAME>`.
 //!  - Some examples require non-default features, which can be enabled with `--all-features` or `--features <FEATURES>`.
-//!
-//! #### Sync API Examples
-//! [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/array_write_read.rs),
-//! [`array_write_read_ndarray`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/array_write_read_ndarray.rs),
-//! [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/sharded_array_write_read.rs),
-//! [`rectangular_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/rectangular_array_write_read.rs),
-//! [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/zip_array_write_read.rs),
-//! [`sync_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/sync_http_array_read.rs).
-//!
-//! #### Async API Examples
-//! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/async_array_write_read.rs),
-//! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples/async_http_array_read.rs),
+//!  - Some examples support a `-- --usage-log` argument to print storage API calls during example execution.
 //!
 //! ## Crate Features
 //! #### Default
