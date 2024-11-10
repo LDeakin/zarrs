@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![cfg(feature = "ndarray")]
 
 use std::sync::Arc;

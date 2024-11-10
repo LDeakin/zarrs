@@ -29,6 +29,9 @@ zstd = ["dep:zstd"] # Enable the zstd codec
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
 async = ["dep:async-trait", "dep:futures", "zarrs_storage/async"] # Enable experimental async API
 
+[lints]
+workspace = true
+
 [package.metadata.docs.rs]
 all-features = true
 

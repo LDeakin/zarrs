@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use ndarray::{array, Array2, ArrayD};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use zarrs::storage::{

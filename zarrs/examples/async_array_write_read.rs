@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use futures::TryStreamExt;
 use zarrs::storage::{
     storage_adapter::usage_log::UsageLogStorageAdapter, AsyncReadableWritableListableStorage,

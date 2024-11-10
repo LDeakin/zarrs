@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use itertools::Itertools;
 use ndarray::{array, Array2, ArrayD};
 use zarrs::{

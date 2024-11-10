@@ -34,6 +34,7 @@ pub struct HTTPStore {
     client: reqwest::blocking::Client,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn handle_reqwest_error(err: reqwest::Error) -> StorageError {
     StorageError::Other(err.to_string())
 }

@@ -13,6 +13,18 @@ members = [
     "zarrs_zip",
 ]
 
+[workspace.lints.rust]
+unused_variables = "warn"
+dead_code = "warn"
+missing_docs = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_panics_doc = "warn"
+missing_errors_doc = "warn"
+
 [workspace.dependencies.zarrs_metadata]
 version = "0.2.0"
 path = "zarrs_metadata"

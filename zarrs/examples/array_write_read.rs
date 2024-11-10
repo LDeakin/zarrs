@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use zarrs::storage::{
     storage_adapter::usage_log::UsageLogStorageAdapter, ReadableWritableListableStorage,
