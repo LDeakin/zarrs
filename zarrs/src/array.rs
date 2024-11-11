@@ -162,8 +162,9 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///    - [`retrieve_array_subset`](Array::retrieve_array_subset)
 ///    - [`retrieve_encoded_chunk`](Array::retrieve_encoded_chunk)
 ///    - [`partial_decoder`](Array::partial_decoder)
-///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and store metadata
+///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and metadata
 ///    - [`store_metadata`](Array::store_metadata)
+///    - [`erase_metadata`](Array::erase_metadata)
 ///    - [`store_chunk`](Array::store_chunk)
 ///    - [`store_chunks`](Array::store_chunks)
 ///    - [`store_encoded_chunk`](Array::store_encoded_chunk)
@@ -178,8 +179,8 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///   - Standard variants store or retrieve data represented as [`ArrayBytes`] (representing fixed or variable length bytes).
 ///   - `_elements` suffix variants can store or retrieve chunks with a known type.
 ///   - `_ndarray` suffix variants can store or retrieve [`ndarray::Array`]s (requires `ndarray` feature).
-///   - `_opt` suffix variants have a [`CodecOptions`](crate::array::codec::CodecOptions) parameter for fine-grained concurrency control.
-///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
+///   - `_opt` suffix variants have a [`CodecOptions`](crate::array::codec::CodecOptions) parameter for fine-grained concurrency control and more.
+///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions).
 ///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
 /// Additional methods are offered by extension traits:
