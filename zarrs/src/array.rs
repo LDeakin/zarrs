@@ -154,7 +154,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// ## Array Data
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
 /// The core array methods are:
-///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
+///  - [`[Async]ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
 ///    - [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists)
 ///    - [`retrieve_chunk`](Array::retrieve_chunk)
 ///    - [`retrieve_chunks`](Array::retrieve_chunks)
@@ -162,7 +162,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///    - [`retrieve_array_subset`](Array::retrieve_array_subset)
 ///    - [`retrieve_encoded_chunk`](Array::retrieve_encoded_chunk)
 ///    - [`partial_decoder`](Array::partial_decoder)
-///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and metadata
+///  - [`[Async]WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and metadata
 ///    - [`store_metadata`](Array::store_metadata)
 ///    - [`erase_metadata`](Array::erase_metadata)
 ///    - [`store_chunk`](Array::store_chunk)
@@ -170,7 +170,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///    - [`store_encoded_chunk`](Array::store_encoded_chunk)
 ///    - [`erase_chunk`](Array::erase_chunk)
 ///    - [`erase_chunks`](Array::erase_chunks)
-///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading *and* writing
+///  - [`[Async]ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading *and* writing
 ///    - [`store_chunk_subset`](Array::store_chunk_subset)
 ///    - [`store_array_subset`](Array::store_array_subset)
 ///    - [`partial_encoder`](Array::partial_encoder)
@@ -184,8 +184,8 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
 /// Additional methods are offered by extension traits:
+///  - [`ArrayShardedExt`] and [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
 ///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching)
-///  - [`ArrayShardedExt`], [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
 ///
 /// ### Chunks and Array Subsets
 /// Several convenience methods are available for querying the underlying chunk grid:
@@ -298,10 +298,11 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///
 /// `zarrs` consumers can create custom caches by implementing the [`ChunkCache`] trait.
 ///
-/// Chunk caching is likely to be effective for remote stores where redundant retrieval are costly.
+/// Chunk caching is likely to be effective for remote stores where redundant retrievals are costly.
 /// Chunk caching may not outperform disk caching with a filesystem store.
 /// The above caches use internal locking to support multithreading, which has a performance overhead.
-/// **Prefer not to use a chunk cache if chunks are not accessed repeatedly**, because cached retrieve methods do not use partial decoders and any intersected chunk is fully decoded if not present in the cache.
+/// **Prefer not to use a chunk cache if chunks are not accessed repeatedly**.
+/// Cached retrieve methods do not use partial decoders, and any intersected chunk is fully decoded if not present in the cache.
 /// The encoded chunk caches may be optimal if dealing with highly compressed/sparse data with a fast codec.
 /// However, the decoded chunk caches are likely to be more performant in most cases.
 ///
