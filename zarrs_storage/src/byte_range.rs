@@ -259,6 +259,9 @@ pub unsafe fn extract_byte_ranges_concat_unchecked(
             .sum::<u64>(),
     )
     .unwrap();
+    if out_size == 0 {
+        return vec![];
+    }
     let mut out = Vec::with_capacity(out_size);
     let out_slice = UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut out);
     let mut offset: usize = 0;

@@ -265,9 +265,11 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             }
             DataTypeSize::Fixed(data_type_size) => {
                 // Allocate an array for the output
-                let mut decoded_shard = Vec::<u8>::with_capacity(
-                    shard_representation.num_elements_usize() * data_type_size,
-                );
+                let size_output = shard_representation.num_elements_usize() * data_type_size;
+                if size_output == 0 {
+                    return Ok(ArrayBytes::new_flen(vec![]));
+                }
+                let mut decoded_shard = Vec::<u8>::with_capacity(size_output);
 
                 let contiguous_fill_value = if any_empty {
                     Some(get_contiguous_fill_value(

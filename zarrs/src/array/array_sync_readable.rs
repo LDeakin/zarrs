@@ -706,6 +706,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     DataTypeSize::Fixed(data_type_size) => {
                         // Allocate the output
                         let size_output = array_subset.num_elements_usize() * data_type_size;
+                        if size_output == 0 {
+                            return Ok(ArrayBytes::new_flen(vec![]));
+                        }
                         let mut output = Vec::with_capacity(size_output);
 
                         {

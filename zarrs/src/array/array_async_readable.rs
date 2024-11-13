@@ -633,6 +633,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                         let size_output =
                             usize::try_from(array_subset.num_elements() * data_type_size as u64)
                                 .unwrap();
+                        if size_output == 0 {
+                            return Ok(ArrayBytes::new_flen(vec![]));
+                        }
                         let mut output = Vec::with_capacity(size_output);
                         {
                             let output =

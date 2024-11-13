@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Remove `async-recursion` dependency
 
+### Fixed
+- Fix panics that could occur with with empty byte ranges / empty array subsets in `Array`, `ByteRange` and codec methods
+
 ## [0.17.1] - 2024-10-18
 
 ### Added
