@@ -16,6 +16,12 @@ pub mod codec {
     pub mod bz2;
     /// `gzip` codec metadata.
     pub mod gzip;
+    /// `vlen-array` codec metadata.
+    pub mod vlen_array;
+    /// `vlen-bytes` codec metadata.
+    pub mod vlen_bytes;
+    /// `vlen-utf8` codec metadata.
+    pub mod vlen_utf8;
     /// `zfpy` codec metadata.
     pub mod zfpy;
     /// `zstd` codec metadata.

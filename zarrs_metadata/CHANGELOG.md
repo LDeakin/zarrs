@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `GroupMetadataV2` constructors
 - Add `ArrayMetadataV2` constructors
 - Implement `From<{&str,String}>` for `DataTypeMetadataV2`
+- Add `v2::array::codec::vlen_{array,bytes,utf8}` modules
 
 ### Changed
 - **Breaking**: Mark `GroupMetadataV3` and `ArrayMetadataV3` as non-exhaustive
