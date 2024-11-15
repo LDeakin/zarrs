@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Relax `output_subset` requirements on `ArrayToBytesCodecTraits::decode_into` and `ArrayPartialDecoderTraits::partial_decode_into`
   - The subset shape and dimensionality no longer has to match, only the number of elements
 - Bump `pco` (pcodec) to 0.4
+- **Breaking**: Change `experimental_codec_names` config hashmap to `HashMap<String, String>` from `HashMap<&'static str, String>`
 
 ### Removed
 - Remove `async-recursion` dependency
