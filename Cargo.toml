@@ -42,7 +42,7 @@ version = "0.1.0"
 path = "zarrs_http"
 
 [workspace.dependencies.zarrs_object_store]
-version = "0.2.1"
+version = "0.3.0"
 path = "zarrs_object_store"
 
 [workspace.dependencies.zarrs_opendal]

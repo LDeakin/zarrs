@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2024-11-15
+
 ### Added
  - Add docs about precise version selection
 
@@ -33,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `storage` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_object_store-v0.2.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_object_store-v0.3.0...HEAD
+[0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.3.0
 [0.2.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.2.1
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.1.0
