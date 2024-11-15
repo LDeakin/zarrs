@@ -144,7 +144,9 @@ pub fn array_metadata_v2_to_v3(
         for filter in filters {
             // TODO: Add a V2 registry with V2 to V3 conversion functions
             match filter.id() {
-                "vlen-utf8" | "vlen-bytes" | "vlen-array" => {
+                crate::v2::array::codec::vlen_array::IDENTIFIER
+                | crate::v2::array::codec::vlen_bytes::IDENTIFIER
+                | crate::v2::array::codec::vlen_utf8::IDENTIFIER => {
                     has_array_to_bytes = true;
                     let vlen_v2_metadata = MetadataV3::new_with_serializable_configuration(
                         crate::v3::array::codec::vlen_v2::IDENTIFIER,
