@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0-beta.0] - 2024-11-15
+
+### Highlights
+- Experimental partial encoding support (enabling writing shards incrementally)
+- Improve Zarr V2 interoperability and conversion
+
 ### Added
 - Add a `makefile` and simplify `BUILD.md`
 - Add chunk-by-chunk update example in `Array` docs
@@ -37,10 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Change `experimental_codec_names` config hashmap to `HashMap<String, String>` from `HashMap<&'static str, String>`
 - **Breaking**: Add `name` parameter to `vlen_v2` codec constructors
 - Register `vlen-array`, `vlen-bytes`, and `vlen-utf8` codecs
+- Bump `zarrs_metadata` to 0.2.0
+- Bump `zarrs_storage` to 0.3.0
+- Bump `zarrs_filesystem` to 0.2.0
 
 ### Removed
 - Remove `async-recursion` dependency
-- Remove `Default` implementation for `VlenV2Codec`
+- **Breaking**: Remove `Default` implementation for `VlenV2Codec`
 
 ### Fixed
 - Fix panics that could occur with with empty byte ranges / empty array subsets in `Array`, `ByteRange` and codec methods
@@ -1120,6 +1129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial public release
 
 [unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.17.1...HEAD
+[0.18.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0-beta.0
 [0.17.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.1
 [0.17.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0
 [0.17.0-beta.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.3
