@@ -16,6 +16,12 @@ pub mod codec {
     pub mod bz2;
     /// `gzip` codec metadata.
     pub mod gzip;
+    /// `vlen-array` codec metadata.
+    pub mod vlen_array;
+    /// `vlen-bytes` codec metadata.
+    pub mod vlen_bytes;
+    /// `vlen-utf8` codec metadata.
+    pub mod vlen_utf8;
     /// `zfpy` codec metadata.
     pub mod zfpy;
     /// `zstd` codec metadata.
@@ -244,6 +250,8 @@ pub enum FillValueMetadataV2 {
     NegInfinity,
     /// A number.
     Number(serde_json::Number),
+    /// A string.
+    String(String),
 }
 
 impl<'de> serde::Deserialize<'de> for FillValueMetadataV2 {
@@ -261,7 +269,7 @@ impl<'de> serde::Deserialize<'de> for FillValueMetadataV2 {
                 "NaN" => Ok(Self::NaN),
                 "Infinity" => Ok(Self::Infinity),
                 "-Infinity" => Ok(Self::NegInfinity),
-                _ => Err(serde::de::Error::custom("unsupported fill value")),
+                _ => Ok(Self::String(string)),
             },
             FillValueMetadataV2Type::Number(number) => Ok(Self::Number(number)),
             FillValueMetadataV2Type::Null => Ok(Self::Null),
@@ -280,6 +288,7 @@ impl Serialize for FillValueMetadataV2 {
             Self::Infinity => serializer.serialize_str("Infinity"),
             Self::NegInfinity => serializer.serialize_str("-Infinity"),
             Self::Number(number) => number.serialize(serializer),
+            Self::String(string) => string.serialize(serializer),
         }
     }
 }

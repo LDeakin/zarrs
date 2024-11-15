@@ -22,7 +22,7 @@
   "fill_value": "",
   "codecs": [
     {
-      "name": "https://codec.zarrs.dev/array_to_bytes/vlen_v2"
+      "name": "vlen-utf8"
     }
   ]
 }

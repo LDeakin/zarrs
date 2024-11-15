@@ -97,7 +97,7 @@ fn cities() -> Result<(), Box<dyn Error>> {
     assert_eq!(cities[47862], "Sariwŏn-si");
     assert_eq!(cities[47867], "Charlotte Amalie");
 
-    let vlen_v2 = Arc::new(VlenV2Codec::default());
+    let vlen_v2 = Arc::new(VlenV2Codec::new("vlen-utf8".to_string()));
 
     // let vlen = Arc::new(VlenCodec::default());
     let vlen_configuration: VlenCodecConfiguration = serde_json::from_str(r#"{
@@ -129,6 +129,36 @@ fn cities() -> Result<(), Box<dyn Error>> {
     // | vlen_v2 | zstd 5      | 362626 |
     // | vlen             |             | 642580 |
     // | vlen             | zstd 5      | 346950 |
+
+    Ok(())
+}
+
+#[test]
+fn cities_zarr_python_v2_compat() -> Result<(), Box<dyn Error>> {
+    let store = Arc::new(FilesystemStore::new(
+        "tests/data/zarr_python_compat/cities_v2.zarr",
+    )?);
+    let array = zarrs::array::Array::open(store.clone(), "/")?;
+    let subset_all = array.subset_all();
+    let cities_out = array.retrieve_array_subset_elements::<String>(&subset_all)?;
+
+    let cities = read_cities()?;
+    assert_eq!(cities, cities_out);
+
+    Ok(())
+}
+
+#[test]
+fn cities_zarr_python_v3_compat() -> Result<(), Box<dyn Error>> {
+    let store = Arc::new(FilesystemStore::new(
+        "tests/data/zarr_python_compat/cities_v3.zarr",
+    )?);
+    let array = zarrs::array::Array::open(store.clone(), "/")?;
+    let subset_all = array.subset_all();
+    let cities_out = array.retrieve_array_subset_elements::<String>(&subset_all)?;
+
+    let cities = read_cities()?;
+    assert_eq!(cities, cities_out);
 
     Ok(())
 }

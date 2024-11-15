@@ -114,7 +114,7 @@ pub struct Config {
     metadata_convert_version: MetadataConvertVersion,
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
-    experimental_codec_names: HashMap<&'static str, String>,
+    experimental_codec_names: HashMap<String, String>,
     experimental_partial_encoding: bool,
 }
 
@@ -125,17 +125,17 @@ impl Default for Config {
         let experimental_codec_names = HashMap::from([
             // Array to array
             #[cfg(feature = "bitround")]
-            (codec::bitround::IDENTIFIER, "https://codec.zarrs.dev/array_to_array/bitround".to_string()),
+            (codec::bitround::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_array/bitround".to_string()),
             // Array to bytes
             #[cfg(feature = "zfp")]
-            (codec::zfp::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/zfp".to_string()),
+            (codec::zfp::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/zfp".to_string()),
             #[cfg(feature = "pcodec")]
-            (codec::pcodec::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/pcodec".to_string()),
-            (codec::vlen::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/vlen".to_string()),
-            (codec::vlen_v2::IDENTIFIER, "https://codec.zarrs.dev/array_to_bytes/vlen_v2".to_string()),
+            (codec::pcodec::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/pcodec".to_string()),
+            (codec::vlen::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen".to_string()),
+            (codec::vlen_v2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen_v2".to_string()),
             // Bytes to bytes
             #[cfg(feature = "bz2")]
-            (codec::bz2::IDENTIFIER, "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
+            (codec::bz2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
         ]);
 
         let concurrency_multiply = 1;
@@ -259,12 +259,12 @@ impl Config {
 
     /// Get the [experimental codec names](#experimental-codec-names) configuration.
     #[must_use]
-    pub fn experimental_codec_names(&self) -> &HashMap<&'static str, String> {
+    pub fn experimental_codec_names(&self) -> &HashMap<String, String> {
         &self.experimental_codec_names
     }
 
     /// Get a mutable reference to the [experimental codec names](#experimental-codec-names) configuration.
-    pub fn experimental_codec_names_mut(&mut self) -> &mut HashMap<&'static str, String> {
+    pub fn experimental_codec_names_mut(&mut self) -> &mut HashMap<String, String> {
         &mut self.experimental_codec_names
     }
 
