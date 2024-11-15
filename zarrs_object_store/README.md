@@ -24,6 +24,16 @@ let store: AsyncReadableWritableListableStorage =
 ## Version Compatibility Matrix
 See [doc/version_compatibility_matrix.md](./doc/version_compatibility_matrix.md).
 
+`object_store` is re-exported as a dependency of this crate, so it does not need to be specified as a direct dependency.
+
+However, if `object_store` is a direct dependency, it is necessary to ensure that the version used by this crate is compatible.
+This crate can depend on a range of semver-incompatible versions of `object_store`, and Cargo will not automatically choose a single version of `object_store` that satisfies all dependencies.
+Use a precise cargo update to ensure compatibility.
+For example, if this crate resolves to `object_store` 0.11.1 and your code uses 0.10.2:
+```shell
+cargo update --package object_store:0.11.1 --precise 0.10.2
+```
+
 ## Licence
 `zarrs_object_store` is licensed under either of
  - the Apache License, Version 2.0 [LICENSE-APACHE](./LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
