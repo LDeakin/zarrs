@@ -316,5 +316,6 @@ pub fn array_metadata_fill_value_v2_to_v3(
                 unreachable!("number must be convertible to u64, i64 or f64")
             }
         }
+        FillValueMetadataV2::String(string) => Some(FillValueMetadataV3::String(string.clone())),
     }
 }
