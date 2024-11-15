@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-11-15
+
 ### Changed
  - Bump `zarrs_storage` to 0.3.0-dev
  - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
@@ -16,5 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Split from the `zarrs_storage` crate
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_zip-v0.1.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_zip-v0.2.0...HEAD
+[0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_zip-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_zip-v0.1.0
