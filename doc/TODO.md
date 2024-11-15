@@ -11,10 +11,6 @@
 - Remove most/all `_opt` methods when Rust [`import-trait-associated-functions`](https://github.com/rust-lang/rfcs/pull/3591) stabilises
 - Use lending iterators where/if possible to avoid `Vec` allocations in iterators?
 
-### Ecosystem Compatibility
-- Support `vlen-utf8`/`vlen-bytes`/`vlen-array` for `zarr-python` V3 compatibility?
-  - My thoughts on variable-length data type standardisation: https://github.com/zarr-developers/zeps/pull/47#issuecomment-2238480835
-
 ### Codecs
 - Implement codecs for compatibility with virtual NetCDF/HDF5 data with compression?
 

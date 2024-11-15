@@ -35,9 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The subset shape and dimensionality no longer has to match, only the number of elements
 - Bump `pco` (pcodec) to 0.4
 - **Breaking**: Change `experimental_codec_names` config hashmap to `HashMap<String, String>` from `HashMap<&'static str, String>`
+- **Breaking**: Add `name` parameter to `vlen_v2` codec constructors
+- Register `vlen-array`, `vlen-bytes`, and `vlen-utf8` codecs
 
 ### Removed
 - Remove `async-recursion` dependency
+- Remove `Default` implementation for `VlenV2Codec`
 
 ### Fixed
 - Fix panics that could occur with with empty byte ranges / empty array subsets in `Array`, `ByteRange` and codec methods

@@ -23,37 +23,38 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1};
 
 /// The `vlen_v2` codec implementation.
-#[derive(Debug, Clone, Default)]
-pub struct VlenV2Codec {}
+#[derive(Debug, Clone)]
+pub struct VlenV2Codec {
+    name: String,
+}
 
 impl VlenV2Codec {
-    /// Create a new `vlen` codec.
+    /// Create a new `vlen_v2` codec.
     #[must_use]
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(name: String) -> Self {
+        Self { name }
     }
 
-    /// Create a new `vlen` codec from configuration.
+    /// Create a new `vlen_v2` codec from configuration.
     #[must_use]
-    pub fn new_with_configuration(_configuration: &VlenV2CodecConfiguration) -> Self {
+    pub fn new_with_name_configuration(
+        name: String,
+        _configuration: &VlenV2CodecConfiguration,
+    ) -> Self {
         // let VlenV2CodecConfiguration::V1(configuration) = configuration;
-        Self {}
+        Self { name }
     }
 }
 
 impl CodecTraits for VlenV2Codec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+        let config = global_config();
+        let name = config
+            .experimental_codec_names()
+            .get(&self.name)
+            .unwrap_or(&self.name);
         let configuration = VlenV2CodecConfigurationV1 {};
-        Some(
-            MetadataV3::new_with_serializable_configuration(
-                global_config()
-                    .experimental_codec_names()
-                    .get(super::IDENTIFIER)
-                    .expect("experimental codec identifier in global map"),
-                &configuration,
-            )
-            .unwrap(),
-        )
+        Some(MetadataV3::new_with_serializable_configuration(name, &configuration).unwrap())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -28,6 +28,15 @@ use crate::{
 inventory::submit! {
     CodecPlugin::new(IDENTIFIER, is_name_vlen_v2, create_codec_vlen_v2)
 }
+inventory::submit! {
+    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_array::IDENTIFIER, is_name_vlen_array, create_codec_vlen_v2)
+}
+inventory::submit! {
+    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_bytes::IDENTIFIER, is_name_vlen_bytes, create_codec_vlen_v2)
+}
+inventory::submit! {
+    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_utf8::IDENTIFIER, is_name_vlen_utf8, create_codec_vlen_v2)
+}
 
 fn is_name_vlen_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
@@ -38,11 +47,26 @@ fn is_name_vlen_v2(name: &str) -> bool {
                 .expect("experimental codec identifier in global map")
 }
 
+fn is_name_vlen_array(name: &str) -> bool {
+    name.eq(crate::metadata::v2::array::codec::vlen_array::IDENTIFIER)
+}
+
+fn is_name_vlen_bytes(name: &str) -> bool {
+    name.eq(crate::metadata::v2::array::codec::vlen_bytes::IDENTIFIER)
+}
+
+fn is_name_vlen_utf8(name: &str) -> bool {
+    name.eq(crate::metadata::v2::array::codec::vlen_utf8::IDENTIFIER)
+}
+
 pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: VlenV2CodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(VlenV2Codec::new_with_configuration(&configuration));
+    let codec = Arc::new(VlenV2Codec::new_with_name_configuration(
+        metadata.name().to_string(),
+        &configuration,
+    ));
     Ok(Codec::ArrayToBytes(codec))
 }
 

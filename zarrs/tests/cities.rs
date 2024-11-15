@@ -97,7 +97,7 @@ fn cities() -> Result<(), Box<dyn Error>> {
     assert_eq!(cities[47862], "Sariwŏn-si");
     assert_eq!(cities[47867], "Charlotte Amalie");
 
-    let vlen_v2 = Arc::new(VlenV2Codec::default());
+    let vlen_v2 = Arc::new(VlenV2Codec::new("vlen-utf8".to_string()));
 
     // let vlen = Arc::new(VlenCodec::default());
     let vlen_configuration: VlenCodecConfiguration = serde_json::from_str(r#"{
