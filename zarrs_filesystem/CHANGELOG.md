@@ -18,5 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Split from the `zarrs_storage` crate
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_filesystem-v0.1.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_filesystem-v0.2.0...HEAD
+[0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_filesystem-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_filesystem-v0.1.0
