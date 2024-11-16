@@ -32,7 +32,8 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///
 /// If `false`, empty chunks (where all elements match the fill value) will not be stored.
 /// This incurs a computational overhead as each element must be tested for equality to the fill value before a chunk is encoded.
-/// If `true`, the aforementioned test is skipped and all chunks are stored.
+/// If `true`, the aforementioned test is skipped and empty chunks will be stored.
+/// Note that empty chunks must still be stored explicitly (e.g. with [`Array::store_chunk`](crate::array::Array::store_chunk)).
 ///
 /// ### Codec Concurrent Target
 /// > default: [`std::thread::available_parallelism`]`()`
@@ -49,8 +50,8 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 /// ### Chunk Concurrent Minimum
 /// > default: `4`
 ///
-/// For array operations involving multiple chunks, this is the preferred minimum chunk concurrency.
-/// For example, `array_store_chunks` will concurrently encode and store up to four chunks at a time by default.
+/// Array operations involving multiple chunks can tune the chunk and codec concurrency to improve performance/reduce memory usage.
+/// This option sets the preferred minimum chunk concurrency.
 /// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`] parameter of an encode or decode method.
 ///
 /// ## Metadata Options
