@@ -20,6 +20,12 @@ pub const fn version_patch() -> u32 {
     VERSION_PATCH
 }
 
+/// The `zarrs` pre-release version.
+#[must_use]
+pub const fn version_pre() -> &'static str {
+    env!("CARGO_PKG_VERSION_PRE")
+}
+
 /// A [`u32`] representation of the `zarrs` version.
 ///
 /// Encoded as
@@ -45,6 +51,14 @@ pub const fn version_patch() -> u32 {
 /// # assert!(version_patch == zarrs::version::version_patch());
 /// ```
 #[must_use]
-pub fn version() -> u32 {
+pub const fn version() -> u32 {
     (version_major() << 22) | (version_minor() << 12) | version_patch()
+}
+
+/// A string representation of the `zarrs` version.
+///
+/// Matches the `CARGO_PKG_VERSION`.
+#[must_use]
+pub const fn version_str() -> &'static str {
+    env!("CARGO_PKG_VERSION")
 }

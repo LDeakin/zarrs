@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `zarrs::version::version_{str,pre}`
+
 ### Changed
-- Make `zarrs::version::version_{major,minor,patch}` const
+- Make `zarrs::version::version_{,major,minor,patch}` const
 
 ## [0.18.0-beta.0] - 2024-11-15
 
