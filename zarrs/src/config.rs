@@ -138,14 +138,10 @@ impl Default for Config {
             (codec::bz2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
         ]);
 
-        let concurrency_multiply = 1;
-        let concurrency_add = 0;
         Self {
             validate_checksums: true,
             store_empty_chunks: false,
-            codec_concurrent_target: std::thread::available_parallelism().unwrap().get()
-                * concurrency_multiply
-                + concurrency_add,
+            codec_concurrent_target: rayon::current_num_threads(),
             chunk_concurrent_minimum: 4,
             experimental_codec_store_metadata_if_encode_only: false,
             metadata_convert_version: MetadataConvertVersion::Default,
