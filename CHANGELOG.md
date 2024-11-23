@@ -7,16 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Add `zarrs::version::version_{str,pre}`
-- Add "The zarrs Book" and `zarrs-python` to docs
+## [0.18.0] - 2024-11-23
 
-### Changed
-- Make `zarrs::version::version_{,major,minor,patch}` const
+### Announcements
+- [`zarrs-python`](https://github.com/ilan-gold/zarrs-python) was recently released
+  - It implements a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation
+  - It is supported by downstream libraries like `dask`
+  - See [zarr_benchmarks](https://github.com/LDeakin/zarr_benchmarks) for benchmarks
+- [The `zarrs` Book](https://book.zarrs.dev) has been created and is under construction
 
-## [0.18.0-beta.0] - 2024-11-15
-
-### Highlights
+### Release Highlights
 - Experimental partial encoding support (enabling writing shards incrementally)
 - Improve Zarr V2 interoperability and conversion
 
@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `zarr_v2_to_v3` example
 - Add `{Array,Group}::to_v3()`
 - Add `ShardingCodecBuilder::build_arc()`
+- Add `zarrs::version::version_{str,pre}`
+- Add "The zarrs Book" and `zarrs-python` to docs
 
 ### Changed
 - Bump `unsafe_cell_slice` to 0.2.0
@@ -53,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `zarrs_metadata` to 0.2.0
 - Bump `zarrs_storage` to 0.3.0
 - Bump `zarrs_filesystem` to 0.2.0
+- Make `zarrs::version::version_{,major,minor,patch}` const
 
 ### Removed
 - Remove `async-recursion` dependency
@@ -60,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fix panics that could occur with with empty byte ranges / empty array subsets in `Array`, `ByteRange` and codec methods
+
+## [0.18.0-beta.0] - 2024-11-15
 
 ## [0.17.1] - 2024-10-18
 
@@ -1135,7 +1140,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.17.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.0...HEAD
+[0.18.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0
 [0.18.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0-beta.0
 [0.17.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.1
 [0.17.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0
