@@ -7,11 +7,15 @@
 //!
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
+//! If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
+//! It includes a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation.
+//!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
+//! - Read [The `zarrs` Book](https://book.zarrs.dev).
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] is a good place to start.
-//! - Check out [`zarrs` ecosystem](#zarrs-ecosystem).
+//! - Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
 //!
 //! ## Implementation Status
 //!

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add `zarrs::version::version_{str,pre}`
+- Add "The zarrs Book" and `zarrs-python` to docs
 
 ### Changed
 - Make `zarrs::version::version_{,major,minor,patch}` const
