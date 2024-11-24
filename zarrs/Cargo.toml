@@ -5,6 +5,7 @@ authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.77"
 description = "A library for the Zarr storage format for multidimensional arrays and metadata"
+homepage = "https://zarrs.dev"
 documentation = "https://docs.rs/zarrs"
 repository = "https://github.com/LDeakin/zarrs"
 license = "MIT OR Apache-2.0"
