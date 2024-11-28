@@ -18,6 +18,7 @@ unused_variables = "warn"
 dead_code = "warn"
 missing_docs = "warn"
 unreachable_pub = "warn"
+unsafe_op_in_unsafe_fn = "warn"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }

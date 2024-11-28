@@ -93,7 +93,7 @@ fn do_partial_decode<'a>(
                     return Err(CodecError::UnsupportedDataType(
                         data_type.clone(),
                         super::IDENTIFIER.to_string(),
-                    ))
+                    ));
                 }
             };
         }

@@ -360,25 +360,29 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         if let Some(chunk_encoded) = chunk_encoded {
             let chunk_encoded: Vec<u8> = chunk_encoded.into();
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-            self.codecs()
-                .decode_into(
-                    Cow::Owned(chunk_encoded),
-                    &chunk_representation,
+            unsafe {
+                self.codecs()
+                    .decode_into(
+                        Cow::Owned(chunk_encoded),
+                        &chunk_representation,
+                        output,
+                        output_shape,
+                        output_subset,
+                        options,
+                    )
+                    .map_err(ArrayError::CodecError)
+            }
+        } else {
+            unsafe {
+                copy_fill_value_into(
+                    self.data_type(),
+                    self.fill_value(),
                     output,
                     output_shape,
                     output_subset,
-                    options,
                 )
                 .map_err(ArrayError::CodecError)
-        } else {
-            copy_fill_value_into(
-                self.data_type(),
-                self.fill_value(),
-                output,
-                output_shape,
-                output_subset,
-            )
-            .map_err(ArrayError::CodecError)
+            }
         }
     }
 
@@ -790,14 +794,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             && chunk_subset.shape() == chunk_representation.shape_u64()
         {
             // Fast path if `chunk_subset` encompasses the whole chunk
-            self.async_retrieve_chunk_into(
-                chunk_indices,
-                output,
-                output_shape,
-                output_subset,
-                options,
-            )
-            .await
+            unsafe {
+                self.async_retrieve_chunk_into(
+                    chunk_indices,
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+                .await
+            }
         } else {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
@@ -809,13 +815,15 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 self.chunk_key(chunk_indices),
             ));
 
-            Ok(self
-                .codecs
-                .clone()
-                .async_partial_decoder(input_handle, &chunk_representation, options)
-                .await?
-                .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)
-                .await?)
+            unsafe {
+                self.codecs
+                    .clone()
+                    .async_partial_decoder(input_handle, &chunk_representation, options)
+                    .await?
+                    .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)
+                    .await?;
+            }
+            Ok(())
         }
     }
 

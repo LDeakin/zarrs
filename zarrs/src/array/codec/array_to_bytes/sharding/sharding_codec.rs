@@ -445,9 +445,11 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                                     );
                                     let shard_offset =
                                         usize::try_from(index * data_type_size as u64).unwrap();
-                                    output
-                                        .index_mut(shard_offset..shard_offset + fv.len())
-                                        .copy_from_slice(fv);
+                                    unsafe {
+                                        output
+                                            .index_mut(shard_offset..shard_offset + fv.len())
+                                            .copy_from_slice(fv);
+                                    }
                                 }
                             } else {
                                 unreachable!();
@@ -461,14 +463,16 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                             let offset: usize = offset.try_into().unwrap();
                             let size: usize = size.try_into().unwrap();
                             let encoded_chunk = &encoded_shard[offset..offset + size];
-                            self.inner_codecs.decode_into(
-                                Cow::Borrowed(encoded_chunk),
-                                &chunk_representation,
-                                output,
-                                output_shape,
-                                &output_subset_chunk,
-                                &options,
-                            )?;
+                            unsafe {
+                                self.inner_codecs.decode_into(
+                                    Cow::Borrowed(encoded_chunk),
+                                    &chunk_representation,
+                                    output,
+                                    output_shape,
+                                    &output_subset_chunk,
+                                    &options,
+                                )?;
+                            }
                         };
 
                         Ok::<_, CodecError>(())
@@ -738,7 +742,7 @@ impl ShardingCodec {
             &options,
         )?;
         {
-            let shard_slice = unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) };
+            let shard_slice = crate::vec_spare_capacity_to_mut_slice(&mut shard);
             match self.index_location {
                 ShardingIndexLocation::Start => {
                     shard_slice[..encoded_array_index.len()].copy_from_slice(&encoded_array_index);
@@ -749,7 +753,7 @@ impl ShardingCodec {
                 }
             }
         }
-
+        // SAFETY: all elements have been initialised
         unsafe { shard.set_len(shard_length) };
         shard.shrink_to_fit();
         Ok(shard)
@@ -884,7 +888,7 @@ impl ShardingCodec {
             options,
         )?;
         {
-            let shard_slice = unsafe { crate::vec_spare_capacity_to_mut_slice(&mut shard) };
+            let shard_slice = crate::vec_spare_capacity_to_mut_slice(&mut shard);
             match self.index_location {
                 ShardingIndexLocation::Start => {
                     shard_slice[..encoded_array_index.len()].copy_from_slice(&encoded_array_index);
@@ -895,6 +899,7 @@ impl ShardingCodec {
                 }
             }
         }
+        // SAFETY: all elements have been initialised
         unsafe { shard.set_len(shard_length) };
         Ok(shard)
     }

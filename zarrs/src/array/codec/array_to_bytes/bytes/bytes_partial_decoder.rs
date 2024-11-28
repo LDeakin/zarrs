@@ -56,7 +56,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                     return Err(CodecError::UnsupportedDataType(
                         self.data_type().clone(),
                         super::IDENTIFIER.to_string(),
-                    ))
+                    ));
                 }
                 DataTypeSize::Fixed(data_type_size) => {
                     // Get byte ranges
@@ -166,7 +166,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder {
                     return Err(CodecError::UnsupportedDataType(
                         self.data_type().clone(),
                         super::IDENTIFIER.to_string(),
-                    ))
+                    ));
                 }
                 DataTypeSize::Fixed(data_type_size) => array_subset
                     .byte_ranges(&chunk_shape, data_type_size)

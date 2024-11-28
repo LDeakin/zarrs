@@ -204,9 +204,9 @@ pub use zarrs_filesystem as filesystem;
 pub use storage::byte_range;
 
 /// Get a mutable slice of the spare capacity in a vector.
-#[allow(dead_code)]
-unsafe fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {
+fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {
     let spare_capacity = vec.spare_capacity_mut();
+    // SAFETY: `spare_capacity` is valid for both reads and writes for len * mem::size_of::<T>() many bytes, and it is properly aligned
     unsafe {
         std::slice::from_raw_parts_mut(
             spare_capacity.as_mut_ptr().cast::<T>(),

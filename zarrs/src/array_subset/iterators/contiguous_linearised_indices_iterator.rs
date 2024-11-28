@@ -53,8 +53,11 @@ impl ContiguousLinearisedIndices {
     /// `array_shape` must encapsulate `subset`.
     #[must_use]
     pub unsafe fn new_unchecked(subset: &ArraySubset, array_shape: Vec<u64>) -> Self {
-        let inner = subset.contiguous_indices_unchecked(&array_shape);
-        Self { inner, array_shape }
+        // SAFETY: The length of array_shape matches the array subset dimensionality
+        unsafe {
+            let inner = subset.contiguous_indices_unchecked(&array_shape);
+            Self { inner, array_shape }
+        }
     }
 
     /// Return the number of starting indices (i.e. the length of the iterator).

@@ -325,14 +325,16 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
             // Fast path if no bytes to bytes or array to array codecs
-            return self.array_to_bytes.decode_into(
-                bytes,
-                array_representations.last().unwrap(),
-                output,
-                output_shape,
-                output_subset,
-                options,
-            );
+            return unsafe {
+                self.array_to_bytes.decode_into(
+                    bytes,
+                    array_representations.last().unwrap(),
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+            };
         }
 
         // bytes->bytes
@@ -345,14 +347,16 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.array_to_array.is_empty() {
             // Fast path if no array to array codecs
-            return self.array_to_bytes.decode_into(
-                bytes,
-                array_representations.last().unwrap(),
-                output,
-                output_shape,
-                output_subset,
-                options,
-            );
+            return unsafe {
+                self.array_to_bytes.decode_into(
+                    bytes,
+                    array_representations.last().unwrap(),
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+            };
         }
 
         // bytes->array

@@ -130,7 +130,8 @@ impl ChunkGridTraits for RectangularChunkGrid {
                 RectangularChunkGridDimension::Varying(s) => {
                     let last_default = OffsetSize {
                         offset: 0,
-                        size: NonZeroU64::new_unchecked(1),
+                        // SAFETY: 1 is non-zero
+                        size: unsafe { NonZeroU64::new_unchecked(1) },
                     };
                     let last = s.last().unwrap_or(&last_default);
                     if *array_shape == last.offset + last.size.get() {
@@ -222,7 +223,8 @@ impl ChunkGridTraits for RectangularChunkGrid {
                 RectangularChunkGridDimension::Varying(offsets_sizes) => {
                     let last_default = OffsetSize {
                         offset: 0,
-                        size: NonZeroU64::new_unchecked(1),
+                        // SAFETY: 1 is non-zero
+                        size: unsafe { NonZeroU64::new_unchecked(1) },
                     };
                     let last = offsets_sizes.last().unwrap_or(&last_default);
                     if *index < last.offset + last.size.get() {
@@ -242,19 +244,21 @@ impl ChunkGridTraits for RectangularChunkGrid {
             .collect()
     }
 
+    /// # Safety
+    /// The length of `array_indices` and `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn chunk_element_indices_unchecked(
         &self,
         array_indices: &[u64],
         array_shape: &[u64],
     ) -> Option<ArrayIndices> {
-        let chunk_indices = self.chunk_indices_unchecked(array_indices, array_shape);
+        let chunk_indices = unsafe { self.chunk_indices_unchecked(array_indices, array_shape) };
         chunk_indices.and_then(|chunk_indices| {
-            self.chunk_origin_unchecked(&chunk_indices, array_shape)
-                .map(|chunk_start| {
-                    std::iter::zip(array_indices, &chunk_start)
-                        .map(|(i, s)| i - s)
-                        .collect()
-                })
+            // SAFETY: The length of chunk_indices matches the dimensionality of the chunk grid
+            unsafe { self.chunk_origin_unchecked(&chunk_indices, array_shape) }.map(|chunk_start| {
+                std::iter::zip(array_indices, &chunk_start)
+                    .map(|(i, s)| i - s)
+                    .collect()
+            })
         })
     }
 
@@ -268,7 +272,7 @@ impl ChunkGridTraits for RectangularChunkGrid {
                             RectangularChunkGridDimension::Fixed(_) => true,
                             RectangularChunkGridDimension::Varying(offsets_sizes) => offsets_sizes
                                 .last()
-                                .map_or(false, |last| *array_index < last.offset + last.size.get()),
+                                .is_some_and(|last| *array_index < last.offset + last.size.get()),
                         }
                 },
             )

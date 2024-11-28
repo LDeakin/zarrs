@@ -74,7 +74,7 @@ impl BytesCodec {
                 return Err(CodecError::UnsupportedDataType(
                     decoded_representation.data_type().clone(),
                     super::IDENTIFIER.to_string(),
-                ))
+                ));
             }
             DataTypeSize::Fixed(data_type_size) => {
                 let array_size = decoded_representation.num_elements() * data_type_size as u64;

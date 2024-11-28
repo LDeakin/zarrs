@@ -92,7 +92,7 @@ impl Node {
                     | NodeMetadata::Group(GroupMetadata::V3(_)) => return Ok(metadata),
                     NodeMetadata::Array(ArrayMetadata::V2(_))
                     | NodeMetadata::Group(GroupMetadata::V2(_)) => {
-                        return Err(NodeCreateError::MetadataVersionMismatch)
+                        return Err(NodeCreateError::MetadataVersionMismatch);
                     }
                 }
             }
@@ -154,7 +154,7 @@ impl Node {
                     | NodeMetadata::Group(GroupMetadata::V3(_)) => return Ok(metadata),
                     NodeMetadata::Array(ArrayMetadata::V2(_))
                     | NodeMetadata::Group(GroupMetadata::V2(_)) => {
-                        return Err(NodeCreateError::MetadataVersionMismatch)
+                        return Err(NodeCreateError::MetadataVersionMismatch);
                     }
                 }
             }

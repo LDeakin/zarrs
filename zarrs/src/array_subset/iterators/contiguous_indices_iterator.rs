@@ -84,9 +84,12 @@ impl ContiguousIndices {
                 shape_out_i.write(subset_size);
             }
         }
+        // SAFETY: each element is initialised
         unsafe { shape_out.set_len(array_shape.len()) };
-        let subset_contiguous_start =
-            ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out);
+        // SAFETY: The length of shape_out matches the subset dimensionality
+        let subset_contiguous_start = unsafe {
+            ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out)
+        };
         // let inner = subset_contiguous_start.iter_indices();
         Self {
             subset_contiguous_start,

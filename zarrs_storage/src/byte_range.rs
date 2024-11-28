@@ -268,12 +268,18 @@ pub unsafe fn extract_byte_ranges_concat_unchecked(
     for byte_range in byte_ranges {
         let start = usize::try_from(byte_range.start(bytes.len() as u64)).unwrap();
         let byte_range_len = usize::try_from(byte_range.length(bytes.len() as u64)).unwrap();
-        out_slice
-            .index_mut(offset..offset + byte_range_len)
-            .copy_from_slice(&bytes[start..start + byte_range_len]);
+        // SAFETY: the slices are non-overlapping
+        unsafe {
+            out_slice
+                .index_mut(offset..offset + byte_range_len)
+                .copy_from_slice(&bytes[start..start + byte_range_len]);
+        }
         offset += byte_range_len;
     }
-    out.set_len(out_size);
+    // SAFETY: each element is initialised
+    unsafe {
+        out.set_len(out_size);
+    }
     out
 }
 
