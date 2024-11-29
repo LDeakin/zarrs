@@ -25,6 +25,22 @@ use crate::{
     storage::byte_range::ByteRange,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// The different kinds of array indexing methods.
+///
+/// See: https://numpy.org/neps/nep-0021-advanced-indexing.html#existing-indexing-operations
+pub enum IndexingMethod {
+    /// Basic indexing i.e., ranges
+    #[default]
+    Basic,
+    /// Vectorized Indexing
+    VIndex,
+    /// Orthogonal Indexing
+    Oindex,
+    /// Mixed Indexing, a variant of vectorized
+    Mixed,
+}
+
 /// An array subset.
 ///
 /// The unsafe `_unchecked methods` are mostly intended for internal use to avoid redundant input validation.
@@ -34,6 +50,10 @@ pub struct ArraySubset {
     start: ArrayIndices,
     /// The shape of the array subset.
     shape: ArrayShape,
+    /// Integer indices
+    integer_indices: Vec<Option<ArrayIndices>>,
+    /// Indexing method
+    indexing_method: IndexingMethod,
 }
 
 impl Display for ArraySubset {
@@ -49,6 +69,8 @@ impl ArraySubset {
         Self {
             start: vec![0; dimensionality],
             shape: vec![0; dimensionality],
+            integer_indices: vec![None; dimensionality],
+            indexing_method: IndexingMethod::Basic,
         }
     }
 
@@ -57,15 +79,19 @@ impl ArraySubset {
     pub fn new_with_ranges(ranges: &[Range<u64>]) -> Self {
         let start = ranges.iter().map(|range| range.start).collect();
         let shape = ranges.iter().map(|range| range.end - range.start).collect();
-        Self { start, shape }
+        let len = ranges.len();
+        Self { start, shape, integer_indices: vec![None; len], indexing_method: IndexingMethod::Basic }
     }
 
     /// Create a new array subset with `size` starting at the origin.
     #[must_use]
     pub fn new_with_shape(shape: ArrayShape) -> Self {
+        let len = shape.len();
         Self {
-            start: vec![0; shape.len()],
+            start: vec![0; len],
             shape,
+            integer_indices: vec![None; len],
+            indexing_method: IndexingMethod::Basic,
         }
     }
 
@@ -78,8 +104,9 @@ impl ArraySubset {
         start: ArrayIndices,
         shape: ArrayShape,
     ) -> Result<Self, IncompatibleDimensionalityError> {
+        let len = start.len();
         if start.len() == shape.len() {
-            Ok(Self { start, shape })
+            Ok(Self { start, shape, integer_indices: vec![None; len], indexing_method: IndexingMethod::Basic, })
         } else {
             Err(IncompatibleDimensionalityError::new(
                 start.len(),
@@ -95,7 +122,8 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn new_with_start_shape_unchecked(start: ArrayIndices, shape: ArrayShape) -> Self {
         debug_assert_eq!(start.len(), shape.len());
-        Self { start, shape }
+        let len = start.len();
+        Self { start, shape, integer_indices: vec![None; len], indexing_method: IndexingMethod::Basic, }
     }
 
     /// Create a new array subset from a start and end (inclusive).
@@ -121,13 +149,14 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn new_with_start_end_inc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
+        let len = start.len();
         let shape = std::iter::zip(&start, end)
             .map(|(&start, end)| {
                 debug_assert!(end >= start);
                 end.saturating_sub(start) + 1
             })
             .collect();
-        Self { start, shape }
+        Self { start, shape, integer_indices: vec![None; len], indexing_method: IndexingMethod::Basic, }
     }
 
     /// Create a new array subset from a start and end (exclusive).
@@ -153,13 +182,14 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn new_with_start_end_exc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
+        let len = start.len();
         let shape = std::iter::zip(&start, end)
             .map(|(&start, end)| {
                 debug_assert!(end >= start);
                 end.saturating_sub(start)
             })
             .collect();
-        Self { start, shape }
+        Self { start, shape, integer_indices: vec![None; len], indexing_method: IndexingMethod::Basic, }
     }
 
     /// Return the array subset as a vec of ranges.
@@ -556,11 +586,14 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn relative_to_unchecked(&self, start: &[u64]) -> Self {
         debug_assert_eq!(start.len(), self.dimensionality());
+        let len = start.len();
         Self {
             start: std::iter::zip(self.start(), start)
                 .map(|(a, b)| a - b)
                 .collect::<Vec<_>>(),
             shape: self.shape().to_vec(),
+            integer_indices: vec![None; len],
+            indexing_method: IndexingMethod::Basic,
         }
     }
 
