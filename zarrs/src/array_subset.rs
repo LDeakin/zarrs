@@ -327,6 +327,12 @@ impl ArraySubset {
         &self.shape
     }
 
+    /// Return integer indices.
+    #[must_use]
+    pub fn integer_indices(&self) -> &[Option<ArrayIndices>] {
+        &self.integer_indices
+    }
+
     /// Return the shape of the array subset.
     ///
     /// # Panics
