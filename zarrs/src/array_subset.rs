@@ -357,7 +357,7 @@ impl ArraySubset {
         self.start.len()
     }
 
-    /// Return the end (inclusive) of the array subset.
+    /// Return the end (inclusive) of the array subset.  If there is an integer index at that position, 0 is used.
     ///
     /// Returns [`None`] if the array subset is empty.
     #[must_use]
@@ -365,19 +365,20 @@ impl ArraySubset {
         if self.is_empty() {
             None
         } else {
-            Some(
-                std::iter::zip(&self.start, &self.shape)
-                    .map(|(start, size)| start + size - 1)
-                    .collect(),
-            )
+            Some(self.end_exc().iter().map(|i| i - 1).collect())
         }
     }
 
     /// Return the end (exclusive) of the array subset.
     #[must_use]
     pub fn end_exc(&self) -> ArrayIndices {
-        std::iter::zip(&self.start, &self.shape)
-            .map(|(start, size)| start + size)
+        izip!(&self.start, &self.shape, &self.integer_indices)
+            .map(|(start, size, maybe_index)| {
+                match maybe_index {
+                    Some(index) => *index.iter().max().unwrap(),
+                    None => start + size,
+                }
+            })
             .collect()
     }
 
@@ -399,7 +400,7 @@ impl ArraySubset {
         usize::try_from(self.num_elements()).unwrap()
     }
 
-    /// Returns [`true`] if the array subset contains `indices`.
+    /// Returns [`true`] if the array subset contains `indices`.  Does not check integer indices.
     #[must_use]
     pub fn contains(&self, indices: &[u64]) -> bool {
         izip!(indices, &self.start, &self.shape).all(|(&i, &o, &s)| i >= o && i < o + s)
