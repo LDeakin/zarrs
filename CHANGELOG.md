@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fix `unsafe_op_in_unsafe_fn` in lint
+- Clarify that zstd is draft and gdeflate are experimental in their docs
 
 ## [0.18.0] - 2024-11-23
 
