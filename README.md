@@ -1,4 +1,4 @@
-# zar<u>*rs*</u>
+# zar<ins>rs</ins>
 
 [![Latest Version](https://img.shields.io/crates/v/zarrs.svg)](https://crates.io/crates/zarrs)
 [![zarrs documentation](https://docs.rs/zarrs/badge.svg)](https://docs.rs/zarrs)

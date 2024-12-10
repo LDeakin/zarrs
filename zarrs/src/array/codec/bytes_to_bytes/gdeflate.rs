@@ -2,6 +2,10 @@
 //!
 //! Applies [gdeflate](https://docs.nvidia.com/cuda/nvcomp/gdeflate.html) compression.
 //!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
 //! `gdeflate` encoded data sequentially encodes a static header, a dynamic header, and the compressed bytes.
 //!
 //! The static header is composed of the following:

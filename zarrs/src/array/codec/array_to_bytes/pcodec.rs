@@ -3,7 +3,7 @@
 //! [Pcodec](https://github.com/mwlon/pcodec) (or Pco, pronounced "pico") losslessly compresses and decompresses numerical sequences with high compression ratio and fast speed.
 //!
 //! <div class="warning">
-//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
 //!
 //! This codec requires the `pcodec` feature, which is disabled by default.

@@ -2,7 +2,11 @@
 //!
 //! Applies [Zstd](https://tools.ietf.org/html/rfc8878) compression.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/zstd/v1.0.html>.
+//! <div class="warning">
+//! This codec is based on a draft specification and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
+//! See <https://github.com/zarr-developers/zarr-specs/pull/256>.
 
 mod zstd_codec;
 mod zstd_partial_decoder;

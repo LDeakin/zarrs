@@ -4,7 +4,7 @@
 //! Rounds integers to the specified number of bits from the most significant set bit.
 //!
 //! <div class="warning">
-//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
 //!
 //! This codec requires the `bitround` feature, which is disabled by default.
