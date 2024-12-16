@@ -7,14 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1] - 2024-12-17
+
 ### Changed
 - Bump `zfp-sys` to 0.3.0
 - Bump `bzip2` to 0.5.0
 - Minor readme/ecosystem updates
 
 ### Fixed
-- Fix `unsafe_op_in_unsafe_fn` in lint
-- Clarify that zstd is draft and gdeflate are experimental in their docs
+- Fix `unsafe_op_in_unsafe_fn` lint
+- Clarify that the `zstd` codec is draft in docs
+- Clarify that the `gdeflate` codec is experimental in docs
 
 ## [0.18.0] - 2024-11-23
 
@@ -1149,7 +1152,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.1...HEAD
+[0.18.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.1
 [0.18.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0
 [0.18.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0-beta.0
 [0.17.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.1
