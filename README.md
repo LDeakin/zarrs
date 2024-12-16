@@ -7,9 +7,7 @@
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?token=OBKJQNAZPP)](https://codecov.io/gh/LDeakin/zarrs)
 
-`zarrs` is a Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. It supports:
- - [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html), and
- - (New in 0.15) A [V3 compatible subset](https://docs.rs/zarrs/latest/zarrs/#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
+`zarrs` is a Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. It supports [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html) and a [V3 compatible subset](https://docs.rs/zarrs/latest/zarrs/#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
 
 A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
@@ -95,10 +93,10 @@ println!("{array_ndarray:4}");
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | **Core**                                                                                      |                                                                                                                                 |
 | [![zarrs_ver]](https://crates.io/crates/zarrs) `zarrs`                                        | [![docs]](https://docs.rs/zarrs)              The core library for manipulating Zarr hierarchies                                |
-| [![zarrs_metadata_ver]](https://crates.io/crates/zarrs_metadata) `zarrs_metadata`             | [![docs]](https://docs.rs/zarrs_metadata)     Zarr metadata support                                                             |
-| [![zarrs_storage_ver]](https://crates.io/crates/zarrs_storage) `zarrs_storage`                | [![docs]](https://docs.rs/zarrs_storage)      The storage API for `zarrs`                                                       |
+| [![zarrs_metadata_ver]](https://crates.io/crates/zarrs_metadata) `zarrs_metadata`             | [![docs]](https://docs.rs/zarrs_metadata)     Zarr metadata support (re-exported as `zarrs::metadata`)                          |
+| [![zarrs_storage_ver]](https://crates.io/crates/zarrs_storage) `zarrs_storage`                | [![docs]](https://docs.rs/zarrs_storage)      The storage API for `zarrs` (re-exported as `zarrs::storage`)                     |
 | **Stores**                                                                                    |                                                                                                                                 |
-| [![zarrs_filesystem_ver]](https://crates.io/crates/zarrs_filesystem) `zarrs_filesystem`       | [![docs]](https://docs.rs/zarrs_filesystem)   A filesystem store                                                                |
+| [![zarrs_filesystem_ver]](https://crates.io/crates/zarrs_filesystem) `zarrs_filesystem`       | [![docs]](https://docs.rs/zarrs_filesystem)   A filesystem store (re-exported as `zarrs::filesystem`)                           |
 | [![zarrs_object_store_ver]](https://crates.io/crates/zarrs_object_store) `zarrs_object_store` | [![docs]](https://docs.rs/zarrs_object_store) [`object_store`](https://docs.rs/object_store/latest/object_store/) store support |
 | [![zarrs_opendal_ver]](https://crates.io/crates/zarrs_opendal) `zarrs_opendal`                | [![docs]](https://docs.rs/zarrs_opendal)      [`opendal`](https://docs.rs/opendal/latest/opendal/) store support                |
 | [![zarrs_http_ver]](https://crates.io/crates/zarrs_http) `zarrs_http`                         | [![docs]](https://docs.rs/zarrs_http)         A synchronous http store                                                          |
