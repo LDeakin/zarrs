@@ -121,6 +121,40 @@ where
     Ok(nodes)
 }
 
+/// Get the direct child nodes.
+///
+/// Unlike [`async_get_child_nodes`], this does not fully resolve the node hierarchy and the nodes returned will not have any children.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_get_direct_child_nodes<TStorage>(
+    storage: &Arc<TStorage>,
+    path: &NodePath,
+) -> Result<Vec<Node>, StorageError>
+where
+    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+{
+    let prefix: StorePrefix = path.try_into()?;
+    let prefixes = async_discover_children(storage, &prefix).await?;
+    let mut nodes: Vec<Node> = Vec::new();
+    // TODO: Asynchronously get metadata of all prefixes
+    for prefix in &prefixes {
+        let mut child_metadata = get_metadata_v3(storage, prefix).await?;
+        if child_metadata.is_none() {
+            child_metadata = get_metadata_v2(storage, prefix).await?;
+        }
+        let Some(child_metadata) = child_metadata else {
+            return Err(StorageError::MissingMetadata(prefix.clone()));
+        };
+
+        let path: NodePath = prefix
+            .try_into()
+            .map_err(|err: NodePathError| StorageError::Other(err.to_string()))?;
+        nodes.push(Node::new_with_metadata(path, child_metadata, vec![]));
+    }
+    Ok(nodes)
+}
+
 /// Asynchronously check if a node exists.
 ///
 /// # Errors

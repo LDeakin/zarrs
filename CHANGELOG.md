@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `Node::[async_]get_direct_child_nodes`
+
 ## [0.18.1] - 2024-12-17
 
 ### Changed

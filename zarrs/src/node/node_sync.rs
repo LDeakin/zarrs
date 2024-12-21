@@ -113,6 +113,36 @@ pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorag
     Ok(nodes)
 }
 
+/// Get the direct child nodes.
+///
+/// Unlike [`get_child_nodes`], this does not fully resolve the node hierarchy and the nodes returned will not have any children.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn get_direct_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+    storage: &Arc<TStorage>,
+    path: &NodePath,
+) -> Result<Vec<Node>, StorageError> {
+    let prefix: StorePrefix = path.try_into()?;
+    let prefixes = discover_children(storage, &prefix)?;
+    let mut nodes: Vec<Node> = Vec::new();
+    for prefix in &prefixes {
+        let mut child_metadata = get_metadata_v3(storage, prefix)?;
+        if child_metadata.is_none() {
+            child_metadata = get_metadata_v2(storage, prefix)?;
+        }
+        let Some(child_metadata) = child_metadata else {
+            return Err(StorageError::MissingMetadata(prefix.clone()));
+        };
+
+        let path: NodePath = prefix
+            .try_into()
+            .map_err(|err: NodePathError| StorageError::Other(err.to_string()))?;
+        nodes.push(Node::new_with_metadata(path, child_metadata, vec![]));
+    }
+    Ok(nodes)
+}
+
 /// Check if a node exists.
 ///
 /// # Errors
