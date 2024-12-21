@@ -30,8 +30,11 @@ use std::sync::Arc;
 
 use derive_more::Display;
 use thiserror::Error;
+use zarrs_metadata::NodeMetadata;
+use zarrs_storage::ListableStorageTraits;
 
 use crate::{
+    array::{Array, ArrayCreateError},
     config::{
         global_config, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
@@ -40,7 +43,10 @@ use crate::{
         v2_to_v3::group_metadata_v2_to_v3,
         v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     },
-    node::{meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, NodePath, NodePathError},
+    node::{
+        get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node, NodePath,
+        NodePathError,
+    },
     storage::{ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits},
 };
 
@@ -220,6 +226,33 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
 
         // No metadata has been found
         Err(GroupCreateError::MissingMetadata)
+    }
+}
+
+impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TStorage> {
+    /// Return the children of the group
+    pub fn children(&self) -> Result<Vec<Node>, StorageError> {
+        get_child_nodes(&self.storage, &self.path)
+    }
+
+    /// Return the children of the group that are [`Group`]s
+    pub fn child_groups(&self) -> Result<Vec<Self>, GroupCreateError> {
+        self.children()?
+            .into_iter()
+            .filter(|node| matches!(node.metadata(), NodeMetadata::Group(_)))
+            .map(|node| Group::open(self.storage.clone(), node.name().as_str()))
+            .collect()
+    }
+}
+
+impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits + 'static> Group<TStorage> {
+    /// Return the children of the group that are [`Array`]s
+    pub fn child_arrays(&self) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
+        self.children()?
+            .into_iter()
+            .filter(|node| matches!(node.metadata(), NodeMetadata::Array(_)))
+            .map(|node| Array::open(self.storage.clone(), node.name().as_str()))
+            .collect()
     }
 }
 
