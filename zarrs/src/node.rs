@@ -78,6 +78,22 @@ pub enum NodeCreateError {
     MissingMetadata,
 }
 
+// FIXME: Remove in the next breaking release
+impl From<NodeCreateError> for StorageError {
+    fn from(value: NodeCreateError) -> Self {
+        match value {
+            NodeCreateError::NodePathError(err) => StorageError::Other(err.to_string()),
+            NodeCreateError::StorageError(err) => err,
+            NodeCreateError::MetadataVersionMismatch => {
+                StorageError::Other(NodeCreateError::MetadataVersionMismatch.to_string())
+            }
+            NodeCreateError::MissingMetadata => {
+                StorageError::Other(NodeCreateError::MissingMetadata.to_string())
+            }
+        }
+    }
+}
+
 impl Node {
     fn get_metadata<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
         storage: &Arc<TStorage>,
