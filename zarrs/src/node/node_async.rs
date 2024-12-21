@@ -1,94 +1,22 @@
 use std::sync::Arc;
 
 use crate::{
-    array::{ArrayMetadata, ArrayMetadataV2},
-    group::GroupMetadata,
-    metadata::{v2::GroupMetadataV2, v3::NodeMetadataV3},
+    config::MetadataRetrieveVersion,
     storage::{
         async_discover_children, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-        StorageError, StoreKey, StorePrefix,
+        StorageError, StorePrefix,
     },
 };
 
 use super::{
-    meta_key_v2_array, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node, NodeMetadata,
-    NodePath, NodePathError,
+    meta_key_v2_array, meta_key_v2_group, meta_key_v3, Node, NodeMetadata, NodePath, NodePathError,
 };
-
-async fn get_metadata_v3<
-    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
->(
-    storage: &Arc<TStorage>,
-    prefix: &StorePrefix,
-) -> Result<Option<NodeMetadata>, StorageError> {
-    let key: StoreKey = meta_key_v3(
-        &prefix
-            .try_into()
-            .map_err(|err: NodePathError| StorageError::Other(err.to_string()))?,
-    );
-    match storage.get(&key).await? {
-        Some(metadata) => {
-            let metadata: NodeMetadataV3 = serde_json::from_slice(&metadata)
-                .map_err(|err| StorageError::InvalidMetadata(key, err.to_string()))?;
-            Ok(Some(match metadata {
-                NodeMetadataV3::Array(array) => NodeMetadata::Array(ArrayMetadata::V3(array)),
-                NodeMetadataV3::Group(group) => NodeMetadata::Group(GroupMetadata::V3(group)),
-            }))
-        }
-        None => Ok(None),
-    }
-}
-
-async fn get_metadata_v2<
-    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
->(
-    storage: &Arc<TStorage>,
-    prefix: &StorePrefix,
-) -> Result<Option<NodeMetadata>, StorageError> {
-    let node_path = prefix
-        .try_into()
-        .map_err(|err: NodePathError| StorageError::Other(err.to_string()))?;
-    let attributes_key = meta_key_v2_attributes(&node_path);
-
-    // Try array
-    let key_array: StoreKey = meta_key_v2_array(&node_path);
-    if let Some(metadata) = storage.get(&key_array).await? {
-        let mut metadata: ArrayMetadataV2 = serde_json::from_slice(&metadata)
-            .map_err(|err| StorageError::InvalidMetadata(key_array, err.to_string()))?;
-        let attributes = storage.get(&attributes_key).await?;
-        if let Some(attributes) = attributes {
-            let attributes: serde_json::Map<String, serde_json::Value> =
-                serde_json::from_slice(&attributes).map_err(|err| {
-                    StorageError::InvalidMetadata(attributes_key, err.to_string())
-                })?;
-            metadata.attributes = attributes;
-        }
-        return Ok(Some(NodeMetadata::Array(ArrayMetadata::V2(metadata))));
-    }
-
-    // Try group
-    let key_group: StoreKey = meta_key_v2_group(&node_path);
-    if let Some(metadata) = storage.get(&key_group).await? {
-        let mut metadata: GroupMetadataV2 = serde_json::from_slice(&metadata)
-            .map_err(|err| StorageError::InvalidMetadata(key_group, err.to_string()))?;
-        let attributes = storage.get(&attributes_key).await?;
-        if let Some(attributes) = attributes {
-            let attributes: serde_json::Map<String, serde_json::Value> =
-                serde_json::from_slice(&attributes).map_err(|err| {
-                    StorageError::InvalidMetadata(attributes_key, err.to_string())
-                })?;
-            metadata.attributes = attributes;
-        }
-        return Ok(Some(NodeMetadata::Group(GroupMetadata::V2(metadata))));
-    }
-
-    Ok(None)
-}
 
 /// Asynchronously get the child nodes.
 ///
 /// # Errors
 /// Returns a [`StorageError`] if there is an underlying error with the store.
+// FIXME: Change to NodeCreateError in the next breaking release
 pub async fn async_get_child_nodes<TStorage>(
     storage: &Arc<TStorage>,
     path: &NodePath,
@@ -101,22 +29,47 @@ where
     let mut nodes: Vec<Node> = Vec::new();
     // TODO: Asynchronously get metadata of all prefixes
     for prefix in &prefixes {
-        let mut child_metadata = get_metadata_v3(storage, prefix).await?;
-        if child_metadata.is_none() {
-            child_metadata = get_metadata_v2(storage, prefix).await?;
-        }
-        let Some(child_metadata) = child_metadata else {
-            return Err(StorageError::MissingMetadata(prefix.clone()));
-        };
-
         let path: NodePath = prefix
             .try_into()
             .map_err(|err: NodePathError| StorageError::Other(err.to_string()))?;
+        let child_metadata =
+            Node::async_get_metadata(storage, &path, &MetadataRetrieveVersion::Default).await?;
+
         let children = match child_metadata {
             NodeMetadata::Array(_) => Vec::default(),
             NodeMetadata::Group(_) => Box::pin(async_get_child_nodes(storage, &path)).await?,
         };
         nodes.push(Node::new_with_metadata(path, child_metadata, children));
+    }
+    Ok(nodes)
+}
+
+/// Get the direct child nodes.
+///
+/// Unlike [`async_get_child_nodes`], this does not fully resolve the node hierarchy and the nodes returned will not have any children.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+// FIXME: Change to NodeCreateError in the next breaking release
+pub async fn async_get_direct_child_nodes<TStorage>(
+    storage: &Arc<TStorage>,
+    path: &NodePath,
+) -> Result<Vec<Node>, StorageError>
+where
+    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
+{
+    let prefix: StorePrefix = path.try_into()?;
+    let prefixes = async_discover_children(storage, &prefix).await?;
+    let mut nodes: Vec<Node> = Vec::new();
+    // TODO: Asynchronously get metadata of all prefixes
+    for prefix in &prefixes {
+        let path: NodePath = prefix
+            .try_into()
+            .map_err(|err: NodePathError| StorageError::Other(err.to_string()))?;
+        let child_metadata =
+            Node::async_get_metadata(storage, &path, &MetadataRetrieveVersion::Default).await?;
+
+        nodes.push(Node::new_with_metadata(path, child_metadata, vec![]));
     }
     Ok(nodes)
 }
