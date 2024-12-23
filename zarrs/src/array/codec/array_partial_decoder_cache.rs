@@ -8,7 +8,7 @@ use super::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions};
 use super::AsyncArrayPartialDecoderTraits;
 
 /// A cache for an [`ArrayPartialDecoderTraits`] partial decoder.
-pub struct ArrayPartialDecoderCache {
+pub(crate) struct ArrayPartialDecoderCache {
     decoded_representation: ChunkRepresentation,
     cache: ArrayBytes<'static>,
 }
@@ -18,7 +18,7 @@ impl ArrayPartialDecoderCache {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: &dyn ArrayPartialDecoderTraits,
         decoded_representation: ChunkRepresentation,
         options: &CodecOptions,
@@ -43,7 +43,7 @@ impl ArrayPartialDecoderCache {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
-    pub async fn async_new(
+    pub(crate) async fn async_new(
         input_handle: &dyn AsyncArrayPartialDecoderTraits,
         decoded_representation: ChunkRepresentation,
         options: &CodecOptions,

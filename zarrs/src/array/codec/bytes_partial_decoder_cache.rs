@@ -13,7 +13,7 @@ use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};
 use super::AsyncBytesPartialDecoderTraits;
 
 /// A cache for a [`BytesPartialDecoderTraits`] partial decoder.
-pub struct BytesPartialDecoderCache<'a> {
+pub(crate) struct BytesPartialDecoderCache<'a> {
     cache: Option<Vec<u8>>,
     phantom: PhantomData<&'a ()>,
 }
@@ -23,7 +23,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if caching fails.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: &dyn BytesPartialDecoderTraits,
         options: &CodecOptions,
     ) -> Result<Self, CodecError> {
@@ -41,7 +41,7 @@ impl<'a> BytesPartialDecoderCache<'a> {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if caching fails.
-    pub async fn async_new(
+    pub(crate) async fn async_new(
         input_handle: &dyn AsyncBytesPartialDecoderTraits,
         options: &CodecOptions,
     ) -> Result<BytesPartialDecoderCache<'a>, CodecError> {
