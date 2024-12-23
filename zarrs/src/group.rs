@@ -231,11 +231,17 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
 
 impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TStorage> {
     /// Return the children of the group
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
     pub fn children(&self) -> Result<Vec<Node>, StorageError> {
         get_child_nodes(&self.storage, &self.path)
     }
 
     /// Return the children of the group that are [`Group`]s
+    ///
+    /// # Errors
+    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
     pub fn child_groups(&self) -> Result<Vec<Self>, GroupCreateError> {
         self.children()?
             .into_iter()
@@ -247,6 +253,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
 
 impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits + 'static> Group<TStorage> {
     /// Return the children of the group that are [`Array`]s
+    ///
+    /// # Errors
+    /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
     pub fn child_arrays(&self) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
         self.children()?
             .into_iter()
