@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::{collections::HashMap, sync::Arc};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -5,6 +6,7 @@ use rayon_iter_concurrent_limit::iter_concurrent_limit;
 use unsafe_cell_slice::UnsafeCellSlice;
 
 use super::array_bytes::{merge_chunks_vlen, update_bytes_flen};
+use super::codec::array_to_bytes::sharding::ShardingPartialDecoder;
 use super::element::ElementOwned;
 use super::{
     codec::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
@@ -89,6 +91,18 @@ impl ArrayShardedReadableExtCache {
 /// Sharding indexes are cached in a [`ArrayShardedReadableExtCache`] enabling faster retrieval.
 // TODO: Add default methods? Or change to options: Option<&CodecOptions>? Should really do this for array (breaking)...
 pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'static> {
+    /// Retrieve the encoded bytes of an inner chunk.
+    ///
+    /// See [`Array::retrieve_encoded_chunk`].
+    #[allow(clippy::missing_errors_doc)]
+    fn retrieve_encoded_inner_chunk(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
+        inner_chunk_indices: &[u64],
+    ) -> Result<Option<Vec<u8>>, ArrayError>;
+
+    // TODO: retrieve_encoded_inner_chunks
+
     /// Read and decode the inner chunk at `chunk_indices` into its bytes.
     ///
     /// See [`Array::retrieve_chunk_opt`].
@@ -195,6 +209,56 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
 impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt<TStorage>
     for Array<TStorage>
 {
+    fn retrieve_encoded_inner_chunk(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
+        inner_chunk_indices: &[u64],
+    ) -> Result<Option<Vec<u8>>, ArrayError> {
+        if cache.array_is_sharded() {
+            // TODO: Can the shard_indices logic be simplified?
+            let array_subset = cache
+                .inner_chunk_grid()
+                .subset(inner_chunk_indices, self.shape())?
+                .ok_or_else(|| {
+                    ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
+                })?;
+            let shards = self.chunks_in_array_subset(&array_subset)?.ok_or_else(|| {
+                ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
+            })?;
+            if shards.num_elements() != 1 {
+                // This should not happen, but it is checked just in case.
+                return Err(ArrayError::InvalidChunkGridIndicesError(
+                    inner_chunk_indices.to_vec(),
+                ));
+            }
+            let shard_indices = shards.start();
+            let shard_origin = self.chunk_origin(shard_indices)?;
+
+            let partial_decoder = cache.retrieve(self, shard_indices)?;
+            let partial_decoder = (&partial_decoder as &dyn Any)
+                .downcast_ref::<ShardingPartialDecoder>()
+                .expect("array is sharded");
+
+            // TODO: Can the chunk_indices logic be simplified?
+            let shard_subset = array_subset.relative_to(&shard_origin)?;
+            let effective_inner_chunk_shape = self
+                .effective_inner_chunk_shape()
+                .expect("array is sharded");
+            let chunk_indices: Vec<u64> = shard_subset
+                .start()
+                .iter()
+                .zip(effective_inner_chunk_shape.as_slice())
+                .map(|(o, s)| o / s.get())
+                .collect();
+
+            Ok(partial_decoder
+                .retrieve_inner_chunk_encoded(&chunk_indices)?
+                .map(Vec::from))
+        } else {
+            Ok(self.retrieve_encoded_chunk(inner_chunk_indices)?)
+        }
+    }
+
     fn retrieve_inner_chunk_opt(
         &self,
         cache: &ArrayShardedReadableExtCache,
@@ -202,6 +266,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         options: &CodecOptions,
     ) -> Result<ArrayBytes<'_>, ArrayError> {
         if cache.array_is_sharded() {
+            // TODO: Can the shard_indices logic be simplified?
             let array_subset = cache
                 .inner_chunk_grid()
                 .subset(inner_chunk_indices, self.shape())?

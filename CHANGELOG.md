@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add `Node::[async_]get_direct_child_nodes`
+- Add `ArrayShardedReadableExt::retrieve_encoded_inner_chunk`
 
 ### Changed
 - Reduce metadata code duplication in the `Node` module

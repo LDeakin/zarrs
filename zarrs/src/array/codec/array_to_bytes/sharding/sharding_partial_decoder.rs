@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
+use zarrs_storage::byte_range::ByteRange;
 
 use crate::array::{
     array_bytes::{merge_chunks_vlen, update_bytes_flen},
@@ -12,6 +13,7 @@ use crate::array::{
     },
     concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
     ravel_indices, ArrayBytes, ArraySize, ChunkRepresentation, ChunkShape, DataType, DataTypeSize,
+    RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -57,6 +59,32 @@ impl ShardingPartialDecoder {
             inner_codecs,
             shard_index,
         })
+    }
+
+    /// Retrieve the encoded bytes of an inner chunk.
+    ///
+    /// The `chunk_indices` are relative to the start of the shard.
+    pub(crate) fn retrieve_inner_chunk_encoded(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<RawBytes<'_>>, CodecError> {
+        let shard_index = &self.shard_index;
+        if let Some(shard_index) = shard_index {
+            let chunks_per_shard =
+                calculate_chunks_per_shard(self.decoded_representation.shape(), &self.chunk_shape)?;
+            let chunks_per_shard = chunks_per_shard.to_array_shape();
+
+            let shard_index_idx: usize =
+                usize::try_from(ravel_indices(chunk_indices, &chunks_per_shard) * 2).unwrap();
+            let offset = shard_index[shard_index_idx];
+            let size = shard_index[shard_index_idx + 1];
+            self.input_handle.partial_decode_concat(
+                &[ByteRange::new(offset..offset + size)],
+                &CodecOptions::default(),
+            )
+        } else {
+            Ok(None)
+        }
     }
 }
 
