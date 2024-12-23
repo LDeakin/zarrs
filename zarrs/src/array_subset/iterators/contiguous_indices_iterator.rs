@@ -4,7 +4,7 @@ use itertools::izip;
 
 use crate::{
     array::ArrayIndices,
-    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
+    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError, IndexingMethod},
 };
 
 use super::IndicesIterator;
@@ -70,26 +70,33 @@ impl ContiguousIndices {
         let mut contiguous = true;
         let mut contiguous_elements = 1;
         let mut shape_out: Vec<u64> = Vec::with_capacity(array_shape.len());
-        for (&subset_start, &subset_size, &array_size, shape_out_i) in izip!(
-            subset.start().iter().rev(),
-            subset.shape().iter().rev(),
-            array_shape.iter().rev(),
-            shape_out.spare_capacity_mut().iter_mut().rev(),
-        ) {
-            if contiguous {
-                contiguous_elements *= subset_size;
-                shape_out_i.write(1);
-                contiguous = subset_start == 0 && subset_size == array_size;
-            } else {
-                shape_out_i.write(subset_size);
+        if subset.indexing_method != IndexingMethod::VIndex {
+            for (&subset_start, &subset_size, maybe_integer_index, &array_size, shape_out_i) in izip!(
+                subset.start().iter().rev(),
+                subset.shape().iter().rev(),
+                subset.integer_indices().iter().rev(),
+                array_shape.iter().rev(),
+                shape_out.spare_capacity_mut().iter_mut().rev(),
+            ) {
+                if contiguous {
+                    if maybe_integer_index.is_some() {
+                        shape_out_i.write(subset_size);
+                        contiguous = false;
+                    } else {
+                        contiguous_elements *= subset_size;
+                        shape_out_i.write(1);
+                        contiguous = subset_start == 0 && subset_size == array_size;
+                    }
+                } else {
+                    shape_out_i.write(subset_size);
+                }
             }
+        } else {
+            shape_out = subset.shape().to_vec();
         }
         // SAFETY: each element is initialised
         unsafe { shape_out.set_len(array_shape.len()) };
-        // SAFETY: The length of shape_out matches the subset dimensionality
-        let subset_contiguous_start = unsafe {
-            ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out)
-        };
+        let subset_contiguous_start = ArraySubset::new_with_start_shape_indices(subset.start().to_vec(), subset.integer_indices().to_vec(), shape_out, subset.indexing_method).unwrap();
         // let inner = subset_contiguous_start.iter_indices();
         Self {
             subset_contiguous_start,
