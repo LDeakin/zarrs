@@ -4,6 +4,7 @@ use std::{collections::HashMap, sync::Arc};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
 use unsafe_cell_slice::UnsafeCellSlice;
+use zarrs_storage::byte_range::ByteRange;
 
 use super::array_bytes::{merge_chunks_vlen, update_bytes_flen};
 use super::codec::array_to_bytes::sharding::ShardingPartialDecoder;
@@ -90,7 +91,18 @@ impl ArrayShardedReadableExtCache {
 ///
 /// Sharding indexes are cached in a [`ArrayShardedReadableExtCache`] enabling faster retrieval.
 // TODO: Add default methods? Or change to options: Option<&CodecOptions>? Should really do this for array (breaking)...
-pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'static> {
+pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'static>
+{
+    /// Retrieve the byte range of an encoded inner chunk.
+    ///
+    /// # Errors
+    /// Returns an [`ArrayError`] on failure, such as if decoding the shard index fails.
+    fn inner_chunk_byte_range(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
+        inner_chunk_indices: &[u64],
+    ) -> Result<Option<ByteRange>, ArrayError>;
+
     /// Retrieve the encoded bytes of an inner chunk.
     ///
     /// See [`Array::retrieve_encoded_chunk`].
@@ -206,50 +218,85 @@ pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'st
     ) -> Result<ndarray::ArrayD<T>, ArrayError>;
 }
 
+fn inner_chunk_shard_index_and_subset<TStorage: ?Sized + ReadableStorageTraits + 'static>(
+    array: &Array<TStorage>,
+    cache: &ArrayShardedReadableExtCache,
+    inner_chunk_indices: &[u64],
+) -> Result<(Vec<u64>, ArraySubset), ArrayError> {
+    // TODO: Can this logic be simplified?
+    let array_subset = cache
+        .inner_chunk_grid()
+        .subset(inner_chunk_indices, array.shape())?
+        .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec()))?;
+    let shards = array
+        .chunks_in_array_subset(&array_subset)?
+        .ok_or_else(|| ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec()))?;
+    if shards.num_elements() != 1 {
+        // This should not happen, but it is checked just in case.
+        return Err(ArrayError::InvalidChunkGridIndicesError(
+            inner_chunk_indices.to_vec(),
+        ));
+    }
+    let shard_indices = shards.start();
+    let shard_origin = array.chunk_origin(shard_indices)?;
+    let shard_subset = array_subset.relative_to(&shard_origin)?;
+    Ok((shard_indices.to_vec(), shard_subset))
+}
+
+fn inner_chunk_shard_index_and_chunk_index<TStorage: ?Sized + ReadableStorageTraits + 'static>(
+    array: &Array<TStorage>,
+    cache: &ArrayShardedReadableExtCache,
+    inner_chunk_indices: &[u64],
+) -> Result<(Vec<u64>, Vec<u64>), ArrayError> {
+    // TODO: Simplify this?
+    let (shard_indices, shard_subset) =
+        inner_chunk_shard_index_and_subset(array, cache, inner_chunk_indices)?;
+    let effective_inner_chunk_shape = array
+        .effective_inner_chunk_shape()
+        .expect("array is sharded");
+    let chunk_indices: Vec<u64> = shard_subset
+        .start()
+        .iter()
+        .zip(effective_inner_chunk_shape.as_slice())
+        .map(|(o, s)| o / s.get())
+        .collect();
+    Ok((shard_indices, chunk_indices))
+}
+
 impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt<TStorage>
     for Array<TStorage>
 {
+    fn inner_chunk_byte_range(
+        &self,
+        cache: &ArrayShardedReadableExtCache,
+        inner_chunk_indices: &[u64],
+    ) -> Result<Option<ByteRange>, ArrayError> {
+        if cache.array_is_sharded() {
+            let (shard_indices, chunk_indices) =
+                inner_chunk_shard_index_and_chunk_index(self, cache, inner_chunk_indices)?;
+            let partial_decoder = cache.retrieve(self, &shard_indices)?;
+            let partial_decoder = (&partial_decoder as &dyn Any)
+                .downcast_ref::<ShardingPartialDecoder>()
+                .expect("array is sharded");
+
+            Ok(partial_decoder.inner_chunk_byte_range(&chunk_indices)?)
+        } else {
+            Ok(None)
+        }
+    }
+
     fn retrieve_encoded_inner_chunk(
         &self,
         cache: &ArrayShardedReadableExtCache,
         inner_chunk_indices: &[u64],
     ) -> Result<Option<Vec<u8>>, ArrayError> {
         if cache.array_is_sharded() {
-            // TODO: Can the shard_indices logic be simplified?
-            let array_subset = cache
-                .inner_chunk_grid()
-                .subset(inner_chunk_indices, self.shape())?
-                .ok_or_else(|| {
-                    ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
-                })?;
-            let shards = self.chunks_in_array_subset(&array_subset)?.ok_or_else(|| {
-                ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
-            })?;
-            if shards.num_elements() != 1 {
-                // This should not happen, but it is checked just in case.
-                return Err(ArrayError::InvalidChunkGridIndicesError(
-                    inner_chunk_indices.to_vec(),
-                ));
-            }
-            let shard_indices = shards.start();
-            let shard_origin = self.chunk_origin(shard_indices)?;
-
-            let partial_decoder = cache.retrieve(self, shard_indices)?;
+            let (shard_indices, chunk_indices) =
+                inner_chunk_shard_index_and_chunk_index(self, cache, inner_chunk_indices)?;
+            let partial_decoder = cache.retrieve(self, &shard_indices)?;
             let partial_decoder = (&partial_decoder as &dyn Any)
                 .downcast_ref::<ShardingPartialDecoder>()
                 .expect("array is sharded");
-
-            // TODO: Can the chunk_indices logic be simplified?
-            let shard_subset = array_subset.relative_to(&shard_origin)?;
-            let effective_inner_chunk_shape = self
-                .effective_inner_chunk_shape()
-                .expect("array is sharded");
-            let chunk_indices: Vec<u64> = shard_subset
-                .start()
-                .iter()
-                .zip(effective_inner_chunk_shape.as_slice())
-                .map(|(o, s)| o / s.get())
-                .collect();
 
             Ok(partial_decoder
                 .retrieve_inner_chunk_encoded(&chunk_indices)?
@@ -266,27 +313,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
         options: &CodecOptions,
     ) -> Result<ArrayBytes<'_>, ArrayError> {
         if cache.array_is_sharded() {
-            // TODO: Can the shard_indices logic be simplified?
-            let array_subset = cache
-                .inner_chunk_grid()
-                .subset(inner_chunk_indices, self.shape())?
-                .ok_or_else(|| {
-                    ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
-                })?;
-            let shards = self.chunks_in_array_subset(&array_subset)?.ok_or_else(|| {
-                ArrayError::InvalidChunkGridIndicesError(inner_chunk_indices.to_vec())
-            })?;
-            if shards.num_elements() != 1 {
-                // This should not happen, but it is checked just in case.
-                return Err(ArrayError::InvalidChunkGridIndicesError(
-                    inner_chunk_indices.to_vec(),
-                ));
-            }
-            let shard_indices = shards.start();
-            let shard_origin = self.chunk_origin(shard_indices)?;
-            let shard_subset = array_subset.relative_to(&shard_origin)?;
-
-            let partial_decoder = cache.retrieve(self, shard_indices)?;
+            let (shard_indices, shard_subset) =
+                inner_chunk_shard_index_and_subset(self, cache, inner_chunk_indices)?;
+            let partial_decoder = cache.retrieve(self, &shard_indices)?;
             let bytes = partial_decoder
                 .partial_decode(&[shard_subset], options)?
                 .remove(0)

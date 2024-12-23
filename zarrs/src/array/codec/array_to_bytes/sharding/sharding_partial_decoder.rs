@@ -61,13 +61,13 @@ impl ShardingPartialDecoder {
         })
     }
 
-    /// Retrieve the encoded bytes of an inner chunk.
+    /// Retrieve the byte range of an encoded inner chunk.
     ///
     /// The `chunk_indices` are relative to the start of the shard.
-    pub(crate) fn retrieve_inner_chunk_encoded(
+    pub(crate) fn inner_chunk_byte_range(
         &self,
         chunk_indices: &[u64],
-    ) -> Result<Option<RawBytes<'_>>, CodecError> {
+    ) -> Result<Option<ByteRange>, CodecError> {
         let shard_index = &self.shard_index;
         if let Some(shard_index) = shard_index {
             let chunks_per_shard =
@@ -78,10 +78,23 @@ impl ShardingPartialDecoder {
                 usize::try_from(ravel_indices(chunk_indices, &chunks_per_shard) * 2).unwrap();
             let offset = shard_index[shard_index_idx];
             let size = shard_index[shard_index_idx + 1];
-            self.input_handle.partial_decode_concat(
-                &[ByteRange::new(offset..offset + size)],
-                &CodecOptions::default(),
-            )
+            Ok(Some(ByteRange::new(offset..offset + size)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Retrieve the encoded bytes of an inner chunk.
+    ///
+    /// The `chunk_indices` are relative to the start of the shard.
+    pub(crate) fn retrieve_inner_chunk_encoded(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<RawBytes<'_>>, CodecError> {
+        let byte_range = self.inner_chunk_byte_range(chunk_indices)?;
+        if let Some(byte_range) = byte_range {
+            self.input_handle
+                .partial_decode_concat(&[byte_range], &CodecOptions::default())
         } else {
             Ok(None)
         }
