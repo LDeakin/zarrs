@@ -17,17 +17,17 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{blosc_decompress_bytes_partial, blosc_typesize, blosc_validate};
 
 /// Partial decoder for the `blosc` codec.
-pub(crate) struct BloscPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct BloscPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> BloscPartialDecoder<'a> {
-    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+impl BloscPartialDecoder {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for BloscPartialDecoder<'_> {
+impl BytesPartialDecoderTraits for BloscPartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

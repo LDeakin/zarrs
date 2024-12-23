@@ -18,18 +18,18 @@ use crate::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// Partial decoder for the `bytes` codec.
-pub(crate) struct VlenPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct VlenPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     index_codecs: Arc<CodecChain>,
     data_codecs: Arc<CodecChain>,
     index_data_type: VlenIndexDataType,
 }
 
-impl<'a> VlenPartialDecoder<'a> {
+impl VlenPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
     pub(crate) fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         index_codecs: Arc<CodecChain>,
         data_codecs: Arc<CodecChain>,
@@ -95,7 +95,7 @@ fn decode_vlen_bytes<'a>(
     }
 }
 
-impl ArrayPartialDecoderTraits for VlenPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for VlenPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }

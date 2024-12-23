@@ -17,16 +17,16 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{reverse_endianness, Endianness};
 
 /// Partial decoder for the `bytes` codec.
-pub(crate) struct BytesPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct BytesPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
 }
 
-impl<'a> BytesPartialDecoder<'a> {
+impl BytesPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
     pub(crate) fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
     ) -> Self {
@@ -38,7 +38,7 @@ impl<'a> BytesPartialDecoder<'a> {
     }
 }
 
-impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for BytesPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }

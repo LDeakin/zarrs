@@ -14,18 +14,18 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::CHECKSUM_SIZE;
 
 /// Partial decoder for the `crc32c` (CRC32C checksum) codec.
-pub(crate) struct Crc32cPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct Crc32cPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> Crc32cPartialDecoder<'a> {
+impl Crc32cPartialDecoder {
     /// Create a new partial decoder for the `crc32c` codec.
-    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
+impl BytesPartialDecoderTraits for Crc32cPartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

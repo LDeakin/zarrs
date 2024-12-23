@@ -6,7 +6,7 @@
 //!
 //! A [`CodecChain`] represents a codec sequence consisting of any number of array to array and bytes to bytes codecs, and one array to bytes codec.
 //! A codec chain is itself an array to bytes codec.
-//! A [`ArrayPartialDecoderCache`] or [`BytesPartialDecoderCache`] may be inserted into a codec chain to optimise partial decoding where appropriate.
+//! A cache may be inserted into a codec chain to optimise partial decoding where appropriate.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id18>.
 
@@ -59,8 +59,8 @@ use thiserror::Error;
 
 mod array_partial_decoder_cache;
 mod bytes_partial_decoder_cache;
-pub use array_partial_decoder_cache::ArrayPartialDecoderCache;
-pub use bytes_partial_decoder_cache::BytesPartialDecoderCache;
+pub(crate) use array_partial_decoder_cache::ArrayPartialDecoderCache;
+pub(crate) use bytes_partial_decoder_cache::BytesPartialDecoderCache;
 
 mod byte_interval_partial_decoder;
 pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;

@@ -27,7 +27,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 /// A codec chain is a sequence of array to array, a bytes to bytes, and a sequence of array to bytes codecs.
 ///
-/// A codec chain partial decoder may insert a cache: [`ArrayPartialDecoderCache`] or [`BytesPartialDecoderCache`].
+/// A codec chain partial decoder may insert a cache.
 /// For example, the output of the `blosc`/`gzip` codecs should be cached since they read and decode an entire chunk.
 /// If decoding (i.e. going backwards through a codec chain), then a cache may be inserted
 ///    - following the last codec with [`partial_decoder_decodes_all`](crate::array::codec::CodecTraits::partial_decoder_decodes_all) true, or

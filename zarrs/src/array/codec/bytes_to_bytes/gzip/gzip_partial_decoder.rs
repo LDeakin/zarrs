@@ -18,18 +18,18 @@ use crate::{
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `gzip` codec.
-pub(crate) struct GzipPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct GzipPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> GzipPartialDecoder<'a> {
+impl GzipPartialDecoder {
     /// Create a new partial decoder for the `gzip` codec.
-    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for GzipPartialDecoder<'_> {
+impl BytesPartialDecoderTraits for GzipPartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

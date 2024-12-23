@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Reduce metadata code duplication in the `Node` module
+- **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
+
+### Fixed
+- Cleanup unnecessary lifetime constraints in partial decoders
 
 ## [0.18.1] - 2024-12-17
 
