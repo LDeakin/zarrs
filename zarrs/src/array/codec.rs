@@ -90,6 +90,7 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::storage::AsyncReadableStorage;
 
+use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -241,7 +242,7 @@ pub trait ArrayCodecTraits: CodecTraits {
 }
 
 /// Partial bytes decoder traits.
-pub trait BytesPartialDecoderTraits: Send + Sync {
+pub trait BytesPartialDecoderTraits: Any + Send + Sync {
     /// Partially decode bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
@@ -288,7 +289,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
 #[cfg(feature = "async")]
 /// Asynchronous partial bytes decoder traits.
 #[async_trait::async_trait]
-pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
+pub trait AsyncBytesPartialDecoderTraits: Any + Send + Sync {
     /// Partially decode bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
@@ -333,7 +334,7 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
 }
 
 /// Partial array decoder traits.
-pub trait ArrayPartialDecoderTraits: Send + Sync {
+pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
@@ -394,7 +395,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
 }
 
 /// Partial array encoder traits.
-pub trait ArrayPartialEncoderTraits: Send + Sync {
+pub trait ArrayPartialEncoderTraits: Any + Send + Sync {
     /// Erase the chunk.
     ///
     /// # Errors
@@ -413,7 +414,7 @@ pub trait ArrayPartialEncoderTraits: Send + Sync {
 }
 
 /// Partial bytes encoder traits.
-pub trait BytesPartialEncoderTraits: Send + Sync {
+pub trait BytesPartialEncoderTraits: Any + Send + Sync {
     /// Erase the chunk.
     ///
     /// # Errors
@@ -434,7 +435,7 @@ pub trait BytesPartialEncoderTraits: Send + Sync {
 #[cfg(feature = "async")]
 /// Asynchronous partial array decoder traits.
 #[async_trait::async_trait]
-pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
+pub trait AsyncArrayPartialDecoderTraits: Any + Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
@@ -863,7 +864,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     // TODO: Async partial encoder
 }
 
-impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
+impl BytesPartialDecoderTraits for std::io::Cursor<&'static [u8]> {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -878,7 +879,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
     }
 }
 
-impl BytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
+impl BytesPartialDecoderTraits for std::io::Cursor<RawBytes<'static>> {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -910,7 +911,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&'static [u8]> {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -927,7 +928,7 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<RawBytes<'static>> {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
