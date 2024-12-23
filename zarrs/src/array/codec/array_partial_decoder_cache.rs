@@ -8,12 +8,12 @@ use super::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions};
 use super::AsyncArrayPartialDecoderTraits;
 
 /// A cache for an [`ArrayPartialDecoderTraits`] partial decoder.
-pub struct ArrayPartialDecoderCache<'a> {
+pub struct ArrayPartialDecoderCache {
     decoded_representation: ChunkRepresentation,
-    cache: ArrayBytes<'a>,
+    cache: ArrayBytes<'static>,
 }
 
-impl<'a> ArrayPartialDecoderCache<'a> {
+impl ArrayPartialDecoderCache {
     /// Create a new partial decoder cache.
     ///
     /// # Errors
@@ -47,7 +47,7 @@ impl<'a> ArrayPartialDecoderCache<'a> {
         input_handle: &dyn AsyncArrayPartialDecoderTraits,
         decoded_representation: ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<ArrayPartialDecoderCache<'a>, CodecError> {
+    ) -> Result<ArrayPartialDecoderCache, CodecError> {
         let bytes = input_handle
             .partial_decode(
                 &[ArraySubset::new_with_shape(
@@ -65,7 +65,7 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     }
 }
 
-impl ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'_> {
+impl ArrayPartialDecoderTraits for ArrayPartialDecoderCache {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
@@ -90,7 +90,7 @@ impl ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'_> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'_> {
+impl AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }

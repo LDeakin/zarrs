@@ -12,15 +12,15 @@ use crate::array::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// Partial decoder for the `bytes` codec.
-pub(crate) struct PcodecPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct PcodecPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
 }
 
-impl<'a> PcodecPartialDecoder<'a> {
+impl PcodecPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
     pub(crate) fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
     ) -> Self {
         Self {
@@ -101,7 +101,7 @@ fn do_partial_decode<'a>(
     Ok(decoded_bytes)
 }
 
-impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for PcodecPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }

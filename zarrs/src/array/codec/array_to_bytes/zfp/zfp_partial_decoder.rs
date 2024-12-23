@@ -18,17 +18,17 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{zarr_to_zfp_data_type, zfp_decode, ZfpMode};
 
 /// Partial decoder for the `zfp` codec.
-pub(crate) struct ZfpPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct ZfpPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
     write_header: bool,
 }
 
-impl<'a> ZfpPartialDecoder<'a> {
+impl ZfpPartialDecoder {
     /// Create a new partial decoder for the `zfp` codec.
     pub(crate) fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
         write_header: bool,
@@ -48,7 +48,7 @@ impl<'a> ZfpPartialDecoder<'a> {
     }
 }
 
-impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for ZfpPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
