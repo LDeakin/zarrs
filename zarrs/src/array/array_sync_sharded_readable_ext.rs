@@ -88,7 +88,7 @@ impl ArrayShardedReadableExtCache {
 ///
 /// Sharding indexes are cached in a [`ArrayShardedReadableExtCache`] enabling faster retrieval.
 // TODO: Add default methods? Or change to options: Option<&CodecOptions>? Should really do this for array (breaking)...
-pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'static> {
+pub trait ArrayShardedReadableExt<TStorage: ?Sized + ReadableStorageTraits + 'static>: private::Sealed {
     /// Read and decode the inner chunk at `chunk_indices` into its bytes.
     ///
     /// See [`Array::retrieve_chunk_opt`].
@@ -470,6 +470,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
             self.retrieve_array_subset_elements_sharded_opt::<T>(cache, array_subset, options)?;
         super::elements_to_ndarray(array_subset.shape(), elements)
     }
+}
+
+mod private {
+    use super::*;
+
+    pub trait Sealed {}
+
+    impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Sealed for Array<TStorage> {}
 }
 
 #[cfg(test)]
