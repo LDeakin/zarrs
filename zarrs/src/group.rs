@@ -44,14 +44,16 @@ use crate::{
         v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     },
     node::{
-        get_child_nodes, get_direct_child_nodes, meta_key_v2_attributes, meta_key_v2_group,
-        meta_key_v3, Node, NodePath, NodePathError,
+        _get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node, NodePath,
+        NodePathError,
     },
     storage::{ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits},
 };
 
 #[cfg(feature = "async")]
 use crate::storage::{AsyncReadableStorageTraits, AsyncWritableStorageTraits};
+// #[cfg(feature = "async")]
+// use crate::node::_async_get_child_nodes;
 
 pub use self::group_builder::GroupBuilder;
 pub use crate::metadata::{v3::GroupMetadataV3, GroupMetadata};
@@ -235,11 +237,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying error with the store.
     pub fn children(&self, recursive: bool) -> Result<Vec<Node>, StorageError> {
-        if recursive {
-            get_child_nodes(&self.storage, &self.path)
-        } else {
-            get_direct_child_nodes(&self.storage, &self.path)
-        }
+        #[allow(clippy::used_underscore_items)]
+        _get_child_nodes(&self.storage, &self.path, recursive)
     }
 
     /// Return the children of the group that are [`Group`]s
