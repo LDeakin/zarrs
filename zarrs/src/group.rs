@@ -44,8 +44,8 @@ use crate::{
         v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     },
     node::{
-        get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node, NodePath,
-        NodePathError,
+        get_child_nodes, get_direct_child_nodes, meta_key_v2_attributes, meta_key_v2_group,
+        meta_key_v3, Node, NodePath, NodePathError,
     },
     storage::{ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits},
 };
@@ -234,16 +234,20 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     ///
     /// # Errors
     /// Returns [`StorageError`] if there is an underlying error with the store.
-    pub fn children(&self) -> Result<Vec<Node>, StorageError> {
-        get_child_nodes(&self.storage, &self.path)
+    pub fn children(&self, recursive: bool) -> Result<Vec<Node>, StorageError> {
+        if recursive {
+            get_child_nodes(&self.storage, &self.path)
+        } else {
+            get_direct_child_nodes(&self.storage, &self.path)
+        }
     }
 
     /// Return the children of the group that are [`Group`]s
     ///
     /// # Errors
     /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
-    pub fn child_groups(&self) -> Result<Vec<Self>, GroupCreateError> {
-        self.children()?
+    pub fn child_groups(&self, recursive: bool) -> Result<Vec<Self>, GroupCreateError> {
+        self.children(recursive)?
             .into_iter()
             .filter_map(|node| match node.metadata() {
                 NodeMetadata::Group(metadata) => Some(Group::new_with_metadata(
@@ -262,8 +266,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits + 'static>
     ///
     /// # Errors
     /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
-    pub fn child_arrays(&self) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
-        self.children()?
+    pub fn child_arrays(&self, recursive: bool) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
+        self.children(recursive)?
             .into_iter()
             .filter_map(|node| match node.metadata() {
                 NodeMetadata::Array(metadata) => Some(Array::new_with_metadata(
