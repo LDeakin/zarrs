@@ -245,8 +245,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     pub fn child_groups(&self) -> Result<Vec<Self>, GroupCreateError> {
         self.children()?
             .into_iter()
-            .filter(|node| matches!(node.metadata(), NodeMetadata::Group(_)))
-            .map(|node| Group::open(self.storage.clone(), node.name().as_str()))
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Group(metadata) => Some(Group::new_with_metadata(
+                    self.storage.clone(),
+                    node.name().as_str(),
+                    metadata.clone(),
+                )),
+                _ => None,
+            })
             .collect()
     }
 }
@@ -259,8 +265,14 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits + 'static>
     pub fn child_arrays(&self) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
         self.children()?
             .into_iter()
-            .filter(|node| matches!(node.metadata(), NodeMetadata::Array(_)))
-            .map(|node| Array::open(self.storage.clone(), node.name().as_str()))
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Array(metadata) => Some(Array::new_with_metadata(
+                    self.storage.clone(),
+                    node.name().as_str(),
+                    metadata.clone(),
+                )),
+                _ => None,
+            })
             .collect()
     }
 }
