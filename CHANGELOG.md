@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- [#104](https://github.com/LDeakin/zarrs/pull/104) functions to get children of Group by [@niklasmueboe]
 - Impl `From<Node>` for `NodeMetadata`
 
 ### Changed
@@ -1213,3 +1214,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [@lorenzocerrone]: https://github.com/lorenzocerrone
 [@dustinlagoy]: https://github.com/dustinlagoy
 [@sk1p]: https://github.com/sk1p
+[@niklasmueboe]: https://github.com/niklasmueboe
