@@ -249,19 +249,21 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     pub fn child_groups(&self, recursive: bool) -> Result<Vec<Self>, GroupCreateError> {
         self.children(recursive)?
             .into_iter()
-            .filter_map(|node| match node.metadata() {
-                NodeMetadata::Group(metadata) => Some(Group::new_with_metadata(
-                    self.storage.clone(),
-                    node.name().as_str(),
-                    metadata.clone(),
-                )),
-                _ => None,
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Group(metadata) => Some(Group::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata,
+                    )),
+                    NodeMetadata::Array(_) => None,
+                }
             })
             .collect()
     }
-}
 
-impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits + 'static> Group<TStorage> {
     /// Return the children of the group that are [`Array`]s
     ///
     /// # Errors
@@ -269,13 +271,17 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits + 'static>
     pub fn child_arrays(&self, recursive: bool) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
         self.children(recursive)?
             .into_iter()
-            .filter_map(|node| match node.metadata() {
-                NodeMetadata::Array(metadata) => Some(Array::new_with_metadata(
-                    self.storage.clone(),
-                    node.name().as_str(),
-                    metadata.clone(),
-                )),
-                _ => None,
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Array(metadata) => Some(Array::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata.clone(),
+                    )),
+                    NodeMetadata::Group(_) => None,
+                }
             })
             .collect()
     }
