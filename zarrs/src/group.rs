@@ -51,9 +51,11 @@ use crate::{
 };
 
 #[cfg(feature = "async")]
-use crate::storage::{AsyncReadableStorageTraits, AsyncWritableStorageTraits};
-// #[cfg(feature = "async")]
-// use crate::node::_async_get_child_nodes;
+use crate::node::_async_get_child_nodes;
+#[cfg(feature = "async")]
+use crate::storage::{
+    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+};
 
 pub use self::group_builder::GroupBuilder;
 pub use crate::metadata::{v3::GroupMetadataV3, GroupMetadata};
@@ -332,6 +334,67 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
 
         // No metadata has been found
         Err(GroupCreateError::MissingMetadata)
+    }
+}
+
+#[cfg(feature = "async")]
+impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits> Group<TStorage> {
+    /// Return the children of the group
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub async fn async_children(&self, recursive: bool) -> Result<Vec<Node>, StorageError> {
+        #[allow(clippy::used_underscore_items)]
+        _async_get_child_nodes(&self.storage, &self.path, recursive).await
+    }
+
+    /// Return the children of the group that are [`Group`]s
+    ///
+    /// # Errors
+    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    pub async fn async_child_groups(&self, recursive: bool) -> Result<Vec<Self>, GroupCreateError> {
+        self.async_children(recursive)
+            .await?
+            .into_iter()
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Group(metadata) => Some(Group::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata,
+                    )),
+                    NodeMetadata::Array(_) => None,
+                }
+            })
+            .collect()
+    }
+
+    /// Return the children of the group that are [`Array`]s
+    ///
+    /// # Errors
+    /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
+    pub async fn async_child_arrays(
+        &self,
+        recursive: bool,
+    ) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
+        self.async_children(recursive)
+            .await?
+            .into_iter()
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Array(metadata) => Some(Array::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata.clone(),
+                    )),
+                    NodeMetadata::Group(_) => None,
+                }
+            })
+            .collect()
     }
 }
 

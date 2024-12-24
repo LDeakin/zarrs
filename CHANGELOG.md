@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [#104](https://github.com/LDeakin/zarrs/pull/104) functions to get children of Group by [@niklasmueboe]
+  - adds `Group::[async_]children`, `Group::[async_]child_groups`, `Group::[async_]child_arrays`
 - Impl `From<Node>` for `NodeMetadata`
 
 ### Changed

@@ -23,8 +23,8 @@ pub use key::{
 
 #[cfg(feature = "async")]
 mod node_async;
-// #[cfg(feature = "async")]
-// pub(crate) use node_async::_async_get_child_nodes;
+#[cfg(feature = "async")]
+pub(crate) use node_async::_async_get_child_nodes;
 #[cfg(feature = "async")]
 pub use node_async::{async_get_child_nodes, async_node_exists, async_node_exists_listable};
 
