@@ -61,6 +61,12 @@ pub struct Node {
     children: Vec<Node>,
 }
 
+impl From<Node> for NodeMetadata {
+    fn from(value: Node) -> Self {
+        value.metadata
+    }
+}
+
 /// A node creation error.
 #[derive(Debug, Error)]
 pub enum NodeCreateError {
