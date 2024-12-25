@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.2] - 2024-12-25
+
 ### Added
 - [#104](https://github.com/LDeakin/zarrs/pull/104) functions to get children of Group by [@niklasmueboe]
   - adds `Group::[async_]children`, `Group::[async_]child_groups`, `Group::[async_]child_arrays`
@@ -1160,7 +1162,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.2...HEAD
+[0.18.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.2
 [0.18.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.1
 [0.18.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0
 [0.18.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0-beta.0

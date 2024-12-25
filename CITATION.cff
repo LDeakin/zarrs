@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "zarrs"
-version: 0.18.1
-date-released: 2024-12-17
+version: 0.18.2
+date-released: 2024-12-25
 repository-code: "https://github.com/LDeakin/zarrs"
 url: "https://zarrs.dev"
 abstract: "zarrs is a Rust library for the Zarr storage format for multidimensional arrays and metadata."
