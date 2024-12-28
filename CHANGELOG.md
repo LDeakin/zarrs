@@ -7,15 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- impl `From<Node>` for `NodePath` ([#112] by [@niklasmueboe])
+- Add `Group::child[_{group,array}]_paths` ([#112] by [@niklasmueboe])
+
+[#112]: https://github.com/LDeakin/zarrs/pull/112
+
 ## [0.18.2] - 2024-12-25
 
 ### Added
-- [#104](https://github.com/LDeakin/zarrs/pull/104) functions to get children of Group by [@niklasmueboe]
+- functions to get children of Group ([#104] by [@niklasmueboe])
   - adds `Group::[async_]children`, `Group::[async_]child_groups`, `Group::[async_]child_arrays`
 - Impl `From<Node>` for `NodeMetadata`
 
 ### Changed
 - Reduce metadata code duplication in the `Node` module
+
+[#104]: https://github.com/LDeakin/zarrs/pull/104
 
 ## [0.18.1] - 2024-12-17
 
