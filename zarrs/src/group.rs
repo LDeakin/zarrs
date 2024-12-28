@@ -286,6 +286,51 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
             })
             .collect()
     }
+
+    /// Return the paths of the groups children
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub fn child_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+        let paths = self
+            .children(recursive)?
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        Ok(paths)
+    }
+
+    /// Return the paths of the groups children if the child is a group
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub fn child_group_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+        let paths = self
+            .children(recursive)?
+            .into_iter()
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Group(_) => Some(node.into()),
+                NodeMetadata::Array(_) => None,
+            })
+            .collect();
+        Ok(paths)
+    }
+
+    /// Return the paths of the groups children if the child is an array
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub fn child_array_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+        let paths = self
+            .children(recursive)?
+            .into_iter()
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Array(_) => Some(node.into()),
+                NodeMetadata::Group(_) => None,
+            })
+            .collect();
+        Ok(paths)
+    }
 }
 
 #[cfg(feature = "async")]

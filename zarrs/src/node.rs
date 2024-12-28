@@ -67,6 +67,12 @@ impl From<Node> for NodeMetadata {
     }
 }
 
+impl From<Node> for NodePath {
+    fn from(value: Node) -> Self {
+        value.path
+    }
+}
+
 /// A node creation error.
 #[derive(Debug, Error)]
 pub enum NodeCreateError {
