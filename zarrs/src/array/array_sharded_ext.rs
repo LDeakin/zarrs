@@ -1,7 +1,7 @@
 use super::{codec::ShardingCodecConfiguration, Array, ArrayShape, ChunkGrid, ChunkShape};
 
 /// An [`Array`] extension trait to simplify working with arrays using the `sharding_indexed` codec.
-pub trait ArrayShardedExt {
+pub trait ArrayShardedExt: private::Sealed {
     /// Returns true if the array to bytes codec of the array is `sharding_indexed`.
     fn is_sharded(&self) -> bool;
 
@@ -85,4 +85,12 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
             self.inner_chunk_grid().grid_shape_unchecked(self.shape())
         }
     }
+}
+
+mod private {
+    use super::Array;
+
+    pub trait Sealed {}
+
+    impl<TStorage: ?Sized> Sealed for Array<TStorage> {}
 }
