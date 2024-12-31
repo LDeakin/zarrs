@@ -22,6 +22,7 @@ type PartialDecoderHashMap = HashMap<Vec<u64>, Arc<dyn ArrayPartialDecoderTraits
 /// A cache used for methods in the [`ArrayShardedReadableExt`] trait.
 pub struct ArrayShardedReadableExtCache {
     array_is_sharded: bool,
+    array_is_exclusively_sharded: bool,
     inner_chunk_grid: ChunkGrid,
     cache: Arc<std::sync::Mutex<PartialDecoderHashMap>>,
 }
@@ -33,6 +34,7 @@ impl ArrayShardedReadableExtCache {
         let inner_chunk_grid = array.inner_chunk_grid();
         Self {
             array_is_sharded: array.is_sharded(),
+            array_is_exclusively_sharded: array.is_exclusively_sharded(),
             inner_chunk_grid,
             cache: Arc::new(std::sync::Mutex::new(HashMap::default())),
         }
@@ -44,6 +46,14 @@ impl ArrayShardedReadableExtCache {
     #[must_use]
     pub fn array_is_sharded(&self) -> bool {
         self.array_is_sharded
+    }
+
+    /// Returns true if the array is exclusively sharded (no array-to-array or bytes-to-bytes codecs).
+    ///
+    /// This is cheaper than calling [`ArrayShardedExt::is_exclusively_sharded`] repeatedly.
+    #[must_use]
+    pub fn array_is_exclusively_sharded(&self) -> bool {
+        self.array_is_exclusively_sharded
     }
 
     fn inner_chunk_grid(&self) -> &ChunkGrid {
