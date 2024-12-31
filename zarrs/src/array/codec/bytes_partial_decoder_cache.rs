@@ -1,6 +1,6 @@
 //! A cache for partial decoders.
 
-use std::{borrow::Cow, marker::PhantomData};
+use std::borrow::Cow;
 
 use crate::{
     array::RawBytes,
@@ -13,27 +13,23 @@ use super::{BytesPartialDecoderTraits, CodecError, CodecOptions};
 use super::AsyncBytesPartialDecoderTraits;
 
 /// A cache for a [`BytesPartialDecoderTraits`] partial decoder.
-pub struct BytesPartialDecoderCache<'a> {
+pub(crate) struct BytesPartialDecoderCache {
     cache: Option<Vec<u8>>,
-    phantom: PhantomData<&'a ()>,
 }
 
-impl<'a> BytesPartialDecoderCache<'a> {
+impl BytesPartialDecoderCache {
     /// Create a new partial decoder cache.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if caching fails.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: &dyn BytesPartialDecoderTraits,
         options: &CodecOptions,
     ) -> Result<Self, CodecError> {
         let cache = input_handle
             .partial_decode(&[ByteRange::FromStart(0, None)], options)?
             .map(|mut bytes| bytes.remove(0).into_owned());
-        Ok(Self {
-            cache,
-            phantom: PhantomData,
-        })
+        Ok(Self { cache })
     }
 
     #[cfg(feature = "async")]
@@ -41,22 +37,19 @@ impl<'a> BytesPartialDecoderCache<'a> {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if caching fails.
-    pub async fn async_new(
+    pub(crate) async fn async_new(
         input_handle: &dyn AsyncBytesPartialDecoderTraits,
         options: &CodecOptions,
-    ) -> Result<BytesPartialDecoderCache<'a>, CodecError> {
+    ) -> Result<BytesPartialDecoderCache, CodecError> {
         let cache = input_handle
             .partial_decode(&[ByteRange::FromStart(0, None)], options)
             .await?
             .map(|mut bytes| bytes.remove(0).into_owned());
-        Ok(Self {
-            cache,
-            phantom: PhantomData,
-        })
+        Ok(Self { cache })
     }
 }
 
-impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
+impl BytesPartialDecoderTraits for BytesPartialDecoderCache {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -77,7 +70,7 @@ impl BytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache<'_> {
+impl AsyncBytesPartialDecoderTraits for BytesPartialDecoderCache {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

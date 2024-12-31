@@ -14,17 +14,17 @@ use crate::{
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `bz2` codec.
-pub(crate) struct Bz2PartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct Bz2PartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> Bz2PartialDecoder<'a> {
-    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+impl Bz2PartialDecoder {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for Bz2PartialDecoder<'_> {
+impl BytesPartialDecoderTraits for Bz2PartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
