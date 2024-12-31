@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
 - **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
+- **Breaking**: Make `Any` a supertrait of partial encoder/decoder traits
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders
@@ -31,11 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Reduce metadata code duplication in the `Node` module
-- **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
-- **Breaking**: Make `Any` a supertrait of partial encoder/decoder traits
-
-### Fixed
-- Cleanup unnecessary lifetime constraints in partial decoders
 
 [#104]: https://github.com/LDeakin/zarrs/pull/104
 
