@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
+- **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
+
+### Fixed
+- Cleanup unnecessary lifetime constraints in partial decoders
 
 ## [0.18.3] - 2024-12-30
 
@@ -27,10 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Reduce metadata code duplication in the `Node` module
-- **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
-
-### Fixed
-- Cleanup unnecessary lifetime constraints in partial decoders
 
 [#104]: https://github.com/LDeakin/zarrs/pull/104
 
