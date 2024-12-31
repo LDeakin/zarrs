@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
 - **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
 - **Breaking**: Make `Any` a supertrait of partial encoder/decoder traits
+- **Breaking**: Add `ArrayError::UnsupportedMethod`
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders
