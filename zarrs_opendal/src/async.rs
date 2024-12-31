@@ -83,7 +83,7 @@ impl AsyncWritableStorageTraits for AsyncOpendalStore {
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
-        handle_result(self.operator.remove(vec![key.to_string()]).await)
+        handle_result(self.operator.delete(key.as_str()).await)
     }
 
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
@@ -157,23 +157,44 @@ impl AsyncListableStorageTraits for AsyncOpendalStore {
     }
 
     async fn size_prefix(&self, prefix: &StorePrefix) -> Result<u64, StorageError> {
-        handle_result_notfound(
+        let Some(files) = handle_result_notfound(
             self.operator
                 .list_with(prefix.as_str())
                 .recursive(true)
-                .metakey(opendal::Metakey::ContentLength)
                 .await,
         )?
-        .map_or_else(
-            || Ok(0),
-            |list| {
-                let size = list
-                    .into_iter()
-                    .map(|entry| entry.metadata().content_length())
-                    .sum::<u64>();
-                Ok(size)
-            },
-        )
+        else {
+            return Ok(0);
+        };
+
+        if self
+            .operator
+            .info()
+            .full_capability()
+            .list_has_content_length
+        {
+            let size = files
+                .into_iter()
+                .filter_map(|entry| {
+                    if entry.metadata().is_file() {
+                        Some(entry.metadata().content_length())
+                    } else {
+                        None
+                    }
+                })
+                .sum::<u64>();
+            Ok(size)
+        } else {
+            // TODO: concurrent
+            let mut size = 0;
+            for entry in files {
+                let meta = handle_result(self.operator.stat(entry.path()).await)?;
+                if meta.is_file() {
+                    size += meta.content_length();
+                }
+            }
+            Ok(size)
+        }
     }
 }
 

@@ -20,7 +20,9 @@ use super::{ChunkCache, ChunkCacheType};
 /// An [`Array`] extension trait to support reading with a chunk cache.
 ///
 /// Note that these methods never perform partial decoding and always fully decode chunks intersected that are not in the cache.
-pub trait ArrayChunkCacheExt<TStorage: ?Sized + ReadableStorageTraits + 'static> {
+pub trait ArrayChunkCacheExt<TStorage: ?Sized + ReadableStorageTraits + 'static>:
+    private::Sealed
+{
     /// Cached variant of [`retrieve_chunk_opt`](Array::retrieve_chunk_opt).
     #[allow(clippy::missing_errors_doc)]
     fn retrieve_chunk_opt_cached<CT: ChunkCacheType>(
@@ -453,4 +455,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
             self.retrieve_array_subset_elements_opt_cached(cache, array_subset, options)?;
         crate::array::elements_to_ndarray(array_subset.shape(), elements)
     }
+}
+
+mod private {
+    use super::{Array, ReadableStorageTraits};
+
+    pub trait Sealed {}
+
+    impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Sealed for Array<TStorage> {}
 }

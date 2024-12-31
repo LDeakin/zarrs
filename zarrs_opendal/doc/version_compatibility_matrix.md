@@ -1,7 +1,8 @@
 | [zarrs_opendal] | [opendal] | [zarrs] ([zarrs_storage]) |
 | --------------- | --------- | ------------------------- |
-| 0.3             | 0.46-0.50 | 0.17 (0.2.0)              |
-| 0.4             | 0.46-0.50 | 0.18 (0.3.0)              |
+| 0.5             | 0.51-0.51 | 0.18.x (0.3.x)            |
+| 0.4             | 0.46-0.50 | 0.18.x (0.3.x)            |
+| 0.3             | 0.46-0.50 | 0.17.x (0.2.x)            |
 
 [zarrs_opendal]: https://crates.io/crates/zarrs_opendal
 [opendal]: https://crates.io/crates/opendal

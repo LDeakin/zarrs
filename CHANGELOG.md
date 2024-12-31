@@ -7,8 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
+
+## [0.18.3] - 2024-12-30
+
 ### Added
-- Add `Node::[async_]get_direct_child_nodes`
+- impl `From<Node>` for `NodePath` ([#112] by [@niklasmueboe])
+- Add `Group::child[_{group,array}]_paths` ([#112] by [@niklasmueboe])
+
+[#112]: https://github.com/LDeakin/zarrs/pull/112
+
+## [0.18.2] - 2024-12-25
+
+### Added
+- functions to get children of Group ([#104] by [@niklasmueboe])
+  - adds `Group::[async_]children`, `Group::[async_]child_groups`, `Group::[async_]child_arrays`
+- Impl `From<Node>` for `NodeMetadata`
 
 ### Changed
 - Reduce metadata code duplication in the `Node` module
@@ -16,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders
+
+[#104]: https://github.com/LDeakin/zarrs/pull/104
 
 ## [0.18.1] - 2024-12-17
 
@@ -1162,7 +1179,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.3...HEAD
+[0.18.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.3
+[0.18.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.2
 [0.18.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.1
 [0.18.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0
 [0.18.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0-beta.0
@@ -1217,3 +1236,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [@lorenzocerrone]: https://github.com/lorenzocerrone
 [@dustinlagoy]: https://github.com/dustinlagoy
 [@sk1p]: https://github.com/sk1p
+[@niklasmueboe]: https://github.com/niklasmueboe
