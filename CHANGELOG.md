@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ArrayShardedReadableExt::inner_chunk_byte_range`
 - Add `ArrayShardedExt::is_exclusively_sharded`
 - Add `ArrayShardedReadableExtCache::array_is_exclusively_sharded`
+- Add `Vlen{Array,Bytes,Utf8}Codec`, replacing `VlenV2Codec`
 
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Add `ArrayError::UnsupportedMethod`
 - **Breaking**: Rename `DataType::Binary` to `Bytes` for compatibility with `zarr-python`
 - **Breaking**: Make `array::codec::array_to_bytes::bytes::reverse_endianness` private
+- **Breaking**: Make `VlenV2Codec` private
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders

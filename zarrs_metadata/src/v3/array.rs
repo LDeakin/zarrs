@@ -35,8 +35,8 @@ pub mod codec {
     pub mod transpose;
     /// `vlen` codec metadata.
     pub mod vlen;
-    /// `vlen_v2` codec metadata.
-    pub mod vlen_v2;
+    // /// `vlen_v2` codec metadata.
+    // pub mod vlen_v2;
     /// `zfp` codec metadata.
     pub mod zfp;
     /// `zstd` codec metadata.
