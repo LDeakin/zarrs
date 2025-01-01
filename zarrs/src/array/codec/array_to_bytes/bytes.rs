@@ -47,7 +47,7 @@ pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginC
 }
 
 /// Reverse the endianness of bytes for a given data type.
-pub fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
+pub(crate) fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
     match data_type {
         DataType::Bool | DataType::Int8 | DataType::UInt8 | DataType::RawBits(_) => {}
         DataType::Int16 | DataType::UInt16 | DataType::Float16 | DataType::BFloat16 => {
@@ -72,7 +72,7 @@ pub fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
             v.chunks_exact_mut(8).for_each(swap);
         }
         // Variable-sized data types are not supported and are rejected outside of this function
-        DataType::String | DataType::Binary => unreachable!(),
+        DataType::String | DataType::Bytes => unreachable!(),
     }
 }
 

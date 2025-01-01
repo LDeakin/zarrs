@@ -324,7 +324,7 @@ fn array_binary() -> Result<(), Box<dyn std::error::Error>> {
     let array_path = "/array";
     let mut builder = ArrayBuilder::new(
         vec![4, 4], // array shape
-        DataType::Binary,
+        DataType::Bytes,
         vec![2, 2].try_into().unwrap(), // regular chunk shape
         FillValue::from([]),
     );
