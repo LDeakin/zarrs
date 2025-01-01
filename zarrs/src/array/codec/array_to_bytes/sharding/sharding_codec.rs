@@ -38,13 +38,13 @@ use unsafe_cell_slice::UnsafeCellSlice;
 #[derive(Clone, Debug)]
 pub struct ShardingCodec {
     /// An array of integers specifying the shape of the inner chunks in a shard along each dimension of the outer array.
-    chunk_shape: ChunkShape,
+    pub(crate) chunk_shape: ChunkShape,
     /// The codecs used to encode and decode inner chunks.
-    inner_codecs: Arc<CodecChain>,
+    pub(crate) inner_codecs: Arc<CodecChain>,
     /// The codecs used to encode and decode the shard index.
-    index_codecs: Arc<CodecChain>,
+    pub(crate) index_codecs: Arc<CodecChain>,
     /// Specifies whether the shard index is located at the beginning or end of the file.
-    index_location: ShardingIndexLocation,
+    pub(crate) index_location: ShardingIndexLocation,
 }
 
 impl ShardingCodec {
