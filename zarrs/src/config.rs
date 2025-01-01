@@ -133,7 +133,6 @@ impl Default for Config {
             #[cfg(feature = "pcodec")]
             (codec::pcodec::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/pcodec".to_string()),
             (codec::vlen::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen".to_string()),
-            (codec::vlen_v2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen_v2".to_string()),
             // Bytes to bytes
             #[cfg(feature = "bz2")]
             (codec::bz2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),

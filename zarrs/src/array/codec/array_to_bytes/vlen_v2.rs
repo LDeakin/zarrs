@@ -5,18 +5,13 @@ mod vlen_v2_partial_decoder;
 
 use std::{mem::size_of, sync::Arc};
 
-pub use vlen_v2::IDENTIFIER;
+/// The identifier for the `vlen_v2` codec.
+pub(crate) const IDENTIFIER: &str = "vlen_v2";
+// pub use vlen_v2::IDENTIFIER;
 
-pub use crate::metadata::v3::array::codec::vlen_v2::{
-    VlenV2CodecConfiguration, VlenV2CodecConfigurationV1,
-};
-use crate::{
-    array::{codec::CodecError, RawBytes},
-    config::global_config,
-    metadata::v3::array::codec::vlen_v2,
-};
+use crate::array::{codec::CodecError, RawBytes};
 
-pub use vlen_v2_codec::VlenV2Codec;
+pub(crate) use vlen_v2_codec::VlenV2Codec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
@@ -40,11 +35,6 @@ inventory::submit! {
 
 fn is_name_vlen_v2(name: &str) -> bool {
     name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
 }
 
 fn is_name_vlen_array(name: &str) -> bool {
@@ -60,14 +50,12 @@ fn is_name_vlen_utf8(name: &str) -> bool {
 }
 
 pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
-    let configuration: VlenV2CodecConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(VlenV2Codec::new_with_name_configuration(
-        metadata.name().to_string(),
-        &configuration,
-    ));
-    Ok(Codec::ArrayToBytes(codec))
+    if metadata.configuration_is_none_or_empty() {
+        let codec = Arc::new(VlenV2Codec::new(metadata.name().to_string()));
+        Ok(Codec::ArrayToBytes(codec))
+    } else {
+        Err(PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()).into())
+    }
 }
 
 fn get_interleaved_bytes_and_offsets(

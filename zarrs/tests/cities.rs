@@ -12,7 +12,7 @@ use zarrs::{
     array::{
         codec::{
             array_to_bytes::{
-                sharding::ShardingCodecBuilder, vlen::VlenCodec, vlen_v2::VlenV2Codec,
+                sharding::ShardingCodecBuilder, vlen::VlenCodec, vlen_utf8::VlenUtf8Codec,
             },
             ArrayToBytesCodecTraits, ZstdCodec,
         },
@@ -97,7 +97,7 @@ fn cities() -> Result<(), Box<dyn Error>> {
     assert_eq!(cities[47862], "Sariwŏn-si");
     assert_eq!(cities[47867], "Charlotte Amalie");
 
-    let vlen_v2 = Arc::new(VlenV2Codec::new("vlen-utf8".to_string()));
+    let vlen_utf8 = Arc::new(VlenUtf8Codec::new());
 
     // let vlen = Arc::new(VlenCodec::default());
     let vlen_configuration: VlenCodecConfiguration = serde_json::from_str(r#"{
@@ -116,8 +116,8 @@ fn cities() -> Result<(), Box<dyn Error>> {
 
     print!("| encoding         | compression | size   |\n");
     print!("| ---------------- | ----------- | ------ |\n");
-    print!("| vlen_v2 |             | {} |\n", cities_impl(&cities, None, 1000, None, vlen_v2.clone(), true)?);
-    print!("| vlen_v2 | zstd 5      | {} |\n", cities_impl(&cities, Some(5), 1000, None, vlen_v2.clone(), false)?);
+    print!("| vlen_utf8 |             | {} |\n", cities_impl(&cities, None, 1000, None, vlen_utf8.clone(), true)?);
+    print!("| vlen_utf8 | zstd 5      | {} |\n", cities_impl(&cities, Some(5), 1000, None, vlen_utf8.clone(), false)?);
     print!("| vlen             |             | {} |\n", cities_impl(&cities, None, 1000, None, vlen.clone(), false)?);
     print!("| vlen             | zstd 5      | {} |\n", cities_impl(&cities, None, 1000, None, vlen_compressed.clone(), false)?);
     println!();
@@ -125,8 +125,8 @@ fn cities() -> Result<(), Box<dyn Error>> {
 
     // | encoding         | compression | size   |
     // | ---------------- | ----------- | ------ |
-    // | vlen_v2 |             | 642196 |
-    // | vlen_v2 | zstd 5      | 362626 |
+    // | vlen_utf8 |             | 642196 |
+    // | vlen_utf8 | zstd 5      | 362626 |
     // | vlen             |             | 642580 |
     // | vlen             | zstd 5      | 346950 |
 

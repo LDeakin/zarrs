@@ -19,7 +19,6 @@ use crate::{
             codec::{
                 bytes::BytesCodecConfigurationV1,
                 transpose::{TransposeCodecConfigurationV1, TransposeOrder},
-                vlen_v2::VlenV2CodecConfigurationV1,
             },
             fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadataV3},
         },
@@ -148,10 +147,8 @@ pub fn array_metadata_v2_to_v3(
                 | crate::v2::array::codec::vlen_bytes::IDENTIFIER
                 | crate::v2::array::codec::vlen_utf8::IDENTIFIER => {
                     has_array_to_bytes = true;
-                    let vlen_v2_metadata = MetadataV3::new_with_serializable_configuration(
-                        crate::v3::array::codec::vlen_v2::IDENTIFIER,
-                        &VlenV2CodecConfigurationV1 {},
-                    )?;
+                    let vlen_v2_metadata =
+                        MetadataV3::new_with_configuration(filter.id(), serde_json::Map::default());
                     codecs.push(vlen_v2_metadata);
                 }
                 _ => {

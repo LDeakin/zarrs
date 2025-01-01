@@ -20,28 +20,16 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-use super::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1};
-
 /// The `vlen_v2` codec implementation.
 #[derive(Debug, Clone)]
-pub struct VlenV2Codec {
+pub(crate) struct VlenV2Codec {
     name: String,
 }
 
 impl VlenV2Codec {
     /// Create a new `vlen_v2` codec.
     #[must_use]
-    pub fn new(name: String) -> Self {
-        Self { name }
-    }
-
-    /// Create a new `vlen_v2` codec from configuration.
-    #[must_use]
-    pub fn new_with_name_configuration(
-        name: String,
-        _configuration: &VlenV2CodecConfiguration,
-    ) -> Self {
-        // let VlenV2CodecConfiguration::V1(configuration) = configuration;
+    pub(crate) fn new(name: String) -> Self {
         Self { name }
     }
 }
@@ -53,8 +41,10 @@ impl CodecTraits for VlenV2Codec {
             .experimental_codec_names()
             .get(&self.name)
             .unwrap_or(&self.name);
-        let configuration = VlenV2CodecConfigurationV1 {};
-        Some(MetadataV3::new_with_serializable_configuration(name, &configuration).unwrap())
+        Some(MetadataV3::new_with_configuration(
+            name,
+            serde_json::Map::default(),
+        ))
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
