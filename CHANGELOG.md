@@ -7,10 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `ArrayShardedReadableExt::retrieve_encoded_inner_chunk`
+- Add `ArrayShardedReadableExt::inner_chunk_byte_range`
+- Add `ArrayShardedExt::is_exclusively_sharded`
+- Add `ArrayShardedReadableExtCache::array_is_exclusively_sharded`
+
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
 - **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
 - **Breaking**: Make `Any` a supertrait of partial encoder/decoder traits
+- **Breaking**: Add `ArrayError::UnsupportedMethod`
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders

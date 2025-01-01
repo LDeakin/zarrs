@@ -5,6 +5,9 @@ pub trait ArrayShardedExt: private::Sealed {
     /// Returns true if the array to bytes codec of the array is `sharding_indexed`.
     fn is_sharded(&self) -> bool;
 
+    /// Returns true if the array-to-bytes codec of the array is `sharding_indexed` and the array has no array-to-array or bytes-to-bytes codecs.
+    fn is_exclusively_sharded(&self) -> bool;
+
     /// Return the inner chunk shape as defined in the `sharding_indexed` codec metadata.
     ///
     /// Returns [`None`] for an unsharded array.
@@ -38,6 +41,12 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
             .expect("the array to bytes codec should have metadata")
             .name() // TODO: Add codec::identifier()?
             == super::codec::array_to_bytes::sharding::IDENTIFIER
+    }
+
+    fn is_exclusively_sharded(&self) -> bool {
+        self.is_sharded()
+            && self.codecs.array_to_array_codecs().is_empty()
+            && self.codecs.bytes_to_bytes_codecs().is_empty()
     }
 
     fn inner_chunk_shape(&self) -> Option<ChunkShape> {
