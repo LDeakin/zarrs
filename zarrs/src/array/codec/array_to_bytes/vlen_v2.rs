@@ -3,7 +3,7 @@
 mod vlen_v2_codec;
 mod vlen_v2_partial_decoder;
 
-pub(crate) mod vlen_v2_impl;
+pub(crate) mod vlen_v2_macros;
 
 use std::{mem::size_of, sync::Arc};
 

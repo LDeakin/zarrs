@@ -1,4 +1,41 @@
-macro_rules! vlen_v2_impl {
+macro_rules! vlen_v2_module {
+    ($module:ident, $module_codec:ident, $struct:ident) => {
+        mod $module_codec;
+
+        use std::sync::Arc;
+
+        pub use $module::IDENTIFIER;
+
+        pub use $module_codec::$struct;
+
+        use crate::{
+            array::codec::{Codec, CodecPlugin},
+            metadata::v2::array::codec::$module,
+            metadata::v3::MetadataV3,
+            plugin::{PluginCreateError, PluginMetadataInvalidError},
+        };
+
+        // Register the codec.
+        inventory::submit! {
+            CodecPlugin::new(IDENTIFIER, is_name, create_codec)
+        }
+
+        fn is_name(name: &str) -> bool {
+            name.eq(IDENTIFIER)
+        }
+
+        fn create_codec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
+            if metadata.configuration_is_none_or_empty() {
+                let codec = Arc::new($struct::new());
+                Ok(Codec::ArrayToBytes(codec))
+            } else {
+                Err(PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()).into())
+            }
+        }
+    };
+}
+
+macro_rules! vlen_v2_codec {
     ($struct:ident,$identifier:expr) => {
         use std::sync::Arc;
 
@@ -135,4 +172,5 @@ macro_rules! vlen_v2_impl {
     };
 }
 
-pub(crate) use vlen_v2_impl;
+pub(crate) use vlen_v2_codec;
+pub(crate) use vlen_v2_module;
