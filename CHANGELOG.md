@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
 - **Breaking**: Make `Any` a supertrait of partial encoder/decoder traits
 - **Breaking**: Add `ArrayError::UnsupportedMethod`
+- **Breaking**: Rename `DataType::Binary` to `Bytes` for compatibility with `zarr-python`
+- **Breaking**: Make `array::codec::array_to_bytes::bytes::reverse_endianness` private
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders

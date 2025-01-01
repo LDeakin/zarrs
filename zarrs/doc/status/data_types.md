@@ -4,7 +4,7 @@
 [r* (raw bits)] | [ZEP0001] | &check; | | |
 | [bfloat16] | [zarr-specs #130] | &check; | | |
 | [string] (experimental) | [ZEP0007 (draft)] | &check; | | |
-| [binary] (experimental) | [ZEP0007 (draft)] | &check; | | |
+| [bytes] (experimental) | [ZEP0007 (draft)] | &check; | | |
 
 <sup>† Experimental data types are recommended for evaluation only.</sup>
 
@@ -25,7 +25,7 @@
 [bfloat16]: crate::array::data_type::DataType::BFloat16
 [r* (raw bits)]: crate::array::data_type::DataType::RawBits
 [string]: crate::array::data_type::DataType::String
-[binary]: crate::array::data_type::DataType::Binary
+[bytes]: crate::array::data_type::DataType::Bytes
 
 [ZEP0001]: https://zarr.dev/zeps/accepted/ZEP0001.html
 [zarr-specs #130]: https://github.com/zarr-developers/zarr-specs/issues/130
