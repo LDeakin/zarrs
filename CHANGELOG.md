@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ArrayShardedExt::is_exclusively_sharded`
 - Add `ArrayShardedReadableExtCache::array_is_exclusively_sharded`
 - Add `Vlen{Array,Bytes,Utf8}Codec`, replacing `VlenV2Codec`
+- Add `ZstdCodecConfigurationNumCodecs`
+  - Adds support for Zarr V2 `zstd` encoded data created with `numcodecs` < 0.13
 
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
