@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders
+- Fix `clippy::useless_conversion` lint
 
 ## [0.18.3] - 2024-12-30
 

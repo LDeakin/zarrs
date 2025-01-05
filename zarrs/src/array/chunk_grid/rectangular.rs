@@ -185,7 +185,6 @@ impl ChunkGridTraits for RectangularChunkGrid {
                 }
             })
             .collect::<Option<Vec<_>>>()
-            .map(std::convert::Into::into)
     }
 
     unsafe fn chunk_origin_unchecked(
