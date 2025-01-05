@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Bump `itertools` to 0.14
+
 ### Fixed
 - Fix `unsafe_op_in_unsafe_fn` in lint
 

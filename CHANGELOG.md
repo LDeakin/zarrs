@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Rename `DataType::Binary` to `Bytes` for compatibility with `zarr-python`
 - **Breaking**: Make `array::codec::array_to_bytes::bytes::reverse_endianness` private
 - **Breaking**: Make `VlenV2Codec` private
+- Bump `itertools` to 0.14
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders

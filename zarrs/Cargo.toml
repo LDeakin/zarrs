@@ -53,7 +53,7 @@ futures = { version = "0.3.29", optional = true }
 gdeflate-sys = { version = "0.4.1", optional = true }
 half = { version = "2.0.0", features = ["bytemuck"] }
 inventory = "0.3.0"
-itertools = "0.13.0"
+itertools = "0.14.0"
 lru = "0.12.4"
 moka = { version = "0.12.8", features = ["sync"] }
 ndarray = { version = ">=0.15.0,<17", optional = true }
