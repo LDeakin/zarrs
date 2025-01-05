@@ -6,6 +6,7 @@ use crate::{
             codec::{
                 blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
                 zfpy::{codec_zfpy_v2_numcodecs_to_v3, ZfpyCodecConfigurationNumcodecs},
+                zstd::{codec_zstd_v2_numcodecs_to_v3, ZstdCodecConfigurationNumCodecs},
             },
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
             DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
@@ -211,6 +212,16 @@ pub fn array_metadata_v2_to_v3(
                 let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, &data_type);
                 codecs.push(MetadataV3::new_with_serializable_configuration(
                     crate::v3::array::codec::blosc::IDENTIFIER,
+                    &configuration,
+                )?);
+            }
+            crate::v3::array::codec::zstd::IDENTIFIER => {
+                let zstd = serde_json::from_value::<ZstdCodecConfigurationNumCodecs>(
+                    serde_json::to_value(compressor.configuration())?,
+                )?;
+                let configuration = codec_zstd_v2_numcodecs_to_v3(&zstd);
+                codecs.push(MetadataV3::new_with_serializable_configuration(
+                    crate::v3::array::codec::zstd::IDENTIFIER,
                     &configuration,
                 )?);
             }
