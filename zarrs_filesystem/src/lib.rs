@@ -161,7 +161,7 @@ impl FilesystemStore {
         let path_str = path.to_string_lossy();
         #[cfg(target_os = "windows")]
         {
-            StoreKey::new(path_str.replace("\\", "/"))
+            StoreKey::new(path_str.replace('\\', "/"))
         }
         #[cfg(not(target_os = "windows"))]
         {
