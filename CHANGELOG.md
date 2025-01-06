@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Vlen{Array,Bytes,Utf8}Codec`, replacing `VlenV2Codec`
 - Add `ZstdCodecConfigurationNumCodecs`
   - Adds support for Zarr V2 `zstd` encoded data created with `numcodecs` < 0.13
+- Add support for pcodec `Auto`, `None`, and `TryLookback` delta specs
 
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
@@ -25,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Make `array::codec::array_to_bytes::bytes::reverse_endianness` private
 - **Breaking**: Make `VlenV2Codec` private
 - Bump `itertools` to 0.14
+
+### Removed
+- Remove support for pcodec `Try{FloatMult,FloatQuant,IntMult}` mode specs
+  - These may be reimplemented when supported by `zarr-python`/`numcodecs`
 
 ### Fixed
 - Cleanup unnecessary lifetime constraints in partial decoders
