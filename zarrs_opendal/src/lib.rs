@@ -15,6 +15,16 @@
 //!
 #![doc = include_str!("../doc/version_compatibility_matrix.md")]
 //!
+//! `opendal` is re-exported as a dependency of this crate, so it does not need to be specified as a direct dependency.
+//!
+//! However, if `opendal` is a direct dependency, it is necessary to ensure that the version used by this crate is compatible.
+//! This crate can depend on a range of semver-incompatible versions of `opendal`, and Cargo will not automatically choose a single version of `opendal` that satisfies all dependencies.
+//! Use a precise cargo update to ensure compatibility.
+//! For example, if this crate resolves to `opendal` 0.50.2 and your code uses 0.49.2:
+//! ```shell
+//! cargo update --package opendal:0.50.2 --precise 0.49.2
+//! ```
+//!
 //! ## Licence
 //! `zarrs_opendal` is licensed under either of
 //! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_opendal/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or

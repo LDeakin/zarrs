@@ -4,7 +4,7 @@
 //! 8/16-bit integer types are supported through promotion to 32-bit in accordance with the [zfp utility functions](https://zfp.readthedocs.io/en/release1.0.1/low-level-api.html#utility-functions).
 //!
 //! <div class="warning">
-//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
 //!
 //! This codec requires the `zfp` feature, which is disabled by default.
@@ -546,7 +546,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk
@@ -605,7 +605,7 @@ mod tests {
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap();
 

@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![cfg(all(feature = "sharding", feature = "zstd"))]
 
 use std::{
@@ -11,7 +12,7 @@ use zarrs::{
     array::{
         codec::{
             array_to_bytes::{
-                sharding::ShardingCodecBuilder, vlen::VlenCodec, vlen_v2::VlenV2Codec,
+                sharding::ShardingCodecBuilder, vlen::VlenCodec, vlen_utf8::VlenUtf8Codec,
             },
             ArrayToBytesCodecTraits, ZstdCodec,
         },
@@ -71,7 +72,8 @@ fn cities_impl(
     }
 
     let array = builder.build(store.clone(), "/")?;
-    array.store_metadata_opt(&ArrayMetadataOptions::default().set_include_zarrs_metadata(false))?;
+    array
+        .store_metadata_opt(&ArrayMetadataOptions::default().with_include_zarrs_metadata(false))?;
 
     let subset_all = array.subset_all();
     array.store_array_subset_elements(&subset_all, &cities)?;
@@ -87,6 +89,7 @@ fn cities_impl(
 
 #[rustfmt::skip]
 #[test]
+#[cfg_attr(miri, ignore)]
 fn cities() -> Result<(), Box<dyn Error>> {
     let cities = read_cities()?;
     assert_eq!(cities.len(), 47868);
@@ -94,7 +97,7 @@ fn cities() -> Result<(), Box<dyn Error>> {
     assert_eq!(cities[47862], "Sariwŏn-si");
     assert_eq!(cities[47867], "Charlotte Amalie");
 
-    let vlen_v2 = Arc::new(VlenV2Codec::default());
+    let vlen_utf8 = Arc::new(VlenUtf8Codec::new());
 
     // let vlen = Arc::new(VlenCodec::default());
     let vlen_configuration: VlenCodecConfiguration = serde_json::from_str(r#"{
@@ -113,8 +116,8 @@ fn cities() -> Result<(), Box<dyn Error>> {
 
     print!("| encoding         | compression | size   |\n");
     print!("| ---------------- | ----------- | ------ |\n");
-    print!("| vlen_v2 |             | {} |\n", cities_impl(&cities, None, 1000, None, vlen_v2.clone(), true)?);
-    print!("| vlen_v2 | zstd 5      | {} |\n", cities_impl(&cities, Some(5), 1000, None, vlen_v2.clone(), false)?);
+    print!("| vlen_utf8 |             | {} |\n", cities_impl(&cities, None, 1000, None, vlen_utf8.clone(), true)?);
+    print!("| vlen_utf8 | zstd 5      | {} |\n", cities_impl(&cities, Some(5), 1000, None, vlen_utf8.clone(), false)?);
     print!("| vlen             |             | {} |\n", cities_impl(&cities, None, 1000, None, vlen.clone(), false)?);
     print!("| vlen             | zstd 5      | {} |\n", cities_impl(&cities, None, 1000, None, vlen_compressed.clone(), false)?);
     println!();
@@ -122,10 +125,40 @@ fn cities() -> Result<(), Box<dyn Error>> {
 
     // | encoding         | compression | size   |
     // | ---------------- | ----------- | ------ |
-    // | vlen_v2 |             | 642196 |
-    // | vlen_v2 | zstd 5      | 362626 |
+    // | vlen_utf8 |             | 642196 |
+    // | vlen_utf8 | zstd 5      | 362626 |
     // | vlen             |             | 642580 |
     // | vlen             | zstd 5      | 346950 |
+
+    Ok(())
+}
+
+#[test]
+fn cities_zarr_python_v2_compat() -> Result<(), Box<dyn Error>> {
+    let store = Arc::new(FilesystemStore::new(
+        "tests/data/zarr_python_compat/cities_v2.zarr",
+    )?);
+    let array = zarrs::array::Array::open(store.clone(), "/")?;
+    let subset_all = array.subset_all();
+    let cities_out = array.retrieve_array_subset_elements::<String>(&subset_all)?;
+
+    let cities = read_cities()?;
+    assert_eq!(cities, cities_out);
+
+    Ok(())
+}
+
+#[test]
+fn cities_zarr_python_v3_compat() -> Result<(), Box<dyn Error>> {
+    let store = Arc::new(FilesystemStore::new(
+        "tests/data/zarr_python_compat/cities_v3.zarr",
+    )?);
+    let array = zarrs::array::Array::open(store.clone(), "/")?;
+    let subset_all = array.subset_all();
+    let cities_out = array.retrieve_array_subset_elements::<String>(&subset_all)?;
+
+    let cities = read_cities()?;
+    assert_eq!(cities, cities_out);
 
     Ok(())
 }

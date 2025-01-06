@@ -1,17 +1,19 @@
-//! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. It supports:
-//! - [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html), and
-//! - A [V3 compatible subset](#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
+//! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. It supports [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html) and a [V3 compatible subset](#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
 //!
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
+//! If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
+//! It includes a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation.
+//!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
-//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/examples) and [the example below](#examples).
+//! - Read [The `zarrs` Book](https://book.zarrs.dev).
+//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] is a good place to start.
-//! - Check out [`zarrs` ecosystem](#zarrs-ecosystem).
+//! - Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
 //!
 //! ## Implementation Status
 //!
@@ -66,11 +68,21 @@
 //!
 #![doc = include_str!("../doc/status/stores.md")]
 //!
-//! A huge range of storage backends are supported via the [`opendal`](https://docs.rs/opendal/latest/opendal/) and [`object_store`](https://docs.rs/opendal/latest/object_store/) crates.
-//! The documentation for the [zarrs_opendal] and [zarrs_object_store] crates includes version compatibility matrices with `zarrs` and the associated storage backends.
+//! A huge range of storage backends are supported via the [`opendal`] and [`object_store`] crates.
+//! The documentation for the [`zarrs_opendal`] and [`zarrs_object_store`] crates includes version compatibility matrices with `zarrs` and the associated storage backends.
 //! These backends provide more feature complete HTTP stores than [zarrs_http].
 //!
-//! Asynchronous stores can be used in a synchronous context with the [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter).
+//! [`zarrs_icechunk`] implements the [Icechunk](https://icechunk.io/overview/) transactional storage engine, a storage specification for Zarr.
+//! It supports [`object_store`] stores.
+//!
+//! [`opendal`]: https://docs.rs/opendal/latest/opendal/
+//! [`object_store`]: https://docs.rs/object_store/latest/object_store/
+//! [`object_store`]: https://docs.rs/object_store/latest/object_store/
+//! [`zarrs_icechunk`]: https://docs.rs/zarrs_icechunk/latest/zarrs_icechunk/
+//! [`zarrs_object_store`]: https://docs.rs/zarrs_object_store/latest/zarrs_object_store/
+//! [`zarrs_opendal`]: https://docs.rs/zarrs_opendal/latest/zarrs_opendal/
+//!
+//! The [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter) enables some async stores to be used in a sync context.
 //!
 //! ## Examples
 #![cfg_attr(feature = "ndarray", doc = "```rust")]
@@ -141,21 +153,13 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! Examples can be run with `cargo run --example <EXAMPLE_NAME>`.
-//!  - Add `-- --usage-log` to see storage API calls during example execution.
+//! Various examples can be found in [zarrs/examples](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples) that show how to
+//! - create and manipulate zarr hierarchies with various stores (sync and async), codecs, etc.
+//! - convert between Zarr V2 and V3.
+//!
+//! They can be run with `cargo run --example <EXAMPLE_NAME>`.
 //!  - Some examples require non-default features, which can be enabled with `--all-features` or `--features <FEATURES>`.
-//!
-//! #### Sync API Examples
-//! [`array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read.rs),
-//! [`array_write_read_ndarray`](https://github.com/LDeakin/zarrs/blob/main/examples/array_write_read_ndarray.rs),
-//! [`sharded_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sharded_array_write_read.rs),
-//! [`rectangular_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/rectangular_array_write_read.rs),
-//! [`zip_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/zip_array_write_read.rs),
-//! [`sync_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/sync_http_array_read.rs).
-//!
-//! #### Async API Examples
-//! [`async_array_write_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_array_write_read.rs),
-//! [`async_http_array_read`](https://github.com/LDeakin/zarrs/blob/main/examples/async_http_array_read.rs),
+//!  - Some examples support a `-- --usage-log` argument to print storage API calls during example execution.
 //!
 //! ## Crate Features
 //! #### Default
@@ -178,14 +182,6 @@
 //!  - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 //!
 //! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
-
-#![warn(unused_variables)]
-#![warn(dead_code)]
-#![deny(missing_docs)]
-// #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
-#![deny(clippy::missing_panics_doc)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub mod array;
@@ -206,9 +202,9 @@ pub use zarrs_filesystem as filesystem;
 pub use storage::byte_range;
 
 /// Get a mutable slice of the spare capacity in a vector.
-#[allow(dead_code)]
-unsafe fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {
+fn vec_spare_capacity_to_mut_slice<T>(vec: &mut Vec<T>) -> &mut [T] {
     let spare_capacity = vec.spare_capacity_mut();
+    // SAFETY: `spare_capacity` is valid for both reads and writes for len * mem::size_of::<T>() many bytes, and it is properly aligned
     unsafe {
         std::slice::from_raw_parts_mut(
             spare_capacity.as_mut_ptr().cast::<T>(),

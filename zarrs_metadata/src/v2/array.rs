@@ -1,4 +1,4 @@
-use derive_more::Display;
+use derive_more::{derive::From, Display};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -16,6 +16,12 @@ pub mod codec {
     pub mod bz2;
     /// `gzip` codec metadata.
     pub mod gzip;
+    /// `vlen-array` codec metadata.
+    pub mod vlen_array;
+    /// `vlen-bytes` codec metadata.
+    pub mod vlen_bytes;
+    /// `vlen-utf8` codec metadata.
+    pub mod vlen_utf8;
     /// `zfpy` codec metadata.
     pub mod zfpy;
     /// `zstd` codec metadata.
@@ -84,6 +90,69 @@ pub struct ArrayMetadataV2 {
     pub additional_fields: AdditionalFields,
 }
 
+impl ArrayMetadataV2 {
+    /// Create Zarr V2 array metadata.
+    ///
+    /// Defaults to:
+    /// - C order,
+    /// - empty attributes, and
+    /// - no additional fields.
+    #[must_use]
+    pub fn new(
+        shape: ArrayShape,
+        chunks: ChunkShape,
+        dtype: DataTypeMetadataV2,
+        fill_value: FillValueMetadataV2,
+        compressor: Option<MetadataV2>,
+        filters: Option<Vec<MetadataV2>>,
+    ) -> Self {
+        Self {
+            zarr_format: monostate::MustBe!(2u64),
+            shape,
+            chunks,
+            dtype,
+            compressor,
+            fill_value,
+            order: ArrayMetadataV2Order::C,
+            filters,
+            dimension_separator: ChunkKeySeparator::Dot,
+            attributes: serde_json::Map::default(),
+            additional_fields: AdditionalFields::default(),
+        }
+    }
+
+    /// Set the dimension separator.
+    #[must_use]
+    pub fn with_dimension_separator(mut self, dimension_separator: ChunkKeySeparator) -> Self {
+        self.dimension_separator = dimension_separator;
+        self
+    }
+
+    /// Set the order.
+    #[must_use]
+    pub fn with_order(mut self, order: ArrayMetadataV2Order) -> Self {
+        self.order = order;
+        self
+    }
+
+    /// Set the user attributes.
+    #[must_use]
+    pub fn with_attributes(
+        mut self,
+        attributes: serde_json::Map<String, serde_json::Value>,
+    ) -> Self {
+        self.attributes = attributes;
+        self
+    }
+
+    /// Set the additional fields.
+    #[must_use]
+    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+        self.additional_fields = additional_fields;
+        self
+    }
+}
+
 const fn chunk_key_separator_default_zarr_v2() -> ChunkKeySeparator {
     ChunkKeySeparator::Dot
 }
@@ -128,10 +197,11 @@ impl From<DataTypeMetadataV2Structured> for DataTypeMetadataV2StructuredTuple {
 }
 
 /// Zarr V2 data type metadata.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug, From)]
 #[serde(untagged)]
 pub enum DataTypeMetadataV2 {
     /// A simple data type.
+    #[from(String, &str)]
     Simple(String),
     /// A structured data type.
     Structured(Vec<DataTypeMetadataV2Structured>),
@@ -180,6 +250,8 @@ pub enum FillValueMetadataV2 {
     NegInfinity,
     /// A number.
     Number(serde_json::Number),
+    /// A string.
+    String(String),
 }
 
 impl<'de> serde::Deserialize<'de> for FillValueMetadataV2 {
@@ -197,7 +269,7 @@ impl<'de> serde::Deserialize<'de> for FillValueMetadataV2 {
                 "NaN" => Ok(Self::NaN),
                 "Infinity" => Ok(Self::Infinity),
                 "-Infinity" => Ok(Self::NegInfinity),
-                _ => Err(serde::de::Error::custom("unsupported fill value")),
+                _ => Ok(Self::String(string)),
             },
             FillValueMetadataV2Type::Number(number) => Ok(Self::Number(number)),
             FillValueMetadataV2Type::Null => Ok(Self::Null),
@@ -216,6 +288,7 @@ impl Serialize for FillValueMetadataV2 {
             Self::Infinity => serializer.serialize_str("Infinity"),
             Self::NegInfinity => serializer.serialize_str("-Infinity"),
             Self::Number(number) => number.serialize(serializer),
+            Self::String(string) => string.serialize(serializer),
         }
     }
 }

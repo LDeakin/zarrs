@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use std::{error::Error, path::PathBuf, sync::Arc};
 
 use zarrs::{array::Array, array_subset::ArraySubset, storage::StoreKey};

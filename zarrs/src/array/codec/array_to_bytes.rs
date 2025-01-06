@@ -3,7 +3,11 @@
 pub mod bytes;
 pub mod codec_chain;
 pub mod vlen;
-pub mod vlen_v2;
+pub mod vlen_array;
+pub mod vlen_bytes;
+pub mod vlen_utf8;
+
+pub(crate) mod vlen_v2;
 
 #[cfg(feature = "pcodec")]
 pub mod pcodec;

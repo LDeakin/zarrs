@@ -1,29 +1,22 @@
-## Building
-```bash
-cargo build --release
-```
-
 ## Testing
 ```bash
-# Must have no warnings/errors to pass CI
-cargo +nightly build --all-features && \
-cargo +nightly test --all-features && \
-RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo +nightly doc --all-features && \
-cargo +nightly fmt --all -- --check && \
-cargo +nightly clippy --all-features -- -D warnings && \
-cargo +nightly check && \
-cargo +nightly check --no-default-features
+make check
 ```
+Runs:
+- build (default features, all features, no default features)
+- test
+- clippy
+- doc
+- fmt (check)
 
+Extra checks with `clippy::nursery` (can have false positives):
 ```bash
-# Additional checks
-cargo +nightly clippy --all-features -- -D warnings -W clippy::nursery -A clippy::significant_drop_tightening -A clippy::significant_drop_in_scrutinee
-# cargo clippy --all-features -- -D warnings -W clippy::unwrap_used -W clippy::expect_used
+make check_extra
 ```
 
 ## Docs with Examples
 ```bash
-cargo +nightly doc -Z unstable-options -Z rustdoc-scrape-examples --all-features
+make doc
 ```
 
 ## Performance
@@ -34,28 +27,25 @@ cargo bench -- --save-baseline baseline
 cargo bench -- --baseline baseline
 ```
 
-## Coverage report (using [cargo-llvm-cov](https://crates.io/crates/cargo-llvm-cov))
-
+## Coverage (using [cargo-llvm-cov](https://crates.io/crates/cargo-llvm-cov))
 Install `cargo-llvm-cov`
 ```bash
-cargo +nightly install cargo-llvm-cov --locked
+make coverage_install
 ```
 
 Generate a HTML report
 ```bash
-cargo +nightly llvm-cov --all-features --doctests --html
-open target/llvm-cov/html/index.html
+make coverage_report
 ```
 
 Generate a coverage file for [Coverage Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters) in VSCode
 ```bash
-cargo +nightly llvm-cov --all-features --doctests --lcov --output-path lcov.info
+make coverage_file
 ```
 
 ## [Miri](https://github.com/rust-lang/miri)
-Tests which call foreign functions or access the filesystem are disabled.
+Tests that call foreign functions or access the filesystem are disabled.
 The [inventory](https://crates.io/crates/inventory) crate does not work in miri, so there are workarounds in place for codecs, chunk key encodings, and chunk grids.
 ```bash
-# `-Zmiri-ignore-leaks` is needed for multi-threaded programs... https://github.com/rust-lang/miri/issues/1371
-MIRIFLAGS="-Zmiri-disable-isolation -Zmiri-permissive-provenance -Zmiri-ignore-leaks -Zmiri-tree-borrows" cargo +nightly miri test --all-features
+make miri
 ```

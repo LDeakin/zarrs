@@ -2,14 +2,14 @@
 
 use crate::{
     Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-    StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    StoreKeyOffsetValue, StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix,
     WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
 use crate::{
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 use std::sync::{
@@ -27,6 +27,7 @@ pub struct PerformanceMetricsStorageAdapter<TStorage: ?Sized> {
     bytes_written: AtomicUsize,
     reads: AtomicUsize,
     writes: AtomicUsize,
+    keys_erased: AtomicUsize,
 }
 
 impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
@@ -39,7 +40,16 @@ impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
             bytes_written: AtomicUsize::default(),
             reads: AtomicUsize::default(),
             writes: AtomicUsize::default(),
+            keys_erased: AtomicUsize::default(),
         }
+    }
+
+    /// Reset the performance metrics.
+    pub fn reset(&self) {
+        self.bytes_read.store(0, Ordering::Relaxed);
+        self.bytes_written.store(0, Ordering::Relaxed);
+        self.reads.store(0, Ordering::Relaxed);
+        self.writes.store(0, Ordering::Relaxed);
     }
 
     /// Returns the number of bytes read.
@@ -60,6 +70,13 @@ impl<TStorage: ?Sized> PerformanceMetricsStorageAdapter<TStorage> {
     /// Returns the number of write requests.
     pub fn writes(&self) -> usize {
         self.writes.load(Ordering::Relaxed)
+    }
+
+    /// Returns the number of key erase requests.
+    ///
+    /// Includes keys erased that may not have existed, and excludes prefix erase requests.
+    pub fn keys_erased(&self) -> usize {
+        self.keys_erased.load(Ordering::Relaxed)
     }
 }
 
@@ -85,8 +102,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits> ReadableStorageTraits
         if let Some(values) = &values {
             let bytes_read = values.iter().map(Bytes::len).sum();
             self.bytes_read.fetch_add(bytes_read, Ordering::Relaxed);
-            self.reads.fetch_add(byte_ranges.len(), Ordering::Relaxed);
         }
+        self.reads.fetch_add(byte_ranges.len(), Ordering::Relaxed);
         Ok(values)
     }
 
@@ -144,24 +161,26 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let bytes_written = key_start_values
+        let bytes_written = key_offset_values
             .iter()
             .map(|ksv| ksv.value().len())
             .sum::<usize>();
         self.bytes_written
             .fetch_add(bytes_written, Ordering::Relaxed);
         self.writes
-            .fetch_add(key_start_values.len(), Ordering::Relaxed);
-        self.storage.set_partial_values(key_start_values)
+            .fetch_add(key_offset_values.len(), Ordering::Relaxed);
+        self.storage.set_partial_values(key_offset_values)
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
+        self.keys_erased.fetch_add(1, Ordering::Relaxed);
         self.storage.erase(key)
     }
 
     fn erase_values(&self, keys: &[StoreKey]) -> Result<(), StorageError> {
+        self.keys_erased.fetch_add(keys.len(), Ordering::Relaxed);
         self.storage.erase_values(keys)
     }
 
@@ -260,17 +279,17 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let bytes_written = key_start_values
+        let bytes_written = key_offset_values
             .iter()
             .map(|ksv| ksv.value().len())
             .sum::<usize>();
         self.bytes_written
             .fetch_add(bytes_written, Ordering::Relaxed);
         self.writes
-            .fetch_add(key_start_values.len(), Ordering::Relaxed);
-        self.storage.set_partial_values(key_start_values).await
+            .fetch_add(key_offset_values.len(), Ordering::Relaxed);
+        self.storage.set_partial_values(key_offset_values).await
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
@@ -284,11 +303,4 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         self.storage.erase_prefix(prefix).await
     }
-}
-
-#[cfg(feature = "async")]
-#[async_trait::async_trait]
-impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for PerformanceMetricsStorageAdapter<TStorage>
-{
 }

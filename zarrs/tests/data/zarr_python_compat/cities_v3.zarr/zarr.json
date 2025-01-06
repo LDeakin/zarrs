@@ -1,0 +1,1 @@
+{"shape": [47868], "data_type": "string", "chunk_grid": {"name": "regular", "configuration": {"chunk_shape": [1000]}}, "chunk_key_encoding": {"name": "default", "configuration": {"separator": "/"}}, "fill_value": "0", "codecs": [{"name": "vlen-utf8", "configuration": {}}], "attributes": {}, "zarr_format": 3, "node_type": "array", "storage_transformers": []}

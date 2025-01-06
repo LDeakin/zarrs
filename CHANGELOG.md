@@ -7,9 +7,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `ArrayShardedReadableExt::retrieve_encoded_inner_chunk`
+- Add `ArrayShardedReadableExt::inner_chunk_byte_range`
+- Add `ArrayShardedExt::is_exclusively_sharded`
+- Add `ArrayShardedReadableExtCache::array_is_exclusively_sharded`
+- Add `Vlen{Array,Bytes,Utf8}Codec`, replacing `VlenV2Codec`
+- Add `ZstdCodecConfigurationNumCodecs`
+  - Adds support for Zarr V2 `zstd` encoded data created with `numcodecs` < 0.13
+- Add support for pcodec `Auto`, `None`, and `TryLookback` delta specs
+
+### Changed
+- **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
+- **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
+- **Breaking**: Make `Any` a supertrait of partial encoder/decoder traits
+- **Breaking**: Add `ArrayError::UnsupportedMethod`
+- **Breaking**: Rename `DataType::Binary` to `Bytes` for compatibility with `zarr-python`
+- **Breaking**: Make `array::codec::array_to_bytes::bytes::reverse_endianness` private
+- **Breaking**: Make `VlenV2Codec` private
+- Bump `itertools` to 0.14
+
+### Removed
+- Remove support for pcodec `Try{FloatMult,FloatQuant,IntMult}` mode specs
+  - These may be reimplemented when supported by `zarr-python`/`numcodecs`
+
+### Fixed
+- Cleanup unnecessary lifetime constraints in partial decoders
+- Fix `clippy::useless_conversion` lint
+
+## [0.18.3] - 2024-12-30
+
+### Added
+- impl `From<Node>` for `NodePath` ([#112] by [@niklasmueboe])
+- Add `Group::child[_{group,array}]_paths` ([#112] by [@niklasmueboe])
+
+[#112]: https://github.com/LDeakin/zarrs/pull/112
+
+## [0.18.2] - 2024-12-25
+
+### Added
+- functions to get children of Group ([#104] by [@niklasmueboe])
+  - adds `Group::[async_]children`, `Group::[async_]child_groups`, `Group::[async_]child_arrays`
+- Impl `From<Node>` for `NodeMetadata`
+
+### Changed
+- Reduce metadata code duplication in the `Node` module
+
+[#104]: https://github.com/LDeakin/zarrs/pull/104
+
+## [0.18.1] - 2024-12-17
+
+### Changed
+- Bump `zfp-sys` to 0.3.0
+- Bump `bzip2` to 0.5.0
+- Minor readme/ecosystem updates
+
+### Fixed
+- Fix `unsafe_op_in_unsafe_fn` lint
+- Clarify that the `zstd` codec is draft in docs
+- Clarify that the `gdeflate` codec is experimental in docs
+
+## [0.18.0] - 2024-11-23
+
+### Announcements
+- [`zarrs-python`](https://github.com/ilan-gold/zarrs-python) was recently released
+  - It implements a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation
+  - It is supported by downstream libraries like `dask`
+  - See [zarr_benchmarks](https://github.com/LDeakin/zarr_benchmarks) for benchmarks
+- [The `zarrs` Book](https://book.zarrs.dev) has been created and is under construction
+
+### Release Highlights
+- Experimental partial encoding support (enabling writing shards incrementally)
+- Improve Zarr V2 interoperability and conversion
+
+### Added
+- Add a `makefile` and simplify `BUILD.md`
+- Add chunk-by-chunk update example in `Array` docs
+- Add `array::copy_fill_value_into()`
+- Add experimental partial encoding support (sync only):
+  - Enables writing shards incrementally
+  - With `{CodecOptions,Config}::experimental_partial_encoding` enabled, `Array::store_{array,chunk}_subset` will use partial encoding
+  - This is an experimental feature for now until it has more comprehensively tested and support is added in the async API
+  - Adds `ArrayPartialEncoderTraits`, `BytesPartialEncoderTraits`, `StoragePartialEncoder`, `ArrayPartialEncoderDefault`, `BytesPartialEncoderDefault`
+  - **Breaking**: Add `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::partial_encoder`
+- Add `with_` methods to `{Array,Group}MetadataOptions`
+- Add `zarr_v2_to_v3` example
+- Add `{Array,Group}::to_v3()`
+- Add `ShardingCodecBuilder::build_arc()`
+- Add `zarrs::version::version_{str,pre}`
+- Add "The zarrs Book" and `zarrs-python` to docs
+
 ### Changed
 - Bump `unsafe_cell_slice` to 0.2.0
 - **Breaking**: Change `output` parameter of `decode_into` codec trait methods to `&UnsafeCellSlice<u8>`
+- **Breaking**: Add `dynamic()` to all `CodecTraits`
+- **Breaking**: Add `options` parameter to `[Async]ArrayPartialDecoderTraits::partial_decode` and remove `partial_decode_opt`
+- Make `array::update_array_bytes()` public
+- **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
+- Bump `zfp-sys` to 0.2.0
+- Display `ArraySubset` as a list of ranges
+- Relax `output_subset` requirements on `ArrayToBytesCodecTraits::decode_into` and `ArrayPartialDecoderTraits::partial_decode_into`
+  - The subset shape and dimensionality no longer has to match, only the number of elements
+- Bump `pco` (pcodec) to 0.4
+- **Breaking**: Change `experimental_codec_names` config hashmap to `HashMap<String, String>` from `HashMap<&'static str, String>`
+- **Breaking**: Add `name` parameter to `vlen_v2` codec constructors
+- Register `vlen-array`, `vlen-bytes`, and `vlen-utf8` codecs
+- Bump `zarrs_metadata` to 0.2.0
+- Bump `zarrs_storage` to 0.3.0
+- Bump `zarrs_filesystem` to 0.2.0
+- Make `zarrs::version::version_{,major,minor,patch}` const
+
+### Removed
+- Remove `async-recursion` dependency
+- **Breaking**: Remove `Default` implementation for `VlenV2Codec`
+
+### Fixed
+- Fix panics that could occur with with empty byte ranges / empty array subsets in `Array`, `ByteRange` and codec methods
+
+## [0.18.0-beta.0] - 2024-11-15
+
+## [0.17.1] - 2024-10-18
+
+### Added
+ - Add `zarrs_icechunk` to ecosystem docs
+
+### Fixed
+ - Fix `data_key` encoding on windows (it contained '//')
+ - Fix `clippy::needless_lifetimes` lint
 
 ## [0.17.0] - 2024-10-02
 
@@ -1076,7 +1200,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.17.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.3...HEAD
+[0.18.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.3
+[0.18.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.2
+[0.18.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.1
+[0.18.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0
+[0.18.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0-beta.0
+[0.17.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.1
 [0.17.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0
 [0.17.0-beta.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.3
 [0.17.0-beta.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.0-beta.2
@@ -1127,3 +1257,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [@lorenzocerrone]: https://github.com/lorenzocerrone
 [@dustinlagoy]: https://github.com/dustinlagoy
 [@sk1p]: https://github.com/sk1p
+[@niklasmueboe]: https://github.com/niklasmueboe

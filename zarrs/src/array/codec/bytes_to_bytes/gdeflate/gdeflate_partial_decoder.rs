@@ -14,18 +14,18 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::gdeflate_decode;
 
 /// Partial decoder for the `gdeflate` codec.
-pub struct GDeflatePartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct GDeflatePartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> GDeflatePartialDecoder<'a> {
+impl GDeflatePartialDecoder {
     /// Create a new partial decoder for the `gdeflate` codec.
-    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for GDeflatePartialDecoder<'_> {
+impl BytesPartialDecoderTraits for GDeflatePartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -50,14 +50,14 @@ impl BytesPartialDecoderTraits for GDeflatePartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `gdeflate` codec.
-pub struct AsyncGDeflatePartialDecoder {
+pub(crate) struct AsyncGDeflatePartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
 impl AsyncGDeflatePartialDecoder {
     /// Create a new partial decoder for the `gdeflate` codec.
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }

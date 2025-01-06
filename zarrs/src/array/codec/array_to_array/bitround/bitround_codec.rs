@@ -4,7 +4,8 @@ use crate::{
     array::{
         codec::{
             options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
-            ArrayToArrayCodecTraits, CodecError, CodecTraits, RecommendedConcurrency,
+            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
+            CodecError, CodecTraits, RecommendedConcurrency,
         },
         ArrayMetadataOptions, ChunkRepresentation, ChunkShape, DataType,
     },
@@ -87,6 +88,10 @@ impl ArrayCodecTraits for BitroundCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for BitroundCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+        self as Arc<dyn ArrayToArrayCodecTraits>
+    }
+
     fn encode<'a>(
         &self,
         bytes: ArrayBytes<'a>,
@@ -124,6 +129,21 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
                 self.keepbits,
             )?,
         ))
+    }
+
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
+        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(ArrayToArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self,
+        )))
     }
 
     #[cfg(feature = "async")]

@@ -18,18 +18,18 @@ use crate::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// Partial decoder for the `bytes` codec.
-pub struct VlenPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct VlenPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     index_codecs: Arc<CodecChain>,
     data_codecs: Arc<CodecChain>,
     index_data_type: VlenIndexDataType,
 }
 
-impl<'a> VlenPartialDecoder<'a> {
+impl VlenPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    pub(crate) fn new(
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         index_codecs: Arc<CodecChain>,
         data_codecs: Arc<CodecChain>,
@@ -95,12 +95,12 @@ fn decode_vlen_bytes<'a>(
     }
 }
 
-impl ArrayPartialDecoderTraits for VlenPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for VlenPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -122,7 +122,7 @@ impl ArrayPartialDecoderTraits for VlenPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncVlenPartialDecoder {
+pub(crate) struct AsyncVlenPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     index_codecs: Arc<CodecChain>,
@@ -133,7 +133,7 @@ pub struct AsyncVlenPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncVlenPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         index_codecs: Arc<CodecChain>,
@@ -157,7 +157,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncVlenPartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,

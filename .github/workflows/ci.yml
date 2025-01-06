@@ -2,9 +2,9 @@ name: build
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "v[0-9]+.[0-9]+"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "v[0-9]+.[0-9]+"]
 
 env:
   CARGO_TERM_COLOR: always
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: ["stable", "1.76", "beta", "nightly"]
+        toolchain: ["stable", "1.77", "beta", "nightly"]
         features: ["--features \"\"", "--all-features", "--no-default-features"]
     runs-on: ubuntu-latest
     steps:

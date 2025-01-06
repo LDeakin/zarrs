@@ -11,10 +11,10 @@ use crate::{
 };
 
 use super::{
-    array_bytes::{merge_chunks_vlen, update_bytes_flen},
+    array_bytes::{copy_fill_value_into, merge_chunks_vlen},
     codec::{
         options::CodecOptions, ArrayToBytesCodecTraits, AsyncArrayPartialDecoderTraits,
-        AsyncStoragePartialDecoder, CodecError,
+        AsyncStoragePartialDecoder,
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,
@@ -26,16 +26,6 @@ use super::{
 use super::elements_to_ndarray;
 
 impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
-    /// Async variant of [`new`](Array::open).
-    #[allow(clippy::missing_errors_doc)]
-    #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
-    pub async fn async_new(
-        storage: Arc<TStorage>,
-        path: &str,
-    ) -> Result<Array<TStorage>, ArrayCreateError> {
-        Self::async_open(storage, path).await
-    }
-
     /// Async variant of [`open`](Array::open).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_open(
@@ -370,33 +360,28 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         if let Some(chunk_encoded) = chunk_encoded {
             let chunk_encoded: Vec<u8> = chunk_encoded.into();
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-            self.codecs()
-                .decode_into(
-                    Cow::Owned(chunk_encoded),
-                    &chunk_representation,
+            unsafe {
+                self.codecs()
+                    .decode_into(
+                        Cow::Owned(chunk_encoded),
+                        &chunk_representation,
+                        output,
+                        output_shape,
+                        output_subset,
+                        options,
+                    )
+                    .map_err(ArrayError::CodecError)
+            }
+        } else {
+            unsafe {
+                copy_fill_value_into(
+                    self.data_type(),
+                    self.fill_value(),
                     output,
                     output_shape,
                     output_subset,
-                    options,
                 )
                 .map_err(ArrayError::CodecError)
-        } else {
-            // Fill with the fill value
-            let array_size = ArraySize::new(self.data_type().size(), output_subset.num_elements());
-            if let ArrayBytes::Fixed(fill_value_bytes) =
-                ArrayBytes::new_fill_value(array_size, self.fill_value())
-            {
-                update_bytes_flen(
-                    output,
-                    output_shape,
-                    &fill_value_bytes,
-                    output_subset,
-                    self.data_type().fixed_size().unwrap(),
-                );
-                Ok(())
-            } else {
-                // TODO: Variable length data type support?
-                Err(ArrayError::CodecError(CodecError::ExpectedFixedLengthBytes))
             }
         }
     }
@@ -652,6 +637,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                         let size_output =
                             usize::try_from(array_subset.num_elements() * data_type_size as u64)
                                 .unwrap();
+                        if size_output == 0 {
+                            return Ok(ArrayBytes::new_flen(vec![]));
+                        }
                         let mut output = Vec::with_capacity(size_output);
                         {
                             let output =
@@ -776,7 +764,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 .clone()
                 .async_partial_decoder(input_handle, &chunk_representation, options)
                 .await?
-                .partial_decode_opt(&[chunk_subset.clone()], options)
+                .partial_decode(&[chunk_subset.clone()], options)
                 .await?
                 .remove(0)
                 .into_owned()
@@ -806,14 +794,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             && chunk_subset.shape() == chunk_representation.shape_u64()
         {
             // Fast path if `chunk_subset` encompasses the whole chunk
-            self.async_retrieve_chunk_into(
-                chunk_indices,
-                output,
-                output_shape,
-                output_subset,
-                options,
-            )
-            .await
+            unsafe {
+                self.async_retrieve_chunk_into(
+                    chunk_indices,
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+                .await
+            }
         } else {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
@@ -825,13 +815,15 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 self.chunk_key(chunk_indices),
             ));
 
-            Ok(self
-                .codecs
-                .clone()
-                .async_partial_decoder(input_handle, &chunk_representation, options)
-                .await?
-                .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)
-                .await?)
+            unsafe {
+                self.codecs
+                    .clone()
+                    .async_partial_decoder(input_handle, &chunk_representation, options)
+                    .await?
+                    .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)
+                    .await?;
+            }
+            Ok(())
         }
     }
 

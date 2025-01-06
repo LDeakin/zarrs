@@ -4,10 +4,15 @@
 - Add array methods supporting efficient advanced indexing
     `Array::{store,retrieve}[_elements](indexer: impl Indexer)`
 - Stabilise the async API
-    - Support internal task spawning
-        - Prototype in the [async_spawning](https://github.com/LDeakin/zarrs_tools/tree/async_spawning) branch
+    - Support internal task spawning?
     - Add `array_sharded_ext::{AsyncArrayShardedExt,AsyncArrayShardedReadableExt}`
     - Async support for `StorageValueIO` to enable `ZipStorageAdapter` with async stores
+    - Async support for partial encoding
+- Remove most/all `_opt` methods when Rust [`import-trait-associated-functions`](https://github.com/rust-lang/rfcs/pull/3591) stabilises
+- Use lending iterators where/if possible to avoid `Vec` allocations in iterators?
+
+### Codecs
+- Implement codecs for compatibility with virtual NetCDF/HDF5 data with compression?
 
 ### Experiments
 - Test an io_uring backed filesystem store

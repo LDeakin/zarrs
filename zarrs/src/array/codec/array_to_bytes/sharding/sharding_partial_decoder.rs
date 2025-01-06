@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
+use zarrs_storage::byte_range::ByteRange;
 
 use crate::array::{
     array_bytes::{merge_chunks_vlen, update_bytes_flen},
@@ -12,6 +13,7 @@ use crate::array::{
     },
     concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
     ravel_indices, ArrayBytes, ArraySize, ChunkRepresentation, ChunkShape, DataType, DataTypeSize,
+    RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -23,7 +25,7 @@ use crate::array::codec::{
 use super::{calculate_chunks_per_shard, ShardingIndexLocation};
 
 /// Partial decoder for the sharding codec.
-pub struct ShardingPartialDecoder {
+pub(crate) struct ShardingPartialDecoder {
     input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     chunk_shape: ChunkShape,
@@ -33,7 +35,7 @@ pub struct ShardingPartialDecoder {
 
 impl ShardingPartialDecoder {
     /// Create a new partial decoder for the sharding codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         chunk_shape: ChunkShape,
@@ -58,6 +60,45 @@ impl ShardingPartialDecoder {
             shard_index,
         })
     }
+
+    /// Retrieve the byte range of an encoded inner chunk.
+    ///
+    /// The `chunk_indices` are relative to the start of the shard.
+    pub(crate) fn inner_chunk_byte_range(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<ByteRange>, CodecError> {
+        let shard_index = &self.shard_index;
+        if let Some(shard_index) = shard_index {
+            let chunks_per_shard =
+                calculate_chunks_per_shard(self.decoded_representation.shape(), &self.chunk_shape)?;
+            let chunks_per_shard = chunks_per_shard.to_array_shape();
+
+            let shard_index_idx: usize =
+                usize::try_from(ravel_indices(chunk_indices, &chunks_per_shard) * 2).unwrap();
+            let offset = shard_index[shard_index_idx];
+            let size = shard_index[shard_index_idx + 1];
+            Ok(Some(ByteRange::new(offset..offset + size)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Retrieve the encoded bytes of an inner chunk.
+    ///
+    /// The `chunk_indices` are relative to the start of the shard.
+    pub(crate) fn retrieve_inner_chunk_encoded(
+        &self,
+        chunk_indices: &[u64],
+    ) -> Result<Option<RawBytes<'_>>, CodecError> {
+        let byte_range = self.inner_chunk_byte_range(chunk_indices)?;
+        if let Some(byte_range) = byte_range {
+            self.input_handle
+                .partial_decode_concat(&[byte_range], &CodecOptions::default())
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
@@ -66,7 +107,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -173,7 +214,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                                 err
                             })?;
                             partial_decoder
-                                .partial_decode_opt(
+                                .partial_decode(
                                     &[chunk_subset_overlap
                                         .relative_to(chunk_subset.start())
                                         .unwrap()],
@@ -254,7 +295,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                                 err
                             })?;
                             partial_decoder
-                                .partial_decode_opt(
+                                .partial_decode(
                                     &[chunk_subset_overlap
                                         .relative_to(chunk_subset.start())
                                         .unwrap()],
@@ -292,7 +333,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the sharding codec.
-pub struct AsyncShardingPartialDecoder {
+pub(crate) struct AsyncShardingPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     chunk_shape: ChunkShape,
@@ -303,7 +344,7 @@ pub struct AsyncShardingPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncShardingPartialDecoder {
     /// Create a new partial decoder for the sharding codec.
-    pub async fn new(
+    pub(crate) async fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         chunk_shape: ChunkShape,
@@ -339,7 +380,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -431,7 +472,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     err
                                 })?;
                                 partial_decoder
-                                    .partial_decode_opt(
+                                    .partial_decode(
                                         &[chunk_subset_overlap
                                             .relative_to(chunk_subset.start())
                                             .unwrap()],
@@ -526,7 +567,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                 //     .await?
                                 //     .remove(0);
                                 let decoded_chunk = partial_decoder
-                                    .partial_decode_opt(
+                                    .partial_decode(
                                         &[ArraySubset::new_with_shape(chunk_subset.shape().to_vec())],
                                         options,
                                     ) // TODO: Adjust options for partial decoding

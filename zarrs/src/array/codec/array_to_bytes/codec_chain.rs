@@ -9,9 +9,9 @@ use crate::{
         array_bytes::update_bytes_flen,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
-            ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesPartialDecoderCache,
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, Codec, CodecError, CodecOptions,
-            CodecTraits,
+            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
+            BytesPartialDecoderCache, BytesPartialDecoderTraits, BytesPartialEncoderTraits,
+            BytesToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecTraits,
         },
         concurrency::RecommendedConcurrency,
         ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
@@ -27,7 +27,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 /// A codec chain is a sequence of array to array, a bytes to bytes, and a sequence of array to bytes codecs.
 ///
-/// A codec chain partial decoder may insert a cache: [`ArrayPartialDecoderCache`] or [`BytesPartialDecoderCache`].
+/// A codec chain partial decoder may insert a cache.
 /// For example, the output of the `blosc`/`gzip` codecs should be cached since they read and decode an entire chunk.
 /// If decoding (i.e. going backwards through a codec chain), then a cache may be inserted
 ///    - following the last codec with [`partial_decoder_decodes_all`](crate::array::codec::CodecTraits::partial_decoder_decodes_all) true, or
@@ -230,6 +230,10 @@ impl CodecTraits for CodecChain {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for CodecChain {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+        self as Arc<dyn ArrayToBytesCodecTraits>
+    }
+
     fn encode<'a>(
         &self,
         mut bytes: ArrayBytes<'a>,
@@ -321,14 +325,16 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
             // Fast path if no bytes to bytes or array to array codecs
-            return self.array_to_bytes.decode_into(
-                bytes,
-                array_representations.last().unwrap(),
-                output,
-                output_shape,
-                output_subset,
-                options,
-            );
+            return unsafe {
+                self.array_to_bytes.decode_into(
+                    bytes,
+                    array_representations.last().unwrap(),
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+            };
         }
 
         // bytes->bytes
@@ -341,14 +347,16 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.array_to_array.is_empty() {
             // Fast path if no array to array codecs
-            return self.array_to_bytes.decode_into(
-                bytes,
-                array_representations.last().unwrap(),
-                output,
-                output_shape,
-                output_subset,
-                options,
-            );
+            return unsafe {
+                self.array_to_bytes.decode_into(
+                    bytes,
+                    array_representations.last().unwrap(),
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+            };
         }
 
         // bytes->array
@@ -447,6 +455,74 @@ impl ArrayToBytesCodecTraits for CodecChain {
         }
 
         Ok(input_handle)
+    }
+
+    fn partial_encoder(
+        self: Arc<Self>,
+        mut input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        mut output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        let array_representations =
+            self.get_array_representations(decoded_representation.clone())?;
+        let bytes_representations =
+            self.get_bytes_representations(array_representations.last().unwrap())?;
+
+        for (codec, bytes_representation) in std::iter::zip(
+            self.bytes_to_bytes.iter().rev(),
+            bytes_representations.iter().rev().skip(1),
+        ) {
+            output_handle = Arc::clone(codec).partial_encoder(
+                input_handle.clone(),
+                output_handle,
+                bytes_representation,
+                options,
+            )?;
+            input_handle =
+                Arc::clone(codec).partial_decoder(input_handle, bytes_representation, options)?;
+        }
+
+        let mut output_handle = self.array_to_bytes.clone().partial_encoder(
+            input_handle.clone(),
+            output_handle,
+            array_representations.last().unwrap(),
+            options,
+        )?;
+
+        if self.array_to_array.is_empty() {
+            return Ok(output_handle);
+        }
+
+        let mut input_handle = self.array_to_bytes.clone().partial_decoder(
+            input_handle,
+            array_representations.last().unwrap(),
+            options,
+        )?;
+
+        let mut it = std::iter::zip(
+            self.array_to_array.iter().rev(),
+            array_representations.iter().rev().skip(1),
+        )
+        .peekable();
+        while let Some((codec, array_representation)) = it.next() {
+            output_handle = Arc::clone(codec).partial_encoder(
+                input_handle.clone(),
+                output_handle,
+                array_representation,
+                options,
+            )?;
+
+            if it.peek().is_some() {
+                input_handle = Arc::clone(codec).partial_decoder(
+                    input_handle,
+                    array_representation,
+                    options,
+                )?;
+            }
+        }
+
+        Ok(output_handle)
     }
 
     #[cfg(feature = "async")]
@@ -768,7 +844,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
 
         let decoded_partial_chunk: Vec<f32> = decoded_partial_chunk

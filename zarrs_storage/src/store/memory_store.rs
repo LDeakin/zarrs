@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use crate::{
     byte_range::{ByteOffset, ByteRange, InvalidByteRangeError},
     Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits, StorageError, StoreKey,
-    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
+    StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes, StorePrefix, WritableStorageTraits,
 };
 
 use std::{
@@ -36,7 +36,7 @@ impl MemoryStore {
         }
     }
 
-    fn set_impl(&self, key: &StoreKey, value: &[u8], offset: Option<ByteOffset>, truncate: bool) {
+    fn set_impl(&self, key: &StoreKey, value: &[u8], offset: ByteOffset, truncate: bool) {
         let mut data_map = self.data_map.lock().unwrap();
         let data = data_map
             .entry(key.clone())
@@ -45,7 +45,6 @@ impl MemoryStore {
         drop(data_map);
         let mut data = data.write();
 
-        let offset = offset.unwrap_or(0);
         if offset == 0 && data.is_empty() {
             // fast path
             *data = value.to_vec();
@@ -113,28 +112,28 @@ impl ReadableStorageTraits for MemoryStore {
 
 impl WritableStorageTraits for MemoryStore {
     fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
-        Self::set_impl(self, key, &value, None, true);
+        Self::set_impl(self, key, &value, 0, true);
         Ok(())
     }
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
         use itertools::Itertools;
 
         // Group by key
-        key_start_values
+        key_offset_values
             .iter()
-            .chunk_by(|key_start_value| &key_start_value.key)
+            .chunk_by(|key_offset_value| key_offset_value.key())
             .into_iter()
             .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
             .try_for_each(|(key, group)| {
-                for key_start_value in group {
+                for key_offset_value in group {
                     self.set_impl(
                         &key,
-                        key_start_value.value,
-                        Some(key_start_value.start),
+                        key_offset_value.value(),
+                        key_offset_value.offset(),
                         false,
                     );
                 }

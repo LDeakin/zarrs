@@ -5,8 +5,9 @@ use std::sync::Arc;
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
+            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
+            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
         ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
@@ -73,7 +74,7 @@ impl BytesCodec {
                 return Err(CodecError::UnsupportedDataType(
                     decoded_representation.data_type().clone(),
                     super::IDENTIFIER.to_string(),
-                ))
+                ));
             }
             DataTypeSize::Fixed(data_type_size) => {
                 let array_size = decoded_representation.num_elements() * data_type_size as u64;
@@ -142,6 +143,10 @@ impl ArrayCodecTraits for BytesCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for BytesCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+        self as Arc<dyn ArrayToBytesCodecTraits>
+    }
+
     fn encode<'a>(
         &self,
         bytes: ArrayBytes<'a>,
@@ -177,6 +182,21 @@ impl ArrayToBytesCodecTraits for BytesCodec {
             input_handle,
             decoded_representation.clone(),
             self.endian,
+        )))
+    }
+
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(ArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self,
         )))
     }
 

@@ -14,7 +14,7 @@ use crate::array::codec::AsyncArrayPartialDecoderTraits;
 use super::{round_bytes, IDENTIFIER};
 
 /// Partial decoder for the `bitround` codec.
-pub struct BitroundPartialDecoder {
+pub(crate) struct BitroundPartialDecoder {
     input_handle: Arc<dyn ArrayPartialDecoderTraits>,
     data_type: DataType,
     keepbits: u32,
@@ -22,7 +22,7 @@ pub struct BitroundPartialDecoder {
 
 impl BitroundPartialDecoder {
     /// Create a new partial decoder for the `bitround` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         data_type: &DataType,
         keepbits: u32,
@@ -57,14 +57,12 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder {
         &self.data_type
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
-        let bytes = self
-            .input_handle
-            .partial_decode_opt(array_subsets, options)?;
+        let bytes = self.input_handle.partial_decode(array_subsets, options)?;
 
         let mut bytes_out = Vec::with_capacity(bytes.len());
         for bytes in bytes {
@@ -79,7 +77,7 @@ impl ArrayPartialDecoderTraits for BitroundPartialDecoder {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bitround` codec.
-pub struct AsyncBitroundPartialDecoder {
+pub(crate) struct AsyncBitroundPartialDecoder {
     input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
     data_type: DataType,
     keepbits: u32,
@@ -88,7 +86,7 @@ pub struct AsyncBitroundPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncBitroundPartialDecoder {
     /// Create a new partial decoder for the `bitround` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         data_type: &DataType,
         keepbits: u32,
@@ -125,14 +123,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncBitroundPartialDecoder {
         &self.data_type
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let bytes = self
             .input_handle
-            .partial_decode_opt(array_subsets, options)
+            .partial_decode(array_subsets, options)
             .await?;
 
         let mut bytes_out = Vec::with_capacity(bytes.len());

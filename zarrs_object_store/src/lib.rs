@@ -19,6 +19,16 @@
 //!
 #![doc = include_str!("../doc/version_compatibility_matrix.md")]
 //!
+//! `object_store` is re-exported as a dependency of this crate, so it does not need to be specified as a direct dependency.
+//!
+//! However, if `object_store` is a direct dependency, it is necessary to ensure that the version used by this crate is compatible.
+//! This crate can depend on a range of semver-incompatible versions of `object_store`, and Cargo will not automatically choose a single version of `object_store` that satisfies all dependencies.
+//! Use a precise cargo update to ensure compatibility.
+//! For example, if this crate resolves to `object_store` 0.11.1 and your code uses 0.10.2:
+//! ```shell
+//! cargo update --package object_store:0.11.1 --precise 0.10.2
+//! ```
+//!
 //! ## Licence
 //! `zarrs_object_store` is licensed under either of
 //! - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_object_store/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
@@ -31,9 +41,8 @@ use object_store::path::Path;
 
 use zarrs_storage::{
     async_store_set_partial_values, byte_range::ByteRange, AsyncBytes, AsyncListableStorageTraits,
-    AsyncReadableStorageTraits, AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits,
-    MaybeAsyncBytes, StorageError, StoreKey, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
-    StorePrefix,
+    AsyncReadableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes, StorageError,
+    StoreKey, StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
 };
 
 /// Maps a [`StoreKey`] to an [`object_store`] path.
@@ -146,9 +155,9 @@ impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectSto
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        async_store_set_partial_values(self, key_start_values).await
+        async_store_set_partial_values(self, key_offset_values).await
     }
 
     async fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {
@@ -171,13 +180,6 @@ impl<T: object_store::ObjectStore> AsyncWritableStorageTraits for AsyncObjectSto
         )?;
         Ok(())
     }
-}
-
-#[async_trait::async_trait]
-impl<T: object_store::ObjectStore> AsyncReadableWritableStorageTraits for AsyncObjectStore<T> {
-    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-    //     Ok(self.locks.mutex(key).await)
-    // }
 }
 
 #[async_trait::async_trait]

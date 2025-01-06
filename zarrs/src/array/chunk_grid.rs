@@ -372,7 +372,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
         chunk_indices.len() == self.dimensionality()
             && array_shape.len() == self.dimensionality()
             && self.grid_shape(array_shape).is_ok_and(|chunk_grid_shape| {
-                chunk_grid_shape.map_or(false, |chunk_grid_shape| {
+                chunk_grid_shape.is_some_and(|chunk_grid_shape| {
                     std::iter::zip(chunk_indices, chunk_grid_shape)
                         .all(|(index, shape)| shape == 0 || *index < shape)
                 })
@@ -388,7 +388,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// See [`ChunkGridTraits::chunk_origin`].
     ///
     /// # Safety
-    /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
+    /// The length of `chunk_indices` and `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn chunk_origin_unchecked(
         &self,
         chunk_indices: &[u64],
@@ -398,7 +398,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// See [`ChunkGridTraits::chunk_shape`].
     ///
     /// # Safety
-    /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
+    /// The length of `chunk_indices` and `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn chunk_shape_unchecked(
         &self,
         chunk_indices: &[u64],
@@ -408,7 +408,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// See [`ChunkGridTraits::chunk_shape_u64`].
     ///
     /// # Safety
-    /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
+    /// The length of `chunk_indices` and `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn chunk_shape_u64_unchecked(
         &self,
         chunk_indices: &[u64],
@@ -418,7 +418,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// See [`ChunkGridTraits::chunk_indices`].
     ///
     /// # Safety
-    /// The length of `array_indices` must match the dimensionality of the chunk grid.
+    /// The length of `array_indices` and `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn chunk_indices_unchecked(
         &self,
         array_indices: &[u64],
@@ -428,7 +428,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// See [`ChunkGridTraits::chunk_element_indices`].
     ///
     /// # Safety
-    /// The length of `array_indices` must match the dimensionality of the chunk grid.
+    /// The length of `array_indices` and `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn chunk_element_indices_unchecked(
         &self,
         array_indices: &[u64],
@@ -438,21 +438,21 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// See [`ChunkGridTraits::subset`].
     ///
     /// # Safety
-    /// The length of `chunk_indices` must match the dimensionality of the chunk grid.
+    /// The length of `chunk_indices` and `array_shape` must match the dimensionality of the chunk grid.
     unsafe fn subset_unchecked(
         &self,
         chunk_indices: &[u64],
         array_shape: &[u64],
     ) -> Option<ArraySubset> {
         debug_assert_eq!(self.dimensionality(), chunk_indices.len());
-        if let (Some(chunk_origin), Some(chunk_shape)) = (
-            self.chunk_origin_unchecked(chunk_indices, array_shape),
-            self.chunk_shape_u64_unchecked(chunk_indices, array_shape),
-        ) {
-            Some(ArraySubset::new_with_start_shape_unchecked(
-                chunk_origin,
-                chunk_shape,
-            ))
+        let chunk_origin =
+        // SAFETY: The length of `chunk_indices` and `array_shape` matches the dimensionality of the chunk grid
+        unsafe { self.chunk_origin_unchecked(chunk_indices, array_shape) };
+        let chunk_shape =
+        // SAFETY: The length of `chunk_indices` and `array_shape` matches the dimensionality of the chunk grid
+        unsafe { self.chunk_shape_u64_unchecked(chunk_indices, array_shape) };
+        if let (Some(chunk_origin), Some(chunk_shape)) = (chunk_origin, chunk_shape) {
+            Some(unsafe { ArraySubset::new_with_start_shape_unchecked(chunk_origin, chunk_shape) })
         } else {
             None
         }

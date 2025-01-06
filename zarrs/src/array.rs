@@ -46,7 +46,10 @@ use std::sync::Arc;
 
 pub use self::{
     array_builder::ArrayBuilder,
-    array_bytes::{ArrayBytes, ArrayBytesError, RawBytes, RawBytesOffsets},
+    array_bytes::{
+        copy_fill_value_into, update_array_bytes, ArrayBytes, ArrayBytesError, RawBytes,
+        RawBytesOffsets,
+    },
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
     array_representation::{
@@ -64,6 +67,7 @@ pub use self::{
     storage_transformer::StorageTransformerChain,
 };
 pub use crate::metadata::v2::ArrayMetadataV2;
+use crate::metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 pub use crate::metadata::v3::{
     array::data_type::DataTypeSize,
     array::fill_value::FillValueMetadataV3,
@@ -73,7 +77,7 @@ pub use crate::metadata::v3::{
 pub use crate::metadata::{ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness};
 
 /// An alias for [`FillValueMetadataV3`].
-#[deprecated = "use FillValueMetadataV3 instead"]
+#[deprecated(since = "0.17.0", note = "use FillValueMetadataV3 instead")]
 pub type FillValueMetadata = crate::metadata::v3::array::fill_value::FillValueMetadataV3;
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;
@@ -150,7 +154,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// ## Array Data
 /// Array operations are divided into several categories based on the traits implemented for the backing [storage](crate::storage).
 /// The core array methods are:
-///  - [`ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
+///  - [`[Async]ReadableStorageTraits`](crate::storage::ReadableStorageTraits): read array data and metadata
 ///    - [`retrieve_chunk_if_exists`](Array::retrieve_chunk_if_exists)
 ///    - [`retrieve_chunk`](Array::retrieve_chunk)
 ///    - [`retrieve_chunks`](Array::retrieve_chunks)
@@ -158,34 +162,85 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///    - [`retrieve_array_subset`](Array::retrieve_array_subset)
 ///    - [`retrieve_encoded_chunk`](Array::retrieve_encoded_chunk)
 ///    - [`partial_decoder`](Array::partial_decoder)
-///  - [`WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and store metadata
+///  - [`[Async]WritableStorageTraits`](crate::storage::WritableStorageTraits): store/erase array data and metadata
 ///    - [`store_metadata`](Array::store_metadata)
+///    - [`erase_metadata`](Array::erase_metadata)
 ///    - [`store_chunk`](Array::store_chunk)
 ///    - [`store_chunks`](Array::store_chunks)
 ///    - [`store_encoded_chunk`](Array::store_encoded_chunk)
 ///    - [`erase_chunk`](Array::erase_chunk)
 ///    - [`erase_chunks`](Array::erase_chunks)
-///  - [`ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading *and* writing
+///  - [`[Async]ReadableWritableStorageTraits`](crate::storage::ReadableWritableStorageTraits): store operations requiring reading *and* writing
 ///    - [`store_chunk_subset`](Array::store_chunk_subset)
 ///    - [`store_array_subset`](Array::store_array_subset)
+///    - [`partial_encoder`](Array::partial_encoder)
 ///
 /// Many `retrieve` and `store` methods have multiple variants:
 ///   - Standard variants store or retrieve data represented as [`ArrayBytes`] (representing fixed or variable length bytes).
 ///   - `_elements` suffix variants can store or retrieve chunks with a known type.
 ///   - `_ndarray` suffix variants can store or retrieve [`ndarray::Array`]s (requires `ndarray` feature).
-///   - `_opt` suffix variants have a [`CodecOptions`](crate::array::codec::CodecOptions) parameter for fine-grained concurrency control.
-///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions) which just maximises concurrent operations. This is preferred unless using external parallelisation.
+///   - `_opt` suffix variants have a [`CodecOptions`](crate::array::codec::CodecOptions) parameter for fine-grained concurrency control and more.
+///   - Variants without the `_opt` suffix use default [`CodecOptions`](crate::array::codec::CodecOptions).
 ///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
 /// Additional methods are offered by extension traits:
+///  - [`ArrayShardedExt`] and [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
 ///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching)
-///  - [`ArrayShardedExt`], [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
 ///
-/// ### Optimising Writes
+/// ### Chunks and Array Subsets
+/// Several convenience methods are available for querying the underlying chunk grid:
+///  - [`chunk_origin`](Array::chunk_origin)
+///  - [`chunk_shape`](Array::chunk_shape)
+///  - [`chunk_subset`](Array::chunk_subset)
+///  - [`chunk_subset_bounded`](Array::chunk_subset_bounded)
+///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
+///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
+///
+/// An [`ArraySubset`] spanning the entire array can be retrieved with [`subset_all`](Array::subset_all).
+///
+/// ## Example: Update an Array Chunk-by-Chunk (in Parallel)
+/// In the below example, an array is updated chunk-by-chunk in parallel.
+/// This makes use of [`chunk_subset_bounded`](Array::chunk_subset_bounded) to retrieve and store only the subset of chunks that are within the array bounds.
+/// This can occur when a regular chunk grid does not evenly divide the array shape, for example.
+///
+/// ```rust
+/// # use std::sync::Arc;
+/// # use zarrs::array::{Array, ArrayBytes};
+/// # use zarrs::array_subset::ArraySubset;
+/// # use zarrs::array_subset::iterators::Indices;
+/// # use rayon::iter::{IntoParallelIterator, ParallelIterator};
+/// # let store = Arc::new(zarrs_filesystem::FilesystemStore::new("tests/data/array_write_read.zarr")?);
+/// # let array = Array::open(store, "/group/array")?;
+/// // Get an iterator over the chunk indices
+/// //   The array shape must have been set (i.e. non-zero), otherwise the
+/// //   iterator will be empty
+/// let chunk_grid_shape = array.chunk_grid_shape().unwrap();
+/// let chunks: Indices = ArraySubset::new_with_shape(chunk_grid_shape).indices();
+///
+/// // Iterate over chunk indices (in parallel)
+/// chunks.into_par_iter().try_for_each(|chunk_indices: Vec<u64>| {
+///     // Retrieve the array subset of the chunk within the array bounds
+///     //   This partially decodes chunks that extend beyond the array end
+///     let subset: ArraySubset = array.chunk_subset_bounded(&chunk_indices)?;
+///     let chunk_bytes: ArrayBytes = array.retrieve_array_subset(&subset)?;
+///
+///     // ... Update the chunk bytes
+///
+///     // Write the updated chunk
+///     //   Elements beyond the array bounds in straddling chunks are left
+///     //   unmodified or set to the fill value if the chunk did not exist.
+///     array.store_array_subset(&subset, chunk_bytes)
+/// })?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// ## Optimising Writes
 /// For optimum write performance, an array should be written using [`store_chunk`](Array::store_chunk) or [`store_chunks`](Array::store_chunks) where possible.
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) are less preferred because they may incur decoding overhead and require careful usage if executed in parallel (see below).
 ///
-/// #### Direct IO (Linux)
+/// [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) may incur decoding overhead, and they require careful usage if executed in parallel (see [Parallel Writing](#parallel-writing) below).
+/// However, these methods will use a fast path and avoid decoding if the subset covers entire chunks.
+///
+/// ### Direct IO (Linux)
 /// If using Linux, enabling direct IO with the [`FilesystemStore`](https://docs.rs/zarrs_filesystem/latest/zarrs_filesystem/struct.FilesystemStore.html) may improve write performance.
 ///
 /// Currently, the most performant path for uncompressed writing is to reuse page aligned buffers via [`store_encoded_chunk`](Array::store_encoded_chunk).
@@ -193,23 +248,31 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 //  TODO: Add example?
 ///
 /// ### Parallel Writing
-/// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
-/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve, update, and store chunks.
-/// It is the responsibility of `zarrs` consumers to ensure:
-///   - [`store_chunk_subset`](Array::store_chunk_subset) is not called concurrently on the same chunk, and
-///   - [`store_array_subset`](Array::store_array_subset) is not called concurrently on array subsets sharing chunks.
-///
-/// Partial writes to a chunk may be lost if these rules are not respected.
 /// `zarrs` does not currently offer a "synchronisation" API for locking chunks or array subsets.
 ///
-/// ### Optimising Reads
+/// **It is the responsibility of `zarrs` consumers to ensure that chunks are not written to concurrently**.
+///
+/// If a chunk is written more than once, its element values depend on whichever operation wrote to the chunk last.
+/// The [`store_chunk_subset`](Array::store_chunk_subset) and [`store_array_subset`](Array::store_array_subset) methods and their variants internally retrieve, update, and store chunks.
+/// So do [`partial_encoder`](Array::partial_encoder)s, which may used internally by the above methods.
+///
+/// It is the responsibility of `zarrs` consumers to ensure that:
+///   - [`store_array_subset`](Array::store_array_subset) is not called concurrently on array subsets sharing chunks,
+///   - [`store_chunk_subset`](Array::store_chunk_subset) is not called concurrently on the same chunk,
+///   - [`partial_encoder`](Array::partial_encoder)s are created or used concurrently for the same chunk,
+///   - or any combination of the above are called concurrently on the same chunk.
+///
+/// **Partial writes to a chunk may be lost if these rules are not respected.**
+///
+/// ## Optimising Reads
 /// It is fastest to load arrays using [`retrieve_chunk`](Array::retrieve_chunk) or [`retrieve_chunks`](Array::retrieve_chunks) where possible.
 /// In contrast, the [`retrieve_chunk_subset`](Array::retrieve_chunk_subset) and [`retrieve_array_subset`](Array::retrieve_array_subset) may use partial decoders which can be less efficient with some codecs/stores.
+/// Like their write counterparts, these methods will use a fast path if subsets cover entire chunks.
 ///
 /// **Standard [`Array`] retrieve methods do not perform any caching**.
 /// For this reason, retrieving multiple subsets in a chunk with [`retrieve_chunk_subset`](Array::store_chunk_subset) is very inefficient and strongly discouraged.
 /// For example, consider that a compressed chunk may need to be retrieved and decoded in its entirety even if only a small part of the data is needed.
-/// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode) or [`partial_decode_opt`](codec::ArrayPartialDecoderTraits::partial_decode_opt).
+/// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode).
 /// The underlying codec chain will use a cache where efficient to optimise multiple partial decoding requests (see [`CodecChain`]).
 /// Another alternative is to use [Chunk Caching](#chunk-caching).
 ///
@@ -235,17 +298,18 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///
 /// `zarrs` consumers can create custom caches by implementing the [`ChunkCache`] trait.
 ///
-/// Chunk caching is likely to be effective for remote stores where redundant retrieval are costly.
+/// Chunk caching is likely to be effective for remote stores where redundant retrievals are costly.
 /// Chunk caching may not outperform disk caching with a filesystem store.
 /// The above caches use internal locking to support multithreading, which has a performance overhead.
-/// **Prefer not to use a chunk cache if chunks are not accessed repeatedly**, because cached retrieve methods do not use partial decoders and any intersected chunk is fully decoded if not present in the cache.
+/// **Prefer not to use a chunk cache if chunks are not accessed repeatedly**.
+/// Cached retrieve methods do not use partial decoders, and any intersected chunk is fully decoded if not present in the cache.
 /// The encoded chunk caches may be optimal if dealing with highly compressed/sparse data with a fast codec.
 /// However, the decoded chunk caches are likely to be more performant in most cases.
 ///
 /// For many access patterns, chunk caching may reduce performance.
 /// **Benchmark your algorithm/data.**
 ///
-/// ### Reading Sharded Arrays
+/// ## Reading Sharded Arrays
 /// The `sharding_indexed` ([`ShardingCodec`](codec::array_to_bytes::sharding)) codec enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
 /// With a sharded array, the [`chunk_grid`](Array::chunk_grid) and chunk indices in store/retrieve methods reference the chunks ("shards") of an array.
 ///
@@ -259,17 +323,6 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///
 /// For unsharded arrays, these methods gracefully fallback to referencing standard chunks.
 /// Each method has a `cache` parameter ([`ArrayShardedReadableExtCache`]) that stores shard indexes so that they do not have to be repeatedly retrieved and decoded.
-///
-/// ## Chunk and Array Subset Extents
-/// Several convenience methods are available for querying the underlying chunk grid:
-///  - [`chunk_origin`](Array::chunk_origin)
-///  - [`chunk_shape`](Array::chunk_shape)
-///  - [`chunk_subset`](Array::chunk_subset)
-///  - [`chunk_subset_bounded`](Array::chunk_subset_bounded)
-///  - [`chunks_subset`](Array::chunks_subset) / [`chunks_subset_bounded`](Array::chunks_subset_bounded)
-///  - [`chunks_in_array_subset`](Array::chunks_in_array_subset)
-///
-/// An [`ArraySubset`] spanning the entire array can be retrieved with [`subset_all`](Array::subset_all).
 ///
 /// ## Parallelism and Concurrency
 /// ### Sync API
@@ -726,6 +779,31 @@ impl<TStorage: ?Sized> Array<TStorage> {
             .codecs()
             .recommended_concurrency(chunk_representation)?)
     }
+
+    /// Convert the array to Zarr V3.
+    ///
+    /// # Errors
+    /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is not compatible with Zarr V3 metadata.
+    pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
+        match self.metadata {
+            ArrayMetadata::V2(metadata) => {
+                let metadata: ArrayMetadata = array_metadata_v2_to_v3(&metadata)?.into();
+                Ok(Self {
+                    storage: self.storage,
+                    path: self.path,
+                    data_type: self.data_type,
+                    chunk_grid: self.chunk_grid,
+                    chunk_key_encoding: self.chunk_key_encoding,
+                    fill_value: self.fill_value,
+                    codecs: self.codecs,
+                    storage_transformers: self.storage_transformers,
+                    dimension_names: self.dimension_names,
+                    metadata,
+                })
+            }
+            ArrayMetadata::V3(_) => Ok(self),
+        }
+    }
 }
 
 #[cfg(feature = "ndarray")]
@@ -1009,8 +1087,8 @@ mod tests {
             array_out
                 .store_metadata_opt(
                     &ArrayMetadataOptions::default()
-                        .set_metadata_convert_version(version)
-                        .set_include_zarrs_metadata(false),
+                        .with_metadata_convert_version(version)
+                        .with_include_zarrs_metadata(false),
                 )
                 .unwrap();
         }
@@ -1018,6 +1096,7 @@ mod tests {
 
     #[cfg(feature = "blosc")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_blosc_c() {
         array_v2_to_v3(
             "tests/data/v2/array_blosc_C.zarr",
@@ -1027,6 +1106,7 @@ mod tests {
 
     #[cfg(feature = "blosc")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_blosc_f() {
         array_v2_to_v3(
             "tests/data/v2/array_blosc_F.zarr",
@@ -1036,6 +1116,7 @@ mod tests {
 
     #[cfg(feature = "gzip")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_gzip_c() {
         array_v2_to_v3(
             "tests/data/v2/array_gzip_C.zarr",
@@ -1045,6 +1126,7 @@ mod tests {
 
     #[cfg(feature = "bz2")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_bz2_c() {
         array_v2_to_v3(
             "tests/data/v2/array_bz2_C.zarr",
@@ -1054,6 +1136,7 @@ mod tests {
 
     #[cfg(feature = "zfp")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_zfpy_c() {
         array_v2_to_v3(
             "tests/data/v2/array_zfpy_C.zarr",
@@ -1063,6 +1146,7 @@ mod tests {
 
     #[cfg(feature = "zstd")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_zstd_c() {
         array_v2_to_v3(
             "tests/data/v2/array_zstd_C.zarr",
@@ -1072,6 +1156,7 @@ mod tests {
 
     #[cfg(feature = "pcodec")]
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn array_v2_pcodec_c() {
         array_v2_to_v3(
             "tests/data/v2/array_pcodec_C.zarr",

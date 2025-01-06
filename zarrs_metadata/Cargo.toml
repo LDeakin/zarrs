@@ -1,15 +1,19 @@
 [package]
 name = "zarrs_metadata"
-version = "0.2.0"
+version = "0.3.0-dev"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
-rust-version = "1.76"
+rust-version = "1.77"
 description = "Zarr metadata support for the zarrs crate"
+homepage = "https://zarrs.dev"
 documentation = "https://docs.rs/zarrs_object_store"
 repository = "https://github.com/LDeakin/zarrs"
 license = "MIT OR Apache-2.0"
 keywords = ["zarr", "zarrs", "metadata"]
 categories = ["encoding"]
+
+[lints]
+workspace = true
 
 [dependencies]
 derive_more = { version = "1.0.0", features = ["display", "from"] }
@@ -19,4 +23,4 @@ num = { version = "0.4.1" }
 serde = { version = "1.0.185", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
 serde_repr = "0.1.19"
-thiserror = "1.0.61"
+thiserror = "2.0.0"

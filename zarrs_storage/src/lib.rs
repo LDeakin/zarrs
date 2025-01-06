@@ -144,42 +144,36 @@ impl std::fmt::Display for StoreKeyRange {
 /// A [`StoreKey`], [`ByteOffset`], and value (bytes).
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct StoreKeyStartValue<'a> {
+pub struct StoreKeyOffsetValue<'a> {
     /// The key.
     key: StoreKey,
     /// The starting byte offset.
-    start: ByteOffset,
+    offset: ByteOffset,
     /// The store value.
     value: &'a [u8],
 }
 
-impl StoreKeyStartValue<'_> {
-    /// Create a new [`StoreKeyStartValue`].
-    pub const fn new(key: StoreKey, start: ByteOffset, value: &[u8]) -> StoreKeyStartValue {
-        StoreKeyStartValue { key, start, value }
+impl StoreKeyOffsetValue<'_> {
+    /// Create a new [`StoreKeyOffsetValue`].
+    pub const fn new(key: StoreKey, offset: ByteOffset, value: &[u8]) -> StoreKeyOffsetValue {
+        StoreKeyOffsetValue { key, offset, value }
     }
 
     /// Get the key.
     #[must_use]
-    pub fn key(&self) -> &StoreKey {
+    pub const fn key(&self) -> &StoreKey {
         &self.key
     }
 
-    /// Get the offset of the start.
+    /// Get the offset.
     #[must_use]
-    pub const fn start(&self) -> ByteOffset {
-        self.start
-    }
-
-    /// Get the offset of the exclusive end.
-    #[must_use]
-    pub const fn end(&self) -> ByteOffset {
-        self.start + self.value.len() as u64
+    pub const fn offset(&self) -> ByteOffset {
+        self.offset
     }
 
     /// Get the value.
     #[must_use]
-    pub fn value(&self) -> &[u8] {
+    pub const fn value(&self) -> &[u8] {
         self.value
     }
 }

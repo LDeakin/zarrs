@@ -8,7 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Bump `itertools` to 0.14
+
+### Fixed
+- Fix `unsafe_op_in_unsafe_fn` in lint
+
+## [0.3.0] - 2024-11-15
+
+### Added
+ - Add `ByteRange::new` and `From` for `RangeBounds<u64>`
+ - Add `PerformanceMetricsStorageAdapter::{keys_erased,reset}()`
+ - Implement `Ord` and `PartialOrd` for `ByteRange`
+
+### Changed
  - Bump `unsafe_cell_slice` to 0.2.0
+ - **Breaking**: Change `ByteRange::FromEnd` to `ByteRange::Suffix`
+ - **Breaking**: implement `AsyncReadableWritableStorageTraits` for `T: AsyncReadableStorageTraits + AsyncWritableStorageTraits`
+ - **Breaking**: Bump MSRV to 1.77 (21 March, 2024)
+ - **Breaking**: Rename `StoreKeyStartValue` to `StoreKeyOffsetValue`
+   - Adds `offset` method and removes `start` and `end`
+ - Count missing values as reads in `PerformanceMetricsStorageAdapter`
+ - Print value lengths rather than values in `UsageLogStorageAdapter::set_partial_values()`
+
+### Removed
+ - **Breaking**: Remove `ByteRange::offset()`
+
+## [0.2.2] - 2024-10-17
+
+### Changed
+ - Validate that chunk keys do not contain '//'
 
 ### Fixed
  - Fix new clippy warnings
@@ -47,7 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `storage` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.2.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.3.0...HEAD
+[0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.3.0
+[0.2.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.2.2
 [0.2.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.2.1
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.2.0
 [0.1.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.1.2

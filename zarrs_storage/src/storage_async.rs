@@ -4,8 +4,8 @@ use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 
 use super::{
-    byte_range::ByteRange, AsyncBytes, MaybeAsyncBytes, StorageError, StoreKey, StoreKeyRange,
-    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    byte_range::ByteRange, AsyncBytes, MaybeAsyncBytes, StorageError, StoreKey,
+    StoreKeyOffsetValue, StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Async readable storage traits.
@@ -171,12 +171,12 @@ pub trait AsyncListableStorageTraits: Send + Sync {
 /// Panics if a key ends beyond `usize::MAX`.
 pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTraits>(
     store: &T,
-    key_start_values: &[StoreKeyStartValue<'_>],
+    key_offset_values: &[StoreKeyOffsetValue<'_>],
     // truncate: bool
 ) -> Result<(), StorageError> {
-    let groups = key_start_values
+    let groups = key_offset_values
         .iter()
-        .chunk_by(|key_start_value| &key_start_value.key)
+        .chunk_by(|key_offset_value| key_offset_value.key())
         .into_iter()
         .map(|(key, group)| (key, group.into_iter().cloned().collect::<Vec<_>>()))
         .collect::<Vec<_>>();
@@ -189,27 +189,35 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
 
             // Read the store key
             let bytes = store.get(key).await?.unwrap_or_default();
-            let mut vec = Vec::<u8>::from(bytes);
+            let mut bytes = Vec::<u8>::from(bytes);
 
             // Expand the store key if needed
-            let end_max =
-                usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
-            if vec.len() < end_max {
-                vec.resize_with(end_max, Default::default);
+            let end_max = group
+                .iter()
+                .map(|key_offset_value| {
+                    usize::try_from(
+                        key_offset_value.offset() + key_offset_value.value().len() as u64,
+                    )
+                    .unwrap()
+                })
+                .max()
+                .unwrap();
+            if bytes.len() < end_max {
+                bytes.resize_with(end_max, Default::default);
             }
             // else if truncate {
-            //     vec.truncate(end_max);
+            //     bytes.truncate(end_max);
             // };
 
             // Update the store key
-            for key_start_value in group {
-                let start: usize = key_start_value.start.try_into().unwrap();
-                let end: usize = key_start_value.end().try_into().unwrap();
-                vec[start..end].copy_from_slice(key_start_value.value);
+            for key_offset_value in group {
+                let start = usize::try_from(key_offset_value.offset()).unwrap();
+                bytes[start..start + key_offset_value.value().len()]
+                    .copy_from_slice(key_offset_value.value());
             }
 
             // Write the store key
-            store.set(key, vec.into()).await
+            store.set(key, bytes.into()).await
         })
         .await
 }
@@ -223,13 +231,13 @@ pub trait AsyncWritableStorageTraits: Send + Sync {
     /// Returns a [`StorageError`] on failure to store.
     async fn set(&self, key: &StoreKey, value: AsyncBytes) -> Result<(), StorageError>;
 
-    /// Store bytes according to a list of [`StoreKeyStartValue`].
+    /// Store bytes according to a list of [`StoreKeyOffsetValue`].
     ///
     /// # Errors
     /// Returns a [`StorageError`] on failure to store.
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError>;
 
     /// Erase a [`StoreKey`].
@@ -267,11 +275,10 @@ pub trait AsyncReadableWritableStorageTraits:
 {
 }
 
-// FIXME: Enable this in the next major release
-// impl<T> AsyncReadableWritableStorageTraits for T where
-//     T: AsyncReadableStorageTraits + AsyncWritableStorageTraits
-// {
-// }
+impl<T> AsyncReadableWritableStorageTraits for T where
+    T: AsyncReadableStorageTraits + AsyncWritableStorageTraits
+{
+}
 
 /// A supertrait of [`AsyncReadableStorageTraits`] and [`AsyncListableStorageTraits`].
 pub trait AsyncReadableListableStorageTraits:

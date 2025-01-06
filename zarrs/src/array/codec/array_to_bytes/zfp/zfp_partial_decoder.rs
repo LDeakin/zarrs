@@ -18,17 +18,17 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{zarr_to_zfp_data_type, zfp_decode, ZfpMode};
 
 /// Partial decoder for the `zfp` codec.
-pub struct ZfpPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct ZfpPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
     write_header: bool,
 }
 
-impl<'a> ZfpPartialDecoder<'a> {
+impl ZfpPartialDecoder {
     /// Create a new partial decoder for the `zfp` codec.
-    pub fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    pub(crate) fn new(
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
         write_header: bool,
@@ -48,12 +48,12 @@ impl<'a> ZfpPartialDecoder<'a> {
     }
 }
 
-impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for ZfpPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -111,7 +111,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `zfp` codec.
-pub struct AsyncZfpPartialDecoder {
+pub(crate) struct AsyncZfpPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     mode: ZfpMode,
@@ -121,7 +121,7 @@ pub struct AsyncZfpPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncZfpPartialDecoder {
     /// Create a new partial decoder for the `zfp` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: &ChunkRepresentation,
         mode: ZfpMode,
@@ -149,7 +149,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,

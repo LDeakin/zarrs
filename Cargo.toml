@@ -13,39 +13,52 @@ members = [
     "zarrs_zip",
 ]
 
+[workspace.lints.rust]
+unused_variables = "warn"
+dead_code = "warn"
+missing_docs = "warn"
+unreachable_pub = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_panics_doc = "warn"
+missing_errors_doc = "warn"
+
 [workspace.dependencies.zarrs_metadata]
-version = "0.2.0"
+version = "0.3.0-dev"
 path = "zarrs_metadata"
 
 [workspace.dependencies.zarrs_storage]
-version = "0.2.2"
+version = "0.3.0"
 path = "zarrs_storage"
 
 [workspace.dependencies.zarrs_filesystem]
-version = "0.1.0"
+version = "0.2.0"
 path = "zarrs_filesystem"
 
 [workspace.dependencies.zarrs_http]
-version = "0.1.0"
+version = "0.2.0"
 path = "zarrs_http"
 
 [workspace.dependencies.zarrs_object_store]
-version = "0.2.1"
+version = "0.3.0"
 path = "zarrs_object_store"
 
 [workspace.dependencies.zarrs_opendal]
-version = "0.3.1"
+version = "0.5.0"
 path = "zarrs_opendal"
 
 [workspace.dependencies.zarrs_zip]
-version = "0.1.0"
+version = "0.2.0"
 path = "zarrs_zip"
 
 [workspace.dependencies.object_store]
 version = "0.11"
 
 [workspace.dependencies.opendal]
-version = "0.50.0"
+version = "0.51.0"
 
 [workspace.dependencies.zip]
 version = "2.1.3"

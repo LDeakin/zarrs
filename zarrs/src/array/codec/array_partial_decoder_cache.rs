@@ -8,23 +8,23 @@ use super::{ArrayPartialDecoderTraits, ArraySubset, CodecError, CodecOptions};
 use super::AsyncArrayPartialDecoderTraits;
 
 /// A cache for an [`ArrayPartialDecoderTraits`] partial decoder.
-pub struct ArrayPartialDecoderCache<'a> {
+pub(crate) struct ArrayPartialDecoderCache {
     decoded_representation: ChunkRepresentation,
-    cache: ArrayBytes<'a>,
+    cache: ArrayBytes<'static>,
 }
 
-impl<'a> ArrayPartialDecoderCache<'a> {
+impl ArrayPartialDecoderCache {
     /// Create a new partial decoder cache.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: &dyn ArrayPartialDecoderTraits,
         decoded_representation: ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Self, CodecError> {
         let bytes = input_handle
-            .partial_decode_opt(
+            .partial_decode(
                 &[ArraySubset::new_with_shape(
                     decoded_representation.shape_u64(),
                 )],
@@ -43,13 +43,13 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     ///
     /// # Errors
     /// Returns a [`CodecError`] if initialisation of the partial decoder fails.
-    pub async fn async_new(
+    pub(crate) async fn async_new(
         input_handle: &dyn AsyncArrayPartialDecoderTraits,
         decoded_representation: ChunkRepresentation,
         options: &CodecOptions,
-    ) -> Result<ArrayPartialDecoderCache<'a>, CodecError> {
+    ) -> Result<ArrayPartialDecoderCache, CodecError> {
         let bytes = input_handle
-            .partial_decode_opt(
+            .partial_decode(
                 &[ArraySubset::new_with_shape(
                     decoded_representation.shape_u64(),
                 )],
@@ -65,12 +65,12 @@ impl<'a> ArrayPartialDecoderCache<'a> {
     }
 }
 
-impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+impl ArrayPartialDecoderTraits for ArrayPartialDecoderCache {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         _options: &CodecOptions,
@@ -90,16 +90,16 @@ impl<'a> ArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl<'a> AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache<'a> {
+impl AsyncArrayPartialDecoderTraits for ArrayPartialDecoderCache {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
-        ArrayPartialDecoderTraits::partial_decode_opt(self, decoded_regions, options)
+        ArrayPartialDecoderTraits::partial_decode(self, decoded_regions, options)
     }
 }

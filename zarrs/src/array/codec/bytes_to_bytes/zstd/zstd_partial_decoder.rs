@@ -14,18 +14,18 @@ use crate::{
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `zstd` codec.
-pub struct ZstdPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct ZstdPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> ZstdPartialDecoder<'a> {
+impl ZstdPartialDecoder {
     /// Create a new partial decoder for the `zstd` codec.
-    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for ZstdPartialDecoder<'_> {
+impl BytesPartialDecoderTraits for ZstdPartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -50,14 +50,14 @@ impl BytesPartialDecoderTraits for ZstdPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `zstd` codec.
-pub struct AsyncZstdPartialDecoder {
+pub(crate) struct AsyncZstdPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
 impl AsyncZstdPartialDecoder {
     /// Create a new partial decoder for the `zstd` codec.
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }

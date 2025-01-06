@@ -5,8 +5,9 @@ use itertools::Itertools;
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
+            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
+            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
         ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
@@ -19,40 +20,31 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-use super::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1};
-
 /// The `vlen_v2` codec implementation.
-#[derive(Debug, Clone, Default)]
-pub struct VlenV2Codec {}
+#[derive(Debug, Clone)]
+pub(crate) struct VlenV2Codec {
+    name: String,
+}
 
 impl VlenV2Codec {
-    /// Create a new `vlen` codec.
+    /// Create a new `vlen_v2` codec.
     #[must_use]
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    /// Create a new `vlen` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(_configuration: &VlenV2CodecConfiguration) -> Self {
-        // let VlenV2CodecConfiguration::V1(configuration) = configuration;
-        Self {}
+    pub(crate) fn new(name: String) -> Self {
+        Self { name }
     }
 }
 
 impl CodecTraits for VlenV2Codec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
-        let configuration = VlenV2CodecConfigurationV1 {};
-        Some(
-            MetadataV3::new_with_serializable_configuration(
-                global_config()
-                    .experimental_codec_names()
-                    .get(super::IDENTIFIER)
-                    .expect("experimental codec identifier in global map"),
-                &configuration,
-            )
-            .unwrap(),
-        )
+        let config = global_config();
+        let name = config
+            .experimental_codec_names()
+            .get(&self.name)
+            .unwrap_or(&self.name);
+        Some(MetadataV3::new_with_configuration(
+            name,
+            serde_json::Map::default(),
+        ))
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -75,6 +67,10 @@ impl ArrayCodecTraits for VlenV2Codec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for VlenV2Codec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+        self as Arc<dyn ArrayToBytesCodecTraits>
+    }
+
     fn encode<'a>(
         &self,
         bytes: ArrayBytes<'a>,
@@ -130,6 +126,21 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
                 decoded_representation.clone(),
             ),
         ))
+    }
+
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(ArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self,
+        )))
     }
 
     #[cfg(feature = "async")]

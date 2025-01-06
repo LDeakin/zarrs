@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use std::{error::Error, path::Path};
 
 use zarrs::{

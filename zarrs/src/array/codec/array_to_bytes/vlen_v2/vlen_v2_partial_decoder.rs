@@ -14,15 +14,15 @@ use crate::array::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// Partial decoder for the `bytes` codec.
-pub struct VlenV2PartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct VlenV2PartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
 }
 
-impl<'a> VlenV2PartialDecoder<'a> {
+impl VlenV2PartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    pub(crate) fn new(
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
     ) -> Self {
         Self {
@@ -54,12 +54,12 @@ fn decode_vlen_bytes<'a>(
     }
 }
 
-impl ArrayPartialDecoderTraits for VlenV2PartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for VlenV2PartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -78,7 +78,7 @@ impl ArrayPartialDecoderTraits for VlenV2PartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncVlenV2PartialDecoder {
+pub(crate) struct AsyncVlenV2PartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
 }
@@ -86,7 +86,7 @@ pub struct AsyncVlenV2PartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncVlenV2PartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
     ) -> Self {
@@ -104,7 +104,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncVlenV2PartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,

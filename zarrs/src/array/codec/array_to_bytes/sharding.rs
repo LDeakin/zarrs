@@ -13,6 +13,7 @@
 mod sharding_codec;
 mod sharding_codec_builder;
 mod sharding_partial_decoder;
+mod sharding_partial_encoder;
 
 use std::{borrow::Cow, num::NonZeroU64, sync::Arc};
 
@@ -22,6 +23,7 @@ pub use crate::metadata::v3::array::codec::sharding::{
 
 pub use sharding_codec::ShardingCodec;
 pub use sharding_codec_builder::ShardingCodecBuilder;
+pub(crate) use sharding_partial_decoder::ShardingPartialDecoder;
 
 use crate::{
     array::{
@@ -145,7 +147,7 @@ fn get_index_byte_range(
         .map_err(|e| CodecError::Other(e.to_string()))?;
     Ok(match index_location {
         ShardingIndexLocation::Start => ByteRange::FromStart(0, Some(index_encoded_size)),
-        ShardingIndexLocation::End => ByteRange::FromEnd(0, Some(index_encoded_size)),
+        ShardingIndexLocation::End => ByteRange::Suffix(index_encoded_size),
     })
 }
 
@@ -489,7 +491,7 @@ mod tests {
             .partial_decoder(input_handle, &chunk_representation, options)
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, options)
+            .partial_decode(&decoded_regions, options)
             .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk
@@ -573,7 +575,7 @@ mod tests {
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, options)
+            .partial_decode(&decoded_regions, options)
             .await
             .unwrap();
 
@@ -643,7 +645,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
@@ -685,7 +687,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
 
         let decoded_partial_chunk: Vec<u8> = decoded_partial_chunk

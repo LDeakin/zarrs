@@ -6,6 +6,7 @@ use crate::{
             codec::{
                 blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
                 zfpy::{codec_zfpy_v2_numcodecs_to_v3, ZfpyCodecConfigurationNumcodecs},
+                zstd::{codec_zstd_v2_numcodecs_to_v3, ZstdCodecConfigurationNumCodecs},
             },
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
             DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
@@ -19,11 +20,10 @@ use crate::{
             codec::{
                 bytes::BytesCodecConfigurationV1,
                 transpose::{TransposeCodecConfigurationV1, TransposeOrder},
-                vlen_v2::VlenV2CodecConfigurationV1,
             },
             fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadataV3},
         },
-        AdditionalFields, ArrayMetadataV3, GroupMetadataV3, MetadataV3,
+        ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
 };
 
@@ -33,10 +33,9 @@ use super::v3::array::data_type::DataTypeMetadataV3;
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMetadataV3 {
-    GroupMetadataV3::new(
-        group_metadata_v2.attributes.clone(),
-        group_metadata_v2.additional_fields.clone(),
-    )
+    GroupMetadataV3::new()
+        .with_attributes(group_metadata_v2.attributes.clone())
+        .with_additional_fields(group_metadata_v2.additional_fields.clone())
 }
 
 /// An error conerting Zarr V3 array metadata to V3.
@@ -145,12 +144,12 @@ pub fn array_metadata_v2_to_v3(
         for filter in filters {
             // TODO: Add a V2 registry with V2 to V3 conversion functions
             match filter.id() {
-                "vlen-utf8" | "vlen-bytes" | "vlen-array" => {
+                crate::v2::array::codec::vlen_array::IDENTIFIER
+                | crate::v2::array::codec::vlen_bytes::IDENTIFIER
+                | crate::v2::array::codec::vlen_utf8::IDENTIFIER => {
                     has_array_to_bytes = true;
-                    let vlen_v2_metadata = MetadataV3::new_with_serializable_configuration(
-                        crate::v3::array::codec::vlen_v2::IDENTIFIER,
-                        &VlenV2CodecConfigurationV1 {},
-                    )?;
+                    let vlen_v2_metadata =
+                        MetadataV3::new_with_configuration(filter.id(), serde_json::Map::default());
                     codecs.push(vlen_v2_metadata);
                 }
                 _ => {
@@ -216,6 +215,16 @@ pub fn array_metadata_v2_to_v3(
                     &configuration,
                 )?);
             }
+            crate::v3::array::codec::zstd::IDENTIFIER => {
+                let zstd = serde_json::from_value::<ZstdCodecConfigurationNumCodecs>(
+                    serde_json::to_value(compressor.configuration())?,
+                )?;
+                let configuration = codec_zstd_v2_numcodecs_to_v3(&zstd);
+                codecs.push(MetadataV3::new_with_serializable_configuration(
+                    crate::v3::array::codec::zstd::IDENTIFIER,
+                    &configuration,
+                )?);
+            }
             _ => codecs.push(MetadataV3::new_with_configuration(
                 compressor.id(),
                 compressor.configuration().clone(),
@@ -232,18 +241,12 @@ pub fn array_metadata_v2_to_v3(
 
     let attributes = array_metadata_v2.attributes.clone();
 
-    Ok(ArrayMetadataV3::new(
-        shape,
-        data_type,
-        chunk_grid,
-        chunk_key_encoding,
-        fill_value,
-        codecs,
-        attributes,
-        vec![],
-        None,
-        AdditionalFields::default(),
-    ))
+    Ok(
+        ArrayMetadataV3::new(shape, chunk_grid, data_type, fill_value, codecs)
+            .with_attributes(attributes)
+            .with_additional_fields(array_metadata_v2.additional_fields.clone())
+            .with_chunk_key_encoding(chunk_key_encoding),
+    )
 }
 
 /// An unsupported Zarr V2 data type error.
@@ -321,5 +324,6 @@ pub fn array_metadata_fill_value_v2_to_v3(
                 unreachable!("number must be convertible to u64, i64 or f64")
             }
         }
+        FillValueMetadataV2::String(string) => Some(FillValueMetadataV3::String(string.clone())),
     }
 }

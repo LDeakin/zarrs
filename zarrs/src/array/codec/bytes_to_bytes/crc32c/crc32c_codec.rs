@@ -3,8 +3,8 @@ use std::{borrow::Cow, sync::Arc};
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecOptions,
-            CodecTraits, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+            BytesToBytesCodecTraits, CodecError, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         ArrayMetadataOptions, BytesRepresentation, RawBytes,
     },
@@ -54,6 +54,10 @@ impl CodecTraits for Crc32cCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Crc32cCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+        self as Arc<dyn BytesToBytesCodecTraits>
+    }
+
     fn recommended_concurrency(
         &self,
         _decoded_representation: &BytesRepresentation,
@@ -104,6 +108,21 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
     ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
         Ok(Arc::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
             input_handle,
+        )))
+    }
+
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &BytesRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(BytesPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            *decoded_representation,
+            self,
         )))
     }
 

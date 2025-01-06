@@ -1,32 +1,35 @@
 use std::error::Error;
 
 use crate::{
-    byte_range::ByteRange, ListableStorageTraits, ReadableStorageTraits, StoreKeyRange,
-    StoreKeyStartValue, StorePrefix, WritableStorageTraits,
+    byte_range::ByteRange, ListableStorageTraits, ReadableStorageTraits, StoreKeyOffsetValue,
+    StoreKeyRange, StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
 use crate::{AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits};
 
-// Create a store with the following data
-// - a/
-//   - b [0, 1, 2, 3]
-//   - c [0]
-//   - d/
-//     - e
-//   - f/
-//     - g
-//     - h
-// - i/
-//   - j/
-//     - k [0, 1]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Create a store with the following data
+/// ```text
+/// - a/
+///   - b [0, 1, 2, 3]
+///   - c [0]
+///   - d/
+///     - e
+///   - f/
+///     - g
+///     - h
+/// - i/
+///   - j/
+///     - k [0, 1]
+/// ```
 pub fn store_write<T: WritableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
     store.erase_prefix(&StorePrefix::root())?;
 
     store.set(&"a/b".try_into()?, vec![255, 255, 255].into())?;
-    store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 1, &[1, 2])])?;
-    store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 3, &[3])])?;
-    store.set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 0, &[0])])?;
+    store.set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 1, &[1, 2])])?;
+    store.set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 3, &[3])])?;
+    store.set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 0, &[0])])?;
 
     store.set(&"a/c".try_into()?, vec![0].into())?;
     store.set(&"a/d/e".try_into()?, vec![].into())?;
@@ -49,6 +52,8 @@ pub fn store_write<T: WritableStorageTraits>(store: &T) -> Result<(), Box<dyn Er
     Ok(())
 }
 
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Read from the store and check the data matches the expected values after [`store_write`].
 pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
     assert!(store.get(&"notfound".try_into()?)?.is_none());
     assert!(store.size_key(&"notfound".try_into()?)?.is_none());
@@ -62,22 +67,19 @@ pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
     assert_eq!(
         store.get_partial_values_key(
             &"a/b".try_into()?,
-            &[
-                ByteRange::FromStart(1, Some(1)),
-                ByteRange::FromEnd(0, Some(1))
-            ]
+            &[ByteRange::FromStart(1, Some(1)), ByteRange::Suffix(1)]
         )?,
         Some(vec![vec![1].into(), vec![3].into()])
     );
     assert_eq!(
         store.get_partial_values(&[
             StoreKeyRange::new("a/b".try_into()?, ByteRange::FromStart(1, None)),
-            StoreKeyRange::new("a/b".try_into()?, ByteRange::FromEnd(1, Some(2))),
+            StoreKeyRange::new("a/b".try_into()?, ByteRange::Suffix(2)),
             StoreKeyRange::new("i/j/k".try_into()?, ByteRange::FromStart(1, Some(1))),
         ])?,
         vec![
             Some(vec![1, 2, 3].into()),
-            Some(vec![1, 2].into()),
+            Some(vec![2, 3].into()),
             Some(vec![1].into())
         ]
     );
@@ -91,6 +93,8 @@ pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
     Ok(())
 }
 
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// List the store and check the data matches the expected values after [`store_write`].
 pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Error>> {
     assert_eq!(store.size()?, 7);
     assert_eq!(store.size_prefix(&"a/".try_into()?)?, 5);
@@ -147,18 +151,21 @@ pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
 }
 
 #[cfg(feature = "async")]
-// Create a store with the following data
-// - a/
-//   - b [0, 1, 2, 3]
-//   - c [0]
-//   - d/
-//     - e
-//   - f/
-//     - g
-//     - h
-// - i/
-//   - j/
-//     - k [0, 1]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Create a store with the following data
+/// ```text
+/// - a/
+///   - b [0, 1, 2, 3]
+///   - c [0]
+///   - d/
+///     - e
+///   - f/
+///     - g
+///     - h
+/// - i/
+///   - j/
+///     - k [0, 1]
+/// ```
 pub async fn async_store_write<T: AsyncWritableStorageTraits>(
     store: &T,
 ) -> Result<(), Box<dyn Error>> {
@@ -168,13 +175,13 @@ pub async fn async_store_write<T: AsyncWritableStorageTraits>(
         .set(&"a/b".try_into()?, vec![255, 255, 255].into())
         .await?;
     store
-        .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 1, &[1, 2])])
+        .set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 1, &[1, 2])])
         .await?;
     store
-        .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 3, &[3])])
+        .set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 3, &[3])])
         .await?;
     store
-        .set_partial_values(&[StoreKeyStartValue::new("a/b".try_into()?, 0, &[0])])
+        .set_partial_values(&[StoreKeyOffsetValue::new("a/b".try_into()?, 0, &[0])])
         .await?;
 
     store.set(&"a/c".try_into()?, vec![0].into()).await?;
@@ -209,6 +216,8 @@ pub async fn async_store_write<T: AsyncWritableStorageTraits>(
 }
 
 #[cfg(feature = "async")]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// Read from the store and check the data matches the expected values after [`async_store_write`].
 pub async fn async_store_read<T: AsyncReadableStorageTraits>(
     store: &T,
 ) -> Result<(), Box<dyn Error>> {
@@ -225,10 +234,7 @@ pub async fn async_store_read<T: AsyncReadableStorageTraits>(
         store
             .get_partial_values_key(
                 &"a/b".try_into()?,
-                &[
-                    ByteRange::FromStart(1, Some(1)),
-                    ByteRange::FromEnd(0, Some(1))
-                ]
+                &[ByteRange::FromStart(1, Some(1)), ByteRange::Suffix(1)]
             )
             .await?,
         Some(vec![vec![1].into(), vec![3].into()])
@@ -237,13 +243,13 @@ pub async fn async_store_read<T: AsyncReadableStorageTraits>(
         store
             .get_partial_values(&[
                 StoreKeyRange::new("a/b".try_into()?, ByteRange::FromStart(1, None)),
-                StoreKeyRange::new("a/b".try_into()?, ByteRange::FromEnd(1, Some(2))),
+                StoreKeyRange::new("a/b".try_into()?, ByteRange::Suffix(2)),
                 StoreKeyRange::new("i/j/k".try_into()?, ByteRange::FromStart(1, Some(1))),
             ])
             .await?,
         vec![
             Some(vec![1, 2, 3].into()),
-            Some(vec![1, 2].into()),
+            Some(vec![2, 3].into()),
             Some(vec![1].into())
         ]
     );
@@ -259,6 +265,8 @@ pub async fn async_store_read<T: AsyncReadableStorageTraits>(
 }
 
 #[cfg(feature = "async")]
+#[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
+/// List the store and check the data matches the expected values after [`async_store_write`].
 pub async fn async_store_list<T: AsyncListableStorageTraits>(
     store: &T,
 ) -> Result<(), Box<dyn Error>> {

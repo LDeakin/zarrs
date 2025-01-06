@@ -7,8 +7,8 @@ use super::{
 
 #[cfg(feature = "async")]
 use super::{
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 /// A storage handle.
@@ -84,9 +84,9 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits for Storage
 
     fn set_partial_values(
         &self,
-        key_start_values: &[super::StoreKeyStartValue],
+        key_offset_values: &[super::StoreKeyOffsetValue],
     ) -> Result<(), super::StorageError> {
-        self.0.set_partial_values(key_start_values)
+        self.0.set_partial_values(key_offset_values)
     }
 
     fn erase(&self, key: &super::StoreKey) -> Result<(), super::StorageError> {
@@ -174,9 +174,9 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[super::StoreKeyStartValue],
+        key_offset_values: &[super::StoreKeyOffsetValue],
     ) -> Result<(), super::StorageError> {
-        self.0.set_partial_values(key_start_values).await
+        self.0.set_partial_values(key_offset_values).await
     }
 
     async fn erase(&self, key: &super::StoreKey) -> Result<(), super::StorageError> {
@@ -190,14 +190,4 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
     async fn erase_prefix(&self, prefix: &super::StorePrefix) -> Result<(), super::StorageError> {
         self.0.erase_prefix(prefix).await
     }
-}
-
-#[cfg(feature = "async")]
-#[async_trait::async_trait]
-impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for StorageHandle<TStorage>
-{
-    // async fn mutex(&self, key: &StoreKey) -> Result<AsyncStoreKeyMutex, StorageError> {
-    //     self.0.mutex(key).await
-    // }
 }

@@ -12,15 +12,15 @@ use crate::array::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// Partial decoder for the `bytes` codec.
-pub struct PcodecPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct PcodecPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
 }
 
-impl<'a> PcodecPartialDecoder<'a> {
+impl PcodecPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    pub(crate) fn new(
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
     ) -> Self {
         Self {
@@ -93,7 +93,7 @@ fn do_partial_decode<'a>(
                     return Err(CodecError::UnsupportedDataType(
                         data_type.clone(),
                         super::IDENTIFIER.to_string(),
-                    ))
+                    ));
                 }
             };
         }
@@ -101,12 +101,12 @@ fn do_partial_decode<'a>(
     Ok(decoded_bytes)
 }
 
-impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for PcodecPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -118,7 +118,7 @@ impl ArrayPartialDecoderTraits for PcodecPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncPCodecPartialDecoder {
+pub(crate) struct AsyncPCodecPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
 }
@@ -126,7 +126,7 @@ pub struct AsyncPCodecPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncPCodecPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
     ) -> Self {
@@ -144,7 +144,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncPCodecPartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,

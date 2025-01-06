@@ -10,7 +10,7 @@
 use zarrs_storage::{
     byte_range::{ByteOffset, ByteRange},
     store_set_partial_values, Bytes, ListableStorageTraits, ReadableStorageTraits, StorageError,
-    StoreKey, StoreKeyError, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
+    StoreKey, StoreKeyError, StoreKeyOffsetValue, StoreKeys, StoreKeysPrefixes, StorePrefix,
     StorePrefixes, WritableStorageTraits,
 };
 
@@ -161,7 +161,7 @@ impl FilesystemStore {
         let path_str = path.to_string_lossy();
         #[cfg(target_os = "windows")]
         {
-            StoreKey::new(path_str.replace("\\", "/"))
+            StoreKey::new(path_str.replace('\\', "/"))
         }
         #[cfg(not(target_os = "windows"))]
         {
@@ -191,7 +191,7 @@ impl FilesystemStore {
         &self,
         key: &StoreKey,
         value: &[u8],
-        offset: Option<ByteOffset>,
+        offset: ByteOffset,
         truncate: bool,
     ) -> Result<(), StorageError> {
         let file = self.get_file_mutex(key);
@@ -208,11 +208,9 @@ impl FilesystemStore {
         let mut flags = OpenOptions::new();
         flags.write(true).create(true).truncate(truncate);
 
-        // FIXME: for now, only Linux support; also no support for `offset != 0`
-        let enable_direct = cfg!(target_os = "linux")
-            && self.options.direct_io
-            && offset.is_none()
-            && !value.is_empty();
+        // TODO: for now, only Linux support; also no support for `offset != 0`
+        let enable_direct =
+            cfg!(target_os = "linux") && self.options.direct_io && offset == 0 && !value.is_empty();
 
         // If `value` is already page-size aligned, we don't need to copy.
         let need_copy = value.as_ptr().align_offset(page_size::get()) != 0
@@ -243,10 +241,7 @@ impl FilesystemStore {
             // Truncate again to requested size
             file.set_len(value.len() as u64)?;
         } else {
-            if let Some(offset) = offset {
-                file.seek(SeekFrom::Start(offset))?;
-            }
-
+            file.seek(SeekFrom::Start(offset))?;
             file.write_all(value)?;
         }
 
@@ -279,20 +274,19 @@ impl ReadableStorageTraits for FilesystemStore {
                 // Seek
                 match byte_range {
                     ByteRange::FromStart(offset, _) => file.seek(SeekFrom::Start(*offset)),
-                    ByteRange::FromEnd(_, None) => file.seek(SeekFrom::Start(0u64)),
-                    ByteRange::FromEnd(offset, Some(length)) => {
-                        file.seek(SeekFrom::End(-(i64::try_from(*offset + *length).unwrap())))
+                    ByteRange::Suffix(length) => {
+                        file.seek(SeekFrom::End(-(i64::try_from(*length).unwrap())))
                     }
                 }?;
 
                 // Read
                 match byte_range {
-                    ByteRange::FromStart(_, None) | ByteRange::FromEnd(_, None) => {
+                    ByteRange::FromStart(_, None) => {
                         let mut buffer = Vec::new();
                         file.read_to_end(&mut buffer)?;
                         buffer
                     }
-                    ByteRange::FromStart(_, Some(length)) | ByteRange::FromEnd(_, Some(length)) => {
+                    ByteRange::FromStart(_, Some(length)) | ByteRange::Suffix(length) => {
                         let length = usize::try_from(*length).unwrap();
                         let mut buffer = vec![0; length];
                         file.read_exact(&mut buffer)?;
@@ -317,19 +311,19 @@ impl WritableStorageTraits for FilesystemStore {
         if self.readonly {
             Err(StorageError::ReadOnly)
         } else {
-            Self::set_impl(self, key, &value, None, true)
+            Self::set_impl(self, key, &value, 0, true)
         }
     }
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
         if self.readonly {
             return Err(StorageError::ReadOnly);
         }
 
-        store_set_partial_values(self, key_start_values)
+        store_set_partial_values(self, key_offset_values)
     }
 
     fn erase(&self, key: &StoreKey) -> Result<(), StorageError> {

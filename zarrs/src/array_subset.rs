@@ -10,7 +10,7 @@
 
 pub mod iterators;
 
-use std::{num::NonZeroU64, ops::Range};
+use std::{fmt::Debug, num::NonZeroU64, ops::Range};
 
 use iterators::{
     Chunks, ContiguousIndices, ContiguousLinearisedIndices, Indices, LinearisedIndices,
@@ -28,13 +28,18 @@ use crate::{
 /// An array subset.
 ///
 /// The unsafe `_unchecked methods` are mostly intended for internal use to avoid redundant input validation.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, Default)]
-#[display("start {start:?} shape {shape:?}")]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct ArraySubset {
     /// The start of the array subset.
     start: ArrayIndices,
     /// The shape of the array subset.
     shape: ArrayShape,
+}
+
+impl Display for ArraySubset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.to_ranges().fmt(f)
+    }
 }
 
 impl ArraySubset {
@@ -311,7 +316,9 @@ impl ArraySubset {
         element_size: usize,
     ) -> Vec<ByteRange> {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
-        let contiguous_indices = self.contiguous_linearised_indices_unchecked(array_shape);
+        // SAFETY: The length of array_shape matches the dimensionality
+        let contiguous_indices =
+            unsafe { self.contiguous_linearised_indices_unchecked(array_shape) };
         let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
         for array_index in &contiguous_indices {
             let byte_index = array_index * element_size as u64;
@@ -368,7 +375,9 @@ impl ArraySubset {
         let mut elements_subset = Vec::with_capacity(num_elements);
         let elements_subset_slice = crate::vec_spare_capacity_to_mut_slice(&mut elements_subset);
         let mut subset_offset = 0;
-        let contiguous_elements = self.contiguous_linearised_indices_unchecked(array_shape);
+        // SAFETY: `array_shape` is encapsulated by an array with `array_shape`.
+        let contiguous_elements =
+            unsafe { self.contiguous_linearised_indices_unchecked(array_shape) };
         let element_length = contiguous_elements.contiguous_elements_usize();
         for array_index in &contiguous_elements {
             let element_offset = usize::try_from(array_index).unwrap();
@@ -403,10 +412,11 @@ impl ArraySubset {
     /// Returns an iterator over the indices of elements within the subset.
     ///
     /// # Safety
-    /// `array_shape` must match the dimensionality and encapsulate this array subset.
+    /// `array_shape` must encapsulate this array subset.
     #[must_use]
     pub unsafe fn linearised_indices_unchecked(&self, array_shape: &[u64]) -> LinearisedIndices {
-        LinearisedIndices::new_unchecked(self.clone(), array_shape.to_vec())
+        // SAFETY: array_shape encapsulated this array subset
+        unsafe { LinearisedIndices::new_unchecked(self.clone(), array_shape.to_vec()) }
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
@@ -424,10 +434,11 @@ impl ArraySubset {
     /// Returns an iterator over the indices of contiguous elements within the subset.
     ///
     /// # Safety
-    /// The length of `array_shape` must match the array subset dimensionality.
+    /// `array_shape` must encapsulate this array subset.
     #[must_use]
     pub unsafe fn contiguous_indices_unchecked(&self, array_shape: &[u64]) -> ContiguousIndices {
-        ContiguousIndices::new_unchecked(self, array_shape)
+        // SAFETY: array_shape encapsulated this array subset
+        unsafe { ContiguousIndices::new_unchecked(self, array_shape) }
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
@@ -445,13 +456,14 @@ impl ArraySubset {
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
     ///
     /// # Safety
-    /// The length of `array_shape` must match the array subset dimensionality.
+    /// `array_shape` must encapsulate this array subset.
     #[must_use]
     pub unsafe fn contiguous_linearised_indices_unchecked(
         &self,
         array_shape: &[u64],
     ) -> ContiguousLinearisedIndices {
-        ContiguousLinearisedIndices::new_unchecked(self, array_shape.to_vec())
+        // SAFETY: array_shape encapsulated this array subset
+        unsafe { ContiguousLinearisedIndices::new_unchecked(self, array_shape.to_vec()) }
     }
 
     /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
@@ -477,7 +489,8 @@ impl ArraySubset {
     /// The length of `chunk_shape` must match the array subset dimensionality.
     #[must_use]
     pub unsafe fn chunks_unchecked(&self, chunk_shape: &[NonZeroU64]) -> Chunks {
-        Chunks::new_unchecked(self, chunk_shape)
+        // SAFETY: the dimensionality of chunk_shape matches the dimensionality.
+        unsafe { Chunks::new_unchecked(self, chunk_shape) }
     }
 
     /// Return the overlapping subset between this array subset and `subset_other`.

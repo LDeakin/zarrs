@@ -127,4 +127,10 @@ impl ShardingCodecBuilder {
             self.index_location,
         )
     }
+
+    /// Build into an [`Arc<ShardingCodec>`].
+    #[must_use]
+    pub fn build_arc(&self) -> Arc<ShardingCodec> {
+        Arc::new(self.build())
+    }
 }

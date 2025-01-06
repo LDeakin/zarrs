@@ -13,6 +13,7 @@ mod node_path;
 pub use node_path::{NodePath, NodePathError};
 
 mod node_sync;
+pub(crate) use node_sync::_get_child_nodes;
 pub use node_sync::{get_child_nodes, node_exists, node_exists_listable};
 
 mod key;
@@ -22,6 +23,8 @@ pub use key::{
 
 #[cfg(feature = "async")]
 mod node_async;
+#[cfg(feature = "async")]
+pub(crate) use node_async::_async_get_child_nodes;
 #[cfg(feature = "async")]
 pub use node_async::{async_get_child_nodes, async_node_exists, async_node_exists_listable};
 use zarrs_metadata::v3::group::ConsolidatedMetadataMetadata;
@@ -59,6 +62,18 @@ pub struct Node {
     children: Vec<Node>,
 }
 
+impl From<Node> for NodeMetadata {
+    fn from(value: Node) -> Self {
+        value.metadata
+    }
+}
+
+impl From<Node> for NodePath {
+    fn from(value: Node) -> Self {
+        value.path
+    }
+}
+
 /// A node creation error.
 #[derive(Debug, Error)]
 pub enum NodeCreateError {
@@ -74,6 +89,22 @@ pub enum NodeCreateError {
     /// Missing metadata.
     #[error("Metadata is missing")]
     MissingMetadata,
+}
+
+// FIXME: Remove in the next breaking release
+impl From<NodeCreateError> for StorageError {
+    fn from(value: NodeCreateError) -> Self {
+        match value {
+            NodeCreateError::NodePathError(err) => StorageError::Other(err.to_string()),
+            NodeCreateError::StorageError(err) => err,
+            NodeCreateError::MetadataVersionMismatch => {
+                StorageError::Other(NodeCreateError::MetadataVersionMismatch.to_string())
+            }
+            NodeCreateError::MissingMetadata => {
+                StorageError::Other(NodeCreateError::MissingMetadata.to_string())
+            }
+        }
+    }
 }
 
 impl Node {
@@ -93,7 +124,7 @@ impl Node {
                     | NodeMetadata::Group(GroupMetadata::V3(_)) => return Ok(metadata),
                     NodeMetadata::Array(ArrayMetadata::V2(_))
                     | NodeMetadata::Group(GroupMetadata::V2(_)) => {
-                        return Err(NodeCreateError::MetadataVersionMismatch)
+                        return Err(NodeCreateError::MetadataVersionMismatch);
                     }
                 }
             }
@@ -155,7 +186,7 @@ impl Node {
                     | NodeMetadata::Group(GroupMetadata::V3(_)) => return Ok(metadata),
                     NodeMetadata::Array(ArrayMetadata::V2(_))
                     | NodeMetadata::Group(GroupMetadata::V2(_)) => {
-                        return Err(NodeCreateError::MetadataVersionMismatch)
+                        return Err(NodeCreateError::MetadataVersionMismatch);
                     }
                 }
             }
@@ -196,18 +227,6 @@ impl Node {
         Err(NodeCreateError::MissingMetadata)
     }
 
-    #[deprecated(since = "0.15.0", note = "please use `open` instead")]
-    /// Open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
-    ///
-    /// # Errors
-    /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub fn new<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-        storage: &Arc<TStorage>,
-        path: &str,
-    ) -> Result<Self, NodeCreateError> {
-        Self::open_opt(storage, path, &MetadataRetrieveVersion::Default)
-    }
-
     /// Open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
     ///
     /// # Errors
@@ -240,21 +259,6 @@ impl Node {
             children,
         };
         Ok(node)
-    }
-
-    #[cfg(feature = "async")]
-    #[deprecated(since = "0.15.0", note = "please use `async_open` instead")]
-    /// Asynchronously open a node at `path` and read metadata and children from `storage` with default [`MetadataRetrieveVersion`].
-    ///
-    /// # Errors
-    /// Returns [`NodeCreateError`] if metadata is invalid or there is a failure to list child nodes.
-    pub async fn async_new<
-        TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
-    >(
-        storage: Arc<TStorage>,
-        path: &str,
-    ) -> Result<Self, NodeCreateError> {
-        Self::async_open_opt(storage, path, &MetadataRetrieveVersion::Default).await
     }
 
     #[cfg(feature = "async")]

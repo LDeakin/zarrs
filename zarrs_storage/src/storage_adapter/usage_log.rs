@@ -9,14 +9,14 @@ use itertools::Itertools;
 
 use crate::{
     byte_range::ByteRange, Bytes, ListableStorageTraits, MaybeBytes, ReadableStorageTraits,
-    StorageError, StoreKey, StoreKeyRange, StoreKeyStartValue, StoreKeys, StoreKeysPrefixes,
+    StorageError, StoreKey, StoreKeyOffsetValue, StoreKeyRange, StoreKeys, StoreKeysPrefixes,
     StorePrefix, WritableStorageTraits,
 };
 
 #[cfg(feature = "async")]
 use crate::{
-    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits,
-    AsyncReadableWritableStorageTraits, AsyncWritableStorageTraits, MaybeAsyncBytes,
+    AsyncBytes, AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+    MaybeAsyncBytes,
 };
 
 /// The usage log storage transformer. Logs storage method calls.
@@ -223,13 +223,29 @@ impl<TStorage: ?Sized + WritableStorageTraits> WritableStorageTraits
 
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let result = self.storage.set_partial_values(key_start_values);
+        struct DebugStoreKeyOffsetValue<'a>(&'a StoreKeyOffsetValue<'a>);
+        impl core::fmt::Debug for DebugStoreKeyOffsetValue<'_> {
+            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(
+                    f,
+                    "({} offset={} len={})",
+                    self.0.key(),
+                    self.0.offset(),
+                    self.0.value().len()
+                )
+            }
+        }
+        let result = self.storage.set_partial_values(key_offset_values);
         writeln!(
             self.handle.lock().unwrap(),
-            "{}set_partial_values({key_start_values:?}) -> {result:?}",
-            (self.prefix_func)()
+            "{}set_partial_values({:?}) -> {result:?}",
+            (self.prefix_func)(),
+            key_offset_values
+                .iter()
+                .map(DebugStoreKeyOffsetValue)
+                .collect_vec()
         )?;
         result
     }
@@ -418,12 +434,12 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 
     async fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError> {
-        let result = self.storage.set_partial_values(key_start_values).await;
+        let result = self.storage.set_partial_values(key_offset_values).await;
         writeln!(
             self.handle.lock().unwrap(),
-            "{}set_partial_values({key_start_values:?}) -> {result:?}",
+            "{}set_partial_values({key_offset_values:?}) -> {result:?}",
             (self.prefix_func)()
         )?;
         result
@@ -459,11 +475,4 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         )?;
         result
     }
-}
-
-#[cfg(feature = "async")]
-#[async_trait::async_trait]
-impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits> AsyncReadableWritableStorageTraits
-    for UsageLogStorageAdapter<TStorage>
-{
 }

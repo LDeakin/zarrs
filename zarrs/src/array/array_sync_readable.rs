@@ -13,9 +13,9 @@ use crate::{
 };
 
 use super::{
-    array_bytes::{merge_chunks_vlen, update_bytes_flen},
+    array_bytes::{copy_fill_value_into, merge_chunks_vlen},
     codec::{
-        options::CodecOptions, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, CodecError,
+        options::CodecOptions, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
         StoragePartialDecoder,
     },
     concurrency::concurrency_chunks_and_codec,
@@ -27,16 +27,6 @@ use super::{
 use super::elements_to_ndarray;
 
 impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
-    /// Open an existing array in `storage` at `path` with default [`MetadataRetrieveVersion`].
-    /// The metadata is read from the store.
-    ///
-    /// # Errors
-    /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
-    #[deprecated(since = "0.15.0", note = "please use `open` instead")]
-    pub fn new(storage: Arc<TStorage>, path: &str) -> Result<Self, ArrayCreateError> {
-        Self::open(storage, path)
-    }
-
     /// Open an existing array in `storage` at `path` with default [`MetadataRetrieveVersion`].
     /// The metadata is read from the store.
     ///
@@ -491,8 +481,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         if let Some(chunk_encoded) = chunk_encoded {
             let chunk_encoded: Vec<u8> = chunk_encoded.into();
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-            self.codecs()
-                .decode_into(
+            unsafe {
+                self.codecs().decode_into(
                     Cow::Owned(chunk_encoded),
                     &chunk_representation,
                     output,
@@ -500,25 +490,19 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     output_subset,
                     options,
                 )
-                .map_err(ArrayError::CodecError)
+            }
+            .map_err(ArrayError::CodecError)
         } else {
-            // Fill with the fill value
-            let array_size = ArraySize::new(self.data_type().size(), output_subset.num_elements());
-            if let ArrayBytes::Fixed(fill_value_bytes) =
-                ArrayBytes::new_fill_value(array_size, self.fill_value())
-            {
-                update_bytes_flen(
+            unsafe {
+                copy_fill_value_into(
+                    self.data_type(),
+                    self.fill_value(),
                     output,
                     output_shape,
-                    &fill_value_bytes,
                     output_subset,
-                    self.data_type().fixed_size().unwrap(),
-                );
-                Ok(())
-            } else {
-                // TODO: Variable length data type support?
-                Err(ArrayError::CodecError(CodecError::ExpectedFixedLengthBytes))
+                )
             }
+            .map_err(ArrayError::CodecError)
         }
     }
 
@@ -725,6 +709,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     DataTypeSize::Fixed(data_type_size) => {
                         // Allocate the output
                         let size_output = array_subset.num_elements_usize() * data_type_size;
+                        if size_output == 0 {
+                            return Ok(ArrayBytes::new_flen(vec![]));
+                        }
                         let mut output = Vec::with_capacity(size_output);
 
                         {
@@ -832,7 +819,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             self.codecs
                 .clone()
                 .partial_decoder(input_handle, &chunk_representation, options)?
-                .partial_decode_opt(&[chunk_subset.clone()], options)?
+                .partial_decode(&[chunk_subset.clone()], options)?
                 .remove(0)
                 .into_owned()
         };
@@ -861,7 +848,15 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
             && chunk_subset.shape() == chunk_representation.shape_u64()
         {
             // Fast path if `chunk_subset` encompasses the whole chunk
-            self.retrieve_chunk_into(chunk_indices, output, output_shape, output_subset, options)
+            unsafe {
+                self.retrieve_chunk_into(
+                    chunk_indices,
+                    output,
+                    output_shape,
+                    output_subset,
+                    options,
+                )
+            }
         } else {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
@@ -872,11 +867,19 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                 self.chunk_key(chunk_indices),
             ));
 
-            Ok(self
-                .codecs
-                .clone()
-                .partial_decoder(input_handle, &chunk_representation, options)?
-                .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)?)
+            unsafe {
+                self.codecs
+                    .clone()
+                    .partial_decoder(input_handle, &chunk_representation, options)?
+                    .partial_decode_into(
+                        chunk_subset,
+                        output,
+                        output_shape,
+                        output_subset,
+                        options,
+                    )?;
+            }
+            Ok(())
         }
     }
 

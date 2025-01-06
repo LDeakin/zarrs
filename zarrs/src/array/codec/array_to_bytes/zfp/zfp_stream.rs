@@ -20,7 +20,7 @@ impl Drop for ZfpStream {
 }
 
 impl ZfpStream {
-    pub fn new(mode: &ZfpMode, type_: zfp_type) -> Option<Self> {
+    pub(super) fn new(mode: &ZfpMode, type_: zfp_type) -> Option<Self> {
         let zfp = unsafe { zfp_stream_open(std::ptr::null_mut()) };
         match mode {
             ZfpMode::Expert {
@@ -51,7 +51,7 @@ impl ZfpStream {
         NonNull::new(zfp).map(Self)
     }
 
-    pub const fn as_zfp_stream(&self) -> *mut zfp_stream {
+    pub(super) const fn as_zfp_stream(&self) -> *mut zfp_stream {
         self.0.as_ptr()
     }
 }

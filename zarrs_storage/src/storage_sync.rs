@@ -3,8 +3,8 @@ use std::sync::Arc;
 use itertools::Itertools;
 
 use super::{
-    byte_range::ByteRange, Bytes, MaybeBytes, StorageError, StoreKey, StoreKeyRange,
-    StoreKeyStartValue, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
+    byte_range::ByteRange, Bytes, MaybeBytes, StorageError, StoreKey, StoreKeyOffsetValue,
+    StoreKeyRange, StoreKeys, StoreKeysPrefixes, StorePrefix, StorePrefixes,
 };
 
 /// Readable storage traits.
@@ -154,13 +154,13 @@ pub trait ListableStorageTraits: Send + Sync {
 /// Panics if a key ends beyond `usize::MAX`.
 pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
     store: &T,
-    key_start_values: &[StoreKeyStartValue],
+    key_offset_values: &[StoreKeyOffsetValue],
     // truncate: bool,
 ) -> Result<(), StorageError> {
     // Group by key
-    key_start_values
+    key_offset_values
         .iter()
-        .chunk_by(|key_start_value| &key_start_value.key)
+        .chunk_by(|key_offset_value| key_offset_value.key())
         .into_iter()
         .map(|(key, group)| (key.clone(), group.into_iter().cloned().collect::<Vec<_>>()))
         .try_for_each(|(key, group)| {
@@ -170,29 +170,31 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
 
             // Read the store key
             let bytes = store.get(&key)?.unwrap_or_default();
+            let mut bytes = Vec::<u8>::from(bytes);
 
             // Convert to a mutable vector of the required length
-            let end_max =
-                usize::try_from(group.iter().map(StoreKeyStartValue::end).max().unwrap()).unwrap();
-            let mut bytes = if bytes.len() < end_max {
-                // Expand the store key if needed
-                let mut vec = Vec::with_capacity(end_max);
-                vec.extend_from_slice(&bytes);
-                vec.resize_with(end_max, Default::default);
-                vec
-            // } else if truncate {
-            //     let mut bytes = bytes.to_vec();
+            let end_max = group
+                .iter()
+                .map(|key_offset_value| {
+                    usize::try_from(
+                        key_offset_value.offset() + key_offset_value.value().len() as u64,
+                    )
+                    .unwrap()
+                })
+                .max()
+                .unwrap();
+            if bytes.len() < end_max {
+                bytes.resize_with(end_max, Default::default);
+            }
+            // else if truncate {
             //     bytes.truncate(end_max);
-            //     bytes
-            } else {
-                bytes.to_vec()
-            };
+            // };
 
             // Update the store key
-            for key_start_value in group {
-                let start: usize = key_start_value.start.try_into().unwrap();
-                let end: usize = key_start_value.end().try_into().unwrap();
-                bytes[start..end].copy_from_slice(key_start_value.value);
+            for key_offset_value in group {
+                let start = usize::try_from(key_offset_value.offset()).unwrap();
+                bytes[start..start + key_offset_value.value().len()]
+                    .copy_from_slice(key_offset_value.value());
             }
 
             // Write the store key
@@ -209,13 +211,13 @@ pub trait WritableStorageTraits: Send + Sync {
     /// Returns a [`StorageError`] on failure to store.
     fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError>;
 
-    /// Store bytes according to a list of [`StoreKeyStartValue`].
+    /// Store bytes according to a list of [`StoreKeyOffsetValue`].
     ///
     /// # Errors
     /// Returns a [`StorageError`] on failure to store.
     fn set_partial_values(
         &self,
-        key_start_values: &[StoreKeyStartValue],
+        key_offset_values: &[StoreKeyOffsetValue],
     ) -> Result<(), StorageError>;
 
     /// Erase a [`StoreKey`].

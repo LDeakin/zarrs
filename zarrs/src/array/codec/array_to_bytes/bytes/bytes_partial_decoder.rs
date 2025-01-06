@@ -17,16 +17,16 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{reverse_endianness, Endianness};
 
 /// Partial decoder for the `bytes` codec.
-pub struct BytesPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct BytesPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
 }
 
-impl<'a> BytesPartialDecoder<'a> {
+impl BytesPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
-        input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+    pub(crate) fn new(
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
     ) -> Self {
@@ -38,12 +38,12 @@ impl<'a> BytesPartialDecoder<'a> {
     }
 }
 
-impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
+impl ArrayPartialDecoderTraits for BytesPartialDecoder {
     fn data_type(&self) -> &DataType {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -56,7 +56,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
                     return Err(CodecError::UnsupportedDataType(
                         self.data_type().clone(),
                         super::IDENTIFIER.to_string(),
-                    ))
+                    ));
                 }
                 DataTypeSize::Fixed(data_type_size) => {
                     // Get byte ranges
@@ -107,7 +107,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bytes` codec.
-pub struct AsyncBytesPartialDecoder {
+pub(crate) struct AsyncBytesPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     endian: Option<Endianness>,
@@ -116,7 +116,7 @@ pub struct AsyncBytesPartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncBytesPartialDecoder {
     /// Create a new partial decoder for the `bytes` codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         endian: Option<Endianness>,
@@ -136,7 +136,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -166,7 +166,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder {
                     return Err(CodecError::UnsupportedDataType(
                         self.data_type().clone(),
                         super::IDENTIFIER.to_string(),
-                    ))
+                    ));
                 }
                 DataTypeSize::Fixed(data_type_size) => array_subset
                     .byte_ranges(&chunk_shape, data_type_size)

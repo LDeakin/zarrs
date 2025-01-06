@@ -1,12 +1,16 @@
 use std::{borrow::Cow, sync::Arc};
 
-use pco::{standalone::guarantee::file_size, ChunkConfig, ModeSpec, PagingSpec};
+use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
+use zarrs_metadata::v3::array::codec::pcodec::{
+    PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration,
+};
 
 use crate::{
     array::{
         codec::{
-            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecOptions, CodecTraits, RawBytes,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
+            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
+            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits, RawBytes,
             RecommendedConcurrency,
         },
         convert_from_bytes_slice, transmute_to_bytes_vec, ArrayMetadataOptions,
@@ -30,13 +34,10 @@ pub struct PcodecCodec {
     chunk_config: ChunkConfig,
 }
 
-fn mode_spec_config_to_pco(mode_spec: &PcodecModeSpecConfiguration) -> ModeSpec {
+fn mode_spec_config_to_pco(mode_spec: PcodecModeSpecConfiguration) -> ModeSpec {
     match mode_spec {
         PcodecModeSpecConfiguration::Auto => ModeSpec::Auto,
         PcodecModeSpecConfiguration::Classic => ModeSpec::Classic,
-        PcodecModeSpecConfiguration::TryFloatMult(base) => ModeSpec::TryFloatMult(*base),
-        PcodecModeSpecConfiguration::TryFloatQuant(k) => ModeSpec::TryFloatQuant(*k),
-        PcodecModeSpecConfiguration::TryIntMult(base) => ModeSpec::TryIntMult(*base),
     }
 }
 
@@ -44,24 +45,32 @@ fn mode_spec_pco_to_config(mode_spec: &ModeSpec) -> PcodecModeSpecConfiguration 
     match mode_spec {
         ModeSpec::Auto => PcodecModeSpecConfiguration::Auto,
         ModeSpec::Classic => PcodecModeSpecConfiguration::Classic,
-        ModeSpec::TryFloatMult(base) => PcodecModeSpecConfiguration::TryFloatMult(*base),
-        ModeSpec::TryFloatQuant(k) => PcodecModeSpecConfiguration::TryFloatQuant(*k),
-        ModeSpec::TryIntMult(base) => PcodecModeSpecConfiguration::TryIntMult(*base),
         _ => unreachable!("Mode spec is not supported"),
     }
 }
 
 fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> ChunkConfig {
-    let mode_spec = mode_spec_config_to_pco(&configuration.mode_spec);
-    ChunkConfig::default()
-        .with_compression_level(configuration.level.as_usize())
-        .with_delta_encoding_order(
+    let mode_spec = mode_spec_config_to_pco(configuration.mode_spec);
+    let delta_spec = match configuration.delta_spec {
+        PcodecDeltaSpecConfiguration::Auto => DeltaSpec::Auto,
+        PcodecDeltaSpecConfiguration::None => DeltaSpec::None,
+        PcodecDeltaSpecConfiguration::TryConsecutive => DeltaSpec::TryConsecutive(
             configuration
                 .delta_encoding_order
-                .map(|order| order.as_usize()),
-        )
+                .map_or(0, |o| o.as_usize()),
+        ),
+        PcodecDeltaSpecConfiguration::TryLookback => DeltaSpec::TryLookback,
+    };
+    let paging_spec = match configuration.paging_spec {
+        PcodecPagingSpecConfiguration::EqualPagesUpTo => {
+            PagingSpec::EqualPagesUpTo(configuration.equal_pages_up_to)
+        }
+    };
+    ChunkConfig::default()
+        .with_compression_level(configuration.level.as_usize())
         .with_mode_spec(mode_spec)
-        .with_paging_spec(PagingSpec::EqualPagesUpTo(configuration.equal_pages_up_to))
+        .with_delta_spec(delta_spec)
+        .with_paging_spec(paging_spec)
 }
 
 impl PcodecCodec {
@@ -76,16 +85,33 @@ impl PcodecCodec {
 
 impl CodecTraits for PcodecCodec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
-        let PagingSpec::EqualPagesUpTo(equal_pages_up_to) = self.chunk_config.paging_spec else {
-            unreachable!()
+        let mode_spec = mode_spec_pco_to_config(&self.chunk_config.mode_spec);
+        let (delta_spec, delta_encoding_order) = match self.chunk_config.delta_spec {
+            DeltaSpec::Auto => (PcodecDeltaSpecConfiguration::Auto, None),
+            DeltaSpec::None => (PcodecDeltaSpecConfiguration::None, None),
+            DeltaSpec::TryConsecutive(delta_encoding_order) => (
+                PcodecDeltaSpecConfiguration::TryConsecutive,
+                Some(PcodecDeltaEncodingOrder::try_from(delta_encoding_order).expect("valid")),
+            ),
+            DeltaSpec::TryLookback => (PcodecDeltaSpecConfiguration::TryLookback, None),
+            _ => unimplemented!("unsupported pcodec delta spec"),
         };
+        let (paging_spec, equal_pages_up_to) = match self.chunk_config.paging_spec {
+            PagingSpec::EqualPagesUpTo(equal_pages_up_to) => (
+                PcodecPagingSpecConfiguration::EqualPagesUpTo,
+                equal_pages_up_to,
+            ),
+            PagingSpec::Exact(_) => unimplemented!("pcodec exact paging spec not supported"),
+            _ => unimplemented!("unsupported pcodec paging spec"),
+        };
+
         let configuration = PcodecCodecConfiguration::V1(PcodecCodecConfigurationV1 {
-            level: PcodecCompressionLevel::try_from(self.chunk_config.compression_level).unwrap(),
-            delta_encoding_order: self
-                .chunk_config
-                .delta_encoding_order
-                .map(|order| PcodecDeltaEncodingOrder::try_from(order).unwrap()),
-            mode_spec: mode_spec_pco_to_config(&self.chunk_config.mode_spec),
+            level: PcodecCompressionLevel::try_from(self.chunk_config.compression_level)
+                .expect("validated on creation"),
+            mode_spec,
+            delta_spec,
+            paging_spec,
+            delta_encoding_order,
             equal_pages_up_to,
         });
 
@@ -97,7 +123,7 @@ impl CodecTraits for PcodecCodec {
                     .expect("experimental codec identifier in global map"),
                 &configuration,
             )
-            .unwrap(),
+            .expect("pcodec configuration is valid json"),
         )
     }
 
@@ -122,6 +148,10 @@ impl ArrayCodecTraits for PcodecCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for PcodecCodec {
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+        self as Arc<dyn ArrayToBytesCodecTraits>
+    }
+
     fn encode<'a>(
         &self,
         bytes: ArrayBytes<'a>,
@@ -239,6 +269,21 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         )))
     }
 
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
+        Ok(Arc::new(ArrayPartialEncoderDefault::new(
+            input_handle,
+            output_handle,
+            decoded_representation.clone(),
+            self,
+        )))
+    }
+
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -283,6 +328,8 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
                 IDENTIFIER.to_string(),
             )),
         }?;
-        Ok(BytesRepresentation::BoundedSize(size.try_into().unwrap()))
+        Ok(BytesRepresentation::BoundedSize(
+            u64::try_from(size).unwrap(),
+        ))
     }
 }

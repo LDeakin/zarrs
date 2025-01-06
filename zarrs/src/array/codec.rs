@@ -6,7 +6,7 @@
 //!
 //! A [`CodecChain`] represents a codec sequence consisting of any number of array to array and bytes to bytes codecs, and one array to bytes codec.
 //! A codec chain is itself an array to bytes codec.
-//! A [`ArrayPartialDecoderCache`] or [`BytesPartialDecoderCache`] may be inserted into a codec chain to optimise partial decoding where appropriate.
+//! A cache may be inserted into a codec chain to optimise partial decoding where appropriate.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id18>.
 
@@ -59,8 +59,8 @@ use thiserror::Error;
 
 mod array_partial_decoder_cache;
 mod bytes_partial_decoder_cache;
-pub use array_partial_decoder_cache::ArrayPartialDecoderCache;
-pub use bytes_partial_decoder_cache::BytesPartialDecoderCache;
+pub(crate) use array_partial_decoder_cache::ArrayPartialDecoderCache;
+pub(crate) use bytes_partial_decoder_cache::BytesPartialDecoderCache;
 
 mod byte_interval_partial_decoder;
 pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
@@ -69,9 +69,19 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 use unsafe_cell_slice::UnsafeCellSlice;
 
+mod array_partial_encoder_default;
+pub use array_partial_encoder_default::ArrayPartialEncoderDefault;
+
+mod array_to_array_partial_encoder_default;
+pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefault;
+
+mod bytes_partial_encoder_default;
+pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
+
+use crate::storage::{StoreKeyOffsetValue, WritableStorage};
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
-    byte_range::{extract_byte_ranges_read_seek, ByteRange, InvalidByteRangeError},
+    byte_range::{extract_byte_ranges_read_seek, ByteOffset, ByteRange, InvalidByteRangeError},
     metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
     storage::{ReadableStorage, StorageError, StoreKey},
@@ -80,6 +90,7 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::storage::AsyncReadableStorage;
 
+use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -231,7 +242,7 @@ pub trait ArrayCodecTraits: CodecTraits {
 }
 
 /// Partial bytes decoder traits.
-pub trait BytesPartialDecoderTraits: Send + Sync {
+pub trait BytesPartialDecoderTraits: Any + Send + Sync {
     /// Partially decode bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
@@ -278,7 +289,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
 #[cfg(feature = "async")]
 /// Asynchronous partial bytes decoder traits.
 #[async_trait::async_trait]
-pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
+pub trait AsyncBytesPartialDecoderTraits: Any + Send + Sync {
     /// Partially decode bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
@@ -323,27 +334,17 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
 }
 
 /// Partial array decoder traits.
-pub trait ArrayPartialDecoderTraits: Send + Sync {
+pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
-    /// Partially decode a chunk with default codec options.
+    /// Partially decode a chunk.
     ///
     /// If the inner `input_handle` is a bytes decoder and partial decoding returns [`None`], then the array subsets have the fill value.
-    /// Use [`partial_decode_opt`](ArrayPartialDecoderTraits::partial_decode_opt) to control codec options.
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
     fn partial_decode(
-        &self,
-        array_subsets: &[ArraySubset],
-    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
-        self.partial_decode_opt(array_subsets, &CodecOptions::default())
-    }
-
-    /// Explicit options version of [`partial_decode`](ArrayPartialDecoderTraits::partial_decode).
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-    fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -354,6 +355,9 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// This method is intended for internal use by Array.
     /// It currently only works for fixed length data types.
     ///
+    /// The `array_subset` shape and dimensionality does not need to match `output_subset`, but the number of elements must match.
+    /// Extracted elements from the `array_subset` are written to the subset of the output in C order.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
     ///
@@ -361,7 +365,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     /// The caller must ensure that:
     ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
     ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `array_subset` has the same shape as the `output_subset`.
+    ///  - `output_subset` has the same number of elements as `array_subset`.
     unsafe fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
@@ -371,9 +375,9 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         debug_assert!(output_subset.inbounds(output_shape));
-        debug_assert_eq!(array_subset.shape(), output_subset.shape());
+        debug_assert_eq!(array_subset.num_elements(), output_subset.num_elements());
         let decoded_value = self
-            .partial_decode_opt(&[array_subset.clone()], options)?
+            .partial_decode(&[array_subset.clone()], options)?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
             update_bytes_flen(
@@ -390,27 +394,56 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
     }
 }
 
+/// Partial array encoder traits.
+pub trait ArrayPartialEncoderTraits: Any + Send + Sync {
+    /// Erase the chunk.
+    ///
+    /// # Errors
+    /// Returns an error if there is an underlying store error.
+    fn erase(&self) -> Result<(), CodecError>;
+
+    /// Partially encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    fn partial_encode(
+        &self,
+        subsets_and_bytes: &[(&ArraySubset, ArrayBytes<'_>)],
+        options: &CodecOptions,
+    ) -> Result<(), CodecError>;
+}
+
+/// Partial bytes encoder traits.
+pub trait BytesPartialEncoderTraits: Any + Send + Sync {
+    /// Erase the chunk.
+    ///
+    /// # Errors
+    /// Returns an error if there is an underlying store error.
+    fn erase(&self) -> Result<(), CodecError>;
+
+    /// Partially encode a chunk.
+    ///
+    /// # Errors
+    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
+    fn partial_encode(
+        &self,
+        offsets_and_bytes: &[(ByteOffset, crate::array::RawBytes<'_>)],
+        options: &CodecOptions,
+    ) -> Result<(), CodecError>;
+}
+
 #[cfg(feature = "async")]
 /// Asynchronous partial array decoder traits.
 #[async_trait::async_trait]
-pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
+pub trait AsyncArrayPartialDecoderTraits: Any + Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
-    /// Partially decode a chunk with default codec options.
+    /// Partially decode a chunk.
     ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails, array subset is invalid, or the array subset shape does not match array view subset shape.
     async fn partial_decode(
-        &self,
-        array_subsets: &[ArraySubset],
-    ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
-        self.partial_decode_opt(array_subsets, &CodecOptions::default())
-            .await
-    }
-
-    /// Explicit options variant of [`partial_decode`](AsyncArrayPartialDecoderTraits::partial_decode).
-    async fn partial_decode_opt(
         &self,
         array_subsets: &[ArraySubset],
         options: &CodecOptions,
@@ -429,7 +462,7 @@ pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
         debug_assert!(output_subset.inbounds(output_shape));
         debug_assert_eq!(array_subset.shape(), output_subset.shape());
         let decoded_value = self
-            .partial_decode_opt(&[array_subset.clone()], options)
+            .partial_decode(&[array_subset.clone()], options)
             .await?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
@@ -514,9 +547,43 @@ impl AsyncBytesPartialDecoderTraits for AsyncStoragePartialDecoder {
     }
 }
 
+/// A [`WritableStorage`] store value partial encoder.
+pub struct StoragePartialEncoder {
+    storage: WritableStorage,
+    key: StoreKey,
+}
+
+impl StoragePartialEncoder {
+    /// Create a new storage partial encoder.
+    pub fn new(storage: WritableStorage, key: StoreKey) -> Self {
+        Self { storage, key }
+    }
+}
+
+impl BytesPartialEncoderTraits for StoragePartialEncoder {
+    fn erase(&self) -> Result<(), CodecError> {
+        Ok(self.storage.erase(&self.key)?)
+    }
+
+    fn partial_encode(
+        &self,
+        offsets_and_bytes: &[(ByteOffset, crate::array::RawBytes<'_>)],
+        _options: &CodecOptions,
+    ) -> Result<(), CodecError> {
+        let key_offset_values = offsets_and_bytes
+            .iter()
+            .map(|(offset, bytes)| StoreKeyOffsetValue::new(self.key.clone(), *offset, bytes))
+            .collect::<Vec<_>>();
+        Ok(self.storage.set_partial_values(&key_offset_values)?)
+    }
+}
+
 /// Traits for array to array codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
+    /// Return a dynamic version of the codec.
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits>;
+
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
     /// # Errors
@@ -570,6 +637,18 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         options: &CodecOptions,
     ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError>;
 
+    /// Initialise a partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
+        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError>;
+
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
     ///
@@ -581,11 +660,16 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError>;
+
+    // TODO: async_partial_encoder
 }
 
 /// Traits for array to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
+    /// Return a dynamic version of the codec.
+    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits>;
+
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
     /// # Errors
@@ -622,14 +706,17 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// This method is intended for internal use by Array.
     /// It currently only works for fixed length data types.
     ///
+    /// The decoded representation shape and dimensionality does not need to match `output_subset`, but the number of elements must match.
+    /// Chunk elements are written to the subset of the output in C order.
+    ///
     /// # Errors
     /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
     ///
     /// # Safety
     /// The caller must ensure that:
-    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
+    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type, and
     ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `array_subset` has the same shape as the `output_subset`.
+    ///  - `output_subset` has the same number of elements as the decoded representation shape.
     unsafe fn decode_into(
         &self,
         bytes: RawBytes<'_>,
@@ -640,7 +727,10 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         debug_assert!(output_subset.inbounds(output_shape));
-        debug_assert_eq!(decoded_representation.shape_u64(), output_subset.shape());
+        debug_assert_eq!(
+            decoded_representation.num_elements(),
+            output_subset.num_elements()
+        );
         let decoded_value = self.decode(bytes, decoded_representation, options)?;
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
             update_bytes_flen(
@@ -667,6 +757,18 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         options: &CodecOptions,
     ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError>;
 
+    /// Initialise a partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &ChunkRepresentation,
+        _options: &CodecOptions,
+    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError>;
+
     #[cfg(feature = "async")]
     /// Initialise an asynchronous partial decoder.
     ///
@@ -678,11 +780,16 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         decoded_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError>;
+
+    // TODO: Async partial encoder
 }
 
 /// Traits for bytes to bytes codecs.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
+    /// Return a dynamic version of the codec.
+    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits>;
+
     /// Return the maximum internal concurrency supported for the requested decoded representation.
     ///
     /// # Errors
@@ -730,6 +837,18 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
         options: &CodecOptions,
     ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError>;
 
+    /// Initialise a partial encoder.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if initialisation fails.
+    fn partial_encoder(
+        self: Arc<Self>,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        output_handle: Arc<dyn BytesPartialEncoderTraits>,
+        decoded_representation: &BytesRepresentation,
+        options: &CodecOptions,
+    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError>;
+
     #[cfg(feature = "async")]
     /// Initialises an asynchronous partial decoder.
     ///
@@ -741,9 +860,11 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
         decoded_representation: &BytesRepresentation,
         options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError>;
+
+    // TODO: Async partial encoder
 }
 
-impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
+impl BytesPartialDecoderTraits for std::io::Cursor<&'static [u8]> {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -758,7 +879,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
     }
 }
 
-impl BytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
+impl BytesPartialDecoderTraits for std::io::Cursor<RawBytes<'static>> {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -790,7 +911,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&'static [u8]> {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -807,7 +928,7 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<RawBytes<'static>> {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

@@ -6,8 +6,8 @@ use super::{codec::CodecOptions, Array, ArrayBytes, ArrayError, RawBytes};
 
 // pub mod array_chunk_cache_ext_decoded_sync;
 // pub mod array_chunk_cache_ext_encoded_sync;
-pub mod array_chunk_cache_ext_sync;
-pub mod chunk_cache_lru;
+pub(crate) mod array_chunk_cache_ext_sync;
+pub(crate) mod chunk_cache_lru;
 // pub mod chunk_cache_lru_chunk_limit_thread_local;
 // pub mod chunk_cache_lru_size_limit_thread_local;
 

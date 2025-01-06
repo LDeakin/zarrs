@@ -14,17 +14,17 @@ use crate::{
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `bz2` codec.
-pub struct Bz2PartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct Bz2PartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> Bz2PartialDecoder<'a> {
-    pub fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+impl Bz2PartialDecoder {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for Bz2PartialDecoder<'_> {
+impl BytesPartialDecoderTraits for Bz2PartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -51,13 +51,13 @@ impl BytesPartialDecoderTraits for Bz2PartialDecoder<'_> {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the `bz2` codec.
-pub struct AsyncBz2PartialDecoder {
+pub(crate) struct AsyncBz2PartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
 }
 
 #[cfg(feature = "async")]
 impl AsyncBz2PartialDecoder {
-    pub fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }

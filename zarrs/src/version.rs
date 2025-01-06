@@ -1,27 +1,29 @@
 //! `zarrs` version information.
 
+include!(concat!(env!("OUT_DIR"), "/version.rs"));
+
 /// The `zarrs` major version.
 #[must_use]
-pub fn version_major() -> u32 {
-    const VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
-    let major: u32 = VERSION_MAJOR.parse::<u32>().unwrap_or_default();
-    major
+pub const fn version_major() -> u32 {
+    VERSION_MAJOR
 }
 
 /// The `zarrs` minor version.
 #[must_use]
-pub fn version_minor() -> u32 {
-    const VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
-    let minor: u32 = VERSION_MINOR.parse::<u32>().unwrap_or_default();
-    minor
+pub const fn version_minor() -> u32 {
+    VERSION_MINOR
 }
 
 /// The `zarrs` patch version.
 #[must_use]
-pub fn version_patch() -> u32 {
-    const VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
-    let patch: u32 = VERSION_PATCH.parse::<u32>().unwrap_or_default();
-    patch
+pub const fn version_patch() -> u32 {
+    VERSION_PATCH
+}
+
+/// The `zarrs` pre-release version.
+#[must_use]
+pub const fn version_pre() -> &'static str {
+    env!("CARGO_PKG_VERSION_PRE")
 }
 
 /// A [`u32`] representation of the `zarrs` version.
@@ -49,6 +51,14 @@ pub fn version_patch() -> u32 {
 /// # assert!(version_patch == zarrs::version::version_patch());
 /// ```
 #[must_use]
-pub fn version() -> u32 {
+pub const fn version() -> u32 {
     (version_major() << 22) | (version_minor() << 12) | version_patch()
+}
+
+/// A string representation of the `zarrs` version.
+///
+/// Matches the `CARGO_PKG_VERSION`.
+#[must_use]
+pub const fn version_str() -> &'static str {
+    env!("CARGO_PKG_VERSION")
 }

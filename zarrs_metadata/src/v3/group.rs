@@ -52,24 +52,38 @@ impl Eq for GroupMetadataV3 {}
 
 impl Default for GroupMetadataV3 {
     fn default() -> Self {
-        Self::new(serde_json::Map::new(), AdditionalFields::default())
+        Self::new()
     }
 }
 
 impl GroupMetadataV3 {
-    /// Create group metadata.
+    /// Create Zarr V3 group metadata.
     #[must_use]
-    pub fn new(
-        attributes: serde_json::Map<String, serde_json::Value>,
-        additional_fields: AdditionalFields,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
             zarr_format: monostate::MustBe!(3u64),
             node_type: monostate::MustBe!("group"),
-            attributes,
-            additional_fields,
+            attributes: serde_json::Map::new(),
+            additional_fields: AdditionalFields::default(),
             consolidated_metadata: None,
         }
+    }
+
+    /// Set the user attributes.
+    #[must_use]
+    pub fn with_attributes(
+        mut self,
+        attributes: serde_json::Map<String, serde_json::Value>,
+    ) -> Self {
+        self.attributes = attributes;
+        self
+    }
+
+    /// Set the additional fields.
+    #[must_use]
+    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+        self.additional_fields = additional_fields;
+        self
     }
 }
 

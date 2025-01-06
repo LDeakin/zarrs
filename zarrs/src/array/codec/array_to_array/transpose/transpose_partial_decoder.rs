@@ -10,7 +10,7 @@ use crate::array::{
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 /// Partial decoder for the Transpose codec.
-pub struct TransposePartialDecoder {
+pub(crate) struct TransposePartialDecoder {
     input_handle: Arc<dyn ArrayPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     order: TransposeOrder,
@@ -18,7 +18,7 @@ pub struct TransposePartialDecoder {
 
 impl TransposePartialDecoder {
     /// Create a new partial decoder for the Transpose codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn ArrayPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         order: TransposeOrder,
@@ -107,7 +107,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    fn partial_decode_opt(
+    fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -120,7 +120,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder {
             get_decoded_regions_transposed(&self.order, decoded_regions);
         let encoded_value = self
             .input_handle
-            .partial_decode_opt(&decoded_regions_transposed, options)?;
+            .partial_decode(&decoded_regions_transposed, options)?;
         do_transpose(
             encoded_value,
             decoded_regions,
@@ -132,7 +132,7 @@ impl ArrayPartialDecoderTraits for TransposePartialDecoder {
 
 #[cfg(feature = "async")]
 /// Asynchronous partial decoder for the Transpose codec.
-pub struct AsyncTransposePartialDecoder {
+pub(crate) struct AsyncTransposePartialDecoder {
     input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
     decoded_representation: ChunkRepresentation,
     order: TransposeOrder,
@@ -141,7 +141,7 @@ pub struct AsyncTransposePartialDecoder {
 #[cfg(feature = "async")]
 impl AsyncTransposePartialDecoder {
     /// Create a new partial decoder for the Transpose codec.
-    pub fn new(
+    pub(crate) fn new(
         input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
         decoded_representation: ChunkRepresentation,
         order: TransposeOrder,
@@ -161,7 +161,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder {
         self.decoded_representation.data_type()
     }
 
-    async fn partial_decode_opt(
+    async fn partial_decode(
         &self,
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
@@ -174,7 +174,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncTransposePartialDecoder {
             get_decoded_regions_transposed(&self.order, decoded_regions);
         let encoded_value = self
             .input_handle
-            .partial_decode_opt(&decoded_regions_transposed, options)
+            .partial_decode(&decoded_regions_transposed, options)
             .await?;
         do_transpose(
             encoded_value,

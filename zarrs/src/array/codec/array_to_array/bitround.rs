@@ -4,7 +4,7 @@
 //! Rounds integers to the specified number of bits from the most significant set bit.
 //!
 //! <div class="warning">
-//! This codec is experimental and is incompatible with other Zarr V3 implementations.
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
 //!
 //! This codec requires the `bitround` feature, which is disabled by default.
@@ -361,7 +361,7 @@ mod tests {
             )
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk
             .into_iter()
@@ -422,7 +422,7 @@ mod tests {
             .await
             .unwrap();
         let decoded_partial_chunk = partial_decoder
-            .partial_decode_opt(&decoded_regions, &CodecOptions::default())
+            .partial_decode(&decoded_regions, &CodecOptions::default())
             .await
             .unwrap();
         let decoded_partial_chunk = decoded_partial_chunk

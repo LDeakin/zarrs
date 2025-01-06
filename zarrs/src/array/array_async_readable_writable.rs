@@ -150,19 +150,23 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
             // let mutex = self.storage.mutex(&key).await?;
             // let _lock = mutex.lock();
 
+            // TODO: Add async partial encoding
+
             // Decode the entire chunk
             let chunk_bytes_old = self
                 .async_retrieve_chunk_opt(chunk_indices, options)
                 .await?;
 
             // Update the chunk
-            let chunk_bytes_new = update_array_bytes(
-                chunk_bytes_old,
-                chunk_shape,
-                chunk_subset_bytes,
-                chunk_subset,
-                self.data_type().size(),
-            );
+            let chunk_bytes_new = unsafe {
+                update_array_bytes(
+                    chunk_bytes_old,
+                    &chunk_shape,
+                    chunk_subset,
+                    &chunk_subset_bytes,
+                    self.data_type().size(),
+                )
+            };
 
             // Store the updated chunk
             self.async_store_chunk_opt(chunk_indices, chunk_bytes_new, options)

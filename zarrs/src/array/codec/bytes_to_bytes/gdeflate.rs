@@ -2,6 +2,10 @@
 //!
 //! Applies [gdeflate](https://docs.nvidia.com/cuda/nvcomp/gdeflate.html) compression.
 //!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
 //! `gdeflate` encoded data sequentially encodes a static header, a dynamic header, and the compressed bytes.
 //!
 //! The static header is composed of the following:
@@ -117,7 +121,7 @@ fn gdeflate_decode(encoded_value: &RawBytes<'_>) -> Result<Vec<u8>, CodecError> 
 struct GDeflateCompressor(*mut gdeflate_sys::libdeflate_gdeflate_compressor);
 
 impl GDeflateCompressor {
-    pub fn new(compression_level: GDeflateCompressionLevel) -> Result<Self, CodecError> {
+    pub(crate) fn new(compression_level: GDeflateCompressionLevel) -> Result<Self, CodecError> {
         let compressor = unsafe {
             gdeflate_sys::libdeflate_alloc_gdeflate_compressor(compression_level.as_i32())
         };
@@ -138,7 +142,10 @@ impl GDeflateCompressor {
         (out_npages, compress_bound)
     }
 
-    pub fn compress(&self, uncompressed_bytes: &[u8]) -> Result<(Vec<usize>, Vec<u8>), CodecError> {
+    pub(crate) fn compress(
+        &self,
+        uncompressed_bytes: &[u8],
+    ) -> Result<(Vec<usize>, Vec<u8>), CodecError> {
         let (out_npages, compress_bound) = self.get_npages_compress_bound(uncompressed_bytes.len());
         // let compress_bound_page = compress_bound / out_npages;
 
@@ -186,7 +193,7 @@ impl Drop for GDeflateCompressor {
 struct GDeflateDecompressor(*mut gdeflate_sys::libdeflate_gdeflate_decompressor);
 
 impl GDeflateDecompressor {
-    pub fn new() -> Result<Self, CodecError> {
+    pub(crate) fn new() -> Result<Self, CodecError> {
         let decompressor = unsafe { gdeflate_sys::libdeflate_alloc_gdeflate_decompressor() };
         if decompressor.is_null() {
             Err(CodecError::Other(
@@ -197,7 +204,7 @@ impl GDeflateDecompressor {
         }
     }
 
-    pub fn decompress_page(
+    pub(crate) fn decompress_page(
         &self,
         mut in_page: gdeflate_sys::libdeflate_gdeflate_in_page,
         out: *mut u8,
@@ -271,6 +278,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_gdeflate_round_trip1() {
         let elements: Vec<u16> = (0..32).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -289,6 +297,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn codec_gdeflate_partial_decode() {
         let elements: Vec<u16> = (0..8).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
@@ -329,6 +338,7 @@ mod tests {
 
     #[cfg(feature = "async")]
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn codec_gdeflate_async_partial_decode() {
         let elements: Vec<u16> = (0..8).collect();
         let bytes = crate::array::transmute_to_bytes_vec(elements);
