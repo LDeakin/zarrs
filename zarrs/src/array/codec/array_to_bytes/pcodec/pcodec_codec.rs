@@ -1,6 +1,9 @@
 use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
+use zarrs_metadata::v3::array::codec::pcodec::{
+    PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration,
+};
 
 use crate::{
     array::{
@@ -31,13 +34,10 @@ pub struct PcodecCodec {
     chunk_config: ChunkConfig,
 }
 
-fn mode_spec_config_to_pco(mode_spec: &PcodecModeSpecConfiguration) -> ModeSpec {
+fn mode_spec_config_to_pco(mode_spec: PcodecModeSpecConfiguration) -> ModeSpec {
     match mode_spec {
         PcodecModeSpecConfiguration::Auto => ModeSpec::Auto,
         PcodecModeSpecConfiguration::Classic => ModeSpec::Classic,
-        PcodecModeSpecConfiguration::TryFloatMult(base) => ModeSpec::TryFloatMult(*base),
-        PcodecModeSpecConfiguration::TryFloatQuant(k) => ModeSpec::TryFloatQuant(*k),
-        PcodecModeSpecConfiguration::TryIntMult(base) => ModeSpec::TryIntMult(*base),
     }
 }
 
@@ -45,27 +45,32 @@ fn mode_spec_pco_to_config(mode_spec: &ModeSpec) -> PcodecModeSpecConfiguration 
     match mode_spec {
         ModeSpec::Auto => PcodecModeSpecConfiguration::Auto,
         ModeSpec::Classic => PcodecModeSpecConfiguration::Classic,
-        ModeSpec::TryFloatMult(base) => PcodecModeSpecConfiguration::TryFloatMult(*base),
-        ModeSpec::TryFloatQuant(k) => PcodecModeSpecConfiguration::TryFloatQuant(*k),
-        ModeSpec::TryIntMult(base) => PcodecModeSpecConfiguration::TryIntMult(*base),
         _ => unreachable!("Mode spec is not supported"),
     }
 }
 
 fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> ChunkConfig {
-    let mode_spec = mode_spec_config_to_pco(&configuration.mode_spec);
+    let mode_spec = mode_spec_config_to_pco(configuration.mode_spec);
+    let delta_spec = match configuration.delta_spec {
+        PcodecDeltaSpecConfiguration::Auto => DeltaSpec::Auto,
+        PcodecDeltaSpecConfiguration::None => DeltaSpec::None,
+        PcodecDeltaSpecConfiguration::TryConsecutive => DeltaSpec::TryConsecutive(
+            configuration
+                .delta_encoding_order
+                .map_or(0, |o| o.as_usize()),
+        ),
+        PcodecDeltaSpecConfiguration::TryLookback => DeltaSpec::TryLookback,
+    };
+    let paging_spec = match configuration.paging_spec {
+        PcodecPagingSpecConfiguration::EqualPagesUpTo => {
+            PagingSpec::EqualPagesUpTo(configuration.equal_pages_up_to)
+        }
+    };
     ChunkConfig::default()
         .with_compression_level(configuration.level.as_usize())
         .with_mode_spec(mode_spec)
-        .with_delta_spec(
-            configuration
-                .delta_encoding_order
-                .map(|delta_encoding_order| {
-                    DeltaSpec::TryConsecutive(delta_encoding_order.as_usize())
-                })
-                .unwrap_or_default(),
-        )
-        .with_paging_spec(PagingSpec::EqualPagesUpTo(configuration.equal_pages_up_to))
+        .with_delta_spec(delta_spec)
+        .with_paging_spec(paging_spec)
 }
 
 impl PcodecCodec {
@@ -80,21 +85,33 @@ impl PcodecCodec {
 
 impl CodecTraits for PcodecCodec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
-        let PagingSpec::EqualPagesUpTo(equal_pages_up_to) = self.chunk_config.paging_spec else {
-            unreachable!()
+        let mode_spec = mode_spec_pco_to_config(&self.chunk_config.mode_spec);
+        let (delta_spec, delta_encoding_order) = match self.chunk_config.delta_spec {
+            DeltaSpec::Auto => (PcodecDeltaSpecConfiguration::Auto, None),
+            DeltaSpec::None => (PcodecDeltaSpecConfiguration::None, None),
+            DeltaSpec::TryConsecutive(delta_encoding_order) => (
+                PcodecDeltaSpecConfiguration::TryConsecutive,
+                Some(PcodecDeltaEncodingOrder::try_from(delta_encoding_order).expect("valid")),
+            ),
+            DeltaSpec::TryLookback => (PcodecDeltaSpecConfiguration::TryLookback, None),
+            _ => unimplemented!("unsupported pcodec delta spec"),
         };
-        let delta_encoding_order =
-            if let DeltaSpec::TryConsecutive(order) = self.chunk_config.delta_spec {
-                Some(PcodecDeltaEncodingOrder::try_from(order).expect("validated on creation"))
-            } else {
-                None
-            };
+        let (paging_spec, equal_pages_up_to) = match self.chunk_config.paging_spec {
+            PagingSpec::EqualPagesUpTo(equal_pages_up_to) => (
+                PcodecPagingSpecConfiguration::EqualPagesUpTo,
+                equal_pages_up_to,
+            ),
+            PagingSpec::Exact(_) => unimplemented!("pcodec exact paging spec not supported"),
+            _ => unimplemented!("unsupported pcodec paging spec"),
+        };
 
         let configuration = PcodecCodecConfiguration::V1(PcodecCodecConfigurationV1 {
             level: PcodecCompressionLevel::try_from(self.chunk_config.compression_level)
                 .expect("validated on creation"),
+            mode_spec,
+            delta_spec,
+            paging_spec,
             delta_encoding_order,
-            mode_spec: mode_spec_pco_to_config(&self.chunk_config.mode_spec),
             equal_pages_up_to,
         });
 
