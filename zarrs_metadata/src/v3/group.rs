@@ -88,7 +88,10 @@ impl GroupMetadataV3 {
 
     /// Set the consolidated metadata.
     #[must_use]
-    pub fn with_consolidated_metadata(mut self, consolidated_metadata: Option<ConsolidatedMetadata>) -> Self {
+    pub fn with_consolidated_metadata(
+        mut self,
+        consolidated_metadata: Option<ConsolidatedMetadata>,
+    ) -> Self {
         self.consolidated_metadata = consolidated_metadata;
         self
     }
