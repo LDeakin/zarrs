@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ZstdCodecConfigurationNumCodecs`
   - Adds support for Zarr V2 `zstd` encoded data created with `numcodecs` < 0.13
 - Add support for pcodec `Auto`, `None`, and `TryLookback` delta specs
+- Add `Group::[set_]consolidated_metadata`
+- Add `Node::consolidate_metadata`
+  - Consolidated metadata is not currently used to optimise node hierarchy requests
 
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
