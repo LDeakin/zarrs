@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `v3::group::{ConsolidatedMetadata,ConsolidatedMetadataMetadata,ConsolidatedMetadataKind}`
 - Add `GroupMetadataV3::consolidated_metadata` field
 - Add `GroupMetadataV3::with_consolidated_metadata` field
+- Add `fletcher32` codec metadata
 
 ### Changed
 - **Breaking**: Rename `DataTypeMetadataV3::Binary` to `Bytes` for compatibility with `zarr-python`

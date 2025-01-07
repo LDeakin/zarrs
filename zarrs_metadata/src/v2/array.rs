@@ -14,6 +14,8 @@ pub mod codec {
     pub mod blosc;
     /// `bz2` codec metadata.
     pub mod bz2;
+    /// `fletcher32` codec metadata.
+    pub mod fletcher32;
     /// `gzip` codec metadata.
     pub mod gzip;
     /// `vlen-array` codec metadata.

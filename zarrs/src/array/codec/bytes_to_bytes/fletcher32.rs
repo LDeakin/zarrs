@@ -1,40 +1,49 @@
-//! The `crc32c` (CRC32C checksum) bytes to bytes codec.
+//! The `fletcher32` bytes to bytes codec.
 //!
-//! Appends a CRC32C checksum of the input bytestream.
+//! Appends a fletcher32 checksum of the input bytestream.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html>.
+//! This is based on the `numcodecs` implementation.
+//! See <https://numcodecs.readthedocs.io/en/latest/checksum32.html#fletcher32>.
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
+//! This codec requires the `fletcher32` feature, which is disabled by default.
+//!
+//! See [`Fletcher32CodecConfigurationV1`] for example `JSON` metadata.
 
-mod crc32c_codec;
+mod fletcher32_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::crc32c::{
-    Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
+pub use crate::metadata::v3::array::codec::fletcher32::{
+    Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1,
 };
-pub use crc32c_codec::Crc32cCodec;
+pub use fletcher32_codec::Fletcher32Codec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::crc32c, MetadataV3},
+    metadata::v3::{array::codec::fletcher32, MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use crc32c::IDENTIFIER;
+pub use fletcher32::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_crc32c, create_codec_crc32c)
+    CodecPlugin::new(IDENTIFIER, is_name_fletcher32, create_codec_fletcher32)
 }
 
-fn is_name_crc32c(name: &str) -> bool {
+fn is_name_fletcher32(name: &str) -> bool {
     name.eq(IDENTIFIER)
 }
 
-pub(crate) fn create_codec_crc32c(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
+pub(crate) fn create_codec_fletcher32(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(Crc32cCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(Fletcher32Codec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }
 
@@ -57,24 +66,26 @@ mod tests {
     const JSON1: &str = r#"{}"#;
 
     #[test]
-    fn codec_crc32c_configuration_none() {
-        let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
-        let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
+    fn codec_fletcher32_configuration_none() {
+        let codec_configuration: Fletcher32CodecConfiguration =
+            serde_json::from_str(r#"{}"#).unwrap();
+        let codec = Fletcher32Codec::new_with_configuration(&codec_configuration);
         let metadata = codec.create_metadata().unwrap();
         assert_eq!(
             serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"crc32c"}"#
+            r#"{"name":"fletcher32"}"#
         );
     }
 
     #[test]
-    fn codec_crc32c() {
+    fn codec_fletcher32() {
         let elements: Vec<u8> = (0..6).collect();
         let bytes = elements;
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
-        let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
-        let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
+        let codec_configuration: Fletcher32CodecConfiguration =
+            serde_json::from_str(JSON1).unwrap();
+        let codec = Fletcher32Codec::new_with_configuration(&codec_configuration);
 
         let encoded = codec
             .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
@@ -94,17 +105,20 @@ mod tests {
             .try_into()
             .unwrap();
         println!("checksum {checksum:?}");
-        assert_eq!(checksum, &[20, 133, 9, 65]);
+        assert_eq!(checksum, &[9, 6, 14, 8]); // TODO: CHECK
     }
 
     #[test]
-    fn codec_crc32c_partial_decode() {
+    fn codec_fletcher32_partial_decode() {
         let elements: Vec<u8> = (0..32).collect();
         let bytes = elements;
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
-        let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
-        let codec = Arc::new(Crc32cCodec::new_with_configuration(&codec_configuration));
+        let codec_configuration: Fletcher32CodecConfiguration =
+            serde_json::from_str(JSON1).unwrap();
+        let codec = Arc::new(Fletcher32Codec::new_with_configuration(
+            &codec_configuration,
+        ));
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
@@ -134,13 +148,16 @@ mod tests {
 
     #[cfg(feature = "async")]
     #[tokio::test]
-    async fn codec_crc32c_async_partial_decode() {
+    async fn codec_fletcher32_async_partial_decode() {
         let elements: Vec<u8> = (0..32).collect();
         let bytes = elements;
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
-        let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(JSON1).unwrap();
-        let codec = Arc::new(Crc32cCodec::new_with_configuration(&codec_configuration));
+        let codec_configuration: Fletcher32CodecConfiguration =
+            serde_json::from_str(JSON1).unwrap();
+        let codec = Arc::new(Fletcher32Codec::new_with_configuration(
+            &codec_configuration,
+        ));
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
