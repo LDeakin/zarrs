@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Group::[set_]consolidated_metadata`
 - Add `Node::consolidate_metadata`
   - Consolidated metadata is not currently used to optimise node hierarchy requests
+- Add `fletcher32` checksum codec based on the numcodecs implementation
 
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`

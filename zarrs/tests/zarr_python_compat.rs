@@ -21,3 +21,19 @@ fn zarr_python_compat_zip_store() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[cfg(feature = "fletcher32")]
+#[test]
+fn zarr_python_compat_fletcher32() -> Result<(), Box<dyn Error>> {
+    let path = PathBuf::from("tests/data/zarr_python_compat/fletcher32.zarr");
+    let store = Arc::new(FilesystemStore::new(&path)?);
+
+    let array = Array::open(store, "/")?;
+    assert_eq!(array.shape(), vec![100, 100]);
+    let elements = array.retrieve_array_subset_elements::<u16>(&ArraySubset::new_with_shape(
+        array.shape().to_vec(),
+    ))?;
+    assert_eq!(elements, (0..100*100).collect::<Vec<u16>>());
+
+    Ok(())
+}

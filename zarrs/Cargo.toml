@@ -20,6 +20,7 @@ bitround = [] # Enable the experimental bitround codec
 blosc = ["dep:blosc-sys"] # Enable the blosc codec
 bz2 = ["dep:bzip2"] # Enable the experimental bz2 codec
 crc32c = ["dep:crc32c"] # Enable the crc32c checksum codec
+fletcher32 = [] # Enable the fletcher32 checksum codec
 gdeflate = ["dep:gdeflate-sys"] # Enable the experimental gdeflate codec
 gzip = ["dep:flate2"] # Enable the gzip codec
 pcodec = ["dep:pco"] # Enable the experimental pcodec codec

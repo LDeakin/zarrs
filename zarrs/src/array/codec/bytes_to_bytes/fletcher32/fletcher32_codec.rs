@@ -1,5 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
+use num::Integer;
+
 use crate::{
     array::{
         codec::{
@@ -18,29 +20,31 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 #[cfg(feature = "async")]
 use crate::array::codec::bytes_to_bytes::strip_suffix_partial_decoder::AsyncStripSuffixPartialDecoder;
 
-use super::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE, IDENTIFIER};
+use super::{
+    Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1, CHECKSUM_SIZE, IDENTIFIER,
+};
 
-/// A `crc32c` (CRC32C checksum) codec implementation.
+/// A `fletcher32` codec implementation.
 #[derive(Clone, Debug, Default)]
-pub struct Crc32cCodec;
+pub struct Fletcher32Codec;
 
-impl Crc32cCodec {
-    /// Create a new `crc32c` codec.
+impl Fletcher32Codec {
+    /// Create a new `fletcher32` codec.
     #[must_use]
     pub const fn new() -> Self {
         Self {}
     }
 
-    /// Create a new `crc32c` codec.
+    /// Create a new `fletcher32` codec.
     #[must_use]
-    pub const fn new_with_configuration(_configuration: &Crc32cCodecConfiguration) -> Self {
+    pub const fn new_with_configuration(_configuration: &Fletcher32CodecConfiguration) -> Self {
         Self {}
     }
 }
 
-impl CodecTraits for Crc32cCodec {
+impl CodecTraits for Fletcher32Codec {
     fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
-        let configuration = Crc32cCodecConfigurationV1 {};
+        let configuration = Fletcher32CodecConfigurationV1 {};
         Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }
 
@@ -53,8 +57,45 @@ impl CodecTraits for Crc32cCodec {
     }
 }
 
+/// HDF5 Fletcher32.
+///
+/// Based on <https://github.com/Unidata/netcdf-c/blob/main/plugins/H5checksum.c#L109>.
+fn h5_checksum_fletcher32(data: &[u8]) -> u32 {
+    let mut len = data.len() / 2;
+    let mut sum1: u32 = 0;
+    let mut sum2: u32 = 0;
+
+    // Compute checksum for pairs of bytes
+    let mut data_idx = 0;
+    while len > 0 {
+        let tlen = len.min(360);
+        len -= tlen;
+        for _ in 0..tlen {
+            sum1 += u32::from((u16::from(data[data_idx]) << 8u16) | u16::from(data[data_idx + 1]));
+            data_idx += 2;
+            sum2 += sum1;
+        }
+        sum1 = (sum1 & 0xffff) + (sum1 >> 16);
+        sum2 = (sum2 & 0xffff) + (sum2 >> 16);
+    }
+
+    // Check for odd # of bytes
+    if len.is_odd() {
+        sum1 += u32::from(u16::from(data[data_idx]) << 8);
+        sum2 += sum1;
+        sum1 = (sum1 & 0xffff) + (sum1 >> 16);
+        sum2 = (sum2 & 0xffff) + (sum2 >> 16);
+    }
+
+    // Second reduction step to reduce sums to 16 bits
+    sum1 = (sum1 & 0xffff) + (sum1 >> 16);
+    sum2 = (sum2 & 0xffff) + (sum2 >> 16);
+
+    (sum2 << 16) | sum1
+}
+
 #[cfg_attr(feature = "async", async_trait::async_trait)]
-impl BytesToBytesCodecTraits for Crc32cCodec {
+impl BytesToBytesCodecTraits for Fletcher32Codec {
     fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
@@ -71,7 +112,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         decoded_value: RawBytes<'a>,
         _options: &CodecOptions,
     ) -> Result<RawBytes<'a>, CodecError> {
-        let checksum = crc32c::crc32c(&decoded_value).to_le_bytes();
+        let checksum = h5_checksum_fletcher32(&decoded_value).to_le_bytes();
         let mut encoded_value: Vec<u8> = Vec::with_capacity(decoded_value.len() + checksum.len());
         encoded_value.extend_from_slice(&decoded_value);
         encoded_value.extend_from_slice(&checksum);
@@ -87,7 +128,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         if encoded_value.len() >= CHECKSUM_SIZE {
             if options.validate_checksums() {
                 let decoded_value = &encoded_value[..encoded_value.len() - CHECKSUM_SIZE];
-                let checksum = crc32c::crc32c(decoded_value).to_le_bytes();
+                let checksum = h5_checksum_fletcher32(decoded_value).to_le_bytes();
                 if checksum != encoded_value[encoded_value.len() - CHECKSUM_SIZE..] {
                     return Err(CodecError::InvalidChecksum);
                 }
@@ -96,7 +137,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
             Ok(Cow::Owned(decoded_value))
         } else {
             Err(CodecError::Other(
-                "crc32c decoder expects a 32 bit input".to_string(),
+                "fletcher32 decoder expects a 32 bit input".to_string(),
             ))
         }
     }

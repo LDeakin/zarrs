@@ -7,9 +7,9 @@ pub const IDENTIFIER: &str = "fletcher32";
 /// A wrapper to handle various versions of `fletcher32` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
-pub enum Fletcher32odecConfiguration {
+pub enum Fletcher32CodecConfiguration {
     /// Version 1.0 draft.
-    V1(Fletcher32odecConfigurationV1),
+    V1(Fletcher32CodecConfigurationV1),
 }
 
 /// `fletcher32` (checksum) codec configuration parameters (version 1.0 draft).
@@ -18,7 +18,7 @@ pub enum Fletcher32odecConfiguration {
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
-pub struct Fletcher32odecConfigurationV1 {}
+pub struct Fletcher32CodecConfigurationV1 {}
 
 #[cfg(test)]
 mod tests {
@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn codec_fletcher32_config1() {
-        serde_json::from_str::<Fletcher32odecConfiguration>(r#"{}"#).unwrap();
+        serde_json::from_str::<Fletcher32CodecConfiguration>(r#"{}"#).unwrap();
     }
 
     #[test]
