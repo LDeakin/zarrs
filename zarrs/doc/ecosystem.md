@@ -1,15 +1,15 @@
 | Crate                                                                                         | Docs / Description                                                                                                              |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | **Core**                                                                                      |                                                                                                                                 |
-| [![zarrs_ver]](https://crates.io/crates/zarrs) `zarrs`                                        | [![docs]](https://docs.rs/zarrs) The core library for manipulating Zarr hierarchies                                             |
-| [![zarrs_metadata_ver]](https://crates.io/crates/zarrs_metadata) `zarrs_metadata`             | [![docs]](https://docs.rs/zarrs_metadata) Zarr metadata support (re-exported as `zarrs::metadata`)                              |
-| [![zarrs_storage_ver]](https://crates.io/crates/zarrs_storage) `zarrs_storage`                | [![docs]](https://docs.rs/zarrs_storage) The storage API for `zarrs` (re-exported as `zarrs::storage`)                          |
+| [![zarrs_ver]](https://crates.io/crates/zarrs) [zarrs]                                        | [![docs]](https://docs.rs/zarrs) The core library for manipulating Zarr hierarchies                                             |
+| [![zarrs_metadata_ver]](https://crates.io/crates/zarrs_metadata) [zarrs_metadata]             | [![docs]](https://docs.rs/zarrs_metadata) Zarr metadata support (re-exported as `zarrs::metadata`)                              |
+| [![zarrs_storage_ver]](https://crates.io/crates/zarrs_storage) [zarrs_storage]                | [![docs]](https://docs.rs/zarrs_storage) The storage API for `zarrs` (re-exported as `zarrs::storage`)                          |
 | **Stores**                                                                                    |                                                                                                                                 |
-| [![zarrs_filesystem_ver]](https://crates.io/crates/zarrs_filesystem) `zarrs_filesystem`       | [![docs]](https://docs.rs/zarrs_filesystem) A filesystem store (re-exported as `zarrs::filesystem`)                             |
-| [![zarrs_object_store_ver]](https://crates.io/crates/zarrs_object_store) `zarrs_object_store` | [![docs]](https://docs.rs/zarrs_object_store) [`object_store`](https://docs.rs/object_store/latest/object_store/) store support |
-| [![zarrs_opendal_ver]](https://crates.io/crates/zarrs_opendal) `zarrs_opendal`                | [![docs]](https://docs.rs/zarrs_opendal) [`opendal`](https://docs.rs/opendal/latest/opendal/) store support                     |
-| [![zarrs_http_ver]](https://crates.io/crates/zarrs_http) `zarrs_http`                         | [![docs]](https://docs.rs/zarrs_http) A synchronous http store                                                                  |
-| [![zarrs_zip_ver]](https://crates.io/crates/zarrs_zip) `zarrs_zip`                            | [![docs]](https://docs.rs/zarrs_zip) A storage adapter for zip files                                                            |
+| [![zarrs_filesystem_ver]](https://crates.io/crates/zarrs_filesystem) [zarrs_filesystem]       | [![docs]](https://docs.rs/zarrs_filesystem) A filesystem store (re-exported as `zarrs::filesystem`)                             |
+| [![zarrs_object_store_ver]](https://crates.io/crates/zarrs_object_store) [zarrs_object_store] | [![docs]](https://docs.rs/zarrs_object_store) [`object_store`](https://docs.rs/object_store/latest/object_store/) store support |
+| [![zarrs_opendal_ver]](https://crates.io/crates/zarrs_opendal) [zarrs_opendal]                | [![docs]](https://docs.rs/zarrs_opendal) [`opendal`](https://docs.rs/opendal/latest/opendal/) store support                     |
+| [![zarrs_http_ver]](https://crates.io/crates/zarrs_http) [zarrs_http]                         | [![docs]](https://docs.rs/zarrs_http) A synchronous http store                                                                  |
+| [![zarrs_zip_ver]](https://crates.io/crates/zarrs_zip) [zarrs_zip]                            | [![docs]](https://docs.rs/zarrs_zip) A storage adapter for zip files                                                            |
 | [![zarrs_icechunk_ver]](https://crates.io/crates/zarrs_icechunk) [zarrs_icechunk]             | [![docs]](https://docs.rs/zarrs_icechunk) [`icechunk`](https://docs.rs/icechunk/latest/icechunk/) store support                 |
 | **Bindings**                                                                                  |                                                                                                                                 |
 | [![zarrs_python_ver]](https://pypi.org/project/zarrs/) [zarrs-python]                         | [![docs]](https://zarrs-python.readthedocs.io/en/latest/) A codec pipeline for [zarr-python]                                  |
@@ -19,18 +19,25 @@
 
 [docs]: https://img.shields.io/badge/docs-brightgreen
 [zarrs_ver]: https://img.shields.io/crates/v/zarrs
+[zarrs]: https://github.com/LDeakin/zarrs/tree/main/zarrs
 [zarrs_metadata_ver]: https://img.shields.io/crates/v/zarrs_metadata
+[zarrs_metadata]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
 [zarrs_storage_ver]: https://img.shields.io/crates/v/zarrs_storage
+[zarrs_storage]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
 [zarrs_filesystem_ver]: https://img.shields.io/crates/v/zarrs_filesystem
+[zarrs_filesystem]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
 [zarrs_http_ver]: https://img.shields.io/crates/v/zarrs_http
+[zarrs_http]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http
 [zarrs_object_store_ver]: https://img.shields.io/crates/v/zarrs_object_store
+[zarrs_object_store]: https://github.com/LDeakin/zarrs/tree/main/zarrs_object_store
 [zarrs_opendal_ver]: https://img.shields.io/crates/v/zarrs_opendal
+[zarrs_opendal]: https://github.com/LDeakin/zarrs/tree/main/zarrs_opendal
 [zarrs_zip_ver]: https://img.shields.io/crates/v/zarrs_zip
+[zarrs_zip]: https://github.com/LDeakin/zarrs/tree/main/zarrs_zip
 [zarrs_icechunk_ver]: https://img.shields.io/crates/v/zarrs_icechunk
 [zarrs_icechunk]: https://github.com/LDeakin/zarrs_icechunk
 [zarrs_ffi_ver]: https://img.shields.io/crates/v/zarrs_ffi
 [zarrs_ffi]: https://github.com/LDeakin/zarrs_ffi
-[zarrs_tools_ver]: https://img.shields.io/crates/v/zarrs_tools
 [zarrs_python_ver]: https://img.shields.io/pypi/v/zarrs
 [zarrs-python]: https://github.com/ilan-gold/zarrs-python
 [zarr-python]: https://github.com/zarr-developers/zarr-python
