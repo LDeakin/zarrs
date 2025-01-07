@@ -2,7 +2,16 @@
 //!
 //! Appends a fletcher32 checksum of the input bytestream.
 //!
+//! This is based on the `numcodecs` implementation.
 //! See <https://numcodecs.readthedocs.io/en/latest/checksum32.html#fletcher32>.
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
+//! This codec requires the `fletcher32` feature, which is disabled by default.
+//!
+//! See [`Fletcher32CodecConfigurationV1`] for example `JSON` metadata.
 
 mod fletcher32_codec;
 

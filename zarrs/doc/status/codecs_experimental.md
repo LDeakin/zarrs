@@ -13,6 +13,7 @@ This is configurable with [`Config::experimental_codec_names_mut`](config::Confi
 |                | [vlen-utf8]              | <https://codec.zarrs.dev/array_to_bytes/vlen_utf8>  | &check; | &check; |              |
 | Bytes to Bytes | [bz2]                    | <https://codec.zarrs.dev/bytes_to_bytes/bz2>        | &check; | &check; | bz2          |
 |                | [gdeflate]               | <https://codec.zarrs.dev/bytes_to_bytes/gdeflate>   | &check; |         | gdeflate     |
+|                | [fletcher32]             | <https://codec.zarrs.dev/bytes_to_bytes/fletcher32> | &check; | &check; | fletcher32   |
 
 [bitround]: (crate::array::codec::array_to_array::bitround)
 [zfp]: crate::array::codec::array_to_bytes::zfp
@@ -23,3 +24,4 @@ This is configurable with [`Config::experimental_codec_names_mut`](config::Confi
 [vlen-utf8]: crate::array::codec::array_to_bytes::vlen_utf8
 [bz2]: crate::array::codec::bytes_to_bytes::bz2
 [gdeflate]: crate::array::codec::bytes_to_bytes::gdeflate
+[fletcher32]: crate::array::codec::bytes_to_bytes::fletcher32

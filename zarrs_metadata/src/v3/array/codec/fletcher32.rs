@@ -14,7 +14,13 @@ pub enum Fletcher32CodecConfiguration {
 
 /// `fletcher32` (checksum) codec configuration parameters (version 1.0 draft).
 ///
-/// See <https://numcodecs.readthedocs.io/en/latest/checksum32.html>.
+/// ### Example (Zarr V3)
+/// ```json
+/// {
+///     "name": "fletcher32",
+///     "configuration": {}
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]

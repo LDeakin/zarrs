@@ -33,7 +33,7 @@ fn zarr_python_compat_fletcher32() -> Result<(), Box<dyn Error>> {
     let elements = array.retrieve_array_subset_elements::<u16>(&ArraySubset::new_with_shape(
         array.shape().to_vec(),
     ))?;
-    assert_eq!(elements, (0..100*100).collect::<Vec<u16>>());
+    assert_eq!(elements, (0..100 * 100).collect::<Vec<u16>>());
 
     Ok(())
 }
