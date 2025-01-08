@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated metadata is not currently used to optimise node hierarchy requests
 - Add experimental `fletcher32` checksum codec based on the numcodecs implementation
   - Adds `fletcher32` feature flag
+- Add ecosystem compatibility notes in the experimental codecs docs
 
 ### Changed
 - **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`

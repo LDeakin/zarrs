@@ -1,6 +1,19 @@
-Experimental codecs are recommended for evaluation only.
+Experimental codecs are recommended for evaluation only and may have limited ecosystem compatibility.
 By default, the `"name"` of of experimental codecs in array metadata links the codec documentation in this crate.
 This is configurable with [`Config::experimental_codec_names_mut`](config::Config::experimental_codec_names_mut).
+
+The experimental codecs with a &check; in the `V2` column below were developed with `zarr-python` 2.x.x compatibility.
+They should also be compatible with `zarr-python` 3.x.x with `zarr_format=2` arrays.
+
+Arrays created with `zarr-python` 3.x.x with codecs in the `numcodecs.zarr3` submodule are not explicitly supported, but they may work.
+Instead, the intention is to push forward with standardisation of some of these experimental codecs in the near future.
+`numcodecs` codec names needs to be remapped to the identifier of the `zarrs` codec, for example:
+```rust,ignore
+zarrs::config::global_config_mut()
+    .experimental_codec_names_mut()
+    .entry("pcodec".to_string())
+    .and_modify(|e| *e = "numcodecs.pcodec".to_string());
+```
 
 | Codec Type     | Codec                    | ZEP or URI                                          | V3      | V2      | Feature Flag |
 | -------------- | ------------------------ | --------------------------------------------------- | ------- | ------- | ------------ |
