@@ -38,7 +38,7 @@ pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMeta
         .with_additional_fields(group_metadata_v2.additional_fields.clone())
 }
 
-/// An error conerting Zarr V3 array metadata to V3.
+/// An error converting Zarr V2 array metadata to V3.
 #[derive(Debug, Error)]
 pub enum ArrayMetadataV2ToV3ConversionError {
     /// Unsupported data type.
