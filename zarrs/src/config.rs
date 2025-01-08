@@ -136,6 +136,8 @@ impl Default for Config {
             // Bytes to bytes
             #[cfg(feature = "bz2")]
             (codec::bz2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
+            #[cfg(feature = "fletcher32")]
+            (codec::fletcher32::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/fletcher32".to_string()),
         ]);
 
         Self {
