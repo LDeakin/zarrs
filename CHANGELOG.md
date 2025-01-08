@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Make `array::codec::array_to_bytes::bytes::reverse_endianness` private
 - **Breaking**: Make `VlenV2Codec` private
 - Bump `itertools` to 0.14
+- Indicate that `zfp` / `zfpy` codecs have different metadata in codec table
 
 ### Removed
 - Remove support for pcodec `Try{FloatMult,FloatQuant,IntMult}` mode specs
