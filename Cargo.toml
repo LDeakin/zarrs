@@ -27,7 +27,7 @@ missing_panics_doc = "warn"
 missing_errors_doc = "warn"
 
 [workspace.dependencies.zarrs_metadata]
-version = "0.3.0-dev"
+version = "0.3.0"
 path = "zarrs_metadata"
 
 [workspace.dependencies.zarrs_storage]
