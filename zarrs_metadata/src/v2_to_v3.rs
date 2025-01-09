@@ -171,7 +171,7 @@ pub fn array_metadata_v2_to_v3(
                 let zfpy_v2_metadata = serde_json::from_value::<ZfpyCodecConfigurationNumcodecs>(
                     serde_json::to_value(compressor.configuration())?,
                 )?;
-                let configuration = codec_zfpy_v2_numcodecs_to_v3(&zfpy_v2_metadata)?;
+                let configuration = codec_zfpy_v2_numcodecs_to_v3(&zfpy_v2_metadata);
                 let zfp_v3_metadata = MetadataV3::new_with_serializable_configuration(
                     crate::v3::array::codec::zfp::IDENTIFIER,
                     &configuration,

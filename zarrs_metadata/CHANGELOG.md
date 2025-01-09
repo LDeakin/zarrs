@@ -18,9 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Revise `PcodecCodecConfiguration` to match `numcodecs`:
   - Adds `delta_spec: PcodecDeltaSpecConfiguration` and `paging_spec: PcodecPagingSpecConfiguration`
   - Removes `PcodecModeSpecConfiguration::{TryFloatMult,TryFloatQuant,TryIntMult}`
+- **Breaking**: Refactor `ZfpyCodecConfigurationNumcodecs` and `ZfpyCodecConfigurationMode` to validate on deserialisation
+  - `codec_zfpy_v2_numcodecs_to_v3` is now infallible
 
 ### Removed
 - **Breaking**: Remove the `v3::array::codec::vlen_v2` module and all associated types
+- **Breaking**: Remove `Reversible` support from `zfpy` codec metadata
 
 ### Fixed
 - Deny unknown fields in `PcodecCodecConfigurationV1`
