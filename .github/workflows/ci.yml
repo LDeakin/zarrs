@@ -87,16 +87,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-hack cargo-minimal-versions --locked
       - run: cargo minimal-versions check --workspace --all-features --direct
-  codecov:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: sudo apt update && sudo apt install -y cmake clang-15
-      - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo +nightly install cargo-llvm-cov --locked
-      - run: cargo +nightly llvm-cov --all-features --doctests --lcov --output-path lcov.info
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-            token: ${{ secrets.CODECOV_TOKEN }}
+#   codecov:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - run: sudo apt update && sudo apt install -y cmake clang-15
+#       - uses: dtolnay/rust-toolchain@nightly
+#       - uses: Swatinem/rust-cache@v2
+#       - run: cargo +nightly install cargo-llvm-cov --locked
+#       - run: cargo +nightly llvm-cov --all-features --doctests --lcov --output-path lcov.info
+#       - name: Upload coverage reports to Codecov
+#         uses: codecov/codecov-action@v4
+#         with:
+#             token: ${{ secrets.CODECOV_TOKEN }}
