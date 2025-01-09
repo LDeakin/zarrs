@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `itertools` to 0.14
 - Indicate that `zfp` / `zfpy` codecs have different metadata in codec table
 - Use `zarr-python` 3.0.0 in compatibility tests
+- **Breaking**: Bump MSRV to 1.82 (17 October, 2024)
 
 ### Removed
 - Remove support for pcodec `Try{FloatMult,FloatQuant,IntMult}` mode specs

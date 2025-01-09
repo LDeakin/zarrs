@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: ["stable", "1.77", "beta", "nightly"]
+        toolchain: ["stable", "1.82", "beta", "nightly"]
         features: ["--features \"\"", "--all-features", "--no-default-features"]
     runs-on: ubuntu-latest
     steps:
