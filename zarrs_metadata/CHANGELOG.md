@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - **Breaking**: Remove the `v3::array::codec::vlen_v2` module and all associated types
 
+### Fixed
+- Deny unknown fields in `PcodecCodecConfigurationV1`
+
 ## [0.2.0] - 2024-11-15
 
 ### Added

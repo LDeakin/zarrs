@@ -81,6 +81,7 @@ pub enum ZfpCodecConfiguration {
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+// #[serde(deny_unknown_fields)] // NOTE: Not supported with flatten
 pub struct ZfpCodecConfigurationV1 {
     /// Whether or not to write headers.
     ///

@@ -36,6 +36,7 @@ impl Default for PcodecCodecConfiguration {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 #[serde(default)] // for compatibility with zarrs < 0.19
+#[serde(deny_unknown_fields)]
 pub struct PcodecCodecConfigurationV1 {
     /// A compression level from 0-12, where 12 takes the longest and compresses the most.
     pub level: PcodecCompressionLevel,

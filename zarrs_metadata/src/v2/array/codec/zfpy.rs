@@ -12,7 +12,7 @@ pub const IDENTIFIER: &str = "zfpy";
 
 /// Configuration parameters for the `zfpy` codec (numcodecs).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
-// #[serde(deny_unknown_fields)] TODO: zarr-python includes redundant compression_kwargs. Report upstream
+// #[serde(deny_unknown_fields)] // FIXME: zarr-python includes redundant compression_kwargs. Report upstream
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct ZfpyCodecConfigurationNumcodecs {
     /// The zfp
