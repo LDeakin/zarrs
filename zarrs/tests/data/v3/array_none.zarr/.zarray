@@ -1,4 +1,6 @@
 {
+  "node_type": "array",
+  "zarr_format": 2,
   "shape": [
     10,
     10
@@ -7,14 +9,10 @@
     5,
     5
   ],
+  "dtype": "<f4",
+  "compressor": null,
   "fill_value": 0.0,
   "order": "C",
   "filters": null,
-  "dimension_separator": ".",
-  "compressor": {
-    "id": "gzip",
-    "level": 9
-  },
-  "zarr_format": 2,
-  "dtype": "<f4"
+  "dimension_separator": "."
 }

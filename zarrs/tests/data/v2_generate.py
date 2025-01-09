@@ -5,8 +5,8 @@ from numcodecs import Blosc, GZip, BZ2, ZFPY, PCodec, Zstd
 compressor_blosc = Blosc(cname="zstd", clevel=1, shuffle=Blosc.BITSHUFFLE)
 compressor_gzip = GZip(level=9)
 compressor_bz2 = BZ2(level=9)
-compressor_zfpy = ZFPY(mode = 4, tolerance=0.01) # fixed accuracy
-compressor_pcodec = PCodec(level = 8, mode_spec="auto")
+serializer_zfpy = ZFPY(mode = 4, tolerance=0.01) # fixed accuracy
+serializer_pcodec = PCodec(level = 8, mode_spec="auto")
 compressor_zstd = Zstd(level=5, checksum=False)
 
 data = np.array(
@@ -26,28 +26,47 @@ data = np.array(
 
 for order in ["C", "F"]:
     for compressor_name, compressor in [
+        ("none", None),
         ("blosc", compressor_blosc),
         ("gzip", compressor_gzip),
         ("bz2", compressor_bz2),
-        ("zfpy", compressor_zfpy),
-        ("pcodec", compressor_pcodec),
         ("zstd", compressor_zstd),
     ]:
-        if order == "F" and compressor_name != "blosc":
+        if order == "F" and compressor is not None and compressor_name != "blosc":
             continue
 
-        store = zarr.DirectoryStore(f"tests/data/v2/array_{compressor_name}_{order}.zarr")
-        try:
-            store.clear()
-        except FileNotFoundError:
-            pass
-        array = zarr.creation.create(
+        array = zarr.create_array(
+            f"tests/data/v2/array_{compressor_name}_{order}.zarr",
+            overwrite=True,
+            zarr_format=2,
             shape=[10, 10],
             chunks=[5, 5],
             dtype=np.float32,
-            compressor=compressor,
+            fill_value=0.0,
+            compressors=[compressor] if compressor else None,
             order=order,
-            store=store,
+        )
+        array[...] = np.array(data)
+        array.attrs["key"] = "value"
+
+
+    for serializer_name, serializer in [
+        ("zfpy", serializer_zfpy),
+        ("pcodec", serializer_pcodec),
+    ]:
+        if order == "F" and serializer is not None and serializer_name != "blosc":
+            continue
+
+        array = zarr.create_array(
+            f"tests/data/v2/array_{serializer_name}_{order}.zarr",
+            overwrite=True,
+            zarr_format=2,
+            shape=[10, 10],
+            chunks=[5, 5],
+            dtype=np.float32,
+            fill_value=0.0,
+            compressors=[serializer] if serializer else None,
+            order=order,
         )
         array[...] = np.array(data)
         array.attrs["key"] = "value"

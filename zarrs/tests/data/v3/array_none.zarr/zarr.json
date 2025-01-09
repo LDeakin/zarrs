@@ -24,14 +24,9 @@
   "fill_value": 0.0,
   "codecs": [
     {
-      "name": "pcodec",
+      "name": "bytes",
       "configuration": {
-        "level": 8,
-        "mode_spec": "auto",
-        "delta_spec": "auto",
-        "paging_spec": "equal_pages_up_to",
-        "delta_encoding_order": null,
-        "equal_pages_up_to": 262144
+        "endian": "little"
       }
     }
   ],

@@ -1,19 +1,20 @@
 {
-    "chunks": [
-        5,
-        5
-    ],
-    "compressor": {
-        "id": "bz2",
-        "level": 9
-    },
-    "dtype": "<f4",
-    "fill_value": 0.0,
-    "filters": null,
-    "order": "C",
-    "shape": [
-        10,
-        10
-    ],
-    "zarr_format": 2
+  "shape": [
+    10,
+    10
+  ],
+  "chunks": [
+    5,
+    5
+  ],
+  "fill_value": 0.0,
+  "order": "C",
+  "filters": null,
+  "dimension_separator": ".",
+  "compressor": {
+    "id": "bz2",
+    "level": 9
+  },
+  "zarr_format": 2,
+  "dtype": "<f4"
 }

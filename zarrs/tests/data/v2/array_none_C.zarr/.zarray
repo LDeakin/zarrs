@@ -11,10 +11,7 @@
   "order": "C",
   "filters": null,
   "dimension_separator": ".",
-  "compressor": {
-    "id": "gzip",
-    "level": 9
-  },
+  "compressor": null,
   "zarr_format": 2,
   "dtype": "<f4"
 }

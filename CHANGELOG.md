@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Make `VlenV2Codec` private
 - Bump `itertools` to 0.14
 - Indicate that `zfp` / `zfpy` codecs have different metadata in codec table
+- Use `zarr-python` 3.0.0 in compatibility tests
 
 ### Removed
 - Remove support for pcodec `Try{FloatMult,FloatQuant,IntMult}` mode specs
