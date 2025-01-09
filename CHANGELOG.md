@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2025-01-10
+
+### Highlights
+- `zarr-python` 3.0.0 has been released today!
+- The focus of this release has been in maximising compatibility with unstandardised extensions in `zarr-python` (e.g. experimental codecs, consolidated metadata, etc.)
+
 ### Added
 - Add `ArrayShardedReadableExt::retrieve_encoded_inner_chunk`
 - Add `ArrayShardedReadableExt::inner_chunk_byte_range`
@@ -1209,7 +1215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.3...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.19.0...HEAD
+[0.19.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.0
 [0.18.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.3
 [0.18.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.2
 [0.18.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.1
