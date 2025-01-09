@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::v2::array::codec::zfpy::codec_zfpy_v2_numcodecs_to_v3;
 use zfp_sys::{
     zfp_compress,
     zfp_stream_maximum_size,
@@ -99,8 +100,14 @@ impl ZfpCodec {
     /// Create a new `Zfp` codec from configuration.
     #[must_use]
     pub fn new_with_configuration(configuration: &ZfpCodecConfiguration) -> Self {
-        let ZfpCodecConfiguration::V1(ZfpCodecConfigurationV1 { write_header, mode }) =
-            configuration;
+        let configuration = match configuration {
+            ZfpCodecConfiguration::V1(configuration) => configuration.clone(),
+            ZfpCodecConfiguration::NumcodecsZfpy(configuration) => {
+                codec_zfpy_v2_numcodecs_to_v3(configuration)
+            }
+        };
+
+        let ZfpCodecConfigurationV1 { write_header, mode } = configuration;
         let write_header = write_header.unwrap_or(false);
         match mode {
             ZfpMode::Expert {
@@ -108,13 +115,13 @@ impl ZfpCodec {
                 maxbits,
                 maxprec,
                 minexp,
-            } => Self::new_expert(*minbits, *maxbits, *maxprec, *minexp, write_header),
-            ZfpMode::FixedRate { rate } => Self::new_fixed_rate(*rate, write_header),
+            } => Self::new_expert(minbits, maxbits, maxprec, minexp, write_header),
+            ZfpMode::FixedRate { rate } => Self::new_fixed_rate(rate, write_header),
             ZfpMode::FixedPrecision { precision } => {
-                Self::new_fixed_precision(*precision, write_header)
+                Self::new_fixed_precision(precision, write_header)
             }
             ZfpMode::FixedAccuracy { tolerance } => {
-                Self::new_fixed_accuracy(*tolerance, write_header)
+                Self::new_fixed_accuracy(tolerance, write_header)
             }
             ZfpMode::Reversible => Self::new_reversible(write_header),
         }

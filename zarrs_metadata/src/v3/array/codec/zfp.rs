@@ -1,6 +1,8 @@
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 
+use crate::v2::array::codec::zfpy::ZfpyCodecConfigurationNumcodecs;
+
 /// The identifier for the `zfp` codec.
 // TODO: ZEP for zfp
 pub const IDENTIFIER: &str = "zfp";
@@ -9,6 +11,8 @@ pub const IDENTIFIER: &str = "zfp";
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
 #[serde(untagged)]
 pub enum ZfpCodecConfiguration {
+    /// Numcodecs (zfpy).
+    NumcodecsZfpy(ZfpyCodecConfigurationNumcodecs),
     /// Version 1.0 draft.
     V1(ZfpCodecConfigurationV1),
 }
@@ -97,6 +101,7 @@ pub struct ZfpCodecConfigurationV1 {
 /// The zfp mode.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
 #[serde(tag = "mode", rename_all = "snake_case")]
+// #[serde(deny_unknown_fields)]
 pub enum ZfpMode {
     /// Expert mode.
     Expert {

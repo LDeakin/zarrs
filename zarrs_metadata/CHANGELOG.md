@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `GroupMetadataV3::consolidated_metadata` field
 - Add `GroupMetadataV3::with_consolidated_metadata` field
 - Add `fletcher32` codec metadata
+- Add numcodecs zfpy configuration support to `ZfpCodecConfiguration` for decoding V3 arrays that use `numcodecs.zfpy`
 
 ### Changed
 - **Breaking**: Rename `DataTypeMetadataV3::Binary` to `Bytes` for compatibility with `zarr-python`
