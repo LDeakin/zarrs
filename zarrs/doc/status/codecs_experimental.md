@@ -5,14 +5,20 @@ This is configurable with [`Config::experimental_codec_names_mut`](config::Confi
 The experimental codecs with a &check; in the `V2` column below were developed with `zarr-python` 2.x.x compatibility.
 They should also be compatible with `zarr-python` 3.x.x with `zarr_format=2` arrays.
 
-Arrays created with `zarr-python` 3.x.x with codecs in the `numcodecs.zarr3` submodule are not explicitly supported, but they may work.
-Instead, the intention is to push forward with standardisation of some of these experimental codecs in the near future.
-`numcodecs` codec names needs to be remapped to the identifier of the `zarrs` codec, for example:
+Arrays created with `zarr-python` 3.x.x with codecs in the `numcodecs.zarr3` submodule are supported.
+However, arrays must be written with `numcodecs` >0.14.1 which is unreleased at the time of writing.
+
+By default, arrays encoded with `numcodecs.zarr3` codecs will fail to open because the `numcodecs.*` prefix for codec names is not supported by default.
+This is intentional to encourage standardisation of some of these experimental codecs in the near future.
+To enable support, the `numcodecs` codec names needs to be remapped to the identifier of the `zarrs` codec:
 ```rust,ignore
-zarrs::config::global_config_mut()
-    .experimental_codec_names_mut()
-    .entry("pcodec".to_string())
-    .and_modify(|e| *e = "numcodecs.pcodec".to_string());
+{
+    let mut config = crate::config::global_config_mut();
+    let experimental_codec_names = config.experimental_codec_names_mut();
+    experimental_codec_names.insert("zfp".to_string(), "numcodecs.zfpy".to_string());
+    experimental_codec_names.insert("pcodec".to_string(), "numcodecs.pcodec".to_string());
+    experimental_codec_names.insert("bz2".to_string(), "numcodecs.bz2".to_string());
+}
 ```
 
 | Codec Type     | Codec                    | Default Name                                        | V3      | V2      | Feature Flag |
