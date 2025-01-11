@@ -2,7 +2,7 @@ use std::iter::FusedIterator;
 
 use crate::{
     array::{ravel_indices, ArrayShape},
-    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
+    indexer::{IncompatibleIndexerAndShapeError, Indexer},
 };
 
 use super::IndicesIterator;
@@ -19,7 +19,7 @@ use super::IndicesIterator;
 /// ```
 /// An iterator with an array subset corresponding to the lower right 2x2 region will produce `[7, 8, 10, 11]`.
 pub struct LinearisedIndices {
-    subset: ArraySubset,
+    indexer: Indexer,
     array_shape: ArrayShape,
 }
 
@@ -27,21 +27,17 @@ impl LinearisedIndices {
     /// Create a new linearised indices iterator.
     ///
     /// # Errors
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if `array_shape` does not encapsulate `indexer`.
     pub fn new(
-        subset: ArraySubset,
+        indexer: impl Into<Indexer>,
         array_shape: ArrayShape,
-    ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
-        if subset.dimensionality() == array_shape.len()
-            && std::iter::zip(subset.end_exc(), &array_shape).all(|(end, shape)| end <= *shape)
-        {
-            Ok(Self {
-                subset,
-                array_shape,
-            })
-        } else {
-            Err(IncompatibleArraySubsetAndShapeError(subset, array_shape))
-        }
+    ) -> Result<Self, IncompatibleIndexerAndShapeError> {
+        let indexer = indexer.into();
+        indexer.is_compatible(&array_shape)?;
+        Ok(Self {
+            indexer,
+            array_shape,
+        })
     }
 
     /// Create a new linearised indices iterator.
@@ -49,13 +45,11 @@ impl LinearisedIndices {
     /// # Safety
     /// `array_shape` must encapsulate `subset`.
     #[must_use]
-    pub unsafe fn new_unchecked(subset: ArraySubset, array_shape: ArrayShape) -> Self {
-        debug_assert_eq!(subset.dimensionality(), array_shape.len());
-        debug_assert!(
-            std::iter::zip(subset.end_exc(), &array_shape).all(|(end, shape)| end <= *shape)
-        );
+    pub unsafe fn new_unchecked(indexer: impl Into<Indexer>, array_shape: ArrayShape) -> Self {
+        let indexer = indexer.into();
+        debug_assert!(indexer.is_compatible(&array_shape).is_ok());
         Self {
-            subset,
+            indexer,
             array_shape,
         }
     }
@@ -63,7 +57,7 @@ impl LinearisedIndices {
     /// Return the number of indices.
     #[must_use]
     pub fn len(&self) -> usize {
-        self.subset.num_elements_usize()
+        self.indexer.num_elements_usize()
     }
 
     /// Returns true if the number of indices is zero.
@@ -85,7 +79,7 @@ impl<'a> IntoIterator for &'a LinearisedIndices {
 
     fn into_iter(self) -> Self::IntoIter {
         LinearisedIndicesIterator {
-            inner: IndicesIterator::new(&self.subset),
+            inner: IndicesIterator::new(&self.indexer),
             array_shape: &self.array_shape,
         }
     }
@@ -127,6 +121,8 @@ impl FusedIterator for LinearisedIndicesIterator<'_> {}
 
 #[cfg(test)]
 mod tests {
+    use crate::array_subset::ArraySubset;
+
     use super::*;
 
     #[test]
