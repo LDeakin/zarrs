@@ -116,8 +116,14 @@ impl<'a> IndicesIterator<'a> {
     /// Create a new indices iterator.
     #[must_use]
     pub(super) fn new(subset: &'a ArraySubset) -> Self {
-        if subset.indexing_method != IndexingMethod::Mixed && subset.indexing_method != IndexingMethod::Basic && subset.indexing_method != IndexingMethod::VIndex {
-            panic!("This iterator is only for basic vindex and mixed indexing methods. {:?}", subset.indexing_method);
+        if subset.indexing_method != IndexingMethod::Mixed
+            && subset.indexing_method != IndexingMethod::Basic
+            && subset.indexing_method != IndexingMethod::VIndex
+        {
+            panic!(
+                "This iterator is only for basic vindex and mixed indexing methods. {:?}",
+                subset.indexing_method
+            );
         }
         let length = subset.num_elements_usize();
         Self {
@@ -143,12 +149,27 @@ impl Iterator for IndicesIterator<'_> {
     type Item = ArrayIndices;
 
     fn next(&mut self) -> Option<Self::Item> {
-        
         let mut indices = unravel_index(self.range.start as u64, self.subset.shape());
         let first_index = indices.first().unwrap().clone() as usize;
-        
-        izip!(indices.iter_mut(), self.subset.start(), self.subset.integer_indices())
-            .for_each(|(index, start, maybe_integer_index)| if maybe_integer_index.is_none() { *index += start } else { *index = maybe_integer_index.as_ref().unwrap()[if self.subset.indexing_method != IndexingMethod::VIndex { index.clone() as usize } else { first_index }] });
+
+        izip!(
+            indices.iter_mut(),
+            self.subset.start(),
+            self.subset.integer_indices()
+        )
+        .for_each(|(index, start, maybe_integer_index)| {
+            if maybe_integer_index.is_none() {
+                *index += start
+            } else {
+                *index = maybe_integer_index.as_ref().unwrap()[if self.subset.indexing_method
+                    != IndexingMethod::VIndex
+                {
+                    index.clone() as usize
+                } else {
+                    first_index
+                }]
+            }
+        });
 
         if self.range.start < self.range.end {
             self.range.start += 1;
@@ -170,8 +191,24 @@ impl DoubleEndedIterator for IndicesIterator<'_> {
             self.range.end -= 1;
             let mut indices = unravel_index(self.range.end as u64, self.subset.shape());
             let first_index = indices.first().unwrap().clone() as usize;
-            izip!(indices.iter_mut(), self.subset.start(), self.subset.integer_indices())
-                .for_each(|(index, start, maybe_integer_index)| if maybe_integer_index.is_none() { *index += start } else { *index = maybe_integer_index.as_ref().unwrap()[if self.subset.indexing_method != IndexingMethod::VIndex { index.clone() as usize } else { first_index }] });
+            izip!(
+                indices.iter_mut(),
+                self.subset.start(),
+                self.subset.integer_indices()
+            )
+            .for_each(|(index, start, maybe_integer_index)| {
+                if maybe_integer_index.is_none() {
+                    *index += start
+                } else {
+                    *index = maybe_integer_index.as_ref().unwrap()[if self.subset.indexing_method
+                        != IndexingMethod::VIndex
+                    {
+                        index.clone() as usize
+                    } else {
+                        first_index
+                    }]
+                }
+            });
             Some(indices)
         } else {
             None
@@ -287,38 +324,78 @@ mod tests {
 
     #[test]
     fn indices_iterator_integer_mixed() {
-        let indices =
-            Indices::new(ArraySubset::new_with_start_shape_indices(vec![0, 0, 0], vec![None, Some(vec![0, 2, 3]), None], vec![2, 3, 1], crate::array_subset::IndexingMethod::Mixed).unwrap());
-        let mut expected: Vec<Vec<u64>> = vec![vec![0, 0, 0], vec![0, 2, 0],vec![0, 3, 0], vec![1, 0, 0],vec![1, 2, 0],vec![1, 3, 0]];
+        let indices = Indices::new(
+            ArraySubset::new_with_start_shape_indices(
+                vec![0, 0, 0],
+                vec![None, Some(vec![0, 2, 3]), None],
+                vec![2, 3, 1],
+                crate::array_subset::IndexingMethod::Mixed,
+            )
+            .unwrap(),
+        );
+        let mut expected: Vec<Vec<u64>> = vec![
+            vec![0, 0, 0],
+            vec![0, 2, 0],
+            vec![0, 3, 0],
+            vec![1, 0, 0],
+            vec![1, 2, 0],
+            vec![1, 3, 0],
+        ];
         assert_eq!(indices.len(), expected.len());
-        izip!(indices.iter(), expected.iter()).for_each(|(index, expected)| assert_eq!(index, expected.clone()));
+        izip!(indices.iter(), expected.iter())
+            .for_each(|(index, expected)| assert_eq!(index, expected.clone()));
         let mut indices_iter = indices.iter();
-        assert_eq!(indices_iter.next_back(),  expected.pop());
-        assert_eq!(indices_iter.next_back(),  expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
     }
 
     #[test]
     fn indices_iterator_integer_vindex() {
-        let indices =
-            Indices::new(ArraySubset::new_with_start_shape_indices(vec![0, 0, 0], vec![Some(vec![0, 1]), Some(vec![0, 2]), Some(vec![0, 3])], vec![2, 1, 1], crate::array_subset::IndexingMethod::VIndex).unwrap());
+        let indices = Indices::new(
+            ArraySubset::new_with_start_shape_indices(
+                vec![0, 0, 0],
+                vec![Some(vec![0, 1]), Some(vec![0, 2]), Some(vec![0, 3])],
+                vec![2, 1, 1],
+                crate::array_subset::IndexingMethod::VIndex,
+            )
+            .unwrap(),
+        );
         let mut expected: Vec<Vec<u64>> = vec![vec![0, 0, 0], vec![1, 2, 3]];
         assert_eq!(indices.len(), expected.len());
-        izip!(indices.iter(), expected.iter()).for_each(|(index, expected_index)| assert_eq!(index, expected_index.clone()));
+        izip!(indices.iter(), expected.iter())
+            .for_each(|(index, expected_index)| assert_eq!(index, expected_index.clone()));
         let mut indices_iter = indices.iter();
-        assert_eq!(indices_iter.next_back(),  expected.pop());
-        assert_eq!(indices_iter.next_back(),  expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
     }
 
     #[test]
     fn indices_iterator_integer_oindex() {
-        let indices =
-            Indices::new(ArraySubset::new_with_start_shape_indices(vec![0, 0, 0], vec![Some(vec![0, 1]), Some(vec![0, 2]), Some(vec![0, 3])], vec![2, 2, 2], crate::array_subset::IndexingMethod::OIndex).unwrap());
-        let mut expected: Vec<Vec<u64>> = vec![vec![0, 0, 0], vec![0, 0, 3], vec![0, 2, 0], vec![0, 2, 3], vec![1, 0, 0], vec![1, 0, 3], vec![1, 2, 0], vec![1, 2, 3]];
+        let indices = Indices::new(
+            ArraySubset::new_with_start_shape_indices(
+                vec![0, 0, 0],
+                vec![Some(vec![0, 1]), Some(vec![0, 2]), Some(vec![0, 3])],
+                vec![2, 2, 2],
+                crate::array_subset::IndexingMethod::OIndex,
+            )
+            .unwrap(),
+        );
+        let mut expected: Vec<Vec<u64>> = vec![
+            vec![0, 0, 0],
+            vec![0, 0, 3],
+            vec![0, 2, 0],
+            vec![0, 2, 3],
+            vec![1, 0, 0],
+            vec![1, 0, 3],
+            vec![1, 2, 0],
+            vec![1, 2, 3],
+        ];
         assert_eq!(indices.len(), expected.len());
-        izip!(indices.iter(), expected.iter()).for_each(|(index, expected_index)| assert_eq!(index, expected_index.clone()));
+        izip!(indices.iter(), expected.iter())
+            .for_each(|(index, expected_index)| assert_eq!(index, expected_index.clone()));
         let mut indices_iter = indices.iter();
-        assert_eq!(indices_iter.next_back(),  expected.pop());
-        assert_eq!(indices_iter.next_back(),  expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
     }
 
     #[test]

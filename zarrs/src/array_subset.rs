@@ -243,21 +243,36 @@ impl ArraySubset {
         let all_some_integer_indices = integer_indices.iter().all(|x| x.is_some());
         let any_none_integer_indices = integer_indices.iter().any(|x| x.is_none());
         let is_vindex = indexing_method == IndexingMethod::VIndex;
-        let is_vindex_with_unequal_index_lengths = all_some_integer_indices && is_vindex && !integer_indices.iter().map(|x| x.as_ref().unwrap().len()).all_equal();
-        let is_vindex_with_bad_shape = all_some_integer_indices && is_vindex && (integer_indices[0].as_ref().unwrap().len() != (shape[0] as usize) || shape.iter().skip(1).all_equal_value() != Ok(&1));
+        let is_vindex_with_unequal_index_lengths = all_some_integer_indices
+            && is_vindex
+            && !integer_indices
+                .iter()
+                .map(|x| x.as_ref().unwrap().len())
+                .all_equal();
+        let is_vindex_with_bad_shape = all_some_integer_indices
+            && is_vindex
+            && (integer_indices[0].as_ref().unwrap().len() != (shape[0] as usize)
+                || shape.iter().skip(1).all_equal_value() != Ok(&1));
         let is_incorrect_indexing_method = (all_none_integer_indices
             && indexing_method != IndexingMethod::Basic)
             || (!all_none_integer_indices
                 && any_none_integer_indices
                 && indexing_method != IndexingMethod::Mixed)
-            || (all_some_integer_indices
-                && indexing_method == IndexingMethod::Basic)
+            || (all_some_integer_indices && indexing_method == IndexingMethod::Basic)
             || (any_none_integer_indices && is_vindex);
-        let are_integer_indices_wrong_or_missing = izip!(&shape, &integer_indices).any(|(sh, index)| match index {
-            Some(i) => i.len() == 0 || (indexing_method == IndexingMethod::OIndex && i.len() as u64 != *sh),
-            None => *sh == 0,
-        });
-        if is_incorrect_indexing_method || are_integer_indices_wrong_or_missing || is_vindex_with_unequal_index_lengths || is_vindex_with_bad_shape {
+        let are_integer_indices_wrong_or_missing =
+            izip!(&shape, &integer_indices).any(|(sh, index)| match index {
+                Some(i) => {
+                    i.len() == 0
+                        || (indexing_method == IndexingMethod::OIndex && i.len() as u64 != *sh)
+                }
+                None => *sh == 0,
+            });
+        if is_incorrect_indexing_method
+            || are_integer_indices_wrong_or_missing
+            || is_vindex_with_unequal_index_lengths
+            || is_vindex_with_bad_shape
+        {
             return Err(IntegerIndicesError::IncompatibleIntegerIndicesError(
                 IncompatibleIntegerIndicesError::from((
                     start,
@@ -373,11 +388,9 @@ impl ArraySubset {
     #[must_use]
     pub fn end_exc(&self) -> ArrayIndices {
         izip!(&self.start, &self.shape, &self.integer_indices)
-            .map(|(start, size, maybe_index)| {
-                match maybe_index {
-                    Some(index) => *index.iter().max().unwrap(),
-                    None => start + size,
-                }
+            .map(|(start, size, maybe_index)| match maybe_index {
+                Some(index) => *index.iter().max().unwrap(),
+                None => start + size,
             })
             .collect()
     }
@@ -760,14 +773,25 @@ mod tests {
 
     #[test]
     fn array_subset_end_inc() {
-        assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10, 10]).unwrap().end_inc().unwrap().eq(&[9, 9]));
-        assert!(ArraySubset::new_with_start_shape(vec![2, 3], vec![10, 10]).unwrap().end_inc().unwrap().eq(&[11, 12]));
+        assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10, 10])
+            .unwrap()
+            .end_inc()
+            .unwrap()
+            .eq(&[9, 9]));
+        assert!(ArraySubset::new_with_start_shape(vec![2, 3], vec![10, 10])
+            .unwrap()
+            .end_inc()
+            .unwrap()
+            .eq(&[11, 12]));
         let true_val: Vec<u64> = ArraySubset::new_with_start_shape_indices(
             vec![0, 0],
             vec![None, vec![0, 7].into()],
             vec![10, 2],
-            IndexingMethod::Mixed
-        ).unwrap().end_inc().unwrap();
+            IndexingMethod::Mixed,
+        )
+        .unwrap()
+        .end_inc()
+        .unwrap();
         assert!(true_val.eq(&[9, 6]), "{:?}", true_val);
     }
 

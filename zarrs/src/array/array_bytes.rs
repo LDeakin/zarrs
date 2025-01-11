@@ -672,7 +672,13 @@ mod tests {
                 &bytes_array,
                 &vec![4, 4],
                 &vec![1, 2].into(),
-                &ArraySubset::new_with_start_shape_indices(vec![0, 0], vec![Some(vec![0, 2]), Some(vec![0, 2])], vec![2, 1], IndexingMethod::VIndex).unwrap(),
+                &ArraySubset::new_with_start_shape_indices(
+                    vec![0, 0],
+                    vec![Some(vec![0, 2]), Some(vec![0, 2])],
+                    vec![2, 1],
+                    IndexingMethod::VIndex,
+                )
+                .unwrap(),
                 1,
             );
         }
@@ -692,7 +698,13 @@ mod tests {
                 &bytes_array,
                 &vec![4, 4],
                 &vec![1, 2, 3, 4, 5, 6, 7, 8].into(),
-                &ArraySubset::new_with_start_shape_indices(vec![0, 0], vec![Some(vec![0, 2]), None], vec![2, 4], IndexingMethod::Mixed).unwrap(),
+                &ArraySubset::new_with_start_shape_indices(
+                    vec![0, 0],
+                    vec![Some(vec![0, 2]), None],
+                    vec![2, 4],
+                    IndexingMethod::Mixed,
+                )
+                .unwrap(),
                 1,
             );
         }

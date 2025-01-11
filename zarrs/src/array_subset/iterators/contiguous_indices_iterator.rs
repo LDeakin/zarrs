@@ -96,7 +96,13 @@ impl ContiguousIndices {
         }
         // SAFETY: each element is initialised
         unsafe { shape_out.set_len(array_shape.len()) };
-        let subset_contiguous_start = ArraySubset::new_with_start_shape_indices(subset.start().to_vec(), subset.integer_indices().to_vec(), shape_out, subset.indexing_method).unwrap();
+        let subset_contiguous_start = ArraySubset::new_with_start_shape_indices(
+            subset.start().to_vec(),
+            subset.integer_indices().to_vec(),
+            shape_out,
+            subset.indexing_method,
+        )
+        .unwrap();
         // let inner = subset_contiguous_start.iter_indices();
         Self {
             subset_contiguous_start,
