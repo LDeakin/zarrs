@@ -46,7 +46,7 @@ pub enum DataTypeMetadataV3 {
     /// A UTF-8 encoded string.
     String,
     /// Variable-sized binary data.
-    Binary,
+    Bytes,
     /// An unknown data type.
     Unknown(MetadataV3),
 }
@@ -105,7 +105,7 @@ impl DataTypeMetadataV3 {
             Self::Complex64 => "complex64".to_string(),
             Self::Complex128 => "complex128".to_string(),
             Self::String => "string".to_string(),
-            Self::Binary => "binary".to_string(),
+            Self::Bytes => "bytes".to_string(),
             Self::RawBits(size) => format!("r{}", size * 8),
             Self::Unknown(metadata) => metadata.name().to_string(),
         }
@@ -134,7 +134,7 @@ impl DataTypeMetadataV3 {
             }
             Self::Complex128 => Some(DataTypeSize::Fixed(16)),
             Self::RawBits(size) => Some(DataTypeSize::Fixed(*size)),
-            Self::String | Self::Binary => Some(DataTypeSize::Variable),
+            Self::String | Self::Bytes => Some(DataTypeSize::Variable),
             Self::Unknown(_) => None,
         }
     }
@@ -170,7 +170,7 @@ impl DataTypeMetadataV3 {
             "complex64" => return Self::Complex64,
             "complex128" => return Self::Complex128,
             "string" => return Self::String,
-            "binary" => return Self::Binary,
+            "bytes" => return Self::Bytes,
             _ => {}
         };
 

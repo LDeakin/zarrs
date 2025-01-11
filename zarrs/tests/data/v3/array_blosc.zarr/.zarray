@@ -12,10 +12,10 @@
   "dtype": "<f4",
   "compressor": {
     "id": "blosc",
-    "blocksize": 0,
-    "clevel": 1,
     "cname": "zstd",
-    "shuffle": 2
+    "clevel": 1,
+    "shuffle": 2,
+    "blocksize": 0
   },
   "fill_value": 0.0,
   "order": "C",

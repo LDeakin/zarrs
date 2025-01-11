@@ -23,6 +23,8 @@ pub mod codec {
     pub mod bz2;
     /// `crc32c` codec metadata.
     pub mod crc32c;
+    /// `fletcher32` codec metadata.
+    pub mod fletcher32;
     /// `gdeflate` codec metadata.
     pub mod gdeflate;
     /// `gzip` codec metadata.
@@ -35,8 +37,8 @@ pub mod codec {
     pub mod transpose;
     /// `vlen` codec metadata.
     pub mod vlen;
-    /// `vlen_v2` codec metadata.
-    pub mod vlen_v2;
+    // /// `vlen_v2` codec metadata.
+    // pub mod vlen_v2;
     /// `zfp` codec metadata.
     pub mod zfp;
     /// `zstd` codec metadata.

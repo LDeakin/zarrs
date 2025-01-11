@@ -5,7 +5,6 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html>.
 
 mod crc32c_codec;
-mod crc32c_partial_decoder;
 
 use std::sync::Arc;
 

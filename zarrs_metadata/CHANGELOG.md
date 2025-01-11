@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-10
+
+### Added
+- Add `v3::group::{ConsolidatedMetadata,ConsolidatedMetadataMetadata,ConsolidatedMetadataKind}`
+- Add `GroupMetadataV3::consolidated_metadata` field
+- Add `GroupMetadataV3::with_consolidated_metadata` field
+- Add `fletcher32` codec metadata
+- Add numcodecs zfpy configuration support to `ZfpCodecConfiguration` for decoding V3 arrays that use `numcodecs.zfpy`
+
+### Changed
+- **Breaking**: Rename `DataTypeMetadataV3::Binary` to `Bytes` for compatibility with `zarr-python`
+- **Breaking**: Revise `PcodecCodecConfiguration` to match `numcodecs`:
+  - Adds `delta_spec: PcodecDeltaSpecConfiguration` and `paging_spec: PcodecPagingSpecConfiguration`
+  - Removes `PcodecModeSpecConfiguration::{TryFloatMult,TryFloatQuant,TryIntMult}`
+- **Breaking**: Refactor `ZfpyCodecConfigurationNumcodecs` and `ZfpyCodecConfigurationMode` to validate on deserialisation
+  - `codec_zfpy_v2_numcodecs_to_v3` is now infallible
+
+### Removed
+- **Breaking**: Remove the `v3::array::codec::vlen_v2` module and all associated types
+- **Breaking**: Remove `Reversible` support from `zfpy` codec metadata
+
+### Fixed
+- Deny unknown fields in `PcodecCodecConfigurationV1`
+
 ## [0.2.0] - 2024-11-15
 
 ### Added
@@ -32,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.2.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.0...HEAD
+[0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.1.0

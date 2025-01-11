@@ -3,6 +3,7 @@ use std::{borrow::Cow, sync::Arc};
 use crate::{
     array::{
         codec::{
+            bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
             BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
             BytesToBytesCodecTraits, CodecError, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
@@ -14,10 +15,10 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
-use super::{
-    crc32c_partial_decoder, Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE,
-    IDENTIFIER,
-};
+#[cfg(feature = "async")]
+use crate::array::codec::bytes_to_bytes::strip_suffix_partial_decoder::AsyncStripSuffixPartialDecoder;
+
+use super::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE, IDENTIFIER};
 
 /// A `crc32c` (CRC32C checksum) codec implementation.
 #[derive(Clone, Debug, Default)]
@@ -106,8 +107,9 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(crc32c_partial_decoder::Crc32cPartialDecoder::new(
+        Ok(Arc::new(StripSuffixPartialDecoder::new(
             input_handle,
+            CHECKSUM_SIZE,
         )))
     }
 
@@ -133,9 +135,10 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(
-            crc32c_partial_decoder::AsyncCrc32cPartialDecoder::new(input_handle),
-        ))
+        Ok(Arc::new(AsyncStripSuffixPartialDecoder::new(
+            input_handle,
+            CHECKSUM_SIZE,
+        )))
     }
 
     fn compute_encoded_size(
@@ -144,10 +147,10 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
     ) -> BytesRepresentation {
         match decoded_representation {
             BytesRepresentation::FixedSize(size) => {
-                BytesRepresentation::FixedSize(size + core::mem::size_of::<u32>() as u64)
+                BytesRepresentation::FixedSize(size + CHECKSUM_SIZE as u64)
             }
             BytesRepresentation::BoundedSize(size) => {
-                BytesRepresentation::BoundedSize(size + core::mem::size_of::<u32>() as u64)
+                BytesRepresentation::BoundedSize(size + CHECKSUM_SIZE as u64)
             }
             BytesRepresentation::UnboundedSize => BytesRepresentation::UnboundedSize,
         }

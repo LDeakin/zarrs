@@ -12,13 +12,13 @@
   "dtype": "<f4",
   "compressor": {
     "id": "zfpy",
+    "mode": 4,
     "compression_kwargs": {
       "tolerance": 0.01
     },
-    "mode": 4,
-    "precision": -1,
+    "tolerance": 0.01,
     "rate": -1,
-    "tolerance": 0.01
+    "precision": -1
   },
   "fill_value": 0.0,
   "order": "C",

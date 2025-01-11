@@ -109,4 +109,7 @@ pub enum ArrayError {
     ///  - a string with invalid utf-8 encoding.
     #[error("Invalid element value")]
     InvalidElementValue,
+    /// Unsupported method.
+    #[error("unsupported array method: {_0}")]
+    UnsupportedMethod(String),
 }

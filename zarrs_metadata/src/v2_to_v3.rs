@@ -6,6 +6,7 @@ use crate::{
             codec::{
                 blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
                 zfpy::{codec_zfpy_v2_numcodecs_to_v3, ZfpyCodecConfigurationNumcodecs},
+                zstd::{codec_zstd_v2_numcodecs_to_v3, ZstdCodecConfigurationNumCodecs},
             },
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
             DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
@@ -19,7 +20,6 @@ use crate::{
             codec::{
                 bytes::BytesCodecConfigurationV1,
                 transpose::{TransposeCodecConfigurationV1, TransposeOrder},
-                vlen_v2::VlenV2CodecConfigurationV1,
             },
             fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadataV3},
         },
@@ -38,7 +38,7 @@ pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMeta
         .with_additional_fields(group_metadata_v2.additional_fields.clone())
 }
 
-/// An error conerting Zarr V3 array metadata to V3.
+/// An error converting Zarr V2 array metadata to V3.
 #[derive(Debug, Error)]
 pub enum ArrayMetadataV2ToV3ConversionError {
     /// Unsupported data type.
@@ -148,10 +148,8 @@ pub fn array_metadata_v2_to_v3(
                 | crate::v2::array::codec::vlen_bytes::IDENTIFIER
                 | crate::v2::array::codec::vlen_utf8::IDENTIFIER => {
                     has_array_to_bytes = true;
-                    let vlen_v2_metadata = MetadataV3::new_with_serializable_configuration(
-                        crate::v3::array::codec::vlen_v2::IDENTIFIER,
-                        &VlenV2CodecConfigurationV1 {},
-                    )?;
+                    let vlen_v2_metadata =
+                        MetadataV3::new_with_configuration(filter.id(), serde_json::Map::default());
                     codecs.push(vlen_v2_metadata);
                 }
                 _ => {
@@ -173,7 +171,7 @@ pub fn array_metadata_v2_to_v3(
                 let zfpy_v2_metadata = serde_json::from_value::<ZfpyCodecConfigurationNumcodecs>(
                     serde_json::to_value(compressor.configuration())?,
                 )?;
-                let configuration = codec_zfpy_v2_numcodecs_to_v3(&zfpy_v2_metadata)?;
+                let configuration = codec_zfpy_v2_numcodecs_to_v3(&zfpy_v2_metadata);
                 let zfp_v3_metadata = MetadataV3::new_with_serializable_configuration(
                     crate::v3::array::codec::zfp::IDENTIFIER,
                     &configuration,
@@ -214,6 +212,16 @@ pub fn array_metadata_v2_to_v3(
                 let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, &data_type);
                 codecs.push(MetadataV3::new_with_serializable_configuration(
                     crate::v3::array::codec::blosc::IDENTIFIER,
+                    &configuration,
+                )?);
+            }
+            crate::v3::array::codec::zstd::IDENTIFIER => {
+                let zstd = serde_json::from_value::<ZstdCodecConfigurationNumCodecs>(
+                    serde_json::to_value(compressor.configuration())?,
+                )?;
+                let configuration = codec_zstd_v2_numcodecs_to_v3(&zstd);
+                codecs.push(MetadataV3::new_with_serializable_configuration(
+                    crate::v3::array::codec::zstd::IDENTIFIER,
                     &configuration,
                 )?);
             }

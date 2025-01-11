@@ -16,7 +16,7 @@ categories = ["encoding"]
 workspace = true
 
 [dependencies]
-itertools = "0.13.0"
+itertools = "0.14.0"
 thiserror = "2.0.0"
 reqwest = { version = ">=0.11.8,<0.13", features = ["blocking"] }
 url = { version = "2.2.0" }

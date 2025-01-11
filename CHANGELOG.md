@@ -7,12 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2025-01-10
+
+### Highlights
+- `zarr-python` 3.0.0 has been released today!
+- The focus of this release has been in maximising compatibility with unstandardised extensions in `zarr-python` (e.g. experimental codecs, consolidated metadata, etc.)
+
+### Added
+- Add `ArrayShardedReadableExt::retrieve_encoded_inner_chunk`
+- Add `ArrayShardedReadableExt::inner_chunk_byte_range`
+- Add `ArrayShardedExt::is_exclusively_sharded`
+- Add `ArrayShardedReadableExtCache::array_is_exclusively_sharded`
+- Add `Vlen{Array,Bytes,Utf8}Codec`, replacing `VlenV2Codec`
+- Add `ZstdCodecConfigurationNumCodecs`
+  - Adds support for Zarr V2 `zstd` encoded data created with `numcodecs` < 0.13
+- Add support for pcodec `Auto`, `None`, and `TryLookback` delta specs
+- Add `Group::[set_]consolidated_metadata`
+- Add `Node::consolidate_metadata`
+  - Consolidated metadata is not currently used to optimise node hierarchy requests
+- Add experimental `fletcher32` checksum codec based on the numcodecs implementation
+  - Adds `fletcher32` feature flag
+- Add ecosystem compatibility notes in the experimental codecs docs
+
 ### Changed
-- Bump `zfp-sys` to 0.3.0
+- **Breaking**: Seal `Array` extension traits: `ArraySharded[Readable]Ext` and `ArrayChunkCacheExt`
+- **Breaking**: Make `{Array,Bytes}PartialDecoderCache` private
+- **Breaking**: Make `Any` a supertrait of partial encoder/decoder traits
+- **Breaking**: Add `ArrayError::UnsupportedMethod`
+- **Breaking**: Rename `DataType::Binary` to `Bytes` for compatibility with `zarr-python`
+- **Breaking**: Make `array::codec::array_to_bytes::bytes::reverse_endianness` private
+- **Breaking**: Make `VlenV2Codec` private
+- Bump `itertools` to 0.14
+- Indicate that `zfp` / `zfpy` codecs have different metadata in codec table
+- Use `zarr-python` 3.0.0 in compatibility tests
+- **Breaking**: Bump MSRV to 1.82 (17 October, 2024)
+
+### Removed
+- Remove support for pcodec `Try{FloatMult,FloatQuant,IntMult}` mode specs
+  - These may be reimplemented when supported by `zarr-python`/`numcodecs`
 
 ### Fixed
-- Fix `unsafe_op_in_unsafe_fn` in lint
-- Clarify that zstd is draft and gdeflate are experimental in their docs
+- Cleanup unnecessary lifetime constraints in partial decoders
+- Fix `clippy::useless_conversion` lint
+
+## [0.18.3] - 2024-12-30
+
+### Added
+- impl `From<Node>` for `NodePath` ([#112] by [@niklasmueboe])
+- Add `Group::child[_{group,array}]_paths` ([#112] by [@niklasmueboe])
+
+[#112]: https://github.com/LDeakin/zarrs/pull/112
+
+## [0.18.2] - 2024-12-25
+
+### Added
+- functions to get children of Group ([#104] by [@niklasmueboe])
+  - adds `Group::[async_]children`, `Group::[async_]child_groups`, `Group::[async_]child_arrays`
+- Impl `From<Node>` for `NodeMetadata`
+
+### Changed
+- Reduce metadata code duplication in the `Node` module
+
+[#104]: https://github.com/LDeakin/zarrs/pull/104
+
+## [0.18.1] - 2024-12-17
+
+### Changed
+- Bump `zfp-sys` to 0.3.0
+- Bump `bzip2` to 0.5.0
+- Minor readme/ecosystem updates
+
+### Fixed
+- Fix `unsafe_op_in_unsafe_fn` lint
+- Clarify that the `zstd` codec is draft in docs
+- Clarify that the `gdeflate` codec is experimental in docs
 
 ## [0.18.0] - 2024-11-23
 
@@ -1147,7 +1215,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.18.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.19.0...HEAD
+[0.19.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.0
+[0.18.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.3
+[0.18.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.2
+[0.18.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.1
 [0.18.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0
 [0.18.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.0-beta.0
 [0.17.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.17.1
@@ -1201,3 +1273,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [@lorenzocerrone]: https://github.com/lorenzocerrone
 [@dustinlagoy]: https://github.com/dustinlagoy
 [@sk1p]: https://github.com/sk1p
+[@niklasmueboe]: https://github.com/niklasmueboe

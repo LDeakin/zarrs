@@ -1,9 +1,9 @@
 [package]
 name = "zarrs"
-version = "0.18.1"
+version = "0.19.0"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
-rust-version = "1.77"
+rust-version = "1.82"
 description = "A library for the Zarr storage format for multidimensional arrays and metadata"
 homepage = "https://zarrs.dev"
 documentation = "https://docs.rs/zarrs"
@@ -20,6 +20,7 @@ bitround = [] # Enable the experimental bitround codec
 blosc = ["dep:blosc-sys"] # Enable the blosc codec
 bz2 = ["dep:bzip2"] # Enable the experimental bz2 codec
 crc32c = ["dep:crc32c"] # Enable the crc32c checksum codec
+fletcher32 = [] # Enable the fletcher32 checksum codec
 gdeflate = ["dep:gdeflate-sys"] # Enable the experimental gdeflate codec
 gzip = ["dep:flate2"] # Enable the gzip codec
 pcodec = ["dep:pco"] # Enable the experimental pcodec codec
@@ -45,7 +46,7 @@ async-trait = { version = "0.1.74", optional = true }
 blosc-sys = { version = "0.3.4", package = "blosc-src", features = ["snappy", "lz4", "zlib", "zstd"], optional = true }
 bytemuck = { version = "1.14.0", features = ["extern_crate_alloc", "must_cast", "min_const_generics"] }
 bytes = "1.6.0"
-bzip2 = { version = "0.4.4", optional = true, features = ["static"] }
+bzip2 = { version = "0.5.0", optional = true, features = ["static"] }
 crc32c = { version = "0.6.5", optional = true }
 derive_more = { version = "1.0.0", features = ["deref", "display", "from"] }
 flate2 = { version = "1.0.30", optional = true }
@@ -53,7 +54,7 @@ futures = { version = "0.3.29", optional = true }
 gdeflate-sys = { version = "0.4.1", optional = true }
 half = { version = "2.0.0", features = ["bytemuck"] }
 inventory = "0.3.0"
-itertools = "0.13.0"
+itertools = "0.14.0"
 lru = "0.12.4"
 moka = { version = "0.12.8", features = ["sync"] }
 ndarray = { version = ">=0.15.0,<17", optional = true }

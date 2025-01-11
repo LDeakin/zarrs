@@ -22,7 +22,7 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///
 /// [`CodecOptions::validate_checksums()`] defaults to [`Config::validate_checksums()`].
 ///
-/// If validate checksums is enabled, checksum codecs (e.g. `crc32c`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
+/// If validate checksums is enabled, checksum codecs (e.g. `crc32c`, `fletcher32`) will validate that encoded data matches stored checksums, otherwise validation is skipped.
 /// Note that regardless of this configuration option, checksum codecs may skip validation when partial decoding.
 ///
 /// ### Store Empty Chunks
@@ -133,10 +133,11 @@ impl Default for Config {
             #[cfg(feature = "pcodec")]
             (codec::pcodec::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/pcodec".to_string()),
             (codec::vlen::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen".to_string()),
-            (codec::vlen_v2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen_v2".to_string()),
             // Bytes to bytes
             #[cfg(feature = "bz2")]
             (codec::bz2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
+            #[cfg(feature = "fletcher32")]
+            (codec::fletcher32::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/fletcher32".to_string()),
         ]);
 
         Self {

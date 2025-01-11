@@ -12,18 +12,18 @@ use crate::{
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 /// Partial decoder for the `test_unbounded` codec.
-pub(crate) struct TestUnboundedPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct TestUnboundedPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> TestUnboundedPartialDecoder<'a> {
+impl TestUnboundedPartialDecoder {
     /// Create a new partial decoder for the `test_unbounded` codec.
-    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for TestUnboundedPartialDecoder<'_> {
+impl BytesPartialDecoderTraits for TestUnboundedPartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

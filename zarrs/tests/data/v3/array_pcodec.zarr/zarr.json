@@ -26,10 +26,12 @@
     {
       "name": "pcodec",
       "configuration": {
-        "delta_encoding_order": null,
-        "equal_pages_up_to": 262144,
         "level": 8,
-        "mode_spec": "auto"
+        "mode_spec": "auto",
+        "delta_spec": "auto",
+        "paging_spec": "equal_pages_up_to",
+        "delta_encoding_order": null,
+        "equal_pages_up_to": 262144
       }
     }
   ],

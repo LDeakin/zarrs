@@ -221,7 +221,7 @@ macro_rules! impl_element_binary {
     ($raw_type:ty) => {
         impl Element for $raw_type {
             fn validate_data_type(data_type: &DataType) -> Result<(), ArrayError> {
-                (data_type == &DataType::Binary).then_some(()).ok_or(IET)
+                (data_type == &DataType::Bytes).then_some(()).ok_or(IET)
             }
 
             fn into_array_bytes<'a>(

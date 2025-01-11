@@ -6,7 +6,7 @@
 | Bytes to Bytes | [blosc]            | [ZEP0001]         | &check; | &check; | **blosc**     |
 |                | [gzip]             | [ZEP0001]         | &check; | &check; | **gzip**      |
 |                | [crc32c]           | [ZEP0002]         | &check; |         | **crc32c**    |
-|                | [zstd]             | [zarr-specs #256] | &check; | &check; | zstd          |
+|                | [zstd]             | [zarr-specs #256] | &check; | &check; | **zstd**      |
 
 <sup>\* Bolded feature flags are part of the default set of features.</sup>
 

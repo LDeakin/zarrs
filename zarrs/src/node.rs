@@ -13,6 +13,7 @@ mod node_path;
 pub use node_path::{NodePath, NodePathError};
 
 mod node_sync;
+pub(crate) use node_sync::_get_child_nodes;
 pub use node_sync::{get_child_nodes, node_exists, node_exists_listable};
 
 mod key;
@@ -23,9 +24,12 @@ pub use key::{
 #[cfg(feature = "async")]
 mod node_async;
 #[cfg(feature = "async")]
+pub(crate) use node_async::_async_get_child_nodes;
+#[cfg(feature = "async")]
 pub use node_async::{async_get_child_nodes, async_node_exists, async_node_exists_listable};
+use zarrs_metadata::v3::group::ConsolidatedMetadataMetadata;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub use crate::metadata::NodeMetadata;
 use thiserror::Error;
@@ -58,6 +62,18 @@ pub struct Node {
     children: Vec<Node>,
 }
 
+impl From<Node> for NodeMetadata {
+    fn from(value: Node) -> Self {
+        value.metadata
+    }
+}
+
+impl From<Node> for NodePath {
+    fn from(value: Node) -> Self {
+        value.path
+    }
+}
+
 /// A node creation error.
 #[derive(Debug, Error)]
 pub enum NodeCreateError {
@@ -73,6 +89,22 @@ pub enum NodeCreateError {
     /// Missing metadata.
     #[error("Metadata is missing")]
     MissingMetadata,
+}
+
+// FIXME: Remove in the next breaking release
+impl From<NodeCreateError> for StorageError {
+    fn from(value: NodeCreateError) -> Self {
+        match value {
+            NodeCreateError::NodePathError(err) => StorageError::Other(err.to_string()),
+            NodeCreateError::StorageError(err) => err,
+            NodeCreateError::MetadataVersionMismatch => {
+                StorageError::Other(NodeCreateError::MetadataVersionMismatch.to_string())
+            }
+            NodeCreateError::MissingMetadata => {
+                StorageError::Other(NodeCreateError::MissingMetadata.to_string())
+            }
+        }
+    }
 }
 
 impl Node {
@@ -219,6 +251,7 @@ impl Node {
         let metadata = Self::get_metadata(storage, &path, version)?;
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),
+            // TODO: Add consolidated metadata support
             NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
         };
         let node = Self {
@@ -259,6 +292,7 @@ impl Node {
         let metadata = Self::async_get_metadata(&storage, &path, version).await?;
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),
+            // TODO: Add consolidated metadata support
             NodeMetadata::Group(_) => async_get_child_nodes(&storage, &path).await?,
         };
         let node = Self {
@@ -361,6 +395,43 @@ impl Node {
         print_metadata("/", &mut string, &self.metadata);
         update_tree(&mut string, &self.children, 1);
         string
+    }
+
+    /// Consolidate metadata. Returns [`None`] for an array.
+    ///
+    /// [`ConsolidatedMetadataMetadata`] can be converted into [`ConsolidatedMetadata`](crate::metadata::v3::group::ConsolidatedMetadata) in [`GroupMetadataV3`](crate::metadata::v3::group::GroupMetadataV3).
+    #[must_use]
+    #[allow(clippy::items_after_statements)]
+    pub fn consolidate_metadata(&self) -> Option<ConsolidatedMetadataMetadata> {
+        if let NodeMetadata::Array(_) = self.metadata {
+            // Arrays cannot have consolidated metadata
+            return None;
+        }
+
+        fn update_consolidated_metadata(
+            node_path: &str,
+            consolidated_metadata: &mut ConsolidatedMetadataMetadata,
+            children: &[Node],
+        ) {
+            for child in children {
+                let relative_path = child
+                    .path()
+                    .as_str()
+                    .strip_prefix(node_path)
+                    .expect("child path should always include the node path");
+                let relative_path = relative_path.strip_prefix('/').unwrap_or(relative_path);
+                let relative_path = relative_path.to_string();
+                consolidated_metadata.insert(relative_path, child.metadata.clone());
+                update_consolidated_metadata(node_path, consolidated_metadata, &child.children);
+            }
+        }
+        let mut consolidated_metadata = HashMap::default();
+        update_consolidated_metadata(
+            self.path().as_str(),
+            &mut consolidated_metadata,
+            &self.children,
+        );
+        Some(consolidated_metadata)
     }
 }
 

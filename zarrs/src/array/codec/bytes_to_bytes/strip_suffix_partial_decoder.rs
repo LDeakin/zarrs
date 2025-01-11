@@ -11,21 +11,26 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
-use super::CHECKSUM_SIZE;
-
-/// Partial decoder for the `crc32c` (CRC32C checksum) codec.
-pub(crate) struct Crc32cPartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+/// Partial decoder for stripping a suffix (e.g. checksum).
+pub(crate) struct StripSuffixPartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
+    suffix_size: usize,
 }
 
-impl<'a> Crc32cPartialDecoder<'a> {
-    /// Create a new partial decoder for the `crc32c` codec.
-    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
-        Self { input_handle }
+impl StripSuffixPartialDecoder {
+    /// Create a new "strip suffix" partial decoder.
+    pub(crate) fn new(
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        suffix_size: usize,
+    ) -> Self {
+        Self {
+            input_handle,
+            suffix_size,
+        }
     }
 }
 
-impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
+impl BytesPartialDecoderTraits for StripSuffixPartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -42,11 +47,11 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
             let bytes = match byte_range {
                 ByteRange::FromStart(_, Some(_)) => bytes,
                 ByteRange::FromStart(_, None) => {
-                    let length = bytes.len() - CHECKSUM_SIZE;
+                    let length = bytes.len() - self.suffix_size;
                     Cow::Owned(bytes[..length].to_vec())
                 }
                 ByteRange::Suffix(_) => {
-                    let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64);
+                    let length = bytes.len() as u64 - (self.suffix_size as u64);
                     let length = usize::try_from(length).unwrap();
                     Cow::Owned(bytes[..length].to_vec())
                 }
@@ -59,22 +64,29 @@ impl BytesPartialDecoderTraits for Crc32cPartialDecoder<'_> {
 }
 
 #[cfg(feature = "async")]
-/// Asynchronous partial decoder for the `crc32c` (CRC32C checksum) codec.
-pub(crate) struct AsyncCrc32cPartialDecoder {
+/// Asynchronous partial decoder for stripping a suffix (e.g. checksum).
+pub(crate) struct AsyncStripSuffixPartialDecoder {
     input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+    suffix_size: usize,
 }
 
 #[cfg(feature = "async")]
-impl AsyncCrc32cPartialDecoder {
-    /// Create a new partial decoder for the `crc32c` codec.
-    pub(crate) fn new(input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>) -> Self {
-        Self { input_handle }
+impl AsyncStripSuffixPartialDecoder {
+    /// Create a new "strip suffix" partial decoder.
+    pub(crate) fn new(
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+        suffix_size: usize,
+    ) -> Self {
+        Self {
+            input_handle,
+            suffix_size,
+        }
     }
 }
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder {
+impl AsyncBytesPartialDecoderTraits for AsyncStripSuffixPartialDecoder {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -94,11 +106,11 @@ impl AsyncBytesPartialDecoderTraits for AsyncCrc32cPartialDecoder {
             let bytes = match byte_range {
                 ByteRange::FromStart(_, Some(_)) => bytes,
                 ByteRange::FromStart(_, None) => {
-                    let length = bytes.len() - CHECKSUM_SIZE;
+                    let length = bytes.len() - self.suffix_size;
                     Cow::Owned(bytes[..length].to_vec())
                 }
                 ByteRange::Suffix(_) => {
-                    let length = bytes.len() as u64 - (CHECKSUM_SIZE as u64);
+                    let length = bytes.len() as u64 - (self.suffix_size as u64);
                     let length = usize::try_from(length).unwrap();
                     Cow::Owned(bytes[..length].to_vec())
                 }

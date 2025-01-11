@@ -56,7 +56,7 @@ pub enum DataType {
     /// A UTF-8 encoded string.
     String,
     /// Variable-sized binary data.
-    Binary,
+    Bytes,
 }
 
 /// An unsupported data type error.
@@ -104,7 +104,7 @@ impl DataType {
             Self::Complex128 => "complex128",
             Self::RawBits(_usize) => "r*",
             Self::String => "string",
-            Self::Binary => "binary",
+            Self::Bytes => "bytes",
             // Self::Extension(extension) => extension.identifier(),
         }
     }
@@ -140,7 +140,7 @@ impl DataType {
             Self::Complex128 => DataTypeMetadataV3::Complex128,
             Self::RawBits(size) => DataTypeMetadataV3::RawBits(*size),
             Self::String => DataTypeMetadataV3::String,
-            Self::Binary => DataTypeMetadataV3::Binary,
+            Self::Bytes => DataTypeMetadataV3::Bytes,
         }
     }
 
@@ -154,7 +154,7 @@ impl DataType {
             Self::Int64 | Self::UInt64 | Self::Float64 | Self::Complex64 => DataTypeSize::Fixed(8),
             Self::Complex128 => DataTypeSize::Fixed(16),
             Self::RawBits(size) => DataTypeSize::Fixed(*size),
-            Self::String | Self::Binary => DataTypeSize::Variable,
+            Self::String | Self::Bytes => DataTypeSize::Variable,
             // Self::Extension(extension) => extension.size(),
         }
     }
@@ -192,7 +192,7 @@ impl DataType {
             DataTypeMetadataV3::Complex128 => Ok(Self::Complex128),
             DataTypeMetadataV3::RawBits(size) => Ok(Self::RawBits(*size)),
             DataTypeMetadataV3::String => Ok(Self::String),
-            DataTypeMetadataV3::Binary => Ok(Self::Binary),
+            DataTypeMetadataV3::Bytes => Ok(Self::Bytes),
             DataTypeMetadataV3::Unknown(metadata) => {
                 Err(UnsupportedDataTypeError(metadata.to_string()))
             }
@@ -241,7 +241,7 @@ impl DataType {
                 }
                 Err(err())
             }
-            Self::Binary => {
+            Self::Bytes => {
                 if let FillValueMetadataV3::ByteArray(bytes) = fill_value {
                     Ok(FillValue::new(bytes.clone()))
                 } else {
@@ -329,7 +329,7 @@ impl DataType {
             Self::String => FillValueMetadataV3::String(
                 String::from_utf8(fill_value.as_ne_bytes().to_vec()).unwrap(),
             ),
-            Self::Binary => FillValueMetadataV3::ByteArray(fill_value.as_ne_bytes().to_vec()),
+            Self::Bytes => FillValueMetadataV3::ByteArray(fill_value.as_ne_bytes().to_vec()),
         }
     }
 }

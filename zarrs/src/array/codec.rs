@@ -6,7 +6,7 @@
 //!
 //! A [`CodecChain`] represents a codec sequence consisting of any number of array to array and bytes to bytes codecs, and one array to bytes codec.
 //! A codec chain is itself an array to bytes codec.
-//! A [`ArrayPartialDecoderCache`] or [`BytesPartialDecoderCache`] may be inserted into a codec chain to optimise partial decoding where appropriate.
+//! A cache may be inserted into a codec chain to optimise partial decoding where appropriate.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id18>.
 
@@ -59,8 +59,8 @@ use thiserror::Error;
 
 mod array_partial_decoder_cache;
 mod bytes_partial_decoder_cache;
-pub use array_partial_decoder_cache::ArrayPartialDecoderCache;
-pub use bytes_partial_decoder_cache::BytesPartialDecoderCache;
+pub(crate) use array_partial_decoder_cache::ArrayPartialDecoderCache;
+pub(crate) use bytes_partial_decoder_cache::BytesPartialDecoderCache;
 
 mod byte_interval_partial_decoder;
 pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
@@ -90,6 +90,7 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::storage::AsyncReadableStorage;
 
+use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -241,7 +242,7 @@ pub trait ArrayCodecTraits: CodecTraits {
 }
 
 /// Partial bytes decoder traits.
-pub trait BytesPartialDecoderTraits: Send + Sync {
+pub trait BytesPartialDecoderTraits: Any + Send + Sync {
     /// Partially decode bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
@@ -288,7 +289,7 @@ pub trait BytesPartialDecoderTraits: Send + Sync {
 #[cfg(feature = "async")]
 /// Asynchronous partial bytes decoder traits.
 #[async_trait::async_trait]
-pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
+pub trait AsyncBytesPartialDecoderTraits: Any + Send + Sync {
     /// Partially decode bytes.
     ///
     /// Returns [`None`] if partial decoding of the input handle returns [`None`].
@@ -333,7 +334,7 @@ pub trait AsyncBytesPartialDecoderTraits: Send + Sync {
 }
 
 /// Partial array decoder traits.
-pub trait ArrayPartialDecoderTraits: Send + Sync {
+pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
@@ -394,7 +395,7 @@ pub trait ArrayPartialDecoderTraits: Send + Sync {
 }
 
 /// Partial array encoder traits.
-pub trait ArrayPartialEncoderTraits: Send + Sync {
+pub trait ArrayPartialEncoderTraits: Any + Send + Sync {
     /// Erase the chunk.
     ///
     /// # Errors
@@ -413,7 +414,7 @@ pub trait ArrayPartialEncoderTraits: Send + Sync {
 }
 
 /// Partial bytes encoder traits.
-pub trait BytesPartialEncoderTraits: Send + Sync {
+pub trait BytesPartialEncoderTraits: Any + Send + Sync {
     /// Erase the chunk.
     ///
     /// # Errors
@@ -434,7 +435,7 @@ pub trait BytesPartialEncoderTraits: Send + Sync {
 #[cfg(feature = "async")]
 /// Asynchronous partial array decoder traits.
 #[async_trait::async_trait]
-pub trait AsyncArrayPartialDecoderTraits: Send + Sync {
+pub trait AsyncArrayPartialDecoderTraits: Any + Send + Sync {
     /// Return the data type of the partial decoder.
     fn data_type(&self) -> &DataType;
 
@@ -863,7 +864,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     // TODO: Async partial encoder
 }
 
-impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
+impl BytesPartialDecoderTraits for std::io::Cursor<&'static [u8]> {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -878,7 +879,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
     }
 }
 
-impl BytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
+impl BytesPartialDecoderTraits for std::io::Cursor<RawBytes<'static>> {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -910,7 +911,7 @@ impl BytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&'static [u8]> {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
@@ -927,7 +928,7 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<&[u8]> {
 
 #[cfg(feature = "async")]
 #[async_trait::async_trait]
-impl AsyncBytesPartialDecoderTraits for std::io::Cursor<RawBytes<'_>> {
+impl AsyncBytesPartialDecoderTraits for std::io::Cursor<RawBytes<'static>> {
     async fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],

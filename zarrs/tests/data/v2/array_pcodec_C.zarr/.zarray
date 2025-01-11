@@ -1,22 +1,25 @@
 {
-    "chunks": [
-        5,
-        5
-    ],
-    "compressor": {
-        "delta_encoding_order": null,
-        "equal_pages_up_to": 262144,
-        "id": "pcodec",
-        "level": 8,
-        "mode_spec": "auto"
-    },
-    "dtype": "<f4",
-    "fill_value": 0.0,
-    "filters": null,
-    "order": "C",
-    "shape": [
-        10,
-        10
-    ],
-    "zarr_format": 2
+  "shape": [
+    10,
+    10
+  ],
+  "chunks": [
+    5,
+    5
+  ],
+  "fill_value": 0.0,
+  "order": "C",
+  "filters": null,
+  "dimension_separator": ".",
+  "compressor": {
+    "id": "pcodec",
+    "level": 8,
+    "mode_spec": "auto",
+    "delta_spec": "auto",
+    "paging_spec": "equal_pages_up_to",
+    "delta_encoding_order": null,
+    "equal_pages_up_to": 262144
+  },
+  "zarr_format": 2,
+  "dtype": "<f4"
 }

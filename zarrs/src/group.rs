@@ -30,8 +30,12 @@ use std::sync::Arc;
 
 use derive_more::Display;
 use thiserror::Error;
+use zarrs_metadata::v3::group::ConsolidatedMetadata;
+use zarrs_metadata::NodeMetadata;
+use zarrs_storage::ListableStorageTraits;
 
 use crate::{
+    array::{Array, ArrayCreateError},
     config::{
         global_config, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
@@ -40,12 +44,19 @@ use crate::{
         v2_to_v3::group_metadata_v2_to_v3,
         v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     },
-    node::{meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, NodePath, NodePathError},
+    node::{
+        _get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node, NodePath,
+        NodePathError,
+    },
     storage::{ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits},
 };
 
 #[cfg(feature = "async")]
-use crate::storage::{AsyncReadableStorageTraits, AsyncWritableStorageTraits};
+use crate::node::_async_get_child_nodes;
+#[cfg(feature = "async")]
+use crate::storage::{
+    AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
+};
 
 pub use self::group_builder::GroupBuilder;
 pub use crate::metadata::{v3::GroupMetadataV3, GroupMetadata};
@@ -151,6 +162,30 @@ impl<TStorage: ?Sized> Group<TStorage> {
         }
     }
 
+    /// Get the consolidated metadata. Returns [`None`] if `consolidated_metadata` is absent.
+    ///
+    /// Consolidated metadata is not currently supported for Zarr V2 groups.
+    #[must_use]
+    pub fn consolidated_metadata(&self) -> Option<&ConsolidatedMetadata> {
+        if let GroupMetadata::V3(group_metadata) = &self.metadata {
+            group_metadata.consolidated_metadata.as_ref()
+        } else {
+            None
+        }
+    }
+
+    /// Set the consolidated metadata.
+    ///
+    /// Consolidated metadata is not currently supported for Zarr V2 groups, and this function is a no-op.
+    pub fn set_consolidated_metadata(
+        &mut self,
+        consolidated_metadata: Option<ConsolidatedMetadata>,
+    ) {
+        if let GroupMetadata::V3(group_metadata) = &mut self.metadata {
+            group_metadata.consolidated_metadata = consolidated_metadata;
+        }
+    }
+
     /// Convert the group to Zarr V3.
     ///
     /// If the group is already Zarr V3, this is a no-op.
@@ -223,6 +258,106 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
     }
 }
 
+impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TStorage> {
+    /// Return the children of the group
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub fn children(&self, recursive: bool) -> Result<Vec<Node>, StorageError> {
+        #[allow(clippy::used_underscore_items)]
+        _get_child_nodes(&self.storage, &self.path, recursive)
+    }
+
+    /// Return the children of the group that are [`Group`]s
+    ///
+    /// # Errors
+    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    pub fn child_groups(&self, recursive: bool) -> Result<Vec<Self>, GroupCreateError> {
+        self.children(recursive)?
+            .into_iter()
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Group(metadata) => Some(Group::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata,
+                    )),
+                    NodeMetadata::Array(_) => None,
+                }
+            })
+            .collect()
+    }
+
+    /// Return the children of the group that are [`Array`]s
+    ///
+    /// # Errors
+    /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
+    pub fn child_arrays(&self, recursive: bool) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
+        self.children(recursive)?
+            .into_iter()
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Array(metadata) => Some(Array::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata.clone(),
+                    )),
+                    NodeMetadata::Group(_) => None,
+                }
+            })
+            .collect()
+    }
+
+    /// Return the paths of the groups children
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub fn child_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+        let paths = self
+            .children(recursive)?
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        Ok(paths)
+    }
+
+    /// Return the paths of the groups children if the child is a group
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub fn child_group_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+        let paths = self
+            .children(recursive)?
+            .into_iter()
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Group(_) => Some(node.into()),
+                NodeMetadata::Array(_) => None,
+            })
+            .collect();
+        Ok(paths)
+    }
+
+    /// Return the paths of the groups children if the child is an array
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub fn child_array_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+        let paths = self
+            .children(recursive)?
+            .into_iter()
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Array(_) => Some(node.into()),
+                NodeMetadata::Group(_) => None,
+            })
+            .collect();
+        Ok(paths)
+    }
+}
+
 #[cfg(feature = "async")]
 impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
     /// Async variant of [`open`](Group::open).
@@ -269,6 +404,67 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
 
         // No metadata has been found
         Err(GroupCreateError::MissingMetadata)
+    }
+}
+
+#[cfg(feature = "async")]
+impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits> Group<TStorage> {
+    /// Return the children of the group
+    ///
+    /// # Errors
+    /// Returns [`StorageError`] if there is an underlying error with the store.
+    pub async fn async_children(&self, recursive: bool) -> Result<Vec<Node>, StorageError> {
+        #[allow(clippy::used_underscore_items)]
+        _async_get_child_nodes(&self.storage, &self.path, recursive).await
+    }
+
+    /// Return the children of the group that are [`Group`]s
+    ///
+    /// # Errors
+    /// Returns [`GroupCreateError`] if there is a storage error or any metadata is invalid.
+    pub async fn async_child_groups(&self, recursive: bool) -> Result<Vec<Self>, GroupCreateError> {
+        self.async_children(recursive)
+            .await?
+            .into_iter()
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Group(metadata) => Some(Group::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata,
+                    )),
+                    NodeMetadata::Array(_) => None,
+                }
+            })
+            .collect()
+    }
+
+    /// Return the children of the group that are [`Array`]s
+    ///
+    /// # Errors
+    /// Returns [`ArrayCreateError`] if there is a storage error or any metadata is invalid.
+    pub async fn async_child_arrays(
+        &self,
+        recursive: bool,
+    ) -> Result<Vec<Array<TStorage>>, ArrayCreateError> {
+        self.async_children(recursive)
+            .await?
+            .into_iter()
+            .filter_map(|node| {
+                let name = node.name();
+                let metadata: NodeMetadata = node.into();
+                match metadata {
+                    NodeMetadata::Array(metadata) => Some(Array::new_with_metadata(
+                        self.storage.clone(),
+                        name.as_str(),
+                        metadata.clone(),
+                    )),
+                    NodeMetadata::Group(_) => None,
+                }
+            })
+            .collect()
     }
 }
 

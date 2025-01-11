@@ -1,25 +1,26 @@
 {
-    "chunks": [
-        5,
-        5
-    ],
-    "compressor": {
-        "compression_kwargs": {
-            "tolerance": 0.01
-        },
-        "id": "zfpy",
-        "mode": 4,
-        "precision": -1,
-        "rate": -1,
-        "tolerance": 0.01
+  "shape": [
+    10,
+    10
+  ],
+  "chunks": [
+    5,
+    5
+  ],
+  "fill_value": 0.0,
+  "order": "C",
+  "filters": null,
+  "dimension_separator": ".",
+  "compressor": {
+    "id": "zfpy",
+    "mode": 4,
+    "compression_kwargs": {
+      "tolerance": 0.01
     },
-    "dtype": "<f4",
-    "fill_value": 0.0,
-    "filters": null,
-    "order": "C",
-    "shape": [
-        10,
-        10
-    ],
-    "zarr_format": 2
+    "tolerance": 0.01,
+    "rate": -1,
+    "precision": -1
+  },
+  "zarr_format": 2,
+  "dtype": "<f4"
 }

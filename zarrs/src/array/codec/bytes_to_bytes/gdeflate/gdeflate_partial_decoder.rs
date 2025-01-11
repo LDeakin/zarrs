@@ -14,18 +14,18 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::gdeflate_decode;
 
 /// Partial decoder for the `gdeflate` codec.
-pub(crate) struct GDeflatePartialDecoder<'a> {
-    input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>,
+pub(crate) struct GDeflatePartialDecoder {
+    input_handle: Arc<dyn BytesPartialDecoderTraits>,
 }
 
-impl<'a> GDeflatePartialDecoder<'a> {
+impl GDeflatePartialDecoder {
     /// Create a new partial decoder for the `gdeflate` codec.
-    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits + 'a>) -> Self {
+    pub(crate) fn new(input_handle: Arc<dyn BytesPartialDecoderTraits>) -> Self {
         Self { input_handle }
     }
 }
 
-impl BytesPartialDecoderTraits for GDeflatePartialDecoder<'_> {
+impl BytesPartialDecoderTraits for GDeflatePartialDecoder {
     fn partial_decode(
         &self,
         decoded_regions: &[ByteRange],
