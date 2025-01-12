@@ -127,11 +127,7 @@ fn blosc_compress_bytes(
 fn blosc_validate(src: &[u8]) -> Option<usize> {
     let mut destsize: usize = 0;
     let valid = unsafe {
-        blosc_cbuffer_validate(
-            src.as_ptr().cast::<c_void>(),
-            src.len(),
-            std::ptr::addr_of_mut!(destsize),
-        )
+        blosc_cbuffer_validate(src.as_ptr().cast::<c_void>(), src.len(), &raw mut destsize)
     } == 0;
     valid.then_some(destsize)
 }
@@ -145,8 +141,8 @@ fn blosc_typesize(src: &[u8]) -> Option<usize> {
     unsafe {
         blosc_cbuffer_metainfo(
             src.as_ptr().cast::<c_void>(),
-            std::ptr::addr_of_mut!(typesize),
-            std::ptr::addr_of_mut!(flags),
+            &raw mut typesize,
+            &raw mut flags,
         );
     };
     (typesize != 0).then_some(typesize)
@@ -164,9 +160,9 @@ fn blosc_nbytes(src: &[u8]) -> Option<usize> {
     unsafe {
         blosc_cbuffer_sizes(
             src.as_ptr().cast::<c_void>(),
-            std::ptr::addr_of_mut!(uncompressed_bytes),
-            std::ptr::addr_of_mut!(cbytes),
-            std::ptr::addr_of_mut!(blocksize),
+            &raw mut uncompressed_bytes,
+            &raw mut cbytes,
+            &raw mut blocksize,
         );
     };
     (uncompressed_bytes > 0 && cbytes > 0 && blocksize > 0).then_some(uncompressed_bytes)
