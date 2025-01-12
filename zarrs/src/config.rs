@@ -5,7 +5,7 @@
 use crate::metadata::v3::array::codec;
 use std::{
     collections::HashMap,
-    sync::{OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
 #[cfg(doc)]
@@ -282,17 +282,14 @@ impl Config {
     }
 }
 
-static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
+static CONFIG: LazyLock<RwLock<Config>> = LazyLock::new(|| RwLock::new(Config::default()));
 
 /// Returns a reference to the global `zarrs` configuration.
 ///
 /// # Panics
 /// This function panics if the underlying lock has been poisoned and might panic if the global config is already held by the current thread.
 pub fn global_config() -> RwLockReadGuard<'static, Config> {
-    CONFIG
-        .get_or_init(|| RwLock::new(Config::default()))
-        .read()
-        .unwrap()
+    CONFIG.read().unwrap()
 }
 
 /// Returns a mutable reference to the global `zarrs` configuration.
@@ -300,10 +297,7 @@ pub fn global_config() -> RwLockReadGuard<'static, Config> {
 /// # Panics
 /// This function panics if the underlying lock has been poisoned and might panic if the global config is already held by the current thread.
 pub fn global_config_mut() -> RwLockWriteGuard<'static, Config> {
-    CONFIG
-        .get_or_init(|| RwLock::new(Config::default()))
-        .write()
-        .unwrap()
+    CONFIG.write().unwrap()
 }
 
 /// The metadata version to retrieve.
