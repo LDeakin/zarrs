@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Use new language/library features added between Rust 1.78-1.82 (internal)
+
 ## [0.19.0] - 2025-01-10
 
 ### Highlights
