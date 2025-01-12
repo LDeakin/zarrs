@@ -603,7 +603,6 @@ impl<'a, const N: usize> From<&'a [u8; N]> for ArrayBytes<'a> {
 #[cfg(test)]
 mod tests {
     use std::error::Error;
-    use std::mem::size_of;
 
     use crate::array::Element;
 

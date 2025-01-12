@@ -1,4 +1,4 @@
-use std::{mem::size_of, num::NonZeroU64, sync::Arc};
+use std::{num::NonZeroU64, sync::Arc};
 
 use crate::{
     array::{

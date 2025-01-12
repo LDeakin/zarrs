@@ -38,7 +38,7 @@ pub(crate) fn create_codec_crc32c(metadata: &MetadataV3) -> Result<Codec, Plugin
     Ok(Codec::BytesToBytes(codec))
 }
 
-const CHECKSUM_SIZE: usize = core::mem::size_of::<u32>();
+const CHECKSUM_SIZE: usize = size_of::<u32>();
 
 #[cfg(test)]
 mod tests {
@@ -89,8 +89,7 @@ mod tests {
         assert_eq!(bytes, decoded.to_vec());
 
         // Check that the checksum is correct
-        let checksum: &[u8; 4] = &encoded
-            [encoded.len() - core::mem::size_of::<u32>()..encoded.len()]
+        let checksum: &[u8; 4] = &encoded[encoded.len() - size_of::<u32>()..encoded.len()]
             .try_into()
             .unwrap();
         println!("checksum {checksum:?}");

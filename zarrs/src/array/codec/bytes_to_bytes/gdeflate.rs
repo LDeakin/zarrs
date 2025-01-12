@@ -37,7 +37,6 @@ use crate::{
 
 pub use gdeflate::IDENTIFIER;
 
-use core::mem::size_of;
 use std::sync::Arc;
 
 // Register the codec.
@@ -329,7 +328,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .to_vec()
-            .chunks_exact(std::mem::size_of::<u16>())
+            .chunks_exact(size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u16> = vec![2, 3, 5];
@@ -372,7 +371,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .to_vec()
-            .chunks_exact(std::mem::size_of::<u16>())
+            .chunks_exact(size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u16> = vec![2, 3, 5];

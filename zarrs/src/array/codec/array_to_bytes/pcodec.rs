@@ -271,7 +271,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().into_owned())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
+            .chunks(size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u32> = vec![4, 8];
@@ -323,7 +323,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().into_owned())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
+            .chunks(size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u32> = vec![4, 8];

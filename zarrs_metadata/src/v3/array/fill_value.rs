@@ -6,6 +6,8 @@
 //!
 //! The interpretation of fill values is data type dependent.
 
+use std::mem::size_of; // TODO: Can be removed with Rust 1.80+
+
 use derive_more::{Display, From};
 use half::{bf16, f16};
 use num::traits::float::FloatCore;
@@ -63,11 +65,11 @@ impl FillValueFloat {
             Self::Float(float) => T::from(*float),
             Self::HexString(hex_string) => {
                 let bytes: &[u8] = hex_string.as_be_bytes();
-                if bytes.len() == core::mem::size_of::<T>() {
+                if bytes.len() == size_of::<T>() {
                     // NOTE: Cleaner way of doing this?
-                    if core::mem::size_of::<T>() == core::mem::size_of::<f32>() {
+                    if size_of::<T>() == size_of::<f32>() {
                         T::from(f32::from_be_bytes(bytes.try_into().unwrap_or_default()))
-                    } else if core::mem::size_of::<T>() == core::mem::size_of::<f64>() {
+                    } else if size_of::<T>() == size_of::<f64>() {
                         T::from(f64::from_be_bytes(bytes.try_into().unwrap_or_default()))
                     } else {
                         None
@@ -228,11 +230,11 @@ impl FillValueMetadataV3 {
                     F::Float(float) => T::from(*float),
                     F::HexString(hex_string) => {
                         let bytes = hex_string.as_be_bytes();
-                        if bytes.len() == core::mem::size_of::<T>() {
+                        if bytes.len() == size_of::<T>() {
                             // NOTE: Cleaner way of doing this?
-                            if core::mem::size_of::<T>() == core::mem::size_of::<f32>() {
+                            if size_of::<T>() == size_of::<f32>() {
                                 T::from(f32::from_be_bytes(bytes.try_into().unwrap_or_default()))
-                            } else if core::mem::size_of::<T>() == core::mem::size_of::<f64>() {
+                            } else if size_of::<T>() == size_of::<f64>() {
                                 T::from(f64::from_be_bytes(bytes.try_into().unwrap_or_default()))
                             } else {
                                 None
@@ -247,9 +249,9 @@ impl FillValueMetadataV3 {
                             NF::PosInfinity => Some(T::infinity()),
                             NF::NegInfinity => Some(T::neg_infinity()),
                             NF::NaN => {
-                                if core::mem::size_of::<T>() == core::mem::size_of::<f32>() {
+                                if size_of::<T>() == size_of::<f32>() {
                                     T::from(ZARR_NAN_F32)
-                                } else if core::mem::size_of::<T>() == core::mem::size_of::<f64>() {
+                                } else if size_of::<T>() == size_of::<f64>() {
                                     T::from(ZARR_NAN_F64)
                                 } else {
                                     None

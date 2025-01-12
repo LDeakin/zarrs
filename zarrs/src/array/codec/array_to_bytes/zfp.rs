@@ -554,7 +554,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<f32>())
+            .chunks(size_of::<f32>())
             .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<f32> = vec![
@@ -614,7 +614,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<f32>())
+            .chunks(size_of::<f32>())
             .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<f32> = vec![

@@ -5,7 +5,7 @@ mod vlen_v2_partial_decoder;
 
 pub(crate) mod vlen_v2_macros;
 
-use std::{mem::size_of, sync::Arc};
+use std::sync::Arc;
 
 /// The identifier for the `vlen_v2` codec.
 pub(crate) const IDENTIFIER: &str = "vlen_v2";

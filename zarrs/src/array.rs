@@ -911,8 +911,8 @@ pub fn elements_to_ndarray<T>(
     let length = elements.len();
     ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(|_| {
         ArrayError::CodecError(codec::CodecError::UnexpectedChunkDecodedSize(
-            length * std::mem::size_of::<T>(),
-            shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
+            length * size_of::<T>(),
+            shape.iter().product::<u64>() * size_of::<T>() as u64,
         ))
     })
 }
@@ -926,7 +926,7 @@ pub fn bytes_to_ndarray<T: bytemuck::Pod>(
     shape: &[u64],
     bytes: Vec<u8>,
 ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-    let expected_len = shape.iter().product::<u64>() * core::mem::size_of::<T>() as u64;
+    let expected_len = shape.iter().product::<u64>() * size_of::<T>() as u64;
     if bytes.len() as u64 != expected_len {
         return Err(ArrayError::InvalidBytesInputSize(bytes.len(), expected_len));
     }

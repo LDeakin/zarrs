@@ -3,7 +3,7 @@
 mod vlen_codec;
 mod vlen_partial_decoder;
 
-use std::{mem::size_of, num::NonZeroU64, sync::Arc};
+use std::{num::NonZeroU64, sync::Arc};
 
 use itertools::Itertools;
 pub use vlen::IDENTIFIER;

@@ -1,4 +1,3 @@
-use core::mem::size_of;
 use std::{borrow::Cow, sync::Arc};
 
 use crate::{

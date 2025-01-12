@@ -126,7 +126,7 @@ mod tests {
 
         let decoded: Vec<u16> = decoded
             .to_vec()
-            .chunks_exact(std::mem::size_of::<u16>())
+            .chunks_exact(size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
 
@@ -174,7 +174,7 @@ mod tests {
 
         let decoded: Vec<u16> = decoded
             .to_vec()
-            .chunks_exact(std::mem::size_of::<u16>())
+            .chunks_exact(size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
 

@@ -359,7 +359,7 @@ impl ChunkCache<ChunkCacheTypeDecoded> for ChunkCacheDecodedLruSizeLimitThreadLo
 mod tests {
     use super::*;
 
-    use std::{mem::size_of, sync::Arc};
+    use std::sync::Arc;
 
     use crate::{
         array::{
