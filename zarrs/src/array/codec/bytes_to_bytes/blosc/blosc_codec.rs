@@ -6,9 +6,10 @@ use crate::{
     array::{
         codec::{
             BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecOptions, CodecTraits, RecommendedConcurrency,
+            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation, RawBytes,
+        BytesRepresentation, RawBytes,
     },
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
@@ -131,7 +132,7 @@ impl BloscCodec {
 }
 
 impl CodecTraits for BloscCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let configuration = BloscCodecConfigurationV1 {
             cname: self.cname,
             clevel: self.clevel,

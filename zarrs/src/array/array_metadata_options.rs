@@ -1,9 +1,11 @@
 use crate::config::{global_config, MetadataConvertVersion};
 
+use super::codec::CodecMetadataOptions;
+
 /// Options for writing array metadata.
 #[derive(Debug, Clone)]
 pub struct ArrayMetadataOptions {
-    experimental_codec_store_metadata_if_encode_only: bool,
+    codec_options: CodecMetadataOptions,
     convert_version: MetadataConvertVersion,
     include_zarrs_metadata: bool,
 }
@@ -11,7 +13,7 @@ pub struct ArrayMetadataOptions {
 impl Default for ArrayMetadataOptions {
     fn default() -> Self {
         Self {
-            experimental_codec_store_metadata_if_encode_only: false,
+            codec_options: CodecMetadataOptions::default(),
             convert_version: global_config().metadata_convert_version(),
             include_zarrs_metadata: global_config().include_zarrs_metadata(),
         }
@@ -19,26 +21,16 @@ impl Default for ArrayMetadataOptions {
 }
 
 impl ArrayMetadataOptions {
-    /// Return the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
+    /// Return the codec options.
     #[must_use]
-    pub fn experimental_codec_store_metadata_if_encode_only(&self) -> bool {
-        self.experimental_codec_store_metadata_if_encode_only
+    pub fn codec_options(&self) -> &CodecMetadataOptions {
+        &self.codec_options
     }
 
-    /// Set the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
+    /// Return a mutable reference to the codec options.
     #[must_use]
-    pub fn with_experimental_codec_store_metadata_if_encode_only(mut self, enabled: bool) -> Self {
-        self.experimental_codec_store_metadata_if_encode_only = enabled;
-        self
-    }
-
-    /// Set the [experimental codec store metadata if encode only](crate::config::Config#experimental-codec-store-metadata-if-encode-only) setting.
-    pub fn set_experimental_codec_store_metadata_if_encode_only(
-        &mut self,
-        enabled: bool,
-    ) -> &mut Self {
-        self.experimental_codec_store_metadata_if_encode_only = enabled;
-        self
+    pub fn codec_options_mut(&mut self) -> &mut CodecMetadataOptions {
+        &mut self.codec_options
     }
 
     /// Get the [metadata convert version](crate::config::Config#metadata-convert-version) configuration.

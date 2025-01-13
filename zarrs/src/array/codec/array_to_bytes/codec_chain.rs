@@ -11,11 +11,11 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
             ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderCache, BytesPartialDecoderTraits, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecTraits,
+            BytesToBytesCodecTraits, Codec, CodecError, CodecMetadataOptions, CodecOptions,
+            CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
-        RawBytes,
+        ArrayBytes, BytesRepresentation, ChunkRepresentation, ChunkShape, RawBytes,
     },
     array_subset::ArraySubset,
     metadata::v3::MetadataV3,
@@ -137,7 +137,7 @@ impl CodecChain {
 
     /// Create codec chain metadata.
     #[must_use]
-    pub fn create_metadatas_opt(&self, options: &ArrayMetadataOptions) -> Vec<MetadataV3> {
+    pub fn create_metadatas_opt(&self, options: &CodecMetadataOptions) -> Vec<MetadataV3> {
         let mut metadatas =
             Vec::with_capacity(self.array_to_array.len() + 1 + self.bytes_to_bytes.len());
         for codec in &self.array_to_array {
@@ -159,7 +159,7 @@ impl CodecChain {
     /// Create codec chain metadata with default options.
     #[must_use]
     pub fn create_metadatas(&self) -> Vec<MetadataV3> {
-        self.create_metadatas_opt(&ArrayMetadataOptions::default())
+        self.create_metadatas_opt(&CodecMetadataOptions::default())
     }
 
     /// Get the array to array codecs
@@ -215,7 +215,7 @@ impl CodecTraits for CodecChain {
     /// Returns [`None`] since a codec chain does not have standard codec metadata.
     ///
     /// Note that usage of the codec chain is explicit in [`Array`](crate::array::Array) and [`CodecChain::create_metadatas_opt()`] will call [`CodecTraits::create_metadata_opt()`] from for each codec.
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         None
     }
 

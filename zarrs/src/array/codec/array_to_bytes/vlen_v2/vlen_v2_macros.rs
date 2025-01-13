@@ -45,10 +45,11 @@ macro_rules! vlen_v2_codec {
             codec::{
                 array_to_bytes::vlen_v2::VlenV2Codec, ArrayPartialDecoderTraits,
                 ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-                BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits,
+                BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions,
+                CodecTraits,
             },
-            ArrayBytes, ArrayCodecTraits, ArrayMetadataOptions, BytesRepresentation,
-            ChunkRepresentation, RawBytes, RecommendedConcurrency,
+            ArrayBytes, ArrayCodecTraits, BytesRepresentation, ChunkRepresentation, RawBytes,
+            RecommendedConcurrency,
         };
 
         #[cfg(feature = "async")]
@@ -77,7 +78,7 @@ macro_rules! vlen_v2_codec {
         }
 
         impl CodecTraits for $struct {
-            fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+            fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3> {
                 self.inner.create_metadata_opt(options)
             }
 

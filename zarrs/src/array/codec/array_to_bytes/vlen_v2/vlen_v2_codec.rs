@@ -7,11 +7,10 @@ use crate::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
             ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits,
+            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
-        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
-        RawBytes,
+        ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
     },
     config::global_config,
     metadata::v3::MetadataV3,
@@ -35,7 +34,7 @@ impl VlenV2Codec {
 }
 
 impl CodecTraits for VlenV2Codec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let config = global_config();
         let name = config
             .experimental_codec_names()

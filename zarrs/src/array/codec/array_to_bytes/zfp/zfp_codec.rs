@@ -15,10 +15,10 @@ use crate::{
         codec::{
             ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
             ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits, RawBytes,
-            RecommendedConcurrency,
+            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            RawBytes, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataType,
+        BytesRepresentation, ChunkRepresentation, DataType,
     },
     config::global_config,
     metadata::v3::{array::codec::zfp::ZfpMode, MetadataV3},
@@ -129,7 +129,7 @@ impl ZfpCodec {
 }
 
 impl CodecTraits for ZfpCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let configuration = ZfpCodecConfigurationV1 {
             write_header: Some(self.write_header),
             mode: self.mode,

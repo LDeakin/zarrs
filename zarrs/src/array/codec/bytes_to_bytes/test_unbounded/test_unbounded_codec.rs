@@ -4,9 +4,10 @@ use crate::{
     array::{
         codec::{
             BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecOptions, CodecTraits, RecommendedConcurrency,
+            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation, RawBytes,
+        BytesRepresentation, RawBytes,
     },
     metadata::v3::MetadataV3,
 };
@@ -31,7 +32,7 @@ impl TestUnboundedCodec {
 }
 
 impl CodecTraits for TestUnboundedCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         None
     }
 

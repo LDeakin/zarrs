@@ -603,7 +603,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         // Codec metadata manipulation
         match &mut metadata {
             ArrayMetadata::V3(metadata) => {
-                metadata.codecs = self.codecs().create_metadatas_opt(options);
+                metadata.codecs = self.codecs().create_metadatas_opt(options.codec_options());
             }
             ArrayMetadata::V2(_metadata) => {
                 // NOTE: The codec related options in ArrayMetadataOptions do not impact V2 codecs
