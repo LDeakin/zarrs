@@ -21,7 +21,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{vlen_partial_decoder, VlenCodecConfiguration, VlenCodecConfigurationV1};
 
-/// A `bytes` codec implementation.
+/// A `vlen` codec implementation.
 #[derive(Debug, Clone)]
 pub struct VlenCodec {
     index_codecs: Arc<CodecChain>,
