@@ -54,6 +54,14 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 /// This option sets the preferred minimum chunk concurrency.
 /// The concurrency of internal codecs is adjusted to accomodate for the chunk concurrency in accordance with the concurrent target set in the [`CodecOptions`] parameter of an encode or decode method.
 ///
+/// ### Experimental Partial Encoding
+/// > default: [`false`]
+///
+/// If `true`, [`Array::store_chunk_subset`](crate::array::Array::store_chunk_subset) and [`Array::store_array_subset`](crate::array::Array::store_array_subset) and variants can use partial encoding.
+/// This is relevant when using the sharding codec, as it enables inner chunks to be written without reading and writing entire shards.
+///
+/// This is an experimental feature for now until it has more comprehensively tested and support is added in the async API.
+///
 /// ## Metadata Options
 ///
 /// ### Experimental Codec Store Metadata If Encode Only
@@ -96,14 +104,6 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///
 /// Sets the names used when serialising and deserialising the names of experimental codecs.
 /// Deserialisation also accepts the standard `IDENTIFIER` of the codec.
-///
-/// ### Experimental Partial Encoding
-/// > default: [`false`]
-///
-/// If `true`, [`Array::store_chunk_subset`](crate::array::Array::store_chunk_subset) and [`Array::store_array_subset`](crate::array::Array::store_array_subset) and variants can use partial encoding.
-/// This is relevant when using the sharding codec, as it enables inner chunks to be written without reading and writing entire shards.
-///
-/// This is an experimental feature for now until it has more comprehensively tested and support is added in the async API.
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
