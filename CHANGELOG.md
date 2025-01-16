@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Use new language/library features added between Rust 1.78-1.82 (internal)
+- Cleanup root docs and README removing ZEPs table and ecosystem table
 
 ### Fixed
 - New clippy lints

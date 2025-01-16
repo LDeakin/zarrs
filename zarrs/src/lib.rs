@@ -10,27 +10,22 @@
 //!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
-//! - Read [The `zarrs` Book](https://book.zarrs.dev).
+//! - Read [The `zarrs` Book].
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] is a good place to start.
 //! - Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
 //!
 //! ## Implementation Status
 //!
-#![doc = include_str!("../doc/status/ZEPs.md")]
+//! #### Zarr Version Support
 //!
 //! `zarrs` has first-class Zarr V3 support and additionally supports a *compatible subset* of Zarr V2 data that:
 //! - can be converted to V3 with only a metadata change, and
 //! - uses array metadata that is recognised and supported for encoding/decoding.
 //!
-//! An existing V2 or V3 array can be opened with [`Array::open`](crate::array::Array::open).
-//! A new array can be created from V2 or V3 metadata with [`Array::new_with_metadata`](crate::array::Array::new_with_metadata).
-//! The [`ArrayBuilder`](crate::array::ArrayBuilder) only supports V3 array creation.
+//! `zarrs` supports forward conversion from Zarr V2 to V3. See ["Converting Zarr V2 to V3"](https://book.zarrs.dev/v2_to_v3.html) in [The `zarrs` Book], or try the [`zarrs_reencode`](https://github.com/LDeakin/zarrs_tools/blob/main/docs/zarrs_reencode.md) CLI tool.
 //!
-//! `zarrs` supports forward conversion of Zarr V2 data to V3.
-//! See ["Metadata Convert Version"](crate::config::Config#metadata-convert-version) and ["Metadata Erase Version"](crate::config::Config#metadata-erase-version) for information about manipulating the version of array/group metadata.
-//!
-//! ### Array Support
+//! #### Array Support
 //!
 //! <details><summary>Data Types</summary>
 //!
@@ -62,7 +57,7 @@
 #![doc = include_str!("../doc/status/storage_transformers.md")]
 //! </details>
 //!
-//! ### Storage Support
+//! #### Storage Support
 //!
 //! `zarrs` supports stores (filesystem, HTTP, S3, etc.) via crates implementing the [`zarrs_storage`] API.
 //!
@@ -182,6 +177,8 @@
 //!  - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 //!
 //! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+//!
+//! [The `zarrs` Book]: https://book.zarrs.dev
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub mod array;

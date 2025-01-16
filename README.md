@@ -1,30 +1,29 @@
 # zar<ins>rs</ins>
 
 [![Latest Version](https://img.shields.io/crates/v/zarrs.svg)](https://crates.io/crates/zarrs)
-[![zarrs documentation](https://docs.rs/zarrs/badge.svg)](https://docs.rs/zarrs)
+[![zarrs documentation](https://docs.rs/zarrs/badge.svg)][documentation]
 ![msrv](https://img.shields.io/crates/msrv/zarrs)
 [![downloads](https://img.shields.io/crates/d/zarrs)](https://crates.io/crates/zarrs)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?token=OBKJQNAZPP)](https://codecov.io/gh/LDeakin/zarrs)
 [![DOI](https://zenodo.org/badge/695021547.svg)](https://zenodo.org/badge/latestdoi/695021547)
 
-`zarrs` is a Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. It supports [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html) and a [V3 compatible subset](https://docs.rs/zarrs/latest/zarrs/#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
+`zarrs` is a Rust library for the [Zarr] storage format for multidimensional arrays and metadata. It supports [Zarr V3] and a V3 compatible subset of [Zarr V2].
 
-A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
-Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
+A changelog can be found [here][CHANGELOG].
+Correctness issues with past versions are [detailed here][correctness_issues].
 
-Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
+Developed at the [Department of Materials Physics, Australian National University, Canberra, Australia].
 
 > [!TIP]
-> If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
-> It includes a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation.
+> If you are a Python user, check out [`zarrs-python`].
+> It includes a high-performance codec pipeline for the reference [`zarr-python`] implementation.
 
 ## Getting Started
-- Review the [implementation status](https://docs.rs/zarrs/latest/zarrs/#implementation-status), [array support](https://docs.rs/zarrs/latest/zarrs/#array-support), and [storage support](https://docs.rs/zarrs/latest/zarrs/#storage-support).
-- Read [The `zarrs` Book](https://book.zarrs.dev).
-- View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#example).
-- Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`](https://docs.rs/zarrs/latest/zarrs/array/struct.Array.html) is a good place to start.
-- Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
+- Review the [implementation status] ([zarr version support], [array support], [storage support], and the [`zarrs` ecosystem](#zarrs-ecosystem)).
+- Read [The `zarrs` Book].
+- View the [examples] and [the example below](#example).
+- Read the [documentation].
 
 ## Example
 ```rust
@@ -90,61 +89,30 @@ println!("{array_ndarray:4}");
 
 ## `zarrs` Ecosystem
 
-| Crate                                                                                         | Docs / Description                                                                                                              |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Core**                                                                                      |                                                                                                                                 |
-| [![zarrs_ver]](https://crates.io/crates/zarrs) [zarrs]                                        | [![docs]](https://docs.rs/zarrs)              The core library for manipulating Zarr hierarchies                                |
-| [![zarrs_metadata_ver]](https://crates.io/crates/zarrs_metadata) [zarrs_metadata]             | [![docs]](https://docs.rs/zarrs_metadata)     Zarr metadata support (re-exported as `zarrs::metadata`)                          |
-| [![zarrs_storage_ver]](https://crates.io/crates/zarrs_storage) [zarrs_storage]                | [![docs]](https://docs.rs/zarrs_storage)      The storage API for `zarrs` (re-exported as `zarrs::storage`)                     |
-| **Stores**                                                                                    |                                                                                                                                 |
-| [![zarrs_filesystem_ver]](https://crates.io/crates/zarrs_filesystem) [zarrs_filesystem]       | [![docs]](https://docs.rs/zarrs_filesystem)   A filesystem store (re-exported as `zarrs::filesystem`)                           |
-| [![zarrs_object_store_ver]](https://crates.io/crates/zarrs_object_store) [zarrs_object_store] | [![docs]](https://docs.rs/zarrs_object_store) [`object_store`](https://docs.rs/object_store/latest/object_store/) store support |
-| [![zarrs_opendal_ver]](https://crates.io/crates/zarrs_opendal) [zarrs_opendal]                | [![docs]](https://docs.rs/zarrs_opendal)      [`opendal`](https://docs.rs/opendal/latest/opendal/) store support                |
-| [![zarrs_http_ver]](https://crates.io/crates/zarrs_http) [zarrs_http]                         | [![docs]](https://docs.rs/zarrs_http)         A synchronous http store                                                          |
-| [![zarrs_zip_ver]](https://crates.io/crates/zarrs_zip) [zarrs_zip]                            | [![docs]](https://docs.rs/zarrs_zip)          A storage adapter for zip files                                                   |
-| [![zarrs_icechunk_ver]](https://crates.io/crates/zarrs_icechunk) [zarrs_icechunk]             | [![docs]](https://docs.rs/zarrs_icechunk)     [`icechunk`](https://docs.rs/icechunk/latest/icechunk/) store support             |
-| **Bindings**                                                                                  |                                                                                                                                 |
-| [![zarrs_python_ver]](https://pypi.org/project/zarrs/) [zarrs-python]                         | [![docs]](https://zarrs-python.readthedocs.io/en/latest/) A codec pipeline for [zarr-python]                                    |
-| [![zarrs_ffi_ver]](https://crates.io/crates/zarrs_ffi) [zarrs_ffi]                            | [![docs]](https://docs.rs/zarrs_ffi)          A subset of `zarrs` exposed as a C/C++ API                                        |
-| **Zarr Metadata Conventions**                                                                 |                                                                                                                                 |
-| [![ome_zarr_metadata_ver]](https://crates.io/crates/ome_zarr_metadata) [ome_zarr_metadata]    | [![docs]](https://docs.rs/ome_zarr_metadata)  A library for OME-Zarr (previously OME-NGFF) metadata                             |
+### Core
+- [`zarrs`]: The core library for manipulating Zarr hierarchies.
+- [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
+- [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
 
-[docs]: https://img.shields.io/badge/docs-brightgreen
-[zarrs_ver]: https://img.shields.io/crates/v/zarrs
-[zarrs]: https://github.com/LDeakin/zarrs/tree/main/zarrs
-[zarrs_metadata_ver]: https://img.shields.io/crates/v/zarrs_metadata
-[zarrs_metadata]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
-[zarrs_storage_ver]: https://img.shields.io/crates/v/zarrs_storage
-[zarrs_storage]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
-[zarrs_filesystem_ver]: https://img.shields.io/crates/v/zarrs_filesystem
-[zarrs_filesystem]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
-[zarrs_http_ver]: https://img.shields.io/crates/v/zarrs_http
-[zarrs_http]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http
-[zarrs_object_store_ver]: https://img.shields.io/crates/v/zarrs_object_store
-[zarrs_object_store]: https://github.com/LDeakin/zarrs/tree/main/zarrs_object_store
-[zarrs_opendal_ver]: https://img.shields.io/crates/v/zarrs_opendal
-[zarrs_opendal]: https://github.com/LDeakin/zarrs/tree/main/zarrs_opendal
-[zarrs_zip_ver]: https://img.shields.io/crates/v/zarrs_zip
-[zarrs_zip]: https://github.com/LDeakin/zarrs/tree/main/zarrs_zip
-[zarrs_icechunk_ver]: https://img.shields.io/crates/v/zarrs_icechunk
-[zarrs_icechunk]: https://github.com/LDeakin/zarrs_icechunk
-[zarrs_ffi_ver]: https://img.shields.io/crates/v/zarrs_ffi
-[zarrs_ffi]: https://github.com/LDeakin/zarrs_ffi
-[zarrs_python_ver]: https://img.shields.io/pypi/v/zarrs
-[zarrs-python]: https://github.com/ilan-gold/zarrs-python
-[zarr-python]: https://github.com/zarr-developers/zarr-python
-[ome_zarr_metadata_ver]: https://img.shields.io/crates/v/ome_zarr_metadata
-[ome_zarr_metadata]: https://github.com/LDeakin/rust_ome_zarr_metadata
+### Stores
+- [`zarrs_filesystem`]: A filesystem store (re-exported as `zarrs::filesystem`).
+- [`zarrs_object_store`]: [`object_store`] store support.
+- [`zarrs_opendal`]: [`opendal`] store support.
+- [`zarrs_http`]: A synchronous http store.
+- [`zarrs_zip`]: A storage adapter for zip files.
+- [`zarrs_icechunk`]: [`icechunk`] store support.
 
-#### [zarrs_tools]
-[![zarrs_tools_ver]](https://crates.io/crates/zarrs_tools) [![zarrs_tools_doc]](https://docs.rs/zarrs_tools)
+### Bindings
+- [`zarrs-python`]: A high-performance codec pipeline for [`zarr-python`].
+- [`zarrs_ffi`]: A subset of `zarrs` exposed as a C/C++ API.
 
-[zarrs_tools]: https://github.com/LDeakin/zarrs_tools
-[zarrs_tools_ver]: https://img.shields.io/crates/v/zarrs_tools.svg
-[zarrs_tools_doc]: https://docs.rs/zarrs_tools/badge.svg
+### Zarr Metadata Conventions
+- [`ome_zarr_metadata`]: A library for OME-Zarr (previously OME-NGFF) metadata.
 
+### Tools
+- [`zarrs_tools`]: Various tools for creating and manipulating Zarr V3 data with the zarrs rust crate
   - A reencoder that can change codecs, chunk shape, convert Zarr V2 to V3, etc.
-  - Create an [OME-Zarr](https://ngff.openmicroscopy.org/latest/) hierarchy from a Zarr array.
+  - Create an [OME-Zarr] hierarchy from a Zarr array.
   - Transform arrays: crop, rescale, downsample, gradient magnitude, gaussian, noise filtering, etc.
   - Benchmarking tools and performance benchmarks of `zarrs`.
 
@@ -154,3 +122,38 @@ println!("{array_ndarray:4}");
  - the MIT license [LICENSE-MIT](./LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+[CHANGELOG]: https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md
+[correctness_issues]: https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md
+[implementation status]: https://docs.rs/zarrs/latest/zarrs/#implementation-status
+[zarr version support]: https://docs.rs/zarrs/latest/zarrs/#zarr-version-support
+[array support]: https://docs.rs/zarrs/latest/zarrs/#array-support
+[storage support]: https://docs.rs/zarrs/latest/zarrs/#storage-support
+[examples]: https://github.com/LDeakin/zarrs/tree/main/zarrs/examples
+[documentation]: https://docs.rs/zarrs/latest/zarrs/
+[The `zarrs` Book]: https://book.zarrs.dev
+
+[`zarrs`]: https://github.com/LDeakin/zarrs/tree/main/zarrs
+[`zarrs_metadata`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
+[`zarrs_storage`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
+[`zarrs_filesystem`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
+[`zarrs_http`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http
+[`zarrs_object_store`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_object_store
+[`zarrs_opendal`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_opendal
+[`zarrs_zip`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_zip
+[`zarrs_icechunk`]: https://github.com/LDeakin/zarrs_icechunk
+[`zarrs_ffi`]: https://github.com/LDeakin/zarrs_ffi
+[`zarrs-python`]: https://github.com/ilan-gold/zarrs-python
+[`zarr-python`]: https://github.com/zarr-developers/zarr-python
+[`zarrs_tools`]: https://github.com/LDeakin/zarrs_tools
+[`ome_zarr_metadata`]: https://github.com/LDeakin/rust_ome_zarr_metadata
+[`object_store`]: https://github.com/apache/arrow-rs/tree/main/object_store
+[`opendal`]: https://github.com/apache/OpenDAL
+[`icechunk`]: https://github.com/earth-mover/icechunk
+
+[Zarr]: https://zarr.dev
+[Zarr V3]: https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+[Zarr V2]: https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+[OME-Zarr]: https://ngff.openmicroscopy.org/latest/
+
+[Department of Materials Physics, Australian National University, Canberra, Australia]: https://physics.anu.edu.au/research/mp/
