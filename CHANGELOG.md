@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Document that elements in `ArrayBytes` must be in C-contiguous order
+
 ### Changed
 - Use new language/library features added between Rust 1.78-1.82 (internal)
 - Cleanup root docs and README removing ZEPs table and ecosystem table

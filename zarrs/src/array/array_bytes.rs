@@ -13,19 +13,30 @@ use crate::{
 use super::{codec::CodecError, ravel_indices, ArraySize, DataType, FillValue};
 
 /// Array element bytes.
+///
+/// These can represent:
+/// - [`ArrayBytes::Fixed`]: fixed length elements of an array in C-contiguous order,
+/// - [`ArrayBytes::Variable`]: variable length elements of an array in C-contiguous order with padding permitted,
+/// - Encoded array bytes after an array to bytes or bytes to bytes codecs.
 pub type RawBytes<'a> = Cow<'a, [u8]>;
 
 /// Array element byte offsets.
-pub type RawBytesOffsets<'a> = Cow<'a, [usize]>;
+///
+/// These must be monotonically increasing. See [`ArrayBytes::Variable`].
+pub type RawBytesOffsets<'a> = Cow<'a, [usize]>; // FIXME: Switch to a validated newtype in zarrs 0.20
 
 /// Fixed or variable length array bytes.
-///
-/// Offsets are [`None`] if bytes are composed of fixed size data types.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ArrayBytes<'a> {
     /// Bytes for a fixed length array.
+    ///
+    /// These represent elements in C-contiguous order (i.e. row-major order) where the last dimension varies the fastest.
     Fixed(RawBytes<'a>),
     /// Bytes and element byte offsets for a variable length array.
+    ///
+    /// The bytes and offsets are modeled on the [Apache Arrow Variable-size Binary Layout](https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout).
+    /// - The offsets buffer contains length + 1 ~~signed integers (either 32-bit or 64-bit, depending on the data type)~~ usize integers.
+    /// - Offsets must be monotonically increasing, that is `offsets[j+1] >= offsets[j]` for `0 <= j < length`, even for null slots. Thus, the bytes represent C-contiguous elements with padding permitted.
     Variable(RawBytes<'a>, RawBytesOffsets<'a>),
 }
 
@@ -39,6 +50,8 @@ pub enum ArrayBytesError {
 
 impl<'a> ArrayBytes<'a> {
     /// Create a new fixed length array bytes from `bytes`.
+    ///
+    /// `bytes` must be C-contiguous.
     pub fn new_flen(bytes: impl Into<RawBytes<'a>>) -> Self {
         Self::Fixed(bytes.into())
     }
@@ -46,10 +59,12 @@ impl<'a> ArrayBytes<'a> {
     /// Create a new variable length array bytes from `bytes` and `offsets`.
     pub fn new_vlen(
         bytes: impl Into<RawBytes<'a>>,
-        offsets: impl Into<RawBytesOffsets<'a>>,
+        offsets: impl Into<RawBytesOffsets<'a>>, // FIXME: TryInto
     ) -> Self {
         Self::Variable(bytes.into(), offsets.into())
     }
+
+    // TODO: new_vlen_unchecked
 
     /// Create a new [`ArrayBytes`] with `num_elements` composed entirely of the `fill_value`.
     ///
