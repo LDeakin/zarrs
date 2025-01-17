@@ -364,8 +364,9 @@ pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
     /// # Safety
     /// The caller must ensure that:
     ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
-    ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `output_subset` has the same number of elements as `array_subset`.
+    ///  - `output_subset` is within the bounds of `output_shape`,
+    ///  - `output_subset` has the same number of elements as `array_subset`, and
+    ///  - `output_subset`s must be non-overlapping when called in parallel on the same `output`.
     unsafe fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
@@ -715,8 +716,9 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// # Safety
     /// The caller must ensure that:
     ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type, and
-    ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `output_subset` has the same number of elements as the decoded representation shape.
+    ///  - `output_subset` is within the bounds of `output_shape`,
+    ///  - `output_subset` has the same number of elements as the decoded representation shape, and
+    ///  - `output_subset`s must be non-overlapping when called in parallel on the same `output`.
     unsafe fn decode_into(
         &self,
         bytes: RawBytes<'_>,
