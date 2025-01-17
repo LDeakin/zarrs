@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - New clippy lints
 - Mark `String` and `Bytes` data types as experimental in their docs
+- Mark `rectangular` chunk grid as experimental since it is based on a draft ZEP
 
 ## [0.19.0] - 2025-01-10
 
