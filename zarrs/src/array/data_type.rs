@@ -53,9 +53,13 @@ pub enum DataType {
     Complex128,
     /// `r*` raw bits, variable size given by *, limited to be a multiple of 8.
     RawBits(usize), // the stored usize is the size in bytes
-    /// A UTF-8 encoded string.
+    /// A UTF-8 encoded string. **Experimental**.
+    ///
+    /// This data type is not standardised in the Zarr V3 specification.
     String,
-    /// Variable-sized binary data.
+    /// Variable-sized binary data. **Experimental**.
+    ///
+    /// This data type is not standardised in the Zarr V3 specification.
     Bytes,
 }
 
