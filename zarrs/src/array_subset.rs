@@ -670,6 +670,7 @@ mod tests {
         assert!(array_subset0.inbounds(&ArraySubset::new_with_ranges(&[1..5, 2..6])));
         assert!(!array_subset0.inbounds(&ArraySubset::new_with_ranges(&[2..5, 2..6])));
         assert!(!array_subset0.inbounds(&ArraySubset::new_with_ranges(&[1..5, 2..5])));
+        assert!(!array_subset0.inbounds(&ArraySubset::new_with_ranges(&[2..5])));
         assert_eq!(array_subset0.to_ranges(), vec![1..5, 2..6]);
 
         let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);
