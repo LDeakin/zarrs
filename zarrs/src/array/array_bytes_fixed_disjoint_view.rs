@@ -236,7 +236,7 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     pub fn copy_from_slice(&mut self, subset_bytes: &[u8]) -> Result<(), InvalidBytesLengthError> {
         if subset_bytes.len() != self.bytes_in_subset_len {
             return Err(InvalidBytesLengthError::new(
-                self.bytes.len(),
+                subset_bytes.len(),
                 self.bytes_in_subset_len,
             ));
         }
@@ -263,5 +263,83 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         debug_assert_eq!(bytes_copied, subset_bytes.len());
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn disjoint_view() {
+        let mut bytes = (0..9).collect::<Vec<u8>>();
+        let shape = vec![3, 3];
+        {
+            let bytes = UnsafeCellSlice::new(&mut bytes);
+
+            assert!(unsafe {
+                ArrayBytesFixedDisjointView::new(
+                    bytes,
+                    1,
+                    &[10, 10],
+                    ArraySubset::new_with_ranges(&[0..2, 1..3]),
+                )
+            }
+            .is_err()); // incompatible shape
+            assert!(unsafe {
+                ArrayBytesFixedDisjointView::new(
+                    bytes,
+                    2,
+                    &shape,
+                    ArraySubset::new_with_ranges(&[0..2, 1..3]),
+                )
+            }
+            .is_err()); // invalid bytes length
+
+            let mut view0 = unsafe {
+                ArrayBytesFixedDisjointView::new(
+                    bytes,
+                    1,
+                    &shape,
+                    ArraySubset::new_with_ranges(&[0..2, 1..3]),
+                )
+            }
+            .unwrap();
+            assert_eq!(view0.shape(), shape);
+
+            view0.copy_from_slice(&[11, 12, 14, 15]).unwrap();
+            assert!(view0.copy_from_slice(&[11, 12, 14, 15, 255]).is_err()); // wrong length
+
+            let mut view0a =
+                unsafe { view0.subdivide(ArraySubset::new_with_ranges(&[1..2, 1..3])) }.unwrap();
+            view0a.copy_from_slice(&[24, 25]).unwrap();
+            assert!(view0a.copy_from_slice(&[]).is_err()); // wrong length
+
+            assert!(
+                unsafe { view0a.subdivide(ArraySubset::new_with_ranges(&[1..2, 1..3])) }.is_ok()
+            );
+            assert!(
+                unsafe { view0a.subdivide(ArraySubset::new_with_ranges(&[1..2, 2..3])) }.is_ok()
+            );
+            assert!(
+                unsafe { view0a.subdivide(ArraySubset::new_with_ranges(&[0..2, 1..3])) }.is_err()
+            ); // OOB
+            assert!(
+                unsafe { view0a.subdivide(ArraySubset::new_with_ranges(&[1..2, 1..4])) }.is_err()
+            ); // OOB
+
+            let mut view1 = unsafe {
+                ArrayBytesFixedDisjointView::new(
+                    bytes,
+                    1,
+                    &shape,
+                    ArraySubset::new_with_ranges(&[2..3, 1..3]),
+                )
+            }
+            .unwrap();
+            view1.fill(&[255]).unwrap();
+            assert!(view1.fill(&[255, 255]).is_err()); // invalid fill value
+        }
+        assert_eq!(&bytes, &[0, 11, 12, 3, 24, 25, 6, 255, 255]);
     }
 }
