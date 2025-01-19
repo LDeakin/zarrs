@@ -23,6 +23,7 @@
 
 mod array_builder;
 mod array_bytes;
+mod array_bytes_fixed_non_overlapping_view;
 mod array_errors;
 mod array_metadata_options;
 mod array_representation;
@@ -50,6 +51,7 @@ pub use self::{
         copy_fill_value_into, update_array_bytes, ArrayBytes, ArrayBytesError, RawBytes,
         RawBytesOffsets,
     },
+    array_bytes_fixed_non_overlapping_view::ArrayBytesFixedNonOverlappingView,
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
     array_representation::{

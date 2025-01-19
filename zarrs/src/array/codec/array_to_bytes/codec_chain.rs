@@ -2,11 +2,8 @@
 
 use std::sync::Arc;
 
-use unsafe_cell_slice::UnsafeCellSlice;
-
 use crate::{
     array::{
-        array_bytes::update_bytes_flen,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
             ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
@@ -14,10 +11,9 @@ use crate::{
             BytesToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
-        RawBytes,
+        ArrayBytes, ArrayBytesFixedNonOverlappingView, ArrayMetadataOptions, BytesRepresentation,
+        ChunkRepresentation, ChunkShape, RawBytes,
     },
-    array_subset::ArraySubset,
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
@@ -309,13 +305,11 @@ impl ArrayToBytesCodecTraits for CodecChain {
         Ok(bytes)
     }
 
-    unsafe fn decode_into(
+    fn decode_into(
         &self,
         mut bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         let array_representations =
@@ -325,16 +319,12 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
             // Fast path if no bytes to bytes or array to array codecs
-            return unsafe {
-                self.array_to_bytes.decode_into(
-                    bytes,
-                    array_representations.last().unwrap(),
-                    output,
-                    output_shape,
-                    output_subset,
-                    options,
-                )
-            };
+            return self.array_to_bytes.decode_into(
+                bytes,
+                array_representations.last().unwrap(),
+                output_view,
+                options,
+            );
         }
 
         // bytes->bytes
@@ -347,16 +337,12 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.array_to_array.is_empty() {
             // Fast path if no array to array codecs
-            return unsafe {
-                self.array_to_bytes.decode_into(
-                    bytes,
-                    array_representations.last().unwrap(),
-                    output,
-                    output_shape,
-                    output_subset,
-                    options,
-                )
-            };
+            return self.array_to_bytes.decode_into(
+                bytes,
+                array_representations.last().unwrap(),
+                output_view,
+                options,
+            );
         }
 
         // bytes->array
@@ -377,13 +363,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         )?;
 
         if let ArrayBytes::Fixed(decoded_value) = bytes {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                decoded_representation.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
         } else {
             // TODO: Variable length data type support?
             return Err(CodecError::ExpectedFixedLengthBytes);

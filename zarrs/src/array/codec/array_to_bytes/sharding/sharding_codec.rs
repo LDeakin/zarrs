@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     array::{
-        array_bytes::{merge_chunks_vlen, update_bytes_flen},
+        array_bytes::merge_chunks_vlen,
         chunk_shape_to_array_shape,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderTraits,
@@ -14,8 +14,9 @@ use crate::{
             CodecChain, CodecError, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         concurrency::calc_concurrency_outer_inner,
-        transmute_to_bytes_vec, unravel_index, ArrayBytes, ArrayMetadataOptions, ArraySize,
-        BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, FillValue, RawBytes,
+        transmute_to_bytes_vec, unravel_index, ArrayBytes, ArrayBytesFixedNonOverlappingView,
+        ArrayMetadataOptions, ArraySize, BytesRepresentation, ChunkRepresentation, ChunkShape,
+        DataTypeSize, FillValue, RawBytes,
     },
     array_subset::ArraySubset,
     metadata::v3::MetadataV3,
@@ -284,33 +285,27 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                 {
                     let output =
                         UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut decoded_shard);
+                    let shard_shape = shard_representation.shape_u64();
                     let decode_chunk = |chunk_index: usize| {
                         let chunk_subset = self
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
+                        let mut output_view_inner_chunk = unsafe {
+                            ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                output,
+                                data_type_size,
+                                &shard_shape,
+                                chunk_subset,
+                            )
+                        };
 
                         // Read the offset/size
                         let offset = shard_index[chunk_index * 2];
                         let size = shard_index[chunk_index * 2 + 1];
                         if offset == u64::MAX && size == u64::MAX {
                             if let Some(fv) = &contiguous_fill_value {
-                                let contiguous_iterator = unsafe {
-                                    chunk_subset
-                                        .contiguous_linearised_indices_unchecked(&shard_shape)
-                                };
-                                let elements = contiguous_iterator.contiguous_elements();
-                                for index in &contiguous_iterator {
-                                    debug_assert_eq!(
-                                        fv.len() as u64,
-                                        elements * data_type_size as u64
-                                    );
-                                    let shard_offset =
-                                        usize::try_from(index * data_type_size as u64).unwrap();
-                                    unsafe {
-                                        output
-                                            .index_mut(shard_offset..shard_offset + fv.len())
-                                            .copy_from_slice(fv);
-                                    }
-                                }
+                                output_view_inner_chunk
+                                    .fill_from(fv)
+                                    .expect("contiguous fill value from get_contiguous_fill_value should match the expected length of fill_from");
                             } else {
                                 unreachable!();
                             }
@@ -328,13 +323,9 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                                 &chunk_representation,
                                 &options,
                             )?;
-                            update_bytes_flen(
-                                &output,
-                                &shard_representation.shape_u64(),
-                                &decoded_chunk.into_fixed()?,
-                                &chunk_subset,
-                                data_type_size,
-                            );
+                            output_view_inner_chunk
+                                .copy_from_slice(&decoded_chunk.into_fixed()?)
+                                .map_err(CodecError::from)?;
                         };
 
                         Ok::<_, CodecError>(())
@@ -354,13 +345,11 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
     }
 
     #[allow(clippy::too_many_lines)]
-    unsafe fn decode_into(
+    fn decode_into(
         &self,
         encoded_shard: RawBytes<'_>,
         shard_representation: &ChunkRepresentation,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         let shard_shape = shard_representation.shape_u64();
@@ -399,96 +388,69 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
 
-        match shard_representation.data_type().size() {
-            DataTypeSize::Variable => {
-                // TODO: Variable length data type support?
-                Err(CodecError::ExpectedFixedLengthBytes)
-            }
-            DataTypeSize::Fixed(data_type_size) => {
-                let contiguous_fill_value = if any_empty {
-                    Some(get_contiguous_fill_value(
-                        shard_representation.fill_value(),
-                        &self.chunk_shape,
-                        &shard_shape,
-                    ))
+        let contiguous_fill_value = if any_empty {
+            Some(get_contiguous_fill_value(
+                shard_representation.fill_value(),
+                &self.chunk_shape,
+                &shard_shape,
+            ))
+        } else {
+            None
+        };
+
+        let decode_chunk = |chunk_index: usize| {
+            let chunk_subset =
+                self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
+
+            let output_subset_chunk = ArraySubset::new_with_start_shape(
+                std::iter::zip(output_view.subset().start(), chunk_subset.start())
+                    .map(|(o, s)| o + s)
+                    .collect(),
+                chunk_subset.shape().to_vec(),
+            )
+            .unwrap();
+            let mut output_view_inner_chunk =
+                unsafe { output_view.subdivide_unchecked(output_subset_chunk) };
+
+            // Read the offset/size
+            let offset = shard_index[chunk_index * 2];
+            let size = shard_index[chunk_index * 2 + 1];
+            if offset == u64::MAX && size == u64::MAX {
+                if let Some(fv) = &contiguous_fill_value {
+                    output_view_inner_chunk
+                        .fill_from(fv)
+                        .expect("contiguous fill value from get_contiguous_fill_value should match the expected length of fill_from");
                 } else {
-                    None
-                };
-
-                {
-                    let decode_chunk = |chunk_index: usize| {
-                        let chunk_subset = self
-                            .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
-
-                        let output_subset_chunk = ArraySubset::new_with_start_shape(
-                            std::iter::zip(output_subset.start(), chunk_subset.start())
-                                .map(|(o, s)| o + s)
-                                .collect(),
-                            chunk_subset.shape().to_vec(),
-                        )
-                        .unwrap();
-
-                        // Read the offset/size
-                        let offset = shard_index[chunk_index * 2];
-                        let size = shard_index[chunk_index * 2 + 1];
-                        if offset == u64::MAX && size == u64::MAX {
-                            if let Some(fv) = &contiguous_fill_value {
-                                let contiguous_iterator = unsafe {
-                                    output_subset_chunk
-                                        .contiguous_linearised_indices_unchecked(output_shape)
-                                };
-                                let elements = contiguous_iterator.contiguous_elements();
-                                for index in &contiguous_iterator {
-                                    debug_assert_eq!(
-                                        fv.len() as u64,
-                                        elements * data_type_size as u64
-                                    );
-                                    let shard_offset =
-                                        usize::try_from(index * data_type_size as u64).unwrap();
-                                    unsafe {
-                                        output
-                                            .index_mut(shard_offset..shard_offset + fv.len())
-                                            .copy_from_slice(fv);
-                                    }
-                                }
-                            } else {
-                                unreachable!();
-                            }
-                        } else if usize::try_from(offset + size).unwrap() > encoded_shard.len() {
-                            return Err(CodecError::Other(
-                                "The shard index references out-of-bounds bytes. The chunk may be corrupted."
-                                    .to_string(),
-                            ));
-                        } else {
-                            let offset: usize = offset.try_into().unwrap();
-                            let size: usize = size.try_into().unwrap();
-                            let encoded_chunk = &encoded_shard[offset..offset + size];
-                            unsafe {
-                                self.inner_codecs.decode_into(
-                                    Cow::Borrowed(encoded_chunk),
-                                    &chunk_representation,
-                                    output,
-                                    output_shape,
-                                    &output_subset_chunk,
-                                    &options,
-                                )?;
-                            }
-                        };
-
-                        Ok::<_, CodecError>(())
-                    };
-
-                    rayon_iter_concurrent_limit::iter_concurrent_limit!(
-                        shard_concurrent_limit,
-                        (0..num_chunks),
-                        try_for_each,
-                        decode_chunk
-                    )?;
-
-                    Ok(())
+                    unreachable!();
                 }
-            }
-        }
+            } else if usize::try_from(offset + size).unwrap() > encoded_shard.len() {
+                return Err(CodecError::Other(
+                    "The shard index references out-of-bounds bytes. The chunk may be corrupted."
+                        .to_string(),
+                ));
+            } else {
+                let offset: usize = offset.try_into().unwrap();
+                let size: usize = size.try_into().unwrap();
+                let encoded_chunk = &encoded_shard[offset..offset + size];
+                self.inner_codecs.decode_into(
+                    Cow::Borrowed(encoded_chunk),
+                    &chunk_representation,
+                    &mut output_view_inner_chunk,
+                    &options,
+                )?;
+            };
+
+            Ok::<_, CodecError>(())
+        };
+
+        rayon_iter_concurrent_limit::iter_concurrent_limit!(
+            shard_concurrent_limit,
+            (0..num_chunks),
+            try_for_each,
+            decode_chunk
+        )?;
+
+        Ok(())
     }
 
     fn partial_decoder(

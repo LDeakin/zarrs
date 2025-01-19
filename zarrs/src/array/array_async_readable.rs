@@ -18,8 +18,8 @@ use super::{
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,
-    Array, ArrayBytes, ArrayCreateError, ArrayError, ArrayMetadata, ArrayMetadataV2,
-    ArrayMetadataV3, ArraySize, DataTypeSize,
+    Array, ArrayBytes, ArrayBytesFixedNonOverlappingView, ArrayCreateError, ArrayError,
+    ArrayMetadata, ArrayMetadataV2, ArrayMetadataV3, ArraySize, DataTypeSize,
 };
 
 #[cfg(feature = "ndarray")]
@@ -335,12 +335,10 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     }
 
     /// Async variant of [`retrieve_chunk_into`](Array::retrieve_chunk_into).
-    async unsafe fn async_retrieve_chunk_into(
+    async fn async_retrieve_chunk_into(
         &self,
         chunk_indices: &[u64],
-        output: &UnsafeCellSlice<'_, u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         if chunk_indices.len() != self.dimensionality() {
@@ -360,29 +358,17 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         if let Some(chunk_encoded) = chunk_encoded {
             let chunk_encoded: Vec<u8> = chunk_encoded.into();
             let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-            unsafe {
-                self.codecs()
-                    .decode_into(
-                        Cow::Owned(chunk_encoded),
-                        &chunk_representation,
-                        output,
-                        output_shape,
-                        output_subset,
-                        options,
-                    )
-                    .map_err(ArrayError::CodecError)
-            }
-        } else {
-            unsafe {
-                copy_fill_value_into(
-                    self.data_type(),
-                    self.fill_value(),
-                    output,
-                    output_shape,
-                    output_subset,
+            self.codecs()
+                .decode_into(
+                    Cow::Owned(chunk_encoded),
+                    &chunk_representation,
+                    output_view,
+                    options,
                 )
                 .map_err(ArrayError::CodecError)
-            }
+        } else {
+            copy_fill_value_into(self.data_type(), self.fill_value(), output_view)
+                .map_err(ArrayError::CodecError)
         }
     }
 
@@ -650,19 +636,24 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                     let chunk_subset = self.chunk_subset(&chunk_indices)?;
                                     let chunk_subset_overlap =
                                         chunk_subset.overlap(array_subset)?;
-                                    unsafe {
-                                        self.async_retrieve_chunk_subset_into(
-                                            &chunk_indices,
-                                            &chunk_subset_overlap
-                                                .relative_to(chunk_subset.start())?,
-                                            &output,
+
+                                    let mut output_view = unsafe {
+                                        ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                            output,
+                                            data_type_size,
                                             array_subset.shape(),
-                                            &chunk_subset_overlap
-                                                .relative_to(array_subset.start())?,
-                                            &options,
+                                            chunk_subset_overlap
+                                                .relative_to(array_subset.start())
+                                                .unwrap(),
                                         )
-                                        .await?;
-                                    }
+                                    };
+                                    self.async_retrieve_chunk_subset_into(
+                                        &chunk_indices,
+                                        &chunk_subset_overlap.relative_to(chunk_subset.start())?,
+                                        &mut output_view,
+                                        &options,
+                                    )
+                                    .await?;
                                     // let chunk_subset_bytes = self
                                     //     .async_retrieve_chunk_subset_opt(
                                     //         &chunk_indices,
@@ -773,13 +764,11 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         Ok(bytes)
     }
 
-    async unsafe fn async_retrieve_chunk_subset_into(
+    async fn async_retrieve_chunk_subset_into(
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        output: &UnsafeCellSlice<'_, u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
@@ -794,16 +783,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             && chunk_subset.shape() == chunk_representation.shape_u64()
         {
             // Fast path if `chunk_subset` encompasses the whole chunk
-            unsafe {
-                self.async_retrieve_chunk_into(
-                    chunk_indices,
-                    output,
-                    output_shape,
-                    output_subset,
-                    options,
-                )
+            self.async_retrieve_chunk_into(chunk_indices, output_view, options)
                 .await
-            }
         } else {
             let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
             let storage_transformer = self
@@ -815,14 +796,12 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                 self.chunk_key(chunk_indices),
             ));
 
-            unsafe {
-                self.codecs
-                    .clone()
-                    .async_partial_decoder(input_handle, &chunk_representation, options)
-                    .await?
-                    .partial_decode_into(chunk_subset, output, output_shape, output_subset, options)
-                    .await?;
-            }
+            self.codecs
+                .clone()
+                .async_partial_decoder(input_handle, &chunk_representation, options)
+                .await?
+                .partial_decode_into(chunk_subset, output_view, options)
+                .await?;
             Ok(())
         }
     }

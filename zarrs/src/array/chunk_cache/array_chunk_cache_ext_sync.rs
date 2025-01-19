@@ -6,10 +6,11 @@ use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
     array::{
-        array_bytes::{merge_chunks_vlen, update_bytes_flen},
-        codec::CodecOptions,
+        array_bytes::merge_chunks_vlen,
+        codec::{CodecError, CodecOptions},
         concurrency::concurrency_chunks_and_codec,
-        Array, ArrayBytes, ArrayError, ArraySize, DataTypeSize, ElementOwned,
+        Array, ArrayBytes, ArrayBytesFixedNonOverlappingView, ArrayError, ArraySize, DataTypeSize,
+        ElementOwned,
     },
     array_subset::ArraySubset,
     storage::ReadableStorageTraits,
@@ -408,13 +409,17 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
                                     ArrayBytes::Variable(_, _) => unreachable!(),
                                 };
 
-                                update_bytes_flen(
-                                    &output,
-                                    array_subset.shape(),
-                                    fixed,
-                                    &chunk_subset_overlap.relative_to(array_subset.start())?,
-                                    data_type_size,
-                                );
+                                let mut output_view = unsafe {
+                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                        output,
+                                        data_type_size,
+                                        array_subset.shape(),
+                                        chunk_subset_overlap.relative_to(array_subset.start())?,
+                                    )
+                                };
+                                output_view
+                                    .copy_from_slice(fixed)
+                                    .map_err(CodecError::from)?;
                                 Ok::<_, ArrayError>(())
                             };
                             iter_concurrent_limit!(

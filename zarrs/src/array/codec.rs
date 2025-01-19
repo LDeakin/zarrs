@@ -68,7 +68,6 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 
 #[cfg(feature = "async")]
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
-use unsafe_cell_slice::UnsafeCellSlice;
 
 mod array_partial_encoder_default;
 pub use array_partial_encoder_default::ArrayPartialEncoderDefault;
@@ -96,12 +95,11 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use super::array_bytes::update_bytes_flen;
 use super::{
     concurrency::RecommendedConcurrency, ArrayMetadataOptions, BytesRepresentation,
     ChunkRepresentation, ChunkShape, DataType,
 };
-use super::{ArrayBytes, RawBytes};
+use super::{ArrayBytes, ArrayBytesFixedNonOverlappingView, RawBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -361,35 +359,26 @@ pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
     /// Extracted elements from the `array_subset` are written to the subset of the output in C order.
     ///
     /// # Errors
-    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
-    ///
-    /// # Safety
-    /// The caller must ensure that:
-    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
-    ///  - `output_subset` is within the bounds of `output_shape`,
-    ///  - `output_subset` has the same number of elements as `array_subset`, and
-    ///  - `output_subset`s must be non-overlapping when called in parallel on the same `output`.
-    unsafe fn partial_decode_into(
+    /// Returns [`CodecError`] if a codec fails or the number of elements in `array_subset` does not match the number of elements in `output_view`,
+    fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds_shape(output_shape));
-        debug_assert_eq!(array_subset.num_elements(), output_subset.num_elements());
+        if array_subset.num_elements() != output_view.num_elements() {
+            return Err(InvalidNumberOfElementsError::new(
+                array_subset.num_elements(),
+                output_view.num_elements(),
+            )
+            .into());
+        }
+
         let decoded_value = self
             .partial_decode(&[array_subset.clone()], options)?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                self.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
             Ok(())
         } else {
             Err(CodecError::ExpectedFixedLengthBytes)
@@ -454,28 +443,25 @@ pub trait AsyncArrayPartialDecoderTraits: Any + Send + Sync {
 
     /// Async variant of [`ArrayPartialDecoderTraits::partial_decode_into`].
     #[allow(clippy::missing_safety_doc)]
-    async unsafe fn partial_decode_into(
+    async fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds_shape(output_shape));
-        debug_assert_eq!(array_subset.shape(), output_subset.shape());
+        if array_subset.num_elements() != output_view.num_elements() {
+            return Err(InvalidNumberOfElementsError::new(
+                output_view.num_elements(),
+                array_subset.num_elements(),
+            )
+            .into());
+        }
         let decoded_value = self
             .partial_decode(&[array_subset.clone()], options)
             .await?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                self.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
             Ok(())
         } else {
             Err(CodecError::ExpectedFixedLengthBytes)
@@ -713,37 +699,24 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// Chunk elements are written to the subset of the output in C order.
     ///
     /// # Errors
-    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    ///
-    /// # Safety
-    /// The caller must ensure that:
-    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type, and
-    ///  - `output_subset` is within the bounds of `output_shape`,
-    ///  - `output_subset` has the same number of elements as the decoded representation shape, and
-    ///  - `output_subset`s must be non-overlapping when called in parallel on the same `output`.
-    unsafe fn decode_into(
+    /// Returns [`CodecError`] if a codec fails or the number of elements in `decoded_representation` does not match the number of elements in `output_view`,
+    fn decode_into(
         &self,
         bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds_shape(output_shape));
-        debug_assert_eq!(
-            decoded_representation.num_elements(),
-            output_subset.num_elements()
-        );
+        if decoded_representation.num_elements() != output_view.num_elements() {
+            return Err(InvalidNumberOfElementsError::new(
+                output_view.num_elements(),
+                decoded_representation.num_elements(),
+            )
+            .into());
+        }
         let decoded_value = self.decode(bytes, decoded_representation, options)?;
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                decoded_representation.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
         } else {
             return Err(CodecError::ExpectedFixedLengthBytes);
         }

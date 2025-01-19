@@ -5,15 +5,15 @@ use unsafe_cell_slice::UnsafeCellSlice;
 use zarrs_storage::byte_range::ByteRange;
 
 use crate::array::{
-    array_bytes::{merge_chunks_vlen, update_bytes_flen},
+    array_bytes::merge_chunks_vlen,
     codec::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
         ByteIntervalPartialDecoder, BytesPartialDecoderTraits, CodecChain, CodecError,
         CodecOptions,
     },
     concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
-    ravel_indices, ArrayBytes, ArraySize, ChunkRepresentation, ChunkShape, DataType, DataTypeSize,
-    RawBytes,
+    ravel_indices, ArrayBytes, ArrayBytesFixedNonOverlappingView, ArraySize, ChunkRepresentation,
+    ChunkShape, DataType, DataTypeSize, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -305,16 +305,19 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                                 .into_owned()
                         };
                         let decoded_bytes = decoded_bytes.into_fixed()?;
-                        update_bytes_flen(
-                            &out_array_subset_slice,
-                            array_subset.shape(),
-                            &decoded_bytes,
-                            &chunk_subset_overlap
-                                .relative_to(array_subset.start())
-                                .unwrap(),
-                            data_type_size,
-                        );
-                        Ok::<_, CodecError>(())
+                        let mut output_view = unsafe {
+                            ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                out_array_subset_slice,
+                                data_type_size,
+                                array_subset.shape(),
+                                chunk_subset_overlap
+                                    .relative_to(array_subset.start())
+                                    .unwrap(),
+                            )
+                        };
+                        output_view
+                            .copy_from_slice(&decoded_bytes)
+                            .map_err(CodecError::from)
                     };
 
                     rayon_iter_concurrent_limit::iter_concurrent_limit!(
@@ -597,15 +600,19 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     Vec<u8>,
                                     ArraySubset,
                                 ) = subset_and_decoded_chunk?;
-                                update_bytes_flen(
-                                    &shard_slice,
-                                    array_subset.shape(),
-                                    &chunk_subset_bytes.into(),
-                                    &chunk_subset_overlap
-                                        .relative_to(array_subset.start())
-                                        .unwrap(),
-                                    data_type_size,
-                                );
+                                let mut output_view = unsafe {
+                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                        shard_slice,
+                                        data_type_size,
+                                        array_subset.shape(),
+                                        chunk_subset_overlap
+                                            .relative_to(array_subset.start())
+                                            .unwrap(),
+                                    )
+                                };
+                                output_view
+                                    .copy_from_slice(&chunk_subset_bytes)
+                                    .expect("chunk subset bytes are the correct length");
                                 Ok::<_, CodecError>(())
                             }
                         )?;
@@ -627,7 +634,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                         rayon_iter_concurrent_limit::iter_concurrent_limit!(
                             options.concurrent_target(),
                             filled_chunks,
-                            for_each,
+                            try_for_each,
                             |chunk_subset: &ArraySubset| {
                                 let chunk_subset_overlap =
                                     unsafe { array_subset.overlap_unchecked(chunk_subset) };
@@ -636,17 +643,21 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     .fill_value()
                                     .as_ne_bytes()
                                     .repeat(chunk_subset_overlap.num_elements_usize());
-                                update_bytes_flen(
-                                    &shard_slice,
-                                    array_subset.shape(),
-                                    &filled_chunk.into(),
-                                    &chunk_subset_overlap
-                                        .relative_to(array_subset.start())
-                                        .unwrap(),
-                                    data_type_size,
-                                );
+                                let mut output_view = unsafe {
+                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                        shard_slice,
+                                        data_type_size,
+                                        array_subset.shape(),
+                                        chunk_subset_overlap
+                                            .relative_to(array_subset.start())
+                                            .unwrap(),
+                                    )
+                                };
+                                output_view
+                                    .copy_from_slice(&filled_chunk)
+                                    .map_err(CodecError::from)
                             }
-                        );
+                        )?;
                     };
                     unsafe { shard.set_len(shard_size) };
                     out.push(ArrayBytes::from(shard));
