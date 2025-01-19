@@ -7,11 +7,10 @@ use crate::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
             ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits,
+            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
             InvalidBytesLengthError, RecommendedConcurrency,
         },
-        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
-        RawBytes,
+        ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
     },
     metadata::v3::MetadataV3,
 };
@@ -100,7 +99,7 @@ impl BytesCodec {
 }
 
 impl CodecTraits for BytesCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let configuration = BytesCodecConfigurationV1 {
             endian: self.endian,
         };

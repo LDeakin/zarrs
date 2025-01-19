@@ -13,9 +13,11 @@
 pub mod array_to_array;
 pub mod array_to_bytes;
 pub mod bytes_to_bytes;
+pub mod metadata_options;
 pub mod options;
 
 use derive_more::derive::Display;
+pub use metadata_options::CodecMetadataOptions;
 pub use options::{CodecOptions, CodecOptionsBuilder};
 
 // Array to array
@@ -96,8 +98,8 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use super::{
-    concurrency::RecommendedConcurrency, ArrayMetadataOptions, BytesRepresentation,
-    ChunkRepresentation, ChunkShape, DataType,
+    concurrency::RecommendedConcurrency, BytesRepresentation, ChunkRepresentation, ChunkShape,
+    DataType,
 };
 use super::{ArrayBytes, ArrayBytesFixedNonOverlappingView, RawBytes};
 
@@ -199,13 +201,13 @@ pub trait CodecTraits: Send + Sync {
     /// Create metadata.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<MetadataV3>;
+    fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3>;
 
     /// Create metadata with default options.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
     fn create_metadata(&self) -> Option<MetadataV3> {
-        self.create_metadata_opt(&ArrayMetadataOptions::default())
+        self.create_metadata_opt(&CodecMetadataOptions::default())
     }
 
     /// Indicates if the input to a codecs partial decoder should be cached for optimal performance.
