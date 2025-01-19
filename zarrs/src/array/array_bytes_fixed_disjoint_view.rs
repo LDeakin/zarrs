@@ -39,7 +39,9 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     /// Create a new non-overlapping view of the bytes in an array.
     ///
     /// # Errors
-    /// Returns [`SubsetOutOfBoundsError`] if `subset` is out-of-bounds of `shape`.
+    /// Returns [`ArrayBytesFixedDisjointViewCreateError`] if
+    /// - `subset` is out-of-bounds of `shape`, or
+    /// - the length of `bytes` is not the product of the elements in `shape` multiplied by `data_type_size`.
     ///
     /// # Safety
     /// The bytes must not overlap with any other views.
