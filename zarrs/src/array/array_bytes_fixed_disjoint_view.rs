@@ -194,33 +194,31 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         self.contiguous_indices().contiguous_elements_usize() * self.data_type_size
     }
 
-    /// Fill the view with a constant per contiguous slice.
-    ///
-    /// The constant value must be the same length as the byte length of contiguous elements in the view.
+    /// Fill the view with the fill value.
     ///
     /// # Errors
-    /// Returns [`InvalidBytesLengthError`] if the length of `fill_value_contiguous` does not match [`Self::contiguous_bytes_len`].
+    /// Returns [`InvalidBytesLengthError`] if the length of the `fill_value` does not match the data type size.
     ///
     /// # Panics
     /// Panics if an offset into the internal bytes reference exceeds [`usize::MAX`].
-    pub fn copy_from_slice_to_contiguous_elements(
-        &mut self,
-        fill_value_contiguous: &[u8],
-    ) -> Result<(), InvalidBytesLengthError> {
-        let contiguous_indices = self.contiguous_linearised_indices();
-        let length = self.contiguous_bytes_len();
-        if fill_value_contiguous.len() != length {
+    pub fn fill(&mut self, fill_value: &[u8]) -> Result<(), InvalidBytesLengthError> {
+        if fill_value.len() != self.data_type_size {
             return Err(InvalidBytesLengthError::new(
-                fill_value_contiguous.len(),
-                length,
+                fill_value.len(),
+                self.data_type_size,
             ));
         }
+
+        let fill_value_contiguous = fill_value.repeat(self.num_contiguous_elements());
+        let length = self.contiguous_bytes_len();
+        debug_assert_eq!(fill_value_contiguous.len(), length);
+        let contiguous_indices = self.contiguous_linearised_indices();
         contiguous_indices.into_iter().for_each(|index| {
             let offset = usize::try_from(index * self.data_type_size as u64).unwrap();
             unsafe {
                 self.bytes
                     .index_mut(offset..offset + length)
-                    .copy_from_slice(fill_value_contiguous);
+                    .copy_from_slice(&fill_value_contiguous);
             }
         });
         Ok(())

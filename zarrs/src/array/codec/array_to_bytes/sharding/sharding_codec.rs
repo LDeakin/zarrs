@@ -273,12 +273,8 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                         let offset = shard_index[chunk_index * 2];
                         let size = shard_index[chunk_index * 2 + 1];
                         if offset == u64::MAX && size == u64::MAX {
-                            let fill_value_contiguous = shard_representation
-                                .fill_value()
-                                .as_ne_bytes()
-                                .repeat(output_view_inner_chunk.num_contiguous_elements());
                             output_view_inner_chunk
-                                .copy_from_slice_to_contiguous_elements(&fill_value_contiguous)?;
+                                .fill(shard_representation.fill_value().as_ne_bytes())?;
                         } else if usize::try_from(offset + size).unwrap() > encoded_shard.len() {
                             return Err(CodecError::Other(
                                 "The shard index references out-of-bounds bytes. The chunk may be corrupted."
@@ -371,12 +367,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             let offset = shard_index[chunk_index * 2];
             let size = shard_index[chunk_index * 2 + 1];
             if offset == u64::MAX && size == u64::MAX {
-                let fill_value_contiguous = shard_representation
-                    .fill_value()
-                    .as_ne_bytes()
-                    .repeat(output_view_inner_chunk.num_contiguous_elements());
-                output_view_inner_chunk
-                    .copy_from_slice_to_contiguous_elements(&fill_value_contiguous)?;
+                output_view_inner_chunk.fill(shard_representation.fill_value().as_ne_bytes())?;
             } else if usize::try_from(offset + size).unwrap() > encoded_shard.len() {
                 return Err(CodecError::Other(
                     "The shard index references out-of-bounds bytes. The chunk may be corrupted."

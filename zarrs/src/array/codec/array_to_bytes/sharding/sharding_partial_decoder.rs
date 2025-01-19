@@ -651,13 +651,8 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                             .unwrap(),
                                     )
                                 };
-                                let fill_value_contiguous = self
-                                    .decoded_representation
-                                    .fill_value()
-                                    .as_ne_bytes()
-                                    .repeat(output_view.num_contiguous_elements());
                                 output_view
-                                    .copy_from_slice_to_contiguous_elements(&fill_value_contiguous)
+                                    .fill(self.decoded_representation.fill_value().as_ne_bytes())
                                     .map_err(CodecError::from)
                             }
                         )?;
