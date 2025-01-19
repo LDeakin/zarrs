@@ -638,11 +638,6 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                             |chunk_subset: &ArraySubset| {
                                 let chunk_subset_overlap =
                                     unsafe { array_subset.overlap_unchecked(chunk_subset) };
-                                let filled_chunk = self
-                                    .decoded_representation
-                                    .fill_value()
-                                    .as_ne_bytes()
-                                    .repeat(chunk_subset_overlap.num_elements_usize());
                                 let mut output_view = unsafe {
                                     ArrayBytesFixedDisjointView::new_unchecked(
                                         shard_slice,
@@ -653,8 +648,13 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                             .unwrap(),
                                     )
                                 };
+                                let filled_contiguous_elements = self
+                                    .decoded_representation
+                                    .fill_value()
+                                    .as_ne_bytes()
+                                    .repeat(output_view.num_contiguous_elements());
                                 output_view
-                                    .copy_from_slice(&filled_chunk)
+                                    .fill_from(&filled_contiguous_elements)
                                     .map_err(CodecError::from)
                             }
                         )?;
