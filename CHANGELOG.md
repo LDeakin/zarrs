@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
+
+### Changed
+- **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
+
 ## [0.19.1] - 2025-01-19
 
 ### Added

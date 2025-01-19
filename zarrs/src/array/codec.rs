@@ -375,7 +375,7 @@ pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
         output_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds(output_shape));
+        debug_assert!(output_subset.inbounds_shape(output_shape));
         debug_assert_eq!(array_subset.num_elements(), output_subset.num_elements());
         let decoded_value = self
             .partial_decode(&[array_subset.clone()], options)?
@@ -460,7 +460,7 @@ pub trait AsyncArrayPartialDecoderTraits: Any + Send + Sync {
         output_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds(output_shape));
+        debug_assert!(output_subset.inbounds_shape(output_shape));
         debug_assert_eq!(array_subset.shape(), output_subset.shape());
         let decoded_value = self
             .partial_decode(&[array_subset.clone()], options)
@@ -728,7 +728,7 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         output_subset: &ArraySubset,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds(output_shape));
+        debug_assert!(output_subset.inbounds_shape(output_shape));
         debug_assert_eq!(
             decoded_representation.num_elements(),
             output_subset.num_elements()
