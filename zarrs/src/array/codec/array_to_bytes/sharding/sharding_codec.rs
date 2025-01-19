@@ -16,7 +16,7 @@ use crate::{
         },
         concurrency::calc_concurrency_outer_inner,
         transmute_to_bytes_vec, unravel_index, ArrayBytes, ArrayBytesFixedDisjointView, ArraySize,
-        BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, FillValue, RawBytes,
+        BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, RawBytes,
     },
     array_subset::ArraySubset,
     metadata::v3::MetadataV3,
@@ -105,21 +105,6 @@ impl CodecTraits for ShardingCodec {
     }
 }
 
-/// Repeat the fill value into a contiguous vec
-/// The length is the contiguous elements of an inner chunk in the shard. See `ContiguousLinearisedIndices`.
-fn get_contiguous_fill_value(
-    fill_value: &FillValue,
-    chunk_shape: &[NonZeroU64],
-    shard_shape: &[u64],
-) -> Vec<u8> {
-    let chunk_subset = ArraySubset::new_with_shape(chunk_shape_to_array_shape(chunk_shape));
-    let contiguous_iterator =
-        unsafe { chunk_subset.contiguous_linearised_indices_unchecked(shard_shape) };
-    fill_value
-        .as_ne_bytes()
-        .repeat(contiguous_iterator.contiguous_elements_usize())
-}
-
 impl ArrayCodecTraits for ShardingCodec {
     fn recommended_concurrency(
         &self,
@@ -183,7 +168,6 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         shard_representation: &ChunkRepresentation,
         options: &CodecOptions,
     ) -> Result<ArrayBytes<'a>, CodecError> {
-        let shard_shape = shard_representation.shape_u64();
         let chunk_representation = unsafe {
             ChunkRepresentation::new_unchecked(
                 self.chunk_shape.as_slice().to_vec(),
@@ -201,10 +185,6 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
 
         let shard_index =
             self.decode_index(&encoded_shard, chunks_per_shard.as_slice(), options)?;
-
-        let any_empty = shard_index
-            .par_iter()
-            .any(|offset_or_size| *offset_or_size == u64::MAX);
 
         // Calc self/internal concurrent limits
         let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrency_outer_inner(
@@ -272,16 +252,6 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                 }
                 let mut decoded_shard = Vec::<u8>::with_capacity(size_output);
 
-                let contiguous_fill_value = if any_empty {
-                    Some(get_contiguous_fill_value(
-                        shard_representation.fill_value(),
-                        &self.chunk_shape,
-                        &shard_shape,
-                    ))
-                } else {
-                    None
-                };
-
                 {
                     let output =
                         UnsafeCellSlice::new_from_vec_with_spare_capacity(&mut decoded_shard);
@@ -303,13 +273,12 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                         let offset = shard_index[chunk_index * 2];
                         let size = shard_index[chunk_index * 2 + 1];
                         if offset == u64::MAX && size == u64::MAX {
-                            if let Some(fv) = &contiguous_fill_value {
-                                output_view_inner_chunk
-                                    .copy_from_slice_to_contiguous_elements(fv)
-                                    .expect("contiguous fill value from get_contiguous_fill_value should match the expected length of fill_from");
-                            } else {
-                                unreachable!();
-                            }
+                            let fill_value_contiguous = shard_representation
+                                .fill_value()
+                                .as_ne_bytes()
+                                .repeat(output_view_inner_chunk.num_contiguous_elements());
+                            output_view_inner_chunk
+                                .copy_from_slice_to_contiguous_elements(&fill_value_contiguous)?;
                         } else if usize::try_from(offset + size).unwrap() > encoded_shard.len() {
                             return Err(CodecError::Other(
                                 "The shard index references out-of-bounds bytes. The chunk may be corrupted."
@@ -353,7 +322,6 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        let shard_shape = shard_representation.shape_u64();
         let chunk_representation = unsafe {
             ChunkRepresentation::new_unchecked(
                 self.chunk_shape.as_slice().to_vec(),
@@ -372,10 +340,6 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         let shard_index =
             self.decode_index(&encoded_shard, chunks_per_shard.as_slice(), options)?;
 
-        let any_empty = shard_index
-            .par_iter()
-            .any(|offset_or_size| *offset_or_size == u64::MAX);
-
         // Calc self/internal concurrent limits
         let (shard_concurrent_limit, concurrency_limit_inner_chunks) = calc_concurrency_outer_inner(
             options.concurrent_target(),
@@ -388,16 +352,6 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             .into_builder()
             .concurrent_target(concurrency_limit_inner_chunks)
             .build();
-
-        let contiguous_fill_value = if any_empty {
-            Some(get_contiguous_fill_value(
-                shard_representation.fill_value(),
-                &self.chunk_shape,
-                &shard_shape,
-            ))
-        } else {
-            None
-        };
 
         let decode_chunk = |chunk_index: usize| {
             let chunk_subset =
@@ -417,13 +371,12 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             let offset = shard_index[chunk_index * 2];
             let size = shard_index[chunk_index * 2 + 1];
             if offset == u64::MAX && size == u64::MAX {
-                if let Some(fv) = &contiguous_fill_value {
-                    output_view_inner_chunk
-                        .copy_from_slice_to_contiguous_elements(fv)
-                        .expect("contiguous fill value from get_contiguous_fill_value should match the expected length of fill_from");
-                } else {
-                    unreachable!();
-                }
+                let fill_value_contiguous = shard_representation
+                    .fill_value()
+                    .as_ne_bytes()
+                    .repeat(output_view_inner_chunk.num_contiguous_elements());
+                output_view_inner_chunk
+                    .copy_from_slice_to_contiguous_elements(&fill_value_contiguous)?;
             } else if usize::try_from(offset + size).unwrap() > encoded_shard.len() {
                 return Err(CodecError::Other(
                     "The shard index references out-of-bounds bytes. The chunk may be corrupted."
