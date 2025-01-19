@@ -305,7 +305,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                         if offset == u64::MAX && size == u64::MAX {
                             if let Some(fv) = &contiguous_fill_value {
                                 output_view_inner_chunk
-                                    .fill_from(fv)
+                                    .copy_from_slice_to_contiguous_elements(fv)
                                     .expect("contiguous fill value from get_contiguous_fill_value should match the expected length of fill_from");
                             } else {
                                 unreachable!();
@@ -419,7 +419,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             if offset == u64::MAX && size == u64::MAX {
                 if let Some(fv) = &contiguous_fill_value {
                     output_view_inner_chunk
-                        .fill_from(fv)
+                        .copy_from_slice_to_contiguous_elements(fv)
                         .expect("contiguous fill value from get_contiguous_fill_value should match the expected length of fill_from");
                 } else {
                     unreachable!();

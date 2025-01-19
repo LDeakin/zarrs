@@ -190,31 +190,37 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     ///
     /// This is the number of elements that are accessed in a single contiguous block.
     #[must_use]
-    pub fn contiguous_elements_size(&self) -> usize {
+    pub fn contiguous_bytes_len(&self) -> usize {
         self.contiguous_indices().contiguous_elements_usize() * self.data_type_size
     }
 
-    /// Fill the view with a constant value.
+    /// Fill the view with a constant per contiguous slice.
     ///
     /// The constant value must be the same length as the byte length of contiguous elements in the view.
     ///
     /// # Errors
-    /// Returns [`InvalidBytesLengthError`] if the fill value is not the same length [`Self::contiguous_elements_size`].
+    /// Returns [`InvalidBytesLengthError`] if the length of `fill_value_contiguous` does not match [`Self::contiguous_bytes_len`].
     ///
     /// # Panics
     /// Panics if an offset into the internal bytes reference exceeds [`usize::MAX`].
-    pub fn fill_from(&mut self, fv: &[u8]) -> Result<(), InvalidBytesLengthError> {
+    pub fn copy_from_slice_to_contiguous_elements(
+        &mut self,
+        fill_value_contiguous: &[u8],
+    ) -> Result<(), InvalidBytesLengthError> {
         let contiguous_indices = self.contiguous_linearised_indices();
-        let length = self.contiguous_elements_size();
-        if fv.len() != length {
-            return Err(InvalidBytesLengthError::new(fv.len(), length));
+        let length = self.contiguous_bytes_len();
+        if fill_value_contiguous.len() != length {
+            return Err(InvalidBytesLengthError::new(
+                fill_value_contiguous.len(),
+                length,
+            ));
         }
         contiguous_indices.into_iter().for_each(|index| {
             let offset = usize::try_from(index * self.data_type_size as u64).unwrap();
             unsafe {
                 self.bytes
-                    .index_mut(offset..offset + fv.len())
-                    .copy_from_slice(fv);
+                    .index_mut(offset..offset + length)
+                    .copy_from_slice(fill_value_contiguous);
             }
         });
         Ok(())

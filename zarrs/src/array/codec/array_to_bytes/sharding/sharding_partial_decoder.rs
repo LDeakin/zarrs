@@ -657,7 +657,9 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     .as_ne_bytes()
                                     .repeat(output_view.num_contiguous_elements());
                                 output_view
-                                    .fill_from(&filled_contiguous_elements)
+                                    .copy_from_slice_to_contiguous_elements(
+                                        &filled_contiguous_elements,
+                                    )
                                     .map_err(CodecError::from)
                             }
                         )?;
