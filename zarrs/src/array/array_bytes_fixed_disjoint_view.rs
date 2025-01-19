@@ -57,8 +57,8 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         shape: &'a [u64],
         subset: ArraySubset,
     ) -> Result<Self, ArrayBytesFixedDisjointViewCreateError> {
-        let bounding_subset = ArraySubset::new_with_shape(shape.to_vec());
-        if !subset.inbounds(&bounding_subset) {
+        if !subset.inbounds_shape(shape) {
+            let bounding_subset = ArraySubset::new_with_shape(shape.to_vec());
             return Err(SubsetOutOfBoundsError::new(subset, bounding_subset).into());
         }
         let bytes_in_array_len =
