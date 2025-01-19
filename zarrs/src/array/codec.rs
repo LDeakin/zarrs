@@ -15,6 +15,7 @@ pub mod array_to_bytes;
 pub mod bytes_to_bytes;
 pub mod options;
 
+use derive_more::derive::Display;
 pub use options::{CodecOptions, CodecOptionsBuilder};
 
 // Array to array
@@ -77,6 +78,7 @@ pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefaul
 
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
+use zarrs_metadata::ArrayShape;
 
 use crate::storage::{StoreKeyOffsetValue, WritableStorage};
 use crate::{
@@ -962,6 +964,76 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
     }
 }
 
+/// An error indicating the length of bytes does not match the expected length.
+#[derive(Debug, Error, Display)]
+#[display("Invalid bytes len {len}, expected {expected_len}")]
+pub struct InvalidBytesLengthError {
+    len: usize,
+    expected_len: usize,
+}
+
+impl InvalidBytesLengthError {
+    /// Create a new [`InvalidBytesLengthError`].
+    #[must_use]
+    pub fn new(len: usize, expected_len: usize) -> Self {
+        Self { len, expected_len }
+    }
+}
+
+/// An error indicating the shape is not compatible with the expected number of elements.
+#[derive(Debug, Error, Display)]
+#[display("Invalid shape {shape:?} for number of elements {expected_num_elements}")]
+pub struct InvalidArrayShapeError {
+    shape: ArrayShape,
+    expected_num_elements: usize,
+}
+
+impl InvalidArrayShapeError {
+    /// Create a new [`InvalidArrayShapeError`].
+    #[must_use]
+    pub fn new(shape: ArrayShape, expected_num_elements: usize) -> Self {
+        Self {
+            shape,
+            expected_num_elements,
+        }
+    }
+}
+
+/// An error indicating the length of elements does not match the expected length.
+#[derive(Debug, Error, Display)]
+#[display("Invalid number of elements {num}, expected {expected}")]
+pub struct InvalidNumberOfElementsError {
+    num: u64,
+    expected: u64,
+}
+
+impl InvalidNumberOfElementsError {
+    /// Create a new [`InvalidNumberOfElementsError`].
+    #[must_use]
+    pub fn new(num: u64, expected: u64) -> Self {
+        Self { num, expected }
+    }
+}
+
+/// An array subset is out of bounds.
+#[derive(Debug, Error, Display)]
+#[display("Subset {subset} is out of bounds of {must_be_within}")]
+pub struct SubsetOutOfBoundsError {
+    subset: ArraySubset,
+    must_be_within: ArraySubset,
+}
+
+impl SubsetOutOfBoundsError {
+    /// Create a new [`InvalidNumberOfElementsError`].
+    #[must_use]
+    pub fn new(subset: ArraySubset, must_be_within: ArraySubset) -> Self {
+        Self {
+            subset,
+            must_be_within,
+        }
+    }
+}
+
 /// A codec error.
 #[derive(Debug, Error)]
 pub enum CodecError {
@@ -978,8 +1050,8 @@ pub enum CodecError {
     #[error("the array subset {_0} has the wrong dimensionality, expected {_1}")]
     InvalidArraySubsetDimensionalityError(ArraySubset, usize),
     /// The decoded size of a chunk did not match what was expected.
-    #[error("the size of a decoded chunk is {_0}, expected {_1}")]
-    UnexpectedChunkDecodedSize(usize, u64),
+    #[error("the size of a decoded chunk is {}, expected {}", _0.len, _0.expected_len)]
+    UnexpectedChunkDecodedSize(#[from] InvalidBytesLengthError),
     /// An embedded checksum does not match the decoded value.
     #[error("the checksum is invalid")]
     InvalidChecksum,
@@ -1004,6 +1076,15 @@ pub enum CodecError {
     /// Expected variable length bytes.
     #[error("Expected variable length array bytes")]
     ExpectedVariableLengthBytes,
+    /// Invalid array shape.
+    #[error(transparent)]
+    InvalidArrayShape(#[from] InvalidArrayShapeError),
+    /// Invalid number of elements.
+    #[error(transparent)]
+    InvalidNumberOfElements(#[from] InvalidNumberOfElementsError),
+    /// Subset out of bounds.
+    #[error(transparent)]
+    SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
 }
 
 impl From<&str> for CodecError {

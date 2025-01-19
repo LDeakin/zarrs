@@ -910,10 +910,7 @@ pub fn elements_to_ndarray<T>(
 ) -> Result<ndarray::ArrayD<T>, ArrayError> {
     let length = elements.len();
     ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(|_| {
-        ArrayError::CodecError(codec::CodecError::UnexpectedChunkDecodedSize(
-            length * size_of::<T>(),
-            shape.iter().product::<u64>() * size_of::<T>() as u64,
-        ))
+        ArrayError::CodecError(codec::InvalidArrayShapeError::new(shape.to_vec(), length).into())
     })
 }
 
