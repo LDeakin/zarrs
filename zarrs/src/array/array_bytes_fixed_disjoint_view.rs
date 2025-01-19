@@ -47,7 +47,7 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     /// - the length of `bytes` is not the product of the elements in `shape` multiplied by `data_type_size`.
     ///
     /// # Safety
-    /// The bytes must not overlap with any other views.
+    /// The `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
     ///
     /// # Panics
     /// Panics if the product of the elements in `shape` multiplied by `data_type_size` exceeds [`usize::MAX`].
@@ -80,9 +80,9 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     /// Create a new non-overlapping view of the bytes in an array.
     ///
     /// # Safety
-    /// - `subset` must be inbounds of `shape`.
-    /// - The length of `bytes` must be the product of the elements in `shape` multiplied by `data_type_size`.
-    /// - The bytes must not overlap with any other views.
+    /// - `subset` must be inbounds of `shape`,
+    /// - the length of `bytes` must be the product of the elements in `shape` multiplied by `data_type_size`, and
+    /// - the `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
     ///
     /// # Panics
     /// Panics if the product of the elements in `shape` multiplied by `data_type_size` exceeds [`usize::MAX`].
