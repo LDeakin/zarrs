@@ -564,9 +564,26 @@ impl ArraySubset {
         }
     }
 
-    /// Returns true if the array subset is within the bounds of `array_shape`.
+    /// Returns true if this array subset is within the bounds of `subset`.
     #[must_use]
-    pub fn inbounds(&self, array_shape: &[u64]) -> bool {
+    pub fn inbounds(&self, subset: &ArraySubset) -> bool {
+        if self.dimensionality() != subset.dimensionality() {
+            return false;
+        }
+
+        for (self_start, self_shape, other_start, other_shape) in
+            izip!(self.start(), self.shape(), subset.start(), subset.shape())
+        {
+            if self_start < other_start || self_start + self_shape > other_start + other_shape {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Returns true if the array subset is within the bounds of an `ArraySubset` with zero origin and a shape of `array_shape`.
+    #[must_use]
+    pub fn inbounds_shape(&self, array_shape: &[u64]) -> bool {
         if self.dimensionality() != array_shape.len() {
             return false;
         }
@@ -646,9 +663,14 @@ mod tests {
             ArraySubset::new_with_ranges(&[0..4, 1..5])
         );
         assert!(array_subset0.relative_to(&[1, 1, 1]).is_err());
-        assert!(array_subset0.inbounds(&[10, 10]));
-        assert!(!array_subset0.inbounds(&[2, 2]));
-        assert!(!array_subset0.inbounds(&[10, 10, 10]));
+        assert!(array_subset0.inbounds_shape(&[10, 10]));
+        assert!(!array_subset0.inbounds_shape(&[2, 2]));
+        assert!(!array_subset0.inbounds_shape(&[10, 10, 10]));
+        assert!(array_subset0.inbounds(&ArraySubset::new_with_ranges(&[0..6, 1..7])));
+        assert!(array_subset0.inbounds(&ArraySubset::new_with_ranges(&[1..5, 2..6])));
+        assert!(!array_subset0.inbounds(&ArraySubset::new_with_ranges(&[2..5, 2..6])));
+        assert!(!array_subset0.inbounds(&ArraySubset::new_with_ranges(&[1..5, 2..5])));
+        assert!(!array_subset0.inbounds(&ArraySubset::new_with_ranges(&[2..5])));
         assert_eq!(array_subset0.to_ranges(), vec![1..5, 2..6]);
 
         let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);

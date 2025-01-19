@@ -737,7 +737,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         options: &CodecOptions,
     ) -> Result<ArrayBytes<'_>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-        if !chunk_subset.inbounds(&chunk_representation.shape_u64()) {
+        if !chunk_subset.inbounds_shape(&chunk_representation.shape_u64()) {
             return Err(ArrayError::InvalidArraySubset(
                 chunk_subset.clone(),
                 self.shape().to_vec(),
@@ -783,7 +783,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-        if !chunk_subset.inbounds(&chunk_representation.shape_u64()) {
+        if !chunk_subset.inbounds_shape(&chunk_representation.shape_u64()) {
             return Err(ArrayError::InvalidArraySubset(
                 chunk_subset.clone(),
                 self.shape().to_vec(),
