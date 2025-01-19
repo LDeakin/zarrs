@@ -295,6 +295,15 @@ mod tests {
                 )
             }
             .is_err()); // invalid bytes length
+            assert!(unsafe {
+                ArrayBytesFixedDisjointView::new(
+                    bytes,
+                    1,
+                    &shape,
+                    ArraySubset::new_with_ranges(&[0..2, 1..10]),
+                )
+            }
+            .is_err()); // OOB
 
             let mut view0 = unsafe {
                 ArrayBytesFixedDisjointView::new(
