@@ -115,7 +115,7 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     /// Returns [`SubsetOutOfBoundsError`] if `subset` is out-of-bounds of the parent subset.
     ///
     /// # Safety
-    /// The bytes must not overlap with any other views.
+    /// The `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
     pub unsafe fn subdivide(
         &self,
         subset: ArraySubset,
@@ -133,8 +133,8 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     /// Create a new non-overlapping view of the bytes in an array that is a subset of the current view.
     ///
     /// # Safety
-    /// - `subset` must be inbounds of the parent subset.
-    /// - The bytes must not overlap with any other views.
+    /// - `subset` must be inbounds of the parent subset, and
+    /// - the `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
     #[must_use]
     pub unsafe fn subdivide_unchecked(
         &self,
