@@ -8,7 +8,7 @@ use crate::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
             ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
             BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
+            InvalidBytesLengthError, RecommendedConcurrency,
         },
         ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
     },
@@ -76,12 +76,11 @@ impl BytesCodec {
                 ));
             }
             DataTypeSize::Fixed(data_type_size) => {
-                let array_size = decoded_representation.num_elements() * data_type_size as u64;
-                if value.len() as u64 != array_size {
-                    return Err(CodecError::UnexpectedChunkDecodedSize(
-                        value.len(),
-                        array_size,
-                    ));
+                let array_size =
+                    usize::try_from(decoded_representation.num_elements() * data_type_size as u64)
+                        .unwrap();
+                if value.len() != array_size {
+                    return Err(InvalidBytesLengthError::new(value.len(), array_size).into());
                 } else if data_type_size > 1 && self.endian.is_none() {
                     return Err(CodecError::Other(format!(
                         "tried to encode an array with element size {data_type_size} with endianness None"

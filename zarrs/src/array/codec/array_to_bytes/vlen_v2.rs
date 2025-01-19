@@ -11,7 +11,10 @@ use std::sync::Arc;
 pub(crate) const IDENTIFIER: &str = "vlen_v2";
 // pub use vlen_v2::IDENTIFIER;
 
-use crate::array::{codec::CodecError, RawBytes};
+use crate::array::{
+    codec::{CodecError, InvalidBytesLengthError},
+    RawBytes,
+};
 
 pub(crate) use vlen_v2_codec::VlenV2Codec;
 
@@ -67,10 +70,7 @@ fn get_interleaved_bytes_and_offsets(
     // Validate the bytes is long enough to contain header and element lengths
     let header_length = size_of::<u32>() * (1 + num_elements);
     if bytes.len() < header_length {
-        return Err(CodecError::UnexpectedChunkDecodedSize(
-            bytes.len(),
-            header_length as u64,
-        ));
+        return Err(InvalidBytesLengthError::new(bytes.len(), header_length).into());
     }
 
     // Validate the number of elements from the header

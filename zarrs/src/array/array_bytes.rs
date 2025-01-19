@@ -10,7 +10,10 @@ use crate::{
     metadata::v3::array::data_type::DataTypeSize,
 };
 
-use super::{codec::CodecError, ravel_indices, ArraySize, DataType, FillValue};
+use super::{
+    codec::{CodecError, InvalidBytesLengthError},
+    ravel_indices, ArraySize, DataType, FillValue,
+};
 
 /// Array element bytes.
 ///
@@ -217,14 +220,11 @@ impl<'a> ArrayBytes<'a> {
 }
 
 /// Validate fixed length array bytes for a given array size.
-fn validate_bytes_flen(bytes: &RawBytes, array_size: u64) -> Result<(), CodecError> {
-    if bytes.len() as u64 == array_size {
+fn validate_bytes_flen(bytes: &RawBytes, array_size: usize) -> Result<(), InvalidBytesLengthError> {
+    if bytes.len() == array_size {
         Ok(())
     } else {
-        Err(CodecError::UnexpectedChunkDecodedSize(
-            bytes.len(),
-            array_size,
-        ))
+        Err(InvalidBytesLengthError::new(bytes.len(), array_size))
     }
 }
 
@@ -259,9 +259,10 @@ fn validate_bytes(
     data_type_size: DataTypeSize,
 ) -> Result<(), CodecError> {
     match (bytes, data_type_size) {
-        (ArrayBytes::Fixed(bytes), DataTypeSize::Fixed(data_type_size)) => {
-            validate_bytes_flen(bytes, num_elements * data_type_size as u64)
-        }
+        (ArrayBytes::Fixed(bytes), DataTypeSize::Fixed(data_type_size)) => Ok(validate_bytes_flen(
+            bytes,
+            usize::try_from(num_elements * data_type_size as u64).unwrap(),
+        )?),
         (ArrayBytes::Variable(bytes, offsets), DataTypeSize::Variable) => {
             validate_bytes_vlen(bytes, offsets, num_elements)
         }
