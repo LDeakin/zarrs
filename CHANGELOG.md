@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
-- Add `ArrayBytesFixedDisjointView`
+- Add `ArrayBytesFixedDisjointView[CreateError]`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
