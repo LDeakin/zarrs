@@ -12,7 +12,7 @@ use crate::array::{
         CodecOptions,
     },
     concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
-    ravel_indices, ArrayBytes, ArrayBytesFixedNonOverlappingView, ArraySize, ChunkRepresentation,
+    ravel_indices, ArrayBytes, ArrayBytesFixedDisjointView, ArraySize, ChunkRepresentation,
     ChunkShape, DataType, DataTypeSize, RawBytes,
 };
 
@@ -306,7 +306,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         };
                         let decoded_bytes = decoded_bytes.into_fixed()?;
                         let mut output_view = unsafe {
-                            ArrayBytesFixedNonOverlappingView::new_unchecked(
+                            ArrayBytesFixedDisjointView::new_unchecked(
                                 out_array_subset_slice,
                                 data_type_size,
                                 array_subset.shape(),
@@ -601,7 +601,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     ArraySubset,
                                 ) = subset_and_decoded_chunk?;
                                 let mut output_view = unsafe {
-                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new_unchecked(
                                         shard_slice,
                                         data_type_size,
                                         array_subset.shape(),
@@ -644,7 +644,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     .as_ne_bytes()
                                     .repeat(chunk_subset_overlap.num_elements_usize());
                                 let mut output_view = unsafe {
-                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new_unchecked(
                                         shard_slice,
                                         data_type_size,
                                         array_subset.shape(),

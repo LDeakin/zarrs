@@ -15,9 +15,8 @@ use crate::{
             RecommendedConcurrency,
         },
         concurrency::calc_concurrency_outer_inner,
-        transmute_to_bytes_vec, unravel_index, ArrayBytes, ArrayBytesFixedNonOverlappingView,
-        ArraySize, BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, FillValue,
-        RawBytes,
+        transmute_to_bytes_vec, unravel_index, ArrayBytes, ArrayBytesFixedDisjointView, ArraySize,
+        BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, FillValue, RawBytes,
     },
     array_subset::ArraySubset,
     metadata::v3::MetadataV3,
@@ -291,7 +290,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                         let chunk_subset = self
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                         let mut output_view_inner_chunk = unsafe {
-                            ArrayBytesFixedNonOverlappingView::new_unchecked(
+                            ArrayBytesFixedDisjointView::new_unchecked(
                                 output,
                                 data_type_size,
                                 &shard_shape,
@@ -350,7 +349,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         &self,
         encoded_shard: RawBytes<'_>,
         shard_representation: &ChunkRepresentation,
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         let shard_shape = shard_representation.shape_u64();

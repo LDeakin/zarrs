@@ -9,7 +9,7 @@ use crate::{
         array_bytes::merge_chunks_vlen,
         codec::{CodecError, CodecOptions},
         concurrency::concurrency_chunks_and_codec,
-        Array, ArrayBytes, ArrayBytesFixedNonOverlappingView, ArrayError, ArraySize, DataTypeSize,
+        Array, ArrayBytes, ArrayBytesFixedDisjointView, ArrayError, ArraySize, DataTypeSize,
         ElementOwned,
     },
     array_subset::ArraySubset,
@@ -410,7 +410,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
                                 };
 
                                 let mut output_view = unsafe {
-                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new_unchecked(
                                         output,
                                         data_type_size,
                                         array_subset.shape(),

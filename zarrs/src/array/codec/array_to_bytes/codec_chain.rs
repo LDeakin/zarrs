@@ -12,7 +12,7 @@ use crate::{
             CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayBytes, ArrayBytesFixedNonOverlappingView, BytesRepresentation, ChunkRepresentation,
+        ArrayBytes, ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation,
         ChunkShape, RawBytes,
     },
     metadata::v3::MetadataV3,
@@ -310,7 +310,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         &self,
         mut bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         let array_representations =

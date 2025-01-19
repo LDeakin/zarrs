@@ -20,7 +20,7 @@ use super::{
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,
-    Array, ArrayBytesFixedNonOverlappingView, ArrayCreateError, ArrayError, ArrayMetadata,
+    Array, ArrayBytesFixedDisjointView, ArrayCreateError, ArrayError, ArrayMetadata,
     ArrayMetadataV3, ArraySize, DataTypeSize,
 };
 
@@ -462,7 +462,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
     fn retrieve_chunk_into(
         &self,
         chunk_indices: &[u64],
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         if chunk_indices.len() != self.dimensionality() {
@@ -709,7 +709,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 let chunk_subset = self.chunk_subset(&chunk_indices)?;
                                 let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
                                 let mut output_view = unsafe {
-                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new_unchecked(
                                         output,
                                         data_type_size,
                                         array_subset.shape(),
@@ -823,7 +823,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;

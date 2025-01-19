@@ -15,7 +15,7 @@ use super::{
     codec::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
     ArrayShardedExt, ChunkGrid,
 };
-use super::{ArrayBytes, ArrayBytesFixedNonOverlappingView, ArraySize, DataTypeSize};
+use super::{ArrayBytes, ArrayBytesFixedDisjointView, ArraySize, DataTypeSize};
 use crate::array::codec::StoragePartialDecoder;
 use crate::storage::ReadableStorageTraits;
 use crate::{array::codec::ArrayPartialDecoderTraits, array_subset::ArraySubset};
@@ -613,7 +613,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                                     .remove(0)
                                     .into_owned();
                                 let mut output_view = unsafe {
-                                    ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new_unchecked(
                                         output,
                                         data_type_size,
                                         array_subset.shape(),

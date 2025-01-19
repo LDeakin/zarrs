@@ -18,8 +18,8 @@ use super::{
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,
-    Array, ArrayBytes, ArrayBytesFixedNonOverlappingView, ArrayCreateError, ArrayError,
-    ArrayMetadata, ArrayMetadataV2, ArrayMetadataV3, ArraySize, DataTypeSize,
+    Array, ArrayBytes, ArrayBytesFixedDisjointView, ArrayCreateError, ArrayError, ArrayMetadata,
+    ArrayMetadataV2, ArrayMetadataV3, ArraySize, DataTypeSize,
 };
 
 #[cfg(feature = "ndarray")]
@@ -338,7 +338,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
     async fn async_retrieve_chunk_into(
         &self,
         chunk_indices: &[u64],
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         if chunk_indices.len() != self.dimensionality() {
@@ -638,7 +638,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                         chunk_subset.overlap(array_subset)?;
 
                                     let mut output_view = unsafe {
-                                        ArrayBytesFixedNonOverlappingView::new_unchecked(
+                                        ArrayBytesFixedDisjointView::new_unchecked(
                                             output,
                                             data_type_size,
                                             array_subset.shape(),
@@ -768,7 +768,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         &self,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;

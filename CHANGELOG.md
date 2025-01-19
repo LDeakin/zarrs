@@ -10,14 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
-- Add `ArrayBytesNonOverlappingView`
+- Add `ArrayBytesDisjointView`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
 - **Breaking**: `CodecError` enum changes:
   - Change `CodecError::UnexpectedChunkDecodedSize` to an `InvalidBytesLengthError`
   - Add `CodecError::{InvalidArrayShape,InvalidNumberOfElements,SubsetOutOfBounds}`
-- Change output args to `ArrayBytesNonOverlappingView` and make safe the following:
+- **Breaking**: Change output args to `ArrayBytesDisjointView` and make safe the following:
   - `Array::[async_]retrieve_chunk[_subset]_into`
   - `[Async]ArrayPartialDecoderTraits::partial_decode_into`
   - `ArrayToBytesCodecTraits::decode_into`

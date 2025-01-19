@@ -9,8 +9,10 @@ use crate::array_subset::{
 
 use super::codec::{CodecError, InvalidBytesLengthError, SubsetOutOfBoundsError};
 
-/// A view of the bytes in an array that must not overlap with any other views.
-pub struct ArrayBytesFixedNonOverlappingView<'a> {
+/// A distjoint view of the bytes in an array with a fixed-length data type.
+///
+/// The `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
+pub struct ArrayBytesFixedDisjointView<'a> {
     bytes: UnsafeCellSlice<'a, u8>,
     data_type_size: usize,
     shape: &'a [u64],
@@ -19,21 +21,21 @@ pub struct ArrayBytesFixedNonOverlappingView<'a> {
 }
 
 #[derive(Debug, Error, Display)]
-pub enum ArrayBytesFixedNonOverlappingViewCreateError {
+pub enum ArrayBytesFixedDisjointViewCreateError {
     SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
     InvalidBytesLength(#[from] InvalidBytesLengthError),
 }
 
-impl From<ArrayBytesFixedNonOverlappingViewCreateError> for CodecError {
-    fn from(value: ArrayBytesFixedNonOverlappingViewCreateError) -> Self {
+impl From<ArrayBytesFixedDisjointViewCreateError> for CodecError {
+    fn from(value: ArrayBytesFixedDisjointViewCreateError) -> Self {
         match value {
-            ArrayBytesFixedNonOverlappingViewCreateError::SubsetOutOfBounds(e) => e.into(),
-            ArrayBytesFixedNonOverlappingViewCreateError::InvalidBytesLength(e) => e.into(),
+            ArrayBytesFixedDisjointViewCreateError::SubsetOutOfBounds(e) => e.into(),
+            ArrayBytesFixedDisjointViewCreateError::InvalidBytesLength(e) => e.into(),
         }
     }
 }
 
-impl<'a> ArrayBytesFixedNonOverlappingView<'a> {
+impl<'a> ArrayBytesFixedDisjointView<'a> {
     /// Create a new non-overlapping view of the bytes in an array.
     ///
     /// # Errors
@@ -49,7 +51,7 @@ impl<'a> ArrayBytesFixedNonOverlappingView<'a> {
         data_type_size: usize,
         shape: &'a [u64],
         subset: ArraySubset,
-    ) -> Result<Self, ArrayBytesFixedNonOverlappingViewCreateError> {
+    ) -> Result<Self, ArrayBytesFixedDisjointViewCreateError> {
         let bounding_subset = ArraySubset::new_with_shape(shape.to_vec());
         if !subset.inbounds(&bounding_subset) {
             return Err(SubsetOutOfBoundsError::new(subset, bounding_subset).into());
@@ -112,7 +114,7 @@ impl<'a> ArrayBytesFixedNonOverlappingView<'a> {
     pub unsafe fn subdivide(
         &self,
         subset: ArraySubset,
-    ) -> Result<ArrayBytesFixedNonOverlappingView<'a>, SubsetOutOfBoundsError> {
+    ) -> Result<ArrayBytesFixedDisjointView<'a>, SubsetOutOfBoundsError> {
         if !subset.inbounds(&self.subset) {
             return Err(SubsetOutOfBoundsError::new(subset, self.subset.clone()));
         }
@@ -132,7 +134,7 @@ impl<'a> ArrayBytesFixedNonOverlappingView<'a> {
     pub unsafe fn subdivide_unchecked(
         &self,
         subset: ArraySubset,
-    ) -> ArrayBytesFixedNonOverlappingView<'a> {
+    ) -> ArrayBytesFixedDisjointView<'a> {
         debug_assert!(subset.inbounds(&self.subset));
 
         unsafe { Self::new_unchecked(self.bytes, self.data_type_size, self.shape, subset) }

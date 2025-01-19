@@ -101,7 +101,7 @@ use super::{
     concurrency::RecommendedConcurrency, BytesRepresentation, ChunkRepresentation, ChunkShape,
     DataType,
 };
-use super::{ArrayBytes, ArrayBytesFixedNonOverlappingView, RawBytes};
+use super::{ArrayBytes, ArrayBytesFixedDisjointView, RawBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -365,7 +365,7 @@ pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
     fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         if array_subset.num_elements() != output_view.num_elements() {
@@ -448,7 +448,7 @@ pub trait AsyncArrayPartialDecoderTraits: Any + Send + Sync {
     async fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         if array_subset.num_elements() != output_view.num_elements() {
@@ -706,7 +706,7 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
         &self,
         bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output_view: &mut ArrayBytesFixedNonOverlappingView<'_>,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         if decoded_representation.num_elements() != output_view.num_elements() {

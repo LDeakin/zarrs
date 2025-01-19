@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     codec::{CodecError, InvalidBytesLengthError},
-    ravel_indices, ArrayBytesFixedNonOverlappingView, ArraySize, DataType, FillValue,
+    ravel_indices, ArrayBytesFixedDisjointView, ArraySize, DataType, FillValue,
 };
 
 /// Array element bytes.
@@ -374,7 +374,7 @@ pub fn update_array_bytes<'a>(
         ) => {
             let mut chunk_bytes = chunk_bytes.into_owned();
             let mut output_view = unsafe {
-                ArrayBytesFixedNonOverlappingView::new(
+                ArrayBytesFixedDisjointView::new(
                     UnsafeCellSlice::new(&mut chunk_bytes),
                     data_type_size,
                     output_shape,
@@ -505,7 +505,7 @@ pub(crate) fn extract_decoded_regions_vlen<'a>(
 pub fn copy_fill_value_into(
     data_type: &DataType,
     fill_value: &FillValue,
-    output_view: &mut ArrayBytesFixedNonOverlappingView,
+    output_view: &mut ArrayBytesFixedDisjointView,
 ) -> Result<(), CodecError> {
     let array_size = ArraySize::new(data_type.size(), output_view.num_elements());
     if let ArrayBytes::Fixed(fill_value_bytes) = ArrayBytes::new_fill_value(array_size, fill_value)
@@ -606,7 +606,7 @@ mod tests {
         {
             let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
             let mut output_non_overlapping_0 = unsafe {
-                ArrayBytesFixedNonOverlappingView::new_unchecked(
+                ArrayBytesFixedDisjointView::new_unchecked(
                     bytes_array,
                     size_of::<u8>(),
                     &[4, 4],
@@ -616,7 +616,7 @@ mod tests {
             output_non_overlapping_0.copy_from_slice(&[1u8, 2]).unwrap();
 
             let mut output_non_overlapping_1 = unsafe {
-                ArrayBytesFixedNonOverlappingView::new_unchecked(
+                ArrayBytesFixedDisjointView::new_unchecked(
                     bytes_array,
                     size_of::<u8>(),
                     &[4, 4],
