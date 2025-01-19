@@ -20,9 +20,12 @@ pub struct ArrayBytesFixedDisjointView<'a> {
     bytes_in_subset_len: usize,
 }
 
+/// Errors that can occur when creating a [`ArrayBytesFixedDisjointView`].
 #[derive(Debug, Error, Display)]
 pub enum ArrayBytesFixedDisjointViewCreateError {
+    /// The subset is out-of-bounds of the array shape.
     SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
+    /// The length of the bytes is not the correct length.
     InvalidBytesLength(#[from] InvalidBytesLengthError),
 }
 

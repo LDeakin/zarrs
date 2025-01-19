@@ -51,7 +51,9 @@ pub use self::{
         copy_fill_value_into, update_array_bytes, ArrayBytes, ArrayBytesError, RawBytes,
         RawBytesOffsets,
     },
-    array_bytes_fixed_disjoint_view::ArrayBytesFixedDisjointView,
+    array_bytes_fixed_disjoint_view::{
+        ArrayBytesFixedDisjointView, ArrayBytesFixedDisjointViewCreateError,
+    },
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
     array_representation::{
