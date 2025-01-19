@@ -638,7 +638,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                         chunk_subset.overlap(array_subset)?;
 
                                     let mut output_view = unsafe {
-                                        // TODO: Safety docs or use a disjoint view iterator
+                                        // SAFETY: chunks represent disjoint array subsets
                                         ArrayBytesFixedDisjointView::new_unchecked(
                                             output,
                                             data_type_size,

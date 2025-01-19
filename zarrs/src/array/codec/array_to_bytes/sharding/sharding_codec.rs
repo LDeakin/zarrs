@@ -260,7 +260,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                         let chunk_subset = self
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                         let mut output_view_inner_chunk = unsafe {
-                            // TODO: Safety docs or use a disjoint view iterator
+                            // SAFETY: chunks represent disjoint array subsets
                             ArrayBytesFixedDisjointView::new_unchecked(
                                 output,
                                 data_type_size,
@@ -360,8 +360,10 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                 chunk_subset.shape().to_vec(),
             )
             .unwrap();
-            let mut output_view_inner_chunk =
-                unsafe { output_view.subdivide_unchecked(output_subset_chunk) };
+            let mut output_view_inner_chunk = unsafe {
+                // SAFETY: inner chunks represent disjoint array subsets
+                output_view.subdivide_unchecked(output_subset_chunk)
+            };
 
             // Read the offset/size
             let offset = shard_index[chunk_index * 2];
