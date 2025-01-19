@@ -9,7 +9,7 @@ use crate::array_subset::{
 
 use super::codec::{CodecError, InvalidBytesLengthError, SubsetOutOfBoundsError};
 
-/// A distjoint view of the bytes in an array with a fixed-length data type.
+/// A disjoint view of the bytes in an array with a fixed-length data type.
 ///
 /// The `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
 pub struct ArrayBytesFixedDisjointView<'a> {
