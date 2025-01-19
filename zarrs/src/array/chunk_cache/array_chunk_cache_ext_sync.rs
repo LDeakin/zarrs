@@ -410,6 +410,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
                                 };
 
                                 let mut output_view = unsafe {
+                                    // TODO: Safety docs or use a disjoint view iterator
                                     ArrayBytesFixedDisjointView::new_unchecked(
                                         output,
                                         data_type_size,

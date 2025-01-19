@@ -306,6 +306,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         };
                         let decoded_bytes = decoded_bytes.into_fixed()?;
                         let mut output_view = unsafe {
+                            // TODO: Safety docs or use a disjoint view iterator
                             ArrayBytesFixedDisjointView::new_unchecked(
                                 out_array_subset_slice,
                                 data_type_size,
@@ -601,6 +602,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     ArraySubset,
                                 ) = subset_and_decoded_chunk?;
                                 let mut output_view = unsafe {
+                                    // TODO: Safety docs or use a disjoint view iterator
                                     ArrayBytesFixedDisjointView::new_unchecked(
                                         shard_slice,
                                         data_type_size,
@@ -639,6 +641,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                 let chunk_subset_overlap =
                                     unsafe { array_subset.overlap_unchecked(chunk_subset) };
                                 let mut output_view = unsafe {
+                                    // TODO: Safety docs or use a disjoint view iterator
                                     ArrayBytesFixedDisjointView::new_unchecked(
                                         shard_slice,
                                         data_type_size,

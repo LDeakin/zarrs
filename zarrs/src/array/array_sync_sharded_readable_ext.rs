@@ -613,6 +613,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                                     .remove(0)
                                     .into_owned();
                                 let mut output_view = unsafe {
+                                    // TODO: Safety docs or use a disjoint view iterator
                                     ArrayBytesFixedDisjointView::new_unchecked(
                                         output,
                                         data_type_size,

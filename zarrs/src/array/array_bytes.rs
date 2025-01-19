@@ -374,6 +374,7 @@ pub fn update_array_bytes<'a>(
         ) => {
             let mut chunk_bytes = chunk_bytes.into_owned();
             let mut output_view = unsafe {
+                // SAFETY: Only one view is created, so it is disjoint
                 ArrayBytesFixedDisjointView::new(
                     UnsafeCellSlice::new(&mut chunk_bytes),
                     data_type_size,
@@ -606,6 +607,7 @@ mod tests {
         {
             let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
             let mut output_non_overlapping_0 = unsafe {
+                // SAFETY: Only one view is created, so it is disjoint
                 ArrayBytesFixedDisjointView::new_unchecked(
                     bytes_array,
                     size_of::<u8>(),
@@ -616,6 +618,7 @@ mod tests {
             output_non_overlapping_0.copy_from_slice(&[1u8, 2]).unwrap();
 
             let mut output_non_overlapping_1 = unsafe {
+                // SAFETY: Only one view is created, so it is disjoint
                 ArrayBytesFixedDisjointView::new_unchecked(
                     bytes_array,
                     size_of::<u8>(),

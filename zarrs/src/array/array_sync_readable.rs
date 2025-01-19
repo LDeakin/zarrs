@@ -709,6 +709,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 let chunk_subset = self.chunk_subset(&chunk_indices)?;
                                 let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
                                 let mut output_view = unsafe {
+                                    // TODO: Safety docs or use a disjoint view iterator
                                     ArrayBytesFixedDisjointView::new_unchecked(
                                         output,
                                         data_type_size,

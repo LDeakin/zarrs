@@ -290,6 +290,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                         let chunk_subset = self
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                         let mut output_view_inner_chunk = unsafe {
+                            // TODO: Safety docs or use a disjoint view iterator
                             ArrayBytesFixedDisjointView::new_unchecked(
                                 output,
                                 data_type_size,
