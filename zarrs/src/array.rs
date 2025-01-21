@@ -23,6 +23,7 @@
 
 mod array_builder;
 mod array_bytes;
+mod array_bytes_fixed_disjoint_view;
 mod array_errors;
 mod array_metadata_options;
 mod array_representation;
@@ -49,6 +50,9 @@ pub use self::{
     array_bytes::{
         copy_fill_value_into, update_array_bytes, ArrayBytes, ArrayBytesError, RawBytes,
         RawBytesOffsets,
+    },
+    array_bytes_fixed_disjoint_view::{
+        ArrayBytesFixedDisjointView, ArrayBytesFixedDisjointViewCreateError,
     },
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
