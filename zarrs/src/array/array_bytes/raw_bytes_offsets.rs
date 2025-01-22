@@ -71,10 +71,38 @@ impl<'a> TryFrom<&'a [usize]> for RawBytesOffsets<'a> {
     }
 }
 
+impl<'a, const N: usize> TryFrom<&'a [usize; N]> for RawBytesOffsets<'a> {
+    type Error = RawBytesOffsetsCreateError;
+
+    fn try_from(value: &'a [usize; N]) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
 impl TryFrom<Vec<usize>> for RawBytesOffsets<'_> {
     type Error = RawBytesOffsetsCreateError;
 
     fn try_from(value: Vec<usize>) -> Result<Self, Self::Error> {
         Self::new(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn raw_bytes_offsets() {
+        let offsets = RawBytesOffsets::new(vec![0, 1, 2, 3]).unwrap();
+        assert_eq!(&*offsets, &[0, 1, 2, 3]);
+        assert!(RawBytesOffsets::new(vec![0, 1, 1]).is_ok());
+        assert!(RawBytesOffsets::new(vec![0, 1, 0]).is_err());
+        assert!(RawBytesOffsets::try_from(vec![0, 1, 2]).is_ok());
+        assert!(RawBytesOffsets::try_from(vec![0, 1, 0]).is_err());
+        assert!(RawBytesOffsets::try_from([0, 1, 2].as_slice()).is_ok());
+        assert!(RawBytesOffsets::try_from([0, 1, 0].as_slice()).is_err());
+        assert!(RawBytesOffsets::try_from(&[0, 1, 2]).is_ok());
+        assert!(RawBytesOffsets::try_from(&[0, 1, 0]).is_err());
+        assert!(RawBytesOffsets::try_from(Cow::Owned(vec![0, 1, 0])).is_err());
     }
 }
