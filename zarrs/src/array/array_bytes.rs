@@ -662,6 +662,16 @@ mod tests {
     }
 
     #[test]
+    fn array_bytes_vlen() {
+        let data = [0u8, 1, 2, 3, 4];
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 5].try_into().unwrap()).is_ok());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 5, 5].try_into().unwrap()).is_ok());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 5, 6].try_into().unwrap()).is_err());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 1, 3, 5].try_into().unwrap()).is_ok());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 1, 3, 6].try_into().unwrap()).is_err());
+    }
+
+    #[test]
     fn array_bytes_str() -> Result<(), Box<dyn Error>> {
         let data = ["a", "bb", "ccc"];
         let bytes = Element::into_array_bytes(&DataType::String, &data)?;
