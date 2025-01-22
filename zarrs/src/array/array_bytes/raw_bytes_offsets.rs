@@ -22,8 +22,8 @@ impl Deref for RawBytesOffsets<'_> {
 /// This error occurs when the offsets are not monotonically increasing.
 #[derive(Debug, Error, Display)]
 pub enum RawBytesOffsetsCreateError {
-    /// The length must be greater than zero.
-    #[display("length must be greater than zero")]
+    /// The offsets length must be greater than zero.
+    #[display("offsets length must be greater than zero")]
     ZeroLength,
     /// The offsets are not monotonically increasing.
     #[display("offsets are not monotonically increasing")]
