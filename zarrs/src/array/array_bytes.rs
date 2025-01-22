@@ -76,18 +76,13 @@ impl<'a> ArrayBytes<'a> {
         offsets: RawBytesOffsets<'a>,
     ) -> Result<Self, RawBytesOffsetsOutOfBoundsError> {
         let bytes = bytes.into();
-        match offsets.last() {
-            Some(&last) => {
-                if last <= bytes.len() {
-                    Ok(Self::Variable(bytes, offsets))
-                } else {
-                    Err(RawBytesOffsetsOutOfBoundsError {
-                        offset: last,
-                        len: bytes.len(),
-                    })
-                }
-            }
-            None => Err(RawBytesOffsetsOutOfBoundsError { offset: 0, len: 0 }),
+        if offsets.last() <= bytes.len() {
+            Ok(Self::Variable(bytes, offsets))
+        } else {
+            Err(RawBytesOffsetsOutOfBoundsError {
+                offset: offsets.last(),
+                len: bytes.len(),
+            })
         }
     }
 
@@ -100,7 +95,7 @@ impl<'a> ArrayBytes<'a> {
         offsets: RawBytesOffsets<'a>,
     ) -> Self {
         let bytes = bytes.into();
-        debug_assert!(offsets.last().is_some_and(|&last| last <= bytes.len()));
+        debug_assert!(offsets.last() <= bytes.len());
         Self::Variable(bytes, offsets)
     }
 
@@ -501,7 +496,7 @@ pub(crate) fn merge_chunks_vlen<'a>(
 
     // Write bytes
     // TODO: Go parallel
-    let mut bytes = vec![0; *offsets.last().unwrap()];
+    let mut bytes = vec![0; offsets.last()];
     for (chunk_bytes, chunk_subset) in chunk_bytes_and_subsets {
         let (chunk_bytes, chunk_offsets) = chunk_bytes.into_variable()?;
         let indices = chunk_subset.linearised_indices(array_shape).unwrap();
@@ -664,6 +659,7 @@ mod tests {
     #[test]
     fn array_bytes_vlen() {
         let data = [0u8, 1, 2, 3, 4];
+        assert!(ArrayBytes::new_vlen(&data, vec![0].try_into().unwrap()).is_ok());
         assert!(ArrayBytes::new_vlen(&data, vec![0, 5].try_into().unwrap()).is_ok());
         assert!(ArrayBytes::new_vlen(&data, vec![0, 5, 5].try_into().unwrap()).is_ok());
         assert!(ArrayBytes::new_vlen(&data, vec![0, 5, 6].try_into().unwrap()).is_err());
