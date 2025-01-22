@@ -18,10 +18,15 @@ impl Deref for RawBytesOffsets<'_> {
 }
 
 /// An error creating [`RawBytesOffsets`].
-///
-/// This error occurs when the offsets are not monotonically increasing.
 #[derive(Debug, Error, Display)]
-pub struct RawBytesOffsetsCreateError;
+pub enum RawBytesOffsetsCreateError {
+    /// The offsets length must be greater than zero.
+    #[display("offsets length must be greater than zero")]
+    ZeroLength,
+    /// The offsets are not monotonically increasing.
+    #[display("offsets are not monotonically increasing")]
+    NotMonotonicallyIncreasing,
+}
 
 impl<'a> RawBytesOffsets<'a> {
     /// Creates a new `RawBytesOffsets`.
@@ -30,10 +35,12 @@ impl<'a> RawBytesOffsets<'a> {
     /// Returns an error if the offsets are not monotonically increasing.
     pub fn new(offsets: impl Into<Cow<'a, [usize]>>) -> Result<Self, RawBytesOffsetsCreateError> {
         let offsets = offsets.into();
-        if offsets.windows(2).all(|w| w[1] >= w[0]) {
+        if offsets.is_empty() {
+            Err(RawBytesOffsetsCreateError::ZeroLength)
+        } else if offsets.windows(2).all(|w| w[1] >= w[0]) {
             Ok(Self(offsets))
         } else {
-            Err(RawBytesOffsetsCreateError)
+            Err(RawBytesOffsetsCreateError::NotMonotonicallyIncreasing)
         }
     }
 
@@ -44,6 +51,7 @@ impl<'a> RawBytesOffsets<'a> {
     #[must_use]
     pub unsafe fn new_unchecked(offsets: impl Into<Cow<'a, [usize]>>) -> Self {
         let offsets = offsets.into();
+        debug_assert!(!offsets.is_empty());
         debug_assert!(offsets.windows(2).all(|w| w[1] >= w[0]));
         Self(offsets)
     }
@@ -52,6 +60,15 @@ impl<'a> RawBytesOffsets<'a> {
     #[must_use]
     pub fn into_owned(self) -> RawBytesOffsets<'static> {
         RawBytesOffsets(self.0.into_owned().into())
+    }
+
+    /// Returns the last offset.
+    #[must_use]
+    pub fn last(&self) -> usize {
+        unsafe {
+            // SAFETY: The offsets cannot be empty.
+            *self.0.last().unwrap_unchecked()
+        }
     }
 }
 
@@ -95,6 +112,9 @@ mod tests {
     fn raw_bytes_offsets() {
         let offsets = RawBytesOffsets::new(vec![0, 1, 2, 3]).unwrap();
         assert_eq!(&*offsets, &[0, 1, 2, 3]);
+        assert!(RawBytesOffsets::new(vec![]).is_err());
+        assert!(RawBytesOffsets::new(vec![0]).is_ok());
+        assert!(RawBytesOffsets::new(vec![10]).is_ok()); // nonsense, but not invalid
         assert!(RawBytesOffsets::new(vec![0, 1, 1]).is_ok());
         assert!(RawBytesOffsets::new(vec![0, 1, 0]).is_err());
         assert!(RawBytesOffsets::try_from(vec![0, 1, 2]).is_ok());

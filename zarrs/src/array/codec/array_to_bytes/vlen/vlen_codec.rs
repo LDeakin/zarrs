@@ -265,7 +265,7 @@ impl ArrayToBytesCodecTraits for VlenCodec {
             }
         }
         .unwrap();
-        let (data, offsets) = super::get_vlen_bytes_and_offsets(
+        let (bytes, offsets) = super::get_vlen_bytes_and_offsets(
             &index_chunk_rep,
             &bytes,
             &self.index_codecs,
@@ -273,8 +273,8 @@ impl ArrayToBytesCodecTraits for VlenCodec {
             options,
         )?;
         let offsets = RawBytesOffsets::new(offsets)?;
-
-        Ok(ArrayBytes::new_vlen(data, offsets))
+        let array_bytes = ArrayBytes::new_vlen(bytes, offsets)?;
+        Ok(array_bytes)
     }
 
     fn partial_decoder(
