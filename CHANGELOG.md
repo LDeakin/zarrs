@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
 - **Breaking**: `CodecError` enum changes:
   - Change `CodecError::UnexpectedChunkDecodedSize` to an `InvalidBytesLengthError`
-  - Add `CodecError::{InvalidArrayShape,InvalidNumberOfElements,SubsetOutOfBounds}`
+  - Add `CodecError::{InvalidArrayShape,InvalidNumberOfElements,SubsetOutOfBounds,RawBytesOffsetsCreate,RawBytesOffsetsOutOfBounds}`
 - **Breaking**: Change output args to `ArrayBytesFixedDisjointView` and make safe the following:
   - `Array::[async_]retrieve_chunk[_subset]_into`
   - `[Async]ArrayPartialDecoderTraits::partial_decode_into`
@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `zarrs::array::copy_fill_value_into`
   - `zarrs::array::update_array_bytes`
 - **Breaking**: change `RawBytesOffsets` into a validated newtype
+- **Breaking**: `ArrayBytes::new_vlen()` not returns a `Result` and validates bytes/offsets compatibility
 
 ## [0.19.1] - 2025-01-19
 

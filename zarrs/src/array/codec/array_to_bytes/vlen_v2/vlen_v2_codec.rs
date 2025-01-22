@@ -112,7 +112,8 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
         let num_elements = decoded_representation.num_elements_usize();
         let (bytes, offsets) = super::get_interleaved_bytes_and_offsets(num_elements, &bytes)?;
         let offsets = RawBytesOffsets::new(offsets)?;
-        Ok(ArrayBytes::new_vlen(bytes, offsets))
+        let array_bytes = ArrayBytes::new_vlen(bytes, offsets)?;
+        Ok(array_bytes)
     }
 
     fn partial_decoder(

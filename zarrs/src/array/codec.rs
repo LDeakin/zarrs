@@ -97,6 +97,7 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
+use super::RawBytesOffsetsOutOfBoundsError;
 use super::{
     array_bytes::RawBytesOffsetsCreateError, concurrency::RecommendedConcurrency, ArrayBytes,
     ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation, ChunkShape, DataType,
@@ -1063,6 +1064,9 @@ pub enum CodecError {
     /// Invalid byte offsets for variable length data.
     #[error(transparent)]
     RawBytesOffsetsCreate(#[from] RawBytesOffsetsCreateError),
+    /// Variable length array bytes offsets are out of bounds.
+    #[error(transparent)]
+    RawBytesOffsetsOutOfBounds(#[from] RawBytesOffsetsOutOfBoundsError),
 }
 
 impl From<&str> for CodecError {

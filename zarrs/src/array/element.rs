@@ -196,7 +196,11 @@ macro_rules! impl_element_string {
                 for element in elements {
                     bytes.extend_from_slice(element.as_bytes());
                 }
-                Ok(ArrayBytes::new_vlen(bytes, offsets))
+                let array_bytes = unsafe {
+                    // SAFETY: The last offset is the length of the bytes.
+                    ArrayBytes::new_vlen_unchecked(bytes, offsets)
+                };
+                Ok(array_bytes)
             }
         }
     };
@@ -252,7 +256,11 @@ macro_rules! impl_element_binary {
                 // Concatenate bytes
                 let bytes = elements.concat();
 
-                Ok(ArrayBytes::new_vlen(bytes, offsets))
+                let array_bytes = unsafe {
+                    // SAFETY: The last offset is the length of the bytes.
+                    ArrayBytes::new_vlen_unchecked(bytes, offsets)
+                };
+                Ok(array_bytes)
             }
         }
     };

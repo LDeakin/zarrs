@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use derive_more::derive::Display;
 use itertools::Itertools;
 use thiserror::Error;
 use unsafe_cell_slice::UnsafeCellSlice;
@@ -38,7 +39,16 @@ pub enum ArrayBytes<'a> {
     /// The bytes and offsets are modeled on the [Apache Arrow Variable-size Binary Layout](https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout).
     /// - The offsets buffer contains length + 1 ~~signed integers (either 32-bit or 64-bit, depending on the data type)~~ usize integers.
     /// - Offsets must be monotonically increasing, that is `offsets[j+1] >= offsets[j]` for `0 <= j < length`, even for null slots. Thus, the bytes represent C-contiguous elements with padding permitted.
+    /// - The final offset must be less than or equal to the length of the bytes buffer.
     Variable(RawBytes<'a>, RawBytesOffsets<'a>),
+}
+
+/// An error raised if variable length array bytes offsets are out of bounds.
+#[derive(Debug, Error, Display)]
+#[display("Offset {offset} is out of bounds for bytes of length {len}")]
+pub struct RawBytesOffsetsOutOfBoundsError {
+    offset: usize,
+    len: usize,
 }
 
 /// Errors related to [`ArrayBytes<'_>`] and [`ArrayBytes`].
@@ -58,8 +68,40 @@ impl<'a> ArrayBytes<'a> {
     }
 
     /// Create a new variable length array bytes from `bytes` and `offsets`.
-    pub fn new_vlen(bytes: impl Into<RawBytes<'a>>, offsets: RawBytesOffsets<'a>) -> Self {
-        Self::Variable(bytes.into(), offsets)
+    ///
+    /// # Errors
+    /// Returns a [`RawBytesOffsetsOutOfBoundsError`] if the last offset is out of bounds of the bytes.
+    pub fn new_vlen(
+        bytes: impl Into<RawBytes<'a>>,
+        offsets: RawBytesOffsets<'a>,
+    ) -> Result<Self, RawBytesOffsetsOutOfBoundsError> {
+        let bytes = bytes.into();
+        match offsets.last() {
+            Some(&last) => {
+                if last <= bytes.len() {
+                    Ok(Self::Variable(bytes, offsets))
+                } else {
+                    Err(RawBytesOffsetsOutOfBoundsError {
+                        offset: last,
+                        len: bytes.len(),
+                    })
+                }
+            }
+            None => Err(RawBytesOffsetsOutOfBoundsError { offset: 0, len: 0 }),
+        }
+    }
+
+    /// Create a new variable length array bytes from `bytes` and `offsets` without checking the offsets.
+    ///
+    /// # Safety
+    /// The last offset must be less than or equal to the length of the bytes.
+    pub unsafe fn new_vlen_unchecked(
+        bytes: impl Into<RawBytes<'a>>,
+        offsets: RawBytesOffsets<'a>,
+    ) -> Self {
+        let bytes = bytes.into();
+        debug_assert!(offsets.last().is_some_and(|&last| last <= bytes.len()));
+        Self::Variable(bytes, offsets)
     }
 
     /// Create a new [`ArrayBytes`] with `num_elements` composed entirely of the `fill_value`.
@@ -78,14 +120,18 @@ impl<'a> ArrayBytes<'a> {
             }
             ArraySize::Variable { num_elements } => {
                 let num_elements = usize::try_from(num_elements).unwrap();
-                Self::new_vlen(fill_value.as_ne_bytes().repeat(num_elements), unsafe {
+                let offsets = unsafe {
                     // SAFETY: The offsets are monotonically increasing.
                     RawBytesOffsets::new_unchecked(
                         (0..=num_elements)
                             .map(|i| i * fill_value.size())
                             .collect::<Vec<_>>(),
                     )
-                })
+                };
+                unsafe {
+                    // SAFETY: The last offset is equal to the length of the bytes
+                    Self::new_vlen_unchecked(fill_value.as_ne_bytes().repeat(num_elements), offsets)
+                }
             }
         }
     }
@@ -135,9 +181,9 @@ impl<'a> ArrayBytes<'a> {
     #[must_use]
     pub fn into_owned<'b>(self) -> ArrayBytes<'b> {
         match self {
-            Self::Fixed(bytes) => ArrayBytes::<'b>::new_flen(bytes.into_owned()),
+            Self::Fixed(bytes) => ArrayBytes::<'b>::Fixed(bytes.into_owned().into()),
             Self::Variable(bytes, offsets) => {
-                ArrayBytes::<'b>::new_vlen(bytes.into_owned(), offsets.into_owned())
+                ArrayBytes::<'b>::Variable(bytes.into_owned().into(), offsets.into_owned())
             }
         }
     }
@@ -206,7 +252,11 @@ impl<'a> ArrayBytes<'a> {
                     // SAFETY: The offsets are monotonically increasing.
                     RawBytesOffsets::new_unchecked(ss_offsets)
                 };
-                Ok(ArrayBytes::new_vlen(ss_bytes, ss_offsets))
+                let array_bytes = unsafe {
+                    // SAFETY: The last offset is equal to the length of the bytes
+                    ArrayBytes::new_vlen_unchecked(ss_bytes, ss_offsets)
+                };
+                Ok(array_bytes)
             }
             ArrayBytes::Fixed(bytes) => {
                 let byte_ranges =
@@ -337,8 +387,11 @@ pub(crate) fn update_bytes_vlen<'a>(
         // SAFETY: The offsets are monotonically increasing.
         RawBytesOffsets::new_unchecked(offsets_new)
     };
-
-    Ok(ArrayBytes::new_vlen(bytes_new, offsets_new))
+    let array_bytes = unsafe {
+        // SAFETY: The last offset is equal to the length of the bytes
+        ArrayBytes::new_vlen_unchecked(bytes_new, offsets_new)
+    };
+    Ok(array_bytes)
 }
 
 /// Update a subset of an array.
@@ -462,7 +515,12 @@ pub(crate) fn merge_chunks_vlen<'a>(
         }
     }
 
-    Ok(ArrayBytes::new_vlen(bytes, offsets))
+    let array_bytes = unsafe {
+        // SAFETY: The last offset is equal to the length of the bytes
+        ArrayBytes::new_vlen_unchecked(bytes, offsets)
+    };
+
+    Ok(array_bytes)
 }
 
 pub(crate) fn extract_decoded_regions_vlen<'a>(
@@ -496,7 +554,11 @@ pub(crate) fn extract_decoded_regions_vlen<'a>(
             // SAFETY: The offsets are monotonically increasing.
             RawBytesOffsets::new_unchecked(region_offsets)
         };
-        out.push(ArrayBytes::new_vlen(region_bytes, region_offsets));
+        let array_bytes = unsafe {
+            // SAFETY: The last offset is equal to the length of the bytes
+            ArrayBytes::new_vlen_unchecked(region_bytes, region_offsets)
+        };
+        out.push(array_bytes);
     }
     Ok(out)
 }
