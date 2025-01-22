@@ -98,10 +98,10 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use super::{
-    concurrency::RecommendedConcurrency, BytesRepresentation, ChunkRepresentation, ChunkShape,
-    DataType,
+    array_bytes::RawBytesOffsetsCreateError, concurrency::RecommendedConcurrency, ArrayBytes,
+    ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation, ChunkShape, DataType,
+    RawBytes,
 };
-use super::{ArrayBytes, ArrayBytesFixedDisjointView, RawBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -1060,6 +1060,9 @@ pub enum CodecError {
     /// Subset out of bounds.
     #[error(transparent)]
     SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
+    /// Invalid byte offsets for variable length data.
+    #[error(transparent)]
+    RawBytesOffsetsCreate(#[from] RawBytesOffsetsCreateError),
 }
 
 impl From<&str> for CodecError {

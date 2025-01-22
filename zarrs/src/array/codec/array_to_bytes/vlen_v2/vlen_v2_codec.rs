@@ -11,6 +11,7 @@ use crate::{
             RecommendedConcurrency,
         },
         ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
+        RawBytesOffsets,
     },
     config::global_config,
     metadata::v3::MetadataV3,
@@ -110,6 +111,7 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
     ) -> Result<ArrayBytes<'a>, CodecError> {
         let num_elements = decoded_representation.num_elements_usize();
         let (bytes, offsets) = super::get_interleaved_bytes_and_offsets(num_elements, &bytes)?;
+        let offsets = RawBytesOffsets::new(offsets)?;
         Ok(ArrayBytes::new_vlen(bytes, offsets))
     }
 

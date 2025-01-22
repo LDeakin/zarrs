@@ -3,7 +3,9 @@ use std::mem::ManuallyDrop;
 use itertools::Itertools;
 use ArrayError::IncompatibleElementType as IET;
 
-use super::{convert_from_bytes_slice, transmute_to_bytes, ArrayBytes, ArrayError, DataType};
+use super::{
+    convert_from_bytes_slice, transmute_to_bytes, ArrayBytes, ArrayError, DataType, RawBytesOffsets,
+};
 
 /// A trait representing an array element type.
 pub trait Element: Sized + Clone {
@@ -184,6 +186,10 @@ macro_rules! impl_element_string {
                     len = len.checked_add(element.len()).unwrap();
                 }
                 offsets.push(len);
+                let offsets = unsafe {
+                    // SAFETY: The offsets are monotonically increasing.
+                    RawBytesOffsets::new_unchecked(offsets)
+                };
 
                 // Concatenate bytes
                 let mut bytes = Vec::with_capacity(usize::try_from(len).unwrap());
@@ -238,6 +244,10 @@ macro_rules! impl_element_binary {
                     len = len.checked_add(element.len()).unwrap();
                 }
                 offsets.push(len);
+                let offsets = unsafe {
+                    // SAFETY: The offsets are monotonically increasing.
+                    RawBytesOffsets::new_unchecked(offsets)
+                };
 
                 // Concatenate bytes
                 let bytes = elements.concat();

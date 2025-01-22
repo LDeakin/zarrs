@@ -9,7 +9,7 @@ use crate::{
             CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         transmute_to_bytes_vec, ArrayBytes, BytesRepresentation, ChunkRepresentation, CodecChain,
-        DataType, DataTypeSize, Endianness, FillValue, RawBytes,
+        DataType, DataTypeSize, Endianness, FillValue, RawBytes, RawBytesOffsets,
     },
     config::global_config,
     metadata::v3::{array::codec::vlen::VlenIndexDataType, MetadataV3},
@@ -265,14 +265,16 @@ impl ArrayToBytesCodecTraits for VlenCodec {
             }
         }
         .unwrap();
-        let (data, index) = super::get_vlen_bytes_and_offsets(
+        let (data, offsets) = super::get_vlen_bytes_and_offsets(
             &index_chunk_rep,
             &bytes,
             &self.index_codecs,
             &self.data_codecs,
             options,
         )?;
-        Ok(ArrayBytes::new_vlen(data, index))
+        let offsets = RawBytesOffsets::new(offsets)?;
+
+        Ok(ArrayBytes::new_vlen(data, offsets))
     }
 
     fn partial_decoder(
