@@ -15,6 +15,9 @@ use super::{
     ravel_indices, ArrayBytesFixedDisjointView, ArraySize, DataType, FillValue,
 };
 
+mod raw_bytes_offsets;
+pub use raw_bytes_offsets::{RawBytesOffsets, RawBytesOffsetsCreateError};
+
 /// Array element bytes.
 ///
 /// These can represent:
@@ -22,11 +25,6 @@ use super::{
 /// - [`ArrayBytes::Variable`]: variable length elements of an array in C-contiguous order with padding permitted,
 /// - Encoded array bytes after an array to bytes or bytes to bytes codecs.
 pub type RawBytes<'a> = Cow<'a, [u8]>;
-
-/// Array element byte offsets.
-///
-/// These must be monotonically increasing. See [`ArrayBytes::Variable`].
-pub type RawBytesOffsets<'a> = Cow<'a, [usize]>; // FIXME: Switch to a validated newtype in zarrs 0.20
 
 /// Fixed or variable length array bytes.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -60,14 +58,9 @@ impl<'a> ArrayBytes<'a> {
     }
 
     /// Create a new variable length array bytes from `bytes` and `offsets`.
-    pub fn new_vlen(
-        bytes: impl Into<RawBytes<'a>>,
-        offsets: impl Into<RawBytesOffsets<'a>>, // FIXME: TryInto
-    ) -> Self {
-        Self::Variable(bytes.into(), offsets.into())
+    pub fn new_vlen(bytes: impl Into<RawBytes<'a>>, offsets: RawBytesOffsets<'a>) -> Self {
+        Self::Variable(bytes.into(), offsets)
     }
-
-    // TODO: new_vlen_unchecked
 
     /// Create a new [`ArrayBytes`] with `num_elements` composed entirely of the `fill_value`.
     ///
@@ -85,12 +78,14 @@ impl<'a> ArrayBytes<'a> {
             }
             ArraySize::Variable { num_elements } => {
                 let num_elements = usize::try_from(num_elements).unwrap();
-                Self::new_vlen(
-                    fill_value.as_ne_bytes().repeat(num_elements),
-                    (0..=num_elements)
-                        .map(|i| i * fill_value.size())
-                        .collect::<Vec<_>>(),
-                )
+                Self::new_vlen(fill_value.as_ne_bytes().repeat(num_elements), unsafe {
+                    // SAFETY: The offsets are monotonically increasing.
+                    RawBytesOffsets::new_unchecked(
+                        (0..=num_elements)
+                            .map(|i| i * fill_value.size())
+                            .collect::<Vec<_>>(),
+                    )
+                })
             }
         }
     }
@@ -207,6 +202,10 @@ impl<'a> ArrayBytes<'a> {
                     ss_bytes.extend_from_slice(&bytes[curr..next]);
                 }
                 ss_offsets.push(ss_bytes.len());
+                let ss_offsets = unsafe {
+                    // SAFETY: The offsets are monotonically increasing.
+                    RawBytesOffsets::new_unchecked(ss_offsets)
+                };
                 Ok(ArrayBytes::new_vlen(ss_bytes, ss_offsets))
             }
             ArrayBytes::Fixed(bytes) => {
@@ -334,6 +333,10 @@ pub(crate) fn update_bytes_vlen<'a>(
         }
     }
     offsets_new.push(bytes_new.len());
+    let offsets_new = unsafe {
+        // SAFETY: The offsets are monotonically increasing.
+        RawBytesOffsets::new_unchecked(offsets_new)
+    };
 
     Ok(ArrayBytes::new_vlen(bytes_new, offsets_new))
 }
@@ -438,6 +441,10 @@ pub(crate) fn merge_chunks_vlen<'a>(
         *acc += sz;
         Some(*acc)
     }));
+    let offsets = unsafe {
+        // SAFETY: The offsets are monotonically increasing.
+        RawBytesOffsets::new_unchecked(offsets)
+    };
 
     // Write bytes
     // TODO: Go parallel
@@ -485,6 +492,10 @@ pub(crate) fn extract_decoded_regions_vlen<'a>(
             region_bytes.extend_from_slice(&bytes[curr..next]);
         }
         region_offsets.push(region_bytes.len());
+        let region_offsets = unsafe {
+            // SAFETY: The offsets are monotonically increasing.
+            RawBytesOffsets::new_unchecked(region_offsets)
+        };
         out.push(ArrayBytes::new_vlen(region_bytes, region_offsets));
     }
     Ok(out)

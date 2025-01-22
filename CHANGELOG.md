@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ArrayToBytesCodecTraits::decode_into`
   - `zarrs::array::copy_fill_value_into`
   - `zarrs::array::update_array_bytes`
+- **Breaking**: change `RawBytesOffsets` into a validated newtype
 
 ## [0.19.1] - 2025-01-19
 

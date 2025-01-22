@@ -120,6 +120,10 @@ fn transpose_vlen<'a>(
         bytes_new.extend_from_slice(&bytes[curr..next]);
     }
     offsets_new.push(bytes_new.len());
+    let offsets_new = unsafe {
+        // SAFETY: The offsets are monotonically increasing.
+        RawBytesOffsets::new_unchecked(offsets_new)
+    };
 
     ArrayBytes::new_vlen(bytes_new, offsets_new)
 }
