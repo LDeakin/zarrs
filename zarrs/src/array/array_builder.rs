@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
+    data_type::IncompatibleFillValueError,
     metadata::{v3::AdditionalFields, ChunkKeySeparator},
     node::NodePath,
 };
@@ -11,7 +12,6 @@ use super::{
         array_to_bytes::vlen::VlenCodec, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
         BytesCodec, BytesToBytesCodecTraits,
     },
-    data_type::IncompatibleFillValueError,
     Array, ArrayCreateError, ArrayMetadata, ArrayMetadataV3, ArrayShape, ChunkGrid, CodecChain,
     DataType, DimensionName, FillValue, StorageTransformerChain,
 };

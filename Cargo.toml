@@ -4,6 +4,7 @@ resolver = "2"
 
 members = [
     "zarrs",
+    "zarrs_data_type",
     "zarrs_metadata",
     "zarrs_storage",
     "zarrs_filesystem",
@@ -25,6 +26,10 @@ pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 missing_panics_doc = "warn"
 missing_errors_doc = "warn"
+
+[workspace.dependencies.zarrs_data_type]
+version = "0.1.0"
+path = "zarrs_data_type"
 
 [workspace.dependencies.zarrs_metadata]
 version = "0.3.0"
@@ -62,3 +67,10 @@ version = "0.51.0"
 
 [workspace.dependencies.zip]
 version = "2.1.3"
+
+[workspace.dependencies.half]
+version = "2.0.0"
+features = ["bytemuck"]
+
+[workspace.dependencies.num]
+version = "0.4.1"

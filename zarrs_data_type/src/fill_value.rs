@@ -233,9 +233,20 @@ impl FillValue {
 
 #[cfg(test)]
 mod tests {
-    use crate::array::transmute_to_bytes_vec;
-
     use super::*;
+
+    /// Convert from `&[T]` to `Vec<u8>`.
+    #[must_use]
+    fn convert_to_bytes_vec<T: bytemuck::NoUninit>(from: &[T]) -> Vec<u8> {
+        bytemuck::allocation::pod_collect_to_vec(from)
+    }
+
+    /// Transmute from `Vec<T>` to `Vec<u8>`.
+    #[must_use]
+    fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
+        bytemuck::allocation::try_cast_vec(from)
+            .unwrap_or_else(|(_err, from)| convert_to_bytes_vec(&from))
+    }
 
     #[test]
     fn fill_value() {
