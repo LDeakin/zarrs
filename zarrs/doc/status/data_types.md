@@ -8,24 +8,24 @@
 
 <sup>† Experimental data types are recommended for evaluation only.</sup>
 
-[bool]: crate::array::data_type::DataType::Bool
-[int8]: crate::array::data_type::DataType::Int8
-[int16]: crate::array::data_type::DataType::Int16
-[int32]: crate::array::data_type::DataType::Int32
-[int64]: crate::array::data_type::DataType::Int64
-[uint8]: crate::array::data_type::DataType::UInt8
-[uint16]: crate::array::data_type::DataType::UInt16
-[uint32]: crate::array::data_type::DataType::UInt32
-[uint64]: crate::array::data_type::DataType::UInt64
-[float16]: crate::array::data_type::DataType::Float16
-[float32]: crate::array::data_type::DataType::Float32
-[float64]: crate::array::data_type::DataType::Float64
-[complex64]: crate::array::data_type::DataType::Complex64
-[complex128]: crate::array::data_type::DataType::Complex128
-[bfloat16]: crate::array::data_type::DataType::BFloat16
-[r* (raw bits)]: crate::array::data_type::DataType::RawBits
-[string]: crate::array::data_type::DataType::String
-[bytes]: crate::array::data_type::DataType::Bytes
+[bool]: crate::data_type::DataType::Bool
+[int8]: crate::data_type::DataType::Int8
+[int16]: crate::data_type::DataType::Int16
+[int32]: crate::data_type::DataType::Int32
+[int64]: crate::data_type::DataType::Int64
+[uint8]: crate::data_type::DataType::UInt8
+[uint16]: crate::data_type::DataType::UInt16
+[uint32]: crate::data_type::DataType::UInt32
+[uint64]: crate::data_type::DataType::UInt64
+[float16]: crate::data_type::DataType::Float16
+[float32]: crate::data_type::DataType::Float32
+[float64]: crate::data_type::DataType::Float64
+[complex64]: crate::data_type::DataType::Complex64
+[complex128]: crate::data_type::DataType::Complex128
+[bfloat16]: crate::data_type::DataType::BFloat16
+[r* (raw bits)]: crate::data_type::DataType::RawBits
+[string]: crate::data_type::DataType::String
+[bytes]: crate::data_type::DataType::Bytes
 
 [ZEP0001]: https://zarr.dev/zeps/accepted/ZEP0001.html
 [zarr-specs #130]: https://github.com/zarr-developers/zarr-specs/issues/130

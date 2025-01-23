@@ -73,6 +73,10 @@ pub(crate) fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
         }
         // Variable-sized data types are not supported and are rejected outside of this function
         DataType::String | DataType::Bytes => unreachable!(),
+        _ => {
+            // FIXME: Data type extensions, endianness reversal for custom data types
+            unimplemented!("Reverse endianness for data type {:?}", data_type)
+        }
     }
 }
 

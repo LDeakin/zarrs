@@ -33,10 +33,9 @@ pub mod chunk_grid;
 pub mod chunk_key_encoding;
 pub mod codec;
 pub mod concurrency;
-pub mod data_type;
 mod element;
-mod fill_value;
 pub mod storage_transformer;
+pub use crate::data_type; // re-export for zarrs < 0.20 compat
 
 #[cfg(feature = "sharding")]
 mod array_sharded_ext;
@@ -65,11 +64,11 @@ pub use self::{
     codec::ArrayCodecTraits,
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
-    data_type::DataType,
     element::{Element, ElementFixedLength, ElementOwned},
-    fill_value::FillValue,
     storage_transformer::StorageTransformerChain,
 };
+pub use crate::data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
+
 pub use crate::metadata::v2::ArrayMetadataV2;
 use crate::metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 pub use crate::metadata::v3::{

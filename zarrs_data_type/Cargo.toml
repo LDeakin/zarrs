@@ -1,0 +1,30 @@
+[package]
+name = "zarrs_data_type"
+version = "0.1.0"
+authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
+edition = "2021"
+rust-version = "1.77"
+description = "Zarr data types for the zarrs crate"
+homepage = "https://zarrs.dev"
+documentation = "https://docs.rs/zarrs_data_type"
+repository = "https://github.com/LDeakin/zarrs"
+license = "MIT OR Apache-2.0"
+keywords = ["zarr", "zarrs"]
+categories = ["encoding"]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+half = { workspace = true }
+num = { workspace = true }
+thiserror = "2.0.0"
+derive_more = { version = "1.0.0", features = ["display", "from"] }
+zarrs_metadata = { workspace = true }
+
+[dev-dependencies]
+serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
+bytemuck = { version = "1.14.0", features = ["extern_crate_alloc", "must_cast", "min_const_generics"] }

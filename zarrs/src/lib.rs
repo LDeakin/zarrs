@@ -189,6 +189,7 @@ pub mod node;
 pub mod plugin;
 pub mod version;
 
+pub use zarrs_data_type as data_type;
 pub use zarrs_metadata as metadata;
 pub use zarrs_storage as storage;
 
