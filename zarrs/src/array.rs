@@ -1103,12 +1103,11 @@ mod tests {
         )
     }
 
-    #[ignore] // FIXME: Reported upstream https://github.com/zarr-developers/zarr-python/issues/2675
     #[test]
     fn array_v2_none_f() {
         array_v2_to_v3(
             "tests/data/v2/array_none_F.zarr",
-            "tests/data/v3/array_none_tranpose.zarr",
+            "tests/data/v3/array_none_transpose.zarr",
         )
     }
 
@@ -1123,7 +1122,6 @@ mod tests {
     }
 
     #[cfg(feature = "blosc")]
-    #[ignore] // FIXME: Reported upstream https://github.com/zarr-developers/zarr-python/issues/2675
     #[test]
     #[cfg_attr(miri, ignore)]
     fn array_v2_blosc_f() {

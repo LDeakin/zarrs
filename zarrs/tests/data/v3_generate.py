@@ -1,6 +1,17 @@
-import zarr # 3.0.0
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "zarr==3.0.0",
+#     "numcodecs @ git+https://github.com/zarr-developers/numcodecs.git@8d15c02", # > 0.15.0
+#     "zfpy==1.0.1",
+#     "pcodec==0.3.2",
+# ]
+# ///
+
+import zarr
 import numpy as np
-from numcodecs.zarr3 import BZ2, ZFPY, PCodec # 0.14.2.dev22 with https://github.com/zarr-developers/numcodecs/pull/685
+from numcodecs.zarr3 import BZ2, ZFPY, PCodec
 
 compressor_blosc = zarr.codecs.BloscCodec(cname="zstd", clevel=1, shuffle=zarr.codecs.BloscShuffle.bitshuffle)
 compressor_gzip = zarr.codecs.GzipCodec(level=9)

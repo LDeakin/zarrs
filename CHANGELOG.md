@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `zarrs::array::update_array_bytes`
 - **Breaking**: change `RawBytesOffsets` into a validated newtype
 - **Breaking**: `ArrayBytes::new_vlen()` not returns a `Result` and validates bytes/offsets compatibility
+- Reenable broken compatibility tests since fixed in `zarr-python`/`numcodecs`
 
 ## [0.19.1] - 2025-01-19
 
