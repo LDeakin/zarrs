@@ -1102,6 +1102,7 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "transpose")]
     #[test]
     fn array_v2_none_f() {
         array_v2_to_v3(
