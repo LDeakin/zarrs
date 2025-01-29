@@ -96,6 +96,13 @@ pub fn array_metadata_v2_to_v3(
 
     // Fill value
     let mut fill_value = array_metadata_fill_value_v2_to_v3(&array_metadata_v2.fill_value)
+        .or_else(|| {
+            // Support zarr-python encoded string arrays with a `null` fill value
+            match data_type.name().as_str() {
+                "string" => Some(FillValueMetadataV3::String(String::new())),
+                _ => None,
+            }
+        })
         .ok_or_else(|| {
             // TODO: How best to deal with null fill values? What do other implementations do?
             ArrayMetadataV2ToV3ConversionError::UnsupportedFillValue(

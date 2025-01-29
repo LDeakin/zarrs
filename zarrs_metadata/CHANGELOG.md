@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Interpret a `null` fill value as `""` for Zarr V2 string arrays (for `zarr-python` compatibility)
+
 ## [0.3.0] - 2025-01-10
 
 ### Added
