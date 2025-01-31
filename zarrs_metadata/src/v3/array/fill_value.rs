@@ -355,6 +355,19 @@ impl FillValueMetadataV3 {
             _ => None,
         }
     }
+
+    /// Convert the fill value to a string.
+    #[must_use]
+    pub fn try_as_string(&self) -> Option<String> {
+        match self {
+            Self::String(string) => Some(string.clone()),
+            Self::Bool(bool) => Some(bool.to_string()),
+            Self::Int(int) => Some(int.to_string()),
+            Self::UInt(uint) => Some(uint.to_string()),
+            Self::Float(float) => Some(float.to_string()),
+            _ => None,
+        }
+    }
 }
 
 /// Convert a [`f32`] to a [`FillValueFloat`].

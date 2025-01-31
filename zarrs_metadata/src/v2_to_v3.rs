@@ -124,6 +124,16 @@ pub fn array_metadata_v2_to_v3(
                 ));
             }
         }
+    } else if data_type.name() == "string" {
+        // Map a string fill value to a string
+        if let Some(fill_value_string) = fill_value.try_as_string() {
+            fill_value = FillValueMetadataV3::String(fill_value_string);
+        } else {
+            return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedFillValue(
+                data_type.to_string(),
+                array_metadata_v2.fill_value.clone(),
+            ));
+        }
     }
 
     let mut codecs: Vec<MetadataV3> = vec![];
