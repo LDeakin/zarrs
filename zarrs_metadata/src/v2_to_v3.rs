@@ -124,6 +124,11 @@ pub fn array_metadata_v2_to_v3(
                 ));
             }
         }
+    } else if data_type.name() == "string" {
+        // Add a special case for `zarr-python` string data with a 0 fill value -> empty string
+        if let Some(0) = fill_value.try_as_uint::<u64>() {
+            fill_value = FillValueMetadataV3::String(String::new());
+        }
     }
 
     let mut codecs: Vec<MetadataV3> = vec![];
