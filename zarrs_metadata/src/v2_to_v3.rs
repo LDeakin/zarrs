@@ -11,7 +11,7 @@ use crate::{
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
             DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
         },
-        ArrayMetadataV2, GroupMetadataV2,
+        ArrayMetadataV2, GroupMetadataV2, MetadataV2,
     },
     v3::{
         array::{
@@ -25,6 +25,7 @@ use crate::{
         },
         ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
+    Endianness,
 };
 
 use super::v3::array::data_type::DataTypeMetadataV3;
@@ -59,6 +60,134 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     /// Other.
     #[error("{_0}")]
     Other(String),
+}
+
+/// Convert Zarr V2 codec metadata to the equivalent Zarr V3 codec metadata.
+///
+/// # Errors
+/// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is invalid or is not compatible with Zarr V3 metadata.
+pub fn codec_metadata_v2_to_v3(
+    order: ArrayMetadataV2Order,
+    dimensionality: usize,
+    data_type: &DataTypeMetadataV3,
+    endianness: Option<Endianness>,
+    filters: &Option<Vec<MetadataV2>>,
+    compressor: &Option<MetadataV2>,
+) -> Result<Vec<MetadataV3>, ArrayMetadataV2ToV3ConversionError> {
+    let mut codecs: Vec<MetadataV3> = vec![];
+
+    // Array-to-array codecs
+    if order == ArrayMetadataV2Order::F {
+        let transpose_metadata = MetadataV3::new_with_serializable_configuration(
+            crate::v3::array::codec::transpose::IDENTIFIER,
+            &TransposeCodecConfigurationV1 {
+                order: {
+                    let f_order: Vec<usize> = (0..dimensionality).rev().collect();
+                    unsafe {
+                        // SAFETY: f_order is valid
+                        TransposeOrder::new(&f_order).unwrap_unchecked()
+                    }
+                },
+            },
+        )?;
+        codecs.push(transpose_metadata);
+    }
+
+    // Filters (array to array or array to bytes codecs)
+    let mut has_array_to_bytes = false;
+    if let Some(filters) = filters {
+        for filter in filters {
+            // TODO: Add a V2 registry with V2 to V3 conversion functions
+            match filter.id() {
+                crate::v2::array::codec::vlen_array::IDENTIFIER
+                | crate::v2::array::codec::vlen_bytes::IDENTIFIER
+                | crate::v2::array::codec::vlen_utf8::IDENTIFIER => {
+                    has_array_to_bytes = true;
+                    let vlen_v2_metadata =
+                        MetadataV3::new_with_configuration(filter.id(), serde_json::Map::default());
+                    codecs.push(vlen_v2_metadata);
+                }
+                _ => {
+                    codecs.push(MetadataV3::new_with_configuration(
+                        filter.id(),
+                        filter.configuration().clone(),
+                    ));
+                }
+            }
+        }
+    }
+
+    // Compressor (array to bytes codec)
+    if let Some(compressor) = compressor {
+        #[allow(clippy::single_match)]
+        match compressor.id() {
+            crate::v2::array::codec::zfpy::IDENTIFIER => {
+                has_array_to_bytes = true;
+                let zfpy_v2_metadata = serde_json::from_value::<ZfpyCodecConfigurationNumcodecs>(
+                    serde_json::to_value(compressor.configuration())?,
+                )?;
+                let configuration = codec_zfpy_v2_numcodecs_to_v3(&zfpy_v2_metadata);
+                let zfp_v3_metadata = MetadataV3::new_with_serializable_configuration(
+                    crate::v3::array::codec::zfp::IDENTIFIER,
+                    &configuration,
+                )?;
+                codecs.push(zfp_v3_metadata);
+            }
+            crate::v3::array::codec::pcodec::IDENTIFIER => {
+                // pcodec is v2/v3 compatible
+                has_array_to_bytes = true;
+                codecs.push(MetadataV3::new_with_configuration(
+                    compressor.id(),
+                    compressor.configuration().clone(),
+                ));
+            }
+            _ => {}
+        }
+    }
+
+    if !has_array_to_bytes {
+        let bytes_metadata = MetadataV3::new_with_serializable_configuration(
+            crate::v3::array::codec::bytes::IDENTIFIER,
+            &BytesCodecConfigurationV1 { endian: endianness },
+        )?;
+        codecs.push(bytes_metadata);
+    }
+
+    // Compressor (bytes to bytes codec)
+    if let Some(compressor) = compressor {
+        match compressor.id() {
+            crate::v2::array::codec::zfpy::IDENTIFIER
+            | crate::v3::array::codec::pcodec::IDENTIFIER => {
+                // already handled above
+            }
+            crate::v3::array::codec::blosc::IDENTIFIER => {
+                let blosc = serde_json::from_value::<BloscCodecConfigurationNumcodecs>(
+                    serde_json::to_value(compressor.configuration())?,
+                )?;
+                let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, data_type);
+                codecs.push(MetadataV3::new_with_serializable_configuration(
+                    crate::v3::array::codec::blosc::IDENTIFIER,
+                    &configuration,
+                )?);
+            }
+            crate::v3::array::codec::zstd::IDENTIFIER => {
+                let zstd = serde_json::from_value::<ZstdCodecConfigurationNumCodecs>(
+                    serde_json::to_value(compressor.configuration())?,
+                )?;
+                let configuration = codec_zstd_v2_numcodecs_to_v3(&zstd);
+                codecs.push(MetadataV3::new_with_serializable_configuration(
+                    crate::v3::array::codec::zstd::IDENTIFIER,
+                    &configuration,
+                )?);
+            }
+            _ => codecs.push(MetadataV3::new_with_configuration(
+                compressor.id(),
+                compressor.configuration().clone(),
+            )),
+        };
+    }
+
+    Ok(codecs)
 }
 
 /// Convert Zarr V2 array metadata to V3.
@@ -126,118 +255,14 @@ pub fn array_metadata_v2_to_v3(
         }
     }
 
-    let mut codecs: Vec<MetadataV3> = vec![];
-
-    // Array-to-array codecs
-    if array_metadata_v2.order == ArrayMetadataV2Order::F {
-        let transpose_metadata = MetadataV3::new_with_serializable_configuration(
-            crate::v3::array::codec::transpose::IDENTIFIER,
-            &TransposeCodecConfigurationV1 {
-                order: {
-                    let f_order: Vec<usize> = (0..array_metadata_v2.shape.len()).rev().collect();
-                    unsafe {
-                        // SAFETY: f_order is valid
-                        TransposeOrder::new(&f_order).unwrap_unchecked()
-                    }
-                },
-            },
-        )?;
-        codecs.push(transpose_metadata);
-    }
-
-    // Filters (array to array or array to bytes codecs)
-    let mut has_array_to_bytes = false;
-    if let Some(filters) = &array_metadata_v2.filters {
-        for filter in filters {
-            // TODO: Add a V2 registry with V2 to V3 conversion functions
-            match filter.id() {
-                crate::v2::array::codec::vlen_array::IDENTIFIER
-                | crate::v2::array::codec::vlen_bytes::IDENTIFIER
-                | crate::v2::array::codec::vlen_utf8::IDENTIFIER => {
-                    has_array_to_bytes = true;
-                    let vlen_v2_metadata =
-                        MetadataV3::new_with_configuration(filter.id(), serde_json::Map::default());
-                    codecs.push(vlen_v2_metadata);
-                }
-                _ => {
-                    codecs.push(MetadataV3::new_with_configuration(
-                        filter.id(),
-                        filter.configuration().clone(),
-                    ));
-                }
-            }
-        }
-    }
-
-    // Compressor (array to bytes codec)
-    if let Some(compressor) = &array_metadata_v2.compressor {
-        #[allow(clippy::single_match)]
-        match compressor.id() {
-            crate::v2::array::codec::zfpy::IDENTIFIER => {
-                has_array_to_bytes = true;
-                let zfpy_v2_metadata = serde_json::from_value::<ZfpyCodecConfigurationNumcodecs>(
-                    serde_json::to_value(compressor.configuration())?,
-                )?;
-                let configuration = codec_zfpy_v2_numcodecs_to_v3(&zfpy_v2_metadata);
-                let zfp_v3_metadata = MetadataV3::new_with_serializable_configuration(
-                    crate::v3::array::codec::zfp::IDENTIFIER,
-                    &configuration,
-                )?;
-                codecs.push(zfp_v3_metadata);
-            }
-            crate::v3::array::codec::pcodec::IDENTIFIER => {
-                // pcodec is v2/v3 compatible
-                has_array_to_bytes = true;
-                codecs.push(MetadataV3::new_with_configuration(
-                    compressor.id(),
-                    compressor.configuration().clone(),
-                ));
-            }
-            _ => {}
-        }
-    }
-
-    if !has_array_to_bytes {
-        let bytes_metadata = MetadataV3::new_with_serializable_configuration(
-            crate::v3::array::codec::bytes::IDENTIFIER,
-            &BytesCodecConfigurationV1 { endian: endianness },
-        )?;
-        codecs.push(bytes_metadata);
-    }
-
-    // Compressor (bytes to bytes codec)
-    if let Some(compressor) = &array_metadata_v2.compressor {
-        match compressor.id() {
-            crate::v2::array::codec::zfpy::IDENTIFIER
-            | crate::v3::array::codec::pcodec::IDENTIFIER => {
-                // already handled above
-            }
-            crate::v3::array::codec::blosc::IDENTIFIER => {
-                let blosc = serde_json::from_value::<BloscCodecConfigurationNumcodecs>(
-                    serde_json::to_value(compressor.configuration())?,
-                )?;
-                let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, &data_type);
-                codecs.push(MetadataV3::new_with_serializable_configuration(
-                    crate::v3::array::codec::blosc::IDENTIFIER,
-                    &configuration,
-                )?);
-            }
-            crate::v3::array::codec::zstd::IDENTIFIER => {
-                let zstd = serde_json::from_value::<ZstdCodecConfigurationNumCodecs>(
-                    serde_json::to_value(compressor.configuration())?,
-                )?;
-                let configuration = codec_zstd_v2_numcodecs_to_v3(&zstd);
-                codecs.push(MetadataV3::new_with_serializable_configuration(
-                    crate::v3::array::codec::zstd::IDENTIFIER,
-                    &configuration,
-                )?);
-            }
-            _ => codecs.push(MetadataV3::new_with_configuration(
-                compressor.id(),
-                compressor.configuration().clone(),
-            )),
-        };
-    }
+    let codecs = codec_metadata_v2_to_v3(
+        array_metadata_v2.order,
+        array_metadata_v2.shape.len(),
+        &data_type,
+        endianness,
+        &array_metadata_v2.filters,
+        &array_metadata_v2.compressor,
+    )?;
 
     let chunk_key_encoding = MetadataV3::new_with_serializable_configuration(
         crate::v3::array::chunk_key_encoding::v2::IDENTIFIER,
