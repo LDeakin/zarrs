@@ -55,14 +55,14 @@ macro_rules! vlen_v2_codec {
         #[cfg(feature = "async")]
         use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-        /// The `$identifier` codec implementation.
+        #[doc = concat!("The `", $identifier, "` codec implementation.")]
         #[derive(Debug, Clone)]
         pub struct $struct {
             inner: Arc<VlenV2Codec>,
         }
 
         impl $struct {
-            /// Create a new `$identifier` codec.
+            #[doc = concat!("Create a new `", $identifier, "` codec.")]
             #[must_use]
             pub fn new() -> Self {
                 Self {
