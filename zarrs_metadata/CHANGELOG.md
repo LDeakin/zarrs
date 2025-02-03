@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Derive `Copy` for `ArrayMetadataV2Order`
+- Add `codec_metadata_v2_to_v3`
+
 ### Fixed
 - Interpret a `0` fill value as `""` for Zarr V2 string arrays (for `zarr-python` compatibility) ([#140] by [@zqfang])
 

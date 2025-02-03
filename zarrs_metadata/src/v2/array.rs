@@ -296,7 +296,7 @@ impl Serialize for FillValueMetadataV2 {
 }
 
 /// The layout of bytes within each chunk of the array.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ArrayMetadataV2Order {
     /// Row-major order. The last dimension varies fastest.
     C,
