@@ -88,12 +88,6 @@ impl FillValueFloat {
             }
         }
     }
-    fn is_zero(&self) -> bool {
-        match self {
-            Self::Float(float) => *float == 0.0,
-            _ => false
-            }
-        }
 }
 
 /// A hex string.
@@ -359,29 +353,6 @@ impl FillValueMetadataV3 {
                 }
             }
             _ => None,
-        }
-    }
-
-    /// Convert the fill value to a string.
-    #[must_use]
-    pub fn try_as_string(&self) -> Option<String> {
-        match self {
-            Self::String(string) => Some(string.clone()),
-            Self::Bool(bool) => Some(bool.to_string()),
-            Self::Int(int) => Some(int.to_string()),
-            Self::UInt(uint) => Some(uint.to_string()),
-            Self::Float(float) => Some(float.to_string()),
-            _ => None,
-        }
-    }
-    /// evaluate whether the fill value is 0 or not
-    pub fn is_zero(&self) -> bool {
-        match self {
-            Self::Int(int) => *int == 0,
-            Self::UInt(uint) => *uint == 0,
-            Self::Float(float) => float.is_zero(),
-            Self::Bool(bool) => *bool,
-            _ => false,
         }
     }
 }
