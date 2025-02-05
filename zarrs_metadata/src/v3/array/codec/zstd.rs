@@ -1,5 +1,6 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// The identifier for the `zstd` codec.
 pub const IDENTIFIER: &str = "zstd";
@@ -40,12 +41,27 @@ pub struct ZstdCompressionLevel(i32);
 
 impl<'de> serde::Deserialize<'de> for ZstdCompressionLevel {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let number = serde_json::Number::deserialize(d)?;
-        if let Some(number) = number.as_i64() {
-            if (-131_072..=22).contains(&number) {
-                #[allow(clippy::cast_possible_truncation)]
-                return Ok(Self(number as i32));
+        let value = Value::deserialize(d)?;
+        match value {
+            Value::Number(number) => {
+                if let Some(number) = number.as_i64() {
+                    if (-131_072..=22).contains(&number) {
+                        #[allow(clippy::cast_possible_truncation)]
+                        return Ok(Self(number as i32));
+                    }
+                }
             }
+            Value::String(string) => {
+                // COMPATIBILITY: support data created with zarr-python that uses a string for the level
+                // https://github.com/zarr-developers/zarr-python/blob/a52048ddb2d5d069c3404e7457439a9ecb5e40c3/tests/test_v2.py#L278-L280
+                if let Ok(number) = string.parse::<i64>() {
+                    if (-131_072..=22).contains(&number) {
+                        #[allow(clippy::cast_possible_truncation)]
+                        return Ok(Self(number as i32));
+                    }
+                }
+            }
+            _ => {}
         }
         Err(serde::de::Error::custom(
             "Zstd compression level must be an integer between -131072 and 22",

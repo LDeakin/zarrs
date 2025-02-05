@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Permit string compression levels in `zstd` codec metadata (for `zarr-python` compatibility)
 - Use `bytes` codec with native endianness if unset for a Zarr V2 array
 
 ## [0.3.2] - 2025-02-04
