@@ -66,6 +66,7 @@ pub enum ArrayMetadataV2ToV3ConversionError {
 ///
 /// # Errors
 /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is invalid or is not compatible with Zarr V3 metadata.
+#[allow(clippy::too_many_lines)]
 pub fn codec_metadata_v2_to_v3(
     order: ArrayMetadataV2Order,
     dimensionality: usize,
@@ -148,7 +149,9 @@ pub fn codec_metadata_v2_to_v3(
     if !has_array_to_bytes {
         let bytes_metadata = MetadataV3::new_with_serializable_configuration(
             crate::v3::array::codec::bytes::IDENTIFIER,
-            &BytesCodecConfigurationV1 { endian: endianness },
+            &BytesCodecConfigurationV1 {
+                endian: Some(endianness.unwrap_or(Endianness::native())),
+            },
         )?;
         codecs.push(bytes_metadata);
     }

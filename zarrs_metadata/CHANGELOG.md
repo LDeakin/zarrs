@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Use `bytes` codec with native endianness if unset for a Zarr V2 array
+
 ## [0.3.2] - 2025-02-04
 
 ### Added
