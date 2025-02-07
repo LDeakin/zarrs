@@ -257,9 +257,10 @@ pub fn array_metadata_v2_to_v3(
             }
         }
     } else if data_type.name() == "string" {
-        // Add a special case for `zarr-python` string data with a 0 fill value -> empty string
+        // Add a special case for string data with a 0 fill value -> "0"
+        // This was the default in zarr-python 2.x.x.
         if let Some(0) = fill_value.try_as_uint::<u64>() {
-            fill_value = FillValueMetadataV3::String(String::new());
+            fill_value = FillValueMetadataV3::String("0".to_string());
         }
     }
 
