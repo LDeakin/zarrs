@@ -6,10 +6,10 @@ edition = "2021"
 rust-version = "1.77"
 description = "A synchronous http store for the zarrs crate"
 homepage = "https://zarrs.dev"
-documentation = "https://docs.rs/zarrs_storage"
+documentation = "https://docs.rs/zarrs_http"
 repository = "https://github.com/LDeakin/zarrs"
 license = "MIT OR Apache-2.0"
-keywords = ["zarr", "zarrs", "storage", "store"]
+keywords = ["zarr", "zarrs", "http"]
 categories = ["encoding"]
 
 [lints]
