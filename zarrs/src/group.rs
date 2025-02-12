@@ -754,8 +754,8 @@ mod tests {
     }
 
     #[test]
-    fn group_metadata_invalid_additional_field() {
-        let group_metadata = serde_json::from_str::<GroupMetadata>(
+    fn group_metadata_unknown_additional_field() {
+        let group_metadata = serde_json::from_str::<GroupMetadataV3>(
             r#"{
                 "zarr_format": 3,
                 "node_type": "group",
@@ -763,10 +763,16 @@ mod tests {
                   "spam": "ham",
                   "eggs": 42
                 },
-                "unknown": "fail"
+                "unknown": "unsupported"
             }"#,
-        );
-        assert!(group_metadata.is_err());
+        )
+        .unwrap();
+        assert!(group_metadata.additional_fields.len() == 1);
+        assert!(group_metadata
+            .additional_fields
+            .get("unknown")
+            .unwrap()
+            .must_understand());
     }
 
     #[test]

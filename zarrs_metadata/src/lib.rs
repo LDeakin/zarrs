@@ -75,7 +75,7 @@ pub enum NodeMetadata {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use v3::{AdditionalFields, MetadataV3};
+    use v3::{AdditionalField, AdditionalFields, MetadataV3};
 
     #[test]
     fn metadata() {
@@ -111,14 +111,27 @@ mod tests {
     }
 
     #[test]
-    fn additional_fields_auto() {
-        let mut additional_fields = AdditionalFields::new();
+    fn additional_fields_constructors() {
         let additional_field = serde_json::Map::new();
-        additional_fields.insert("key".to_string(), additional_field.into());
-        assert!(!additional_fields.contains_key("must_understand"));
-        assert!(serde_json::to_string(&additional_fields)
-            .unwrap()
-            .contains(r#""must_understand":false"#));
+        let additional_field: AdditionalField = additional_field.into();
+        assert!(additional_field.must_understand());
+        assert!(
+            additional_field.as_value() == &serde_json::Value::Object(serde_json::Map::default())
+        );
+        assert!(serde_json::to_string(&additional_field).unwrap() == r#"{"must_understand":true}"#);
+
+        let additional_field: AdditionalField = AdditionalField::new("test", true);
+        assert!(additional_field.must_understand());
+        assert!(additional_field.as_value() == &serde_json::Value::String("test".to_string()));
+        assert!(serde_json::to_string(&additional_field).unwrap() == r#""test""#);
+
+        let additional_field: AdditionalField = AdditionalField::new(123, false);
+        assert!(!additional_field.must_understand());
+        assert!(
+            additional_field.as_value()
+                == &serde_json::Value::Number(serde_json::Number::from(123))
+        );
+        assert!(serde_json::to_string(&additional_field).unwrap() == "123");
     }
 
     #[test]
@@ -127,20 +140,23 @@ mod tests {
             "unknown_field": {
                 "key": "value",
                 "must_understand": false
-            }
-        }"#;
-        let additional_fields = serde_json::from_str::<AdditionalFields>(json);
-        assert!(additional_fields.is_ok());
-    }
-
-    #[test]
-    fn additional_fields_invalid() {
-        let json = r#"{
-            "unknown_field": {
+            },
+            "unsupported_field_1": {
+                "key": "value",
+                "must_understand": true
+            },
+            "unsupported_field_2": {
                 "key": "value"
-            }
+            },
+            "unsupported_field_3": [],
+            "unsupported_field_4": "test"
         }"#;
-        let additional_fields = serde_json::from_str::<AdditionalFields>(json);
-        assert!(additional_fields.is_err());
+        let additional_fields = serde_json::from_str::<AdditionalFields>(json).unwrap();
+        assert!(additional_fields.len() == 5);
+        assert!(!additional_fields["unknown_field"].must_understand());
+        assert!(additional_fields["unsupported_field_1"].must_understand());
+        assert!(additional_fields["unsupported_field_2"].must_understand());
+        assert!(additional_fields["unsupported_field_3"].must_understand());
+        assert!(additional_fields["unsupported_field_4"].must_understand());
     }
 }
