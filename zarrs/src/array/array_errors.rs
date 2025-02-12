@@ -20,7 +20,6 @@ pub enum ArrayCreateError {
     #[error(transparent)]
     NodePathError(#[from] NodePathError),
     /// Unsupported additional field.
-    // FIXME: Remove in 0.4.0
     #[error(transparent)]
     UnsupportedAdditionalFieldError(#[from] UnsupportedAdditionalFieldError),
     /// Unsupported data type.

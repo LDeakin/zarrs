@@ -213,7 +213,7 @@ impl ConfigurationInvalidError {
     }
 }
 
-// FIXME: Remove in 0.4.0
+// FIXME: Move to `zarrs` itself in 0.4.0
 /// An unsupported additional field error.
 ///
 /// An unsupported field in array or group metadata is an unrecognised field without `"must_understand": false`.
