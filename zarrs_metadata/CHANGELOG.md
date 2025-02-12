@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2025-02-13
+
 ### Added
 - Add `UnsupportedAdditionalFieldError::new`
 
@@ -84,7 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.3...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.4...HEAD
+[0.3.4]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.4
 [0.3.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.3
 [0.3.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.2
 [0.3.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.1
