@@ -82,8 +82,12 @@ mod tests {
         attributes.insert("key".to_string(), "value".into());
         builder.attributes(attributes.clone());
 
+        let mut additional_field = serde_json::Map::new();
+        additional_field.insert("must_understand".to_string(), false.into());
+        // let additional_field =
+        //     zarrs_metadata::v3::AdditionalField::new(serde_json::Map::new(), false);
+
         let mut additional_fields = AdditionalFields::new();
-        let additional_field = serde_json::Map::new();
         additional_fields.insert("key".to_string(), additional_field.into());
         builder.additional_fields(additional_fields.clone());
 
