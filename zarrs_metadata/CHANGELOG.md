@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `UnsupportedAdditionalFieldError::new`
+
 ### Fixed
 - Make `AdditionalField` public and permit any JSON type (not just objects)
 

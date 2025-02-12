@@ -225,6 +225,12 @@ pub struct UnsupportedAdditionalFieldError {
 }
 
 impl UnsupportedAdditionalFieldError {
+    /// Create a new [`UnsupportedAdditionalFieldError`].
+    #[must_use]
+    pub fn new(name: String, value: Value) -> UnsupportedAdditionalFieldError {
+        Self { name, value }
+    }
+
     /// Return the name of the unsupported additional field.
     #[must_use]
     pub fn name(&self) -> &str {
