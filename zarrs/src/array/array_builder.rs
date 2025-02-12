@@ -232,8 +232,7 @@ impl ArrayBuilder {
     /// Set additional fields not defined in the Zarr specification.
     /// Use this cautiously. In general, store user defined attributes using [`ArrayBuilder::attributes`].
     ///
-    /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
-    /// `zarrs` will error when opening an array with additional fields without this annotation.
+    /// `zarrs` and other implementations are expected to error when opening an array with unsupported additional fields, unless they are a JSON object containing `"must_understand": false`.
     pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         self.additional_fields = additional_fields;
         self

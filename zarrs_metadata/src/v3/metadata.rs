@@ -1,5 +1,6 @@
 use derive_more::From;
 use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize};
+use serde_json::Value;
 use thiserror::Error;
 
 /// Metadata with a name and optional configuration.
@@ -33,7 +34,7 @@ pub struct MetadataV3 {
 }
 
 /// Configuration metadata.
-pub type MetadataConfiguration = serde_json::Map<String, serde_json::Value>;
+pub type MetadataConfiguration = serde_json::Map<String, Value>;
 
 impl TryFrom<&str> for MetadataV3 {
     type Error = serde_json::Error;
@@ -138,7 +139,7 @@ impl MetadataV3 {
         configuration: &TConfiguration,
     ) -> Result<Self, serde_json::Error> {
         let configuration = serde_json::to_value(configuration)?;
-        if let serde_json::Value::Object(configuration) = configuration {
+        if let Value::Object(configuration) = configuration {
             Ok(Self::new_with_configuration(name, configuration))
         } else {
             Err(serde::ser::Error::custom(
@@ -212,6 +213,7 @@ impl ConfigurationInvalidError {
     }
 }
 
+// FIXME: Remove in 0.4.0
 /// An unsupported additional field error.
 ///
 /// An unsupported field in array or group metadata is an unrecognised field without `"must_understand": false`.
@@ -219,7 +221,7 @@ impl ConfigurationInvalidError {
 #[error("unsupported additional field {name} with value {value}")]
 pub struct UnsupportedAdditionalFieldError {
     name: String,
-    value: serde_json::Value,
+    value: Value,
 }
 
 impl UnsupportedAdditionalFieldError {
@@ -231,54 +233,110 @@ impl UnsupportedAdditionalFieldError {
 
     /// Return the value of the unsupported additional field.
     #[must_use]
-    pub const fn value(&self) -> &serde_json::Value {
+    pub const fn value(&self) -> &Value {
         &self.value
     }
 }
 
 /// An additional field in array or group metadata.
 ///
-/// Must be an object with a `"must_understand": false` field.
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Default, From)]
+/// A field that is not recognised / supported by `zarrs` will be considered an additional field.
+/// Additional fields can be any JSON type.
+/// An array / group cannot be created with an additional field, unless the additional field is an object with a `"must_understand": false` field.
+///
+/// ### Example additional field JSON
+/// ```json
+//  "unknown_field": {
+//      "key": "value",
+//      "must_understand": false
+//  },
+//  "unsupported_field_1": {
+//      "key": "value",
+//      "must_understand": true
+//  },
+//  "unsupported_field_2": {
+//      "key": "value"
+//  },
+//  "unsupported_field_3": [],
+//  "unsupported_field_4": "test"
+/// ```
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct AdditionalField {
-    must_understand: monostate::MustBe!(false),
-    #[serde(flatten)]
-    fields: serde_json::Map<String, serde_json::Value>,
+    field: Value,
+    must_understand: bool,
 }
 
 impl AdditionalField {
-    /// Return the underlying map.
+    /// Create a new additional field.
     #[must_use]
-    pub const fn as_map(&self) -> &serde_json::Map<String, serde_json::Value> {
-        &self.fields
-    }
-}
-
-impl From<AdditionalField> for serde_json::Map<String, serde_json::Value> {
-    fn from(value: AdditionalField) -> Self {
-        value.fields
-    }
-}
-
-impl From<serde_json::Map<String, serde_json::Value>> for AdditionalField {
-    fn from(value: serde_json::Map<String, serde_json::Value>) -> Self {
+    pub fn new(field: impl Into<Value>, must_understand: bool) -> AdditionalField {
         Self {
-            must_understand: monostate::MustBe!(false),
-            fields: value,
+            field: field.into(),
+            must_understand,
+        }
+    }
+
+    /// Return the underlying value.
+    #[must_use]
+    pub const fn as_value(&self) -> &Value {
+        &self.field
+    }
+
+    /// Return the `must_understand` component of the additional field.
+    #[must_use]
+    pub const fn must_understand(&self) -> bool {
+        self.must_understand
+    }
+}
+
+impl Serialize for AdditionalField {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match &self.field {
+            Value::Object(object) => {
+                let mut map = serializer.serialize_map(Some(object.len() + 1))?;
+                map.serialize_entry("must_understand", &Value::Bool(self.must_understand))?;
+                for (k, v) in object {
+                    map.serialize_entry(k, v)?;
+                }
+                map.end()
+            }
+            _ => self.field.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for AdditionalField {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let value = Value::deserialize(d)?;
+        Ok(value.into())
+    }
+}
+
+impl<T> From<T> for AdditionalField
+where
+    T: Into<Value>,
+{
+    fn from(field: T) -> Self {
+        let mut value: Value = field.into();
+        let must_understand = if let Some(object) = value.as_object_mut() {
+            if let Some(Value::Bool(must_understand)) = object.remove("must_understand") {
+                must_understand
+            } else {
+                true
+            }
+        } else {
+            true
+        };
+        Self {
+            must_understand,
+            field: value,
         }
     }
 }
 
 /// Additional fields in array or group metadata.
-///
-/// Additional fields are a JSON object with a `"must_understand": false` key-value pair.
-///
-/// ### Example additional field JSON
-/// ```json
-/// "unknown_field": {
-///   "key": "value",
-///   "must_understand": false
-/// }
-/// ```
-// NOTE: It would be nice if this was just a serde_json::Map, but it only has implementations for `<String, serde_json::Value>`.
+// NOTE: It would be nice if this was just a serde_json::Map, but it only has implementations for `<String, Value>`.
 pub type AdditionalFields = std::collections::BTreeMap<String, AdditionalField>;
