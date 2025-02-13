@@ -89,6 +89,7 @@ pub use chunk_cache::{
 pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
+use zarrs_metadata::v3::UnsupportedAdditionalFieldError;
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use crate::{
@@ -393,6 +394,20 @@ impl<TStorage: ?Sized> Array<TStorage> {
             ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2)
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
         }?;
+
+        // Check for unsupported additional fields that must be understood
+        if let Some(unsupported_additional_field) = metadata_v3
+            .additional_fields
+            .iter()
+            .find(|additional_field| additional_field.1.must_understand())
+        {
+            return Err(ArrayCreateError::UnsupportedAdditionalFieldError(
+                UnsupportedAdditionalFieldError::new(
+                    unsupported_additional_field.0.clone(),
+                    unsupported_additional_field.1.as_value().clone(),
+                ),
+            ));
+        }
 
         let data_type = DataType::from_metadata(&metadata_v3.data_type)
             .map_err(ArrayCreateError::DataTypeCreateError)?;

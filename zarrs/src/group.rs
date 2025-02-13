@@ -91,6 +91,23 @@ impl<TStorage: ?Sized> Group<TStorage> {
         path: &str,
         metadata: GroupMetadata,
     ) -> Result<Self, GroupCreateError> {
+        // Check for unsupported additional fields that must be understood
+        let additional_fields = match &metadata {
+            GroupMetadata::V2(metadata) => &metadata.additional_fields,
+            GroupMetadata::V3(metadata) => &metadata.additional_fields,
+        };
+        if let Some(unsupported_additional_field) = additional_fields
+            .iter()
+            .find(|additional_field| additional_field.1.must_understand())
+        {
+            return Err(GroupCreateError::UnsupportedAdditionalFieldError(
+                UnsupportedAdditionalFieldError::new(
+                    unsupported_additional_field.0.clone(),
+                    unsupported_additional_field.1.as_value().clone(),
+                ),
+            ));
+        }
+
         let path = NodePath::new(path)?;
         Ok(Self {
             storage,
@@ -754,8 +771,8 @@ mod tests {
     }
 
     #[test]
-    fn group_metadata_invalid_additional_field() {
-        let group_metadata = serde_json::from_str::<GroupMetadata>(
+    fn group_metadata_unknown_additional_field() {
+        let group_metadata = serde_json::from_str::<GroupMetadataV3>(
             r#"{
                 "zarr_format": 3,
                 "node_type": "group",
@@ -765,8 +782,14 @@ mod tests {
                 },
                 "unknown": "fail"
             }"#,
-        );
-        assert!(group_metadata.is_err());
+        )
+        .unwrap();
+        assert!(group_metadata.additional_fields.len() == 1);
+        assert!(group_metadata
+            .additional_fields
+            .get("unknown")
+            .unwrap()
+            .must_understand());
     }
 
     #[test]

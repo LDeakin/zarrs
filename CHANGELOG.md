@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Bump `zarrs_metadata` to 0.3.4 which includes a number of Zarr metadata fixes
+  - See the [`zarrs_metadata` CHANGELOG.md](https://github.com/LDeakin/zarrs/blob/main/zarrs_metadata/CHANGELOG.md)
+
 ## [0.19.1] - 2025-01-19
 
 ### Added
