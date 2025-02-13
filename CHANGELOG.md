@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: move the `zarrs::array::{data_type,fill_value}` modules into the `zarrs_data_type` crate
 - Bump `lru` to 0.13
 
+## [0.19.2] - 2025-02-13
+
+### Changed
+- Bump `zarrs_metadata` to 0.3.4 which includes a number of Zarr metadata fixes
+  - See the [`zarrs_metadata` CHANGELOG.md](https://github.com/LDeakin/zarrs/blob/main/zarrs_metadata/CHANGELOG.md)
+
 ## [0.19.1] - 2025-01-19
 
 ### Added
@@ -1252,7 +1258,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.19.1...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.19.2...HEAD
+[0.19.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.2
 [0.19.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.1
 [0.19.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.0
 [0.18.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.3
