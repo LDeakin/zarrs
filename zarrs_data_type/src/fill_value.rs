@@ -118,7 +118,7 @@ impl From<f64> for FillValue {
 
 impl From<num::complex::Complex32> for FillValue {
     fn from(value: num::complex::Complex32) -> Self {
-        let mut bytes = Vec::with_capacity(std::mem::size_of::<num::complex::Complex32>());
+        let mut bytes = Vec::with_capacity(size_of::<num::complex::Complex32>());
         bytes.extend(value.re.to_ne_bytes());
         bytes.extend(value.im.to_ne_bytes());
         Self(bytes)
@@ -127,7 +127,7 @@ impl From<num::complex::Complex32> for FillValue {
 
 impl From<num::complex::Complex64> for FillValue {
     fn from(value: num::complex::Complex64) -> Self {
-        let mut bytes = Vec::with_capacity(std::mem::size_of::<num::complex::Complex64>());
+        let mut bytes = Vec::with_capacity(size_of::<num::complex::Complex64>());
         bytes.extend(value.re.to_ne_bytes());
         bytes.extend(value.im.to_ne_bytes());
         Self(bytes)
@@ -233,9 +233,20 @@ impl FillValue {
 
 #[cfg(test)]
 mod tests {
-    use crate::array::transmute_to_bytes_vec;
-
     use super::*;
+
+    /// Convert from `&[T]` to `Vec<u8>`.
+    #[must_use]
+    fn convert_to_bytes_vec<T: bytemuck::NoUninit>(from: &[T]) -> Vec<u8> {
+        bytemuck::allocation::pod_collect_to_vec(from)
+    }
+
+    /// Transmute from `Vec<T>` to `Vec<u8>`.
+    #[must_use]
+    fn transmute_to_bytes_vec<T: bytemuck::NoUninit>(from: Vec<T>) -> Vec<u8> {
+        bytemuck::allocation::try_cast_vec(from)
+            .unwrap_or_else(|(_err, from)| convert_to_bytes_vec(&from))
+    }
 
     #[test]
     fn fill_value() {

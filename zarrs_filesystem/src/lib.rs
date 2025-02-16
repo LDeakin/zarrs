@@ -15,7 +15,7 @@ use zarrs_storage::{
 };
 
 use bytes::BytesMut;
-use parking_lot::RwLock;
+use parking_lot::RwLock; // TODO: std::sync::RwLock with Rust 1.78+
 use thiserror::Error;
 use walkdir::WalkDir;
 

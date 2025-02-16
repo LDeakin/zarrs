@@ -7,9 +7,10 @@ use crate::{
         codec::{
             bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
             BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecOptions, CodecTraits, RecommendedConcurrency,
+            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
-        ArrayMetadataOptions, BytesRepresentation, RawBytes,
+        BytesRepresentation, RawBytes,
     },
     metadata::v3::MetadataV3,
 };
@@ -43,7 +44,7 @@ impl Fletcher32Codec {
 }
 
 impl CodecTraits for Fletcher32Codec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let configuration = Fletcher32CodecConfigurationV1 {};
         Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
     }

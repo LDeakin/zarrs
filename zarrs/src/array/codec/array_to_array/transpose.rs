@@ -120,8 +120,15 @@ fn transpose_vlen<'a>(
         bytes_new.extend_from_slice(&bytes[curr..next]);
     }
     offsets_new.push(bytes_new.len());
-
-    ArrayBytes::new_vlen(bytes_new, offsets_new)
+    let offsets_new = unsafe {
+        // SAFETY: The offsets are monotonically increasing.
+        RawBytesOffsets::new_unchecked(offsets_new)
+    };
+    let array_bytes = unsafe {
+        // SAFETY: The last offset is equal to the length of the bytes
+        ArrayBytes::new_vlen_unchecked(bytes_new, offsets_new)
+    };
+    array_bytes
 }
 
 #[cfg(test)]

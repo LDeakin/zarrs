@@ -2,19 +2,16 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
+    data_type::{
+        IncompatibleFillValueError, IncompatibleFillValueMetadataError, UnsupportedDataTypeError,
+    },
     metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
     plugin::PluginCreateError,
     storage::StorageError,
 };
 
-use super::{
-    codec::CodecError,
-    data_type::{
-        IncompatibleFillValueError, IncompatibleFillValueMetadataError, UnsupportedDataTypeError,
-    },
-    ArrayIndices, ArrayShape,
-};
+use super::{codec::CodecError, ArrayIndices, ArrayShape};
 
 /// An array creation error.
 #[derive(Debug, Error)]

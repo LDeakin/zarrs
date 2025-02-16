@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2025-02-13
+
+### Added
+- Add `UnsupportedAdditionalFieldError::new`
+
+### Fixed
+- Make `AdditionalField` public and permit any JSON type (not just objects)
+
+## [0.3.3] - 2025-02-06
+
+### Fixed
+- Permit string compression levels in `zstd` codec metadata (for `zarr-python` compatibility)
+- Use `bytes` codec with native endianness if unset for a Zarr V2 array
+
+## [0.3.2] - 2025-02-04
+
+### Added
+- Derive `Copy` for `ArrayMetadataV2Order`
+- Add `codec_metadata_v2_to_v3`
+
+### Fixed
+- Interpret a `0` fill value as `""` for Zarr V2 string arrays (for `zarr-python` compatibility) ([#140] by [@zqfang])
+
+[#140]: https://github.com/LDeakin/zarrs/pull/140
+
+## [0.3.1] - 2025-01-29
+
+### Fixed
+- Interpret a `null` fill value as `""` for Zarr V2 string arrays (for `zarr-python` compatibility)
+
 ## [0.3.0] - 2025-01-10
 
 ### Added
@@ -56,7 +86,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.4...HEAD
+[0.3.4]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.4
+[0.3.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.3
+[0.3.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.2
+[0.3.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.1
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.1.0
+
+[@zqfang]: https://github.com/zqfang

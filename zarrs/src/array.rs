@@ -23,6 +23,7 @@
 
 mod array_builder;
 mod array_bytes;
+mod array_bytes_fixed_disjoint_view;
 mod array_errors;
 mod array_metadata_options;
 mod array_representation;
@@ -32,10 +33,9 @@ pub mod chunk_grid;
 pub mod chunk_key_encoding;
 pub mod codec;
 pub mod concurrency;
-pub mod data_type;
 mod element;
-mod fill_value;
 pub mod storage_transformer;
+pub use crate::data_type; // re-export for zarrs < 0.20 compat
 
 #[cfg(feature = "sharding")]
 mod array_sharded_ext;
@@ -48,7 +48,10 @@ pub use self::{
     array_builder::ArrayBuilder,
     array_bytes::{
         copy_fill_value_into, update_array_bytes, ArrayBytes, ArrayBytesError, RawBytes,
-        RawBytesOffsets,
+        RawBytesOffsets, RawBytesOffsetsCreateError, RawBytesOffsetsOutOfBoundsError,
+    },
+    array_bytes_fixed_disjoint_view::{
+        ArrayBytesFixedDisjointView, ArrayBytesFixedDisjointViewCreateError,
     },
     array_errors::{ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
@@ -61,11 +64,11 @@ pub use self::{
     codec::ArrayCodecTraits,
     codec::CodecChain,
     concurrency::RecommendedConcurrency,
-    data_type::DataType,
     element::{Element, ElementFixedLength, ElementOwned},
-    fill_value::FillValue,
     storage_transformer::StorageTransformerChain,
 };
+pub use crate::data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
+
 pub use crate::metadata::v2::ArrayMetadataV2;
 use crate::metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 pub use crate::metadata::v3::{
@@ -603,7 +606,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         // Codec metadata manipulation
         match &mut metadata {
             ArrayMetadata::V3(metadata) => {
-                metadata.codecs = self.codecs().create_metadatas_opt(options);
+                metadata.codecs = self.codecs().create_metadatas_opt(options.codec_options());
             }
             ArrayMetadata::V2(_metadata) => {
                 // NOTE: The codec related options in ArrayMetadataOptions do not impact V2 codecs
@@ -910,10 +913,7 @@ pub fn elements_to_ndarray<T>(
 ) -> Result<ndarray::ArrayD<T>, ArrayError> {
     let length = elements.len();
     ndarray::ArrayD::<T>::from_shape_vec(iter_u64_to_usize(shape.iter()), elements).map_err(|_| {
-        ArrayError::CodecError(codec::CodecError::UnexpectedChunkDecodedSize(
-            length * std::mem::size_of::<T>(),
-            shape.iter().product::<u64>() * std::mem::size_of::<T>() as u64,
-        ))
+        ArrayError::CodecError(codec::InvalidArrayShapeError::new(shape.to_vec(), length).into())
     })
 }
 
@@ -926,7 +926,7 @@ pub fn bytes_to_ndarray<T: bytemuck::Pod>(
     shape: &[u64],
     bytes: Vec<u8>,
 ) -> Result<ndarray::ArrayD<T>, ArrayError> {
-    let expected_len = shape.iter().product::<u64>() * core::mem::size_of::<T>() as u64;
+    let expected_len = shape.iter().product::<u64>() * size_of::<T>() as u64;
     if bytes.len() as u64 != expected_len {
         return Err(ArrayError::InvalidBytesInputSize(bytes.len(), expected_len));
     }
@@ -1102,12 +1102,12 @@ mod tests {
         )
     }
 
-    #[ignore] // FIXME: Reported upstream https://github.com/zarr-developers/zarr-python/issues/2675
+    #[cfg(feature = "transpose")]
     #[test]
     fn array_v2_none_f() {
         array_v2_to_v3(
             "tests/data/v2/array_none_F.zarr",
-            "tests/data/v3/array_none_tranpose.zarr",
+            "tests/data/v3/array_none_transpose.zarr",
         )
     }
 
@@ -1122,7 +1122,6 @@ mod tests {
     }
 
     #[cfg(feature = "blosc")]
-    #[ignore] // FIXME: Reported upstream https://github.com/zarr-developers/zarr-python/issues/2675
     #[test]
     #[cfg_attr(miri, ignore)]
     fn array_v2_blosc_f() {

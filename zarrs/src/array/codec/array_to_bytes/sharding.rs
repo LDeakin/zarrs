@@ -111,7 +111,7 @@ fn decode_shard_index(
     )?;
     let decoded_shard_index = decoded_shard_index.into_fixed()?;
     Ok(decoded_shard_index
-        .chunks_exact(core::mem::size_of::<u64>())
+        .chunks_exact(size_of::<u64>())
         .map(|v| u64::from_ne_bytes(v.try_into().unwrap() /* safe */))
         .collect())
 }
@@ -499,7 +499,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
+            .chunks(size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         assert_eq!(answer, decoded_partial_chunk);
@@ -584,7 +584,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
+            .chunks(size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         assert_eq!(answer, decoded_partial_chunk);
@@ -653,7 +653,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u16>())
+            .chunks(size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
 
@@ -695,7 +695,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
+            .chunks(size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u8> = vec![4, 8];

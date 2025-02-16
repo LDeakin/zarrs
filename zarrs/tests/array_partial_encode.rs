@@ -3,7 +3,6 @@
 
 use std::sync::Arc;
 
-use core::mem::size_of;
 use zarrs::{
     array::{
         codec::{

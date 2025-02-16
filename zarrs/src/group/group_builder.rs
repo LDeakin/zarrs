@@ -44,8 +44,7 @@ impl GroupBuilder {
     /// Set additional fields not defined in the Zarr specification.
     /// Use this cautiously. In general, store user defined attributes using [`GroupBuilder::attributes`].
     ///
-    /// Note that array metadata must not contain any additional fields, unless they are annotated with `"must_understand": false`.
-    /// `zarrs` will error when opening an array with additional fields without this annotation.
+    /// `zarrs` and other implementations are expected to error when opening a group with unsupported additional fields, unless they are a JSON object containing `"must_understand": false`.
     pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
         match &mut self.metadata {
             GroupMetadata::V3(metadata) => metadata.additional_fields = additional_fields,

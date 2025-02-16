@@ -73,6 +73,10 @@ pub(crate) fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
         }
         // Variable-sized data types are not supported and are rejected outside of this function
         DataType::String | DataType::Bytes => unreachable!(),
+        _ => {
+            // FIXME: Data type extensions, endianness reversal for custom data types
+            unimplemented!("Reverse endianness for data type {:?}", data_type)
+        }
     }
 }
 
@@ -297,7 +301,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
+            .chunks(size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u8> = vec![4, 8];
@@ -343,7 +347,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<u8>())
+            .chunks(size_of::<u8>())
             .map(|b| u8::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u8> = vec![4, 8];

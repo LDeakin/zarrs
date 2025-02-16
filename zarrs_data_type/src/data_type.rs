@@ -6,7 +6,7 @@ use derive_more::From;
 use half::{bf16, f16};
 use thiserror::Error;
 
-use crate::metadata::v3::array::{
+use zarrs_metadata::v3::array::{
     data_type::{DataTypeMetadataV3, DataTypeSize},
     fill_value::{
         bfloat16_to_fill_value, float16_to_fill_value, float32_to_fill_value,
@@ -53,9 +53,13 @@ pub enum DataType {
     Complex128,
     /// `r*` raw bits, variable size given by *, limited to be a multiple of 8.
     RawBits(usize), // the stored usize is the size in bytes
-    /// A UTF-8 encoded string.
+    /// A UTF-8 encoded string. **Experimental**.
+    ///
+    /// This data type is not standardised in the Zarr V3 specification.
     String,
-    /// Variable-sized binary data.
+    /// Variable-sized binary data. **Experimental**.
+    ///
+    /// This data type is not standardised in the Zarr V3 specification.
     Bytes,
 }
 
@@ -352,7 +356,7 @@ impl core::fmt::Display for DataType {
 mod tests {
     use super::*;
 
-    use crate::metadata::v3::array::{
+    use zarrs_metadata::v3::array::{
         fill_value::{FillValueFloatStringNonFinite, HexString},
         nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     };

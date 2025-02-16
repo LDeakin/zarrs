@@ -322,7 +322,12 @@ impl Node {
     /// Returns the name of the node.
     #[must_use]
     pub fn name(&self) -> NodeName {
-        let name = self.path.as_str().split('/').last().unwrap_or_default();
+        let name = self
+            .path
+            .as_str()
+            .split('/')
+            .next_back()
+            .unwrap_or_default();
         unsafe { NodeName::new_unchecked(name) }
     }
 

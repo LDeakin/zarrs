@@ -7,7 +7,7 @@ use zarrs_metadata::v3::array::codec::sharding::ShardingCodecConfiguration;
 use zarrs_storage::byte_range::ByteRange;
 use zarrs_storage::StorageHandle;
 
-use super::array_bytes::{merge_chunks_vlen, update_bytes_flen};
+use super::array_bytes::merge_chunks_vlen;
 use super::codec::array_to_bytes::sharding::ShardingPartialDecoder;
 use super::codec::{CodecError, ShardingCodec};
 use super::element::ElementOwned;
@@ -15,7 +15,7 @@ use super::{
     codec::CodecOptions, concurrency::concurrency_chunks_and_codec, Array, ArrayError,
     ArrayShardedExt, ChunkGrid,
 };
-use super::{ArrayBytes, ArraySize, DataTypeSize};
+use super::{ArrayBytes, ArrayBytesFixedDisjointView, ArraySize, DataTypeSize};
 use crate::array::codec::StoragePartialDecoder;
 use crate::storage::ReadableStorageTraits;
 use crate::{array::codec::ArrayPartialDecoderTraits, array_subset::ArraySubset};
@@ -612,13 +612,18 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                                     )?
                                     .remove(0)
                                     .into_owned();
-                                update_bytes_flen(
-                                    &output,
-                                    array_subset.shape(),
-                                    &bytes.into_fixed()?,
-                                    &shard_subset_overlap.relative_to(array_subset.start())?,
-                                    data_type_size,
-                                );
+                                let mut output_view = unsafe {
+                                    // SAFETY: chunks represent disjoint array subsets
+                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                        output,
+                                        data_type_size,
+                                        array_subset.shape(),
+                                        shard_subset_overlap.relative_to(array_subset.start())?,
+                                    )
+                                };
+                                output_view
+                                    .copy_from_slice(&bytes.into_fixed()?)
+                                    .map_err(CodecError::from)?;
                                 Ok::<_, ArrayError>(())
                             };
                             let indices = shards.indices();

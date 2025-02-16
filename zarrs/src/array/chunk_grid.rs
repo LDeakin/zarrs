@@ -127,6 +127,9 @@ impl TryFrom<ArrayShape> for ChunkGrid {
 }
 
 /// Chunk grid traits.
+// TODO: Unsafe trait? ChunkGridTraits has invariants that must be upheld by implementations.
+//  - chunks must be disjoint for downstream `ArrayBytesFixedDisjoint` construction and otherwise sane behavior
+//  - this is true for regular and rectangular grids, but a custom grid could violate this
 pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
     /// Create metadata.
     fn create_metadata(&self) -> MetadataV3;

@@ -1,5 +1,7 @@
 //! The `rectangular` chunk grid.
 //!
+//! This chunk grid is considered experimental as it is based on a draft Zarr enhancement proposal.
+//!
 //! See <https://zarr.dev/zeps/draft/ZEP0003.html>.
 
 use std::num::NonZeroU64;
