@@ -1,5 +1,5 @@
 use derive_more::{derive::From, Display};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use thiserror::Error;
 
 use crate::{
@@ -77,7 +77,7 @@ pub struct ArrayMetadataV2 {
     /// Either “C” or “F”, defining the layout of bytes within each chunk of the array.
     pub order: ArrayMetadataV2Order,
     /// A list of JSON objects providing codec configurations, or null if no filters are to be applied.
-    #[serde(default)]
+    #[serde(default, serialize_with = "serialize_v2_filters")]
     pub filters: Option<Vec<MetadataV2>>,
     /// If present, either the string "." or "/" defining the separator placed between the dimensions of a chunk.
     #[serde(default = "chunk_key_separator_default_zarr_v2")]
@@ -90,6 +90,21 @@ pub struct ArrayMetadataV2 {
     /// These are not part of Zarr V2, but are retained for compatibility/flexibility.
     #[serde(flatten)]
     pub additional_fields: AdditionalFields,
+}
+
+#[allow(clippy::ref_option)]
+fn serialize_v2_filters<S>(
+    filters: &Option<Vec<MetadataV2>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let filters = filters.as_ref().filter(|v| !v.is_empty());
+    match filters {
+        Some(filters) => serializer.collect_seq(filters),
+        None => serializer.serialize_none(),
+    }
 }
 
 impl ArrayMetadataV2 {
@@ -108,6 +123,7 @@ impl ArrayMetadataV2 {
         compressor: Option<MetadataV2>,
         filters: Option<Vec<MetadataV2>>,
     ) -> Self {
+        let filters = filters.filter(|v| !v.is_empty());
         Self {
             zarr_format: monostate::MustBe!(2u64),
             shape,
@@ -302,4 +318,31 @@ pub enum ArrayMetadataV2Order {
     C,
     /// Column-major order. The first dimension varies fastest.
     F,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_filters() {
+        let array = ArrayMetadataV2 {
+            zarr_format: monostate::MustBe!(2u64),
+            shape: vec![10000, 10000],
+            chunks: vec![1000, 1000].try_into().unwrap(),
+            dtype: DataTypeMetadataV2::Simple("<f8".to_string()),
+            compressor: None,
+            fill_value: FillValueMetadataV2::String("NaN".to_string()),
+            order: ArrayMetadataV2Order::C,
+            filters: Some(vec![]),
+            dimension_separator: ChunkKeySeparator::Dot,
+            attributes: serde_json::Map::new(),
+            additional_fields: Default::default(),
+        };
+        let serialized = serde_json::to_string(&array).unwrap();
+        assert_eq!(
+            serialized,
+            r#"{"node_type":"array","zarr_format":2,"shape":[10000,10000],"chunks":[1000,1000],"dtype":"<f8","compressor":null,"fill_value":"NaN","order":"C","filters":null,"dimension_separator":"."}"#
+        );
+    }
 }
