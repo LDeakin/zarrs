@@ -163,9 +163,9 @@ impl<'a> IndicesIterator<'a> {
             Indexer::Mixed(mindices) => {
                 let shape: Vec<u64> = mindices.iter().map(|mindex| mindex.len() as u64).collect();
                 let mut indices = unravel_index(index as u64, &shape);
-                std::iter::zip(indices.iter_mut(), mindices.iter()).for_each(|(index, oindex)| {
-                    *index = match oindex {
-                        MixedIndex::OIndex(oindex) => oindex[usize::try_from(*index).unwrap()],
+                std::iter::zip(indices.iter_mut(), mindices.iter()).for_each(|(index, mindex)| {
+                    *index = match mindex {
+                        MixedIndex::IntegerIndex(iindex) => iindex[usize::try_from(*index).unwrap()],
                         MixedIndex::Range(range) => range.start + *index,
                     }
                 });

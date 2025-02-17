@@ -2,8 +2,10 @@ use derive_more::{
     derive::{Deref, Display},
     From,
 };
+use itertools::Itertools;
 use thiserror::Error;
 use zarrs_metadata::ArrayShape;
+use std::iter::zip;
 
 use crate::{array::ArrayIndices, array_subset::ArraySubset};
 
@@ -49,7 +51,7 @@ impl TryFrom<Vec<MixedIndex>> for MixedIndices {
 /// The indices on a single dimension of [`MixedIndices`].
 #[derive(Clone, Debug, From)]
 pub enum MixedIndex {
-    OIndex(ArrayIndices),
+    IntegerIndex(ArrayIndices),
     Range(std::ops::Range<u64>),
 }
 
@@ -59,7 +61,7 @@ impl MixedIndex {
     #[must_use]
     pub fn len(&self) -> usize {
         match self {
-            Self::OIndex(oindex) => oindex.len(),
+            Self::IntegerIndex(oindex) => oindex.len(),
             Self::Range(range) => usize::try_from(range.end.saturating_sub(range.start)).unwrap(),
         }
     }
@@ -153,9 +155,20 @@ impl Indexer {
                     && std::iter::zip(subset.end_exc(), array_shape)
                         .all(|(end, shape)| end <= *shape)
             }
-            Indexer::VIndex(vindices) => todo!("integer indexing"),
-            Indexer::OIndex(oindices) => todo!("integer indexing"),
-            Indexer::Mixed(mindices) => todo!("integer indexing"),
+            Indexer::VIndex(vindices) => {
+                let are_equal_length = vindices.0.iter().map(|x| x.len()).all_equal();
+                let has_right_shape = vindices.0[0].len() != (array_shape[0] as usize) || array_shape.iter().skip(1).all_equal_value() != Ok(&1);
+                are_equal_length && has_right_shape
+            },
+            Indexer::OIndex(oindices) => {
+                let are_integer_indices_wrong_or_missing = zip(array_shape, oindices.0.iter()).any(|(sh, index)| index.len() as u64 != *sh);
+                are_integer_indices_wrong_or_missing
+            },
+            Indexer::Mixed(mindices) => {
+                let all_range_indices = mindices.0.iter().all(|x| matches!(x, MixedIndex::Range(_)));
+                let some_range_indices = mindices.0.iter().any(|x| matches!(x, MixedIndex::Range(_)));
+                !all_range_indices && some_range_indices
+            },
         };
         if compatible {
             Ok(())
