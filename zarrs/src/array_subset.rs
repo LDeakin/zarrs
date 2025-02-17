@@ -17,32 +17,14 @@ use iterators::{
 };
 
 use derive_more::{Display, From};
-use itertools::{izip, Itertools};
+use itertools::izip;
 use thiserror::Error;
 
 use crate::{
     array::{ArrayIndices, ArrayShape},
+    indexer::IncompatibleIndexerAndShapeError,
     storage::byte_range::ByteRange,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-/// The different kinds of array indexing methods.
-///
-/// See: https://numpy.org/neps/nep-0021-advanced-indexing.html#existing-indexing-operations
-pub enum IndexingMethod {
-    /// Basic indexing i.e., no integer indices
-    #[default]
-    Basic,
-    /// Vectorized Indexing
-    VIndex,
-    /// Orthogonal Indexing
-    OIndex,
-    /// Mixed Indexing, a variant of vectorized where integer indices are treated as vectorized but with ranges too
-    Mixed,
-}
-
-/// Integer indices, if they exist, are represented as a `ArrayIndices` - otherwise None.
-pub type MaybeIntegerIndices = Vec<Option<ArrayIndices>>;
 
 /// An array subset.
 ///
@@ -53,10 +35,6 @@ pub struct ArraySubset {
     start: ArrayIndices,
     /// The shape of the array subset.
     shape: ArrayShape,
-    /// Integer indices
-    integer_indices: MaybeIntegerIndices,
-    /// Indexing method
-    pub indexing_method: IndexingMethod,
 }
 
 impl Display for ArraySubset {
@@ -72,8 +50,6 @@ impl ArraySubset {
         Self {
             start: vec![0; dimensionality],
             shape: vec![0; dimensionality],
-            integer_indices: vec![None; dimensionality],
-            indexing_method: IndexingMethod::Basic,
         }
     }
 
@@ -82,24 +58,15 @@ impl ArraySubset {
     pub fn new_with_ranges(ranges: &[Range<u64>]) -> Self {
         let start = ranges.iter().map(|range| range.start).collect();
         let shape = ranges.iter().map(|range| range.end - range.start).collect();
-        let len = ranges.len();
-        Self {
-            start,
-            shape,
-            integer_indices: vec![None; len],
-            indexing_method: IndexingMethod::Basic,
-        }
+        Self { start, shape }
     }
 
     /// Create a new array subset with `size` starting at the origin.
     #[must_use]
     pub fn new_with_shape(shape: ArrayShape) -> Self {
-        let len = shape.len();
         Self {
-            start: vec![0; len],
+            start: vec![0; shape.len()],
             shape,
-            integer_indices: vec![None; len],
-            indexing_method: IndexingMethod::Basic,
         }
     }
 
@@ -112,14 +79,8 @@ impl ArraySubset {
         start: ArrayIndices,
         shape: ArrayShape,
     ) -> Result<Self, IncompatibleDimensionalityError> {
-        let len = start.len();
         if start.len() == shape.len() {
-            Ok(Self {
-                start,
-                shape,
-                integer_indices: vec![None; len],
-                indexing_method: IndexingMethod::Basic,
-            })
+            Ok(Self { start, shape })
         } else {
             Err(IncompatibleDimensionalityError::new(
                 start.len(),
@@ -135,13 +96,7 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn new_with_start_shape_unchecked(start: ArrayIndices, shape: ArrayShape) -> Self {
         debug_assert_eq!(start.len(), shape.len());
-        let len = start.len();
-        Self {
-            start,
-            shape,
-            integer_indices: vec![None; len],
-            indexing_method: IndexingMethod::Basic,
-        }
+        Self { start, shape }
     }
 
     /// Create a new array subset from a start and end (inclusive).
@@ -167,19 +122,13 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn new_with_start_end_inc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
-        let len = start.len();
         let shape = std::iter::zip(&start, end)
             .map(|(&start, end)| {
                 debug_assert!(end >= start);
                 end.saturating_sub(start) + 1
             })
             .collect();
-        Self {
-            start,
-            shape,
-            integer_indices: vec![None; len],
-            indexing_method: IndexingMethod::Basic,
-        }
+        Self { start, shape }
     }
 
     /// Create a new array subset from a start and end (exclusive).
@@ -205,75 +154,13 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn new_with_start_end_exc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
         debug_assert_eq!(start.len(), end.len());
-        let len = start.len();
         let shape = std::iter::zip(&start, end)
             .map(|(&start, end)| {
                 debug_assert!(end >= start);
                 end.saturating_sub(start)
             })
             .collect();
-        Self {
-            start,
-            shape,
-            integer_indices: vec![None; len],
-            indexing_method: IndexingMethod::Basic,
-        }
-    }
-
-    /// Create a new array subset from a start with integer array indices (or not), a shape to indicate where ranges should be used in the absence of integer indices, and an indexing method.
-    /// This function will error out if the dimensionalities do not line up, an incorrect indexing method is passed in given the integer indices, or the integer indices are incompatible with the shape.
-    #[must_use]
-    pub fn new_with_start_shape_indices(
-        start: ArrayIndices,
-        integer_indices: Vec<Option<ArrayIndices>>,
-        shape: ArrayShape,
-        indexing_method: IndexingMethod,
-    ) -> Result<Self, IntegerIndicesError> {
-        if start.len() != shape.len() {
-            return Err(IntegerIndicesError::IncompatibleDimensionalityError(
-                IncompatibleDimensionalityError::new(start.len(), shape.len()),
-            ));
-        }
-        if integer_indices.len() != shape.len() {
-            return Err(IntegerIndicesError::IncompatibleDimensionalityError(
-                IncompatibleDimensionalityError::new(integer_indices.len(), shape.len()),
-            ));
-        }
-        let all_none_integer_indices = integer_indices.iter().all(|x| x.is_none());
-        let all_some_integer_indices = integer_indices.iter().all(|x| x.is_some());
-        let any_none_integer_indices = integer_indices.iter().any(|x| x.is_none());
-        let is_vindex = indexing_method == IndexingMethod::VIndex;
-        let is_vindex_with_unequal_index_lengths = all_some_integer_indices && is_vindex && !integer_indices.iter().map(|x| x.as_ref().unwrap().len()).all_equal();
-        let is_vindex_with_bad_shape = all_some_integer_indices && is_vindex && (integer_indices[0].as_ref().unwrap().len() != (shape[0] as usize) || shape.iter().skip(1).all_equal_value() != Ok(&1));
-        let is_incorrect_indexing_method = (all_none_integer_indices
-            && indexing_method != IndexingMethod::Basic)
-            || (!all_none_integer_indices
-                && any_none_integer_indices
-                && indexing_method != IndexingMethod::Mixed)
-            || (all_some_integer_indices
-                && indexing_method == IndexingMethod::Basic)
-            || (any_none_integer_indices && is_vindex);
-        let are_integer_indices_wrong_or_missing = izip!(&shape, &integer_indices).any(|(sh, index)| match index {
-            Some(i) => i.len() == 0 || (indexing_method == IndexingMethod::OIndex && i.len() as u64 != *sh),
-            None => *sh == 0,
-        });
-        if is_incorrect_indexing_method || are_integer_indices_wrong_or_missing || is_vindex_with_unequal_index_lengths || is_vindex_with_bad_shape {
-            return Err(IntegerIndicesError::IncompatibleIntegerIndicesError(
-                IncompatibleIntegerIndicesError::from((
-                    start,
-                    integer_indices,
-                    shape,
-                    indexing_method,
-                )),
-            ));
-        } else {
-            Ok(Self {
-                start,
-                shape,
-                integer_indices,
-                indexing_method,
-            })
-        }
+        Self { start, shape }
     }
 
     /// Return the array subset as a vec of ranges.
@@ -327,12 +214,6 @@ impl ArraySubset {
         &self.shape
     }
 
-    /// Return integer indices.
-    #[must_use]
-    pub fn integer_indices(&self) -> &[Option<ArrayIndices>] {
-        &self.integer_indices
-    }
-
     /// Return the shape of the array subset.
     ///
     /// # Panics
@@ -357,7 +238,7 @@ impl ArraySubset {
         self.start.len()
     }
 
-    /// Return the end (inclusive) of the array subset.  If there is an integer index at that position, 0 is used.
+    /// Return the end (inclusive) of the array subset.
     ///
     /// Returns [`None`] if the array subset is empty.
     #[must_use]
@@ -365,20 +246,19 @@ impl ArraySubset {
         if self.is_empty() {
             None
         } else {
-            Some(self.end_exc().iter().map(|i| i - 1).collect())
+            Some(
+                std::iter::zip(&self.start, &self.shape)
+                    .map(|(start, size)| start + size - 1)
+                    .collect(),
+            )
         }
     }
 
     /// Return the end (exclusive) of the array subset.
     #[must_use]
     pub fn end_exc(&self) -> ArrayIndices {
-        izip!(&self.start, &self.shape, &self.integer_indices)
-            .map(|(start, size, maybe_index)| {
-                match maybe_index {
-                    Some(index) => *index.iter().max().unwrap(),
-                    None => start + size,
-                }
-            })
+        std::iter::zip(&self.start, &self.shape)
+            .map(|(start, size)| start + size)
             .collect()
     }
 
@@ -400,7 +280,7 @@ impl ArraySubset {
         usize::try_from(self.num_elements()).unwrap()
     }
 
-    /// Returns [`true`] if the array subset contains `indices`.  Does not check integer indices.
+    /// Returns [`true`] if the array subset contains `indices`.
     #[must_use]
     pub fn contains(&self, indices: &[u64]) -> bool {
         izip!(indices, &self.start, &self.shape).all(|(&i, &o, &s)| i >= o && i < o + s)
@@ -410,12 +290,12 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn byte_ranges(
         &self,
         array_shape: &[u64],
         element_size: usize,
-    ) -> Result<Vec<ByteRange>, IncompatibleArraySubsetAndShapeError> {
+    ) -> Result<Vec<ByteRange>, IncompatibleIndexerAndShapeError> {
         let mut byte_ranges: Vec<ByteRange> = Vec::new();
         let contiguous_indices = self.contiguous_linearised_indices(array_shape)?;
         let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
@@ -452,7 +332,7 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the length of `array_shape` does not match the array subset dimensionality or the array subset is outside of the bounds of `array_shape`.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if the length of `array_shape` does not match the array subset dimensionality or the array subset is outside of the bounds of `array_shape`.
     ///
     /// # Panics
     /// Panics if attempting to access a byte index beyond [`usize::MAX`].
@@ -460,7 +340,7 @@ impl ArraySubset {
         &self,
         elements: &[T],
         array_shape: &[u64],
-    ) -> Result<Vec<T>, IncompatibleArraySubsetAndShapeError> {
+    ) -> Result<Vec<T>, IncompatibleIndexerAndShapeError> {
         if elements.len() as u64 == array_shape.iter().product::<u64>()
             && array_shape.len() == self.dimensionality()
             && self
@@ -471,7 +351,7 @@ impl ArraySubset {
         {
             Ok(unsafe { self.extract_elements_unchecked(elements, array_shape) })
         } else {
-            Err(IncompatibleArraySubsetAndShapeError(
+            Err(IncompatibleIndexerAndShapeError::new(
                 self.clone(),
                 array_shape.to_vec(),
             ))
@@ -522,11 +402,11 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn linearised_indices(
         &self,
         array_shape: &[u64],
-    ) -> Result<LinearisedIndices, IncompatibleArraySubsetAndShapeError> {
+    ) -> Result<LinearisedIndices, IncompatibleIndexerAndShapeError> {
         LinearisedIndices::new(self.clone(), array_shape.to_vec())
     }
 
@@ -544,12 +424,12 @@ impl ArraySubset {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn contiguous_indices(
         &self,
         array_shape: &[u64],
-    ) -> Result<ContiguousIndices, IncompatibleArraySubsetAndShapeError> {
-        ContiguousIndices::new(self, array_shape)
+    ) -> Result<ContiguousIndices, IncompatibleIndexerAndShapeError> {
+        ContiguousIndices::new(self.clone(), array_shape)
     }
 
     /// Returns an iterator over the indices of contiguous elements within the subset.
@@ -559,18 +439,18 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn contiguous_indices_unchecked(&self, array_shape: &[u64]) -> ContiguousIndices {
         // SAFETY: array_shape encapsulated this array subset
-        unsafe { ContiguousIndices::new_unchecked(self, array_shape) }
+        unsafe { ContiguousIndices::new_unchecked(self.clone(), array_shape) }
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if the `array_shape` does not encapsulate this array subset.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if the `array_shape` does not encapsulate this array subset.
     pub fn contiguous_linearised_indices(
         &self,
         array_shape: &[u64],
-    ) -> Result<ContiguousLinearisedIndices, IncompatibleArraySubsetAndShapeError> {
+    ) -> Result<ContiguousLinearisedIndices, IncompatibleIndexerAndShapeError> {
         ContiguousLinearisedIndices::new(self, array_shape.to_vec())
     }
 
@@ -677,14 +557,11 @@ impl ArraySubset {
     #[must_use]
     pub unsafe fn relative_to_unchecked(&self, start: &[u64]) -> Self {
         debug_assert_eq!(start.len(), self.dimensionality());
-        let len = start.len();
         Self {
             start: std::iter::zip(self.start(), start)
                 .map(|(a, b)| a - b)
                 .collect::<Vec<_>>(),
             shape: self.shape().to_vec(),
-            integer_indices: vec![None; len],
-            indexing_method: IndexingMethod::Basic,
         }
     }
 
@@ -717,62 +594,17 @@ impl IncompatibleDimensionalityError {
     }
 }
 
-/// An incompatible array and array shape error.
-#[derive(Clone, Debug, Error, From)]
-#[error("incompatible array subset {0} with array shape {1:?}")]
-pub struct IncompatibleArraySubsetAndShapeError(ArraySubset, ArrayShape);
-
-impl IncompatibleArraySubsetAndShapeError {
-    /// Create a new incompatible array subset and shape error.
-    #[must_use]
-    pub fn new(array_subset: ArraySubset, array_shape: ArrayShape) -> Self {
-        Self(array_subset, array_shape)
-    }
-}
-
 /// An incompatible start/end indices error.
 #[derive(Clone, Debug, Error, From)]
 #[error("incompatible start {0:?} with end {1:?}")]
 pub struct IncompatibleStartEndIndicesError(ArrayIndices, ArrayIndices);
-
-/// An incompatible integer indexing combination.
-#[derive(Clone, Debug, Error, From)]
-#[error("incompatible start {0:?} with indices {1:?}, shape {2:?}, and indexing method {3:?}")]
-pub struct IncompatibleIntegerIndicesError(
-    ArrayIndices,
-    Vec<Option<ArrayIndices>>,
-    ArrayShape,
-    IndexingMethod,
-);
-
-/// Error enum to allow users to distinguish between different types of possible integer indices contstructor errors.
-#[derive(Debug)]
-pub enum IntegerIndicesError {
-    /// Error for incompatible dimensionality.
-    IncompatibleDimensionalityError(IncompatibleDimensionalityError),
-    /// Error for some form of incompatible integer indices.
-    IncompatibleIntegerIndicesError(IncompatibleIntegerIndicesError),
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn array_subset_end_inc() {
-        assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10, 10]).unwrap().end_inc().unwrap().eq(&[9, 9]));
-        assert!(ArraySubset::new_with_start_shape(vec![2, 3], vec![10, 10]).unwrap().end_inc().unwrap().eq(&[11, 12]));
-        let true_val: Vec<u64> = ArraySubset::new_with_start_shape_indices(
-            vec![0, 0],
-            vec![None, vec![0, 7].into()],
-            vec![10, 2],
-            IndexingMethod::Mixed
-        ).unwrap().end_inc().unwrap();
-        assert!(true_val.eq(&[9, 6]), "{:?}", true_val);
-    }
-
-    #[test]
-    fn array_subset_new() {
+    fn array_subset() {
         assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10, 10]).is_ok());
         assert!(ArraySubset::new_with_start_shape(vec![0, 0], vec![10]).is_err());
         assert!(ArraySubset::new_with_start_end_inc(vec![0, 0], vec![10, 10]).is_ok());
@@ -814,116 +646,7 @@ mod tests {
                 .into_iter()
                 .next(),
             Some(4 * 1 + 3 * 7 * 1)
-        );
-        assert!(ArraySubset::new_with_start_shape_indices(
-            vec![0, 0],
-            vec![None, None],
-            vec![10, 10],
-            IndexingMethod::Basic
         )
-        .is_ok());
-        assert!(ArraySubset::new_with_start_shape_indices(
-            vec![0, 0],
-            vec![None, vec![0; 10].into()],
-            vec![10, 10],
-            IndexingMethod::Mixed
-        )
-        .is_ok());
-        assert!(ArraySubset::new_with_start_shape_indices(
-            vec![0, 0],
-            vec![vec![0; 10].into(), vec![0; 10].into()],
-            vec![10, 10],
-            IndexingMethod::OIndex
-        )
-        .is_ok());
-        assert!(ArraySubset::new_with_start_shape_indices(
-            vec![0, 0],
-            vec![vec![0; 2].into(), vec![0; 2].into()],
-            vec![2, 1],
-            IndexingMethod::VIndex
-        )
-        .is_ok());
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![None, vec![0; 10].into()],
-                vec![10, 10],
-                IndexingMethod::Basic
-            ),
-            Err(IntegerIndicesError::IncompatibleIntegerIndicesError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![vec![0; 10].into(), vec![0; 10].into()],
-                vec![10, 10],
-                IndexingMethod::Basic
-            ),
-            Err(IntegerIndicesError::IncompatibleIntegerIndicesError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![vec![0; 10].into(), vec![0; 10].into()],
-                vec![9, 10],
-                IndexingMethod::OIndex
-            ),
-            Err(IntegerIndicesError::IncompatibleIntegerIndicesError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![vec![0; 0].into(), vec![0; 10].into()],
-                vec![10, 10],
-                IndexingMethod::OIndex
-            ),
-            Err(IntegerIndicesError::IncompatibleIntegerIndicesError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![None],
-                vec![10, 10],
-                IndexingMethod::Basic
-            ),
-            Err(IntegerIndicesError::IncompatibleDimensionalityError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0],
-                vec![None, None],
-                vec![10, 10],
-                IndexingMethod::Basic
-            ),
-            Err(IntegerIndicesError::IncompatibleDimensionalityError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![vec![0; 3].into(), vec![0; 2].into()],
-                vec![2, 1],
-                IndexingMethod::VIndex
-            ),
-            Err(IntegerIndicesError::IncompatibleIntegerIndicesError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![vec![0; 2].into(), vec![0; 2].into()],
-                vec![2, 2],
-                IndexingMethod::VIndex
-            ),
-            Err(IntegerIndicesError::IncompatibleIntegerIndicesError(_))
-        ));
-        assert!(matches!(
-            ArraySubset::new_with_start_shape_indices(
-                vec![0, 0],
-                vec![vec![0; 2].into(), vec![0; 2].into()],
-                vec![2],
-                IndexingMethod::VIndex
-            ),
-            Err(IntegerIndicesError::IncompatibleDimensionalityError(_))
-        ));
     }
 
     #[test]
