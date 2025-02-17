@@ -6,9 +6,8 @@ use thiserror::Error;
 use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
-    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
-    byte_range::extract_byte_ranges_concat_unchecked,
-    metadata::v3::array::data_type::DataTypeSize,
+    array_subset::ArraySubset, byte_range::extract_byte_ranges_concat_unchecked,
+    indexer::IncompatibleIndexerAndShapeError, metadata::v3::array::data_type::DataTypeSize,
 };
 
 use super::{
@@ -223,7 +222,7 @@ impl<'a> ArrayBytes<'a> {
         match self {
             ArrayBytes::Variable(bytes, offsets) => {
                 let indices = subset.linearised_indices(array_shape).map_err(|_| {
-                    IncompatibleArraySubsetAndShapeError::new(subset.clone(), array_shape.to_vec())
+                    IncompatibleIndexerAndShapeError::new(subset.clone(), array_shape.to_vec())
                 })?;
                 let mut bytes_length = 0;
                 for index in &indices {
@@ -641,7 +640,6 @@ mod tests {
     use std::error::Error;
 
     use crate::array::Element;
-    use crate::array_subset::IndexingMethod;
 
     use super::*;
 
@@ -717,41 +715,55 @@ mod tests {
 
     #[test]
     fn test_flen_update_subset_vindex() {
-        let mut bytes_array = vec![0u8; 4 * 4];
-        {
-            let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
-            update_bytes_flen(
-                &bytes_array,
-                &vec![4, 4],
-                &vec![1, 2].into(),
-                &ArraySubset::new_with_start_shape_indices(vec![0, 0], vec![Some(vec![0, 2]), Some(vec![0, 2])], vec![2, 1], IndexingMethod::VIndex).unwrap(),
-                1,
-            );
-        }
+        todo!("integer indexing")
+        // let mut bytes_array = vec![0u8; 4 * 4];
+        // {
+        //     let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
+        //     update_bytes_flen(
+        //         &bytes_array,
+        //         &vec![4, 4],
+        //         &vec![1, 2].into(),
+        //         &ArraySubset::new_with_start_shape_indices(
+        //             vec![0, 0],
+        //             vec![Some(vec![0, 2]), Some(vec![0, 2])],
+        //             vec![2, 1],
+        //             IndexingMethod::VIndex,
+        //         )
+        //         .unwrap(),
+        //         1,
+        //     );
+        // }
 
-        debug_assert_eq!(
-            bytes_array,
-            vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0]
-        );
+        // debug_assert_eq!(
+        //     bytes_array,
+        //     vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0]
+        // );
     }
 
     #[test]
     fn test_flen_update_subset_mixed() {
-        let mut bytes_array = vec![0u8; 4 * 4];
-        {
-            let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
-            update_bytes_flen(
-                &bytes_array,
-                &vec![4, 4],
-                &vec![1, 2, 3, 4, 5, 6, 7, 8].into(),
-                &ArraySubset::new_with_start_shape_indices(vec![0, 0], vec![Some(vec![0, 2]), None], vec![2, 4], IndexingMethod::Mixed).unwrap(),
-                1,
-            );
-        }
+        todo!("integer indexing");
+        // let mut bytes_array = vec![0u8; 4 * 4];
+        // {
+        //     let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
+        //     update_bytes_flen(
+        //         &bytes_array,
+        //         &vec![4, 4],
+        //         &vec![1, 2, 3, 4, 5, 6, 7, 8].into(),
+        //         &ArraySubset::new_with_start_shape_indices(
+        //             vec![0, 0],
+        //             vec![Some(vec![0, 2]), None],
+        //             vec![2, 4],
+        //             IndexingMethod::Mixed,
+        //         )
+        //         .unwrap(),
+        //         1,
+        //     );
+        // }
 
-        debug_assert_eq!(
-            bytes_array,
-            vec![1, 2, 3, 4, 0, 0, 0, 0, 5, 6, 7, 8, 0, 0, 0, 0]
-        );
+        // debug_assert_eq!(
+        //     bytes_array,
+        //     vec![1, 2, 3, 4, 0, 0, 0, 0, 5, 6, 7, 8, 0, 0, 0, 0]
+        // );
     }
 }
