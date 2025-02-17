@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use derive_more::derive::Display;
 use itertools::Itertools;
 use thiserror::Error;
 use unsafe_cell_slice::UnsafeCellSlice;
@@ -9,23 +10,44 @@ use crate::{
     indexer::IncompatibleIndexerAndShapeError, metadata::v3::array::data_type::DataTypeSize,
 };
 
-use super::{codec::CodecError, ravel_indices, ArraySize, DataType, FillValue};
+use super::{
+    codec::{CodecError, InvalidBytesLengthError},
+    ravel_indices, ArrayBytesFixedDisjointView, ArraySize, DataType, FillValue,
+};
+
+mod raw_bytes_offsets;
+pub use raw_bytes_offsets::{RawBytesOffsets, RawBytesOffsetsCreateError};
 
 /// Array element bytes.
+///
+/// These can represent:
+/// - [`ArrayBytes::Fixed`]: fixed length elements of an array in C-contiguous order,
+/// - [`ArrayBytes::Variable`]: variable length elements of an array in C-contiguous order with padding permitted,
+/// - Encoded array bytes after an array to bytes or bytes to bytes codecs.
 pub type RawBytes<'a> = Cow<'a, [u8]>;
 
-/// Array element byte offsets.
-pub type RawBytesOffsets<'a> = Cow<'a, [usize]>;
-
 /// Fixed or variable length array bytes.
-///
-/// Offsets are [`None`] if bytes are composed of fixed size data types.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ArrayBytes<'a> {
     /// Bytes for a fixed length array.
+    ///
+    /// These represent elements in C-contiguous order (i.e. row-major order) where the last dimension varies the fastest.
     Fixed(RawBytes<'a>),
     /// Bytes and element byte offsets for a variable length array.
+    ///
+    /// The bytes and offsets are modeled on the [Apache Arrow Variable-size Binary Layout](https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout).
+    /// - The offsets buffer contains length + 1 ~~signed integers (either 32-bit or 64-bit, depending on the data type)~~ usize integers.
+    /// - Offsets must be monotonically increasing, that is `offsets[j+1] >= offsets[j]` for `0 <= j < length`, even for null slots. Thus, the bytes represent C-contiguous elements with padding permitted.
+    /// - The final offset must be less than or equal to the length of the bytes buffer.
     Variable(RawBytes<'a>, RawBytesOffsets<'a>),
+}
+
+/// An error raised if variable length array bytes offsets are out of bounds.
+#[derive(Debug, Error, Display)]
+#[display("Offset {offset} is out of bounds for bytes of length {len}")]
+pub struct RawBytesOffsetsOutOfBoundsError {
+    offset: usize,
+    len: usize,
 }
 
 /// Errors related to [`ArrayBytes<'_>`] and [`ArrayBytes`].
@@ -38,16 +60,42 @@ pub enum ArrayBytesError {
 
 impl<'a> ArrayBytes<'a> {
     /// Create a new fixed length array bytes from `bytes`.
+    ///
+    /// `bytes` must be C-contiguous.
     pub fn new_flen(bytes: impl Into<RawBytes<'a>>) -> Self {
         Self::Fixed(bytes.into())
     }
 
     /// Create a new variable length array bytes from `bytes` and `offsets`.
+    ///
+    /// # Errors
+    /// Returns a [`RawBytesOffsetsOutOfBoundsError`] if the last offset is out of bounds of the bytes.
     pub fn new_vlen(
         bytes: impl Into<RawBytes<'a>>,
-        offsets: impl Into<RawBytesOffsets<'a>>,
+        offsets: RawBytesOffsets<'a>,
+    ) -> Result<Self, RawBytesOffsetsOutOfBoundsError> {
+        let bytes = bytes.into();
+        if offsets.last() <= bytes.len() {
+            Ok(Self::Variable(bytes, offsets))
+        } else {
+            Err(RawBytesOffsetsOutOfBoundsError {
+                offset: offsets.last(),
+                len: bytes.len(),
+            })
+        }
+    }
+
+    /// Create a new variable length array bytes from `bytes` and `offsets` without checking the offsets.
+    ///
+    /// # Safety
+    /// The last offset must be less than or equal to the length of the bytes.
+    pub unsafe fn new_vlen_unchecked(
+        bytes: impl Into<RawBytes<'a>>,
+        offsets: RawBytesOffsets<'a>,
     ) -> Self {
-        Self::Variable(bytes.into(), offsets.into())
+        let bytes = bytes.into();
+        debug_assert!(offsets.last() <= bytes.len());
+        Self::Variable(bytes, offsets)
     }
 
     /// Create a new [`ArrayBytes`] with `num_elements` composed entirely of the `fill_value`.
@@ -66,12 +114,18 @@ impl<'a> ArrayBytes<'a> {
             }
             ArraySize::Variable { num_elements } => {
                 let num_elements = usize::try_from(num_elements).unwrap();
-                Self::new_vlen(
-                    fill_value.as_ne_bytes().repeat(num_elements),
-                    (0..=num_elements)
-                        .map(|i| i * fill_value.size())
-                        .collect::<Vec<_>>(),
-                )
+                let offsets = unsafe {
+                    // SAFETY: The offsets are monotonically increasing.
+                    RawBytesOffsets::new_unchecked(
+                        (0..=num_elements)
+                            .map(|i| i * fill_value.size())
+                            .collect::<Vec<_>>(),
+                    )
+                };
+                unsafe {
+                    // SAFETY: The last offset is equal to the length of the bytes
+                    Self::new_vlen_unchecked(fill_value.as_ne_bytes().repeat(num_elements), offsets)
+                }
             }
         }
     }
@@ -121,9 +175,9 @@ impl<'a> ArrayBytes<'a> {
     #[must_use]
     pub fn into_owned<'b>(self) -> ArrayBytes<'b> {
         match self {
-            Self::Fixed(bytes) => ArrayBytes::<'b>::new_flen(bytes.into_owned()),
+            Self::Fixed(bytes) => ArrayBytes::<'b>::Fixed(bytes.into_owned().into()),
             Self::Variable(bytes, offsets) => {
-                ArrayBytes::<'b>::new_vlen(bytes.into_owned(), offsets.into_owned())
+                ArrayBytes::<'b>::Variable(bytes.into_owned().into(), offsets.into_owned())
             }
         }
     }
@@ -188,7 +242,15 @@ impl<'a> ArrayBytes<'a> {
                     ss_bytes.extend_from_slice(&bytes[curr..next]);
                 }
                 ss_offsets.push(ss_bytes.len());
-                Ok(ArrayBytes::new_vlen(ss_bytes, ss_offsets))
+                let ss_offsets = unsafe {
+                    // SAFETY: The offsets are monotonically increasing.
+                    RawBytesOffsets::new_unchecked(ss_offsets)
+                };
+                let array_bytes = unsafe {
+                    // SAFETY: The last offset is equal to the length of the bytes
+                    ArrayBytes::new_vlen_unchecked(ss_bytes, ss_offsets)
+                };
+                Ok(array_bytes)
             }
             ArrayBytes::Fixed(bytes) => {
                 let byte_ranges =
@@ -201,14 +263,11 @@ impl<'a> ArrayBytes<'a> {
 }
 
 /// Validate fixed length array bytes for a given array size.
-fn validate_bytes_flen(bytes: &RawBytes, array_size: u64) -> Result<(), CodecError> {
-    if bytes.len() as u64 == array_size {
+fn validate_bytes_flen(bytes: &RawBytes, array_size: usize) -> Result<(), InvalidBytesLengthError> {
+    if bytes.len() == array_size {
         Ok(())
     } else {
-        Err(CodecError::UnexpectedChunkDecodedSize(
-            bytes.len(),
-            array_size,
-        ))
+        Err(InvalidBytesLengthError::new(bytes.len(), array_size))
     }
 }
 
@@ -243,9 +302,10 @@ fn validate_bytes(
     data_type_size: DataTypeSize,
 ) -> Result<(), CodecError> {
     match (bytes, data_type_size) {
-        (ArrayBytes::Fixed(bytes), DataTypeSize::Fixed(data_type_size)) => {
-            validate_bytes_flen(bytes, num_elements * data_type_size as u64)
-        }
+        (ArrayBytes::Fixed(bytes), DataTypeSize::Fixed(data_type_size)) => Ok(validate_bytes_flen(
+            bytes,
+            usize::try_from(num_elements * data_type_size as u64).unwrap(),
+        )?),
         (ArrayBytes::Variable(bytes, offsets), DataTypeSize::Variable) => {
             validate_bytes_vlen(bytes, offsets, num_elements)
         }
@@ -258,157 +318,126 @@ fn validate_bytes(
     }
 }
 
-/// This function is used internally by various array/codec methods to write the bytes of a chunk subset into an output with an associated array subset.
-/// This approach only works for fixed length data types.
-pub(crate) fn update_bytes_flen(
-    output_bytes: &UnsafeCellSlice<u8>,
-    output_shape: &[u64],
-    subset_bytes: &RawBytes,
-    subset: &ArraySubset,
-    data_type_size: usize,
-) {
-    debug_assert_eq!(
-        output_bytes.len(),
-        usize::try_from(output_shape.iter().product::<u64>()).unwrap() * data_type_size
-    );
-    debug_assert_eq!(
-        subset_bytes.len(),
-        subset.num_elements_usize() * data_type_size,
-    );
-
-    let contiguous_indices =
-        unsafe { subset.contiguous_linearised_indices_unchecked(output_shape) };
-    let length = contiguous_indices.contiguous_elements_usize() * data_type_size;
-    let mut decoded_offset = 0;
-    // TODO: Par iteration?
-    for array_subset_element_index in &contiguous_indices {
-        let output_offset = usize::try_from(array_subset_element_index).unwrap() * data_type_size;
-        debug_assert!((output_offset + length) <= output_bytes.len());
-        debug_assert!((decoded_offset + length) <= subset_bytes.len());
-        unsafe {
-            output_bytes
-                .index_mut(output_offset..output_offset + length)
-                .copy_from_slice(&subset_bytes[decoded_offset..decoded_offset + length]);
-        }
-        decoded_offset += length;
-    }
-}
-
 pub(crate) fn update_bytes_vlen<'a>(
-    output_bytes: &RawBytes,
-    output_offsets: &RawBytesOffsets,
-    output_shape: &[u64],
-    subset_bytes: &RawBytes,
-    subset_offsets: &RawBytesOffsets,
-    subset: &ArraySubset,
-) -> ArrayBytes<'a> {
+    input_bytes: &RawBytes,
+    input_offsets: &RawBytesOffsets,
+    input_shape: &[u64],
+    update_bytes: &RawBytes,
+    update_offsets: &RawBytesOffsets,
+    update_subset: &ArraySubset,
+) -> Result<ArrayBytes<'a>, IncompatibleArraySubsetAndShapeError> {
+    if !update_subset.inbounds_shape(input_shape) {
+        return Err(IncompatibleArraySubsetAndShapeError::new(
+            update_subset.clone(),
+            input_shape.to_vec(),
+        ));
+    }
+
     // Get the current and new length of the bytes in the chunk subset
-    let size_subset_new = {
-        let chunk_subset_indices = ArraySubset::new_with_shape(subset.shape().to_vec())
-            .linearised_indices(subset.shape())
-            .unwrap();
-        chunk_subset_indices
-            .iter()
-            .map(|index| {
-                let index = usize::try_from(index).unwrap();
-                subset_offsets[index + 1] - subset_offsets[index]
-            })
-            .sum::<usize>()
-    };
+    let size_subset_new = update_offsets
+        .iter()
+        .tuple_windows()
+        .map(|(curr, next)| next - curr)
+        .sum::<usize>();
     let size_subset_old = {
-        let chunk_indices = subset.linearised_indices(output_shape).unwrap();
+        let chunk_indices = update_subset.linearised_indices(input_shape).unwrap();
         chunk_indices
             .iter()
             .map(|index| {
                 let index = usize::try_from(index).unwrap();
-                output_offsets[index + 1] - output_offsets[index]
+                input_offsets[index + 1] - input_offsets[index]
             })
             .sum::<usize>()
     };
 
     // Populate new offsets and bytes
-    let mut offsets_new = Vec::with_capacity(output_offsets.len());
-    let bytes_new_len = (output_bytes.len() + size_subset_new)
+    let mut offsets_new = Vec::with_capacity(input_offsets.len());
+    let bytes_new_len = (input_bytes.len() + size_subset_new)
         .checked_sub(size_subset_old)
         .unwrap();
     let mut bytes_new = Vec::with_capacity(bytes_new_len);
-    let indices = ArraySubset::new_with_shape(output_shape.to_vec()).indices();
+    let indices = ArraySubset::new_with_shape(input_shape.to_vec()).indices();
     for (chunk_index, indices) in indices.iter().enumerate() {
         offsets_new.push(bytes_new.len());
-        if subset.contains(&indices) {
+        if update_subset.contains(&indices) {
             let subset_indices = indices
                 .iter()
-                .zip(subset.start())
+                .zip(update_subset.start())
                 .map(|(i, s)| i - s)
                 .collect::<Vec<_>>();
             let subset_index =
-                usize::try_from(ravel_indices(&subset_indices, subset.shape())).unwrap();
-            let start = subset_offsets[subset_index];
-            let end = subset_offsets[subset_index + 1];
-            bytes_new.extend_from_slice(&subset_bytes[start..end]);
+                usize::try_from(ravel_indices(&subset_indices, update_subset.shape())).unwrap();
+            let start = update_offsets[subset_index];
+            let end = update_offsets[subset_index + 1];
+            bytes_new.extend_from_slice(&update_bytes[start..end]);
         } else {
-            let start = output_offsets[chunk_index];
-            let end = output_offsets[chunk_index + 1];
-            bytes_new.extend_from_slice(&output_bytes[start..end]);
+            let start = input_offsets[chunk_index];
+            let end = input_offsets[chunk_index + 1];
+            bytes_new.extend_from_slice(&input_bytes[start..end]);
         }
     }
     offsets_new.push(bytes_new.len());
-
-    ArrayBytes::new_vlen(bytes_new, offsets_new)
+    let offsets_new = unsafe {
+        // SAFETY: The offsets are monotonically increasing.
+        RawBytesOffsets::new_unchecked(offsets_new)
+    };
+    let array_bytes = unsafe {
+        // SAFETY: The last offset is equal to the length of the bytes
+        ArrayBytes::new_vlen_unchecked(bytes_new, offsets_new)
+    };
+    Ok(array_bytes)
 }
 
 /// Update a subset of an array.
 ///
 /// This function is used internally by [`crate::array::Array::store_chunk_subset_opt`] and [`crate::array::Array::async_store_chunk_subset_opt`].
 ///
-/// # Safety
-/// The caller must ensure that:
-///  - `output_bytes` is an array with `output_shape` and `data_type_size`,
-///  - `output_subset_bytes` is an array with the shape of `output_subset` and `data_type_size`,
-///  - `output_subset` is within the bounds of `output_shape`, and
-///  - `output_bytes` and `output_subset_bytes` are compatible (e.g. both fixed or both variable sized).
-#[must_use]
-pub unsafe fn update_array_bytes<'a>(
+/// # Errors
+/// Returns a [`CodecError`] if
+/// - `output_bytes` are not compatible with the `output_shape` and `data_type_size`,
+/// - `output_subset_bytes` are not compatible with the `output_subset` and `data_type_size`,
+/// - `output_subset` is not within the bounds of `output_shape`
+pub fn update_array_bytes<'a>(
     output_bytes: ArrayBytes,
     output_shape: &[u64],
     output_subset: &ArraySubset,
     output_subset_bytes: &ArrayBytes,
     data_type_size: DataTypeSize,
-) -> ArrayBytes<'a> {
+) -> Result<ArrayBytes<'a>, CodecError> {
     match (output_bytes, output_subset_bytes, data_type_size) {
         (
             ArrayBytes::Variable(chunk_bytes, chunk_offsets),
             ArrayBytes::Variable(chunk_subset_bytes, chunk_subset_offsets),
             DataTypeSize::Variable,
-        ) => update_bytes_vlen(
+        ) => Ok(update_bytes_vlen(
             &chunk_bytes,
             &chunk_offsets,
             output_shape,
             chunk_subset_bytes,
             chunk_subset_offsets,
             output_subset,
-        ),
+        )?),
         (
             ArrayBytes::Fixed(chunk_bytes),
             ArrayBytes::Fixed(chunk_subset_bytes),
             DataTypeSize::Fixed(data_type_size),
         ) => {
             let mut chunk_bytes = chunk_bytes.into_owned();
-            {
-                let chunk_bytes = UnsafeCellSlice::new(&mut chunk_bytes);
-                update_bytes_flen(
-                    &chunk_bytes,
-                    output_shape,
-                    chunk_subset_bytes,
-                    output_subset,
+            let mut output_view = unsafe {
+                // SAFETY: Only one view is created, so it is disjoint
+                ArrayBytesFixedDisjointView::new(
+                    UnsafeCellSlice::new(&mut chunk_bytes),
                     data_type_size,
-                );
+                    output_shape,
+                    output_subset.clone(),
+                )
             }
-            ArrayBytes::new_flen(chunk_bytes)
+            .map_err(CodecError::from)?;
+            output_view.copy_from_slice(chunk_subset_bytes)?;
+            Ok(ArrayBytes::new_flen(chunk_bytes))
         }
-        (_, _, _) => {
-            unreachable!("Validation should occur outside of this function")
-        }
+        (_, _, DataTypeSize::Variable) => Err(CodecError::ExpectedVariableLengthBytes),
+        (_, _, DataTypeSize::Fixed(_)) => Err(CodecError::ExpectedFixedLengthBytes),
     }
 }
 
@@ -459,10 +488,14 @@ pub(crate) fn merge_chunks_vlen<'a>(
         *acc += sz;
         Some(*acc)
     }));
+    let offsets = unsafe {
+        // SAFETY: The offsets are monotonically increasing.
+        RawBytesOffsets::new_unchecked(offsets)
+    };
 
     // Write bytes
     // TODO: Go parallel
-    let mut bytes = vec![0; *offsets.last().unwrap()];
+    let mut bytes = vec![0; offsets.last()];
     for (chunk_bytes, chunk_subset) in chunk_bytes_and_subsets {
         let (chunk_bytes, chunk_offsets) = chunk_bytes.into_variable()?;
         let indices = chunk_subset.linearised_indices(array_shape).unwrap();
@@ -476,7 +509,12 @@ pub(crate) fn merge_chunks_vlen<'a>(
         }
     }
 
-    Ok(ArrayBytes::new_vlen(bytes, offsets))
+    let array_bytes = unsafe {
+        // SAFETY: The last offset is equal to the length of the bytes
+        ArrayBytes::new_vlen_unchecked(bytes, offsets)
+    };
+
+    Ok(array_bytes)
 }
 
 pub(crate) fn extract_decoded_regions_vlen<'a>(
@@ -506,7 +544,15 @@ pub(crate) fn extract_decoded_regions_vlen<'a>(
             region_bytes.extend_from_slice(&bytes[curr..next]);
         }
         region_offsets.push(region_bytes.len());
-        out.push(ArrayBytes::new_vlen(region_bytes, region_offsets));
+        let region_offsets = unsafe {
+            // SAFETY: The offsets are monotonically increasing.
+            RawBytesOffsets::new_unchecked(region_offsets)
+        };
+        let array_bytes = unsafe {
+            // SAFETY: The last offset is equal to the length of the bytes
+            ArrayBytes::new_vlen_unchecked(region_bytes, region_offsets)
+        };
+        out.push(array_bytes);
     }
     Ok(out)
 }
@@ -524,25 +570,15 @@ pub(crate) fn extract_decoded_regions_vlen<'a>(
 ///  - `data_type` and `fill_value` are compatible,
 ///  - `output` holds enough space for the preallocated bytes of an array with `output_shape` and `data_type`, and
 ///  - `output_subset` is within the bounds of `output_shape`.
-pub unsafe fn copy_fill_value_into(
+pub fn copy_fill_value_into(
     data_type: &DataType,
     fill_value: &FillValue,
-    output: &UnsafeCellSlice<u8>,
-    output_shape: &[u64],
-    output_subset: &ArraySubset,
+    output_view: &mut ArrayBytesFixedDisjointView,
 ) -> Result<(), CodecError> {
-    let array_size = ArraySize::new(data_type.size(), output_subset.num_elements());
-    if let (ArrayBytes::Fixed(fill_value_bytes), Some(data_type_size)) = (
-        ArrayBytes::new_fill_value(array_size, fill_value),
-        data_type.fixed_size(),
-    ) {
-        update_bytes_flen(
-            output,
-            output_shape,
-            &fill_value_bytes,
-            output_subset,
-            data_type_size,
-        );
+    let array_size = ArraySize::new(data_type.size(), output_view.num_elements());
+    if let ArrayBytes::Fixed(fill_value_bytes) = ArrayBytes::new_fill_value(array_size, fill_value)
+    {
+        output_view.copy_from_slice(&fill_value_bytes)?;
         Ok(())
     } else {
         // TODO: Variable length data type support?
@@ -602,7 +638,6 @@ impl<'a, const N: usize> From<&'a [u8; N]> for ArrayBytes<'a> {
 #[cfg(test)]
 mod tests {
     use std::error::Error;
-    use std::mem::size_of;
 
     use crate::array::Element;
 
@@ -618,6 +653,17 @@ mod tests {
         assert_eq!(bytes.len(), size_of::<u32>() * data.len());
 
         Ok(())
+    }
+
+    #[test]
+    fn array_bytes_vlen() {
+        let data = [0u8, 1, 2, 3, 4];
+        assert!(ArrayBytes::new_vlen(&data, vec![0].try_into().unwrap()).is_ok());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 5].try_into().unwrap()).is_ok());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 5, 5].try_into().unwrap()).is_ok());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 5, 6].try_into().unwrap()).is_err());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 1, 3, 5].try_into().unwrap()).is_ok());
+        assert!(ArrayBytes::new_vlen(&data, vec![0, 1, 3, 6].try_into().unwrap()).is_err());
     }
 
     #[test]
@@ -638,21 +684,27 @@ mod tests {
         let mut bytes_array = vec![0u8; 4 * 4];
         {
             let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
-            update_bytes_flen(
-                &bytes_array,
-                &vec![4, 4],
-                &vec![1u8, 2].into(),
-                &ArraySubset::new_with_ranges(&[1..2, 1..3]),
-                1,
-            );
+            let mut output_non_overlapping_0 = unsafe {
+                // SAFETY: Only one view is created, so it is disjoint
+                ArrayBytesFixedDisjointView::new_unchecked(
+                    bytes_array,
+                    size_of::<u8>(),
+                    &[4, 4],
+                    ArraySubset::new_with_ranges(&[1..2, 1..3]),
+                )
+            };
+            output_non_overlapping_0.copy_from_slice(&[1u8, 2]).unwrap();
 
-            update_bytes_flen(
-                &bytes_array,
-                &vec![4, 4],
-                &vec![3u8, 4].into(),
-                &ArraySubset::new_with_ranges(&[3..4, 0..2]),
-                1,
-            );
+            let mut output_non_overlapping_1 = unsafe {
+                // SAFETY: Only one view is created, so it is disjoint
+                ArrayBytesFixedDisjointView::new_unchecked(
+                    bytes_array,
+                    size_of::<u8>(),
+                    &[4, 4],
+                    ArraySubset::new_with_ranges(&[3..4, 0..2]),
+                )
+            };
+            output_non_overlapping_1.copy_from_slice(&[3u8, 4]).unwrap();
         }
 
         debug_assert_eq!(

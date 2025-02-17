@@ -6,10 +6,11 @@ use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::{
     array::{
-        array_bytes::{merge_chunks_vlen, update_bytes_flen},
-        codec::CodecOptions,
+        array_bytes::merge_chunks_vlen,
+        codec::{CodecError, CodecOptions},
         concurrency::concurrency_chunks_and_codec,
-        Array, ArrayBytes, ArrayError, ArraySize, DataTypeSize, ElementOwned,
+        Array, ArrayBytes, ArrayBytesFixedDisjointView, ArrayError, ArraySize, DataTypeSize,
+        ElementOwned,
     },
     array_subset::ArraySubset,
     storage::ReadableStorageTraits,
@@ -229,7 +230,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
         options: &CodecOptions,
     ) -> Result<ArrayBytes<'_>, ArrayError> {
         let chunk_representation = self.chunk_array_representation(chunk_indices)?;
-        if !chunk_subset.inbounds(&chunk_representation.shape_u64()) {
+        if !chunk_subset.inbounds_shape(&chunk_representation.shape_u64()) {
             return Err(ArrayError::InvalidArraySubset(
                 chunk_subset.clone(),
                 self.shape().to_vec(),
@@ -408,13 +409,18 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
                                     ArrayBytes::Variable(_, _) => unreachable!(),
                                 };
 
-                                update_bytes_flen(
-                                    &output,
-                                    array_subset.shape(),
-                                    fixed,
-                                    &chunk_subset_overlap.relative_to(array_subset.start())?,
-                                    data_type_size,
-                                );
+                                let mut output_view = unsafe {
+                                    // SAFETY: chunks represent disjoint array subsets
+                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                        output,
+                                        data_type_size,
+                                        array_subset.shape(),
+                                        chunk_subset_overlap.relative_to(array_subset.start())?,
+                                    )
+                                };
+                                output_view
+                                    .copy_from_slice(fixed)
+                                    .map_err(CodecError::from)?;
                                 Ok::<_, ArrayError>(())
                             };
                             iter_concurrent_limit!(

@@ -1,4 +1,4 @@
-use std::{mem::size_of, sync::Arc};
+use std::sync::Arc;
 
 use itertools::Itertools;
 
@@ -7,11 +7,11 @@ use crate::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
             ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits,
+            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
             RecommendedConcurrency,
         },
-        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, DataTypeSize,
-        RawBytes,
+        ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
+        RawBytesOffsets,
     },
     config::global_config,
     metadata::v3::MetadataV3,
@@ -35,7 +35,7 @@ impl VlenV2Codec {
 }
 
 impl CodecTraits for VlenV2Codec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let config = global_config();
         let name = config
             .experimental_codec_names()
@@ -111,7 +111,9 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
     ) -> Result<ArrayBytes<'a>, CodecError> {
         let num_elements = decoded_representation.num_elements_usize();
         let (bytes, offsets) = super::get_interleaved_bytes_and_offsets(num_elements, &bytes)?;
-        Ok(ArrayBytes::new_vlen(bytes, offsets))
+        let offsets = RawBytesOffsets::new(offsets)?;
+        let array_bytes = ArrayBytes::new_vlen(bytes, offsets)?;
+        Ok(array_bytes)
     }
 
     fn partial_decoder(

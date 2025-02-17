@@ -3,7 +3,7 @@
 mod vlen_codec;
 mod vlen_partial_decoder;
 
-use std::{mem::size_of, num::NonZeroU64, sync::Arc};
+use std::{num::NonZeroU64, sync::Arc};
 
 use itertools::Itertools;
 pub use vlen::IDENTIFIER;
@@ -13,7 +13,7 @@ pub use crate::metadata::v3::array::codec::vlen::{
 };
 use crate::{
     array::{
-        codec::{ArrayToBytesCodecTraits, CodecError, CodecOptions},
+        codec::{ArrayToBytesCodecTraits, CodecError, CodecOptions, InvalidBytesLengthError},
         convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
         RawBytes,
     },
@@ -62,10 +62,7 @@ fn get_vlen_bytes_and_offsets(
 ) -> Result<(Vec<u8>, Vec<usize>), CodecError> {
     // Get the index length and data start
     if bytes.len() < size_of::<u64>() {
-        return Err(CodecError::UnexpectedChunkDecodedSize(
-            bytes.len(),
-            size_of::<u64>() as u64,
-        ));
+        return Err(InvalidBytesLengthError::new(bytes.len(), size_of::<u64>()).into());
     }
     let index_len = u64::from_le_bytes(bytes[0..size_of::<u64>()].try_into().unwrap());
     let index_len = usize::try_from(index_len)

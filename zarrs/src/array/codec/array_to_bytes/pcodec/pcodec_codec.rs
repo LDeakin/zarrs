@@ -10,11 +10,11 @@ use crate::{
         codec::{
             ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
             ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecOptions, CodecTraits, RawBytes,
-            RecommendedConcurrency,
+            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            RawBytes, RecommendedConcurrency,
         },
-        convert_from_bytes_slice, transmute_to_bytes_vec, ArrayMetadataOptions,
-        BytesRepresentation, ChunkRepresentation, DataType,
+        convert_from_bytes_slice, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
+        DataType,
     },
     config::global_config,
     metadata::v3::{array::codec::pcodec::PcodecModeSpecConfiguration, MetadataV3},
@@ -84,7 +84,7 @@ impl PcodecCodec {
 }
 
 impl CodecTraits for PcodecCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let mode_spec = mode_spec_pco_to_config(&self.chunk_config.mode_spec);
         let (delta_spec, delta_encoding_order) = match self.chunk_config.delta_spec {
             DeltaSpec::Auto => (PcodecDeltaSpecConfiguration::Auto, None),

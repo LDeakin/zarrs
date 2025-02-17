@@ -1,13 +1,12 @@
-use core::mem::size_of;
 use std::{borrow::Cow, sync::Arc};
 
 use crate::{
     array::{
         codec::{
             BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecOptions, CodecTraits,
+            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
         },
-        ArrayMetadataOptions, BytesRepresentation, RawBytes, RecommendedConcurrency,
+        BytesRepresentation, RawBytes, RecommendedConcurrency,
     },
     metadata::v3::MetadataV3,
 };
@@ -48,7 +47,7 @@ impl GDeflateCodec {
 }
 
 impl CodecTraits for GDeflateCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let configuration = GDeflateCodecConfigurationV1 {
             level: self.compression_level,
         };

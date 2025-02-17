@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
+- Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
+- Add `ArrayBytesFixedDisjointView[CreateError]`
+
+### Changed
+- **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
+- **Breaking**: `CodecError` enum changes:
+  - Change `CodecError::UnexpectedChunkDecodedSize` to an `InvalidBytesLengthError`
+  - Add `CodecError::{InvalidArrayShape,InvalidNumberOfElements,SubsetOutOfBounds,RawBytesOffsetsCreate,RawBytesOffsetsOutOfBounds}`
+- **Breaking**: Change output args to `ArrayBytesFixedDisjointView` and make safe the following:
+  - `Array::[async_]retrieve_chunk[_subset]_into`
+  - `[Async]ArrayPartialDecoderTraits::partial_decode_into`
+  - `ArrayToBytesCodecTraits::decode_into`
+  - `zarrs::array::copy_fill_value_into`
+  - `zarrs::array::update_array_bytes`
+- **Breaking**: change `RawBytesOffsets` into a validated newtype
+- **Breaking**: `ArrayBytes::new_vlen()` not returns a `Result` and validates bytes/offsets compatibility
+- Reenable broken compatibility tests since fixed in `zarr-python`/`numcodecs`
+- **Breaking**: move the `zarrs::array::{data_type,fill_value}` modules into the `zarrs_data_type` crate
+- Bump `lru` to 0.13
+
+## [0.19.2] - 2025-02-13
+
+### Changed
+- Bump `zarrs_metadata` to 0.3.4 which includes a number of Zarr metadata fixes
+  - See the [`zarrs_metadata` CHANGELOG.md](https://github.com/LDeakin/zarrs/blob/main/zarrs_metadata/CHANGELOG.md)
+
+## [0.19.1] - 2025-01-19
+
+### Added
+- Document that elements in `ArrayBytes` must be in C-contiguous order
+
+### Changed
+- Use new language/library features added between Rust 1.78-1.82 (internal)
+- Cleanup root docs and README removing ZEPs table and ecosystem table
+
+### Fixed
+- New clippy lints
+- Mark `String` and `Bytes` data types as experimental in their docs
+- Mark `rectangular` chunk grid as experimental since it is based on a draft ZEP
+- Add missing invariant to `[partial_]decode_into` safety docs
+
 ## [0.19.0] - 2025-01-10
 
 ### Highlights
@@ -1215,7 +1258,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.19.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.19.2...HEAD
+[0.19.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.2
+[0.19.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.1
 [0.19.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.0
 [0.18.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.3
 [0.18.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.18.2

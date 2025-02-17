@@ -87,15 +87,13 @@ impl ArrayPartialEncoderTraits for ArrayToArrayPartialEncoderDefault {
                 self.decoded_representation.data_type().size(),
             )?;
 
-            decoded_value = unsafe {
-                update_array_bytes(
-                    decoded_value,
-                    &chunk_shape,
-                    chunk_subset,
-                    chunk_subset_bytes,
-                    self.decoded_representation.data_type().size(),
-                )
-            };
+            decoded_value = update_array_bytes(
+                decoded_value,
+                &chunk_shape,
+                chunk_subset,
+                chunk_subset_bytes,
+                self.decoded_representation.data_type().size(),
+            )?;
         }
 
         let is_fill_value = !options.store_empty_chunks()

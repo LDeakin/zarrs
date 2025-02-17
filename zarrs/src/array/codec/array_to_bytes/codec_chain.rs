@@ -2,22 +2,19 @@
 
 use std::sync::Arc;
 
-use unsafe_cell_slice::UnsafeCellSlice;
-
 use crate::{
     array::{
-        array_bytes::update_bytes_flen,
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
             ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
             BytesPartialDecoderCache, BytesPartialDecoderTraits, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, Codec, CodecError, CodecOptions, CodecTraits,
+            BytesToBytesCodecTraits, Codec, CodecError, CodecMetadataOptions, CodecOptions,
+            CodecTraits,
         },
         concurrency::RecommendedConcurrency,
-        ArrayBytes, ArrayMetadataOptions, BytesRepresentation, ChunkRepresentation, ChunkShape,
-        RawBytes,
+        ArrayBytes, ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation,
+        ChunkShape, RawBytes,
     },
-    array_subset::ArraySubset,
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
@@ -137,7 +134,7 @@ impl CodecChain {
 
     /// Create codec chain metadata.
     #[must_use]
-    pub fn create_metadatas_opt(&self, options: &ArrayMetadataOptions) -> Vec<MetadataV3> {
+    pub fn create_metadatas_opt(&self, options: &CodecMetadataOptions) -> Vec<MetadataV3> {
         let mut metadatas =
             Vec::with_capacity(self.array_to_array.len() + 1 + self.bytes_to_bytes.len());
         for codec in &self.array_to_array {
@@ -159,7 +156,7 @@ impl CodecChain {
     /// Create codec chain metadata with default options.
     #[must_use]
     pub fn create_metadatas(&self) -> Vec<MetadataV3> {
-        self.create_metadatas_opt(&ArrayMetadataOptions::default())
+        self.create_metadatas_opt(&CodecMetadataOptions::default())
     }
 
     /// Get the array to array codecs
@@ -215,7 +212,7 @@ impl CodecTraits for CodecChain {
     /// Returns [`None`] since a codec chain does not have standard codec metadata.
     ///
     /// Note that usage of the codec chain is explicit in [`Array`](crate::array::Array) and [`CodecChain::create_metadatas_opt()`] will call [`CodecTraits::create_metadata_opt()`] from for each codec.
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         None
     }
 
@@ -309,13 +306,11 @@ impl ArrayToBytesCodecTraits for CodecChain {
         Ok(bytes)
     }
 
-    unsafe fn decode_into(
+    fn decode_into(
         &self,
         mut bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
         let array_representations =
@@ -325,16 +320,12 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
             // Fast path if no bytes to bytes or array to array codecs
-            return unsafe {
-                self.array_to_bytes.decode_into(
-                    bytes,
-                    array_representations.last().unwrap(),
-                    output,
-                    output_shape,
-                    output_subset,
-                    options,
-                )
-            };
+            return self.array_to_bytes.decode_into(
+                bytes,
+                array_representations.last().unwrap(),
+                output_view,
+                options,
+            );
         }
 
         // bytes->bytes
@@ -347,16 +338,12 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.array_to_array.is_empty() {
             // Fast path if no array to array codecs
-            return unsafe {
-                self.array_to_bytes.decode_into(
-                    bytes,
-                    array_representations.last().unwrap(),
-                    output,
-                    output_shape,
-                    output_subset,
-                    options,
-                )
-            };
+            return self.array_to_bytes.decode_into(
+                bytes,
+                array_representations.last().unwrap(),
+                output_view,
+                options,
+            );
         }
 
         // bytes->array
@@ -377,13 +364,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         )?;
 
         if let ArrayBytes::Fixed(decoded_value) = bytes {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                decoded_representation.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
         } else {
             // TODO: Variable length data type support?
             return Err(CodecError::ExpectedFixedLengthBytes);
@@ -852,7 +833,7 @@ mod tests {
             .map(|bytes| bytes.into_fixed().unwrap().to_vec())
             .flatten()
             .collect::<Vec<_>>()
-            .chunks(std::mem::size_of::<f32>())
+            .chunks(size_of::<f32>())
             .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         println!("decoded_partial_chunk {decoded_partial_chunk:?}");

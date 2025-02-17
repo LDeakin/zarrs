@@ -304,17 +304,15 @@ impl ArrayPartialEncoderTraits for ShardingPartialEncoder {
                     };
 
                     // Update the inner chunk
-                    let inner_chunk_updated = unsafe {
-                        update_array_bytes(
-                            inner_chunk_decoded,
-                            &self.inner_chunk_representation.shape_u64(),
-                            &inner_chunk_subset_overlap
-                                .relative_to(inner_chunk_subset.start())
-                                .unwrap(),
-                            &inner_chunk_bytes,
-                            self.inner_chunk_representation.data_type().size(),
-                        )
-                    };
+                    let inner_chunk_updated = update_array_bytes(
+                        inner_chunk_decoded,
+                        &self.inner_chunk_representation.shape_u64(),
+                        &inner_chunk_subset_overlap
+                            .relative_to(inner_chunk_subset.start())
+                            .unwrap(),
+                        &inner_chunk_bytes,
+                        self.inner_chunk_representation.data_type().size(),
+                    )?;
                     inner_chunks_decoded
                         .lock()
                         .unwrap()

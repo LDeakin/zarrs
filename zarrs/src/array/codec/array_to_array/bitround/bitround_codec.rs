@@ -5,9 +5,9 @@ use crate::{
         codec::{
             options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
             ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
-            CodecError, CodecTraits, RecommendedConcurrency,
+            CodecError, CodecMetadataOptions, CodecTraits, RecommendedConcurrency,
         },
-        ArrayMetadataOptions, ChunkRepresentation, ChunkShape, DataType,
+        ChunkRepresentation, ChunkShape, DataType,
     },
     config::global_config,
     metadata::v3::MetadataV3,
@@ -47,7 +47,7 @@ impl BitroundCodec {
 }
 
 impl CodecTraits for BitroundCodec {
-    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3> {
         if options.experimental_codec_store_metadata_if_encode_only() {
             let configuration = BitroundCodecConfigurationV1 {
                 keepbits: self.keepbits,

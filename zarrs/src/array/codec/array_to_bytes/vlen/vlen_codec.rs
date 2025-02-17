@@ -1,15 +1,15 @@
-use std::{mem::size_of, num::NonZeroU64, sync::Arc};
+use std::{num::NonZeroU64, sync::Arc};
 
 use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
             ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesCodec,
-            BytesPartialDecoderTraits, BytesPartialEncoderTraits, CodecError, CodecOptions,
-            CodecTraits, RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesPartialEncoderTraits, CodecError, CodecMetadataOptions,
+            CodecOptions, CodecTraits, RecommendedConcurrency,
         },
-        transmute_to_bytes_vec, ArrayBytes, ArrayMetadataOptions, BytesRepresentation,
-        ChunkRepresentation, CodecChain, DataType, DataTypeSize, Endianness, FillValue, RawBytes,
+        transmute_to_bytes_vec, ArrayBytes, BytesRepresentation, ChunkRepresentation, CodecChain,
+        DataType, DataTypeSize, Endianness, FillValue, RawBytes, RawBytesOffsets,
     },
     config::global_config,
     metadata::v3::{array::codec::vlen::VlenIndexDataType, MetadataV3},
@@ -21,7 +21,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{vlen_partial_decoder, VlenCodecConfiguration, VlenCodecConfigurationV1};
 
-/// A `bytes` codec implementation.
+/// A `vlen` codec implementation.
 #[derive(Debug, Clone)]
 pub struct VlenCodec {
     index_codecs: Arc<CodecChain>,
@@ -83,7 +83,7 @@ impl VlenCodec {
 }
 
 impl CodecTraits for VlenCodec {
-    fn create_metadata_opt(&self, _options: &ArrayMetadataOptions) -> Option<MetadataV3> {
+    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
         let configuration = VlenCodecConfigurationV1 {
             index_codecs: self.index_codecs.create_metadatas(),
             data_codecs: self.data_codecs.create_metadatas(),
@@ -265,14 +265,16 @@ impl ArrayToBytesCodecTraits for VlenCodec {
             }
         }
         .unwrap();
-        let (data, index) = super::get_vlen_bytes_and_offsets(
+        let (bytes, offsets) = super::get_vlen_bytes_and_offsets(
             &index_chunk_rep,
             &bytes,
             &self.index_codecs,
             &self.data_codecs,
             options,
         )?;
-        Ok(ArrayBytes::new_vlen(data, index))
+        let offsets = RawBytesOffsets::new(offsets)?;
+        let array_bytes = ArrayBytes::new_vlen(bytes, offsets)?;
+        Ok(array_bytes)
     }
 
     fn partial_decoder(

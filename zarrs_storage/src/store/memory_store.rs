@@ -1,6 +1,6 @@
 //! A synchronous in-memory store.
 
-use parking_lot::RwLock;
+use parking_lot::RwLock; // TODO: std::sync::RwLock with Rust 1.78+
 use std::sync::Mutex;
 
 use crate::{

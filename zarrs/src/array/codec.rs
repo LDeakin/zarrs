@@ -13,8 +13,11 @@
 pub mod array_to_array;
 pub mod array_to_bytes;
 pub mod bytes_to_bytes;
+pub mod metadata_options;
 pub mod options;
 
+use derive_more::derive::Display;
+pub use metadata_options::CodecMetadataOptions;
 pub use options::{CodecOptions, CodecOptionsBuilder};
 
 // Array to array
@@ -67,7 +70,6 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 
 #[cfg(feature = "async")]
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
-use unsafe_cell_slice::UnsafeCellSlice;
 
 mod array_partial_encoder_default;
 pub use array_partial_encoder_default::ArrayPartialEncoderDefault;
@@ -77,6 +79,7 @@ pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefaul
 
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
+use zarrs_metadata::ArrayShape;
 
 use crate::indexer::IncompatibleIndexerAndShapeError;
 use crate::storage::{StoreKeyOffsetValue, WritableStorage};
@@ -95,12 +98,12 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use super::array_bytes::update_bytes_flen;
+use super::RawBytesOffsetsOutOfBoundsError;
 use super::{
-    concurrency::RecommendedConcurrency, ArrayMetadataOptions, BytesRepresentation,
-    ChunkRepresentation, ChunkShape, DataType,
+    array_bytes::RawBytesOffsetsCreateError, concurrency::RecommendedConcurrency, ArrayBytes,
+    ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation, ChunkShape, DataType,
+    RawBytes,
 };
-use super::{ArrayBytes, RawBytes};
 
 /// A codec plugin.
 pub type CodecPlugin = Plugin<Codec>;
@@ -200,13 +203,13 @@ pub trait CodecTraits: Send + Sync {
     /// Create metadata.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn create_metadata_opt(&self, options: &ArrayMetadataOptions) -> Option<MetadataV3>;
+    fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3>;
 
     /// Create metadata with default options.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
     fn create_metadata(&self) -> Option<MetadataV3> {
-        self.create_metadata_opt(&ArrayMetadataOptions::default())
+        self.create_metadata_opt(&CodecMetadataOptions::default())
     }
 
     /// Indicates if the input to a codecs partial decoder should be cached for optimal performance.
@@ -360,34 +363,26 @@ pub trait ArrayPartialDecoderTraits: Any + Send + Sync {
     /// Extracted elements from the `array_subset` are written to the subset of the output in C order.
     ///
     /// # Errors
-    /// Returns [`CodecError`] if a codec fails or an array subset is invalid.
-    ///
-    /// # Safety
-    /// The caller must ensure that:
-    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type,
-    ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `output_subset` has the same number of elements as `array_subset`.
-    unsafe fn partial_decode_into(
+    /// Returns [`CodecError`] if a codec fails or the number of elements in `array_subset` does not match the number of elements in `output_view`,
+    fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds(output_shape));
-        debug_assert_eq!(array_subset.num_elements(), output_subset.num_elements());
+        if array_subset.num_elements() != output_view.num_elements() {
+            return Err(InvalidNumberOfElementsError::new(
+                array_subset.num_elements(),
+                output_view.num_elements(),
+            )
+            .into());
+        }
+
         let decoded_value = self
             .partial_decode(&[array_subset.clone()], options)?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                self.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
             Ok(())
         } else {
             Err(CodecError::ExpectedFixedLengthBytes)
@@ -452,28 +447,25 @@ pub trait AsyncArrayPartialDecoderTraits: Any + Send + Sync {
 
     /// Async variant of [`ArrayPartialDecoderTraits::partial_decode_into`].
     #[allow(clippy::missing_safety_doc)]
-    async unsafe fn partial_decode_into(
+    async fn partial_decode_into(
         &self,
         array_subset: &ArraySubset,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds(output_shape));
-        debug_assert_eq!(array_subset.shape(), output_subset.shape());
+        if array_subset.num_elements() != output_view.num_elements() {
+            return Err(InvalidNumberOfElementsError::new(
+                output_view.num_elements(),
+                array_subset.num_elements(),
+            )
+            .into());
+        }
         let decoded_value = self
             .partial_decode(&[array_subset.clone()], options)
             .await?
             .remove(0);
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                self.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
             Ok(())
         } else {
             Err(CodecError::ExpectedFixedLengthBytes)
@@ -711,36 +703,24 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// Chunk elements are written to the subset of the output in C order.
     ///
     /// # Errors
-    /// Returns [`CodecError`] if a codec fails or the decoded output is incompatible with `decoded_representation`.
-    ///
-    /// # Safety
-    /// The caller must ensure that:
-    ///  - `output` holds enough space for the preallocated bytes of an array with shape `output_shape` of the appropriate data type, and
-    ///  - `output_subset` is within the bounds of `output_shape`, and
-    ///  - `output_subset` has the same number of elements as the decoded representation shape.
-    unsafe fn decode_into(
+    /// Returns [`CodecError`] if a codec fails or the number of elements in `decoded_representation` does not match the number of elements in `output_view`,
+    fn decode_into(
         &self,
         bytes: RawBytes<'_>,
         decoded_representation: &ChunkRepresentation,
-        output: &UnsafeCellSlice<u8>,
-        output_shape: &[u64],
-        output_subset: &ArraySubset,
+        output_view: &mut ArrayBytesFixedDisjointView<'_>,
         options: &CodecOptions,
     ) -> Result<(), CodecError> {
-        debug_assert!(output_subset.inbounds(output_shape));
-        debug_assert_eq!(
-            decoded_representation.num_elements(),
-            output_subset.num_elements()
-        );
+        if decoded_representation.num_elements() != output_view.num_elements() {
+            return Err(InvalidNumberOfElementsError::new(
+                output_view.num_elements(),
+                decoded_representation.num_elements(),
+            )
+            .into());
+        }
         let decoded_value = self.decode(bytes, decoded_representation, options)?;
         if let ArrayBytes::Fixed(decoded_value) = decoded_value {
-            update_bytes_flen(
-                output,
-                output_shape,
-                &decoded_value,
-                output_subset,
-                decoded_representation.data_type().fixed_size().unwrap(),
-            );
+            output_view.copy_from_slice(&decoded_value)?;
         } else {
             return Err(CodecError::ExpectedFixedLengthBytes);
         }
@@ -961,6 +941,76 @@ impl AsyncBytesPartialDecoderTraits for std::io::Cursor<Vec<u8>> {
     }
 }
 
+/// An error indicating the length of bytes does not match the expected length.
+#[derive(Debug, Error, Display)]
+#[display("Invalid bytes len {len}, expected {expected_len}")]
+pub struct InvalidBytesLengthError {
+    len: usize,
+    expected_len: usize,
+}
+
+impl InvalidBytesLengthError {
+    /// Create a new [`InvalidBytesLengthError`].
+    #[must_use]
+    pub fn new(len: usize, expected_len: usize) -> Self {
+        Self { len, expected_len }
+    }
+}
+
+/// An error indicating the shape is not compatible with the expected number of elements.
+#[derive(Debug, Error, Display)]
+#[display("Invalid shape {shape:?} for number of elements {expected_num_elements}")]
+pub struct InvalidArrayShapeError {
+    shape: ArrayShape,
+    expected_num_elements: usize,
+}
+
+impl InvalidArrayShapeError {
+    /// Create a new [`InvalidArrayShapeError`].
+    #[must_use]
+    pub fn new(shape: ArrayShape, expected_num_elements: usize) -> Self {
+        Self {
+            shape,
+            expected_num_elements,
+        }
+    }
+}
+
+/// An error indicating the length of elements does not match the expected length.
+#[derive(Debug, Error, Display)]
+#[display("Invalid number of elements {num}, expected {expected}")]
+pub struct InvalidNumberOfElementsError {
+    num: u64,
+    expected: u64,
+}
+
+impl InvalidNumberOfElementsError {
+    /// Create a new [`InvalidNumberOfElementsError`].
+    #[must_use]
+    pub fn new(num: u64, expected: u64) -> Self {
+        Self { num, expected }
+    }
+}
+
+/// An array subset is out of bounds.
+#[derive(Debug, Error, Display)]
+#[display("Subset {subset} is out of bounds of {must_be_within}")]
+pub struct SubsetOutOfBoundsError {
+    subset: ArraySubset,
+    must_be_within: ArraySubset,
+}
+
+impl SubsetOutOfBoundsError {
+    /// Create a new [`InvalidNumberOfElementsError`].
+    #[must_use]
+    pub fn new(subset: ArraySubset, must_be_within: ArraySubset) -> Self {
+        Self {
+            subset,
+            must_be_within,
+        }
+    }
+}
+
 /// A codec error.
 #[derive(Debug, Error)]
 pub enum CodecError {
@@ -977,8 +1027,8 @@ pub enum CodecError {
     #[error("the array subset {_0} has the wrong dimensionality, expected {_1}")]
     InvalidArraySubsetDimensionalityError(ArraySubset, usize),
     /// The decoded size of a chunk did not match what was expected.
-    #[error("the size of a decoded chunk is {_0}, expected {_1}")]
-    UnexpectedChunkDecodedSize(usize, u64),
+    #[error("the size of a decoded chunk is {}, expected {}", _0.len, _0.expected_len)]
+    UnexpectedChunkDecodedSize(#[from] InvalidBytesLengthError),
     /// An embedded checksum does not match the decoded value.
     #[error("the checksum is invalid")]
     InvalidChecksum,
@@ -1003,6 +1053,21 @@ pub enum CodecError {
     /// Expected variable length bytes.
     #[error("Expected variable length array bytes")]
     ExpectedVariableLengthBytes,
+    /// Invalid array shape.
+    #[error(transparent)]
+    InvalidArrayShape(#[from] InvalidArrayShapeError),
+    /// Invalid number of elements.
+    #[error(transparent)]
+    InvalidNumberOfElements(#[from] InvalidNumberOfElementsError),
+    /// Subset out of bounds.
+    #[error(transparent)]
+    SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
+    /// Invalid byte offsets for variable length data.
+    #[error(transparent)]
+    RawBytesOffsetsCreate(#[from] RawBytesOffsetsCreateError),
+    /// Variable length array bytes offsets are out of bounds.
+    #[error(transparent)]
+    RawBytesOffsetsOutOfBounds(#[from] RawBytesOffsetsOutOfBoundsError),
 }
 
 impl From<&str> for CodecError {

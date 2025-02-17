@@ -43,3 +43,31 @@ fn zarr_python_compat_fletcher32_v2() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[test]
+fn zarr_python_v2_compat_str_fv_0() -> Result<(), Box<dyn Error>> {
+    let store = Arc::new(FilesystemStore::new(
+        "tests/data/zarr_python_compat/str_v2_fv_0.zarr",
+    )?);
+    let array = zarrs::array::Array::open(store.clone(), "/")?;
+    let subset_all = array.subset_all();
+    let elements = array.retrieve_array_subset_elements::<String>(&subset_all)?;
+
+    assert_eq!(elements, &["a", "bb", "", "", ""]);
+
+    Ok(())
+}
+
+#[test]
+fn zarr_python_v2_compat_str_fv_null() -> Result<(), Box<dyn Error>> {
+    let store = Arc::new(FilesystemStore::new(
+        "tests/data/zarr_python_compat/str_v2_fv_null.zarr",
+    )?);
+    let array = zarrs::array::Array::open(store.clone(), "/")?;
+    let subset_all = array.subset_all();
+    let elements = array.retrieve_array_subset_elements::<String>(&subset_all)?;
+
+    assert_eq!(elements, &["a", "bb", "", "", ""]);
+
+    Ok(())
+}

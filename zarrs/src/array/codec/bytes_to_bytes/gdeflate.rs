@@ -28,7 +28,7 @@ pub use gdeflate_codec::GDeflateCodec;
 
 use crate::{
     array::{
-        codec::{Codec, CodecError, CodecPlugin},
+        codec::{Codec, CodecError, CodecPlugin, InvalidBytesLengthError},
         RawBytes,
     },
     metadata::v3::{array::codec::gdeflate, MetadataV3},
@@ -37,7 +37,6 @@ use crate::{
 
 pub use gdeflate::IDENTIFIER;
 
-use core::mem::size_of;
 use std::sync::Arc;
 
 // Register the codec.
@@ -62,10 +61,11 @@ const GDEFLATE_STATIC_HEADER_LENGTH: usize = 2 * size_of::<u64>();
 
 fn gdeflate_decode(encoded_value: &RawBytes<'_>) -> Result<Vec<u8>, CodecError> {
     if encoded_value.len() < GDEFLATE_STATIC_HEADER_LENGTH {
-        return Err(CodecError::UnexpectedChunkDecodedSize(
+        return Err(InvalidBytesLengthError::new(
             encoded_value.len(),
-            GDEFLATE_STATIC_HEADER_LENGTH as u64,
-        ));
+            GDEFLATE_STATIC_HEADER_LENGTH,
+        )
+        .into());
     }
 
     // Decode the static header
@@ -78,10 +78,11 @@ fn gdeflate_decode(encoded_value: &RawBytes<'_>) -> Result<Vec<u8>, CodecError> 
     // Check length of dynamic header
     let dynamic_header_length = num_pages * size_of::<u64>();
     if encoded_value.len() < GDEFLATE_STATIC_HEADER_LENGTH + dynamic_header_length {
-        return Err(CodecError::UnexpectedChunkDecodedSize(
+        return Err(InvalidBytesLengthError::new(
             encoded_value.len(),
-            (GDEFLATE_STATIC_HEADER_LENGTH + dynamic_header_length) as u64,
-        ));
+            GDEFLATE_STATIC_HEADER_LENGTH + dynamic_header_length,
+        )
+        .into());
     }
 
     // Decode the pages
@@ -329,7 +330,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .to_vec()
-            .chunks_exact(std::mem::size_of::<u16>())
+            .chunks_exact(size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u16> = vec![2, 3, 5];
@@ -372,7 +373,7 @@ mod tests {
 
         let decoded_partial_chunk: Vec<u16> = decoded_partial_chunk
             .to_vec()
-            .chunks_exact(std::mem::size_of::<u16>())
+            .chunks_exact(size_of::<u16>())
             .map(|b| u16::from_ne_bytes(b.try_into().unwrap()))
             .collect();
         let answer: Vec<u16> = vec![2, 3, 5];
