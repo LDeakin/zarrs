@@ -108,7 +108,17 @@ impl CodecChain {
         let mut array_to_bytes: Option<Arc<dyn ArrayToBytesCodecTraits>> = None;
         let mut bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>> = vec![];
         for metadata in metadatas {
-            let codec = Codec::from_metadata(metadata)?;
+            let codec = match Codec::from_metadata(metadata) {
+                Ok(codec) => Ok(codec),
+                Err(err) => {
+                    if metadata.must_understand() {
+                        Err(err)
+                    } else {
+                        continue;
+                    }
+                }
+            }?;
+
             match codec {
                 Codec::ArrayToArray(codec) => {
                     array_to_array.push(codec);
