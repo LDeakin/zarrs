@@ -202,6 +202,22 @@ impl<TStorage: ?Sized> Group<TStorage> {
             self
         }
     }
+
+    /// Reject the group if it contains additional fields with `"must_understand": true`.
+    fn validate_metadata(metadata: &GroupMetadata) -> Result<(), GroupCreateError> {
+        let additional_fields = match &metadata {
+            GroupMetadata::V2(metadata) => &metadata.additional_fields,
+            GroupMetadata::V3(metadata) => &metadata.additional_fields,
+        };
+        for (name, field) in additional_fields {
+            if field.must_understand() {
+                return Err(GroupCreateError::UnsupportedAdditionalFieldError(
+                    UnsupportedAdditionalFieldError::new(name.clone(), field.as_value().clone()),
+                ));
+            }
+        }
+        Ok(())
+    }
 }
 
 impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
@@ -224,15 +240,24 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
         path: &str,
         version: &MetadataRetrieveVersion,
     ) -> Result<Self, GroupCreateError> {
-        let node_path = path.try_into()?;
+        let metadata = Self::open_metadata(&storage, path, version)?;
+        Self::validate_metadata(&metadata)?;
+        Self::new_with_metadata(storage, path, metadata)
+    }
 
+    fn open_metadata(
+        storage: &Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<GroupMetadata, GroupCreateError> {
+        let node_path = path.try_into()?;
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
             // Try Zarr V3
             let key_v3 = meta_key_v3(&node_path);
             if let Some(metadata) = storage.get(&key_v3)? {
                 let metadata: GroupMetadataV3 = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
-                return Self::new_with_metadata(storage, path, GroupMetadata::V3(metadata));
+                return Ok(GroupMetadata::V3(metadata));
             }
         }
 
@@ -249,7 +274,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Group<TStorage> {
                         StorageError::InvalidMetadata(attributes_key, err.to_string())
                     })?;
                 }
-                return Self::new_with_metadata(storage, path, GroupMetadata::V2(metadata));
+                return Ok(GroupMetadata::V2(metadata));
             }
         }
 
@@ -373,6 +398,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
         path: &str,
         version: &MetadataRetrieveVersion,
     ) -> Result<Self, GroupCreateError> {
+        let metadata = Self::async_open_metadata(storage.clone(), path, version).await?;
+        Self::validate_metadata(&metadata)?;
+        Self::new_with_metadata(storage, path, metadata)
+    }
+
+    async fn async_open_metadata(
+        storage: Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<GroupMetadata, GroupCreateError> {
         let node_path = path.try_into()?;
 
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
@@ -381,7 +416,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
             if let Some(metadata) = storage.get(&key_v3).await? {
                 let metadata: GroupMetadataV3 = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
-                return Self::new_with_metadata(storage, path, GroupMetadata::V3(metadata));
+                return Ok(GroupMetadata::V3(metadata));
             }
         }
 
@@ -398,7 +433,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits> Group<TStorage> {
                         StorageError::InvalidMetadata(attributes_key, err.to_string())
                     })?;
                 }
-                return Self::new_with_metadata(storage, path, GroupMetadata::V2(metadata));
+                return Ok(GroupMetadata::V2(metadata));
             }
         }
 
@@ -773,6 +808,16 @@ mod tests {
             .get("unknown")
             .unwrap()
             .must_understand());
+
+        // Permit manual creation of group with unsupported metadata
+        let storage = Arc::new(MemoryStore::new());
+        let group =
+            Group::new_with_metadata(storage.clone(), "/", group_metadata.clone().into()).unwrap();
+        group.store_metadata().unwrap();
+
+        // Group opening should fail with unsupported metadata
+        let group = Group::open(storage, "/");
+        assert!(group.is_err());
     }
 
     #[test]
