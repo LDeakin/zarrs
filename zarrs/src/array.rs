@@ -1184,11 +1184,21 @@ mod tests {
     #[allow(dead_code)]
     fn array_v3_numcodecs(path_in: &str) {
         {
+            use zarrs_metadata::v3::array::codec;
             let mut config = crate::config::global_config_mut();
             let experimental_codec_names = config.experimental_codec_names_mut();
-            experimental_codec_names.insert("zfp".to_string(), "numcodecs.zfpy".to_string());
-            experimental_codec_names.insert("pcodec".to_string(), "numcodecs.pcodec".to_string());
-            experimental_codec_names.insert("bz2".to_string(), "numcodecs.bz2".to_string());
+            experimental_codec_names.insert(
+                codec::zfp::IDENTIFIER.to_string(),
+                "numcodecs.zfpy".to_string(),
+            );
+            experimental_codec_names.insert(
+                codec::pcodec::IDENTIFIER.to_string(),
+                "numcodecs.pcodec".to_string(),
+            );
+            experimental_codec_names.insert(
+                codec::bz2::IDENTIFIER.to_string(),
+                "numcodecs.bz2".to_string(),
+            );
         }
 
         let store = Arc::new(FilesystemStore::new(path_in).unwrap());
