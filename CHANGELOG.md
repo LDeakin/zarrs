@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `lru` to 0.13
 - Use codec identifiers in the example for `experimental_codec_names` remapping
 
+### Fixed
+- Error on `{Array,Group}::[async_]open[_opt]` with additional fields with `"must_understand": true`
+
 ## [0.19.2] - 2025-02-13
 
 ### Changed

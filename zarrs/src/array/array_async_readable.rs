@@ -42,6 +42,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
         path: &str,
         version: &MetadataRetrieveVersion,
     ) -> Result<Array<TStorage>, ArrayCreateError> {
+        let metadata = Self::async_open_metadata(storage.clone(), path, version).await?;
+        Self::validate_metadata(&metadata)?;
+        Self::new_with_metadata(storage, path, metadata)
+    }
+
+    async fn async_open_metadata(
+        storage: Arc<TStorage>,
+        path: &str,
+        version: &MetadataRetrieveVersion,
+    ) -> Result<ArrayMetadata, ArrayCreateError> {
         let node_path = NodePath::new(path)?;
 
         if let MetadataRetrieveVersion::Default | MetadataRetrieveVersion::V3 = version {
@@ -50,7 +60,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
             if let Some(metadata) = storage.get(&key_v3).await? {
                 let metadata: ArrayMetadataV3 = serde_json::from_slice(&metadata)
                     .map_err(|err| StorageError::InvalidMetadata(key_v3, err.to_string()))?;
-                return Self::new_with_metadata(storage, path, ArrayMetadata::V3(metadata));
+                return Ok(ArrayMetadata::V3(metadata));
             }
         }
 
@@ -69,7 +79,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                     })?;
                 }
 
-                return Self::new_with_metadata(storage, path, ArrayMetadata::V2(metadata));
+                return Ok(ArrayMetadata::V2(metadata));
             }
         }
 
