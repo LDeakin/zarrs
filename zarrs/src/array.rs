@@ -611,7 +611,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             ArrayMetadata::V2(_metadata) => {
                 // NOTE: The codec related options in ArrayMetadataOptions do not impact V2 codecs
             }
-        };
+        }
 
         // Convert version
         match (metadata, options.metadata_convert_version()) {

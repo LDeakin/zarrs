@@ -87,7 +87,7 @@ impl BytesCodec {
                     )));
                 }
             }
-        };
+        }
 
         if let Some(endian) = &self.endian {
             if !endian.is_native() {

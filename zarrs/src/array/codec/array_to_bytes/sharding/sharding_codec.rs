@@ -292,7 +292,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                             output_view_inner_chunk
                                 .copy_from_slice(&decoded_chunk.into_fixed()?)
                                 .map_err(CodecError::from)?;
-                        };
+                        }
 
                         Ok::<_, CodecError>(())
                     };
@@ -385,7 +385,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                     &mut output_view_inner_chunk,
                     &options,
                 )?;
-            };
+            }
 
             Ok::<_, CodecError>(())
         };

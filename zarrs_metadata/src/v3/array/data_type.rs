@@ -172,7 +172,7 @@ impl DataTypeMetadataV3 {
             "string" => return Self::String,
             "bytes" => return Self::Bytes,
             _ => {}
-        };
+        }
 
         if name.starts_with('r') && name.len() > 1 {
             if let Ok(size_bits) = metadata.name()[1..].parse::<usize>() {

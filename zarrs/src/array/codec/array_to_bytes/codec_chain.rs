@@ -398,7 +398,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if Some(codec_index) == self.cache_index {
             input_handle = Arc::new(BytesPartialDecoderCache::new(&*input_handle, options)?);
-        };
+        }
 
         let mut input_handle = {
             let array_representation = array_representations.last().unwrap();
@@ -537,7 +537,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         if Some(codec_index) == self.cache_index {
             input_handle =
                 Arc::new(BytesPartialDecoderCache::async_new(&*input_handle, options).await?);
-        };
+        }
 
         let mut input_handle = {
             let array_representation = array_representations.last().unwrap();

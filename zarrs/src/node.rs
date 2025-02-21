@@ -383,7 +383,7 @@ impl Node {
                 NodeMetadata::Group(_) => {
                     string.push_str(name);
                 }
-            };
+            }
             string.push('\n');
         }
 

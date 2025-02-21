@@ -49,7 +49,7 @@ impl GroupBuilder {
         match &mut self.metadata {
             GroupMetadata::V3(metadata) => metadata.additional_fields = additional_fields,
             GroupMetadata::V2(metadata) => metadata.additional_fields = additional_fields,
-        };
+        }
         self
     }
 
