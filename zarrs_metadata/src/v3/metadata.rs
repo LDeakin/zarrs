@@ -208,7 +208,7 @@ impl MetadataV3 {
         self.configuration.as_ref()
     }
 
-    /// Return whether the metadata must be understood as indicated by the `must_understand` field of the metadata.
+    /// Return whether the metadata must be understood as indicated by the `must_understand` field.
     ///
     /// The `must_understand` field is implicitly `true` if omitted.
     #[must_use]
