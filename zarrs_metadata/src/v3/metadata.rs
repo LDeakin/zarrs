@@ -395,6 +395,14 @@ mod tests {
     use super::MetadataV3;
 
     #[test]
+    fn metadata_must_understand_implicit_string() {
+        let metadata = r#""test""#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(metadata.must_understand());
+    }
+
+    #[test]
     fn metadata_must_understand_implicit() {
         let metadata = r#"{
     "name": "test"
