@@ -21,28 +21,28 @@ To enable support, the `numcodecs` codec names needs to be remapped to the ident
 }
 ```
 
-| Codec Type     | Codec                    | Default Name                                        | V3      | V2      | Feature Flag |
-| -------------- | ------------------------ | --------------------------------------------------- | ------- | ------- | ------------ |
-| Array to Array | [bitround]               | <https://codec.zarrs.dev/array_to_array/bitround>   | &check; | &check; | bitround     |
-| Array to Bytes | [zfp]                    | <https://codec.zarrs.dev/array_to_bytes/zfp>        | &check; |         | zfp          |
-|                | [zfpy]                   | zfpy                                                | ↑       | &check; | zfp          |
-|                | [pcodec]                 | <https://codec.zarrs.dev/array_to_bytes/pcodec>     | &check; | &check; | pcodec       |
-|                | [vlen]                   | <https://codec.zarrs.dev/array_to_bytes/vlen>       | &check; |         |              |
-|                | [vlen-array]             | <https://codec.zarrs.dev/array_to_bytes/vlen_array> | &check; | &check; |              |
-|                | [vlen-bytes]             | <https://codec.zarrs.dev/array_to_bytes/vlen_bytes> | &check; | &check; |              |
-|                | [vlen-utf8]              | <https://codec.zarrs.dev/array_to_bytes/vlen_utf8>  | &check; | &check; |              |
-| Bytes to Bytes | [bz2]                    | <https://codec.zarrs.dev/bytes_to_bytes/bz2>        | &check; | &check; | bz2          |
-|                | [gdeflate]               | <https://codec.zarrs.dev/bytes_to_bytes/gdeflate>   | &check; |         | gdeflate     |
-|                | [fletcher32]             | <https://codec.zarrs.dev/bytes_to_bytes/fletcher32> | &check; | &check; | fletcher32   |
+| Codec Type     | Codec                          | Default Name                                        | V3      | V2      | Feature Flag |
+| -------------- | ------------------------------ | --------------------------------------------------- | ------- | ------- | ------------ |
+| Array to Array | [codec_bitround]               | <https://codec.zarrs.dev/array_to_array/bitround>   | &check; | &check; | bitround     |
+| Array to Bytes | [codec_zfp]                    | <https://codec.zarrs.dev/array_to_bytes/zfp>        | &check; |         | zfp          |
+|                | [codec_zfpy]                   | zfpy                                                | ↑       | &check; | zfp          |
+|                | [codec_pcodec]                 | <https://codec.zarrs.dev/array_to_bytes/pcodec>     | &check; | &check; | pcodec       |
+|                | [codec_vlen]                   | <https://codec.zarrs.dev/array_to_bytes/vlen>       | &check; |         |              |
+|                | [codec_vlen-array]             | <https://codec.zarrs.dev/array_to_bytes/vlen_array> | &check; | &check; |              |
+|                | [codec_vlen-bytes]             | <https://codec.zarrs.dev/array_to_bytes/vlen_bytes> | &check; | &check; |              |
+|                | [codec_vlen-utf8]              | <https://codec.zarrs.dev/array_to_bytes/vlen_utf8>  | &check; | &check; |              |
+| Bytes to Bytes | [codec_bz2]                    | <https://codec.zarrs.dev/bytes_to_bytes/bz2>        | &check; | &check; | bz2          |
+|                | [codec_gdeflate]               | <https://codec.zarrs.dev/bytes_to_bytes/gdeflate>   | &check; |         | gdeflate     |
+|                | [codec_fletcher32]             | <https://codec.zarrs.dev/bytes_to_bytes/fletcher32> | &check; | &check; | fletcher32   |
 
-[bitround]: (crate::array::codec::array_to_array::bitround)
-[zfp]: crate::array::codec::array_to_bytes::zfp
-[zfpy]: https://numcodecs.readthedocs.io/en/latest/compression/zfpy.html
-[pcodec]: crate::array::codec::array_to_bytes::pcodec
-[vlen]: crate::array::codec::array_to_bytes::vlen
-[vlen-array]: crate::array::codec::array_to_bytes::vlen_array
-[vlen-bytes]: crate::array::codec::array_to_bytes::vlen_bytes
-[vlen-utf8]: crate::array::codec::array_to_bytes::vlen_utf8
-[bz2]: crate::array::codec::bytes_to_bytes::bz2
-[gdeflate]: crate::array::codec::bytes_to_bytes::gdeflate
-[fletcher32]: crate::array::codec::bytes_to_bytes::fletcher32
+[codec_bitround]: crate::array::codec::array_to_array::bitround
+[codec_zfp]: crate::array::codec::array_to_bytes::zfp
+[codec_zfpy]: https://numcodecs.readthedocs.io/en/latest/compression/zfpy.html
+[codec_pcodec]: crate::array::codec::array_to_bytes::pcodec
+[codec_vlen]: crate::array::codec::array_to_bytes::vlen
+[codec_vlen-array]: crate::array::codec::array_to_bytes::vlen_array
+[codec_vlen-bytes]: crate::array::codec::array_to_bytes::vlen_bytes
+[codec_vlen-utf8]: crate::array::codec::array_to_bytes::vlen_utf8
+[codec_bz2]: crate::array::codec::bytes_to_bytes::bz2
+[codec_gdeflate]: crate::array::codec::bytes_to_bytes::gdeflate
+[codec_fletcher32]: crate::array::codec::bytes_to_bytes::fletcher32
