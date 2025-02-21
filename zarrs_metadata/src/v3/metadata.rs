@@ -432,5 +432,10 @@ mod tests {
         let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
         assert!(metadata.name() == "test");
         assert!(!metadata.must_understand());
+        assert_ne!(metadata, MetadataV3::new("test"));
+        assert_eq!(
+            metadata,
+            MetadataV3::new("test").with_must_understand(false)
+        );
     }
 }
