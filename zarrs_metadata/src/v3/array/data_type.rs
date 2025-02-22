@@ -2,8 +2,6 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#data-types>.
 
-use derive_more::From;
-
 use crate::v3::MetadataV3;
 
 /// A data type.

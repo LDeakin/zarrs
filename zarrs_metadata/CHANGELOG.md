@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Bump `derive_more` to 0.2.0
+
 ## [0.3.5] - 2025-02-18
 
 ### Fixed

@@ -22,7 +22,7 @@ all-features = true
 half = { workspace = true }
 num = { workspace = true }
 thiserror = "2.0.0"
-derive_more = { version = "1.0.0", features = ["display", "from"] }
+derive_more = { version = "2.0.0", features = ["display", "from"] }
 zarrs_metadata = { workspace = true }
 
 [dev-dependencies]
