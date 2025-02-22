@@ -92,6 +92,7 @@ pub use chunk_cache::{
 pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
+use zarrs_metadata::v3::UnsupportedAdditionalFieldError;
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use crate::{
@@ -807,6 +808,22 @@ impl<TStorage: ?Sized> Array<TStorage> {
             ArrayMetadata::V3(_) => Ok(self),
         }
     }
+
+    /// Reject the array if it contains additional fields with `"must_understand": true`.
+    fn validate_metadata(metadata: &ArrayMetadata) -> Result<(), ArrayCreateError> {
+        let additional_fields = match &metadata {
+            ArrayMetadata::V2(metadata) => &metadata.additional_fields,
+            ArrayMetadata::V3(metadata) => &metadata.additional_fields,
+        };
+        for (name, field) in additional_fields {
+            if field.must_understand() {
+                return Err(ArrayCreateError::UnsupportedAdditionalFieldError(
+                    UnsupportedAdditionalFieldError::new(name.clone(), field.as_value().clone()),
+                ));
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(feature = "ndarray")]
@@ -938,6 +955,7 @@ pub fn bytes_to_ndarray<T: bytemuck::Pod>(
 mod tests {
     use crate::storage::store::MemoryStore;
     use zarrs_filesystem::FilesystemStore;
+    use zarrs_metadata::v3::AdditionalField;
 
     use super::*;
 
@@ -1184,11 +1202,21 @@ mod tests {
     #[allow(dead_code)]
     fn array_v3_numcodecs(path_in: &str) {
         {
+            use zarrs_metadata::v3::array::codec;
             let mut config = crate::config::global_config_mut();
             let experimental_codec_names = config.experimental_codec_names_mut();
-            experimental_codec_names.insert("zfp".to_string(), "numcodecs.zfpy".to_string());
-            experimental_codec_names.insert("pcodec".to_string(), "numcodecs.pcodec".to_string());
-            experimental_codec_names.insert("bz2".to_string(), "numcodecs.bz2".to_string());
+            experimental_codec_names.insert(
+                codec::zfp::IDENTIFIER.to_string(),
+                "numcodecs.zfpy".to_string(),
+            );
+            experimental_codec_names.insert(
+                codec::pcodec::IDENTIFIER.to_string(),
+                "numcodecs.pcodec".to_string(),
+            );
+            experimental_codec_names.insert(
+                codec::bz2::IDENTIFIER.to_string(),
+                "numcodecs.bz2".to_string(),
+            );
         }
 
         let store = Arc::new(FilesystemStore::new(path_in).unwrap());
@@ -1320,4 +1348,41 @@ mod tests {
     //         false,
     //     );
     // }
+
+    #[test]
+    fn array_additional_fields() {
+        let store = Arc::new(MemoryStore::new());
+        let array_path = "/group/array";
+
+        for must_understand in [true, false] {
+            let additional_field = serde_json::Map::new();
+            let additional_field = AdditionalField::new(additional_field, must_understand);
+            let mut additional_fields = AdditionalFields::new();
+            additional_fields.insert("key".to_string(), additional_field);
+
+            // Permit array creation with manually added additional fields
+            let array = ArrayBuilder::new(
+                vec![8, 8], // array shape
+                DataType::Float32,
+                vec![4, 4].try_into().unwrap(),
+                FillValue::from(ZARR_NAN_F32),
+            )
+            .bytes_to_bytes_codecs(vec![
+                #[cfg(feature = "gzip")]
+                Arc::new(codec::GzipCodec::new(5).unwrap()),
+            ])
+            .additional_fields(additional_fields)
+            .build(store.clone(), array_path)
+            .unwrap();
+            array.store_metadata().unwrap();
+
+            let array = Array::open(store.clone(), array_path);
+            if must_understand {
+                // Disallow array opening with unknown `"must_understand": true` additional fields
+                assert!(array.is_err());
+            } else {
+                assert!(array.is_ok());
+            }
+        }
+    }
 }
