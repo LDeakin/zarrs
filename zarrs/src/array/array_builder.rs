@@ -328,25 +328,7 @@ impl ArrayBuilder {
             .with_storage_transformers(self.storage_transformers.create_metadatas()),
         );
 
-        Ok(Array {
-            storage,
-            path,
-            // shape: self.shape.clone(),
-            data_type: self.data_type.clone(),
-            chunk_grid: self.chunk_grid.clone(),
-            chunk_key_encoding: self.chunk_key_encoding.clone(),
-            fill_value: self.fill_value.clone(),
-            codecs: Arc::new(CodecChain::new(
-                self.array_to_array_codecs.clone(),
-                self.array_to_bytes_codec.clone(),
-                self.bytes_to_bytes_codecs.clone(),
-            )),
-            storage_transformers: self.storage_transformers.clone(),
-            // attributes: self.attributes.clone(),
-            dimension_names: self.dimension_names.clone(),
-            // additional_fields: self.additional_fields.clone(),
-            metadata: array_metadata,
-        })
+        Array::new_with_metadata(storage, path.as_str(), array_metadata)
     }
 
     /// Build into an [`Arc<Array>`].
