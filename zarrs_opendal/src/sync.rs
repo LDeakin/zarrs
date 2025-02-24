@@ -60,8 +60,8 @@ impl ReadableStorageTraits for OpendalStore {
 #[async_trait::async_trait]
 impl WritableStorageTraits for OpendalStore {
     fn set(&self, key: &StoreKey, value: Bytes) -> Result<(), StorageError> {
-        // NOTE: map is an opendal 0.51/0.52 compatibility hack
-        handle_result(self.operator.write(key.as_str(), value)).map(|_| ())
+        handle_result(self.operator.write(key.as_str(), value))?;
+        Ok(())
     }
 
     fn set_partial_values(
