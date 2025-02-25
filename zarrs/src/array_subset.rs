@@ -10,13 +10,17 @@
 
 pub mod iterators;
 
-use std::{fmt::Debug, num::NonZeroU64, ops::Range};
+use std::{
+    fmt::{Debug, Display},
+    num::NonZeroU64,
+    ops::Range,
+};
 
 use iterators::{
     Chunks, ContiguousIndices, ContiguousLinearisedIndices, Indices, LinearisedIndices,
 };
 
-use derive_more::{Display, From};
+use derive_more::From;
 use itertools::izip;
 use thiserror::Error;
 

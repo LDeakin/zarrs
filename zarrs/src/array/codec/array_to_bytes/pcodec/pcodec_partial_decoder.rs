@@ -95,7 +95,7 @@ fn do_partial_decode<'a>(
                         super::IDENTIFIER.to_string(),
                     ));
                 }
-            };
+            }
         }
     }
     Ok(decoded_bytes)

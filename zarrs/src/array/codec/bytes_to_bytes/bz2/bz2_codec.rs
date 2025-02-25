@@ -157,7 +157,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
             .map_or(BytesRepresentation::UnboundedSize, |size| {
                 // https://en.wikipedia.org/wiki/Bzip2#Implementation
                 // TODO: Below assumes a maximum expansion of 1.25 for the blocks + header (4 byte) + footer (11 byte), but need to read spec
-                BytesRepresentation::BoundedSize(4 + 11 + size + (size + 3) / 4)
+                BytesRepresentation::BoundedSize(4 + 11 + size + size.div_ceil(4))
             })
     }
 }

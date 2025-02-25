@@ -47,7 +47,7 @@ impl ZfpStream {
             ZfpMode::Reversible => {
                 unsafe { zfp_stream_set_reversible(zfp) };
             }
-        };
+        }
         NonNull::new(zfp).map(Self)
     }
 

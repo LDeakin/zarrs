@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 - Bump `itertools` to 0.14
+- Bump `derive_more` to 0.2.0
 
 ## [0.2.0] - 2024-11-15
 

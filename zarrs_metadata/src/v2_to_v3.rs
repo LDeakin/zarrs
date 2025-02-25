@@ -187,7 +187,7 @@ pub fn codec_metadata_v2_to_v3(
                 compressor.id(),
                 compressor.configuration().clone(),
             )),
-        };
+        }
     }
 
     Ok(codecs)

@@ -656,7 +656,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     .map_err(CodecError::from)
                             }
                         )?;
-                    };
+                    }
                     unsafe { shard.set_len(shard_size) };
                     out.push(ArrayBytes::from(shard));
                 }
