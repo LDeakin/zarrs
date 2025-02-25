@@ -325,9 +325,9 @@ pub(crate) fn update_bytes_vlen<'a>(
     update_bytes: &RawBytes,
     update_offsets: &RawBytesOffsets,
     update_subset: &ArraySubset,
-) -> Result<ArrayBytes<'a>, IncompatibleArraySubsetAndShapeError> {
+) -> Result<ArrayBytes<'a>, IncompatibleIndexerAndShapeError> {
     if !update_subset.inbounds_shape(input_shape) {
-        return Err(IncompatibleArraySubsetAndShapeError::new(
+        return Err(IncompatibleIndexerAndShapeError::new(
             update_subset.clone(),
             input_shape.to_vec(),
         ));
