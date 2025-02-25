@@ -121,6 +121,20 @@ impl Indexer {
     //     let vindinces: VIndices = vindices.try_into()
     // }
 
+    pub fn start(&self) -> Vec<u64> {
+        match self {
+            Indexer::Subset(subset) => subset.start().to_vec(),
+            Indexer::VIndex(vindices) => vindices.iter().map(|i| i[0]).collect::<Vec<u64>>(),
+            Indexer::OIndex(oindices) => oindices.iter().map(|i| i[0]).collect::<Vec<u64>>(),
+            Indexer::Mixed(mindices) => mindices.iter().map(|i| {
+                match i {
+                    MixedIndex::IntegerIndex(iindex) => iindex[0],
+                    MixedIndex::Range(rindex) => rindex.start,
+                }
+            }).collect::<Vec<u64>>(),
+        }
+    }
+
     /// Return the dimensionality of the indexer.
     #[must_use]
     pub fn dimensionality(&self) -> usize {

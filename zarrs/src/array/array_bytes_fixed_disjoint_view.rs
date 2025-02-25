@@ -2,10 +2,10 @@ use derive_more::derive::Display;
 use thiserror::Error;
 use unsafe_cell_slice::UnsafeCellSlice;
 
-use crate::array_subset::{
+use crate::{array_subset::{
     iterators::{ContiguousIndices, ContiguousLinearisedIndices},
     ArraySubset,
-};
+}, indexer::Indexer};
 
 use super::codec::{CodecError, InvalidBytesLengthError, SubsetOutOfBoundsError};
 
@@ -16,7 +16,7 @@ pub struct ArrayBytesFixedDisjointView<'a> {
     bytes: UnsafeCellSlice<'a, u8>,
     data_type_size: usize,
     shape: &'a [u64],
-    subset: ArraySubset,
+    indexer: Indexer,
     bytes_in_subset_len: usize,
 }
 
@@ -55,26 +55,32 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         bytes: UnsafeCellSlice<'a, u8>,
         data_type_size: usize,
         shape: &'a [u64],
-        subset: ArraySubset,
+        subset: impl Into<Indexer>,
     ) -> Result<Self, ArrayBytesFixedDisjointViewCreateError> {
-        if !subset.inbounds_shape(shape) {
-            let bounding_subset = ArraySubset::new_with_shape(shape.to_vec());
-            return Err(SubsetOutOfBoundsError::new(subset, bounding_subset).into());
-        }
-        let bytes_in_array_len =
-            usize::try_from(shape.iter().product::<u64>()).unwrap() * data_type_size;
-        if bytes.len() != bytes_in_array_len {
-            return Err(InvalidBytesLengthError::new(bytes.len(), bytes_in_array_len).into());
-        }
+        let indexer: Indexer = subset.into();
+        match indexer {
+            Indexer::Subset(array_subset) => {
+                if !array_subset.inbounds_shape(shape) {
+                    let bounding_subset = ArraySubset::new_with_shape(shape.to_vec());
+                    return Err(SubsetOutOfBoundsError::new(array_subset.clone(), bounding_subset).into());
+                }
+                let bytes_in_array_len =
+                    usize::try_from(shape.iter().product::<u64>()).unwrap() * data_type_size;
+                if bytes.len() != bytes_in_array_len {
+                    return Err(InvalidBytesLengthError::new(bytes.len(), bytes_in_array_len).into());
+                }
 
-        let bytes_in_subset_len = subset.num_elements_usize() * data_type_size;
-        Ok(Self {
-            bytes,
-            data_type_size,
-            shape,
-            subset,
-            bytes_in_subset_len,
-        })
+                let bytes_in_subset_len = array_subset.num_elements_usize() * data_type_size;
+                Ok(Self {
+                    bytes,
+                    data_type_size,
+                    shape,
+                    indexer: Indexer::new_subset(array_subset),
+                    bytes_in_subset_len,
+                })
+            },
+            _ => todo!("support other indexing methods")
+        }
     }
 
     /// Create a new non-overlapping view of the bytes in an array.
@@ -91,21 +97,27 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         bytes: UnsafeCellSlice<'a, u8>,
         data_type_size: usize,
         shape: &'a [u64],
-        subset: ArraySubset,
+        subset: impl Into<Indexer>,
     ) -> Self {
-        debug_assert!(subset.inbounds_shape(shape));
-        debug_assert_eq!(
-            bytes.len(),
-            usize::try_from(shape.iter().product::<u64>()).unwrap() * data_type_size
-        );
+        let indexer: Indexer = subset.into();
+        match indexer {
+            Indexer::Subset(array_subset) => {
+                debug_assert!(array_subset.inbounds_shape(shape));
+                debug_assert_eq!(
+                    bytes.len(),
+                    usize::try_from(shape.iter().product::<u64>()).unwrap() * data_type_size
+                );
 
-        let bytes_in_subset_len = subset.num_elements_usize() * data_type_size;
-        Self {
-            bytes,
-            data_type_size,
-            shape,
-            subset,
-            bytes_in_subset_len,
+                let bytes_in_subset_len = array_subset.num_elements_usize() * data_type_size;
+                Self {
+                    bytes,
+                    data_type_size,
+                    shape,
+                    indexer: Indexer::new_subset(array_subset),
+                    bytes_in_subset_len,
+                }
+            },
+            _ => todo!("support other indexing methods!")
         }
     }
 
@@ -120,10 +132,14 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         &self,
         subset: ArraySubset,
     ) -> Result<ArrayBytesFixedDisjointView<'a>, SubsetOutOfBoundsError> {
-        if !subset.inbounds(&self.subset) {
-            return Err(SubsetOutOfBoundsError::new(subset, self.subset.clone()));
+        match &self.indexer {
+            Indexer::Subset(array_subset) => {
+                if !subset.inbounds(&array_subset) {
+                    return Err(SubsetOutOfBoundsError::new(subset, array_subset.clone()));
+                }
+            },
+            _ => todo!("implement subdivide_unchecked for integer indexing")
         }
-
         Ok(unsafe {
             // SAFETY: all inputs have been validated
             Self::new_unchecked(self.bytes, self.data_type_size, self.shape, subset)
@@ -140,8 +156,12 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         &self,
         subset: ArraySubset,
     ) -> ArrayBytesFixedDisjointView<'a> {
-        debug_assert!(subset.inbounds(&self.subset));
-
+        match &self.indexer {
+            Indexer::Subset(array_subset) => {
+                debug_assert!(subset.inbounds(&array_subset));
+            },
+            _ => todo!("implement subdivide_unchecked for integer indexing")
+        }
         unsafe { Self::new_unchecked(self.bytes, self.data_type_size, self.shape, subset) }
     }
 
@@ -153,28 +173,28 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
 
     /// Return the subset of the bytes this view is created from.
     #[must_use]
-    pub fn subset(&self) -> &ArraySubset {
-        &self.subset
+    pub fn subset(&self) -> &Indexer {
+        &self.indexer
     }
 
     /// Return the number of elements in the view.
     #[must_use]
     pub fn num_elements(&self) -> u64 {
-        self.subset.num_elements()
+        // TODO: remove cast
+        self.indexer.num_elements_usize() as u64
     }
 
     fn contiguous_indices(&self) -> ContiguousIndices {
         unsafe {
             // SAFETY: the output shape encapsulates the output subset, checked in constructor
-            self.subset.contiguous_indices_unchecked(self.shape)
+            ContiguousIndices::new_unchecked(self.indexer.clone(), self.shape)
         }
     }
 
     fn contiguous_linearised_indices(&self) -> ContiguousLinearisedIndices {
         unsafe {
             // SAFETY: the output shape encapsulates the output subset, checked in constructor
-            self.subset
-                .contiguous_linearised_indices_unchecked(self.shape)
+            ContiguousLinearisedIndices::new_unchecked(self.indexer.clone(), self.shape.to_vec())
         }
     }
 

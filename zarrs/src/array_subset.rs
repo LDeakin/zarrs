@@ -451,7 +451,7 @@ impl ArraySubset {
         &self,
         array_shape: &[u64],
     ) -> Result<ContiguousLinearisedIndices, IncompatibleIndexerAndShapeError> {
-        ContiguousLinearisedIndices::new(self, array_shape.to_vec())
+        ContiguousLinearisedIndices::new(self.clone(), array_shape.to_vec())
     }
 
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
@@ -464,7 +464,7 @@ impl ArraySubset {
         array_shape: &[u64],
     ) -> ContiguousLinearisedIndices {
         // SAFETY: array_shape encapsulated this array subset
-        unsafe { ContiguousLinearisedIndices::new_unchecked(self, array_shape.to_vec()) }
+        unsafe { ContiguousLinearisedIndices::new_unchecked(self.clone(), array_shape.to_vec()) }
     }
 
     /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
