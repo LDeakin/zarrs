@@ -232,7 +232,7 @@ impl<'a> Producer for ParChunksIteratorProducer<'a> {
 
     fn into_iter(self) -> Self::IntoIter {
         ChunksIterator {
-            inner: IndicesIterator::new_with_start_end(self.inner.subset, self.inner.range),
+            inner: IndicesIterator::new_with_start_end(self.inner.indexer, self.inner.range),
             chunk_shape: self.chunk_shape,
         }
     }
