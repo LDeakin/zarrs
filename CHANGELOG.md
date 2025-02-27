@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
+- Reject arrays and groups with unsupported `"must_understand": true` extensions
 
 ## [0.19.2] - 2025-02-13
 
