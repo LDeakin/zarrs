@@ -2,7 +2,7 @@ use std::iter::FusedIterator;
 
 use crate::{
     array::ravel_indices,
-    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
+    array_subset::{ArraySubset, IncompatibleIndexerAndShapeError}, indexer::Indexer,
 };
 
 use super::{contiguous_indices_iterator::ContiguousIndices, ContiguousIndicesIterator};
@@ -37,12 +37,12 @@ impl ContiguousLinearisedIndices {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
-        subset: &ArraySubset,
+        indexer: impl Into<Indexer>,
         array_shape: Vec<u64>,
-    ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
-        let inner = subset.contiguous_indices(&array_shape)?;
+    ) -> Result<Self, IncompatibleIndexerAndShapeError> {
+        let inner = ContiguousIndices::new(indexer, &&array_shape)?;
         Ok(Self { inner, array_shape })
     }
 
@@ -52,10 +52,10 @@ impl ContiguousLinearisedIndices {
     ///
     /// `array_shape` must encapsulate `subset`.
     #[must_use]
-    pub unsafe fn new_unchecked(subset: &ArraySubset, array_shape: Vec<u64>) -> Self {
+    pub unsafe fn new_unchecked(indexer: impl Into<Indexer>, array_shape: Vec<u64>) -> Self {
         // SAFETY: The length of array_shape matches the array subset dimensionality
         unsafe {
-            let inner = subset.contiguous_indices_unchecked(&array_shape);
+            let inner = ContiguousIndices::new_unchecked(indexer, &array_shape);
             Self { inner, array_shape }
         }
     }

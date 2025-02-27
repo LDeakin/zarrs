@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use crate::{
     array::{array_bytes::update_array_bytes, ArrayBytes, ChunkRepresentation},
-    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
+    array_subset::ArraySubset,
+    indexer::IncompatibleIndexerAndShapeError,
 };
 
 use super::{
@@ -73,8 +74,8 @@ impl ArrayPartialEncoderTraits for ArrayToArrayPartialEncoderDefault {
                 .zip(self.decoded_representation.shape())
                 .any(|(a, b)| *a > b.get())
             {
-                return Err(CodecError::InvalidArraySubsetError(
-                    IncompatibleArraySubsetAndShapeError::new(
+                return Err(CodecError::InvalidIndexerError(
+                    IncompatibleIndexerAndShapeError::new(
                         (*chunk_subset).clone(),
                         self.decoded_representation.shape_u64(),
                     ),
