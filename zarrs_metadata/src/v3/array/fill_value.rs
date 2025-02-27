@@ -36,6 +36,8 @@ pub enum FillValueMetadataV3 {
     /// A string.
     String(String),
     /// An unsupported fill value.
+    // FIXME: Rename to other in next breaking release.
+    // FIXME: Also switch to a non exhaustive?
     Unsupported(serde_json::Value),
 }
 
