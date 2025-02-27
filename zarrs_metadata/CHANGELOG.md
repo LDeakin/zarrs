@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for a `must_understand` field to `MetadataV3` (ZEP0009)
   - Extensions can now be parsed in more than just the additional fields of array/group metadata (e.g. codecs)
+- Add `extensions` field to `v3::{Array,Group}MetadataV3` (ZEP0009)
 
 ## [0.3.5] - 2025-02-18
 

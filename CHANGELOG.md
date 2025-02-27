@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use codec identifiers in the example for `experimental_codec_names` remapping
 - Allow `{Array,Group}::new_with_metadata()` and `{Array,Group}Builder` to create arrays with `"must_understand": true` additional fields
   - `{Array,Group}::[async_]open[_opt]` continue to fail with additional fields with `"must_understand": true`
+- Reject arrays and groups with unsupported `"must_understand": true` extensions
 
 ## [0.19.2] - 2025-02-13
 
