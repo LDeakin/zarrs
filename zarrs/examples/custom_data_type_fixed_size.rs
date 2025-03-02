@@ -8,8 +8,9 @@ use zarrs::array::{
     ArrayBuilder, ArrayBytes, ArrayError, DataTypeSize, Element, ElementOwned, FillValueMetadataV3,
 };
 use zarrs_data_type::{
-    DataType, DataTypeExtension, DataTypeExtensionError, DataTypePlugin, FillValue,
-    IncompatibleFillValueError, IncompatibleFillValueMetadataError,
+    DataType, DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
+    DataTypeExtensionError, DataTypePlugin, FillValue, IncompatibleFillValueError,
+    IncompatibleFillValueMetadataError,
 };
 use zarrs_metadata::{
     v3::{MetadataConfiguration, MetadataV3},
@@ -177,11 +178,17 @@ impl DataTypeExtension for CustomDataTypeFixedSize {
         DataTypeSize::Fixed(size_of::<CustomDataTypeFixedSizeBytes>())
     }
 
-    fn encode_bytes<'a>(
+    fn codec_bytes(&self) -> Result<&dyn DataTypeExtensionBytesCodec, DataTypeExtensionError> {
+        Ok(self)
+    }
+}
+
+impl DataTypeExtensionBytesCodec for CustomDataTypeFixedSize {
+    fn encode<'a>(
         &self,
         bytes: std::borrow::Cow<'a, [u8]>,
         endianness: Option<zarrs_metadata::Endianness>,
-    ) -> Result<std::borrow::Cow<'a, [u8]>, DataTypeExtensionError> {
+    ) -> Result<std::borrow::Cow<'a, [u8]>, DataTypeExtensionBytesCodecError> {
         if let Some(endianness) = endianness {
             if endianness != Endianness::native() {
                 let mut bytes = bytes.into_owned();
@@ -200,15 +207,15 @@ impl DataTypeExtension for CustomDataTypeFixedSize {
                 Ok(bytes)
             }
         } else {
-            Err(DataTypeExtensionError::EndiannessNotSpecified)
+            Err(DataTypeExtensionBytesCodecError::EndiannessNotSpecified)
         }
     }
 
-    fn decode_bytes<'a>(
+    fn decode<'a>(
         &self,
         bytes: std::borrow::Cow<'a, [u8]>,
         endianness: Option<zarrs_metadata::Endianness>,
-    ) -> Result<std::borrow::Cow<'a, [u8]>, DataTypeExtensionError> {
+    ) -> Result<std::borrow::Cow<'a, [u8]>, DataTypeExtensionBytesCodecError> {
         if let Some(endianness) = endianness {
             if endianness != Endianness::native() {
                 let mut bytes = bytes.into_owned();
@@ -229,7 +236,7 @@ impl DataTypeExtension for CustomDataTypeFixedSize {
                 Ok(bytes)
             }
         } else {
-            Err(DataTypeExtensionError::EndiannessNotSpecified)
+            Err(DataTypeExtensionBytesCodecError::EndiannessNotSpecified)
         }
     }
 }

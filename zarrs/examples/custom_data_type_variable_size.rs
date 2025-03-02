@@ -10,13 +10,10 @@ use zarrs::array::{
     RawBytesOffsets,
 };
 use zarrs_data_type::{
-    DataType, DataTypeExtension, DataTypeExtensionError, DataTypePlugin, FillValue,
-    IncompatibleFillValueError, IncompatibleFillValueMetadataError,
+    DataType, DataTypeExtension, DataTypePlugin, FillValue, IncompatibleFillValueError,
+    IncompatibleFillValueMetadataError,
 };
-use zarrs_metadata::{
-    v3::{array::fill_value::FillValueFloat, MetadataConfiguration, MetadataV3},
-    Endianness,
-};
+use zarrs_metadata::v3::{array::fill_value::FillValueFloat, MetadataConfiguration, MetadataV3};
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
 use zarrs_storage::store::MemoryStore;
 
@@ -161,22 +158,6 @@ impl DataTypeExtension for CustomDataTypeVariableSize {
 
     fn size(&self) -> zarrs::array::DataTypeSize {
         DataTypeSize::Variable
-    }
-
-    fn encode_bytes<'a>(
-        &self,
-        _bytes: Cow<'a, [u8]>,
-        _endianness: Option<Endianness>,
-    ) -> Result<Cow<'a, [u8]>, DataTypeExtensionError> {
-        Err(DataTypeExtensionError::BytesCodecUnsupported)
-    }
-
-    fn decode_bytes<'a>(
-        &self,
-        _bytes: Cow<'a, [u8]>,
-        _endianness: Option<Endianness>,
-    ) -> Result<Cow<'a, [u8]>, DataTypeExtensionError> {
-        Err(DataTypeExtensionError::BytesCodecUnsupported)
     }
 }
 

@@ -1,12 +1,22 @@
-//! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata. It supports [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html) and a [V3 compatible subset](#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
+//! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata.
+//!
+//! It supports [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html) and a [V3 compatible subset](#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
+//! It is fully up-to-date and conformant with the Zarr 3.0 specification with support for:
+//! - all *core extensions* (data types, codecs, chunk grids, chunk key encodings, storage transformers),
+//! - all accepted [Zarr Enhancement Proposals (ZEPs)](https://zarr.dev/zeps/) and several draft ZEPs:
+//!   - ZEP 0003: Variable chunking
+//!   - ZEP 0007: Strings
+// TODO: ZEP 0009
+//! - experimental codecs and data types intended for standardisation, and
+//! - user-defined custom extensions and stores.
+//!
+//! If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
+//! It includes a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation.
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
 //!
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
-//!
-//! If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
-//! It includes a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation.
 //!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
@@ -65,10 +75,9 @@
 //!
 //! A huge range of storage backends are supported via the [`opendal`] and [`object_store`] crates.
 //! The documentation for the [`zarrs_opendal`] and [`zarrs_object_store`] crates includes version compatibility matrices with `zarrs` and the associated storage backends.
-//! These backends provide more feature complete HTTP stores than [zarrs_http].
+//! These backends provide more feature complete HTTP stores than [`zarrs_http`].
 //!
-//! [`zarrs_icechunk`] implements the [Icechunk](https://icechunk.io/overview/) transactional storage engine, a storage specification for Zarr.
-//! It supports [`object_store`] stores.
+//! [`zarrs_icechunk`] implements the [Icechunk](https://icechunk.io/overview/) transactional storage engine, a storage specification for Zarr that supports [`object_store`] stores.
 //!
 //! [`opendal`]: https://docs.rs/opendal/latest/opendal/
 //! [`object_store`]: https://docs.rs/object_store/latest/object_store/
@@ -79,7 +88,10 @@
 //!
 //! The [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter) enables some async stores to be used in a sync context.
 //!
+//! A custom store can be developed by implementing the relevant traits in the [`zarrs_storage`] crate.
+//!
 //! ## Examples
+//! ### Create and Read a Zarr Hierarchy
 #![cfg_attr(feature = "ndarray", doc = "```rust")]
 #![cfg_attr(not(feature = "ndarray"), doc = "```rust,ignore")]
 //! # use std::{path::PathBuf, sync::Arc};
@@ -148,13 +160,15 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! Various examples can be found in [zarrs/examples](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples) that show how to
-//! - create and manipulate zarr hierarchies with various stores (sync and async), codecs, etc.
-//! - convert between Zarr V2 and V3.
+//! ### More examples
+//! Various examples can be found in the [examples](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples) directory that demonstrate:
+//! - creating and manipulating zarr hierarchies with various stores (sync and async), codecs, etc,
+//! - converting between Zarr V2 and V3, and
+//! - creating custom data types.
 //!
-//! They can be run with `cargo run --example <EXAMPLE_NAME>`.
+//! Examples can be run with `cargo run --example <EXAMPLE_NAME>`.
 //!  - Some examples require non-default features, which can be enabled with `--all-features` or `--features <FEATURES>`.
-//!  - Some examples support a `-- --usage-log` argument to print storage API calls during example execution.
+//!  - Some examples support a `-- --usage-log` argument to print storage API calls during execution.
 //!
 //! ## Crate Features
 //! #### Default

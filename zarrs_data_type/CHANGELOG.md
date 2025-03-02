@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add support for data type extensions
-  - Adds `DataTypeExtension`, `DataTypeExtensionError`, and `DataTypePlugin`
+  - Adds `DataTypeExtension[BytesCodec]`, `DataTypeExtension[BytesCodec]Error`, and `DataTypePlugin`
   - Add `Extension` variant to `DataType`
 
 ### Changed

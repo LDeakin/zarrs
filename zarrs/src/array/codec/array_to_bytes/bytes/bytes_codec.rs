@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use zarrs_data_type::DataType;
+use zarrs_data_type::{DataType, DataTypeExtensionError};
 
 use crate::{
     array::{
@@ -159,7 +159,10 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         )?;
         let bytes = bytes.into_fixed()?;
         let bytes_encoded = match decoded_representation.data_type() {
-            DataType::Extension(ext) => ext.encode_bytes(bytes, self.endian)?,
+            DataType::Extension(ext) => ext
+                .codec_bytes()?
+                .encode(bytes, self.endian)
+                .map_err(DataTypeExtensionError::from)?,
             _ => self.do_encode_or_decode(bytes, decoded_representation)?,
         };
         Ok(bytes_encoded)
@@ -172,7 +175,10 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         _options: &CodecOptions,
     ) -> Result<ArrayBytes<'a>, CodecError> {
         let bytes_decoded = match decoded_representation.data_type() {
-            DataType::Extension(ext) => ext.decode_bytes(bytes, self.endian)?,
+            DataType::Extension(ext) => ext
+                .codec_bytes()?
+                .decode(bytes, self.endian)
+                .map_err(DataTypeExtensionError::from)?,
             _ => self.do_encode_or_decode(bytes, decoded_representation)?,
         };
         Ok(ArrayBytes::from(bytes_decoded))

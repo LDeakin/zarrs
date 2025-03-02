@@ -276,7 +276,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// **Standard [`Array`] retrieve methods do not perform any caching**.
 /// For this reason, retrieving multiple subsets in a chunk with [`retrieve_chunk_subset`](Array::store_chunk_subset) is very inefficient and strongly discouraged.
 /// For example, consider that a compressed chunk may need to be retrieved and decoded in its entirety even if only a small part of the data is needed.
-/// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode).
+/// In such situations, prefer to initialise a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode).
 /// The underlying codec chain will use a cache where efficient to optimise multiple partial decoding requests (see [`CodecChain`]).
 /// Another alternative is to use [Chunk Caching](#chunk-caching).
 ///
@@ -295,10 +295,8 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///  - [`ChunkCacheEncodedLruChunkLimit`]: an encoded chunk cache with a fixed chunk capacity.
 ///  - [`ChunkCacheDecodedLruSizeLimit`]: a decoded chunk cache with a fixed size in bytes.
 ///  - [`ChunkCacheEncodedLruSizeLimit`]: an encoded chunk cache with a fixed size in bytes.
-///  - [`ChunkCacheDecodedLruChunkLimitThreadLocal`]: a thread-local decoded chunk cache with a fixed chunk capacity (per thread).
-///  - [`ChunkCacheEncodedLruChunkLimitThreadLocal`]: a thread-local encoded chunk cache with a fixed chunk capacity (per thread).
-///  - [`ChunkCacheDecodedLruSizeLimitThreadLocal`]: a thread-local decoded chunk cache with a fixed size in bytes (per thread).
-///  - [`ChunkCacheEncodedLruSizeLimitThreadLocal`]: a thread-local encoded chunk cache with a fixed size in bytes (per thread).
+///
+/// There are also `ThreadLocal` suffixed variants of all of these caches that have a per-thread cache.
 ///
 /// `zarrs` consumers can create custom caches by implementing the [`ChunkCache`] trait.
 ///
@@ -314,7 +312,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// **Benchmark your algorithm/data.**
 ///
 /// ## Reading Sharded Arrays
-/// The `sharding_indexed` ([`ShardingCodec`](codec::array_to_bytes::sharding)) codec enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
+/// The `sharding_indexed` codec ([`ShardingCodec`](codec::array_to_bytes::sharding)) enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
 /// With a sharded array, the [`chunk_grid`](Array::chunk_grid) and chunk indices in store/retrieve methods reference the chunks ("shards") of an array.
 ///
 /// The [`ArrayShardedExt`] trait provides additional methods to [`Array`] to query if an array is sharded and retrieve the inner chunk shape.
