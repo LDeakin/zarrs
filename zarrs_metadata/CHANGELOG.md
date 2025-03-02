@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2025-03-02
+
 ### Added
 - Make `FillValueFloat::to_float` public
 
@@ -97,7 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.5...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.6...HEAD
+[0.3.6]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.6
 [0.3.5]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.5
 [0.3.4]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.4
 [0.3.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.3

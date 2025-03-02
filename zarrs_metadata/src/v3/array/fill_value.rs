@@ -66,6 +66,8 @@ pub enum FillValueFloat {
 
 impl FillValueFloat {
     /// Convert the float fill value to a float.
+    ///
+    /// Returns [`None`] if fill value cannot be converted to the requested float type.
     #[must_use]
     pub fn to_float<T: FloatCore>(&self) -> Option<T> {
         match self {
