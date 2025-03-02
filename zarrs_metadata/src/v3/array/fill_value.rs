@@ -35,6 +35,9 @@ pub enum FillValueMetadataV3 {
     Complex(FillValueFloat, FillValueFloat),
     /// A string.
     String(String),
+    // /// A `null` fill value.
+    // FIXME: Add in the next breaking release
+    // Null,
     /// An unsupported fill value.
     // FIXME: Rename to other in next breaking release.
     // FIXME: Also switch to a non exhaustive?
