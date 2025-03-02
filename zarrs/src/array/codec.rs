@@ -79,6 +79,7 @@ pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefaul
 
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
+use zarrs_data_type::DataTypeExtensionError;
 use zarrs_metadata::ArrayShape;
 use zarrs_plugin::PluginUnsupportedError;
 
@@ -1082,6 +1083,9 @@ pub enum CodecError {
     /// Variable length array bytes offsets are out of bounds.
     #[error(transparent)]
     RawBytesOffsetsOutOfBounds(#[from] RawBytesOffsetsOutOfBoundsError),
+    /// A data type extension error.
+    #[error(transparent)]
+    DataTypeExtension(#[from] DataTypeExtensionError),
 }
 
 impl From<&str> for CodecError {

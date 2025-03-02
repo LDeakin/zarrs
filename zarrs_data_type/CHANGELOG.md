@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add support for data type extensions
+  - Adds `DataTypeExtension`, `DataTypeExtensionError`, and `DataTypePlugin`
+  - Add `Extension` variant to `DataType`
+
 ### Changed
 - Bump `derive_more` to 0.2.0
+- **Breaking**: `DataType::metadata_fill_value` is now fallible
+- **Breaking**: `DataType::{identifier,size,fixed_size}()` are no longer `const`
+- **Breaking**: `DataType::from_metadata()` now returns a `PluginCreateError`
+- **Breaking**: `DataType::metadata_fill_value()` is now fallible
+
+### Removed
+- **Breaking**: Remove `UnsupportedDataTypeError`
+- **Breaking**: Remove `DataType.identifier()`
 
 ## [0.1.0] - 2025-01-24
 

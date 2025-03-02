@@ -2,6 +2,8 @@
 
 use std::sync::Arc;
 
+use zarrs_data_type::DataType;
+
 use crate::{
     array::{
         codec::{
@@ -156,7 +158,11 @@ impl ArrayToBytesCodecTraits for BytesCodec {
             decoded_representation.data_type().size(),
         )?;
         let bytes = bytes.into_fixed()?;
-        self.do_encode_or_decode(bytes, decoded_representation)
+        let bytes_encoded = match decoded_representation.data_type() {
+            DataType::Extension(ext) => ext.encode_bytes(bytes, self.endian)?,
+            _ => self.do_encode_or_decode(bytes, decoded_representation)?,
+        };
+        Ok(bytes_encoded)
     }
 
     fn decode<'a>(
@@ -165,9 +171,11 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
     ) -> Result<ArrayBytes<'a>, CodecError> {
-        Ok(ArrayBytes::from(
-            self.do_encode_or_decode(bytes, decoded_representation)?,
-        ))
+        let bytes_decoded = match decoded_representation.data_type() {
+            DataType::Extension(ext) => ext.decode_bytes(bytes, self.endian)?,
+            _ => self.do_encode_or_decode(bytes, decoded_representation)?,
+        };
+        Ok(ArrayBytes::from(bytes_decoded))
     }
 
     fn partial_decoder(

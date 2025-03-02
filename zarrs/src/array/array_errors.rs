@@ -2,9 +2,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    data_type::{
-        IncompatibleFillValueError, IncompatibleFillValueMetadataError, UnsupportedDataTypeError,
-    },
+    data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
     plugin::PluginCreateError,
@@ -24,7 +22,7 @@ pub enum ArrayCreateError {
     UnsupportedAdditionalFieldError(#[from] UnsupportedAdditionalFieldError),
     /// Unsupported data type.
     #[error(transparent)]
-    DataTypeCreateError(UnsupportedDataTypeError),
+    DataTypeCreateError(PluginCreateError),
     /// Invalid fill value.
     #[error(transparent)]
     InvalidFillValue(#[from] IncompatibleFillValueError),
