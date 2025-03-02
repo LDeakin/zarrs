@@ -4,7 +4,8 @@ use itertools::izip;
 
 use crate::{
     array::ArrayIndices,
-    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
+    array_subset::{ArraySubset, IncompatibleIndexerAndShapeError},
+    indexer::Indexer,
 };
 
 use super::IndicesIterator;
@@ -30,7 +31,7 @@ use super::IndicesIterator;
 /// [((2, 1), 2), ((3, 1), 2)]
 /// ```
 pub struct ContiguousIndices {
-    subset_contiguous_start: ArraySubset,
+    indexer_contiguous_start: Indexer,
     contiguous_elements: u64,
 }
 
@@ -38,21 +39,14 @@ impl ContiguousIndices {
     /// Create a new contiguous indices iterator.
     ///
     /// # Errors
-    /// Returns [`IncompatibleArraySubsetAndShapeError`] if `array_shape` does not encapsulate `subset`.
+    /// Returns [`IncompatibleIndexerAndShapeError`] if `array_shape` does not encapsulate `subset`.
     pub fn new(
-        subset: &ArraySubset,
+        indexer: impl Into<Indexer>,
         array_shape: &[u64],
-    ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
-        if subset.dimensionality() == array_shape.len()
-            && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
-        {
-            Ok(unsafe { Self::new_unchecked(subset, array_shape) })
-        } else {
-            Err(IncompatibleArraySubsetAndShapeError(
-                subset.clone(),
-                array_shape.to_vec(),
-            ))
-        }
+    ) -> Result<Self, IncompatibleIndexerAndShapeError> {
+        let indexer = indexer.into();
+        indexer.is_compatible(array_shape)?;
+        Ok(unsafe { Self::new_unchecked(indexer, array_shape) })
     }
 
     /// Create a new contiguous indices iterator.
@@ -61,46 +55,68 @@ impl ContiguousIndices {
     /// `array_shape` must encapsulate `subset`.
     #[must_use]
     #[allow(clippy::missing_panics_doc)]
-    pub unsafe fn new_unchecked(subset: &ArraySubset, array_shape: &[u64]) -> Self {
-        debug_assert_eq!(subset.dimensionality(), array_shape.len());
-        debug_assert!(
-            std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
-        );
+    pub unsafe fn new_unchecked(indexer: impl Into<Indexer>, array_shape: &[u64]) -> Self {
+        let indexer = indexer.into();
+        debug_assert!(indexer.is_compatible(array_shape).is_ok());
 
-        let mut contiguous = true;
-        let mut contiguous_elements = 1;
-        let mut shape_out: Vec<u64> = Vec::with_capacity(array_shape.len());
-        for (&subset_start, &subset_size, &array_size, shape_out_i) in izip!(
-            subset.start().iter().rev(),
-            subset.shape().iter().rev(),
-            array_shape.iter().rev(),
-            shape_out.spare_capacity_mut().iter_mut().rev(),
-        ) {
-            if contiguous {
-                contiguous_elements *= subset_size;
-                shape_out_i.write(1);
-                contiguous = subset_start == 0 && subset_size == array_size;
-            } else {
-                shape_out_i.write(subset_size);
+        match indexer {
+            Indexer::Subset(subset) => {
+                let mut contiguous = true;
+                let mut contiguous_elements = 1;
+                let mut shape_out: Vec<u64> = Vec::with_capacity(array_shape.len());
+                for (&subset_start, &subset_size, &array_size, shape_out_i) in izip!(
+                    subset.start().iter().rev(),
+                    subset.shape().iter().rev(),
+                    array_shape.iter().rev(),
+                    shape_out.spare_capacity_mut().iter_mut().rev(),
+                ) {
+                    if contiguous {
+                        contiguous_elements *= subset_size;
+                        shape_out_i.write(1);
+                        contiguous = subset_start == 0 && subset_size == array_size;
+                    } else {
+                        shape_out_i.write(subset_size);
+                    }
+                }
+                // SAFETY: each element is initialised
+                unsafe { shape_out.set_len(array_shape.len()) };
+                // SAFETY: The length of shape_out matches the subset dimensionality
+                let subset_contiguous_start = unsafe {
+                    ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out)
+                };
+                Self {
+                    indexer_contiguous_start: Indexer::Subset(subset_contiguous_start),
+                    contiguous_elements,
+                }
             }
-        }
-        // SAFETY: each element is initialised
-        unsafe { shape_out.set_len(array_shape.len()) };
-        // SAFETY: The length of shape_out matches the subset dimensionality
-        let subset_contiguous_start = unsafe {
-            ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out)
-        };
-        // let inner = subset_contiguous_start.iter_indices();
-        Self {
-            subset_contiguous_start,
-            contiguous_elements,
+            Indexer::VIndex(vindices) => {
+                // TODO: integer indexing vindices could have contiguous elements, worth checking?
+                Self {
+                    indexer_contiguous_start: Indexer::VIndex(vindices),
+                    contiguous_elements: 1,
+                }
+            }
+            Indexer::OIndex(oindices) => {
+                // TODO: integer indexing oindices could have contiguous elements, worth checking?
+                Self {
+                    indexer_contiguous_start: Indexer::OIndex(oindices),
+                    contiguous_elements: 1,
+                }
+            }
+            Indexer::Mixed(mindices) => {
+                // TODO: integer indexing mindices could have contiguous elements, worth checking?
+                Self {
+                    indexer_contiguous_start: Indexer::Mixed(mindices),
+                    contiguous_elements: 1,
+                }
+            }
         }
     }
 
     /// Return the number of starting indices (i.e. the length of the iterator).
     #[must_use]
     pub fn len(&self) -> usize {
-        self.subset_contiguous_start.num_elements_usize()
+        self.indexer_contiguous_start.num_elements_usize()
     }
 
     /// Returns true if the number of starting indices is zero.
@@ -137,7 +153,7 @@ impl<'a> IntoIterator for &'a ContiguousIndices {
 
     fn into_iter(self) -> Self::IntoIter {
         ContiguousIndicesIterator {
-            inner: IndicesIterator::new(&self.subset_contiguous_start),
+            inner: IndicesIterator::new(&self.indexer_contiguous_start),
             contiguous_elements: self.contiguous_elements,
         }
     }
