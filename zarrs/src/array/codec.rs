@@ -81,9 +81,10 @@ mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
 use zarrs_metadata::ArrayShape;
 
+use crate::indexer::IncompatibleIndexerAndShapeError;
 use crate::storage::{StoreKeyOffsetValue, WritableStorage};
 use crate::{
-    array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
+    array_subset::ArraySubset,
     byte_range::{extract_byte_ranges_read_seek, ByteOffset, ByteRange, InvalidByteRangeError},
     metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
@@ -1019,9 +1020,9 @@ pub enum CodecError {
     /// An invalid byte range was requested.
     #[error(transparent)]
     InvalidByteRangeError(#[from] InvalidByteRangeError),
-    /// An invalid array subset was requested.
+    /// An incompatible indexer and array shape error.
     #[error(transparent)]
-    InvalidArraySubsetError(#[from] IncompatibleArraySubsetAndShapeError),
+    InvalidIndexerError(#[from] IncompatibleIndexerAndShapeError),
     /// An invalid array subset was requested with the wrong dimensionality.
     #[error("the array subset {_0} has the wrong dimensionality, expected {_1}")]
     InvalidArraySubsetDimensionalityError(ArraySubset, usize),
