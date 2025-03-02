@@ -80,6 +80,7 @@ pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefaul
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
 use zarrs_metadata::ArrayShape;
+use zarrs_plugin::PluginUnsupportedError;
 
 use crate::storage::{StoreKeyOffsetValue, WritableStorage};
 use crate::{
@@ -105,8 +106,20 @@ use super::{
 };
 
 /// A codec plugin.
-pub type CodecPlugin = Plugin<Codec>;
+#[derive(derive_more::Deref)]
+pub struct CodecPlugin(Plugin<Codec, MetadataV3>);
 inventory::collect!(CodecPlugin);
+
+impl CodecPlugin {
+    /// Create a new [`CodecPlugin`].
+    pub const fn new(
+        identifier: &'static str,
+        match_name_fn: fn(name: &str) -> bool,
+        create_fn: fn(metadata: &MetadataV3) -> Result<Codec, PluginCreateError>,
+    ) -> Self {
+        Self(Plugin::new(identifier, match_name_fn, create_fn))
+    }
+}
 
 /// A generic array to array, array to bytes, or bytes to bytes codec.
 #[derive(Debug)]
@@ -190,10 +203,12 @@ impl Codec {
                 _ => {}
             }
         }
-        Err(PluginCreateError::Unsupported {
-            name: metadata.name().to_string(),
-            plugin_type: "codec".to_string(),
-        })
+        Err(PluginUnsupportedError::new(
+            metadata.name().to_string(),
+            metadata.configuration().cloned(),
+            "codec".to_string(),
+        )
+        .into())
     }
 }
 

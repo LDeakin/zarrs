@@ -2,6 +2,7 @@
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
 - [`zarrs_data_type`]: Zarr data types (re-exported as `zarrs::data_type`).
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
+- [`zarrs_plugin`]: Zarr plugin support (re-exported as `zarrs::plugin`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
 
 #### Stores
@@ -29,6 +30,7 @@
 [`zarrs`]: https://github.com/LDeakin/zarrs/tree/main/zarrs
 [`zarrs_data_type`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_data_type
 [`zarrs_metadata`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
+[`zarrs_plugin`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_plugin
 [`zarrs_storage`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
 [`zarrs_filesystem`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
 [`zarrs_http`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http

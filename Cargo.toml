@@ -6,6 +6,7 @@ members = [
     "zarrs",
     "zarrs_data_type",
     "zarrs_metadata",
+    "zarrs_plugin",
     "zarrs_storage",
     "zarrs_filesystem",
     "zarrs_http",
@@ -34,6 +35,10 @@ path = "zarrs_data_type"
 [workspace.dependencies.zarrs_metadata]
 version = "0.3.6"
 path = "zarrs_metadata"
+
+[workspace.dependencies.zarrs_plugin]
+version = "0.1.0"
+path = "zarrs_plugin"
 
 [workspace.dependencies.zarrs_storage]
 version = "0.3.0"
@@ -74,3 +79,6 @@ features = ["bytemuck"]
 
 [workspace.dependencies.num]
 version = "0.4.1"
+
+[workspace.dependencies.inventory]
+version = "0.3.0"

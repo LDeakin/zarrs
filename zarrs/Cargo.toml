@@ -53,7 +53,7 @@ flate2 = { version = "1.0.30", optional = true }
 futures = { version = "0.3.29", optional = true }
 gdeflate-sys = { version = "0.4.1", optional = true }
 half = { workspace = true }
-inventory = "0.3.0"
+inventory = { workspace = true }
 itertools = "0.14.0"
 lru = "0.13.0"
 moka = { version = "0.12.8", features = ["sync"] }
@@ -70,6 +70,7 @@ unsafe_cell_slice = "0.2.0"
 zarrs_filesystem = { workspace = true, optional = true }
 zarrs_data_type = { workspace = true }
 zarrs_metadata = { workspace = true }
+zarrs_plugin = { workspace = true }
 zarrs_storage = { workspace = true }
 zfp-sys = {version = "0.3.0", features = ["static"], optional = true }
 zstd = { version = "0.13.1", features = ["zstdmt"], optional = true }
@@ -86,7 +87,6 @@ opendal = { workspace = true, features = ["services-fs", "services-http"] }
 tempfile = "3"
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread"] }
 walkdir = "2.3.2"
-zarrs_storage = { workspace = true }
 zarrs_opendal = { workspace = true }
 zarrs_object_store = { workspace = true }
 zarrs_filesystem = { workspace = true }

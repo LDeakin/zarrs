@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow `{Array,Group}::new_with_metadata()` and `{Array,Group}Builder` to create arrays with `"must_understand": true` additional fields
   - `{Array,Group}::[async_]open[_opt]` continue to fail with additional fields with `"must_understand": true`
 - Bump `derive_more` to 0.2.0
+- Split the `plugin` module to the `zarrs_plugin` crate
+  - `zarrs_plugin` is re-exported as `zarrs::plugin`
+  - **Breaking**: `Plugin` is now generic over the creation arguments
+  - **Breaking**: `StorageTransformerPlugin` now uses a `Plugin`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements

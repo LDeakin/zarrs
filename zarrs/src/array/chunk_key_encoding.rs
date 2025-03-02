@@ -15,6 +15,7 @@ pub use crate::metadata::{
 };
 pub use default::DefaultChunkKeyEncoding;
 pub use v2::V2ChunkKeyEncoding;
+use zarrs_plugin::PluginUnsupportedError;
 
 use crate::{
     metadata::v3::MetadataV3,
@@ -29,8 +30,20 @@ use derive_more::{Deref, From};
 pub struct ChunkKeyEncoding(Arc<dyn ChunkKeyEncodingTraits>);
 
 /// A chunk key encoding plugin.
-pub type ChunkKeyEncodingPlugin = Plugin<ChunkKeyEncoding>;
+#[derive(derive_more::Deref)]
+pub struct ChunkKeyEncodingPlugin(Plugin<ChunkKeyEncoding, MetadataV3>);
 inventory::collect!(ChunkKeyEncodingPlugin);
+
+impl ChunkKeyEncodingPlugin {
+    /// Create a new [`ChunkKeyEncodingPlugin`].
+    pub const fn new(
+        identifier: &'static str,
+        match_name_fn: fn(name: &str) -> bool,
+        create_fn: fn(metadata: &MetadataV3) -> Result<ChunkKeyEncoding, PluginCreateError>,
+    ) -> Self {
+        Self(Plugin::new(identifier, match_name_fn, create_fn))
+    }
+}
 
 impl ChunkKeyEncoding {
     /// Create a chunk key encoding.
@@ -63,10 +76,12 @@ impl ChunkKeyEncoding {
                 _ => {}
             }
         }
-        Err(PluginCreateError::Unsupported {
-            name: metadata.name().to_string(),
-            plugin_type: "chunk key encoding".to_string(),
-        })
+        Err(PluginUnsupportedError::new(
+            metadata.name().to_string(),
+            metadata.configuration().cloned(),
+            "chunk key encoding".to_string(),
+        )
+        .into())
     }
 }
 

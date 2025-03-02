@@ -186,11 +186,11 @@ pub mod array_subset;
 pub mod config;
 pub mod group;
 pub mod node;
-pub mod plugin;
 pub mod version;
 
 pub use zarrs_data_type as data_type;
 pub use zarrs_metadata as metadata;
+pub use zarrs_plugin as plugin;
 pub use zarrs_storage as storage;
 
 #[cfg(feature = "filesystem")]

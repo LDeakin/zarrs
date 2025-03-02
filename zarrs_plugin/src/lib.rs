@@ -1,27 +1,49 @@
-//! [Zarr V3 extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points) utilities.
+//! The plugin API for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 //!
-//! A [`Plugin`] creates objects from [`MetadataV3`] (consisting of a name and optional configuration).
-//! It is used to implement [Zarr extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points), such as [chunk grids][`crate::array::chunk_grid`], [chunk key encodings](`crate::array::chunk_key_encoding`), [codecs](`crate::array::codec`), and [storage transformers](`crate::array::storage_transformer`).
+//! A [`Plugin`] creates concrete implementations of [Zarr V3 extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points) from inputs.
+//! Extension points include chunk grids, chunk key encodings, codecs, data types, and storage transformers.
 //!
-//! [`DataType`](crate::data_type::DataType)s are not currently supported as an extension point.
-// FIXME: Data type extensions
-//!
-//! Plugins are registered at compile time using the [inventory] crate.
+//! In `zarrs`, plugins are registered at compile time using the [`inventory`](https://docs.rs/inventory/latest/inventory/) crate.
 //! At runtime, a name matching function is applied to identify which registered plugin is associated with the metadata.
-//! If a match is found, the plugin is created from the metadata.
+//! If a match is found, the plugin is created from the metadata and other relevant inputs.
 
 use thiserror::Error;
 
-use crate::metadata::v3::MetadataV3;
+pub use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
 
 /// A plugin.
-pub struct Plugin<TPlugin> {
+pub struct Plugin<TPlugin, TInputs> {
     /// the identifier of the plugin.
     identifier: &'static str,
     /// Tests if the name is a match for this plugin.
     match_name_fn: fn(name: &str) -> bool,
     /// Create an implementation of this plugin from metadata.
-    create_fn: fn(metadata: &MetadataV3) -> Result<TPlugin, PluginCreateError>,
+    create_fn: fn(inputs: &TInputs) -> Result<TPlugin, PluginCreateError>,
+}
+
+/// An unsupported plugin error
+#[derive(Debug, Error)]
+#[error("{plugin_type} {name} is not supported")]
+pub struct PluginUnsupportedError {
+    name: String,
+    configuration: Option<MetadataConfiguration>,
+    plugin_type: String,
+}
+
+impl PluginUnsupportedError {
+    /// Create a new [`PluginUnsupportedError`].
+    #[must_use]
+    pub fn new(
+        name: String,
+        configuration: Option<MetadataConfiguration>,
+        plugin_type: String,
+    ) -> Self {
+        Self {
+            name,
+            configuration,
+            plugin_type,
+        }
+    }
 }
 
 /// An invalid plugin metadata error.
@@ -50,8 +72,8 @@ impl PluginMetadataInvalidError {
 #[allow(missing_docs)]
 pub enum PluginCreateError {
     /// An unsupported plugin.
-    #[error("{plugin_type} {name} is not supported")]
-    Unsupported { name: String, plugin_type: String },
+    #[error(transparent)]
+    Unsupported(#[from] PluginUnsupportedError),
     /// Invalid metadata.
     #[error(transparent)]
     MetadataInvalid(#[from] PluginMetadataInvalidError),
@@ -72,12 +94,12 @@ impl From<String> for PluginCreateError {
     }
 }
 
-impl<TPlugin> Plugin<TPlugin> {
+impl<TPlugin, TInputs> Plugin<TPlugin, TInputs> {
     /// Create a new plugin for registration.
     pub const fn new(
         identifier: &'static str,
         match_name_fn: fn(name: &str) -> bool,
-        create_fn: fn(metadata: &MetadataV3) -> Result<TPlugin, PluginCreateError>,
+        create_fn: fn(inputs: &TInputs) -> Result<TPlugin, PluginCreateError>,
     ) -> Self {
         Self {
             identifier,
@@ -86,15 +108,16 @@ impl<TPlugin> Plugin<TPlugin> {
         }
     }
 
-    /// Create a `TPlugin` plugin from `metadata`.
+    /// Create a `TPlugin` plugin from `inputs`.
     ///
     /// # Errors
     ///
     /// Returns a [`PluginCreateError`] if plugin creation fails due to either:
     ///  - metadata name being unregistered,
-    ///  - or the configuration is invalid.
-    pub fn create(&self, metadata: &MetadataV3) -> Result<TPlugin, PluginCreateError> {
-        (self.create_fn)(metadata)
+    ///  - or the configuration is invalid, or
+    ///  - some other reason specific to the plugin.
+    pub fn create(&self, inputs: &TInputs) -> Result<TPlugin, PluginCreateError> {
+        (self.create_fn)(inputs)
     }
 
     /// Returns true if this plugin is associated with `name`.
