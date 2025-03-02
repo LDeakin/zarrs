@@ -7,6 +7,7 @@ build:
 
 test:
 	cargo +$(TOOLCHAIN) test --all-features
+	cargo +$(TOOLCHAIN) test --all-features --examples
 
 doc: RUSTDOCFLAGS="-D warnings --cfg docsrs"
 doc:

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::{
-    data_type::IncompatibleFillValueError,
     metadata::{v3::AdditionalFields, ChunkKeySeparator},
     node::NodePath,
 };
@@ -297,16 +296,6 @@ impl ArrayBuilder {
             }
         }
 
-        if let Some(data_type_size) = self.data_type.fixed_size() {
-            if data_type_size != self.fill_value.size() {
-                return Err(IncompatibleFillValueError::new(
-                    self.data_type.name(),
-                    self.fill_value.clone(),
-                )
-                .into());
-            }
-        }
-
         let codec_chain = CodecChain::new(
             self.array_to_array_codecs.clone(),
             self.array_to_bytes_codec.clone(),
@@ -318,7 +307,7 @@ impl ArrayBuilder {
                 self.shape.clone(),
                 self.chunk_grid.create_metadata(),
                 self.data_type.metadata(),
-                self.data_type.metadata_fill_value(&self.fill_value),
+                self.data_type.metadata_fill_value(&self.fill_value)?,
                 codec_chain.create_metadatas(),
             )
             .with_attributes(self.attributes.clone())

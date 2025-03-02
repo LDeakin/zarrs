@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
 - Add `ArrayBytesFixedDisjointView[CreateError]`
+- Add support for data type extensions with `zarrs_data_type` 0.2.0
+- Add `custom_data_type_fixed_size` and `custom_data_type_variable_size` examples
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
@@ -36,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `zarrs_plugin` is re-exported as `zarrs::plugin`
   - **Breaking**: `Plugin` is now generic over the creation arguments
   - **Breaking**: `StorageTransformerPlugin` now uses a `Plugin`
+- Add `DataTypeExtension` variant to `CodecError`
+- `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
