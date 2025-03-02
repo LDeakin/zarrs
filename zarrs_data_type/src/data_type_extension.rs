@@ -63,10 +63,10 @@ pub trait DataTypeExtension: Debug + Send + Sync {
     /// # Errors
     /// Returns [`DataTypeExtensionError::CodecUnsupported`] if the `bytes` codec is unsupported.
     fn codec_bytes(&self) -> Result<&dyn DataTypeExtensionBytesCodec, DataTypeExtensionError> {
-        Err(DataTypeExtensionError::CodecUnsupported(
-            "bytes".to_string(),
-            self.name(),
-        ))
+        Err(DataTypeExtensionError::CodecUnsupported {
+            data_type: self.name(),
+            codec: "bytes".to_string(),
+        })
     }
 }
 
@@ -75,8 +75,13 @@ pub trait DataTypeExtension: Debug + Send + Sync {
 #[non_exhaustive]
 pub enum DataTypeExtensionError {
     /// Codec not supported
-    #[display("The {_0} codec is not supported by the {_1} extension data type")]
-    CodecUnsupported(String, String),
+    #[display("The {codec} codec is not supported by the {data_type} extension data type")]
+    CodecUnsupported {
+        /// The data type name.
+        data_type: String,
+        /// The codec name.
+        codec: String,
+    },
     /// A `bytes` codec error.
     BytesCodec(#[from] DataTypeExtensionBytesCodecError),
 }
