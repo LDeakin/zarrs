@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `{Array,Group}::[async_]open[_opt]` continue to fail with additional fields with `"must_understand": true`
 - Bump `derive_more` to 0.2.0
 
+### Fixed
+- Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
+
 ## [0.19.2] - 2025-02-13
 
 ### Changed
