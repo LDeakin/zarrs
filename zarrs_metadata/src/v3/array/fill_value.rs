@@ -62,7 +62,9 @@ pub enum FillValueFloat {
 }
 
 impl FillValueFloat {
-    fn to_float<T: FloatCore>(&self) -> Option<T> {
+    /// Convert the float fill value to a float.
+    #[must_use]
+    pub fn to_float<T: FloatCore>(&self) -> Option<T> {
         match self {
             Self::Float(float) => T::from(*float),
             Self::HexString(hex_string) => {
