@@ -37,6 +37,8 @@ mod element;
 pub mod storage_transformer;
 pub use crate::data_type; // re-export for zarrs < 0.20 compat
 
+#[cfg(feature = "dlpack")]
+mod array_dlpack_ext;
 #[cfg(feature = "sharding")]
 mod array_sharded_ext;
 #[cfg(feature = "sharding")]
@@ -88,10 +90,15 @@ pub use chunk_cache::{
     chunk_cache_lru::*, ChunkCache, ChunkCacheType, ChunkCacheTypeDecoded, ChunkCacheTypeEncoded,
 };
 
+#[cfg(feature = "dlpack")]
+pub use array_dlpack_ext::{
+    ArrayDlPackExt, ArrayDlPackExtError, AsyncArrayDlPackExt, RawBytesDlPack,
+};
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
+
 use zarrs_metadata::v3::UnsupportedAdditionalFieldError;
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
@@ -188,8 +195,9 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
 /// Additional methods are offered by extension traits:
-///  - [`ArrayShardedExt`] and [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
-///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching)
+///  - [`ArrayShardedExt`] and [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays).
+///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching).
+///  - [`[Async]ArrayDlPackExt`](ArrayDlPackExt): convenience methods for [`DLPack`](https://arrow.apache.org/docs/python/dlpack.html) tensor interop.
 ///
 /// ### Chunks and Array Subsets
 /// Several convenience methods are available for querying the underlying chunk grid:

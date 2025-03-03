@@ -181,6 +181,7 @@
 //!    - The async API is runtime-agnostic. This has some limitations that are detailed in the [`Array`](crate::array::Array) docs.
 //!    - The async API is not as performant as the sync API.
 //!  - Codecs: `bitround`, `bz2`, `pcodec`, `zfp`, `zstd`.
+//!  - `dlpack`: adds convenience methods for [`DLPack`](https://arrow.apache.org/docs/python/dlpack.html) tensor interop to [`Array`](crate::array::Array)
 //!
 //! ## `zarrs` Ecosystem
 #![doc = include_str!("../doc/ecosystem.md")]
