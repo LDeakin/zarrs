@@ -20,7 +20,7 @@ pub struct RawBytesDlPack {
     shape: Vec<i64>,
 }
 
-/// [`ArrayDlPackExt`] errors.
+/// Errors related to [`[Async]ArrayDlPackExt`](ArrayDlPackExt) methods.
 #[derive(Clone, Debug, Error, Display)]
 #[non_exhaustive]
 pub enum ArrayDlPackExtError {

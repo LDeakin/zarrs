@@ -197,7 +197,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// Additional methods are offered by extension traits:
 ///  - [`ArrayShardedExt`] and [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays).
 ///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching).
-///  - [`[Async]ArrayDlPackExt`](ArrayDlPackExt): convenience methods for [`DLPack`](https://arrow.apache.org/docs/python/dlpack.html) tensor interop.
+///  - [`[Async]ArrayDlPackExt`](ArrayDlPackExt): methods for [`DLPack`](https://arrow.apache.org/docs/python/dlpack.html) tensor interop.
 ///
 /// ### Chunks and Array Subsets
 /// Several convenience methods are available for querying the underlying chunk grid:
