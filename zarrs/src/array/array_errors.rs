@@ -60,6 +60,7 @@ pub enum ArrayCreateError {
 
 /// Array errors.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum ArrayError {
     /// A store error.
     #[error(transparent)]
@@ -107,4 +108,8 @@ pub enum ArrayError {
     /// Unsupported method.
     #[error("unsupported array method: {_0}")]
     UnsupportedMethod(String),
+    #[cfg(feature = "dlpack")]
+    /// A `DLPack` error
+    #[error(transparent)]
+    DlPackError(#[from] super::array_dlpack_ext::ArrayDlPackExtError),
 }
