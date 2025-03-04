@@ -344,44 +344,25 @@ impl ArraySubset {
         elements: &[T],
         array_shape: &[u64],
     ) -> Result<Vec<T>, IncompatibleArraySubsetAndShapeError> {
-        if elements.len() as u64 == array_shape.iter().product::<u64>()
-            && array_shape.len() == self.dimensionality()
-            && self
+        let is_same_shape = elements.len() as u64 == array_shape.iter().product::<u64>();
+        let is_correct_dimensionality = array_shape.len() == self.dimensionality();
+        let is_in_bounds = self
                 .end_exc()
                 .iter()
                 .zip(array_shape)
-                .all(|(end, shape)| end <= shape)
-        {
-            Ok(unsafe { self.extract_elements_unchecked(elements, array_shape) })
-        } else {
-            Err(IncompatibleArraySubsetAndShapeError(
+                .all(|(end, shape)| end <= shape);
+        if !(is_correct_dimensionality && is_in_bounds && is_same_shape) {
+            return Err(IncompatibleArraySubsetAndShapeError(
                 self.clone(),
                 array_shape.to_vec(),
-            ))
+            ));
         }
-    }
-
-    /// Return the elements in this array subset from an array with shape `array_shape`.
-    ///
-    /// # Safety
-    /// The length of `array_shape` must match the array subset dimensionality and the array subset must be within the bounds of `array_shape`.
-    ///
-    /// # Panics
-    /// Panics if attempting to reference a byte beyond `usize::MAX`.
-    #[must_use]
-    pub unsafe fn extract_elements_unchecked<T: std::marker::Copy>(
-        &self,
-        elements: &[T],
-        array_shape: &[u64],
-    ) -> Vec<T> {
-        debug_assert_eq!(elements.len() as u64, array_shape.iter().product::<u64>());
         let num_elements = usize::try_from(self.num_elements()).unwrap();
         let mut elements_subset = Vec::with_capacity(num_elements);
         let elements_subset_slice = crate::vec_spare_capacity_to_mut_slice(&mut elements_subset);
         let mut subset_offset = 0;
         // SAFETY: `array_shape` is encapsulated by an array with `array_shape`.
-        let contiguous_elements =
-            unsafe { self.contiguous_linearised_indices_unchecked(array_shape) };
+        let contiguous_elements = self.contiguous_linearised_indices(array_shape)?;
         let element_length = contiguous_elements.contiguous_elements_usize();
         for array_index in &contiguous_elements {
             let element_offset = usize::try_from(array_index).unwrap();
@@ -392,7 +373,8 @@ impl ArraySubset {
             subset_offset += element_length;
         }
         unsafe { elements_subset.set_len(num_elements) };
-        elements_subset
+        Ok(elements_subset)
+
     }
 
     /// Returns an iterator over the indices of elements within the subset.
