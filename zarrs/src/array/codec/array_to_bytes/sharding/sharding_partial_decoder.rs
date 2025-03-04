@@ -4,7 +4,7 @@ use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
 use zarrs_storage::byte_range::ByteRange;
 
-use crate::array::{
+use crate::{array::{
     array_bytes::merge_chunks_vlen,
     codec::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
@@ -14,7 +14,7 @@ use crate::array::{
     concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
     ravel_indices, ArrayBytes, ArrayBytesFixedDisjointView, ArraySize, ChunkRepresentation,
     ChunkShape, DataType, DataTypeSize, RawBytes,
-};
+}, array_subset::IncompatibleDimensionalityError};
 
 #[cfg(feature = "async")]
 use crate::array::codec::{
@@ -171,10 +171,11 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
 
             match self.decoded_representation.element_size() {
                 DataTypeSize::Variable => {
-                    let decode_inner_chunk_subset = |(chunk_indices, chunk_subset): (
+                    let decode_inner_chunk_subset = |chunk: Result<(
                         Vec<u64>,
                         _,
-                    )| {
+                    ), IncompatibleDimensionalityError>| {
+                        let (chunk_indices, chunk_subset) = chunk?;
                         let shard_index_idx: usize =
                             usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
                                 .unwrap();
@@ -230,7 +231,6 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                                 .unwrap(),
                         ))
                     };
-
                     // Decode the inner chunk subsets
                     let chunk_bytes_and_subsets =
                         rayon_iter_concurrent_limit::iter_concurrent_limit!(
@@ -252,10 +252,11 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                     let out_array_subset_slice =
                         UnsafeCellSlice::new(out_array_subset.as_mut_slice());
 
-                    let decode_inner_chunk_subset_into_slice = |(chunk_indices, chunk_subset): (
+                    let decode_inner_chunk_subset_into_slice = |chunk: Result<(
                         Vec<u64>,
                         _,
-                    )| {
+                    ), IncompatibleDimensionalityError>| {
+                        let (chunk_indices, chunk_subset) = chunk?;
                         let shard_index_idx: usize =
                             usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
                                 .unwrap();
@@ -307,14 +308,14 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         let decoded_bytes = decoded_bytes.into_fixed()?;
                         let mut output_view = unsafe {
                             // SAFETY: chunks represent disjoint array subsets
-                            ArrayBytesFixedDisjointView::new_unchecked(
+                            ArrayBytesFixedDisjointView::new(
                                 out_array_subset_slice,
                                 data_type_size,
                                 array_subset.shape(),
                                 chunk_subset_overlap
                                     .relative_to(array_subset.start())
                                     .unwrap(),
-                            )
+                            )?
                         };
                         output_view
                             .copy_from_slice(&decoded_bytes)
@@ -603,14 +604,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                 ) = subset_and_decoded_chunk?;
                                 let mut output_view = unsafe {
                                     // SAFETY: chunks represent disjoint array subsets
-                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new(
                                         shard_slice,
                                         data_type_size,
                                         array_subset.shape(),
                                         chunk_subset_overlap
                                             .relative_to(array_subset.start())
                                             .unwrap(),
-                                    )
+                                    )?
                                 };
                                 output_view
                                     .copy_from_slice(&chunk_subset_bytes)
@@ -642,14 +643,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     unsafe { array_subset.overlap_unchecked(chunk_subset) };
                                 let mut output_view = unsafe {
                                     // SAFETY: chunks represent disjoint array subsets
-                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new(
                                         shard_slice,
                                         data_type_size,
                                         array_subset.shape(),
                                         chunk_subset_overlap
                                             .relative_to(array_subset.start())
                                             .unwrap(),
-                                    )
+                                    )?
                                 };
                                 output_view
                                     .fill(self.decoded_representation.fill_value().as_ne_bytes())

@@ -9,7 +9,7 @@ use crate::{
     storage::StorageError,
 };
 
-use super::{codec::CodecError, ArrayIndices, ArrayShape};
+use super::{codec::CodecError, ArrayBytesFixedDisjointViewCreateError, ArrayIndices, ArrayShape};
 
 /// An array creation error.
 #[derive(Debug, Error)]
@@ -61,6 +61,9 @@ pub enum ArrayCreateError {
 /// Array errors.
 #[derive(Debug, Error)]
 pub enum ArrayError {
+    /// Error when a disjoint view creation cannot be done
+    #[error(transparent)]
+    ArrayBytesFixedDisjointViewCreateError(#[from] ArrayBytesFixedDisjointViewCreateError),
     /// A store error.
     #[error(transparent)]
     StorageError(#[from] StorageError),

@@ -614,12 +614,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayShardedReadableExt
                                     .into_owned();
                                 let mut output_view = unsafe {
                                     // SAFETY: chunks represent disjoint array subsets
-                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new(
                                         output,
                                         data_type_size,
                                         array_subset.shape(),
                                         shard_subset_overlap.relative_to(array_subset.start())?,
-                                    )
+                                    )?
                                 };
                                 output_view
                                     .copy_from_slice(&bytes.into_fixed()?)
