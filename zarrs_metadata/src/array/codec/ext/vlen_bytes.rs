@@ -8,6 +8,7 @@ pub const IDENTIFIER: &str = "vlen-bytes";
 
 /// A wrapper to handle various versions of `vlen-bytes` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum VlenBytesCodecConfiguration {
     /// Version 1.0 draft.

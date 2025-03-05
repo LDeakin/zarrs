@@ -8,6 +8,7 @@ pub const IDENTIFIER: &str = "bytes";
 
 /// A wrapper to handle various versions of `bytes` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum BytesCodecConfiguration {
     /// Version 1.0.

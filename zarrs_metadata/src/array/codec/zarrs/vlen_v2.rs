@@ -6,6 +6,7 @@ pub const IDENTIFIER: &str = "vlen_v2";
 
 /// A wrapper to handle various versions of `vlen_v2` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum VlenV2CodecConfiguration {
     /// Version 1.0 draft.

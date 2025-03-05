@@ -135,7 +135,7 @@ pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCre
     let configuration: ZfpCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
 
@@ -409,7 +409,7 @@ mod tests {
         let bytes = T::into_array_bytes(chunk_representation.data_type(), &elements).unwrap();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(configuration).unwrap();
-        let codec = ZfpCodec::new_with_configuration(&configuration);
+        let codec = ZfpCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -592,7 +592,7 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
-        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(
@@ -648,7 +648,7 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
-        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap());
 
         let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
         let encoded = codec

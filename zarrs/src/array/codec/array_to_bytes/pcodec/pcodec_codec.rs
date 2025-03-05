@@ -2,7 +2,7 @@ use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
 use zarrs_metadata::codec::pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration};
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::{
     array::{
@@ -73,11 +73,21 @@ fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> 
 
 impl PcodecCodec {
     /// Create a new `pcodec` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &PcodecCodecConfiguration) -> Self {
-        let PcodecCodecConfiguration::V1(configuration) = configuration;
-        let chunk_config = configuration_to_chunk_config(configuration);
-        Self { chunk_config }
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &PcodecCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            PcodecCodecConfiguration::V1(configuration) => {
+                let chunk_config = configuration_to_chunk_config(configuration);
+                Ok(Self { chunk_config })
+            }
+            _ => Err(PluginCreateError::Other(
+                "this pcodec codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 }
 

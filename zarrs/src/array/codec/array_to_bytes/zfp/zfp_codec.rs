@@ -1,7 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use zarrs_metadata::codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode};
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use zfp_sys::{
     zfp_compress,
     zfp_stream_maximum_size,
@@ -97,35 +97,49 @@ impl ZfpCodec {
         }
     }
 
-    /// Create a new `zfp` codec compatible with `zfpy` (numcodecs).
-    #[must_use]
-    pub fn new_zfpy(configuration: &ZfpyCodecConfiguration) -> Self {
+    /// Create a new `zfp` codec a `zfpy` codec configuration.
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration_zfpy(
+        configuration: &ZfpyCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
         // zfpy writes a redundant header
         let write_header = true;
         match configuration {
             ZfpyCodecConfiguration::Numcodecs(configuration) => match configuration.mode {
                 ZfpyCodecConfigurationMode::FixedRate { rate } => {
-                    Self::new_fixed_rate(rate, write_header)
+                    Ok(Self::new_fixed_rate(rate, write_header))
                 }
                 ZfpyCodecConfigurationMode::FixedPrecision { precision } => {
-                    Self::new_fixed_precision(precision, write_header)
+                    Ok(Self::new_fixed_precision(precision, write_header))
                 }
                 ZfpyCodecConfigurationMode::FixedAccuracy { tolerance } => {
-                    Self::new_fixed_accuracy(tolerance, write_header)
+                    Ok(Self::new_fixed_accuracy(tolerance, write_header))
                 }
             },
+            _ => Err(PluginCreateError::Other(
+                "this zfpy codec configuration variant is unsupported".to_string(),
+            ))?,
         }
     }
 
-    /// Create a new `Zfp` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &ZfpCodecConfiguration) -> Self {
+    /// Create a new `zfp` codec from configuration.
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &ZfpCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
         let configuration = match configuration {
             ZfpCodecConfiguration::V1(configuration) => configuration.clone(),
+            _ => Err(PluginCreateError::Other(
+                "this zfp codec configuration variant is unsupported".to_string(),
+            ))?,
         };
 
         let write_header = false;
-        match configuration.mode {
+        Ok(match configuration.mode {
             ZfpMode::Expert {
                 minbits,
                 maxbits,
@@ -140,7 +154,7 @@ impl ZfpCodec {
                 Self::new_fixed_accuracy(tolerance, write_header)
             }
             ZfpMode::Reversible => Self::new_reversible(write_header),
-        }
+        })
     }
 }
 

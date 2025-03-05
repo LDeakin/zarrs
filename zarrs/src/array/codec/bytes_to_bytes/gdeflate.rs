@@ -81,7 +81,7 @@ pub(crate) fn create_codec_gdeflate(metadata: &MetadataV3) -> Result<Codec, Plug
     let configuration: GDeflateCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
 
@@ -315,7 +315,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = GDeflateCodec::new_with_configuration(&configuration);
+        let codec = GDeflateCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec
             .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
@@ -334,7 +334,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
@@ -375,7 +375,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())

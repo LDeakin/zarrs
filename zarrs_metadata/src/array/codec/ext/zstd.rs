@@ -9,6 +9,7 @@ pub const IDENTIFIER: &str = "zstd";
 
 /// A wrapper to handle various versions of `zstd` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum ZstdCodecConfiguration {
     /// Version 1.0 / `numcodecs` version 0.13.

@@ -9,6 +9,7 @@ pub const IDENTIFIER: &str = "pcodec";
 
 /// A wrapper to handle various versions of `pcodec` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum PcodecCodecConfiguration {
     /// Version 1.0 draft.

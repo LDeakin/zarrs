@@ -5,7 +5,7 @@ use std::{
 };
 
 use flate2::bufread::{GzDecoder, GzEncoder};
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
@@ -41,11 +41,19 @@ impl GzipCodec {
     }
 
     /// Create a new `gzip` codec from configuration.
-    #[must_use]
-    pub const fn new_with_configuration(configuration: &GzipCodecConfiguration) -> Self {
-        let GzipCodecConfiguration::V1(configuration) = configuration;
-        Self {
-            compression_level: configuration.level,
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &GzipCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            GzipCodecConfiguration::V1(configuration) => Ok(Self {
+                compression_level: configuration.level,
+            }),
+            _ => Err(PluginCreateError::Other(
+                "this gzip codec configuration variant is unsupported".to_string(),
+            )),
         }
     }
 }

@@ -19,8 +19,6 @@ pub use core::*;
 
 /// `ext` codec metadata.
 mod ext {
-    /// `bitround` codec metadata.
-    pub mod bitround;
     /// `bz2` codec metadata.
     pub mod bz2;
     /// `fletcher32` codec metadata.
@@ -40,6 +38,8 @@ pub use ext::*;
 
 /// `zarrs` codec metadata.
 mod zarrs {
+    /// `bitround` codec metadata.
+    pub mod bitround;
     /// `gdeflate` codec metadata.
     pub mod gdeflate;
     /// `vlen` codec metadata.

@@ -72,14 +72,21 @@ impl VlenCodec {
     pub fn new_with_configuration(
         configuration: &VlenCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
-        let VlenCodecConfiguration::V1(configuration) = configuration;
-        let index_codecs = Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
-        let data_codecs = Arc::new(CodecChain::from_metadata(&configuration.data_codecs)?);
-        Ok(Self::new(
-            index_codecs,
-            data_codecs,
-            configuration.index_data_type,
-        ))
+        match configuration {
+            VlenCodecConfiguration::V1(configuration) => {
+                let index_codecs =
+                    Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
+                let data_codecs = Arc::new(CodecChain::from_metadata(&configuration.data_codecs)?);
+                Ok(Self::new(
+                    index_codecs,
+                    data_codecs,
+                    configuration.index_data_type,
+                ))
+            }
+            _ => Err(PluginCreateError::Other(
+                "this vlen codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 }
 

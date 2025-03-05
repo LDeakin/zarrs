@@ -9,6 +9,7 @@ pub const IDENTIFIER: &str = "zfp";
 
 /// A wrapper to handle various versions of `zfp` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum ZfpCodecConfiguration {
     /// Version 1.0 draft.

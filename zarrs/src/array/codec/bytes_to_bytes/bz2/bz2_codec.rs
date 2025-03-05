@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
@@ -37,10 +37,18 @@ impl Bz2Codec {
     }
 
     /// Create a new `bz2` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &Bz2CodecConfiguration) -> Self {
-        let Bz2CodecConfiguration::V1(configuration) = configuration;
-        Self::new(configuration.level)
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &Bz2CodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            Bz2CodecConfiguration::V1(configuration) => Ok(Self::new(configuration.level)),
+            _ => Err(PluginCreateError::Other(
+                "this bz2 codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 }
 

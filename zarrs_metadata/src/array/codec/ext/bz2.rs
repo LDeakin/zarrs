@@ -9,6 +9,7 @@ pub const IDENTIFIER: &str = "bz2";
 
 /// A wrapper to handle various versions of `bz2` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum Bz2CodecConfiguration {
     /// Version 1.0 draft.

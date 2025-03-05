@@ -8,6 +8,7 @@ pub const IDENTIFIER: &str = "crc32c";
 
 /// A wrapper to handle various versions of `crc32c` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum Crc32cCodecConfiguration {
     /// Version 1.0.

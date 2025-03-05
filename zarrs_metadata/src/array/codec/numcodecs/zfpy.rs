@@ -11,6 +11,7 @@ pub const IDENTIFIER: &str = "zfpy";
 
 /// A wrapper to handle various versions of `zfpy` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum ZfpyCodecConfiguration {
     /// `numcodecs` version 0.8.

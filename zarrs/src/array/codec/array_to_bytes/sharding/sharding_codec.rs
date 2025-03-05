@@ -73,15 +73,22 @@ impl ShardingCodec {
     pub fn new_with_configuration(
         configuration: &ShardingCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
-        let ShardingCodecConfiguration::V1(configuration) = configuration;
-        let inner_codecs = Arc::new(CodecChain::from_metadata(&configuration.codecs)?);
-        let index_codecs = Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
-        Ok(Self::new(
-            configuration.chunk_shape.clone(),
-            inner_codecs,
-            index_codecs,
-            configuration.index_location,
-        ))
+        match configuration {
+            ShardingCodecConfiguration::V1(configuration) => {
+                let inner_codecs = Arc::new(CodecChain::from_metadata(&configuration.codecs)?);
+                let index_codecs =
+                    Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
+                Ok(Self::new(
+                    configuration.chunk_shape.clone(),
+                    inner_codecs,
+                    index_codecs,
+                    configuration.index_location,
+                ))
+            }
+            _ => Err(PluginCreateError::Other(
+                "this sharding_indexed codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 }
 

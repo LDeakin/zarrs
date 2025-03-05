@@ -9,6 +9,7 @@ pub const IDENTIFIER: &str = "gdeflate";
 
 /// A wrapper to handle various versions of `gdeflate` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum GDeflateCodecConfiguration {
     /// Version 1.0 draft.

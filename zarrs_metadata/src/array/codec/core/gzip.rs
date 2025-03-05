@@ -8,6 +8,7 @@ pub const IDENTIFIER: &str = "gzip";
 
 /// A wrapper to handle various versions of `gzip` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum GzipCodecConfiguration {
     /// Version 1.0.

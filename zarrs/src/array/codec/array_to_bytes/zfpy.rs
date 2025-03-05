@@ -86,6 +86,6 @@ pub(crate) fn create_codec_zfpy(metadata: &MetadataV3) -> Result<Codec, PluginCr
     let configuration: ZfpyCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(ZfpCodec::new_zfpy(&configuration));
+    let codec = Arc::new(ZfpCodec::new_with_configuration_zfpy(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

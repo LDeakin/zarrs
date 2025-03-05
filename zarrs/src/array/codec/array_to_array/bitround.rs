@@ -81,7 +81,7 @@ pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, Plug
     let configuration: BitroundCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(BitroundCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(BitroundCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }
 
@@ -256,7 +256,7 @@ mod tests {
         let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -288,7 +288,7 @@ mod tests {
         let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -326,7 +326,7 @@ mod tests {
         let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -351,7 +351,7 @@ mod tests {
     fn codec_bitround_partial_decode() {
         const JSON: &'static str = r#"{ "keepbits": 2 }"#;
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(
@@ -410,7 +410,7 @@ mod tests {
     async fn codec_bitround_async_partial_decode() {
         const JSON: &'static str = r#"{ "keepbits": 2 }"#;
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(

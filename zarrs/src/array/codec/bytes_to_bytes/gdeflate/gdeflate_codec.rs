@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
@@ -37,11 +37,21 @@ impl GDeflateCodec {
     }
 
     /// Create a new `gdeflate` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &GDeflateCodecConfiguration) -> Self {
-        let GDeflateCodecConfiguration::V1(configuration) = configuration;
-        let compression_level = configuration.level;
-        Self { compression_level }
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &GDeflateCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            GDeflateCodecConfiguration::V1(configuration) => {
+                let compression_level = configuration.level;
+                Ok(Self { compression_level })
+            }
+            _ => Err(PluginCreateError::Other(
+                "this gdeflate codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 }
 

@@ -38,8 +38,14 @@ impl TransposeCodec {
     pub fn new_with_configuration(
         configuration: &TransposeCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
-        let TransposeCodecConfiguration::V1(configuration) = configuration;
-        Ok(Self::new(configuration.order.clone()))
+        match configuration {
+            TransposeCodecConfiguration::V1(configuration) => {
+                Ok(Self::new(configuration.order.clone()))
+            }
+            _ => Err(PluginCreateError::Other(
+                "this transpose codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 
     /// Create a new transpose codec.

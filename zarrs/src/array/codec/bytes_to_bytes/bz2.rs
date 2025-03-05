@@ -68,7 +68,7 @@ pub(crate) fn create_codec_bz2(metadata: &MetadataV3) -> Result<Codec, PluginCre
     let configuration: Bz2CodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(Bz2Codec::new_with_configuration(&configuration));
+    let codec = Arc::new(Bz2Codec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
 
@@ -100,7 +100,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Bz2Codec::new_with_configuration(&codec_configuration);
+        let codec = Bz2Codec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
@@ -125,7 +125,7 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
@@ -171,7 +171,7 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())

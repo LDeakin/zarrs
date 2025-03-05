@@ -65,7 +65,7 @@ pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginC
     let configuration: BytesCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(BytesCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(BytesCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
 
@@ -121,7 +121,7 @@ mod tests {
     fn codec_bytes_configuration_big() {
         let codec_configuration: BytesCodecConfiguration =
             serde_json::from_str(r#"{"endian":"big"}"#).unwrap();
-        let codec = BytesCodec::new_with_configuration(&codec_configuration);
+        let codec = BytesCodec::new_with_configuration(&codec_configuration).unwrap();
         let configuration = codec.configuration("bytes").unwrap();
         assert_eq!(
             serde_json::to_string(&configuration).unwrap(),
@@ -133,7 +133,7 @@ mod tests {
     fn codec_bytes_configuration_little() {
         let codec_configuration: BytesCodecConfiguration =
             serde_json::from_str(r#"{"endian":"little"}"#).unwrap();
-        let codec = BytesCodec::new_with_configuration(&codec_configuration);
+        let codec = BytesCodec::new_with_configuration(&codec_configuration).unwrap();
         let configuration = codec.configuration("bytes").unwrap();
         assert_eq!(
             serde_json::to_string(&configuration).unwrap(),
@@ -144,7 +144,7 @@ mod tests {
     #[test]
     fn codec_bytes_configuration_none() {
         let codec_configuration: BytesCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
-        let codec = BytesCodec::new_with_configuration(&codec_configuration);
+        let codec = BytesCodec::new_with_configuration(&codec_configuration).unwrap();
         let configuration = codec.configuration("bytes").unwrap();
         assert_eq!(serde_json::to_string(&configuration).unwrap(), r#"{}"#);
     }

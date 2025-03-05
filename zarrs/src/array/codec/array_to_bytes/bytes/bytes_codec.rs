@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use zarrs_data_type::{DataType, DataTypeExtensionError};
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
@@ -57,10 +57,18 @@ impl BytesCodec {
     }
 
     /// Create a new `bytes` codec from configuration.
-    #[must_use]
-    pub const fn new_with_configuration(configuration: &BytesCodecConfiguration) -> Self {
-        let BytesCodecConfiguration::V1(configuration) = configuration;
-        Self::new(configuration.endian)
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &BytesCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            BytesCodecConfiguration::V1(configuration) => Ok(Self::new(configuration.endian)),
+            _ => Err(PluginCreateError::Other(
+                "this bytes codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 
     fn do_encode_or_decode<'a>(

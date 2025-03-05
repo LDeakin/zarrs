@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use zstd::zstd_safe;
 
 use crate::array::{
@@ -35,18 +35,25 @@ impl ZstdCodec {
     }
 
     /// Create a new `Zstd` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &ZstdCodecConfiguration) -> Self {
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &ZstdCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
         let (compression, checksum) = match configuration {
             ZstdCodecConfiguration::V1(configuration) => {
                 (configuration.level, configuration.checksum)
             }
             ZstdCodecConfiguration::Numcodecs(configuration) => (configuration.level, false),
+            _ => Err(PluginCreateError::Other(
+                "this zstd codec configuration variant is unsupported".to_string(),
+            ))?,
         };
-        Self {
+        Ok(Self {
             compression: compression.into(),
             checksum,
-        }
+        })
     }
 }
 

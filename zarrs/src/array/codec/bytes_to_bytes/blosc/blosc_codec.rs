@@ -106,6 +106,9 @@ impl BloscCodec {
                         .to_string(),
                 ))?
             }
+            _ => Err(PluginCreateError::Other(
+                "this blosc codec configuration variant is unsupported".to_string(),
+            )),
         }
     }
 

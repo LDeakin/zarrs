@@ -9,6 +9,7 @@ pub const IDENTIFIER: &str = "bitround";
 
 /// A wrapper to handle various versions of `bitround` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[non_exhaustive]
 #[serde(untagged)]
 pub enum BitroundCodecConfiguration {
     /// Version 1.0 draft.

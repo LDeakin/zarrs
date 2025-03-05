@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
@@ -35,11 +35,19 @@ impl BitroundCodec {
     }
 
     /// Create a new `bitround` codec from a configuration.
-    #[must_use]
-    pub const fn new_with_configuration(configuration: &BitroundCodecConfiguration) -> Self {
-        let BitroundCodecConfiguration::V1(configuration) = configuration;
-        Self {
-            keepbits: configuration.keepbits,
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &BitroundCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            BitroundCodecConfiguration::V1(configuration) => Ok(Self {
+                keepbits: configuration.keepbits,
+            }),
+            _ => Err(PluginCreateError::Other(
+                "this bitround codec configuration variant is unsupported".to_string(),
+            )),
         }
     }
 }
