@@ -24,7 +24,7 @@ impl From<BytesCodecConfiguration> for MetadataConfiguration {
     }
 }
 
-/// Configuration parameters for the `bytes` codec (version 1.0).
+/// `bytes` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]

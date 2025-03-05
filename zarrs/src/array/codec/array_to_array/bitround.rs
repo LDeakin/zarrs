@@ -1,7 +1,8 @@
-//! The `bitround` array to array codec.
+//! The `bitround` array to array codec (Experimental).
 //!
-//! Rounds the mantissa of floating point data types to the specified number of bits.
-//! Rounds integers to the specified number of bits from the most significant set bit.
+//! Round the mantissa of floating point data types to the specified number of bits.
+//! Rounds integers from the most significant set bit.
+//! Bit rounding leaves an array more amenable to compression.
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
@@ -9,7 +10,37 @@
 //!
 //! This codec requires the `bitround` feature, which is disabled by default.
 //!
-//! See [`BitroundCodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! This codec is fully compatible with the `numcodecs.bitround` codec in `zarr-python`.
+//! However, it supports additional data types not supported by that implementation.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.bitround>
+//! - <https://codec.zarrs.dev/array_to_array/bitround>
+// TODO: Document how integer rounding works
+//!
+//! ### Specification Deviations
+//! The `bitround` codec in `numcodecs` exclusively supports floating point data types.
+//! The `bitround` codec in `zarrs` additionally supports integers by rounding from the most significant set bit.
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.bitround`
+//! - `numcodecs.bitround`
+//! - `https://codec.zarrs.dev/array_to_array/bitround`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `bitround`
+//!
+//! ### Codec `configuration` Example - [`BitroundCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "keepbits": 10
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::bitround::BitroundCodecConfigurationV1;
+//! # let configuration: BitroundCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
 
 mod bitround_codec;
 mod bitround_partial_decoder;

@@ -1,4 +1,4 @@
-//! The `pcodec` array to bytes codec.
+//! The `pcodec` array to bytes codec (Experimental).
 //!
 //! [Pcodec](https://github.com/mwlon/pcodec) (or Pco, pronounced "pico") losslessly compresses and decompresses numerical sequences with high compression ratio and fast speed.
 //!
@@ -8,7 +8,34 @@
 //!
 //! This codec requires the `pcodec` feature, which is disabled by default.
 //!
-//! See [`PcodecCodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations:
+//! This codec is fully compatible with the `numcodecs.pcodec` codec in `zarr-python`.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/blob/numcodecs/codecs/numcodecs.pcodec/README.md>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `numcodecs.pcodec`
+//! - `https://codec.zarrs.dev/array_to_bytes/pcodec`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `pcodec`
+//!
+//! ### Codec `configuration` Example - [`PcodecCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 5,
+//!     "mode_spec": "auto",
+//!     "delta_spec": "auto",
+//!     "paging_spec": "equal_pages_up_to",
+//!     "delta_encoding_order": null,
+//!     "equal_pages_up_to": 262144
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::pcodec::PcodecCodecConfiguration;
+//! # serde_json::from_str::<PcodecCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod pcodec_codec;
 mod pcodec_partial_decoder;

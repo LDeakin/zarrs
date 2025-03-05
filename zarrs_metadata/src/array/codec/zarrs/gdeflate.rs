@@ -25,7 +25,7 @@ impl From<GDeflateCodecConfiguration> for MetadataConfiguration {
     }
 }
 
-/// Configuration parameters for the `gdeflate` codec (version 1.0 draft).
+/// `gdeflate` codec configuration parameters (version 1.0 draft).
 ///
 /// ### Example: encode with a compression level of 12
 /// ```rust

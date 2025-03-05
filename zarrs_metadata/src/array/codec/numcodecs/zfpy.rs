@@ -1,4 +1,4 @@
-use derive_more::Display;
+use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
@@ -9,7 +9,25 @@ use crate::{
 /// The identifier for the `zfpy` codec.
 pub const IDENTIFIER: &str = "zfpy";
 
-/// Configuration parameters for the `zfpy` codec (numcodecs).
+/// A wrapper to handle various versions of `zfpy` codec configuration parameters.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
+#[serde(untagged)]
+pub enum ZfpyCodecConfiguration {
+    /// `numcodecs` version 0.8.
+    Numcodecs(ZfpyCodecConfigurationNumcodecs),
+}
+
+impl From<ZfpyCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: ZfpyCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
+}
+
+/// `zfpy` codec configuration parameters (numcodecs).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
 // #[serde(deny_unknown_fields)] // FIXME: zarr-python includes redundant compression_kwargs. Report upstream
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
@@ -17,16 +35,6 @@ pub struct ZfpyCodecConfigurationNumcodecs {
     /// The zfp codec configuration mode.
     #[serde(flatten)]
     pub mode: ZfpyCodecConfigurationMode,
-}
-
-impl From<ZfpyCodecConfigurationNumcodecs> for MetadataConfiguration {
-    fn from(configuration: ZfpyCodecConfigurationNumcodecs) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
 }
 
 /// The `zfpy` codec configuration mode.

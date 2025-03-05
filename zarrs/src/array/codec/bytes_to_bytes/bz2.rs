@@ -1,4 +1,4 @@
-//! The `bz2` (bzip2) bytes to bytes codec.
+//! The `bz2` (bzip2) bytes to bytes codec (Experimental).
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
@@ -6,7 +6,30 @@
 //!
 //! This codec requires the `bz2` feature, which is disabled by default.
 //!
-//! See [`Bz2CodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! This codec is fully compatible with the `numcodecs.bz2` codec in `zarr-python`.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.bz2>
+//! - <https://codec.zarrs.dev/bytes_to_bytes/bz2>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `numcodecs.bz2`
+//! - `https://codec.zarrs.dev/bytes_to_bytes/bz2`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `bz2`
+//!
+//! ### Codec `configuration` Example - [`Bz2CodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 9
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::bz2::Bz2CodecConfiguration;
+//! # serde_json::from_str::<Bz2CodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod bz2_codec;
 mod bz2_partial_decoder;

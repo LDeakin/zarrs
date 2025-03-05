@@ -1,4 +1,4 @@
-//! The `zstd` bytes to bytes codec.
+//! The `zstd` bytes to bytes codec (Experimental).
 //!
 //! Applies [Zstd](https://tools.ietf.org/html/rfc8878) compression.
 //!
@@ -6,7 +6,33 @@
 //! This codec is based on a draft specification and may be incompatible with other Zarr V3 implementations.
 //! </div>
 //!
-//! See <https://github.com/zarr-developers/zarr-specs/pull/256>.
+//! ### Compatible Implementations
+//! This is expected to become a standardised extension.
+//!
+//! Some implementations have compatibility issues due to how the content size is encoded:
+//! - <https://github.com/zarr-developers/numcodecs/issues/424>
+//! - <https://github.com/google/neuroglancer/issues/625>
+//!
+//! ### Specification:
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/zarr-python-exts/codecs/zstd>
+//! - <https://github.com/zarr-developers/zarr-specs/pull/256>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zstd`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `zstd`
+//!
+//! ### Codec `configuration` Example - [`ZstdCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 1,
+//!     "checksum": true
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zstd::ZstdCodecConfiguration;
+//! # serde_json::from_str::<ZstdCodecConfiguration>(JSON).unwrap();
 
 mod zstd_codec;
 mod zstd_partial_decoder;

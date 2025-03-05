@@ -1,8 +1,32 @@
-//! The transpose array to array codec.
+//! The `transpose` array to array codec (Core).
 //!
 //! Permutes the dimensions of arrays.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/v1.0.html>.
+//! ### [`TransposeCodecConfiguration`] Example:
+//!
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/transpose>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `transpose`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`TransposeCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "order": [2, 1, 0]
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::transpose::TransposeCodecConfiguration;
+//! # let configuration: TransposeCodecConfiguration = serde_json::from_str(JSON).unwrap();
+//! ```
 
 mod transpose_codec;
 mod transpose_partial_decoder;

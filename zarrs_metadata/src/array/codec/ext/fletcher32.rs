@@ -24,7 +24,7 @@ impl From<Fletcher32CodecConfiguration> for MetadataConfiguration {
     }
 }
 
-/// `fletcher32` (checksum) codec configuration parameters (version 1.0 draft).
+/// `fletcher32` codec configuration parameters (version 1.0 draft).
 ///
 /// ### Example (Zarr V3)
 /// ```json

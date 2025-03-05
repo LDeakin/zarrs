@@ -25,73 +25,9 @@ impl From<ZfpCodecConfiguration> for MetadataConfiguration {
     }
 }
 
-/// Configuration parameters for the `zfp` codec (version 1.0 draft).
+/// `zfp` codec configuration parameters (version 1.0 draft).
 ///
 /// Further information on the meaning of these parameters can be found in the [zfp documentation](https://zfp.readthedocs.io/en/latest/).
-///
-/// Valid examples:
-///
-/// ### Encode in fixed rate mode with 10.5 compressed bits per value
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "mode": "fixed_rate",
-///     "rate": 10.5
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
-/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-/// ```
-///
-/// ### Encode in fixed precision mode with 19 uncompressed bits per value
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "mode": "fixed_precision",
-///     "precision": 19
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
-/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-/// ```
-///
-/// ### Encode in fixed accuracy mode with a tolerance of 0.05
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "mode": "fixed_accuracy",
-///     "tolerance": 0.05
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
-/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-/// ```
-///
-/// ### Encode in reversible mode
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "mode": "reversible"
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
-/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-/// ```
-///
-/// ### Encode in expert mode
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "mode": "expert",
-///     "minbits": 1,
-///     "maxbits": 13,
-///     "maxprec": 19,
-///     "minexp": -2
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
-/// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 // #[serde(deny_unknown_fields)] // NOTE: Not supported with flatten
 pub struct ZfpCodecConfigurationV1 {

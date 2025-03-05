@@ -1,8 +1,28 @@
-//! The `crc32c` (CRC32C checksum) bytes to bytes codec.
+//! The `crc32c` bytes to bytes codec (Core).
 //!
 //! Appends a CRC32C checksum of the input bytestream.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html>.
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/crc32c>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `crc32c`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `crc32c`
+//!
+//! ### Codec `configuration` Example - [`Crc32cCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {}
+//! # "#;
+//! # use zarrs_metadata::codec::crc32c::Crc32cCodecConfiguration;
+//! # serde_json::from_str::<Crc32cCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod crc32c_codec;
 

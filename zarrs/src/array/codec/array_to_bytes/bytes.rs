@@ -1,8 +1,33 @@
-//! The `bytes` array to bytes codec.
+//! The `bytes` array to bytes codec (Core).
 //!
 //! Encodes arrays of fixed-size numeric data types as little endian or big endian in lexicographical order.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/bytes/v1.0.html>.
+//! ### Compatible Implementations:
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/bytes/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/bytes>
+//!
+//! ### Specification Deviations
+//! The `bytes` specification defines a fixed set of supported data types, whereas the `bytes` codec in `zarrs` supports any fixed size data type that implements the [`DataTypeExtensionBytesCodec`](crate::data_type::DataTypeExtensionBytesCodec) trait.
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `bytes`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`BytesCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "endian": "little"
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::bytes::BytesCodecConfiguration;
+//! # serde_json::from_str::<BytesCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod bytes_codec;
 mod bytes_partial_decoder;

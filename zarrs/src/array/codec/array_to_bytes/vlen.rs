@@ -1,4 +1,72 @@
-//! The `vlen` array to bytes codec.
+//! The `vlen` array to bytes codec (Experimental).
+//!
+//! Encodes the offsets and bytes of variable-sized data through independent codec chains.
+//! This codec is compatible with any variable-sized data type.
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
+//! ### Compatible Implementations
+//! None
+//!
+//! ### Specification
+//! - <https://codec.zarrs.dev/array_to_bytes/vlen>
+//!
+//! TODO. See
+//! - <https://github.com/zarr-developers/zeps/pull/47#issuecomment-2238480835>
+//! - <https://github.com/zarr-developers/zarr-python/pull/2036#discussion_r1788465492>
+//!
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.vlen`
+//! - `https://codec.zarrs.dev/array_to_bytes/vlen`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`VlenCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "data_codecs": [
+//!             {
+//!                     "name": "bytes"
+//!             },
+//!             {
+//!                     "name": "blosc",
+//!                     "configuration": {
+//!                             "cname": "zstd",
+//!                             "clevel": 5,
+//!                             "shuffle": "bitshuffle",
+//!                             "typesize": 1,
+//!                             "blocksize": 0
+//!                     }
+//!             }
+//!     ],
+//!     "index_codecs": [
+//!             {
+//!                     "name": "bytes",
+//!                     "configuration": {
+//!                             "endian": "little"
+//!                     }
+//!             },
+//!             {
+//!                     "name": "blosc",
+//!                     "configuration": {
+//!                             "cname": "zstd",
+//!                             "clevel": 5,
+//!                             "shuffle": "shuffle",
+//!                             "typesize": 4,
+//!                             "blocksize": 0
+//!                     }
+//!             }
+//!     ],
+//!     "index_data_type": "uint32"
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::vlen::VlenCodecConfiguration;
+//! # let configuration: VlenCodecConfiguration = serde_json::from_str(JSON).unwrap();
 
 mod vlen_codec;
 mod vlen_partial_decoder;

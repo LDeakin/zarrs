@@ -1,10 +1,16 @@
-//! The `gdeflate` bytes to bytes codec.
+//! The `gdeflate` bytes to bytes codec (Experimental).
 //!
-//! Applies [gdeflate](https://docs.nvidia.com/cuda/nvcomp/gdeflate.html) compression.
+//! Applies [GDeflate](https://docs.nvidia.com/cuda/nvcomp/gdeflate.html) compression.
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
+//!
+//! ### Compatible Implementations
+//! None
+//!
+//! ### Specification
+//! - <https://codec.zarrs.dev/bytes_to_bytes/gdeflate>
 //!
 //! `gdeflate` encoded data sequentially encodes a static header, a dynamic header, and the compressed bytes.
 //!
@@ -16,6 +22,24 @@
 //!  - `COMPRESSED_PAGE_SIZES`: `NUMBER_OF_PAGES` little-endian 64-bit unsigned integers holding the compressed sizes of each page.
 //!
 //! The remaining bytes are the `gdeflate` encoded pages of total length equal to the sum of all `COMPRESSED_PAGE_SIZES`.
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.gdeflate`
+//! - `https://codec.zarrs.dev/bytes_to_bytes/gdeflate`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`GDeflateCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 9
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::gdeflate::GDeflateCodecConfiguration;
+//! # serde_json::from_str::<GDeflateCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod gdeflate_codec;
 mod gdeflate_partial_decoder;

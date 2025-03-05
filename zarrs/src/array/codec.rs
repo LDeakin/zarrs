@@ -49,7 +49,7 @@ pub use array_to_bytes::sharding::{
 #[cfg(feature = "zfp")]
 pub use array_to_bytes::zfp::{ZfpCodec, ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 #[cfg(feature = "zfp")]
-pub use array_to_bytes::zfpy::ZfpyCodecConfigurationNumcodecs;
+pub use array_to_bytes::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationNumcodecs};
 
 // Bytes to bytes
 #[cfg(feature = "blosc")]

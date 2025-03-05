@@ -96,7 +96,7 @@ pub enum BloscCompressor {
     Zstd,
 }
 
-/// Configuration parameters for the `blosc` codec (version 1.0).
+/// `blosc` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
@@ -119,7 +119,7 @@ pub struct BloscCodecConfigurationV1 {
     pub blocksize: usize,
 }
 
-/// Configuration parameters for the `blosc` codec (numcodecs).
+/// `blosc` codec configuration parameters (numcodecs).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]

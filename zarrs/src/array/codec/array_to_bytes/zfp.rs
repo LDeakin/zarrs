@@ -1,4 +1,4 @@
-//! The `zfp` array to bytes codec.
+//! The `zfp` array to bytes codec (Experimental).
 //!
 //! [zfp](https://zfp.io/) is a compressed number format for 1D to 4D arrays of 32/64-bit floating point or integer data.
 //! 8/16-bit integer types are supported through promotion to 32-bit in accordance with the [zfp utility functions](https://zfp.readthedocs.io/en/release1.0.1/low-level-api.html#utility-functions).
@@ -9,7 +9,80 @@
 //!
 //! This codec requires the `zfp` feature, which is disabled by default.
 //!
-//! See [`ZfpCodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! None
+//!
+//! ### Specification:
+//! - <https://codec.zarrs.dev/array_to_bytes/zfp>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.zfp`
+//! - `https://codec.zarrs.dev/array_to_bytes/zfp`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Examples - [`ZfpCodecConfiguration`]:
+//! #### Encode in fixed rate mode with 10.5 compressed bits per value
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "fixed_rate",
+//!     "rate": 10.5
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in fixed precision mode with 19 uncompressed bits per value
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "fixed_precision",
+//!     "precision": 19
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in fixed accuracy mode with a tolerance of 0.05
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "fixed_accuracy",
+//!     "tolerance": 0.05
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in reversible mode
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "reversible"
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in expert mode
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "expert",
+//!     "minbits": 1,
+//!     "maxbits": 13,
+//!     "maxprec": 19,
+//!     "minexp": -2
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 
 mod zfp_array;
 mod zfp_bitstream;

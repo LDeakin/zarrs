@@ -1,4 +1,31 @@
+use derive_more::{Display, From};
+use serde::{Deserialize, Serialize};
+
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `vlen-array` codec.
 pub const IDENTIFIER: &str = "vlen-array";
 
-// pub use crate::array::codec::vlen_v2::VlenV2CodecConfigurationV1;
+/// A wrapper to handle various versions of `vlen-array` codec configuration parameters.
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
+#[serde(untagged)]
+pub enum VlenArrayCodecConfiguration {
+    /// Version 1.0 draft.
+    V1(VlenArrayCodecConfigurationV1),
+}
+
+impl From<VlenArrayCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: VlenArrayCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
+}
+
+/// `vlen-array` codec configuration parameters (version 1.0 draft).
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
+#[serde(deny_unknown_fields)]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
+pub struct VlenArrayCodecConfigurationV1 {}

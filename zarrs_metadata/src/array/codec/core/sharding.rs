@@ -39,40 +39,6 @@ impl TryFrom<MetadataConfiguration> for ShardingCodecConfiguration {
 /// Sharding codec configuration parameters.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/v1.0.html#configuration-parameters>.
-///
-/// ### Example sharding codec configuration
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "chunk_shape": [32, 32, 32],
-///     "codecs": [
-///         {
-///             "name": "endian",
-///             "configuration": {
-///                 "endian": "little"
-///             }
-///         },
-///         {
-///             "name": "gzip",
-///             "configuration": {
-///                 "level": 1
-///             }
-///         }
-///     ],
-///     "index_codecs": [
-///         {
-///             "name": "endian",
-///             "configuration": {
-///                 "endian": "little"
-///             }
-///         },
-///         { "name": "crc32c" }
-///     ]
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::sharding::ShardingCodecConfigurationV1;
-/// # let configuration: ShardingCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-/// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]

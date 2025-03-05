@@ -7,9 +7,13 @@ pub(crate) fn codec_map_default() -> CodecMap {
         (
             codec::bitround::IDENTIFIER.into(),
             CodecName {
-                name: "https://codec.zarrs.dev/array_to_array/bitround".into(),
-                // TODO: `numcodecs.bitround` does not support all of the data types supported by the zarrs implementation
-                aliases: ["numcodecs.bitround".into()].into(),
+                name: "zarrs.bitround".into(),
+                aliases: [
+                    "https://codec.zarrs.dev/array_to_array/bitround".into(),
+                    // NOTE: `numcodecs.bitround` does not support all of the data types supported by the zarrs implementation
+                    "numcodecs.bitround".into(),
+                ]
+                .into(),
                 aliases_v2: ["bitround".into()].into(),
             },
         ),

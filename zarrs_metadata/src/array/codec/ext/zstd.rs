@@ -27,7 +27,7 @@ impl From<ZstdCodecConfiguration> for MetadataConfiguration {
     }
 }
 
-/// Configuration parameters for the `zstd` codec (version 1.0).
+/// `zstd` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
@@ -46,7 +46,7 @@ impl ZstdCodecConfigurationV1 {
     }
 }
 
-/// Configuration parameters for the `zstd` codec (`numcodecs` version 0.1).
+/// `zstd` codec configuration parameters (`numcodecs` version 0.1).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]

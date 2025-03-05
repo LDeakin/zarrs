@@ -6,7 +6,7 @@ use crate::v3::MetadataConfiguration;
 /// The identifier for the `crc32c` codec.
 pub const IDENTIFIER: &str = "crc32c";
 
-/// A wrapper to handle various versions of `crc32c` (CRC32C checksum) codec configuration parameters.
+/// A wrapper to handle various versions of `crc32c` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum Crc32cCodecConfiguration {
@@ -24,7 +24,7 @@ impl From<Crc32cCodecConfiguration> for MetadataConfiguration {
     }
 }
 
-/// `crc32c` (CRC32C checksum) codec configuration parameters (version 1.0).
+/// `crc32c` codec configuration parameters (version 1.0).
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html#configuration-parameters>.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

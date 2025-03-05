@@ -25,7 +25,7 @@ impl From<Bz2CodecConfiguration> for MetadataConfiguration {
     }
 }
 
-/// Configuration parameters for the `bz2` codec (version 1.0 draft).
+/// `bz2` codec configuration parameters (version 1.0 draft).
 ///
 /// ### Example: encode with a compression level of 9
 /// ```rust

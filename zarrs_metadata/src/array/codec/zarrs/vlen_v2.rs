@@ -8,11 +8,11 @@ pub const IDENTIFIER: &str = "vlen_v2";
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum VlenV2CodecConfiguration {
-    /// Version 1.0.
+    /// Version 1.0 draft.
     V1(VlenV2CodecConfigurationV1),
 }
 
-/// Configuration parameters for the `vlen_v2` codec (version 1.0).
+/// `vlen_v2` codec configuration parameters (version 1.0 draft).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, Default)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]

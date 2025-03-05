@@ -1,24 +1,24 @@
-| Codec Type     | Default codec `name`               | Feature Flag* |
-| -------------- | ---------------------------------- | ------------- |
-| Array to Array | [`transpose`]                      | **transpose** |
-|                | [`zarrs.bitround`] (experimental)  | bitround      |
-| Array to Bytes | [`bytes`]                          |               |
-|                | [`vlen-array`]                     |               |
-|                | [`vlen-bytes`]                     |               |
-|                | [`vlen-utf8`]                      |               |
-|                | [`sharding_indexed`]               | **sharding**  |
-|                | [`numcodecs.pcodec`]               | pcodec        |
-|                | [`numcodecs.zfpy`]                 | zfp           |
-|                | [`zarrs.vlen`] (experimental)      |               |
-|                | [`zarrs.vlen_v2`] (experimental)   |               |
-|                | [`zarrs.zfp`] (experimental)       | zfp           |
-| Bytes to Bytes | [`blosc`]                          | **blosc**     |
-|                | [`crc32c`]                         | **crc32c**    |
-|                | [`gzip`]                           | **gzip**      |
-|                | [`zstd`]                           | **zstd**      |
-|                | [`numcodecs.bz2`]                  | bz2           |
-|                | [`numcodecs.fletcher32`]           | fletcher32    |
-|                | [`zarrs.gdeflate`] (experimental)  | gdeflate      |
+| Codec Type     | Default codec `name`     | Status       | Feature Flag* |
+| -------------- | -------------------------| ------------ | ------------- |
+| Array to Array | [`transpose`]            | Core         | **transpose** |
+|                | [`zarrs.bitround`]       | Experimental | bitround      |
+| Array to Bytes | [`bytes`]                | Core         |               |
+|                | [`sharding_indexed`]     | Core         | **sharding**  |
+|                | [`vlen-array`]           | Experimental |               |
+|                | [`vlen-bytes`]           | Experimental |               |
+|                | [`vlen-utf8`]            | Experimental |               |
+|                | [`numcodecs.pcodec`]     | Experimental | pcodec        |
+|                | [`numcodecs.zfpy`]       | Experimental | zfp           |
+|                | [`zarrs.vlen`]           | Experimental |               |
+|                | [`zarrs.vlen_v2`]        | Experimental |               |
+|                | [`zarrs.zfp`]            | Experimental | zfp           |
+| Bytes to Bytes | [`blosc`]                | Core         | **blosc**     |
+|                | [`crc32c`]               | Core         | **crc32c**    |
+|                | [`gzip`]                 | Core         | **gzip**      |
+|                | [`zstd`]                 | Experimental | **zstd**      |
+|                | [`numcodecs.bz2`]        | Experimental | bz2           |
+|                | [`numcodecs.fletcher32`] | Experimental | fletcher32    |
+|                | [`zarrs.gdeflate`]       | Experimental | gdeflate      |
 
 <sup>\* Bolded feature flags are part of the default set of features.</sup>
 
@@ -50,10 +50,11 @@
 
 **Experimental codecs are recommended for evaluation only**.
 They may change in future releases without maintaining backwards compatibilty.
+These codecs have not been standardised, but many are fully compatible with other Zarr implementations.
 
 Codec `name`s and aliases are configurable with [`Config::codec_map_mut`](config::Config::codec_map_mut).
 `zarrs` will persist codec names if opening an existing array of creating an array from metadata.
 
-Arrays created with `zarr-python` 3.x.x with codecs in the `numcodecs.zarr3` submodule are supported.
+`zarrs` supports arrays created with `zarr-python` 3.x.x with various `numcodecs.zarr3` codecs.
 However, arrays must be written with `numcodecs` 0.15+.
 

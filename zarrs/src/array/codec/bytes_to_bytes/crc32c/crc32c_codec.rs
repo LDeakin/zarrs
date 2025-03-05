@@ -20,7 +20,7 @@ use crate::array::codec::bytes_to_bytes::strip_suffix_partial_decoder::AsyncStri
 
 use super::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE};
 
-/// A `crc32c` (CRC32C checksum) codec implementation.
+/// A `crc32c` codec implementation.
 #[derive(Clone, Debug, Default)]
 pub struct Crc32cCodec;
 

@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::codec::zfpy::{ZfpyCodecConfigurationMode, ZfpyCodecConfigurationNumcodecs};
+use zarrs_metadata::codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode};
 use zarrs_plugin::MetadataConfiguration;
 use zfp_sys::{
     zfp_compress,
@@ -99,19 +99,21 @@ impl ZfpCodec {
 
     /// Create a new `zfp` codec compatible with `zfpy` (numcodecs).
     #[must_use]
-    pub fn new_zfpy(configuration: &ZfpyCodecConfigurationNumcodecs) -> Self {
+    pub fn new_zfpy(configuration: &ZfpyCodecConfiguration) -> Self {
         // zfpy writes a redundant header
         let write_header = true;
-        match configuration.mode {
-            ZfpyCodecConfigurationMode::FixedRate { rate } => {
-                Self::new_fixed_rate(rate, write_header)
-            }
-            ZfpyCodecConfigurationMode::FixedPrecision { precision } => {
-                Self::new_fixed_precision(precision, write_header)
-            }
-            ZfpyCodecConfigurationMode::FixedAccuracy { tolerance } => {
-                Self::new_fixed_accuracy(tolerance, write_header)
-            }
+        match configuration {
+            ZfpyCodecConfiguration::Numcodecs(configuration) => match configuration.mode {
+                ZfpyCodecConfigurationMode::FixedRate { rate } => {
+                    Self::new_fixed_rate(rate, write_header)
+                }
+                ZfpyCodecConfigurationMode::FixedPrecision { precision } => {
+                    Self::new_fixed_precision(precision, write_header)
+                }
+                ZfpyCodecConfigurationMode::FixedAccuracy { tolerance } => {
+                    Self::new_fixed_accuracy(tolerance, write_header)
+                }
+            },
         }
     }
 

@@ -1,8 +1,29 @@
-//! The `gzip` bytes to bytes codec.
+//! The `gzip` bytes to bytes codec (Core).
 //!
 //! Applies [gzip](https://datatracker.ietf.org/doc/html/rfc1952) compression.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/v1.0.html>.
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/gzip>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `gzip`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `gzip`
+//!
+//! ### Codec `configuration` Example - [`GzipCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 1
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::gzip::GzipCodecConfiguration;
+//! # serde_json::from_str::<GzipCodecConfiguration>(JSON).unwrap();
 
 mod gzip_codec;
 mod gzip_partial_decoder;

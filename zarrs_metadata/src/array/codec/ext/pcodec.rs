@@ -31,20 +31,9 @@ impl Default for PcodecCodecConfiguration {
     }
 }
 
-/// Configuration parameters for the `pcodec` codec (version 1.0 draft).
+/// `pcodec` codec configuration parameters (version 1.0 draft).
 ///
 /// This configuration matches the implementation in `numcodecs`.
-///
-/// ### Example: encode with a compression level of 12 and otherwise default parameters
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "level": 12
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::pcodec::PcodecCodecConfigurationV1;
-/// # let configuration: PcodecCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-// TODO: Examples for more advanced configurations
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 #[serde(default)] // for compatibility with zarrs < 0.19

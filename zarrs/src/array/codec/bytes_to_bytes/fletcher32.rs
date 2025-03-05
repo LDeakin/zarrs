@@ -1,9 +1,6 @@
-//! The `fletcher32` bytes to bytes codec.
+//! The `fletcher32` bytes to bytes codec (Experimental).
 //!
 //! Appends a fletcher32 checksum of the input bytestream.
-//!
-//! This is based on the `numcodecs` implementation.
-//! See <https://numcodecs.readthedocs.io/en/latest/checksum32.html#fletcher32>.
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
@@ -11,7 +8,28 @@
 //!
 //! This codec requires the `fletcher32` feature, which is disabled by default.
 //!
-//! See [`Fletcher32CodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! This codec is fully compatible with the `numcodecs.fletcher32` codec in `zarr-python`.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.fletcher32>
+//! - <https://codec.zarrs.dev/bytes_to_bytes/fletcher32>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `numcodecs.fletcher32`
+//! - `https://codec.zarrs.dev/bytes_to_bytes/fletcher32`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `fletcher32`
+//!
+//! ### Codec `configuration` Example - [`Fletcher32CodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {}
+//! # "#;
+//! # use zarrs_metadata::codec::fletcher32::Fletcher32CodecConfiguration;
+//! # serde_json::from_str::<Fletcher32CodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod fletcher32_codec;
 

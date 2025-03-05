@@ -26,17 +26,6 @@ impl From<BitroundCodecConfiguration> for MetadataConfiguration {
 }
 
 /// `bitround` codec configuration parameters (version 1.0 draft).
-///
-/// ### Example: Keep 10 bits of the mantissa
-/// ```rust
-/// # let JSON = r#"
-/// {
-///     "keepbits": 10
-/// }
-/// # "#;
-/// # use zarrs_metadata::codec::bitround::BitroundCodecConfigurationV1;
-/// # let configuration: BitroundCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
-/// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 pub struct BitroundCodecConfigurationV1 {
