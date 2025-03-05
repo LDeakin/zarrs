@@ -1,7 +1,10 @@
 use derive_more::Display;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::v3::array::codec::zfp::{ZfpCodecConfigurationV1, ZfpMode};
+use crate::{
+    array::codec::zfp::{ZfpCodecConfigurationV1, ZfpMode},
+    v3::MetadataConfiguration,
+};
 
 /// The identifier for the `zfpy` codec.
 pub const IDENTIFIER: &str = "zfpy";
@@ -14,6 +17,16 @@ pub struct ZfpyCodecConfigurationNumcodecs {
     /// The zfp codec configuration mode.
     #[serde(flatten)]
     pub mode: ZfpyCodecConfigurationMode,
+}
+
+impl From<ZfpyCodecConfigurationNumcodecs> for MetadataConfiguration {
+    fn from(configuration: ZfpyCodecConfigurationNumcodecs) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// The `zfpy` codec configuration mode.
@@ -119,15 +132,12 @@ pub fn codec_zfpy_v2_numcodecs_to_v3(
             ZfpMode::FixedAccuracy { tolerance }
         }
     };
-    ZfpCodecConfigurationV1 {
-        write_header: Some(true),
-        mode,
-    }
+    ZfpCodecConfigurationV1 { mode }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::v3::array::codec::zfp::ZfpCodecConfigurationV1;
+    use crate::array::codec::zfp::ZfpCodecConfigurationV1;
 
     use super::*;
 
@@ -146,11 +156,10 @@ mod tests {
             v2.mode,
             ZfpyCodecConfigurationMode::FixedRate { rate: 0.123 }
         );
-        let ZfpCodecConfigurationV1 { write_header, mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
+        let ZfpCodecConfigurationV1 { mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
         let ZfpMode::FixedRate { rate } = mode else {
             panic!()
         };
-        assert_eq!(write_header, Some(true));
         assert_eq!(rate, 0.123);
     }
 
@@ -169,11 +178,10 @@ mod tests {
             v2.mode,
             ZfpyCodecConfigurationMode::FixedPrecision { precision: 10 }
         );
-        let ZfpCodecConfigurationV1 { write_header, mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
+        let ZfpCodecConfigurationV1 { mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
         let ZfpMode::FixedPrecision { precision } = mode else {
             panic!()
         };
-        assert_eq!(write_header, Some(true));
         assert_eq!(precision, 10);
     }
 
@@ -192,11 +200,10 @@ mod tests {
             v2.mode,
             ZfpyCodecConfigurationMode::FixedAccuracy { tolerance: 0.123 }
         );
-        let ZfpCodecConfigurationV1 { write_header, mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
+        let ZfpCodecConfigurationV1 { mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
         let ZfpMode::FixedAccuracy { tolerance } = mode else {
             panic!()
         };
-        assert_eq!(write_header, Some(true));
         assert_eq!(tolerance, 0.123);
     }
 

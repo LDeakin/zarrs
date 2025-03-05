@@ -9,7 +9,8 @@ mod gzip_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::gzip::{
+use crate::metadata::codec::gzip;
+pub use crate::metadata::codec::gzip::{
     GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
     GzipCompressionLevelError,
 };
@@ -17,7 +18,7 @@ pub use gzip_codec::GzipCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::gzip, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

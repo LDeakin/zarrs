@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
-use crate::{
-    array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use zarrs_plugin::MetadataConfiguration;
+
+use crate::array::{
+    codec::{
+        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -32,7 +31,15 @@ impl TestUnboundedCodec {
 }
 
 impl CodecTraits for TestUnboundedCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
+    fn identifier(&self) -> &'static str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
         None
     }
 

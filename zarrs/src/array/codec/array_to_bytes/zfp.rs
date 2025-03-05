@@ -20,7 +20,7 @@ mod zfp_stream;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
+pub use crate::metadata::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use zfp_codec::ZfpCodec;
 
 use zfp_sys::{
@@ -35,10 +35,8 @@ use crate::{
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
     config::global_config,
-    metadata::v3::{
-        array::codec::zfp::{self, ZfpMode},
-        MetadataV3,
-    },
+    metadata::codec::zfp::{self, ZfpMode},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -54,12 +52,10 @@ inventory::submit! {
 }
 
 fn is_name_zfp(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

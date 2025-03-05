@@ -20,7 +20,8 @@
 mod gdeflate_codec;
 mod gdeflate_partial_decoder;
 
-pub use crate::metadata::v3::array::codec::gdeflate::{
+use crate::metadata::codec::gdeflate;
+pub use crate::metadata::codec::gdeflate::{
     GDeflateCodecConfiguration, GDeflateCodecConfigurationV1, GDeflateCompressionLevel,
     GDeflateCompressionLevelError,
 };
@@ -31,7 +32,8 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin, InvalidBytesLengthError},
         RawBytes,
     },
-    metadata::v3::{array::codec::gdeflate, MetadataV3},
+    config::global_config,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -45,7 +47,10 @@ inventory::submit! {
 }
 
 fn is_name_gdeflate(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_gdeflate(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

@@ -1,14 +1,13 @@
 use std::{borrow::Cow, sync::Arc};
 
-use crate::{
-    array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-        },
-        BytesRepresentation, RawBytes, RecommendedConcurrency,
+use zarrs_plugin::MetadataConfiguration;
+
+use crate::array::{
+    codec::{
+        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes, RecommendedConcurrency,
 };
 
 #[cfg(feature = "async")]
@@ -17,7 +16,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{
     gdeflate_decode, gdeflate_partial_decoder, GDeflateCodecConfiguration,
     GDeflateCodecConfigurationV1, GDeflateCompressionLevel, GDeflateCompressionLevelError,
-    GDeflateCompressor, GDEFLATE_STATIC_HEADER_LENGTH, IDENTIFIER,
+    GDeflateCompressor, GDEFLATE_STATIC_HEADER_LENGTH,
 };
 
 /// A `gdeflate` codec implementation.
@@ -47,11 +46,19 @@ impl GDeflateCodec {
 }
 
 impl CodecTraits for GDeflateCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = GDeflateCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = GDeflateCodecConfiguration::V1(GDeflateCodecConfigurationV1 {
             level: self.compression_level,
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

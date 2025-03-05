@@ -20,7 +20,7 @@ use std::{
     sync::Arc,
 };
 
-pub use crate::metadata::v3::array::codec::blosc::{
+pub use crate::metadata::codec::blosc::{
     BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
     BloscShuffleMode,
 };
@@ -34,7 +34,8 @@ use thiserror::Error;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::blosc, MetadataV3},
+    metadata::codec::blosc,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

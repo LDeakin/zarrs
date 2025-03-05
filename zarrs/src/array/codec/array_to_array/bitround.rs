@@ -16,7 +16,8 @@ mod bitround_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::bitround::{
+use crate::metadata::codec::bitround;
+pub use crate::metadata::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
 pub use bitround_codec::BitroundCodec;
@@ -27,7 +28,7 @@ use crate::{
         DataType,
     },
     config::global_config,
-    metadata::v3::{array::codec::bitround, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -39,12 +40,10 @@ inventory::submit! {
 }
 
 fn is_name_bitround(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

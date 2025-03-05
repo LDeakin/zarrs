@@ -1,7 +1,7 @@
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 
-use crate::v2::array::codec::zfpy::ZfpyCodecConfigurationNumcodecs;
+use crate::v3::MetadataConfiguration;
 
 /// The identifier for the `zfp` codec.
 // TODO: ZEP for zfp
@@ -11,10 +11,18 @@ pub const IDENTIFIER: &str = "zfp";
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
 #[serde(untagged)]
 pub enum ZfpCodecConfiguration {
-    /// Numcodecs (zfpy).
-    NumcodecsZfpy(ZfpyCodecConfigurationNumcodecs),
     /// Version 1.0 draft.
     V1(ZfpCodecConfigurationV1),
+}
+
+impl From<ZfpCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: ZfpCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Configuration parameters for the `zfp` codec (version 1.0 draft).
@@ -31,7 +39,7 @@ pub enum ZfpCodecConfiguration {
 ///     "rate": 10.5
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -43,7 +51,7 @@ pub enum ZfpCodecConfiguration {
 ///     "precision": 19
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -55,7 +63,7 @@ pub enum ZfpCodecConfiguration {
 ///     "tolerance": 0.05
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -66,7 +74,7 @@ pub enum ZfpCodecConfiguration {
 ///     "mode": "reversible"
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 ///
@@ -81,18 +89,12 @@ pub enum ZfpCodecConfiguration {
 ///     "minexp": -2
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::zfp::ZfpCodecConfigurationV1;
+/// # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
 /// # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 // #[serde(deny_unknown_fields)] // NOTE: Not supported with flatten
 pub struct ZfpCodecConfigurationV1 {
-    /// Whether or not to write headers.
-    ///
-    /// This is retained for compatibility with the zfpy numcodecs codec, which redundantly writes headers.
-    /// Prefer to set this to false or [`None`].
-    #[serde(default)]
-    pub write_header: Option<bool>,
     /// The zfp mode.
     #[serde(flatten)]
     pub mode: ZfpMode,

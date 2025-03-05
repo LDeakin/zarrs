@@ -10,41 +10,6 @@ use super::AdditionalFields;
 
 pub mod data_type;
 
-/// Zarr V3 codec metadata.
-pub mod codec {
-    /// `bitround` codec metadata.
-    pub mod bitround;
-    /// `blosc` codec metadata.
-    pub mod blosc;
-    /// `bytes` codec metadata.
-    pub mod bytes;
-
-    /// `bz2` codec metadata.
-    pub mod bz2;
-    /// `crc32c` codec metadata.
-    pub mod crc32c;
-    /// `fletcher32` codec metadata.
-    pub mod fletcher32;
-    /// `gdeflate` codec metadata.
-    pub mod gdeflate;
-    /// `gzip` codec metadata.
-    pub mod gzip;
-    /// `pcodec` codec metadata.
-    pub mod pcodec;
-    /// `sharding` codec metadata.
-    pub mod sharding;
-    /// `transpose` codec metadata.
-    pub mod transpose;
-    /// `vlen` codec metadata.
-    pub mod vlen;
-    // /// `vlen_v2` codec metadata.
-    // pub mod vlen_v2;
-    /// `zfp` codec metadata.
-    pub mod zfp;
-    /// `zstd` codec metadata.
-    pub mod zstd;
-}
-
 /// Zarr V3 chunk grid metadata.
 pub mod chunk_grid {
     /// `rectangular` chunk grid metadata.

@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::v3::MetadataV3;
+use crate::v3::{MetadataConfiguration, MetadataV3};
 
 /// The identifier for the `vlen` codec.
 pub const IDENTIFIER: &str = "vlen";
@@ -12,6 +12,16 @@ pub const IDENTIFIER: &str = "vlen";
 pub enum VlenCodecConfiguration {
     /// Version 1.0.
     V1(VlenCodecConfigurationV1),
+}
+
+impl From<VlenCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: VlenCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Configuration parameters for the `vlen` codec (version 1.0).

@@ -11,10 +11,8 @@ use std::sync::Arc;
 
 use crate::metadata::Endianness;
 
-use crate::metadata::v3::array::codec::bytes;
-pub use crate::metadata::v3::array::codec::bytes::{
-    BytesCodecConfiguration, BytesCodecConfigurationV1,
-};
+use crate::metadata::codec::bytes;
+pub use crate::metadata::codec::bytes::{BytesCodecConfiguration, BytesCodecConfigurationV1};
 
 pub use bytes_codec::BytesCodec;
 
@@ -99,10 +97,10 @@ mod tests {
         let codec_configuration: BytesCodecConfiguration =
             serde_json::from_str(r#"{"endian":"big"}"#).unwrap();
         let codec = BytesCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
+        let configuration = codec.configuration("bytes").unwrap();
         assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"bytes","configuration":{"endian":"big"}}"#
+            serde_json::to_string(&configuration).unwrap(),
+            r#"{"endian":"big"}"#
         );
     }
 
@@ -111,10 +109,10 @@ mod tests {
         let codec_configuration: BytesCodecConfiguration =
             serde_json::from_str(r#"{"endian":"little"}"#).unwrap();
         let codec = BytesCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
+        let configuration = codec.configuration("bytes").unwrap();
         assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"bytes","configuration":{"endian":"little"}}"#
+            serde_json::to_string(&configuration).unwrap(),
+            r#"{"endian":"little"}"#
         );
     }
 
@@ -122,11 +120,8 @@ mod tests {
     fn codec_bytes_configuration_none() {
         let codec_configuration: BytesCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
         let codec = BytesCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
-        assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"bytes"}"#
-        );
+        let configuration = codec.configuration("bytes").unwrap();
+        assert_eq!(serde_json::to_string(&configuration).unwrap(), r#"{}"#);
     }
 
     fn codec_bytes_round_trip_impl(

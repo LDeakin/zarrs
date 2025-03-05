@@ -15,7 +15,7 @@ mod pcodec_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::pcodec::{
+pub use crate::metadata::codec::pcodec::{
     PcodecCodecConfiguration, PcodecCodecConfigurationV1, PcodecCompressionLevel,
     PcodecDeltaEncodingOrder,
 };
@@ -25,7 +25,7 @@ pub use pcodec_codec::PcodecCodec;
 use crate::{
     array::codec::{Codec, CodecPlugin},
     config::global_config,
-    metadata::v3::{array::codec::pcodec, MetadataV3},
+    metadata::{codec::pcodec, v3::MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -37,12 +37,10 @@ inventory::submit! {
 }
 
 fn is_name_pcodec(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

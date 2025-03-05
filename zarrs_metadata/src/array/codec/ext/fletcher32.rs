@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `fletcher32` codec.
 pub const IDENTIFIER: &str = "fletcher32";
 
@@ -10,6 +12,16 @@ pub const IDENTIFIER: &str = "fletcher32";
 pub enum Fletcher32CodecConfiguration {
     /// Version 1.0 draft.
     V1(Fletcher32CodecConfigurationV1),
+}
+
+impl From<Fletcher32CodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: Fletcher32CodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// `fletcher32` (checksum) codec configuration parameters (version 1.0 draft).

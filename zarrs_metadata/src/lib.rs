@@ -21,11 +21,14 @@ pub mod v2;
 /// Zarr V2 to V3 conversion.
 pub mod v2_to_v3;
 
+mod codec_map;
+pub use codec_map::{CodecMap, CodecName};
+
 /// An alias for [`v3::MetadataV3`].
 #[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]
 pub type Metadata = v3::MetadataV3;
 
-pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
+pub use array::{codec, ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
 
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]

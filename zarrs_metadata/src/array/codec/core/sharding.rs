@@ -1,7 +1,11 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-use crate::{v3::MetadataV3, ChunkShape};
+use crate::{
+    v3::{MetadataConfiguration, MetadataV3},
+    ChunkShape,
+};
 
 /// The identifier for the `sharding_indexed` codec.
 pub const IDENTIFIER: &str = "sharding_indexed";
@@ -12,6 +16,24 @@ pub const IDENTIFIER: &str = "sharding_indexed";
 pub enum ShardingCodecConfiguration {
     /// Version 1.0.
     V1(ShardingCodecConfigurationV1),
+}
+
+impl From<ShardingCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: ShardingCodecConfiguration) -> Self {
+        let serde_json::Value::Object(configuration) = serde_json::to_value(configuration).unwrap()
+        else {
+            unreachable!()
+        };
+        configuration
+    }
+}
+
+impl TryFrom<MetadataConfiguration> for ShardingCodecConfiguration {
+    type Error = serde_json::Error;
+
+    fn try_from(value: MetadataConfiguration) -> Result<Self, Self::Error> {
+        serde_json::from_value(Value::Object(value))
+    }
 }
 
 /// Sharding codec configuration parameters.
@@ -48,7 +70,7 @@ pub enum ShardingCodecConfiguration {
 ///     ]
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::sharding::ShardingCodecConfigurationV1;
+/// # use zarrs_metadata::codec::sharding::ShardingCodecConfigurationV1;
 /// # let configuration: ShardingCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

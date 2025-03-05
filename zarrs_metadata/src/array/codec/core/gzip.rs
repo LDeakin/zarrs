@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `gzip` codec.
 pub const IDENTIFIER: &str = "gzip";
 
@@ -10,6 +12,16 @@ pub const IDENTIFIER: &str = "gzip";
 pub enum GzipCodecConfiguration {
     /// Version 1.0.
     V1(GzipCodecConfigurationV1),
+}
+
+impl From<GzipCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: GzipCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Configuration parameters for the `gzip` codec (version 1.0).

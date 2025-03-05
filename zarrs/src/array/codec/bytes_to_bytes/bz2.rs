@@ -16,11 +16,12 @@ use std::sync::Arc;
 use crate::{
     array::codec::{Codec, CodecPlugin},
     config::global_config,
-    metadata::v3::{array::codec::bz2, MetadataV3},
+    metadata::codec::bz2,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use crate::metadata::v3::array::codec::bz2::{
+pub use crate::metadata::codec::bz2::{
     Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
 };
 
@@ -34,12 +35,10 @@ inventory::submit! {
 }
 
 fn is_name_bz2(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_bz2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

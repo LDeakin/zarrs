@@ -9,7 +9,8 @@ mod transpose_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::transpose::{
+use crate::metadata::codec::transpose;
+pub use crate::metadata::codec::transpose::{
     InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
     TransposeOrder,
 };
@@ -21,7 +22,7 @@ use crate::{
         codec::{Codec, CodecPlugin},
         ArrayBytes, RawBytes,
     },
-    metadata::v3::{array::codec::transpose, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

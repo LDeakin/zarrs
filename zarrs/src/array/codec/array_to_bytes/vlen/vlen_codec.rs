@@ -1,5 +1,7 @@
 use std::{num::NonZeroU64, sync::Arc};
 
+use zarrs_plugin::MetadataConfiguration;
+
 use crate::{
     array::{
         codec::{
@@ -11,8 +13,7 @@ use crate::{
         transmute_to_bytes_vec, ArrayBytes, BytesRepresentation, ChunkRepresentation, CodecChain,
         DataType, DataTypeSize, Endianness, FillValue, RawBytes, RawBytesOffsets,
     },
-    config::global_config,
-    metadata::v3::{array::codec::vlen::VlenIndexDataType, MetadataV3},
+    metadata::codec::vlen::VlenIndexDataType,
     plugin::PluginCreateError,
 };
 
@@ -33,12 +34,12 @@ impl Default for VlenCodec {
     fn default() -> Self {
         let index_codecs = Arc::new(CodecChain::new(
             vec![],
-            Arc::new(BytesCodec::new(Some(Endianness::Little))),
+            Arc::new(BytesCodec::new(Some(Endianness::Little))).into(),
             vec![],
         ));
         let data_codecs = Arc::new(CodecChain::new(
             vec![],
-            Arc::new(BytesCodec::new(None)),
+            Arc::new(BytesCodec::new(None)).into(),
             vec![],
         ));
         Self {
@@ -83,22 +84,21 @@ impl VlenCodec {
 }
 
 impl CodecTraits for VlenCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = VlenCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = VlenCodecConfiguration::V1(VlenCodecConfigurationV1 {
             index_codecs: self.index_codecs.create_metadatas(),
             data_codecs: self.data_codecs.create_metadatas(),
             index_data_type: self.index_data_type,
-        };
-        Some(
-            MetadataV3::new_with_serializable_configuration(
-                global_config()
-                    .experimental_codec_names()
-                    .get(super::IDENTIFIER)
-                    .expect("experimental codec identifier in global map"),
-                &configuration,
-            )
-            .unwrap(),
-        )
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

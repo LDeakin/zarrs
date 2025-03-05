@@ -2,11 +2,11 @@
 //!
 //! See [`Config`] for the list of options.
 
-use crate::metadata::v3::array::codec;
-use std::{
-    collections::HashMap,
-    sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard},
-};
+use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
+
+mod codec_map_default;
+use codec_map_default::codec_map_default;
+use zarrs_metadata::CodecMap;
 
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
@@ -99,11 +99,15 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///  }
 /// ```
 ///
-/// ### Experimental Codec Names
-/// > default: See the [crate root documentation](crate#array-support).
+/// ### Codec Map
+/// > default: See below.
 ///
-/// Sets the names used when serialising and deserialising the names of experimental codecs.
-/// Deserialisation also accepts the standard `IDENTIFIER` of the codec.
+/// Sets the codec `name` used when serialising and deserialising codecs.
+/// Aliases can be set so `zarrs` can recognise compatible codecs from other implementations / interim codec names.
+///
+/// ```rust
+#[doc = include_str!("./config/codec_map_default.rs")]
+/// ```
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -115,31 +119,14 @@ pub struct Config {
     metadata_convert_version: MetadataConvertVersion,
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
-    experimental_codec_names: HashMap<String, String>,
+    codec_map: CodecMap,
     experimental_partial_encoding: bool,
 }
 
 #[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
-        #[rustfmt::skip]
-        let experimental_codec_names = HashMap::from([
-            // Array to array
-            #[cfg(feature = "bitround")]
-            (codec::bitround::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_array/bitround".to_string()),
-            // Array to bytes
-            #[cfg(feature = "zfp")]
-            (codec::zfp::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/zfp".to_string()),
-            #[cfg(feature = "pcodec")]
-            (codec::pcodec::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/pcodec".to_string()),
-            (codec::vlen::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen".to_string()),
-            // Bytes to bytes
-            #[cfg(feature = "bz2")]
-            (codec::bz2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
-            #[cfg(feature = "fletcher32")]
-            (codec::fletcher32::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/fletcher32".to_string()),
-        ]);
-
+        let codec_map = codec_map_default();
         Self {
             validate_checksums: true,
             store_empty_chunks: false,
@@ -149,7 +136,7 @@ impl Default for Config {
             metadata_convert_version: MetadataConvertVersion::Default,
             metadata_erase_version: MetadataEraseVersion::Default,
             include_zarrs_metadata: true,
-            experimental_codec_names,
+            codec_map,
             experimental_partial_encoding: false,
         }
     }
@@ -255,15 +242,15 @@ impl Config {
         self
     }
 
-    /// Get the [experimental codec names](#experimental-codec-names) configuration.
+    /// Get the [codec mapping](#codec-mapping) configuration.
     #[must_use]
-    pub fn experimental_codec_names(&self) -> &HashMap<String, String> {
-        &self.experimental_codec_names
+    pub fn codec_map(&self) -> &CodecMap {
+        &self.codec_map
     }
 
-    /// Get a mutable reference to the [experimental codec names](#experimental-codec-names) configuration.
-    pub fn experimental_codec_names_mut(&mut self) -> &mut HashMap<String, String> {
-        &mut self.experimental_codec_names
+    /// Get a mutable reference to the [codec mapping](#codec-mapping) configuration.
+    pub fn codec_map_mut(&mut self) -> &mut CodecMap {
+        &mut self.codec_map
     }
 
     /// Get the [experimental partial encoding](#experimental-partial-encoding) configuration.

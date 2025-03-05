@@ -6,8 +6,7 @@ pub mod vlen;
 pub mod vlen_array;
 pub mod vlen_bytes;
 pub mod vlen_utf8;
-
-pub(crate) mod vlen_v2;
+pub mod vlen_v2;
 
 #[cfg(feature = "pcodec")]
 pub mod pcodec;
@@ -15,3 +14,5 @@ pub mod pcodec;
 pub mod sharding;
 #[cfg(feature = "zfp")]
 pub mod zfp;
+#[cfg(feature = "zfp")]
+pub mod zfpy;

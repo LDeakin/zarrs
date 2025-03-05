@@ -3,18 +3,16 @@
 use std::sync::Arc;
 
 use zarrs_data_type::{DataType, DataTypeExtensionError};
+use zarrs_plugin::MetadataConfiguration;
 
-use crate::{
-    array::{
-        codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            InvalidBytesLengthError, RecommendedConcurrency,
-        },
-        ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
+use crate::array::{
+    codec::{
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
+        ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
+        BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        InvalidBytesLengthError, RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -101,14 +99,19 @@ impl BytesCodec {
 }
 
 impl CodecTraits for BytesCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = BytesCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = BytesCodecConfiguration::V1(BytesCodecConfigurationV1 {
             endian: self.endian,
-        };
-        Some(
-            MetadataV3::new_with_serializable_configuration(super::IDENTIFIER, &configuration)
-                .unwrap(),
-        )
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -8,7 +8,7 @@ pub(crate) mod vlen_v2_macros;
 use std::sync::Arc;
 
 /// The identifier for the `vlen_v2` codec.
-pub(crate) const IDENTIFIER: &str = "vlen_v2";
+pub const IDENTIFIER: &str = "vlen_v2";
 // pub use vlen_v2::IDENTIFIER;
 
 use crate::array::{
@@ -16,7 +16,7 @@ use crate::array::{
     RawBytes,
 };
 
-pub(crate) use vlen_v2_codec::VlenV2Codec;
+pub use vlen_v2_codec::VlenV2Codec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
@@ -29,13 +29,13 @@ inventory::submit! {
     CodecPlugin::new(IDENTIFIER, is_name_vlen_v2, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_array::IDENTIFIER, is_name_vlen_array, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_array::IDENTIFIER, is_name_vlen_array, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_bytes::IDENTIFIER, is_name_vlen_bytes, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_bytes::IDENTIFIER, is_name_vlen_bytes, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_utf8::IDENTIFIER, is_name_vlen_utf8, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_utf8::IDENTIFIER, is_name_vlen_utf8, create_codec_vlen_v2)
 }
 
 fn is_name_vlen_v2(name: &str) -> bool {
@@ -43,20 +43,20 @@ fn is_name_vlen_v2(name: &str) -> bool {
 }
 
 fn is_name_vlen_array(name: &str) -> bool {
-    name.eq(crate::metadata::v2::array::codec::vlen_array::IDENTIFIER)
+    name.eq(crate::metadata::codec::vlen_array::IDENTIFIER)
 }
 
 fn is_name_vlen_bytes(name: &str) -> bool {
-    name.eq(crate::metadata::v2::array::codec::vlen_bytes::IDENTIFIER)
+    name.eq(crate::metadata::codec::vlen_bytes::IDENTIFIER)
 }
 
 fn is_name_vlen_utf8(name: &str) -> bool {
-    name.eq(crate::metadata::v2::array::codec::vlen_utf8::IDENTIFIER)
+    name.eq(crate::metadata::codec::vlen_utf8::IDENTIFIER)
 }
 
 pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     if metadata.configuration_is_none_or_empty() {
-        let codec = Arc::new(VlenV2Codec::new(metadata.name().to_string()));
+        let codec = Arc::new(VlenV2Codec::new());
         Ok(Codec::ArrayToBytes(codec))
     } else {
         Err(PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()).into())

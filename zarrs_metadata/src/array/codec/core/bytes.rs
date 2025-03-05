@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::Endianness;
+use crate::{v3::MetadataConfiguration, Endianness};
 
 /// The identifier for the `bytes` codec.
 pub const IDENTIFIER: &str = "bytes";
@@ -12,6 +12,16 @@ pub const IDENTIFIER: &str = "bytes";
 pub enum BytesCodecConfiguration {
     /// Version 1.0.
     V1(BytesCodecConfigurationV1),
+}
+
+impl From<BytesCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: BytesCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Configuration parameters for the `bytes` codec (version 1.0).

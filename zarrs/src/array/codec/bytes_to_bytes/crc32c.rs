@@ -8,14 +8,13 @@ mod crc32c_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::crc32c::{
-    Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
-};
+pub use crate::metadata::codec::crc32c::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1};
 pub use crc32c_codec::Crc32cCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::crc32c, MetadataV3},
+    metadata::codec::crc32c,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -60,11 +59,8 @@ mod tests {
     fn codec_crc32c_configuration_none() {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
-        assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"crc32c"}"#
-        );
+        let metadata = codec.configuration("crc32c").unwrap();
+        assert_eq!(serde_json::to_string(&metadata).unwrap(), r#"{}"#);
     }
 
     #[test]

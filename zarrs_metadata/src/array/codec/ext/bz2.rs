@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `bz2` codec.
 // TODO: ZEP for bz2
 pub const IDENTIFIER: &str = "bz2";
@@ -13,6 +15,16 @@ pub enum Bz2CodecConfiguration {
     V1(Bz2CodecConfigurationV1),
 }
 
+impl From<Bz2CodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: Bz2CodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// Configuration parameters for the `bz2` codec (version 1.0 draft).
 ///
 /// ### Example: encode with a compression level of 9
@@ -22,7 +34,7 @@ pub enum Bz2CodecConfiguration {
 ///     "level": 9
 /// }
 /// # "#;
-/// # use zarrs_metadata::v2::array::codec::bz2::Bz2CodecConfigurationV1;
+/// # use zarrs_metadata::codec::bz2::Bz2CodecConfigurationV1;
 /// # let configuration: Bz2CodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

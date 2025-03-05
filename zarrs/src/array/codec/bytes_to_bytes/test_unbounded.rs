@@ -7,6 +7,9 @@ mod test_unbounded_partial_decoder;
 
 pub use test_unbounded_codec::TestUnboundedCodec;
 
+/// The identifier for the `test_unbounded` codec.
+pub const IDENTIFIER: &str = "test_unbounded";
+
 #[cfg(test)]
 mod tests {
     use std::{borrow::Cow, sync::Arc};

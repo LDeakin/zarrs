@@ -1,9 +1,8 @@
 use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
-use zarrs_metadata::v3::array::codec::pcodec::{
-    PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration,
-};
+use zarrs_metadata::codec::pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration};
+use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
     array::{
@@ -16,8 +15,7 @@ use crate::{
         convert_from_bytes_slice, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
         DataType,
     },
-    config::global_config,
-    metadata::v3::{array::codec::pcodec::PcodecModeSpecConfiguration, MetadataV3},
+    metadata::codec::pcodec::PcodecModeSpecConfiguration,
 };
 
 #[cfg(feature = "async")]
@@ -84,7 +82,15 @@ impl PcodecCodec {
 }
 
 impl CodecTraits for PcodecCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
         let mode_spec = mode_spec_pco_to_config(&self.chunk_config.mode_spec);
         let (delta_spec, delta_encoding_order) = match self.chunk_config.delta_spec {
             DeltaSpec::Auto => (PcodecDeltaSpecConfiguration::Auto, None),
@@ -115,16 +121,7 @@ impl CodecTraits for PcodecCodec {
             equal_pages_up_to,
         });
 
-        Some(
-            MetadataV3::new_with_serializable_configuration(
-                global_config()
-                    .experimental_codec_names()
-                    .get(super::IDENTIFIER)
-                    .expect("experimental codec identifier in global map"),
-                &configuration,
-            )
-            .expect("pcodec configuration is valid json"),
-        )
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `pcodec` codec.
 // TODO: ZEP for pcodec when stabilised
 pub const IDENTIFIER: &str = "pcodec";
@@ -11,6 +13,16 @@ pub const IDENTIFIER: &str = "pcodec";
 pub enum PcodecCodecConfiguration {
     /// Version 1.0 draft.
     V1(PcodecCodecConfigurationV1),
+}
+
+impl From<PcodecCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: PcodecCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Default for PcodecCodecConfiguration {
@@ -30,7 +42,7 @@ impl Default for PcodecCodecConfiguration {
 ///     "level": 12
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::pcodec::PcodecCodecConfigurationV1;
+/// # use zarrs_metadata::codec::pcodec::PcodecCodecConfigurationV1;
 /// # let configuration: PcodecCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 // TODO: Examples for more advanced configurations
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]

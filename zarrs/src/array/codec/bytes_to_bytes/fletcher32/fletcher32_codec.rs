@@ -1,18 +1,16 @@
 use std::{borrow::Cow, sync::Arc};
 
 use num::Integer;
+use zarrs_plugin::MetadataConfiguration;
 
-use crate::{
-    array::{
-        codec::{
-            bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use crate::array::{
+    codec::{
+        bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
+        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -21,9 +19,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 #[cfg(feature = "async")]
 use crate::array::codec::bytes_to_bytes::strip_suffix_partial_decoder::AsyncStripSuffixPartialDecoder;
 
-use super::{
-    Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1, CHECKSUM_SIZE, IDENTIFIER,
-};
+use super::{Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1, CHECKSUM_SIZE};
 
 /// A `fletcher32` codec implementation.
 #[derive(Clone, Debug, Default)]
@@ -44,9 +40,17 @@ impl Fletcher32Codec {
 }
 
 impl CodecTraits for Fletcher32Codec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = Fletcher32CodecConfigurationV1 {};
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = Fletcher32CodecConfiguration::V1(Fletcher32CodecConfigurationV1 {});
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

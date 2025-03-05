@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `bitround` codec.
 // TODO: ZEP for bitround
 pub const IDENTIFIER: &str = "bitround";
@@ -13,6 +15,16 @@ pub enum BitroundCodecConfiguration {
     V1(BitroundCodecConfigurationV1),
 }
 
+impl From<BitroundCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: BitroundCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// `bitround` codec configuration parameters (version 1.0 draft).
 ///
 /// ### Example: Keep 10 bits of the mantissa
@@ -22,7 +34,7 @@ pub enum BitroundCodecConfiguration {
 ///     "keepbits": 10
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::bitround::BitroundCodecConfigurationV1;
+/// # use zarrs_metadata::codec::bitround::BitroundCodecConfigurationV1;
 /// # let configuration: BitroundCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

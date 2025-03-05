@@ -1,6 +1,8 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `gdeflate` codec.
 // TODO: ZEP for gdeflate
 pub const IDENTIFIER: &str = "gdeflate";
@@ -13,6 +15,16 @@ pub enum GDeflateCodecConfiguration {
     V1(GDeflateCodecConfigurationV1),
 }
 
+impl From<GDeflateCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: GDeflateCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// Configuration parameters for the `gdeflate` codec (version 1.0 draft).
 ///
 /// ### Example: encode with a compression level of 12
@@ -22,7 +34,7 @@ pub enum GDeflateCodecConfiguration {
 ///     "level": 12
 /// }
 /// # "#;
-/// # use zarrs_metadata::v3::array::codec::gdeflate::GDeflateCodecConfigurationV1;
+/// # use zarrs_metadata::codec::gdeflate::GDeflateCodecConfigurationV1;
 /// # let configuration: GDeflateCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

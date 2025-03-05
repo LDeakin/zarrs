@@ -1,6 +1,7 @@
 use std::{borrow::Cow, ffi::c_char, sync::Arc};
 
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
+use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
     array::{
@@ -11,7 +12,6 @@ use crate::{
         },
         BytesRepresentation, RawBytes,
     },
-    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
 
@@ -21,7 +21,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{
     blosc_compress_bytes, blosc_decompress_bytes, blosc_partial_decoder, blosc_validate,
     compressor_as_cstr, BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel,
-    BloscCompressor, BloscError, BloscShuffleMode, IDENTIFIER,
+    BloscCompressor, BloscError, BloscShuffleMode,
 };
 
 /// A `blosc` codec implementation.
@@ -99,6 +99,13 @@ impl BloscCodec {
                 configuration.shuffle,
                 configuration.typesize,
             ),
+            BloscCodecConfiguration::Numcodecs(_) => {
+                // Note: this situation is avoided with codec_metadata_v2_to_v3
+                Err(PluginCreateError::Other(
+                    "the blosc codec cannot be created from numcodecs.blosc metadata directly"
+                        .to_string(),
+                ))?
+            }
         }
     }
 
@@ -132,8 +139,16 @@ impl BloscCodec {
 }
 
 impl CodecTraits for BloscCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = BloscCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = BloscCodecConfiguration::V1(BloscCodecConfigurationV1 {
             cname: self.cname,
             clevel: self.clevel,
             shuffle: self.shuffle_mode.unwrap_or_else(|| {
@@ -145,8 +160,8 @@ impl CodecTraits for BloscCodec {
             }),
             typesize: self.typesize,
             blocksize: self.blocksize,
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

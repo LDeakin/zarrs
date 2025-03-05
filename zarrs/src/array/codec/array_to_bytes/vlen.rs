@@ -8,9 +8,7 @@ use std::{num::NonZeroU64, sync::Arc};
 use itertools::Itertools;
 pub use vlen::IDENTIFIER;
 
-pub use crate::metadata::v3::array::codec::vlen::{
-    VlenCodecConfiguration, VlenCodecConfigurationV1,
-};
+pub use crate::metadata::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
 use crate::{
     array::{
         codec::{ArrayToBytesCodecTraits, CodecError, CodecOptions, InvalidBytesLengthError},
@@ -18,7 +16,7 @@ use crate::{
         RawBytes,
     },
     config::global_config,
-    metadata::v3::array::codec::vlen,
+    metadata::codec::vlen,
 };
 
 pub use vlen_codec::VlenCodec;
@@ -37,12 +35,10 @@ inventory::submit! {
 }
 
 fn is_name_vlen(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_vlen(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

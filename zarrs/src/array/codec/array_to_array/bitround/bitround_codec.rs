@@ -1,24 +1,22 @@
 use std::sync::Arc;
 
-use crate::{
-    array::{
-        codec::{
-            options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
-            CodecError, CodecMetadataOptions, CodecTraits, RecommendedConcurrency,
-        },
-        ChunkRepresentation, ChunkShape, DataType,
+use zarrs_plugin::MetadataConfiguration;
+
+use crate::array::{
+    codec::{
+        array_to_bytes::vlen_v2::IDENTIFIER, options::CodecOptions, ArrayBytes, ArrayCodecTraits,
+        ArrayPartialDecoderTraits, ArrayPartialEncoderTraits, ArrayToArrayCodecTraits,
+        ArrayToArrayPartialEncoderDefault, CodecError, CodecMetadataOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    config::global_config,
-    metadata::v3::MetadataV3,
+    ChunkRepresentation, ChunkShape, DataType,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 use super::{
-    bitround_partial_decoder, round_bytes, BitroundCodecConfiguration,
-    BitroundCodecConfigurationV1, IDENTIFIER,
+    bitround_partial_decoder, round_bytes, BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
 
 /// A `bitround` codec implementation.
@@ -47,21 +45,20 @@ impl BitroundCodec {
 }
 
 impl CodecTraits for BitroundCodec {
-    fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3> {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
         if options.experimental_codec_store_metadata_if_encode_only() {
-            let configuration = BitroundCodecConfigurationV1 {
+            let configuration = BitroundCodecConfiguration::V1(BitroundCodecConfigurationV1 {
                 keepbits: self.keepbits,
-            };
-            Some(
-                MetadataV3::new_with_serializable_configuration(
-                    global_config()
-                        .experimental_codec_names()
-                        .get(super::IDENTIFIER)
-                        .expect("experimental codec identifier in global map"),
-                    &configuration,
-                )
-                .unwrap(),
-            )
+            });
+            Some(configuration.into())
         } else {
             None
         }

@@ -1,16 +1,15 @@
 use std::{borrow::Cow, sync::Arc};
 
-use crate::{
-    array::{
-        codec::{
-            bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use zarrs_plugin::MetadataConfiguration;
+
+use crate::array::{
+    codec::{
+        bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
+        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -19,7 +18,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 #[cfg(feature = "async")]
 use crate::array::codec::bytes_to_bytes::strip_suffix_partial_decoder::AsyncStripSuffixPartialDecoder;
 
-use super::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE, IDENTIFIER};
+use super::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE};
 
 /// A `crc32c` (CRC32C checksum) codec implementation.
 #[derive(Clone, Debug, Default)]
@@ -40,9 +39,17 @@ impl Crc32cCodec {
 }
 
 impl CodecTraits for Crc32cCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = Crc32cCodecConfigurationV1 {};
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = Crc32cCodecConfiguration::V1(Crc32cCodecConfigurationV1 {});
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

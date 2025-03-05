@@ -13,14 +13,15 @@ mod zstd_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::zstd::{
+use crate::metadata::codec::zstd;
+pub use crate::metadata::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
 pub use zstd_codec::ZstdCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::zstd, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 

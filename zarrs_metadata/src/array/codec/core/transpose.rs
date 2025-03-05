@@ -2,6 +2,8 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `transpose` codec.
 pub const IDENTIFIER: &str = "transpose";
 
@@ -11,6 +13,16 @@ pub const IDENTIFIER: &str = "transpose";
 pub enum TransposeCodecConfiguration {
     /// Version 1.0.
     V1(TransposeCodecConfigurationV1),
+}
+
+impl From<TransposeCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: TransposeCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Configuration parameters for the Transpose codec (version 1.0).

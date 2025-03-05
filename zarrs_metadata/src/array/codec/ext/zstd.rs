@@ -2,6 +2,8 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::v3::MetadataConfiguration;
+
 /// The identifier for the `zstd` codec.
 pub const IDENTIFIER: &str = "zstd";
 
@@ -9,8 +11,20 @@ pub const IDENTIFIER: &str = "zstd";
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum ZstdCodecConfiguration {
-    /// Version 1.0.
+    /// Version 1.0 / `numcodecs` version 0.13.
     V1(ZstdCodecConfigurationV1),
+    /// `numcodecs` version 0.1.
+    Numcodecs(ZstdCodecConfigurationNumcodecs),
+}
+
+impl From<ZstdCodecConfiguration> for MetadataConfiguration {
+    fn from(configuration: ZstdCodecConfiguration) -> Self {
+        let configuration = serde_json::to_value(configuration).unwrap();
+        match configuration {
+            serde_json::Value::Object(configuration) => configuration,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Configuration parameters for the `zstd` codec (version 1.0).
@@ -32,11 +46,28 @@ impl ZstdCodecConfigurationV1 {
     }
 }
 
+/// Configuration parameters for the `zstd` codec (`numcodecs` version 0.1).
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
+#[serde(deny_unknown_fields)]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
+pub struct ZstdCodecConfigurationNumcodecs {
+    /// The compression level.
+    pub level: ZstdCompressionLevel,
+}
+
+/// Convert [`ZstdCodecConfigurationNumcodecs`] to [`ZstdCodecConfiguration`].
+#[must_use]
+pub fn codec_zstd_v2_numcodecs_to_v3(
+    zstd: &ZstdCodecConfigurationNumcodecs,
+) -> ZstdCodecConfiguration {
+    ZstdCodecConfiguration::V1(ZstdCodecConfigurationV1::new(zstd.level, false))
+}
+
 /// A `Zstd` compression level. An integer from -131072 to 22 which controls the speed and level of compression (has no impact on decoding).
 ///
 /// A value of 0 indicates to use the default compression level.
 /// Otherwise, a higher level is expected to achieve a higher compression ratio at the cost of lower speed.
-#[derive(Serialize, Clone, Eq, PartialEq, Debug)]
+#[derive(Serialize, Clone, Copy, Eq, PartialEq, Debug)]
 pub struct ZstdCompressionLevel(i32);
 
 impl<'de> serde::Deserialize<'de> for ZstdCompressionLevel {
@@ -102,13 +133,13 @@ mod tests {
         serde_json::from_str::<ZstdCodecConfiguration>(JSON_VALID).unwrap();
     }
 
-    #[test]
-    fn codec_zstd_configuration_invalid1() {
-        const JSON_INVALID1: &str = r#"{
-        "level": 5
-    }"#;
-        assert!(serde_json::from_str::<ZstdCodecConfiguration>(JSON_INVALID1).is_err());
-    }
+    // #[test]
+    // fn codec_zstd_configuration_invalid1() {
+    //     const JSON_INVALID1: &str = r#"{
+    //     "level": 5
+    // }"#;
+    //     assert!(serde_json::from_str::<ZstdCodecConfiguration>(JSON_INVALID1).is_err());
+    // }
 
     #[test]
     fn codec_zstd_configuration_invalid2() {

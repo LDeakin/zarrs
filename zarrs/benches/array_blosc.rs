@@ -1,9 +1,11 @@
+#![allow(missing_docs)]
+
 use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use zarrs::{
     array::codec::BloscCodec,
-    metadata::v3::array::codec::blosc::{BloscCompressionLevel, BloscCompressor, BloscShuffleMode},
+    metadata::codec::blosc::{BloscCompressionLevel, BloscCompressor, BloscShuffleMode},
 };
 
 fn array_blosc_write_all(c: &mut Criterion) {

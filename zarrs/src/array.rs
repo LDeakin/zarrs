@@ -72,7 +72,6 @@ pub use self::{
 pub use crate::data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
 
 pub use crate::metadata::v2::ArrayMetadataV2;
-use crate::metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 pub use crate::metadata::v3::{
     array::data_type::DataTypeSize,
     array::fill_value::FillValueMetadataV3,
@@ -80,6 +79,7 @@ pub use crate::metadata::v3::{
     ArrayMetadataV3,
 };
 pub use crate::metadata::{ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness};
+use crate::{config::global_config, metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError};
 
 /// An alias for [`FillValueMetadataV3`].
 #[deprecated(since = "0.17.0", note = "use FillValueMetadataV3 instead")]
@@ -400,7 +400,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         // Convert V2 metadata to V3 if it is a compatible subset
         let metadata_v3 = match &metadata {
             ArrayMetadata::V3(v3) => Ok(v3.clone()),
-            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2)
+            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2, global_config().codec_map())
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
         }?;
 
@@ -625,7 +625,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             (AM::V3(metadata), V::Default | V::V3) => ArrayMetadata::V3(metadata),
             (AM::V2(metadata), V::Default) => ArrayMetadata::V2(metadata),
             (AM::V2(metadata), V::V3) => {
-                let metadata = array_metadata_v2_to_v3(&metadata)
+                let metadata = array_metadata_v2_to_v3(&metadata, global_config().codec_map())
                     .expect("conversion succeeded on array creation");
                 AM::V3(metadata)
             }
@@ -797,7 +797,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
     pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
         match self.metadata {
             ArrayMetadata::V2(metadata) => {
-                let metadata: ArrayMetadata = array_metadata_v2_to_v3(&metadata)?.into();
+                let metadata: ArrayMetadata =
+                    array_metadata_v2_to_v3(&metadata, global_config().codec_map())?.into();
                 Ok(Self {
                     storage: self.storage,
                     path: self.path,
@@ -1181,7 +1182,7 @@ mod tests {
     fn array_v2_zfpy_c() {
         array_v2_to_v3(
             "tests/data/v2/array_zfpy_C.zarr",
-            "tests/data/v3/array_zfp.zarr",
+            "tests/data/v3/array_zfpy.zarr",
         )
     }
 
@@ -1207,24 +1208,6 @@ mod tests {
 
     #[allow(dead_code)]
     fn array_v3_numcodecs(path_in: &str) {
-        {
-            use zarrs_metadata::v3::array::codec;
-            let mut config = crate::config::global_config_mut();
-            let experimental_codec_names = config.experimental_codec_names_mut();
-            experimental_codec_names.insert(
-                codec::zfp::IDENTIFIER.to_string(),
-                "numcodecs.zfpy".to_string(),
-            );
-            experimental_codec_names.insert(
-                codec::pcodec::IDENTIFIER.to_string(),
-                "numcodecs.pcodec".to_string(),
-            );
-            experimental_codec_names.insert(
-                codec::bz2::IDENTIFIER.to_string(),
-                "numcodecs.bz2".to_string(),
-            );
-        }
-
         let store = Arc::new(FilesystemStore::new(path_in).unwrap());
         let array_in = Array::open(store, "/").unwrap();
 
