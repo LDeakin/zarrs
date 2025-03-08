@@ -30,6 +30,7 @@ pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endian
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum ArrayMetadata {
     /// Zarr Version 3.0.
     V3(v3::ArrayMetadataV3),
@@ -64,6 +65,7 @@ impl TryFrom<&str> for GroupMetadata {
 /// Node metadata ([`ArrayMetadata`] or [`GroupMetadata`]).
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum NodeMetadata {
     /// Array metadata.
     Array(ArrayMetadata),

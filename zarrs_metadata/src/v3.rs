@@ -16,6 +16,7 @@ pub use metadata::{
 /// V3 node metadata ([`ArrayMetadataV3`] or [`GroupMetadataV3`]).
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum NodeMetadataV3 {
     /// Array metadata.
     Array(ArrayMetadataV3),
