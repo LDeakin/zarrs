@@ -7,7 +7,7 @@ use crate::{
         transpose::{TransposeCodecConfigurationV1, TransposeOrder},
         zstd::codec_zstd_v2_numcodecs_to_v3,
     },
-    codec::zstd::ZstdCodecConfigurationNumcodecs,
+    codec::zstd::ZstdCodecConfiguration,
     v2::{
         array::{
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
@@ -181,9 +181,9 @@ pub fn codec_metadata_v2_to_v3(
                 )?);
             }
             crate::array::codec::zstd::IDENTIFIER => {
-                let zstd = serde_json::from_value::<ZstdCodecConfigurationNumcodecs>(
-                    serde_json::to_value(compressor.configuration())?,
-                )?;
+                let zstd = serde_json::from_value::<ZstdCodecConfiguration>(serde_json::to_value(
+                    compressor.configuration(),
+                )?)?;
                 let configuration = codec_zstd_v2_numcodecs_to_v3(&zstd);
                 codecs.push(MetadataV3::new_with_serializable_configuration(
                     name,

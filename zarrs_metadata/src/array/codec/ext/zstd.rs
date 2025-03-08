@@ -58,10 +58,13 @@ pub struct ZstdCodecConfigurationNumcodecs {
 
 /// Convert [`ZstdCodecConfigurationNumcodecs`] to [`ZstdCodecConfiguration`].
 #[must_use]
-pub fn codec_zstd_v2_numcodecs_to_v3(
-    zstd: &ZstdCodecConfigurationNumcodecs,
-) -> ZstdCodecConfiguration {
-    ZstdCodecConfiguration::V1(ZstdCodecConfigurationV1::new(zstd.level, false))
+pub fn codec_zstd_v2_numcodecs_to_v3(zstd: &ZstdCodecConfiguration) -> ZstdCodecConfiguration {
+    match zstd {
+        ZstdCodecConfiguration::V1(zstd) => ZstdCodecConfiguration::V1(zstd.clone()),
+        ZstdCodecConfiguration::Numcodecs(ZstdCodecConfigurationNumcodecs { level }) => {
+            ZstdCodecConfiguration::V1(ZstdCodecConfigurationV1::new(*level, false))
+        }
+    }
 }
 
 /// A `Zstd` compression level. An integer from -131072 to 22 which controls the speed and level of compression (has no impact on decoding).
