@@ -13,10 +13,30 @@
 //! ### Specification
 //! - <https://codec.zarrs.dev/array_to_bytes/vlen>
 //!
-//! TODO. See
+//! Based on <https://github.com/zarr-developers/zeps/pull/47#issuecomment-1710505141> by Jeremy Maitin-Shepard.
+//! Additional discussion:
 //! - <https://github.com/zarr-developers/zeps/pull/47#issuecomment-2238480835>
 //! - <https://github.com/zarr-developers/zarr-python/pull/2036#discussion_r1788465492>
 //!
+//! This is an alternative `vlen` codec to the `vlen-utf8`, `vlen-bytes`, and `vlen-array` codecs that were introduced in Zarr V2.
+//! Rather than interleaving element bytes and lengths, element bytes (data) and offsets (indexes) are encoded separately and concatenated.
+//! Unlike the legacy `vlen-*` codecs, this new `vlen` codec is suited to partial decoding.
+//! Additionally, it it is not coupled to the array data type and can utilise the full potential of the Zarr V3 codec system.
+//!
+//! Before encoding, the index is structured using the Apache arrow variable-size binary layout with the validity bitmap elided.
+//! The index has `length + 1` offsets which are monotonically increasing such that
+//! ```rust,ignore
+//! element_position = offsets[j]
+//! element_length = offsets[j + 1] - offsets[j]  // (for 0 <= j < length)
+//! ```
+//! where `length` is the number of chunk elements.
+//! The index can be encoded with either `uint32` or `uint64` offsets depdendent on the `index_data_type` configuration parameter.
+//!
+//! The data and index can use their own independent codec chain with support for any Zarr V3 codecs.
+//! The codecs are specified by `data_codecs` and `index_codecs` parameters in the codec configuration.
+//!
+//! The first 8 bytes hold a u64 little-endian indicating the length of the encoded index.
+//! This is followed by the encoded index and then the encoded bytes with no padding.
 //!
 //! ### Codec `name` Aliases (Zarr V3)
 //! - `zarrs.vlen`
