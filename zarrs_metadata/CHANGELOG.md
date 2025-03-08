@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `From<T> for MetadataConfiguration` for all codec configuration enums
 - Implement `Copy` for `ZstdCompressionLevel`
 - Add `zfpy` codec metadata (unmerging `zfpy`/`zfp`)
+- Add `MetadataConfigurationSerialize`
 
 ### Changed
 - Bump `half` to 2.3.1

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    v3::{MetadataConfiguration, MetadataV3},
+    v3::{MetadataConfiguration, MetadataConfigurationSerialize, MetadataV3},
     ChunkShape,
 };
 
@@ -19,21 +19,13 @@ pub enum ShardingCodecConfiguration {
     V1(ShardingCodecConfigurationV1),
 }
 
-impl From<ShardingCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: ShardingCodecConfiguration) -> Self {
-        let serde_json::Value::Object(configuration) = serde_json::to_value(configuration).unwrap()
-        else {
-            unreachable!()
-        };
-        configuration
-    }
-}
+impl MetadataConfigurationSerialize for ShardingCodecConfiguration {}
 
 impl TryFrom<MetadataConfiguration> for ShardingCodecConfiguration {
     type Error = serde_json::Error;
 
     fn try_from(value: MetadataConfiguration) -> Result<Self, Self::Error> {
-        serde_json::from_value(Value::Object(value))
+        serde_json::from_value(Value::Object(value.into()))
     }
 }
 

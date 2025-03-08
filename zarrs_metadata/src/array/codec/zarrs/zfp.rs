@@ -1,7 +1,7 @@
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 
-use crate::v3::MetadataConfiguration;
+use crate::v3::MetadataConfigurationSerialize;
 
 /// The identifier for the `zfp` codec.
 // TODO: ZEP for zfp
@@ -16,15 +16,7 @@ pub enum ZfpCodecConfiguration {
     V1(ZfpCodecConfigurationV1),
 }
 
-impl From<ZfpCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: ZfpCodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for ZfpCodecConfiguration {}
 
 /// `zfp` codec configuration parameters (version 1.0 draft).
 ///

@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::v3::MetadataConfiguration;
+use crate::v3::MetadataConfigurationSerialize;
 
 /// The identifier for the `gdeflate` codec.
 // TODO: ZEP for gdeflate
@@ -16,15 +16,7 @@ pub enum GDeflateCodecConfiguration {
     V1(GDeflateCodecConfigurationV1),
 }
 
-impl From<GDeflateCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: GDeflateCodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for GDeflateCodecConfiguration {}
 
 /// `gdeflate` codec configuration parameters (version 1.0 draft).
 ///

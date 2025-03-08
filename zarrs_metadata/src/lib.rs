@@ -112,7 +112,7 @@ mod tests {
                 .unwrap();
         let mut configuration = serde_json::Map::new();
         configuration.insert("endian".to_string(), "little".into());
-        assert_eq!(metadata.configuration(), Some(&configuration));
+        assert_eq!(metadata.configuration(), Some(&configuration.into()));
     }
 
     #[test]

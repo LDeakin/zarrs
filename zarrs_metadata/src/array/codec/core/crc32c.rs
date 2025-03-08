@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use crate::v3::MetadataConfiguration;
+use crate::v3::MetadataConfigurationSerialize;
 
 /// The identifier for the `crc32c` codec.
 pub const IDENTIFIER: &str = "crc32c";
@@ -15,15 +15,7 @@ pub enum Crc32cCodecConfiguration {
     V1(Crc32cCodecConfigurationV1),
 }
 
-impl From<Crc32cCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: Crc32cCodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for Crc32cCodecConfiguration {}
 
 /// `crc32c` codec configuration parameters (version 1.0).
 ///

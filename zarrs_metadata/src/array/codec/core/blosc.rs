@@ -2,7 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::v3::{array::data_type::DataTypeSize, MetadataConfiguration};
+use crate::v3::{array::data_type::DataTypeSize, MetadataConfigurationSerialize};
 
 /// The identifier for the `blosc` codec.
 pub const IDENTIFIER: &str = "blosc";
@@ -18,15 +18,7 @@ pub enum BloscCodecConfiguration {
     Numcodecs(BloscCodecConfigurationNumcodecs),
 }
 
-impl From<BloscCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: BloscCodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for BloscCodecConfiguration {}
 
 /// An integer from 0 to 9 controlling the compression level
 ///

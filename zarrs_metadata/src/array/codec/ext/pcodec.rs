@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::v3::MetadataConfiguration;
+use crate::v3::MetadataConfigurationSerialize;
 
 /// The identifier for the `pcodec` codec.
 // TODO: ZEP for pcodec when stabilised
@@ -16,15 +16,7 @@ pub enum PcodecCodecConfiguration {
     V1(PcodecCodecConfigurationV1),
 }
 
-impl From<PcodecCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: PcodecCodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for PcodecCodecConfiguration {}
 
 impl Default for PcodecCodecConfiguration {
     fn default() -> Self {

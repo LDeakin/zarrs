@@ -2,7 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::v3::MetadataConfiguration;
+use crate::v3::MetadataConfigurationSerialize;
 
 /// The identifier for the `zstd` codec.
 pub const IDENTIFIER: &str = "zstd";
@@ -18,15 +18,7 @@ pub enum ZstdCodecConfiguration {
     Numcodecs(ZstdCodecConfigurationNumcodecs),
 }
 
-impl From<ZstdCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: ZstdCodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for ZstdCodecConfiguration {}
 
 /// `zstd` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::v3::MetadataConfiguration;
+use crate::v3::MetadataConfigurationSerialize;
 
 /// The identifier for the `bz2` codec.
 // TODO: ZEP for bz2
@@ -16,15 +16,7 @@ pub enum Bz2CodecConfiguration {
     V1(Bz2CodecConfigurationV1),
 }
 
-impl From<Bz2CodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: Bz2CodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for Bz2CodecConfiguration {}
 
 /// `bz2` codec configuration parameters (version 1.0 draft).
 ///

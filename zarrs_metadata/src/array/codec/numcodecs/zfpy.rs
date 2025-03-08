@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     array::codec::zfp::{ZfpCodecConfigurationV1, ZfpMode},
-    v3::MetadataConfiguration,
+    v3::MetadataConfigurationSerialize,
 };
 
 /// The identifier for the `zfpy` codec.
@@ -18,15 +18,7 @@ pub enum ZfpyCodecConfiguration {
     Numcodecs(ZfpyCodecConfigurationNumcodecs),
 }
 
-impl From<ZfpyCodecConfiguration> for MetadataConfiguration {
-    fn from(configuration: ZfpyCodecConfiguration) -> Self {
-        let configuration = serde_json::to_value(configuration).unwrap();
-        match configuration {
-            serde_json::Value::Object(configuration) => configuration,
-            _ => unreachable!(),
-        }
-    }
-}
+impl MetadataConfigurationSerialize for ZfpyCodecConfiguration {}
 
 /// `zfpy` codec configuration parameters (numcodecs).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
