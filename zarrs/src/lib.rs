@@ -200,6 +200,7 @@ pub mod array;
 pub mod array_subset;
 pub mod config;
 pub mod group;
+pub mod indexer;
 pub mod node;
 pub mod version;
 

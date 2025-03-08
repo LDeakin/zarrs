@@ -2,7 +2,7 @@ use std::iter::FusedIterator;
 
 use crate::{
     array::{unravel_index, ArrayIndices},
-    array_subset::ArraySubset,
+    indexer::{Indexer, MixedIndex},
 };
 
 use rayon::iter::{
@@ -22,28 +22,36 @@ use rayon::iter::{
 /// ```
 /// An iterator with an array subset corresponding to the lower right 2x2 region will produce `[(2, 1), (2, 2), (3, 1), (3, 2)]`.
 pub struct Indices {
-    subset: ArraySubset,
+    indexer: Indexer,
     range: std::ops::Range<usize>,
+}
+
+impl From<Indexer> for Indices {
+    fn from(indexer: Indexer) -> Self {
+        let length = indexer.num_elements_usize();
+        Self {
+            indexer,
+            range: 0..length,
+        }
+    }
 }
 
 impl Indices {
     /// Create a new indices struct.
     #[must_use]
-    pub fn new(subset: ArraySubset) -> Self {
-        let length = subset.num_elements_usize();
-        Self {
-            subset,
-            range: 0..length,
-        }
+    pub fn new(indexer: impl Into<Indexer>) -> Self {
+        let indexer = indexer.into();
+        Self::from(indexer)
     }
 
     /// Create a new indices struct spanning `range`.
     #[must_use]
     pub fn new_with_start_end(
-        subset: ArraySubset,
+        indexer: impl Into<Indexer>,
         range: impl std::ops::RangeBounds<usize>,
     ) -> Self {
-        let length = subset.num_elements_usize();
+        let indexer = indexer.into();
+        let length = indexer.num_elements_usize();
         let start = match range.start_bound() {
             std::ops::Bound::Included(start) => *start,
             std::ops::Bound::Excluded(start) => start.saturating_add(1),
@@ -55,7 +63,7 @@ impl Indices {
             std::ops::Bound::Unbounded => length,
         };
         Self {
-            subset,
+            indexer,
             range: start..end,
         }
     }
@@ -85,7 +93,7 @@ impl<'a> IntoIterator for &'a Indices {
 
     fn into_iter(self) -> Self::IntoIter {
         IndicesIterator {
-            subset: &self.subset,
+            indexer: &self.indexer,
             range: self.range.clone(),
         }
     }
@@ -97,7 +105,7 @@ impl<'a> IntoParallelIterator for &'a Indices {
 
     fn into_par_iter(self) -> Self::Iter {
         ParIndicesIterator {
-            subset: &self.subset,
+            indexer: &self.indexer,
             range: self.range.clone(),
         }
     }
@@ -107,17 +115,18 @@ impl<'a> IntoParallelIterator for &'a Indices {
 ///
 /// See [`Indices`].
 pub struct IndicesIterator<'a> {
-    subset: &'a ArraySubset,
+    indexer: &'a Indexer,
     range: std::ops::Range<usize>,
 }
 
 impl<'a> IndicesIterator<'a> {
     /// Create a new indices iterator.
     #[must_use]
-    pub(super) fn new(subset: &'a ArraySubset) -> Self {
-        let length = subset.num_elements_usize();
+    pub(super) fn new(indexer: impl Into<&'a Indexer>) -> Self {
+        let indexer = indexer.into();
+        let length = indexer.num_elements_usize();
         Self {
-            subset,
+            indexer,
             range: 0..length,
         }
     }
@@ -125,12 +134,43 @@ impl<'a> IndicesIterator<'a> {
     /// Create a new indices iterator spanning an explicit index range.
     #[must_use]
     pub(super) fn new_with_start_end(
-        subset: &'a ArraySubset,
+        indexer: impl Into<&'a Indexer>,
         range: impl Into<std::ops::Range<usize>>,
     ) -> Self {
+        let indexer = indexer.into();
         Self {
-            subset,
+            indexer,
             range: range.into(),
+        }
+    }
+
+    fn get_indices(&self, index: usize) -> ArrayIndices {
+        match self.indexer {
+            Indexer::Subset(subset) => {
+                let mut indices = unravel_index(index as u64, subset.shape());
+                std::iter::zip(indices.iter_mut(), subset.start())
+                    .for_each(|(index, start)| *index += start);
+                indices
+            }
+            Indexer::OIndex(oindices) => {
+                let shape: Vec<u64> = oindices.iter().map(|oindex| oindex.len() as u64).collect();
+                let mut indices = unravel_index(index as u64, &shape);
+                std::iter::zip(indices.iter_mut(), oindices.iter())
+                    .for_each(|(index, oindex)| *index = oindex[usize::try_from(*index).unwrap()]);
+                indices
+            }
+            Indexer::VIndex(vindices) => vindices.iter().map(|v| v[index]).collect(),
+            Indexer::Mixed(mindices) => {
+                let shape: Vec<u64> = mindices.iter().map(|mindex| mindex.len() as u64).collect();
+                let mut indices = unravel_index(index as u64, &shape);
+                std::iter::zip(indices.iter_mut(), mindices.iter()).for_each(|(index, mindex)| {
+                    *index = match mindex {
+                        MixedIndex::IntegerIndex(iindex) => iindex[usize::try_from(*index).unwrap()],
+                        MixedIndex::Range(range) => range.start + *index,
+                    }
+                });
+                indices
+            }
         }
     }
 }
@@ -139,11 +179,8 @@ impl Iterator for IndicesIterator<'_> {
     type Item = ArrayIndices;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut indices = unravel_index(self.range.start as u64, self.subset.shape());
-        std::iter::zip(indices.iter_mut(), self.subset.start())
-            .for_each(|(index, start)| *index += start);
-
         if self.range.start < self.range.end {
+            let indices = self.get_indices(self.range.start);
             self.range.start += 1;
             Some(indices)
         } else {
@@ -161,10 +198,7 @@ impl DoubleEndedIterator for IndicesIterator<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.range.end > self.range.start {
             self.range.end -= 1;
-            let mut indices = unravel_index(self.range.end as u64, self.subset.shape());
-            std::iter::zip(indices.iter_mut(), self.subset.start())
-                .for_each(|(index, start)| *index += start);
-            Some(indices)
+            Some(self.get_indices(self.range.end))
         } else {
             None
         }
@@ -179,7 +213,7 @@ impl FusedIterator for IndicesIterator<'_> {}
 ///
 /// See [`Indices`].
 pub struct ParIndicesIterator<'a> {
-    subset: &'a ArraySubset,
+    indexer: &'a Indexer,
     range: std::ops::Range<usize>,
 }
 
@@ -215,7 +249,7 @@ impl IndexedParallelIterator for ParIndicesIterator<'_> {
 
 #[derive(Debug)]
 pub(super) struct ParIndicesIteratorProducer<'a> {
-    pub(super) subset: &'a ArraySubset,
+    pub(super) indexer: &'a Indexer,
     pub(super) range: std::ops::Range<usize>,
 }
 
@@ -224,16 +258,16 @@ impl<'a> Producer for ParIndicesIteratorProducer<'a> {
     type IntoIter = IndicesIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IndicesIterator::new_with_start_end(self.subset, self.range)
+        IndicesIterator::new_with_start_end(self.indexer, self.range)
     }
 
     fn split_at(self, index: usize) -> (Self, Self) {
         let left = ParIndicesIteratorProducer {
-            subset: self.subset,
+            indexer: self.indexer,
             range: self.range.start..self.range.start + index,
         };
         let right = ParIndicesIteratorProducer {
-            subset: self.subset,
+            indexer: self.indexer,
             range: (self.range.start + index)..self.range.end,
         };
         (left, right)
@@ -243,7 +277,7 @@ impl<'a> Producer for ParIndicesIteratorProducer<'a> {
 impl<'a> From<&'a ParIndicesIterator<'_>> for ParIndicesIteratorProducer<'a> {
     fn from(iterator: &'a ParIndicesIterator<'_>) -> Self {
         Self {
-            subset: iterator.subset,
+            indexer: iterator.indexer,
             range: iterator.range.clone(),
         }
     }
@@ -251,6 +285,8 @@ impl<'a> From<&'a ParIndicesIterator<'_>> for ParIndicesIteratorProducer<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::{array_subset::ArraySubset, indexer::Indexer};
+
     use super::*;
 
     #[test]
@@ -275,6 +311,62 @@ mod tests {
         let mut iter = indices.iter();
         assert_eq!(iter.next(), Some(vec![1, 5]));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn indices_iterator_integer_mixed() {
+        let indexer = Indexer::Mixed(
+            vec![(0..2).into(), vec![0, 2, 3].into(), (0..1).into()]
+                .try_into()
+                .unwrap(),
+        );
+        let indices = Indices::from(indexer);
+        let mut expected: Vec<Vec<u64>> = vec![
+            vec![0, 0, 0],
+            vec![0, 2, 0],
+            vec![0, 3, 0],
+            vec![1, 0, 0],
+            vec![1, 2, 0],
+            vec![1, 3, 0],
+        ];
+        assert_eq!(indices.len(), expected.len());
+        assert_eq!(indices.iter().collect::<Vec<_>>(), expected);
+        let mut indices_iter = indices.iter();
+        assert_eq!(indices_iter.next_back(), expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
+    }
+
+    #[test]
+    fn indices_iterator_integer_vindex() {
+        let indexer = Indexer::VIndex(vec![vec![0, 1], vec![0, 2], vec![0, 3]].try_into().unwrap());
+        let indices = Indices::from(indexer);
+        let mut expected: Vec<Vec<u64>> = vec![vec![0, 0, 0], vec![1, 2, 3]];
+        assert_eq!(indices.len(), expected.len());
+        assert_eq!(indices.iter().collect::<Vec<_>>(), expected);
+        let mut indices_iter = indices.iter();
+        assert_eq!(indices_iter.next_back(), expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
+    }
+
+    #[test]
+    fn indices_iterator_integer_oindex() {
+        let indexer = Indexer::OIndex(vec![vec![0, 1], vec![0, 2], vec![0, 3]].try_into().unwrap());
+        let indices = Indices::from(indexer);
+        let mut expected: Vec<Vec<u64>> = vec![
+            vec![0, 0, 0],
+            vec![0, 0, 3],
+            vec![0, 2, 0],
+            vec![0, 2, 3],
+            vec![1, 0, 0],
+            vec![1, 0, 3],
+            vec![1, 2, 0],
+            vec![1, 2, 3],
+        ];
+        assert_eq!(indices.len(), expected.len());
+        assert_eq!(indices.iter().collect::<Vec<_>>(), expected);
+        let mut indices_iter = indices.iter();
+        assert_eq!(indices_iter.next_back(), expected.pop());
+        assert_eq!(indices_iter.next_back(), expected.pop());
     }
 
     #[test]
