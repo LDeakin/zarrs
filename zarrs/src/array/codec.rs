@@ -83,6 +83,7 @@ use zarrs_data_type::DataTypeExtensionError;
 use zarrs_metadata::ArrayShape;
 use zarrs_plugin::PluginUnsupportedError;
 
+use crate::array_subset::IncompatibleDimensionalityError;
 use crate::storage::{StoreKeyOffsetValue, WritableStorage};
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
@@ -1029,6 +1030,9 @@ impl SubsetOutOfBoundsError {
 /// A codec error.
 #[derive(Debug, Error)]
 pub enum CodecError {
+    /// An error creating a subset while decoding
+    #[error(transparent)]
+    IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),

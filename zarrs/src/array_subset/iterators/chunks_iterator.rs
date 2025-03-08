@@ -113,7 +113,7 @@ impl Chunks {
 }
 
 impl<'a> IntoIterator for &'a Chunks {
-    type Item = (ArrayIndices, ArraySubset);
+    type Item = Result<(ArrayIndices, ArraySubset), IncompatibleDimensionalityError>;
     type IntoIter = ChunksIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -125,7 +125,7 @@ impl<'a> IntoIterator for &'a Chunks {
 }
 
 impl<'a> IntoParallelIterator for &'a Chunks {
-    type Item = (ArrayIndices, ArraySubset);
+    type Item = Result<(ArrayIndices, ArraySubset), IncompatibleDimensionalityError>;
     type Iter = ParChunksIterator<'a>;
 
     fn into_par_iter(self) -> Self::Iter {
@@ -145,19 +145,17 @@ pub struct ChunksIterator<'a> {
 }
 
 impl ChunksIterator<'_> {
-    fn chunk_indices_with_subset(&self, chunk_indices: Vec<u64>) -> (Vec<u64>, ArraySubset) {
+    fn chunk_indices_with_subset(&self, chunk_indices: Vec<u64>) -> Result<(Vec<u64>, ArraySubset), IncompatibleDimensionalityError> {
         let start = std::iter::zip(&chunk_indices, self.chunk_shape)
             .map(|(i, c)| i * c)
             .collect();
-        let chunk_subset = unsafe {
-            ArraySubset::new_with_start_shape_unchecked(start, self.chunk_shape.to_vec())
-        };
-        (chunk_indices, chunk_subset)
+        let chunk_subset = ArraySubset::new_with_start_shape(start, self.chunk_shape.to_vec())?;
+        Ok((chunk_indices, chunk_subset))
     }
 }
 
 impl Iterator for ChunksIterator<'_> {
-    type Item = (ArrayIndices, ArraySubset);
+    type Item = Result<(ArrayIndices, ArraySubset), IncompatibleDimensionalityError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
@@ -191,7 +189,7 @@ pub struct ParChunksIterator<'a> {
 }
 
 impl ParallelIterator for ParChunksIterator<'_> {
-    type Item = (Vec<u64>, ArraySubset);
+    type Item = Result<(Vec<u64>, ArraySubset), IncompatibleDimensionalityError>;
 
     fn drive_unindexed<C>(self, consumer: C) -> C::Result
     where
@@ -227,7 +225,7 @@ struct ParChunksIteratorProducer<'a> {
 }
 
 impl<'a> Producer for ParChunksIteratorProducer<'a> {
-    type Item = (Vec<u64>, ArraySubset);
+    type Item = Result<(Vec<u64>, ArraySubset), IncompatibleDimensionalityError>;
     type IntoIter = ChunksIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {

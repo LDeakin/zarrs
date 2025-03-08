@@ -52,10 +52,7 @@ fn get_decoded_regions_transposed(
 ) -> Vec<ArraySubset> {
     let mut decoded_regions_transposed = Vec::with_capacity(decoded_regions.len());
     for decoded_region in decoded_regions {
-        let start = permute(decoded_region.start(), &order.0);
-        let size = permute(decoded_region.shape(), &order.0);
-        let decoded_region_transpose =
-            unsafe { ArraySubset::new_with_start_shape_unchecked(start, size) };
+        let decoded_region_transpose = decoded_region.permute(&order.0);
         decoded_regions_transposed.push(decoded_region_transpose);
     }
     decoded_regions_transposed

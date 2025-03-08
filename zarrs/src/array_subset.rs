@@ -25,7 +25,7 @@ use itertools::izip;
 use thiserror::Error;
 
 use crate::{
-    array::{ArrayIndices, ArrayShape},
+    array::{ArrayIndices, ArrayShape, codec::array_to_array::transpose::permute},
     storage::byte_range::ByteRange,
 };
 
@@ -90,16 +90,6 @@ impl ArraySubset {
                 shape.len(),
             ))
         }
-    }
-
-    /// Create a new array subset.
-    ///
-    /// # Safety
-    /// The length of `start` and `size` must match.
-    #[must_use]
-    pub unsafe fn new_with_start_shape_unchecked(start: ArrayIndices, shape: ArrayShape) -> Self {
-        debug_assert_eq!(start.len(), shape.len());
-        Self { start, shape }
     }
 
     /// Create a new array subset from a start and end (inclusive).
@@ -309,28 +299,6 @@ impl ArraySubset {
         Ok(byte_ranges)
     }
 
-    /// Return the byte ranges of an array subset in an array with `array_shape` and `element_size`.
-    ///
-    /// # Safety
-    /// The length of `array_shape` must match the dimensionality of `array_subset`.
-    #[must_use]
-    pub unsafe fn byte_ranges_unchecked(
-        &self,
-        array_shape: &[u64],
-        element_size: usize,
-    ) -> Vec<ByteRange> {
-        let mut byte_ranges: Vec<ByteRange> = Vec::new();
-        // SAFETY: The length of array_shape matches the dimensionality
-        let contiguous_indices =
-            unsafe { self.contiguous_linearised_indices_unchecked(array_shape) };
-        let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
-        for array_index in &contiguous_indices {
-            let byte_index = array_index * element_size as u64;
-            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length as u64)));
-        }
-        byte_ranges
-    }
-
     /// Return the elements in this array subset from an array with shape `array_shape`.
     ///
     /// # Errors
@@ -344,44 +312,25 @@ impl ArraySubset {
         elements: &[T],
         array_shape: &[u64],
     ) -> Result<Vec<T>, IncompatibleArraySubsetAndShapeError> {
-        if elements.len() as u64 == array_shape.iter().product::<u64>()
-            && array_shape.len() == self.dimensionality()
-            && self
+        let is_same_shape = elements.len() as u64 == array_shape.iter().product::<u64>();
+        let is_correct_dimensionality = array_shape.len() == self.dimensionality();
+        let is_in_bounds = self
                 .end_exc()
                 .iter()
                 .zip(array_shape)
-                .all(|(end, shape)| end <= shape)
-        {
-            Ok(unsafe { self.extract_elements_unchecked(elements, array_shape) })
-        } else {
-            Err(IncompatibleArraySubsetAndShapeError(
+                .all(|(end, shape)| end <= shape);
+        if !(is_correct_dimensionality && is_in_bounds && is_same_shape) {
+            return Err(IncompatibleArraySubsetAndShapeError(
                 self.clone(),
                 array_shape.to_vec(),
-            ))
+            ));
         }
-    }
-
-    /// Return the elements in this array subset from an array with shape `array_shape`.
-    ///
-    /// # Safety
-    /// The length of `array_shape` must match the array subset dimensionality and the array subset must be within the bounds of `array_shape`.
-    ///
-    /// # Panics
-    /// Panics if attempting to reference a byte beyond `usize::MAX`.
-    #[must_use]
-    pub unsafe fn extract_elements_unchecked<T: std::marker::Copy>(
-        &self,
-        elements: &[T],
-        array_shape: &[u64],
-    ) -> Vec<T> {
-        debug_assert_eq!(elements.len() as u64, array_shape.iter().product::<u64>());
         let num_elements = usize::try_from(self.num_elements()).unwrap();
         let mut elements_subset = Vec::with_capacity(num_elements);
         let elements_subset_slice = crate::vec_spare_capacity_to_mut_slice(&mut elements_subset);
         let mut subset_offset = 0;
         // SAFETY: `array_shape` is encapsulated by an array with `array_shape`.
-        let contiguous_elements =
-            unsafe { self.contiguous_linearised_indices_unchecked(array_shape) };
+        let contiguous_elements = self.contiguous_linearised_indices(array_shape)?;
         let element_length = contiguous_elements.contiguous_elements_usize();
         for array_index in &contiguous_elements {
             let element_offset = usize::try_from(array_index).unwrap();
@@ -392,7 +341,8 @@ impl ArraySubset {
             subset_offset += element_length;
         }
         unsafe { elements_subset.set_len(num_elements) };
-        elements_subset
+        Ok(elements_subset)
+
     }
 
     /// Returns an iterator over the indices of elements within the subset.
@@ -435,16 +385,6 @@ impl ArraySubset {
         ContiguousIndices::new(self, array_shape)
     }
 
-    /// Returns an iterator over the indices of contiguous elements within the subset.
-    ///
-    /// # Safety
-    /// `array_shape` must encapsulate this array subset.
-    #[must_use]
-    pub unsafe fn contiguous_indices_unchecked(&self, array_shape: &[u64]) -> ContiguousIndices {
-        // SAFETY: array_shape encapsulated this array subset
-        unsafe { ContiguousIndices::new_unchecked(self, array_shape) }
-    }
-
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
     ///
     /// # Errors
@@ -455,19 +395,6 @@ impl ArraySubset {
         array_shape: &[u64],
     ) -> Result<ContiguousLinearisedIndices, IncompatibleArraySubsetAndShapeError> {
         ContiguousLinearisedIndices::new(self, array_shape.to_vec())
-    }
-
-    /// Returns an iterator over the linearised indices of contiguous elements within the subset.
-    ///
-    /// # Safety
-    /// `array_shape` must encapsulate this array subset.
-    #[must_use]
-    pub unsafe fn contiguous_linearised_indices_unchecked(
-        &self,
-        array_shape: &[u64],
-    ) -> ContiguousLinearisedIndices {
-        // SAFETY: array_shape encapsulated this array subset
-        unsafe { ContiguousLinearisedIndices::new_unchecked(self, array_shape.to_vec()) }
     }
 
     /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
@@ -599,6 +526,13 @@ impl ArraySubset {
         }
         true
     }
+
+    /// Create a permuted ArraySubset according to an order
+    pub fn permute(&self, order: &Vec<usize>) -> Self {
+        let start = permute(self.start(), order);
+        let shape = permute(self.shape(), order);
+        Self { start, shape }
+    }
 }
 
 /// An incompatible dimensionality error.
@@ -702,7 +636,7 @@ mod tests {
         );
 
         assert_eq!(
-            unsafe { array_subset.byte_ranges_unchecked(&[4, 4], 1) },
+            array_subset.byte_ranges(&[4, 4], 1).unwrap(),
             vec![
                 ByteRange::FromStart(5, Some(2)),
                 ByteRange::FromStart(9, Some(2))
