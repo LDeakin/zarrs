@@ -15,6 +15,11 @@
 //! ### Specification:
 //! - <https://codec.zarrs.dev/array_to_bytes/zfp>
 //!
+//! This codec is similar to `numcodecs.zfpy` with the following except:
+//! - `"mode"`s are specified as strings
+//! - reversible mode and expert mode are supported
+//! - a zfp header is **not** written, as it is redundant with the codec metadata
+//!
 //! ### Codec `name` Aliases (Zarr V3)
 //! - `zarrs.zfp`
 //! - `https://codec.zarrs.dev/array_to_bytes/zfp`
