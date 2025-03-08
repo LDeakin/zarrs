@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `DataTypeExtension` variant to `CodecError`
 - `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
 - **Breaking**: `ArrayError` is now marked as non-exhaustive
+- Bump `half` to 2.3.1
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements

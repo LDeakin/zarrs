@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Bump `half` to 2.3.1
+
 ## [0.3.6] - 2025-03-02
 
 ### Added
