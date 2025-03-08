@@ -12,7 +12,7 @@
 //! This codec is fully compatible with the `numcodecs.pcodec` codec in `zarr-python`.
 //!
 //! ### Specification
-//! - <https://github.com/zarr-developers/zarr-extensions/blob/numcodecs/codecs/numcodecs.pcodec/README.md>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.pcodec>
 //!
 //! ### Codec `name` Aliases (Zarr V3)
 //! - `numcodecs.pcodec`
