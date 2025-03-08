@@ -13,7 +13,7 @@ use zarrs_data_type::{
     DataType, DataTypeExtension, DataTypePlugin, FillValue, IncompatibleFillValueError,
     IncompatibleFillValueMetadataError,
 };
-use zarrs_metadata::v3::{array::fill_value::FillValueFloat, MetadataConfiguration, MetadataV3};
+use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
 use zarrs_storage::store::MemoryStore;
 
@@ -116,24 +116,16 @@ impl DataTypeExtension for CustomDataTypeVariableSize {
         &self,
         fill_value_metadata: &FillValueMetadataV3,
     ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
-        let fill_value = match fill_value_metadata {
-            FillValueMetadataV3::Float(f) => Ok(f
-                .to_float::<f32>()
-                .ok_or_else(|| {
-                    IncompatibleFillValueMetadataError::new(
-                        self.name(),
-                        fill_value_metadata.clone(),
-                    )
-                })?
-                .to_ne_bytes()
-                .to_vec()),
-            FillValueMetadataV3::Unsupported(serde_json::Value::Null) => Ok(vec![]),
-            _ => Err(IncompatibleFillValueMetadataError::new(
+        if let Some(f) = fill_value_metadata.as_f32() {
+            Ok(FillValue::new(f.to_ne_bytes().to_vec()))
+        } else if fill_value_metadata.is_null() {
+            Ok(FillValue::new(vec![]))
+        } else {
+            Err(IncompatibleFillValueMetadataError::new(
                 self.name(),
                 fill_value_metadata.clone(),
-            )),
-        }?;
-        Ok(FillValue::new(fill_value))
+            ))
+        }
     }
 
     fn metadata_fill_value(
@@ -142,12 +134,10 @@ impl DataTypeExtension for CustomDataTypeVariableSize {
     ) -> Result<FillValueMetadataV3, IncompatibleFillValueError> {
         let fill_value = fill_value.as_ne_bytes();
         if fill_value.len() == 0 {
-            Ok(FillValueMetadataV3::Unsupported(serde_json::Value::Null))
+            Ok(FillValueMetadataV3::Null)
         } else if fill_value.len() == 4 {
             let value = f32::from_ne_bytes(fill_value.try_into().unwrap());
-            Ok(FillValueMetadataV3::Float(FillValueFloat::Float(
-                value as f64,
-            )))
+            Ok(FillValueMetadataV3::from(value))
         } else {
             Err(IncompatibleFillValueError::new(
                 self.name(),

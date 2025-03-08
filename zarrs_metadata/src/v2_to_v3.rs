@@ -19,7 +19,7 @@ use crate::{
         array::{
             chunk_grid::regular::RegularChunkGridConfiguration,
             chunk_key_encoding::v2::V2ChunkKeyEncodingConfiguration,
-            fill_value::{FillValueFloat, FillValueFloatStringNonFinite, FillValueMetadataV3},
+            fill_value::FillValueMetadataV3,
         },
         ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
@@ -239,7 +239,7 @@ pub fn array_metadata_v2_to_v3(
         .or_else(|| {
             // Support zarr-python encoded string arrays with a `null` fill value
             match data_type.name().as_str() {
-                "string" => Some(FillValueMetadataV3::String(String::new())),
+                "string" => Some(FillValueMetadataV3::from("")),
                 _ => None,
             }
         })
@@ -252,22 +252,21 @@ pub fn array_metadata_v2_to_v3(
         })?;
     if data_type.name() == "bool" {
         // Map a 0/1 scalar fill value to a bool
-        if let Some(fill_value_uint) = fill_value.try_as_uint::<u64>() {
-            if fill_value_uint == 0 {
-                fill_value = FillValueMetadataV3::Bool(false);
-            } else if fill_value_uint == 1 {
-                fill_value = FillValueMetadataV3::Bool(true);
-            } else {
+        match fill_value.as_u64() {
+            Some(0) => fill_value = FillValueMetadataV3::from(false),
+            Some(1) => fill_value = FillValueMetadataV3::from(true),
+            Some(_) => {
                 return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedFillValue(
                     data_type.to_string(),
                     array_metadata_v2.fill_value.clone(),
-                ));
+                ))
             }
+            None => {}
         }
     } else if data_type.name() == "string" {
         // Add a special case for `zarr-python` string data with a 0 fill value -> empty string
-        if let Some(0) = fill_value.try_as_uint::<u64>() {
-            fill_value = FillValueMetadataV3::String(String::new());
+        if let Some(0) = fill_value.as_u64() {
+            fill_value = FillValueMetadataV3::from("");
         }
     }
 
@@ -353,26 +352,10 @@ pub fn array_metadata_fill_value_v2_to_v3(
 ) -> Option<FillValueMetadataV3> {
     match fill_value {
         FillValueMetadataV2::Null => None,
-        FillValueMetadataV2::NaN => Some(FillValueMetadataV3::Float(FillValueFloat::NonFinite(
-            FillValueFloatStringNonFinite::NaN,
-        ))),
-        FillValueMetadataV2::Infinity => Some(FillValueMetadataV3::Float(
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::PosInfinity),
-        )),
-        FillValueMetadataV2::NegInfinity => Some(FillValueMetadataV3::Float(
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity),
-        )),
-        FillValueMetadataV2::Number(number) => {
-            if let Some(u) = number.as_u64() {
-                Some(FillValueMetadataV3::UInt(u))
-            } else if let Some(i) = number.as_i64() {
-                Some(FillValueMetadataV3::Int(i))
-            } else if let Some(f) = number.as_f64() {
-                Some(FillValueMetadataV3::Float(FillValueFloat::Float(f)))
-            } else {
-                unreachable!("number must be convertible to u64, i64 or f64")
-            }
-        }
-        FillValueMetadataV2::String(string) => Some(FillValueMetadataV3::String(string.clone())),
+        FillValueMetadataV2::NaN => Some(f32::NAN.into()),
+        FillValueMetadataV2::Infinity => Some(f32::INFINITY.into()),
+        FillValueMetadataV2::NegInfinity => Some(f32::NEG_INFINITY.into()),
+        FillValueMetadataV2::Number(number) => Some(number.clone().into()),
+        FillValueMetadataV2::String(string) => Some(string.clone().into()),
     }
 }

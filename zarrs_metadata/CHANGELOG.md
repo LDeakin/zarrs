@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `{array,codec}_metadata_v2_to_v3` now take a `CodecMap`
   - `zarrs` has a default codec map initialised in `zarrs::config::global_config().codec_map()`
 - **Breaking**: Remove `write_header` from `zfp` codec configuration (since `zfpy` is now separate)
+- Refactor `FillValueMetadataV3` to support arbitrary fill value metadata for ZEP0009
+  - **Breaking**: `FillValueMetadataV3` has been completely restructured
+  - **Breaking**: All functions in `v3::array::fill_value` have been removed
+  - **Breaking**: `try_as_*()` methods in `FillValueMetadataV3` have been replaced with more extensive `as_*()` methods
+  - **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`
 
 ## [0.3.6] - 2025-03-02
 
