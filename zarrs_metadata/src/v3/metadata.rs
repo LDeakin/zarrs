@@ -7,20 +7,24 @@ use thiserror::Error;
 
 /// Metadata with a name and optional configuration.
 ///
-/// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::v3::ArrayMetadataV3)), which is structured as JSON with a name and optional configuration, or just a string representing the name.
+/// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::v3::ArrayMetadataV3)) which is either:
+/// - a string name / identifier, or
+/// - a JSON object with a required `name` field and optional `configuration` and `must_understand` fields.
 ///
-/// Can be deserialised from a JSON string or name/configuration map.
-/// For example:
+/// `must_understand` is implicitly set to [`true`] if omitted.
+/// See [ZEP0009](https://zarr.dev/zeps/draft/ZEP0009.html) for more information on this field and Zarr V3 extensions.
+///
+/// ### Example Metadata
 /// ```json
 /// "bytes"
 /// ```
-/// or
+///
 /// ```json
 /// {
 ///     "name": "bytes",
 /// }
 /// ```
-/// or
+///
 /// ```json
 /// {
 ///     "name": "bytes",
@@ -28,11 +32,22 @@ use thiserror::Error;
 ///       "endian": "little"
 ///     }
 /// }
+/// ```
 ///
+/// ```json
+/// {
+///     "name": "bytes",
+///     "configuration": {
+///       "endian": "little"
+///     },
+///     "must_understand": False
+/// }
+/// ```
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct MetadataV3 {
     name: String,
     configuration: Option<MetadataConfiguration>,
+    must_understand: bool,
 }
 
 /// Configuration metadata.
@@ -86,15 +101,22 @@ impl serde::Serialize for MetadataV3 {
                 s.serialize_entry("name", &self.name)?;
                 s.end()
             } else {
-                let mut s = s.serialize_map(Some(2))?;
+                let mut s = s.serialize_map(Some(if self.must_understand { 2 } else { 3 }))?;
                 s.serialize_entry("name", &self.name)?;
                 s.serialize_entry("configuration", configuration)?;
+                if !self.must_understand {
+                    s.serialize_entry("must_understand", &false)?;
+                }
                 s.end()
             }
         } else {
             s.serialize_str(self.name.as_str())
         }
     }
+}
+
+fn default_must_understand() -> bool {
+    true
 }
 
 impl<'de> serde::Deserialize<'de> for MetadataV3 {
@@ -105,6 +127,8 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
             name: String,
             #[serde(default)]
             configuration: Option<MetadataConfiguration>,
+            #[serde(default = "default_must_understand")]
+            must_understand: bool,
         }
 
         #[derive(Deserialize)]
@@ -121,10 +145,12 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
             MetadataIntermediate::Name(name) => Ok(Self {
                 name,
                 configuration: None,
+                must_understand: true,
             }),
             MetadataIntermediate::NameConfiguration(metadata) => Ok(Self {
                 name: metadata.name,
                 configuration: metadata.configuration,
+                must_understand: metadata.must_understand,
             }),
         }
     }
@@ -137,6 +163,7 @@ impl MetadataV3 {
         Self {
             name: name.into(),
             configuration: None,
+            must_understand: true,
         }
     }
 
@@ -149,7 +176,15 @@ impl MetadataV3 {
         Self {
             name: name.into(),
             configuration: Some(configuration.into()),
+            must_understand: true,
         }
+    }
+
+    /// Set the value of the `must_understand` field.
+    #[must_use]
+    pub fn with_must_understand(mut self, must_understand: bool) -> Self {
+        self.must_understand = must_understand;
+        self
     }
 
     /// Convert a serializable configuration to [`MetadataV3`].
@@ -193,6 +228,14 @@ impl MetadataV3 {
     #[must_use]
     pub const fn configuration(&self) -> Option<&MetadataConfiguration> {
         self.configuration.as_ref()
+    }
+
+    /// Return whether the metadata must be understood as indicated by the `must_understand` field.
+    ///
+    /// The `must_understand` field is implicitly `true` if omitted.
+    #[must_use]
+    pub fn must_understand(&self) -> bool {
+        self.must_understand
     }
 
     /// Returns true if the configuration is none or an empty map.
@@ -368,3 +411,53 @@ where
 /// Additional fields in array or group metadata.
 // NOTE: It would be nice if this was just a serde_json::Map, but it only has implementations for `<String, Value>`.
 pub type AdditionalFields = std::collections::BTreeMap<String, AdditionalField>;
+
+#[cfg(test)]
+mod tests {
+    use super::MetadataV3;
+
+    #[test]
+    fn metadata_must_understand_implicit_string() {
+        let metadata = r#""test""#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(metadata.must_understand());
+    }
+
+    #[test]
+    fn metadata_must_understand_implicit() {
+        let metadata = r#"{
+    "name": "test"
+}"#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(metadata.must_understand());
+    }
+
+    #[test]
+    fn metadata_must_understand_true() {
+        let metadata = r#"{
+    "name": "test",
+    "must_understand": true
+}"#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(metadata.must_understand());
+    }
+
+    #[test]
+    fn metadata_must_understand_false() {
+        let metadata = r#"{
+    "name": "test",
+    "must_understand": false
+}"#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(!metadata.must_understand());
+        assert_ne!(metadata, MetadataV3::new("test"));
+        assert_eq!(
+            metadata,
+            MetadataV3::new("test").with_must_understand(false)
+        );
+    }
+}
