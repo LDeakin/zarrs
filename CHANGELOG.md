@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: Add `CodecTraits::{identifier,default_name,configuration[_opt]}()`
   - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
 - **Breaking**: Change the error type of `node::[async_]get_child_nodes()` and `Group::{children,child_*}()` to `NodeCreateError` instead of `StorageError`
+- Bump `thiserror` to 2.0.2
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements

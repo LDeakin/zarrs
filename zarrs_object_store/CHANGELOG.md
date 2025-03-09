@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Breaking**: Bump `object_store` to 0.12.0
+- Bump `thiserror` to 2.0.12
 
 ## [0.3.0] - 2024-11-15
 

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bump `derive_more` to 0.2.0
+- Bump `thiserror` to 2.0.12
 - Fix clippy lints
 
 ## [0.3.1] - 2025-01-10

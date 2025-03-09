@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `DataType::[fixed_]size()` are no longer `const`
 - Bump `derive_more` to 0.2.0
 - Bump `half` to 2.3.1
+- Bump `thiserror` to 2.0.12
 
 ### Removed
 - **Breaking**: Remove `UnsupportedDataTypeError`

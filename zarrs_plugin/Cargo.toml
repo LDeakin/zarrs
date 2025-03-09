@@ -16,5 +16,5 @@ categories = ["encoding"]
 workspace = true
 
 [dependencies]
-thiserror = "2.0.0"
+thiserror = { workspace = true }
 zarrs_metadata = { workspace = true }
