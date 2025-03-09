@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `zarrs` has a default codec map accessible via `zarrs::config::global_config().codec_map()`
 - **Breaking**: Remove `write_header` from `zfp` codec configuration
 - Bump `half` to 2.3.1
+- Bump `thiserror` to 2.0.12
 
 ### Removed
 - **Breaking**: Remove `DataTypeMetadataV3::size[_fixed]()`
