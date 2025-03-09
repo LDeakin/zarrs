@@ -1,9 +1,8 @@
 #![allow(missing_docs)]
 
-use std::{borrow::Cow, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use num::traits::{FromBytes, ToBytes};
-use serde::{Deserialize, Serialize};
 use zarrs::array::{
     ArrayBuilder, ArrayBytes, ArrayError, DataTypeSize, Element, ElementOwned, FillValueMetadataV3,
 };
@@ -19,10 +18,19 @@ use zarrs_metadata::{
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
 use zarrs_storage::store::MemoryStore;
 
-#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct CustomDataTypeFixedSizeElement {
     x: u64,
     y: f32,
+}
+
+impl From<CustomDataTypeFixedSizeElement> for FillValueMetadataV3 {
+    fn from(value: CustomDataTypeFixedSizeElement) -> Self {
+        FillValueMetadataV3::from(HashMap::from([
+            ("x".to_string(), FillValueMetadataV3::from(value.x)),
+            ("y".to_string(), FillValueMetadataV3::from(value.y)),
+        ]))
+    }
 }
 
 type CustomDataTypeFixedSizeMetadata = CustomDataTypeFixedSizeElement;
@@ -144,34 +152,34 @@ impl DataTypeExtension for CustomDataTypeFixedSize {
         &self,
         fill_value_metadata: &FillValueMetadataV3,
     ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
-        let custom_fill_value = match fill_value_metadata {
-            FillValueMetadataV3::Unsupported(value) => serde_json::from_value::<
-                CustomDataTypeFixedSizeMetadata,
-            >(value.clone())
-            .map_err(|_| {
-                IncompatibleFillValueMetadataError::new(self.name(), fill_value_metadata.clone())
-            })?,
-            _ => Err(IncompatibleFillValueMetadataError::new(
-                self.name(),
-                fill_value_metadata.clone(),
-            ))?,
-        };
-        Ok(FillValue::new(custom_fill_value.to_ne_bytes().to_vec()))
+        let err =
+            || IncompatibleFillValueMetadataError::new(self.name(), fill_value_metadata.clone());
+        let metadata_object = fill_value_metadata.as_object().ok_or_else(err)?;
+        let x = metadata_object
+            .get("x")
+            .ok_or_else(err)?
+            .as_u64()
+            .ok_or_else(err)?;
+        let y = metadata_object
+            .get("y")
+            .ok_or_else(err)?
+            .as_f64()
+            .ok_or_else(err)? as f32;
+        let element = CustomDataTypeFixedSizeElement { x, y };
+        Ok(FillValue::new(element.to_ne_bytes().to_vec()))
     }
 
     fn metadata_fill_value(
         &self,
         fill_value: &FillValue,
     ) -> Result<FillValueMetadataV3, IncompatibleFillValueError> {
-        let fill_value_metadata = CustomDataTypeFixedSizeMetadata::from_ne_bytes(
+        let element = CustomDataTypeFixedSizeMetadata::from_ne_bytes(
             fill_value
                 .as_ne_bytes()
                 .try_into()
                 .map_err(|_| IncompatibleFillValueError::new(self.name(), fill_value.clone()))?,
         );
-        Ok(FillValueMetadataV3::Unsupported(
-            serde_json::to_value(fill_value_metadata).unwrap(),
-        ))
+        Ok(FillValueMetadataV3::from(element))
     }
 
     fn size(&self) -> zarrs::array::DataTypeSize {

@@ -4,16 +4,12 @@
 
 use std::{fmt::Debug, mem::discriminant, sync::Arc};
 
-use half::{bf16, f16};
 use thiserror::Error;
 
 use zarrs_metadata::v3::{
     array::{
         data_type::{DataTypeMetadataV3, DataTypeSize},
-        fill_value::{
-            bfloat16_to_fill_value, float16_to_fill_value, float32_to_fill_value,
-            float64_to_fill_value, FillValueFloat, FillValueMetadataV3,
-        },
+        fill_value::FillValueMetadataV3,
     },
     MetadataConfiguration, MetadataV3,
 };
@@ -88,7 +84,7 @@ impl Eq for DataType {}
 
 /// A fill value metadata incompatibility error.
 #[derive(Debug, Error)]
-#[error("incompatible fill value {1} for data type {0}")]
+#[error("incompatible fill value {} for data type {}", _1.to_string(), _0.to_string())]
 pub struct IncompatibleFillValueMetadataError(String, FillValueMetadataV3);
 
 impl IncompatibleFillValueMetadataError {
@@ -248,57 +244,83 @@ impl DataType {
         fill_value: &FillValueMetadataV3,
     ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
         use FillValue as FV;
-        let err = || IncompatibleFillValueMetadataError(self.name(), fill_value.clone());
+        let err0 = || IncompatibleFillValueMetadataError(self.name(), fill_value.clone());
+        let err = |_| IncompatibleFillValueMetadataError(self.name(), fill_value.clone());
         match self {
-            Self::Bool => Ok(FV::from(fill_value.try_as_bool().ok_or_else(err)?)),
-            Self::Int8 => Ok(FV::from(fill_value.try_as_int::<i8>().ok_or_else(err)?)),
-            Self::Int16 => Ok(FV::from(fill_value.try_as_int::<i16>().ok_or_else(err)?)),
-            Self::Int32 => Ok(FV::from(fill_value.try_as_int::<i32>().ok_or_else(err)?)),
-            Self::Int64 => Ok(FV::from(fill_value.try_as_int::<i64>().ok_or_else(err)?)),
-            Self::UInt8 => Ok(FV::from(fill_value.try_as_uint::<u8>().ok_or_else(err)?)),
-            Self::UInt16 => Ok(FV::from(fill_value.try_as_uint::<u16>().ok_or_else(err)?)),
-            Self::UInt32 => Ok(FV::from(fill_value.try_as_uint::<u32>().ok_or_else(err)?)),
-            Self::UInt64 => Ok(FV::from(fill_value.try_as_uint::<u64>().ok_or_else(err)?)),
-            Self::Float16 => Ok(FV::from(fill_value.try_as_float16().ok_or_else(err)?)),
-            Self::Float32 => Ok(FV::from(fill_value.try_as_float::<f32>().ok_or_else(err)?)),
-            Self::Float64 => Ok(FV::from(fill_value.try_as_float::<f64>().ok_or_else(err)?)),
-            Self::BFloat16 => Ok(FV::from(fill_value.try_as_bfloat16().ok_or_else(err)?)),
+            Self::Bool => Ok(FV::from(fill_value.as_bool().ok_or_else(err0)?)),
+            Self::Int8 => {
+                let int = fill_value.as_i64().ok_or_else(err0)?;
+                let int = i8::try_from(int).map_err(err)?;
+                Ok(FV::from(int))
+            }
+            Self::Int16 => {
+                let int = fill_value.as_i64().ok_or_else(err0)?;
+                let int = i16::try_from(int).map_err(err)?;
+                Ok(FV::from(int))
+            }
+            Self::Int32 => {
+                let int = fill_value.as_i64().ok_or_else(err0)?;
+                let int = i32::try_from(int).map_err(err)?;
+                Ok(FV::from(int))
+            }
+            Self::Int64 => {
+                let int = fill_value.as_i64().ok_or_else(err0)?;
+                Ok(FV::from(int))
+            }
+            Self::UInt8 => {
+                let int = fill_value.as_u64().ok_or_else(err0)?;
+                let int = u8::try_from(int).map_err(err)?;
+                Ok(FV::from(int))
+            }
+            Self::UInt16 => {
+                let int = fill_value.as_u64().ok_or_else(err0)?;
+                let int = u16::try_from(int).map_err(err)?;
+                Ok(FV::from(int))
+            }
+            Self::UInt32 => {
+                let int = fill_value.as_u64().ok_or_else(err0)?;
+                let int = u32::try_from(int).map_err(err)?;
+                Ok(FV::from(int))
+            }
+            Self::UInt64 => {
+                let int = fill_value.as_u64().ok_or_else(err0)?;
+                Ok(FV::from(int))
+            }
+            Self::BFloat16 => Ok(FV::from(fill_value.as_bf16().ok_or_else(err0)?)),
+            Self::Float16 => Ok(FV::from(fill_value.as_f16().ok_or_else(err0)?)),
+            Self::Float32 => Ok(FV::from(fill_value.as_f32().ok_or_else(err0)?)),
+            Self::Float64 => Ok(FV::from(fill_value.as_f64().ok_or_else(err0)?)),
             Self::Complex64 => {
-                let (re, im) = fill_value.try_as_float_pair::<f32>().ok_or_else(err)?;
-                Ok(FV::from(num::complex::Complex32::new(re, im)))
+                if let [re, im] = fill_value.as_array().ok_or_else(err0)? {
+                    let re = re.as_f32().ok_or_else(err0)?;
+                    let im = im.as_f32().ok_or_else(err0)?;
+                    Ok(FV::from(num::complex::Complex32::new(re, im)))
+                } else {
+                    Err(err0())?
+                }
             }
             Self::Complex128 => {
-                let (re, im) = fill_value.try_as_float_pair::<f64>().ok_or_else(err)?;
-                Ok(FV::from(num::complex::Complex64::new(re, im)))
+                if let [re, im] = fill_value.as_array().ok_or_else(err0)? {
+                    let re = re.as_f64().ok_or_else(err0)?;
+                    let im = im.as_f64().ok_or_else(err0)?;
+                    Ok(FV::from(num::complex::Complex64::new(re, im)))
+                } else {
+                    Err(err0())?
+                }
             }
             Self::RawBits(size) => {
-                if let FillValueMetadataV3::ByteArray(bytes) = fill_value {
-                    if bytes.len() == *size {
-                        return Ok(FillValue::new(bytes.clone()));
-                    }
+                let bytes = fill_value.as_bytes().ok_or_else(err0)?;
+                if bytes.len() == *size {
+                    Ok(FV::from(bytes))
+                } else {
+                    Err(err0())?
                 }
-                Err(err())
             }
             Self::Bytes => {
-                if let FillValueMetadataV3::ByteArray(bytes) = fill_value {
-                    Ok(FillValue::new(bytes.clone()))
-                } else {
-                    Err(err())
-                }
+                let bytes = fill_value.as_bytes().ok_or_else(err0)?;
+                Ok(FV::from(bytes))
             }
-            // Self::Extension(extension) => extension.fill_value_from_metadata(fill_value),
-            Self::String => match fill_value {
-                FillValueMetadataV3::String(string) => {
-                    Ok(FillValue::new(string.as_bytes().to_vec()))
-                }
-                FillValueMetadataV3::Float(float) => match float {
-                    FillValueFloat::HexString(hex_string) => Ok(String::from(hex_string).into()),
-                    FillValueFloat::NonFinite(non_finite) => Ok(String::from(non_finite).into()),
-                    FillValueFloat::Float(_) => Err(err()),
-                },
-                FillValueMetadataV3::ByteArray(bytes) => Ok(FillValue::new(bytes.clone())),
-                _ => Err(err()),
-            },
+            Self::String => Ok(FV::from(fill_value.as_str().ok_or_else(err0)?)),
             Self::Extension(ext) => ext.fill_value(fill_value),
         }
     }
@@ -318,113 +340,99 @@ impl DataType {
             Self::Bool => {
                 let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 match bytes[0] {
-                    0 => Ok(FillValueMetadataV3::Bool(false)),
-                    1 => Ok(FillValueMetadataV3::Bool(true)),
+                    0 => Ok(FillValueMetadataV3::from(false)),
+                    1 => Ok(FillValueMetadataV3::from(true)),
                     _ => Err(error()),
                 }
             }
             Self::Int8 => {
                 let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::Int(i64::from(i8::from_ne_bytes(
-                    bytes,
-                ))))
+                let number = i8::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Int16 => {
                 let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::Int(i64::from(i16::from_ne_bytes(
-                    bytes,
-                ))))
+                let number = i16::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Int32 => {
                 let bytes: [u8; 4] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::Int(i64::from(i32::from_ne_bytes(
-                    bytes,
-                ))))
+                let number = i32::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Int64 => {
                 let bytes: [u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::Int(i64::from_ne_bytes(bytes)))
+                let number = i64::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::UInt8 => {
                 let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::UInt(u64::from(u8::from_ne_bytes(
-                    bytes,
-                ))))
+                let number = u8::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::UInt16 => {
                 let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::UInt(u64::from(u16::from_ne_bytes(
-                    bytes,
-                ))))
+                let number = u16::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::UInt32 => {
                 let bytes: [u8; 4] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::UInt(u64::from(u32::from_ne_bytes(
-                    bytes,
-                ))))
+                let number = u32::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::UInt64 => {
                 let bytes: [u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::UInt(u64::from_ne_bytes(bytes)))
+                let number = u64::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Float16 => {
                 let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                let fill_value = f16::from_ne_bytes(bytes);
-                Ok(FillValueMetadataV3::Float(float16_to_fill_value(
-                    fill_value,
-                )))
+                let number = half::f16::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Float32 => {
                 let bytes: [u8; 4] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::Float(float32_to_fill_value(
-                    f32::from_ne_bytes(bytes),
-                )))
+                let number = f32::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Float64 => {
                 let bytes: [u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                Ok(FillValueMetadataV3::Float(float64_to_fill_value(
-                    f64::from_ne_bytes(bytes),
-                )))
+                let number = f64::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::BFloat16 => {
                 let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                let fill_value = bf16::from_ne_bytes(bytes);
-                Ok(FillValueMetadataV3::Float(bfloat16_to_fill_value(
-                    fill_value,
-                )))
+                let number = half::bf16::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Complex64 => {
                 let bytes: &[u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let re = f32::from_ne_bytes(unsafe { bytes[0..4].try_into().unwrap_unchecked() });
                 let im = f32::from_ne_bytes(unsafe { bytes[4..8].try_into().unwrap_unchecked() });
-                Ok(FillValueMetadataV3::Complex(
-                    float32_to_fill_value(re),
-                    float32_to_fill_value(im),
-                ))
+                let re = FillValueMetadataV3::from(re);
+                let im = FillValueMetadataV3::from(im);
+                Ok(FillValueMetadataV3::from([re, im]))
             }
             Self::Complex128 => {
                 let bytes: &[u8; 16] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let re = f64::from_ne_bytes(unsafe { bytes[0..8].try_into().unwrap_unchecked() });
                 let im = f64::from_ne_bytes(unsafe { bytes[8..16].try_into().unwrap_unchecked() });
-                Ok(FillValueMetadataV3::Complex(
-                    float64_to_fill_value(re),
-                    float64_to_fill_value(im),
-                ))
+                let re = FillValueMetadataV3::from(re);
+                let im = FillValueMetadataV3::from(im);
+                Ok(FillValueMetadataV3::from([re, im]))
             }
             Self::RawBits(size) => {
                 let bytes = fill_value.as_ne_bytes();
                 if bytes.len() == *size {
-                    Ok(FillValueMetadataV3::ByteArray(bytes.to_vec()))
+                    Ok(FillValueMetadataV3::from(bytes))
                 } else {
                     Err(error())
                 }
             }
-            Self::String => Ok(FillValueMetadataV3::String(
+            Self::String => Ok(FillValueMetadataV3::from(
                 String::from_utf8(fill_value.as_ne_bytes().to_vec()).map_err(|_| error())?,
             )),
-            Self::Bytes => Ok(FillValueMetadataV3::ByteArray(
-                fill_value.as_ne_bytes().to_vec(),
-            )),
+            Self::Bytes => Ok(FillValueMetadataV3::from(fill_value.as_ne_bytes().to_vec())),
             Self::Extension(extension) => extension.metadata_fill_value(fill_value),
         }
     }
@@ -448,9 +456,9 @@ impl core::fmt::Display for DataType {
 mod tests {
     use super::*;
 
-    use zarrs_metadata::v3::array::{
-        fill_value::{FillValueFloatStringNonFinite, HexString},
-        nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
+    use half::bf16;
+    use zarrs_metadata::v3::array::nan_representations::{
+        ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64,
     };
 
     #[test]
@@ -808,7 +816,7 @@ mod tests {
                 )
                 .unwrap()
                 .as_ne_bytes(),
-            f16::NAN.to_ne_bytes()
+            ZARR_NAN_F16.to_ne_bytes()
         );
 
         assert_eq!(
@@ -1090,11 +1098,11 @@ mod tests {
         assert_eq!(data_type, DataType::RawBits(2));
 
         let metadata = serde_json::from_str::<FillValueMetadataV3>("[123]").unwrap();
+        assert_eq!(serde_json::to_string(&metadata).unwrap(), "[123]");
+        // assert_eq!(metadata.to_string(), "[123]");
+        let fill_value_err = data_type.fill_value_from_metadata(&metadata).unwrap_err();
         assert_eq!(
-            data_type
-                .fill_value_from_metadata(&metadata)
-                .unwrap_err()
-                .to_string(),
+            fill_value_err.to_string(),
             "incompatible fill value [123] for data type r16"
         );
     }
@@ -1102,71 +1110,71 @@ mod tests {
     #[test]
     fn float_fill_value() {
         assert_eq!(
-            float16_to_fill_value(f16::INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::PosInfinity)
+            FillValueMetadataV3::from(half::f16::INFINITY),
+            serde_json::from_str(r#""Infinity""#).unwrap()
         );
         assert_eq!(
-            float16_to_fill_value(f16::NEG_INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity)
+            FillValueMetadataV3::from(half::f16::NEG_INFINITY),
+            serde_json::from_str(r#""-Infinity""#).unwrap()
         );
         assert_eq!(
-            float16_to_fill_value(ZARR_NAN_F16),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NaN)
+            FillValueMetadataV3::from(ZARR_NAN_F16),
+            serde_json::from_str(r#""NaN""#).unwrap()
         );
-        let f16_nan_alt = unsafe { std::mem::transmute::<u16, f16>(0b01_11111_000000001) };
+        let f16_nan_alt = unsafe { std::mem::transmute::<u16, half::f16>(0b01_11111_000000001) };
         assert!(f16_nan_alt.is_nan());
         assert_eq!(
-            float16_to_fill_value(f16_nan_alt),
-            FillValueFloat::HexString(HexString::new(vec![126, 1]))
+            FillValueMetadataV3::from(f16_nan_alt),
+            serde_json::from_str(r#""0x7e01""#).unwrap()
         );
         assert_eq!(
-            bfloat16_to_fill_value(bf16::INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::PosInfinity)
+            FillValueMetadataV3::from(bf16::INFINITY),
+            serde_json::from_str(r#""Infinity""#).unwrap()
         );
         assert_eq!(
-            bfloat16_to_fill_value(bf16::NEG_INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity)
+            FillValueMetadataV3::from(bf16::NEG_INFINITY),
+            serde_json::from_str(r#""-Infinity""#).unwrap()
         );
         assert_eq!(
-            bfloat16_to_fill_value(ZARR_NAN_BF16),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NaN)
+            FillValueMetadataV3::from(ZARR_NAN_BF16),
+            serde_json::from_str(r#""NaN""#).unwrap()
         );
         let bf16_nan_alt = unsafe { std::mem::transmute::<u16, bf16>(0b0_01111_11111000001) };
         assert!(bf16_nan_alt.is_nan());
         assert_eq!(
-            bfloat16_to_fill_value(bf16_nan_alt),
-            FillValueFloat::HexString(HexString::new(vec![127, 193]))
+            FillValueMetadataV3::from(bf16_nan_alt),
+            serde_json::from_str(r#""0x7fc1""#).unwrap()
         );
         assert_eq!(
-            float32_to_fill_value(f32::INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::PosInfinity)
+            FillValueMetadataV3::from(f32::INFINITY),
+            serde_json::from_str(r#""Infinity""#).unwrap()
         );
         assert_eq!(
-            float32_to_fill_value(f32::NEG_INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity)
+            FillValueMetadataV3::from(f32::NEG_INFINITY),
+            serde_json::from_str(r#""-Infinity""#).unwrap()
         );
         assert_eq!(
-            float32_to_fill_value(ZARR_NAN_F32),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NaN)
+            FillValueMetadataV3::from(ZARR_NAN_F32),
+            serde_json::from_str(r#""NaN""#).unwrap()
         );
         let f32_nan_alt =
             unsafe { std::mem::transmute::<u32, f32>(0b0_11111111_10000000000000000000001) };
         assert!(f32_nan_alt.is_nan());
         assert_eq!(
-            float32_to_fill_value(f32_nan_alt),
-            FillValueFloat::HexString(HexString::new(vec![127, 192, 0, 1]))
+            FillValueMetadataV3::from(f32_nan_alt),
+            serde_json::from_str(r#""0x7fc00001""#).unwrap()
         );
         assert_eq!(
-            float64_to_fill_value(f64::INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::PosInfinity)
+            FillValueMetadataV3::from(f64::INFINITY),
+            serde_json::from_str(r#""Infinity""#).unwrap()
         );
         assert_eq!(
-            float64_to_fill_value(f64::NEG_INFINITY),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NegInfinity)
+            FillValueMetadataV3::from(f64::NEG_INFINITY),
+            serde_json::from_str(r#""-Infinity""#).unwrap()
         );
         assert_eq!(
-            float64_to_fill_value(ZARR_NAN_F64),
-            FillValueFloat::NonFinite(FillValueFloatStringNonFinite::NaN)
+            FillValueMetadataV3::from(ZARR_NAN_F64),
+            serde_json::from_str(r#""NaN""#).unwrap()
         );
         let f64_nan_alt = unsafe {
             std::mem::transmute::<u64, f64>(
@@ -1175,8 +1183,8 @@ mod tests {
         };
         assert!(f64_nan_alt.is_nan());
         assert_eq!(
-            float64_to_fill_value(f64_nan_alt),
-            FillValueFloat::HexString(HexString::new(vec![127, 248, 0, 0, 0, 0, 0, 1]))
+            FillValueMetadataV3::from(f64_nan_alt),
+            serde_json::from_str(r#""0x7ff8000000000001""#).unwrap()
         );
     }
 
@@ -1248,31 +1256,20 @@ mod tests {
             data_type.metadata_fill_value(&fill_value).unwrap()
         );
 
-        let metadata = serde_json::from_str::<FillValueMetadataV3>(
-            r#"[104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]"#,
-        )
-        .unwrap();
-        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
-        assert_eq!(fill_value.as_ne_bytes(), "hello world".as_bytes(),);
-        assert_ne!(
-            metadata,
-            data_type.metadata_fill_value(&fill_value).unwrap()
-        ); // metadata is byte array rep, that is okay
-
         let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""Infinity""#).unwrap();
         let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
         assert_eq!(fill_value.as_ne_bytes(), "Infinity".as_bytes(),);
-        assert_ne!(
+        assert_eq!(
             metadata,
             data_type.metadata_fill_value(&fill_value).unwrap()
-        ); // metadata is float rep, that is okay
+        );
 
         let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0x7fc00000""#).unwrap();
         let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
         assert_eq!(fill_value.as_ne_bytes(), "0x7fc00000".as_bytes(),);
-        assert_ne!(
+        assert_eq!(
             metadata,
             data_type.metadata_fill_value(&fill_value).unwrap()
-        ); // metadata is float rep, that is okay
+        );
     }
 }

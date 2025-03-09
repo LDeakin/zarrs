@@ -1,21 +1,40 @@
-//! The `crc32c` (CRC32C checksum) bytes to bytes codec.
+//! The `crc32c` bytes to bytes codec (Core).
 //!
 //! Appends a CRC32C checksum of the input bytestream.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html>.
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/crc32c>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `crc32c`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `crc32c`
+//!
+//! ### Codec `configuration` Example - [`Crc32cCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {}
+//! # "#;
+//! # use zarrs_metadata::codec::crc32c::Crc32cCodecConfiguration;
+//! # serde_json::from_str::<Crc32cCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod crc32c_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::crc32c::{
-    Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
-};
+pub use crate::metadata::codec::crc32c::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1};
 pub use crc32c_codec::Crc32cCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::crc32c, MetadataV3},
+    metadata::codec::crc32c,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -60,11 +79,8 @@ mod tests {
     fn codec_crc32c_configuration_none() {
         let codec_configuration: Crc32cCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
         let codec = Crc32cCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
-        assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"crc32c"}"#
-        );
+        let metadata = codec.configuration("crc32c").unwrap();
+        assert_eq!(serde_json::to_string(&metadata).unwrap(), r#"{}"#);
     }
 
     #[test]

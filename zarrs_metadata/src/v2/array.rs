@@ -6,30 +6,6 @@ use crate::{
     v2::MetadataV2, v3::AdditionalFields, ArrayShape, ChunkKeySeparator, ChunkShape, Endianness,
 };
 
-/// Zarr V2 codec metadata.
-pub mod codec {
-    /// `bitround` codec metadata.
-    pub mod bitround;
-    /// `blosc` codec metadata.
-    pub mod blosc;
-    /// `bz2` codec metadata.
-    pub mod bz2;
-    /// `fletcher32` codec metadata.
-    pub mod fletcher32;
-    /// `gzip` codec metadata.
-    pub mod gzip;
-    /// `vlen-array` codec metadata.
-    pub mod vlen_array;
-    /// `vlen-bytes` codec metadata.
-    pub mod vlen_bytes;
-    /// `vlen-utf8` codec metadata.
-    pub mod vlen_utf8;
-    /// `zfpy` codec metadata.
-    pub mod zfpy;
-    /// `zstd` codec metadata.
-    pub mod zstd;
-}
-
 /// Zarr array metadata (storage specification v2).
 ///
 /// An example `JSON` document for a Zarr V2 array:

@@ -7,7 +7,7 @@
 //!   - ZEP 0003: Variable chunking
 //!   - ZEP 0007: Strings
 // TODO: ZEP 0009
-//! - experimental codecs and data types intended for standardisation, and
+//! - experimental codecs, data types, and chunk grids intended for Zarr V3 standardisation, and
 //! - user-defined custom extensions and stores.
 //!
 //! If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
@@ -47,11 +47,6 @@
 #![doc = include_str!("../doc/status/codecs.md")]
 //! </details>
 //!
-//! <details><summary>Codecs (Experimental)</summary>
-//!
-#![doc = include_str!("../doc/status/codecs_experimental.md")]
-//! </details>
-//!
 //! <details><summary>Chunk Grids</summary>
 //!
 #![doc = include_str!("../doc/status/chunk_grids.md")]
@@ -69,15 +64,12 @@
 //!
 //! #### Storage Support
 //!
-//! `zarrs` supports stores (filesystem, HTTP, S3, etc.) via crates implementing the [`zarrs_storage`] API.
+//! `zarrs` supports a huge range of stores (including custom stores) via the [`zarrs_storage`] API.
+//!
+//! <details><summary>Stores</summary>
 //!
 #![doc = include_str!("../doc/status/stores.md")]
-//!
-//! A huge range of storage backends are supported via the [`opendal`] and [`object_store`] crates.
-//! The documentation for the [`zarrs_opendal`] and [`zarrs_object_store`] crates includes version compatibility matrices with `zarrs` and the associated storage backends.
-//! These backends provide more feature complete HTTP stores than [`zarrs_http`].
-//!
-//! [`zarrs_icechunk`] implements the [Icechunk](https://icechunk.io/overview/) transactional storage engine, a storage specification for Zarr that supports [`object_store`] stores.
+//! </details>
 //!
 //! [`opendal`]: https://docs.rs/opendal/latest/opendal/
 //! [`object_store`]: https://docs.rs/object_store/latest/object_store/
@@ -86,9 +78,13 @@
 //! [`zarrs_object_store`]: https://docs.rs/zarrs_object_store/latest/zarrs_object_store/
 //! [`zarrs_opendal`]: https://docs.rs/zarrs_opendal/latest/zarrs_opendal/
 //!
-//! The [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter) enables some async stores to be used in a sync context.
 //!
-//! A custom store can be developed by implementing the relevant traits in the [`zarrs_storage`] crate.
+//! The [`opendal`] and [`object_store`] crates are popular Rust storage backends that are fully supported via [`zarrs_opendal`] and [`zarrs_object_store`].
+//! These backends provide more feature complete HTTP stores than [`zarrs_http`].
+//!
+//! [`zarrs_icechunk`] implements the [Icechunk](https://icechunk.io/overview/) transactional storage engine, a storage specification for Zarr that supports [`object_store`] stores.
+//!
+//! The [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter) enables some async stores to be used in a sync context.
 //!
 //! ## Examples
 //! ### Create and Read a Zarr Hierarchy

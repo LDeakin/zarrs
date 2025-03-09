@@ -15,8 +15,7 @@ use crate::{
 use super::{
     array_bytes::{copy_fill_value_into, merge_chunks_vlen},
     codec::{
-        options::CodecOptions, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-        StoragePartialDecoder,
+        ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, CodecOptions, StoragePartialDecoder,
     },
     concurrency::concurrency_chunks_and_codec,
     element::ElementOwned,

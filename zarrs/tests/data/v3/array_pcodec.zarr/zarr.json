@@ -24,7 +24,7 @@
   "fill_value": 0.0,
   "codecs": [
     {
-      "name": "pcodec",
+      "name": "numcodecs.pcodec",
       "configuration": {
         "level": 8,
         "mode_spec": "auto",

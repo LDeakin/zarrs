@@ -1,50 +1,44 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
+use zarrs_plugin::MetadataConfiguration;
 
-use crate::{
-    array::{
-        codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
-        RawBytesOffsets,
+use crate::array::{
+    codec::{
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
+        ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
+        BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    config::global_config,
-    metadata::v3::MetadataV3,
+    ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes, RawBytesOffsets,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 /// The `vlen_v2` codec implementation.
-#[derive(Debug, Clone)]
-pub(crate) struct VlenV2Codec {
-    name: String,
-}
+#[derive(Debug, Clone, Default)]
+pub struct VlenV2Codec {}
 
 impl VlenV2Codec {
     /// Create a new `vlen_v2` codec.
     #[must_use]
-    pub(crate) fn new(name: String) -> Self {
-        Self { name }
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
 impl CodecTraits for VlenV2Codec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let config = global_config();
-        let name = config
-            .experimental_codec_names()
-            .get(&self.name)
-            .unwrap_or(&self.name);
-        Some(MetadataV3::new_with_configuration(
-            name,
-            serde_json::Map::default(),
-        ))
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        Some(MetadataConfiguration::default())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

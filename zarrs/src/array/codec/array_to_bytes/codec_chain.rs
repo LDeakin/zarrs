@@ -2,19 +2,22 @@
 
 use std::sync::Arc;
 
+use zarrs_plugin::MetadataConfiguration;
+
 use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderCache, BytesPartialDecoderTraits, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, Codec, CodecError, CodecMetadataOptions, CodecOptions,
-            CodecTraits,
+            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderCache,
+            BytesPartialDecoderTraits, BytesPartialEncoderTraits, Codec, CodecError,
+            CodecMetadataOptions, CodecOptions, CodecTraits, NamedArrayToArrayCodec,
+            NamedArrayToBytesCodec, NamedBytesToBytesCodec,
         },
         concurrency::RecommendedConcurrency,
         ArrayBytes, ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation,
         ChunkShape, RawBytes,
     },
+    config::global_config,
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
@@ -31,9 +34,9 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 ///    - preceding the first codec with [`partial_decoder_should_cache_input`](crate::array::codec::CodecTraits::partial_decoder_should_cache_input), whichever is further.
 #[derive(Debug, Clone)]
 pub struct CodecChain {
-    array_to_array: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
-    array_to_bytes: Arc<dyn ArrayToBytesCodecTraits>,
-    bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>>,
+    array_to_array: Vec<NamedArrayToArrayCodec>,
+    array_to_bytes: NamedArrayToBytesCodec,
+    bytes_to_bytes: Vec<NamedBytesToBytesCodec>,
     cache_index: Option<usize>, // for partial decoders
 }
 
@@ -41,9 +44,9 @@ impl CodecChain {
     /// Create a new codec chain.
     #[must_use]
     pub fn new(
-        array_to_array: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
-        array_to_bytes: Arc<dyn ArrayToBytesCodecTraits>,
-        bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>>,
+        array_to_array: Vec<NamedArrayToArrayCodec>,
+        array_to_bytes: NamedArrayToBytesCodec,
+        bytes_to_bytes: Vec<NamedBytesToBytesCodec>,
     ) -> Self {
         let mut cache_index_must = None;
         let mut cache_index_should = None;
@@ -58,13 +61,16 @@ impl CodecChain {
             codec_index += 1;
         }
 
-        if cache_index_should.is_none() && array_to_bytes.partial_decoder_should_cache_input() {
-            cache_index_should = Some(codec_index);
+        {
+            let codec = &array_to_bytes;
+            if cache_index_should.is_none() && codec.partial_decoder_should_cache_input() {
+                cache_index_should = Some(codec_index);
+            }
+            if codec.partial_decoder_decodes_all() {
+                cache_index_must = Some(codec_index + 1);
+            }
+            codec_index += 1;
         }
-        if array_to_bytes.partial_decoder_decodes_all() {
-            cache_index_must = Some(codec_index + 1);
-        }
-        codec_index += 1;
 
         for codec in array_to_array.iter().rev() {
             if cache_index_should.is_none() && codec.partial_decoder_should_cache_input() {
@@ -104,24 +110,33 @@ impl CodecChain {
     ///  - no array to bytes codec is supplied, or
     ///  - more than one array to bytes codec is supplied.
     pub fn from_metadata(metadatas: &[MetadataV3]) -> Result<Self, PluginCreateError> {
-        let mut array_to_array: Vec<Arc<dyn ArrayToArrayCodecTraits>> = vec![];
-        let mut array_to_bytes: Option<Arc<dyn ArrayToBytesCodecTraits>> = None;
-        let mut bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>> = vec![];
+        let mut array_to_array: Vec<NamedArrayToArrayCodec> = vec![];
+        let mut array_to_bytes: Option<NamedArrayToBytesCodec> = None;
+        let mut bytes_to_bytes: Vec<NamedBytesToBytesCodec> = vec![];
         for metadata in metadatas {
             let codec = Codec::from_metadata(metadata)?;
             match codec {
                 Codec::ArrayToArray(codec) => {
-                    array_to_array.push(codec);
+                    array_to_array.push(NamedArrayToArrayCodec::new(
+                        metadata.name().to_string(),
+                        codec,
+                    ));
                 }
                 Codec::ArrayToBytes(codec) => {
                     if array_to_bytes.is_none() {
-                        array_to_bytes = Some(codec);
+                        array_to_bytes = Some(NamedArrayToBytesCodec::new(
+                            metadata.name().to_string(),
+                            codec,
+                        ));
                     } else {
                         return Err(PluginCreateError::from("multiple array to bytes codecs"));
                     }
                 }
                 Codec::BytesToBytes(codec) => {
-                    bytes_to_bytes.push(codec);
+                    bytes_to_bytes.push(NamedBytesToBytesCodec::new(
+                        metadata.name().to_string(),
+                        codec,
+                    ));
                 }
             }
         }
@@ -135,19 +150,44 @@ impl CodecChain {
     /// Create codec chain metadata.
     #[must_use]
     pub fn create_metadatas_opt(&self, options: &CodecMetadataOptions) -> Vec<MetadataV3> {
+        let config = global_config();
+        let get_name = |identifier: &str| -> Option<&str> {
+            if options.convert_aliased_extension_names() {
+                if let Some(entry) = config.codec_map().get(identifier) {
+                    Some(entry.name())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
         let mut metadatas =
             Vec::with_capacity(self.array_to_array.len() + 1 + self.bytes_to_bytes.len());
         for codec in &self.array_to_array {
-            if let Some(metadata) = codec.create_metadata_opt(options) {
-                metadatas.push(metadata);
+            if let Some(configuration) = codec.configuration_opt(options) {
+                metadatas.push(MetadataV3::new_with_configuration(
+                    get_name(codec.identifier()).unwrap_or(codec.name()),
+                    configuration,
+                ));
             }
         }
-        if let Some(metadata) = self.array_to_bytes.create_metadata_opt(options) {
-            metadatas.push(metadata);
+        {
+            let codec = &self.array_to_bytes;
+            if let Some(configuration) = codec.configuration_opt(options) {
+                metadatas.push(MetadataV3::new_with_configuration(
+                    get_name(codec.identifier()).unwrap_or(codec.name()),
+                    configuration,
+                ));
+            }
         }
         for codec in &self.bytes_to_bytes {
-            if let Some(metadata) = codec.create_metadata_opt(options) {
-                metadatas.push(metadata);
+            if let Some(configuration) = codec.configuration_opt(options) {
+                metadatas.push(MetadataV3::new_with_configuration(
+                    get_name(codec.identifier()).unwrap_or(codec.name()),
+                    configuration,
+                ));
             }
         }
         metadatas
@@ -161,20 +201,20 @@ impl CodecChain {
 
     /// Get the array to array codecs
     #[must_use]
-    pub fn array_to_array_codecs(&self) -> &[Arc<dyn ArrayToArrayCodecTraits>] {
+    pub fn array_to_array_codecs(&self) -> &[NamedArrayToArrayCodec] {
         &self.array_to_array
     }
 
     /// Get the array to bytes codec
     #[allow(clippy::borrowed_box)]
     #[must_use]
-    pub fn array_to_bytes_codec(&self) -> &Arc<dyn ArrayToBytesCodecTraits> {
+    pub fn array_to_bytes_codec(&self) -> &NamedArrayToBytesCodec {
         &self.array_to_bytes
     }
 
     /// Get the bytes to bytes codecs
     #[must_use]
-    pub fn bytes_to_bytes_codecs(&self) -> &[Arc<dyn BytesToBytesCodecTraits>] {
+    pub fn bytes_to_bytes_codecs(&self) -> &[NamedBytesToBytesCodec] {
         &self.bytes_to_bytes
     }
 
@@ -198,6 +238,7 @@ impl CodecChain {
         let mut bytes_representations = Vec::with_capacity(self.bytes_to_bytes.len() + 1);
         bytes_representations.push(
             self.array_to_bytes
+                .codec()
                 .compute_encoded_size(array_representation_last)?,
         );
         for codec in &self.bytes_to_bytes {
@@ -209,10 +250,18 @@ impl CodecChain {
 }
 
 impl CodecTraits for CodecChain {
+    fn identifier(&self) -> &'static str {
+        "_zarrs_codec_chain"
+    }
+
     /// Returns [`None`] since a codec chain does not have standard codec metadata.
     ///
-    /// Note that usage of the codec chain is explicit in [`Array`](crate::array::Array) and [`CodecChain::create_metadatas_opt()`] will call [`CodecTraits::create_metadata_opt()`] from for each codec.
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
+    /// Note that usage of the codec chain is explicit in [`Array`](crate::array::Array) and [`CodecChain::create_metadatas_opt()`] will call [`CodecTraits::configuration_opt()`] from for each codec.
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
         None
     }
 
@@ -251,11 +300,13 @@ impl ArrayToBytesCodecTraits for CodecChain {
         }
 
         // array->bytes
-        let mut bytes = self
-            .array_to_bytes
-            .encode(bytes, &decoded_representation, options)?;
+        let mut bytes =
+            self.array_to_bytes
+                .codec()
+                .encode(bytes, &decoded_representation, options)?;
         let mut decoded_representation = self
             .array_to_bytes
+            .codec()
             .compute_encoded_size(&decoded_representation)?;
 
         // bytes->bytes
@@ -287,9 +338,11 @@ impl ArrayToBytesCodecTraits for CodecChain {
         }
 
         // bytes->array
-        let mut bytes =
-            self.array_to_bytes
-                .decode(bytes, array_representations.last().unwrap(), options)?;
+        let mut bytes = self.array_to_bytes.codec().decode(
+            bytes,
+            array_representations.last().unwrap(),
+            options,
+        )?;
 
         // array->array
         for (codec, array_representation) in std::iter::zip(
@@ -320,7 +373,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.bytes_to_bytes.is_empty() && self.array_to_array.is_empty() {
             // Fast path if no bytes to bytes or array to array codecs
-            return self.array_to_bytes.decode_into(
+            return self.array_to_bytes.codec().decode_into(
                 bytes,
                 array_representations.last().unwrap(),
                 output_view,
@@ -338,7 +391,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         if self.array_to_array.is_empty() {
             // Fast path if no array to array codecs
-            return self.array_to_bytes.decode_into(
+            return self.array_to_bytes.codec().decode_into(
                 bytes,
                 array_representations.last().unwrap(),
                 output_view,
@@ -347,9 +400,11 @@ impl ArrayToBytesCodecTraits for CodecChain {
         }
 
         // bytes->array
-        let mut bytes =
-            self.array_to_bytes
-                .decode(bytes, array_representations.last().unwrap(), options)?;
+        let mut bytes = self.array_to_bytes.codec().decode(
+            bytes,
+            array_representations.last().unwrap(),
+            options,
+        )?;
 
         // array->array
         for (codec, array_representation) in std::iter::zip(
@@ -405,6 +460,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             let codec = &self.array_to_bytes;
             codec_index += 1;
             codec
+                .codec()
                 .clone()
                 .partial_decoder(input_handle, array_representation, options)?
         };
@@ -421,10 +477,11 @@ impl ArrayToBytesCodecTraits for CodecChain {
                 )?);
             }
             codec_index += 1;
-            input_handle =
-                codec
-                    .clone()
-                    .partial_decoder(input_handle, array_representation, options)?;
+            input_handle = codec.codec().clone().partial_decoder(
+                input_handle,
+                array_representation,
+                options,
+            )?;
         }
 
         if Some(codec_index) == self.cache_index {
@@ -464,7 +521,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
                 Arc::clone(codec).partial_decoder(input_handle, bytes_representation, options)?;
         }
 
-        let mut output_handle = self.array_to_bytes.clone().partial_encoder(
+        let mut output_handle = self.array_to_bytes.codec().clone().partial_encoder(
             input_handle.clone(),
             output_handle,
             array_representations.last().unwrap(),
@@ -475,7 +532,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             return Ok(output_handle);
         }
 
-        let mut input_handle = self.array_to_bytes.clone().partial_decoder(
+        let mut input_handle = self.array_to_bytes.codec().clone().partial_decoder(
             input_handle,
             array_representations.last().unwrap(),
             options,
@@ -529,6 +586,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             }
             codec_index += 1;
             input_handle = codec
+                .codec()
                 .clone()
                 .async_partial_decoder(input_handle, bytes_representation, options)
                 .await?;
@@ -544,6 +602,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             let codec = &self.array_to_bytes;
             codec_index += 1;
             codec
+                .codec()
                 .clone()
                 .async_partial_decoder(input_handle, array_representation, options)
                 .await?
@@ -565,6 +624,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
             }
             codec_index += 1;
             input_handle = codec
+                .codec()
                 .clone()
                 .async_partial_decoder(input_handle, array_representation, options)
                 .await?;
@@ -595,6 +655,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
 
         let mut bytes_representation = self
             .array_to_bytes
+            .codec()
             .compute_encoded_size(&decoded_representation)?;
 
         for codec in &self.bytes_to_bytes {
@@ -630,6 +691,7 @@ impl ArrayCodecTraits for CodecChain {
 
         let recommended_concurrency = &self
             .array_to_bytes
+            .codec()
             .recommended_concurrency(array_representations.last().unwrap())?;
         concurrency_min = std::cmp::min(concurrency_min, recommended_concurrency.min());
         concurrency_max = std::cmp::max(concurrency_max, recommended_concurrency.max());
@@ -651,6 +713,7 @@ impl ArrayCodecTraits for CodecChain {
 
         Ok(recommended_concurrency)
     }
+
     fn partial_decode_granularity(
         &self,
         decoded_representation: &ChunkRepresentation,
@@ -659,6 +722,7 @@ impl ArrayCodecTraits for CodecChain {
             array_to_array.partial_decode_granularity(decoded_representation)
         } else {
             self.array_to_bytes
+                .codec()
                 .partial_decode_granularity(decoded_representation)
         }
     }
@@ -722,7 +786,7 @@ mod tests {
 
     #[cfg(feature = "bz2")]
     const JSON_BZ2: &str = r#"{ 
-    "name": "bz2",
+    "name": "numcodecs.bz2",
     "configuration": {
         "level": 5
     }
@@ -742,12 +806,12 @@ mod tests {
 
     #[cfg(feature = "pcodec")]
     const JSON_PCODEC: &str = r#"{ 
-    "name": "pcodec"
+    "name": "numcodecs.pcodec"
 }"#;
 
     #[cfg(feature = "gdeflate")]
     const JSON_GDEFLATE: &str = r#"{ 
-    "name": "gdeflate",
+    "name": "zarrs.gdeflate",
     "configuration": {
         "level": 5
     }

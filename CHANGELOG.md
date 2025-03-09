@@ -44,6 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
 - **Breaking**: `ArrayError` is now marked as non-exhaustive
 - Bump `half` to 2.3.1
+- Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
+  - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
+- Refactor `codec` name handling and `CodecTraits` in alignment with ZEP0009 and the [`zarr-extensions`] repository
+  - All "experimental" codecs now use the `zarrs.` prefix (or `numcodecs.` if fully compatible)
+  - Add support for aliased codec names
+  - Enables pass-through of codecs from Zarr V2 to V3 without converting to a V3 equivalent (if supported)
+  - **Breaking**: Add `CodecTraits::{identifier,default_name,configuration[_opt]}()`
+  - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
@@ -1332,6 +1340,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.2.0
+
+[`zarr-extensions`]: https://github.com/zarr-developers/zarr-extensions
 
 [@LDeakin]: https://github.com/LDeakin
 [@lorenzocerrone]: https://github.com/lorenzocerrone

@@ -10,7 +10,7 @@ pub use group::GroupMetadataV3;
 mod metadata;
 pub use metadata::{
     AdditionalField, AdditionalFields, ConfigurationInvalidError, MetadataConfiguration,
-    MetadataV3, UnsupportedAdditionalFieldError,
+    MetadataConfigurationSerialize, MetadataV3, UnsupportedAdditionalFieldError,
 };
 
 /// V3 node metadata ([`ArrayMetadataV3`] or [`GroupMetadataV3`]).
