@@ -13,7 +13,7 @@ use zarrs::{
     },
     array_subset::ArraySubset,
 };
-use zarrs_metadata::v3::array::codec::sharding::ShardingIndexLocation;
+use zarrs_metadata::codec::sharding::ShardingIndexLocation;
 use zarrs_storage::{
     storage_adapter::performance_metrics::PerformanceMetricsStorageAdapter, store::MemoryStore,
     ReadableStorageTraits,
@@ -223,10 +223,8 @@ fn array_partial_encode_sharding_index_end() {
 ))]
 #[test]
 fn array_partial_encode_sharding_index_compressed() {
-    use zarrs_metadata::v3::array::codec::{
-        blosc::{BloscCompressionLevel, BloscCompressor, BloscShuffleMode},
-        bz2::Bz2CompressionLevel,
-    };
+    use zarrs_metadata::codec::blosc::{BloscCompressionLevel, BloscCompressor, BloscShuffleMode};
+    use zarrs_metadata::codec::bz2::Bz2CompressionLevel;
 
     for index_location in &[ShardingIndexLocation::Start, ShardingIndexLocation::End] {
         array_partial_encode_sharding(

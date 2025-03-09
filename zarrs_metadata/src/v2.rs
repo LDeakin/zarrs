@@ -13,6 +13,7 @@ pub use metadata::MetadataV2;
 /// V2 node metadata ([`ArrayMetadataV2`] or [`GroupMetadataV2`]).
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum NodeMetadataV2 {
     /// Array metadata.
     Array(ArrayMetadataV2),
@@ -27,12 +28,12 @@ mod tests {
     use super::*;
 
     use crate::{
-        v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3_data_type},
-        v3::array::codec::{
+        array::codec::{
             blosc::{self, BloscCodecConfigurationV1},
             transpose::{self, TransposeCodecConfigurationV1},
         },
-        ChunkKeySeparator, ChunkShape, Endianness,
+        v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3_data_type},
+        ChunkKeySeparator, ChunkShape, CodecMap, Endianness,
     };
 
     #[test]
@@ -81,7 +82,8 @@ mod tests {
         );
         println!("{array_metadata_v2:?}");
 
-        let array_metadata_v3 = array_metadata_v2_to_v3(&array_metadata_v2)?;
+        let codec_map = CodecMap::default();
+        let array_metadata_v3 = array_metadata_v2_to_v3(&array_metadata_v2, &codec_map)?;
         println!("{array_metadata_v3:?}");
 
         let first_codec = array_metadata_v3.codecs.first().unwrap();

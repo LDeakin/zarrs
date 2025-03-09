@@ -30,7 +30,7 @@
       }
     },
     {
-      "name": "bz2",
+      "name": "numcodecs.bz2",
       "configuration": {
         "level": 9
       }

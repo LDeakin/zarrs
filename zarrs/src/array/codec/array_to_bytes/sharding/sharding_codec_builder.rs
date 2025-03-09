@@ -3,7 +3,10 @@ use std::sync::Arc;
 use codec::CodecChain;
 
 use crate::array::{
-    codec::{self, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesToBytesCodecTraits},
+    codec::{
+        self, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesToBytesCodecTraits,
+        NamedArrayToArrayCodec, NamedArrayToBytesCodec, NamedBytesToBytesCodec,
+    },
     ChunkShape,
 };
 
@@ -18,11 +21,11 @@ use super::{ShardingCodec, ShardingIndexLocation};
 #[derive(Debug)]
 pub struct ShardingCodecBuilder {
     inner_chunk_shape: ChunkShape,
-    index_array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
-    index_bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
-    array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
-    array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
-    bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
+    index_array_to_bytes_codec: NamedArrayToBytesCodec,
+    index_bytes_to_bytes_codecs: Vec<NamedBytesToBytesCodec>,
+    array_to_array_codecs: Vec<NamedArrayToArrayCodec>,
+    array_to_bytes_codec: NamedArrayToBytesCodec,
+    bytes_to_bytes_codecs: Vec<NamedBytesToBytesCodec>,
     index_location: ShardingIndexLocation,
 }
 
@@ -32,13 +35,13 @@ impl ShardingCodecBuilder {
     pub fn new(inner_chunk_shape: ChunkShape) -> Self {
         Self {
             inner_chunk_shape,
-            index_array_to_bytes_codec: Arc::<codec::BytesCodec>::default(),
+            index_array_to_bytes_codec: Arc::<codec::BytesCodec>::default().into(),
             index_bytes_to_bytes_codecs: vec![
                 #[cfg(feature = "crc32c")]
-                Arc::new(codec::Crc32cCodec::new()),
+                Arc::new(codec::Crc32cCodec::new()).into(),
             ],
             array_to_array_codecs: Vec::default(),
-            array_to_bytes_codec: Arc::<codec::BytesCodec>::default(),
+            array_to_bytes_codec: Arc::<codec::BytesCodec>::default().into(),
             bytes_to_bytes_codecs: Vec::default(),
             index_location: ShardingIndexLocation::default(),
         }
@@ -51,7 +54,7 @@ impl ShardingCodecBuilder {
         &mut self,
         index_array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
     ) -> &mut Self {
-        self.index_array_to_bytes_codec = index_array_to_bytes_codec;
+        self.index_array_to_bytes_codec = index_array_to_bytes_codec.into();
         self
     }
 
@@ -62,7 +65,21 @@ impl ShardingCodecBuilder {
         &mut self,
         index_bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) -> &mut Self {
-        self.index_bytes_to_bytes_codecs = index_bytes_to_bytes_codecs;
+        self.index_bytes_to_bytes_codecs = index_bytes_to_bytes_codecs
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        self
+    }
+
+    /// Set the index array to bytes codec with non-default names.
+    ///
+    /// If left unmodified, the index will be encoded with the `bytes` codec with native endian encoding.
+    pub fn index_array_to_bytes_codec_named(
+        &mut self,
+        index_array_to_bytes_codec: impl Into<NamedArrayToBytesCodec>,
+    ) -> &mut Self {
+        self.index_array_to_bytes_codec = index_array_to_bytes_codec.into();
         self
     }
 
@@ -73,7 +90,21 @@ impl ShardingCodecBuilder {
         &mut self,
         array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
     ) -> &mut Self {
-        self.array_to_array_codecs = array_to_array_codecs;
+        self.array_to_array_codecs = array_to_array_codecs.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Set the index bytes to bytes codecs with non-default names.
+    ///
+    /// If left unmodified, the index will be encoded with the `crc32c checksum` codec (if supported).
+    pub fn index_bytes_to_bytes_codecs_named(
+        &mut self,
+        index_bytes_to_bytes_codecs: Vec<impl Into<NamedBytesToBytesCodec>>,
+    ) -> &mut Self {
+        self.index_bytes_to_bytes_codecs = index_bytes_to_bytes_codecs
+            .into_iter()
+            .map(Into::into)
+            .collect();
         self
     }
 
@@ -84,7 +115,29 @@ impl ShardingCodecBuilder {
         &mut self,
         array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
     ) -> &mut Self {
-        self.array_to_bytes_codec = array_to_bytes_codec;
+        self.array_to_bytes_codec = array_to_bytes_codec.into();
+        self
+    }
+
+    /// Set the inner chunk array to array codecs with non-default names.
+    ///
+    /// If left unmodified, no array to array codecs will be applied for the inner chunks.
+    pub fn array_to_array_codecs_named(
+        &mut self,
+        array_to_array_codecs: Vec<impl Into<NamedArrayToArrayCodec>>,
+    ) -> &mut Self {
+        self.array_to_array_codecs = array_to_array_codecs.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Set the inner chunk array to bytes codec.
+    ///
+    /// If left unmodified, the inner chunks will be encoded with the `bytes` codec with native endian encoding.
+    pub fn array_to_bytes_codec_named(
+        &mut self,
+        array_to_bytes_codec: impl Into<NamedArrayToBytesCodec>,
+    ) -> &mut Self {
+        self.array_to_bytes_codec = array_to_bytes_codec.into();
         self
     }
 
@@ -95,7 +148,18 @@ impl ShardingCodecBuilder {
         &mut self,
         bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) -> &mut Self {
-        self.bytes_to_bytes_codecs = bytes_to_bytes_codecs;
+        self.bytes_to_bytes_codecs = bytes_to_bytes_codecs.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Set the inner chunk bytes to bytes codecs.
+    ///
+    /// If left unmodified, no bytes to bytes codecs will be applied for the inner chunks.
+    pub fn bytes_to_bytes_codecs_named(
+        &mut self,
+        bytes_to_bytes_codecs: Vec<impl Into<NamedBytesToBytesCodec>>,
+    ) -> &mut Self {
+        self.bytes_to_bytes_codecs = bytes_to_bytes_codecs.into_iter().map(Into::into).collect();
         self
     }
 
@@ -110,12 +174,12 @@ impl ShardingCodecBuilder {
     /// Build into a [`ShardingCodec`].
     #[must_use]
     pub fn build(&self) -> ShardingCodec {
-        let inner_codecs = Arc::new(CodecChain::new(
+        let inner_codecs = Arc::new(CodecChain::new_named(
             self.array_to_array_codecs.clone(),
             self.array_to_bytes_codec.clone(),
             self.bytes_to_bytes_codecs.clone(),
         ));
-        let index_codecs = Arc::new(CodecChain::new(
+        let index_codecs = Arc::new(CodecChain::new_named(
             vec![],
             self.index_array_to_bytes_codec.clone(),
             self.index_bytes_to_bytes_codecs.clone(),

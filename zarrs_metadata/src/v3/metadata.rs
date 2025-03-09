@@ -1,4 +1,6 @@
-use derive_more::From;
+use std::fmt::Debug;
+
+use derive_more::{Deref, From, Into};
 use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -49,7 +51,24 @@ pub struct MetadataV3 {
 }
 
 /// Configuration metadata.
-pub type MetadataConfiguration = serde_json::Map<String, Value>;
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Deref, From, Into, Eq, PartialEq)]
+pub struct MetadataConfiguration(serde_json::Map<String, Value>);
+
+impl<T: MetadataConfigurationSerialize> From<T> for MetadataConfiguration {
+    fn from(value: T) -> Self {
+        match serde_json::to_value(value) {
+            Ok(serde_json::Value::Object(configuration)) => configuration.into(),
+            _ => {
+                panic!("the configuration could not be converted to a JSON object")
+            }
+        }
+    }
+}
+
+/// A trait for metadata configurations.
+///
+/// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
+pub trait MetadataConfigurationSerialize: Serialize + DeserializeOwned {}
 
 impl TryFrom<&str> for MetadataV3 {
     type Error = serde_json::Error;
@@ -150,10 +169,13 @@ impl MetadataV3 {
 
     /// Create metadata from `name` and `configuration`.
     #[must_use]
-    pub fn new_with_configuration(name: &str, configuration: MetadataConfiguration) -> Self {
+    pub fn new_with_configuration(
+        name: &str,
+        configuration: impl Into<MetadataConfiguration>,
+    ) -> Self {
         Self {
             name: name.into(),
-            configuration: Some(configuration),
+            configuration: Some(configuration.into()),
             must_understand: true,
         }
     }
@@ -221,7 +243,7 @@ impl MetadataV3 {
     pub fn configuration_is_none_or_empty(&self) -> bool {
         self.configuration
             .as_ref()
-            .map_or(true, serde_json::Map::is_empty)
+            .map_or(true, |configuration| configuration.is_empty())
     }
 }
 

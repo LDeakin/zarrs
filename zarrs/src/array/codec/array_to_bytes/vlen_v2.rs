@@ -1,4 +1,29 @@
-//! The `vlen_v2` array to bytes codec.
+//! The `vlen_v2` array to bytes codec (Experimental).
+//!
+//! This codec is the same as `vlen-utf8`, `vlen-array`, `vlen-bytes` from Zarr V2, except that it is decoupled from the data type.
+//! It can operate on any variable-sized data type.
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
+//! ### Compatible Implementations
+//! None
+//!
+//! ### Specification
+//! - <https://codec.zarrs.dev/array_to_bytes/vlen_v2>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.vlen_v2`
+//! - `https://codec.zarrs.dev/array_to_bytes/vlen_v2`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`VlenV2CodecConfiguration`]:
+//! ```json
+//! {}
+//! ```
 
 mod vlen_v2_codec;
 mod vlen_v2_partial_decoder;
@@ -7,16 +32,16 @@ pub(crate) mod vlen_v2_macros;
 
 use std::sync::Arc;
 
-/// The identifier for the `vlen_v2` codec.
-pub(crate) const IDENTIFIER: &str = "vlen_v2";
-// pub use vlen_v2::IDENTIFIER;
+use crate::metadata::codec::vlen_v2::{self};
+
+pub use vlen_v2::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1, IDENTIFIER};
 
 use crate::array::{
     codec::{CodecError, InvalidBytesLengthError},
     RawBytes,
 };
 
-pub(crate) use vlen_v2_codec::VlenV2Codec;
+pub use vlen_v2_codec::VlenV2Codec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
@@ -29,13 +54,13 @@ inventory::submit! {
     CodecPlugin::new(IDENTIFIER, is_name_vlen_v2, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_array::IDENTIFIER, is_name_vlen_array, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_array::IDENTIFIER, is_name_vlen_array, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_bytes::IDENTIFIER, is_name_vlen_bytes, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_bytes::IDENTIFIER, is_name_vlen_bytes, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::v2::array::codec::vlen_utf8::IDENTIFIER, is_name_vlen_utf8, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_utf8::IDENTIFIER, is_name_vlen_utf8, create_codec_vlen_v2)
 }
 
 fn is_name_vlen_v2(name: &str) -> bool {
@@ -43,20 +68,20 @@ fn is_name_vlen_v2(name: &str) -> bool {
 }
 
 fn is_name_vlen_array(name: &str) -> bool {
-    name.eq(crate::metadata::v2::array::codec::vlen_array::IDENTIFIER)
+    name.eq(crate::metadata::codec::vlen_array::IDENTIFIER)
 }
 
 fn is_name_vlen_bytes(name: &str) -> bool {
-    name.eq(crate::metadata::v2::array::codec::vlen_bytes::IDENTIFIER)
+    name.eq(crate::metadata::codec::vlen_bytes::IDENTIFIER)
 }
 
 fn is_name_vlen_utf8(name: &str) -> bool {
-    name.eq(crate::metadata::v2::array::codec::vlen_utf8::IDENTIFIER)
+    name.eq(crate::metadata::codec::vlen_utf8::IDENTIFIER)
 }
 
 pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     if metadata.configuration_is_none_or_empty() {
-        let codec = Arc::new(VlenV2Codec::new(metadata.name().to_string()));
+        let codec = Arc::new(VlenV2Codec::new());
         Ok(Codec::ArrayToBytes(codec))
     } else {
         Err(PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()).into())

@@ -9,16 +9,19 @@ use crate::{
 };
 
 use super::{
-    meta_key_v2_array, meta_key_v2_group, meta_key_v3, Node, NodeMetadata, NodePath, NodePathError,
+    meta_key_v2_array, meta_key_v2_group, meta_key_v3, Node, NodeCreateError, NodeMetadata,
+    NodePath, NodePathError,
 };
 
-// TODO: Replace async_get_child_nodes with this method in the next breaking release
-// TODO: Change to NodeCreateError in the next breaking release
-pub(crate) async fn _async_get_child_nodes<TStorage>(
+/// Asynchronously get the child nodes.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub async fn async_get_child_nodes<TStorage>(
     storage: &Arc<TStorage>,
     path: &NodePath,
     recursive: bool,
-) -> Result<Vec<Node>, StorageError>
+) -> Result<Vec<Node>, NodeCreateError>
 where
     TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
 {
@@ -36,7 +39,9 @@ where
         let children = if recursive {
             match child_metadata {
                 NodeMetadata::Array(_) => Vec::default(),
-                NodeMetadata::Group(_) => Box::pin(async_get_child_nodes(storage, &path)).await?,
+                NodeMetadata::Group(_) => {
+                    Box::pin(async_get_child_nodes(storage, &path, true)).await?
+                }
             }
         } else {
             vec![]
@@ -44,22 +49,6 @@ where
         nodes.push(Node::new_with_metadata(path, child_metadata, children));
     }
     Ok(nodes)
-}
-
-/// Asynchronously get the child nodes.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-// FIXME: Change to NodeCreateError in the next breaking release
-pub async fn async_get_child_nodes<TStorage>(
-    storage: &Arc<TStorage>,
-    path: &NodePath,
-) -> Result<Vec<Node>, StorageError>
-where
-    TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits,
-{
-    #[allow(clippy::used_underscore_items)]
-    _async_get_child_nodes(storage, path, true).await
 }
 
 /// Asynchronously check if a node exists.

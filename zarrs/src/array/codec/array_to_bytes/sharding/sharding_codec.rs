@@ -19,7 +19,6 @@ use crate::{
         BytesRepresentation, ChunkRepresentation, ChunkShape, DataTypeSize, RawBytes,
     },
     array_subset::ArraySubset,
-    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
 
@@ -29,11 +28,12 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{
     calculate_chunks_per_shard, compute_index_encoded_size, decode_shard_index,
     sharding_index_decoded_representation, sharding_partial_decoder, sharding_partial_encoder,
-    ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation, IDENTIFIER,
+    ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
 };
 
 use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
+use zarrs_plugin::MetadataConfiguration;
 
 /// A `sharding` codec implementation.
 #[derive(Clone, Debug)]
@@ -73,27 +73,42 @@ impl ShardingCodec {
     pub fn new_with_configuration(
         configuration: &ShardingCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
-        let ShardingCodecConfiguration::V1(configuration) = configuration;
-        let inner_codecs = Arc::new(CodecChain::from_metadata(&configuration.codecs)?);
-        let index_codecs = Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
-        Ok(Self::new(
-            configuration.chunk_shape.clone(),
-            inner_codecs,
-            index_codecs,
-            configuration.index_location,
-        ))
+        match configuration {
+            ShardingCodecConfiguration::V1(configuration) => {
+                let inner_codecs = Arc::new(CodecChain::from_metadata(&configuration.codecs)?);
+                let index_codecs =
+                    Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
+                Ok(Self::new(
+                    configuration.chunk_shape.clone(),
+                    inner_codecs,
+                    index_codecs,
+                    configuration.index_location,
+                ))
+            }
+            _ => Err(PluginCreateError::Other(
+                "this sharding_indexed codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 }
 
 impl CodecTraits for ShardingCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = ShardingCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = ShardingCodecConfiguration::V1(ShardingCodecConfigurationV1 {
             chunk_shape: self.chunk_shape.clone(),
             codecs: self.inner_codecs.create_metadatas(),
             index_codecs: self.index_codecs.create_metadatas(),
             index_location: self.index_location,
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

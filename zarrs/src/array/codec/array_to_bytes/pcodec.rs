@@ -1,4 +1,4 @@
-//! The `pcodec` array to bytes codec.
+//! The `pcodec` array to bytes codec (Experimental).
 //!
 //! [Pcodec](https://github.com/mwlon/pcodec) (or Pco, pronounced "pico") losslessly compresses and decompresses numerical sequences with high compression ratio and fast speed.
 //!
@@ -8,14 +8,41 @@
 //!
 //! This codec requires the `pcodec` feature, which is disabled by default.
 //!
-//! See [`PcodecCodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations:
+//! This codec is fully compatible with the `numcodecs.pcodec` codec in `zarr-python`.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.pcodec>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `numcodecs.pcodec`
+//! - `https://codec.zarrs.dev/array_to_bytes/pcodec`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `pcodec`
+//!
+//! ### Codec `configuration` Example - [`PcodecCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 5,
+//!     "mode_spec": "auto",
+//!     "delta_spec": "auto",
+//!     "paging_spec": "equal_pages_up_to",
+//!     "delta_encoding_order": null,
+//!     "equal_pages_up_to": 262144
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::pcodec::PcodecCodecConfiguration;
+//! # serde_json::from_str::<PcodecCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod pcodec_codec;
 mod pcodec_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::pcodec::{
+pub use crate::metadata::codec::pcodec::{
     PcodecCodecConfiguration, PcodecCodecConfigurationV1, PcodecCompressionLevel,
     PcodecDeltaEncodingOrder,
 };
@@ -25,7 +52,7 @@ pub use pcodec_codec::PcodecCodec;
 use crate::{
     array::codec::{Codec, CodecPlugin},
     config::global_config,
-    metadata::v3::{array::codec::pcodec, MetadataV3},
+    metadata::{codec::pcodec, v3::MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -37,19 +64,17 @@ inventory::submit! {
 }
 
 fn is_name_pcodec(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(PcodecCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(PcodecCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
 
@@ -112,7 +137,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_u16() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::UInt16,
             FillValue::from(0u16),
         )
@@ -122,7 +148,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_u32() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::UInt32,
             FillValue::from(0u32),
         )
@@ -132,7 +159,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_u64() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::UInt64,
             FillValue::from(0u64),
         )
@@ -142,7 +170,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_i16() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Int16,
             FillValue::from(0i16),
         )
@@ -152,7 +181,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_i32() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Int32,
             FillValue::from(0i32),
         )
@@ -162,7 +192,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_i64() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Int64,
             FillValue::from(0i64),
         )
@@ -172,7 +203,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_f16() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Float16,
             FillValue::from(half::f16::from_f32(0.0)),
         )
@@ -182,7 +214,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_f32() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Float32,
             FillValue::from(0f32),
         )
@@ -192,7 +225,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_f64() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Float64,
             FillValue::from(0f64),
         )
@@ -202,7 +236,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_complex64() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Complex64,
             FillValue::from(num::complex::Complex32::new(0f32, 0f32)),
         )
@@ -212,7 +247,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_complex128() {
         codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::Complex128,
             FillValue::from(num::complex::Complex64::new(0f64, 0f64)),
         )
@@ -222,7 +258,8 @@ mod tests {
     #[test]
     fn codec_pcodec_round_trip_u8() {
         assert!(codec_pcodec_round_trip_impl(
-            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap()),
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
             DataType::UInt8,
             FillValue::from(0u8),
         )
@@ -242,9 +279,10 @@ mod tests {
         let bytes = transmute_to_bytes_vec(elements);
         let bytes: ArrayBytes = bytes.into();
 
-        let codec = Arc::new(PcodecCodec::new_with_configuration(
-            &serde_json::from_str(JSON_VALID).unwrap(),
-        ));
+        let codec = Arc::new(
+            PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
+        );
 
         let encoded = codec
             .encode(
@@ -292,9 +330,10 @@ mod tests {
         let bytes = transmute_to_bytes_vec(elements);
         let bytes: ArrayBytes = bytes.into();
 
-        let codec = Arc::new(PcodecCodec::new_with_configuration(
-            &serde_json::from_str(JSON_VALID).unwrap(),
-        ));
+        let codec = Arc::new(
+            PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
+        );
 
         let encoded = codec
             .encode(

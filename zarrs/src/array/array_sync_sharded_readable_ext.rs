@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rayon_iter_concurrent_limit::iter_concurrent_limit;
 use unsafe_cell_slice::UnsafeCellSlice;
-use zarrs_metadata::v3::array::codec::sharding::ShardingCodecConfiguration;
+use zarrs_metadata::codec::sharding::ShardingCodecConfiguration;
 use zarrs_storage::byte_range::ByteRange;
 use zarrs_storage::StorageHandle;
 
@@ -124,16 +124,16 @@ impl ArrayShardedReadableExtCache {
                 array.chunk_key(shard_indices),
             ));
 
-            // --- Workaround for lack off trait upcasting ---
+            // --- Workaround for lack of trait upcasting ---
             let chunk_representation = array.chunk_array_representation(shard_indices)?;
-            let sharding_codec_metadata = array
+            let sharding_codec_configuration = array
                 .codecs()
                 .array_to_bytes_codec()
-                .create_metadata()
+                .configuration()
                 .expect("valid sharding metadata");
-            let sharding_codec_configuration = sharding_codec_metadata
-                .to_configuration::<ShardingCodecConfiguration>()
-                .expect("valid sharding configuration");
+            let sharding_codec_configuration =
+                ShardingCodecConfiguration::try_from(sharding_codec_configuration)
+                    .expect("valid sharding configuration");
             let sharding_codec = Arc::new(
                 ShardingCodec::new_with_configuration(&sharding_codec_configuration).expect(
                     "supported sharding codec configuration, already instantiated in array",
@@ -681,7 +681,7 @@ mod private {
 mod tests {
     use std::sync::Arc;
 
-    use zarrs_metadata::v3::array::codec::transpose::TransposeOrder;
+    use zarrs_metadata::codec::transpose::TransposeOrder;
 
     use crate::{
         array::{

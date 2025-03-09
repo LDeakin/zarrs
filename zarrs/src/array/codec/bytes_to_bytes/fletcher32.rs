@@ -1,9 +1,6 @@
-//! The `fletcher32` bytes to bytes codec.
+//! The `fletcher32` bytes to bytes codec (Experimental).
 //!
 //! Appends a fletcher32 checksum of the input bytestream.
-//!
-//! This is based on the `numcodecs` implementation.
-//! See <https://numcodecs.readthedocs.io/en/latest/checksum32.html#fletcher32>.
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
@@ -11,13 +8,35 @@
 //!
 //! This codec requires the `fletcher32` feature, which is disabled by default.
 //!
-//! See [`Fletcher32CodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! This codec is fully compatible with the `numcodecs.fletcher32` codec in `zarr-python`.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.fletcher32>
+//! - <https://codec.zarrs.dev/bytes_to_bytes/fletcher32>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `numcodecs.fletcher32`
+//! - `https://codec.zarrs.dev/bytes_to_bytes/fletcher32`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `fletcher32`
+//!
+//! ### Codec `configuration` Example - [`Fletcher32CodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {}
+//! # "#;
+//! # use zarrs_metadata::codec::fletcher32::Fletcher32CodecConfiguration;
+//! # serde_json::from_str::<Fletcher32CodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod fletcher32_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::fletcher32::{
+use crate::metadata::codec::fletcher32;
+pub use crate::metadata::codec::fletcher32::{
     Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1,
 };
 pub use fletcher32_codec::Fletcher32Codec;
@@ -25,7 +44,7 @@ pub use fletcher32_codec::Fletcher32Codec;
 use crate::{
     array::codec::{Codec, CodecPlugin},
     config::global_config,
-    metadata::v3::{array::codec::fletcher32, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -37,12 +56,10 @@ inventory::submit! {
 }
 
 fn is_name_fletcher32(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_fletcher32(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
@@ -76,11 +93,8 @@ mod tests {
         let codec_configuration: Fletcher32CodecConfiguration =
             serde_json::from_str(r#"{}"#).unwrap();
         let codec = Fletcher32Codec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
-        assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"fletcher32"}"#
-        );
+        let configuration = codec.configuration("numcodecs.fletcher32").unwrap();
+        assert_eq!(serde_json::to_string(&configuration).unwrap(), r#"{}"#);
     }
 
     #[test]

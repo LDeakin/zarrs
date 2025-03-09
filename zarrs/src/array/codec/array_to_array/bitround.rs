@@ -1,7 +1,8 @@
-//! The `bitround` array to array codec.
+//! The `bitround` array to array codec (Experimental).
 //!
-//! Rounds the mantissa of floating point data types to the specified number of bits.
-//! Rounds integers to the specified number of bits from the most significant set bit.
+//! Round the mantissa of floating point data types to the specified number of bits.
+//! Rounds integers from the most significant set bit.
+//! Bit rounding leaves an array more amenable to compression.
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
@@ -9,14 +10,45 @@
 //!
 //! This codec requires the `bitround` feature, which is disabled by default.
 //!
-//! See [`BitroundCodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! This codec is fully compatible with the `numcodecs.bitround` codec in `zarr-python`.
+//! However, it supports additional data types not supported by that implementation.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.bitround>
+//! - <https://codec.zarrs.dev/array_to_array/bitround>
+// TODO: Document how integer rounding works
+//!
+//! ### Specification Deviations
+//! The `bitround` codec in `numcodecs` exclusively supports floating point data types.
+//! The `bitround` codec in `zarrs` additionally supports integers by rounding from the most significant set bit.
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.bitround`
+//! - `numcodecs.bitround`
+//! - `https://codec.zarrs.dev/array_to_array/bitround`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `bitround`
+//!
+//! ### Codec `configuration` Example - [`BitroundCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "keepbits": 10
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::bitround::BitroundCodecConfigurationV1;
+//! # let configuration: BitroundCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
 
 mod bitround_codec;
 mod bitround_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::bitround::{
+use crate::metadata::codec::bitround;
+pub use crate::metadata::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
 pub use bitround_codec::BitroundCodec;
@@ -27,7 +59,7 @@ use crate::{
         DataType,
     },
     config::global_config,
-    metadata::v3::{array::codec::bitround, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -39,19 +71,17 @@ inventory::submit! {
 }
 
 fn is_name_bitround(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BitroundCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(BitroundCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(BitroundCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }
 
@@ -226,7 +256,7 @@ mod tests {
         let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -258,7 +288,7 @@ mod tests {
         let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -296,7 +326,7 @@ mod tests {
         let bytes = ArrayBytes::from(bytes);
 
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = BitroundCodec::new_with_configuration(&codec_configuration);
+        let codec = BitroundCodec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -321,7 +351,7 @@ mod tests {
     fn codec_bitround_partial_decode() {
         const JSON: &'static str = r#"{ "keepbits": 2 }"#;
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(
@@ -380,7 +410,7 @@ mod tests {
     async fn codec_bitround_async_partial_decode() {
         const JSON: &'static str = r#"{ "keepbits": 2 }"#;
         let codec_configuration: BitroundCodecConfiguration = serde_json::from_str(JSON).unwrap();
-        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(BitroundCodec::new_with_configuration(&codec_configuration).unwrap());
 
         let elements: Vec<f32> = (0..32).map(|i| i as f32).collect();
         let chunk_representation = ChunkRepresentation::new(

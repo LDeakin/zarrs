@@ -37,6 +37,8 @@ mod element;
 pub mod storage_transformer;
 pub use crate::data_type; // re-export for zarrs < 0.20 compat
 
+#[cfg(feature = "dlpack")]
+mod array_dlpack_ext;
 #[cfg(feature = "sharding")]
 mod array_sharded_ext;
 #[cfg(feature = "sharding")]
@@ -70,7 +72,6 @@ pub use self::{
 pub use crate::data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
 
 pub use crate::metadata::v2::ArrayMetadataV2;
-use crate::metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 pub use crate::metadata::v3::{
     array::data_type::DataTypeSize,
     array::fill_value::FillValueMetadataV3,
@@ -78,6 +79,7 @@ pub use crate::metadata::v3::{
     ArrayMetadataV3,
 };
 pub use crate::metadata::{ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness};
+use crate::{config::global_config, metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError};
 
 /// An alias for [`FillValueMetadataV3`].
 #[deprecated(since = "0.17.0", note = "use FillValueMetadataV3 instead")]
@@ -88,10 +90,15 @@ pub use chunk_cache::{
     chunk_cache_lru::*, ChunkCache, ChunkCacheType, ChunkCacheTypeDecoded, ChunkCacheTypeEncoded,
 };
 
+#[cfg(feature = "dlpack")]
+pub use array_dlpack_ext::{
+    ArrayDlPackExt, ArrayDlPackExtError, AsyncArrayDlPackExt, RawBytesDlPack,
+};
 #[cfg(feature = "sharding")]
 pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
+
 use zarrs_metadata::v3::UnsupportedAdditionalFieldError;
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
@@ -188,8 +195,9 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///   - **Experimental**: `async_` prefix variants can be used with async stores (requires `async` feature).
 ///
 /// Additional methods are offered by extension traits:
-///  - [`ArrayShardedExt`] and [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays)
-///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching)
+///  - [`ArrayShardedExt`] and [`ArrayShardedReadableExt`]: see [Reading Sharded Arrays](#reading-sharded-arrays).
+///  - [`ArrayChunkCacheExt`]: see [Chunk Caching](#chunk-caching).
+///  - [`[Async]ArrayDlPackExt`](ArrayDlPackExt): methods for [`DLPack`](https://arrow.apache.org/docs/python/dlpack.html) tensor interop.
 ///
 /// ### Chunks and Array Subsets
 /// Several convenience methods are available for querying the underlying chunk grid:
@@ -276,7 +284,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// **Standard [`Array`] retrieve methods do not perform any caching**.
 /// For this reason, retrieving multiple subsets in a chunk with [`retrieve_chunk_subset`](Array::store_chunk_subset) is very inefficient and strongly discouraged.
 /// For example, consider that a compressed chunk may need to be retrieved and decoded in its entirety even if only a small part of the data is needed.
-/// In such situations, prefer to retrieve a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode).
+/// In such situations, prefer to initialise a partial decoder for a chunk with [`partial_decoder`](Array::partial_decoder) and then retrieve multiple chunk subsets with [`partial_decode`](codec::ArrayPartialDecoderTraits::partial_decode).
 /// The underlying codec chain will use a cache where efficient to optimise multiple partial decoding requests (see [`CodecChain`]).
 /// Another alternative is to use [Chunk Caching](#chunk-caching).
 ///
@@ -295,10 +303,8 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 ///  - [`ChunkCacheEncodedLruChunkLimit`]: an encoded chunk cache with a fixed chunk capacity.
 ///  - [`ChunkCacheDecodedLruSizeLimit`]: a decoded chunk cache with a fixed size in bytes.
 ///  - [`ChunkCacheEncodedLruSizeLimit`]: an encoded chunk cache with a fixed size in bytes.
-///  - [`ChunkCacheDecodedLruChunkLimitThreadLocal`]: a thread-local decoded chunk cache with a fixed chunk capacity (per thread).
-///  - [`ChunkCacheEncodedLruChunkLimitThreadLocal`]: a thread-local encoded chunk cache with a fixed chunk capacity (per thread).
-///  - [`ChunkCacheDecodedLruSizeLimitThreadLocal`]: a thread-local decoded chunk cache with a fixed size in bytes (per thread).
-///  - [`ChunkCacheEncodedLruSizeLimitThreadLocal`]: a thread-local encoded chunk cache with a fixed size in bytes (per thread).
+///
+/// There are also `ThreadLocal` suffixed variants of all of these caches that have a per-thread cache.
 ///
 /// `zarrs` consumers can create custom caches by implementing the [`ChunkCache`] trait.
 ///
@@ -314,7 +320,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// **Benchmark your algorithm/data.**
 ///
 /// ## Reading Sharded Arrays
-/// The `sharding_indexed` ([`ShardingCodec`](codec::array_to_bytes::sharding)) codec enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
+/// The `sharding_indexed` codec ([`ShardingCodec`](codec::array_to_bytes::sharding)) enables multiple sub-chunks ("inner chunks") to be stored in a single chunk ("shard").
 /// With a sharded array, the [`chunk_grid`](Array::chunk_grid) and chunk indices in store/retrieve methods reference the chunks ("shards") of an array.
 ///
 /// The [`ArrayShardedExt`] trait provides additional methods to [`Array`] to query if an array is sharded and retrieve the inner chunk shape.
@@ -394,7 +400,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         // Convert V2 metadata to V3 if it is a compatible subset
         let metadata_v3 = match &metadata {
             ArrayMetadata::V3(v3) => Ok(v3.clone()),
-            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2)
+            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2, global_config().codec_map())
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
         }?;
 
@@ -619,7 +625,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             (AM::V3(metadata), V::Default | V::V3) => ArrayMetadata::V3(metadata),
             (AM::V2(metadata), V::Default) => ArrayMetadata::V2(metadata),
             (AM::V2(metadata), V::V3) => {
-                let metadata = array_metadata_v2_to_v3(&metadata)
+                let metadata = array_metadata_v2_to_v3(&metadata, global_config().codec_map())
                     .expect("conversion succeeded on array creation");
                 AM::V3(metadata)
             }
@@ -791,7 +797,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
     pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
         match self.metadata {
             ArrayMetadata::V2(metadata) => {
-                let metadata: ArrayMetadata = array_metadata_v2_to_v3(&metadata)?.into();
+                let metadata: ArrayMetadata =
+                    array_metadata_v2_to_v3(&metadata, global_config().codec_map())?.into();
                 Ok(Self {
                     storage: self.storage,
                     path: self.path,
@@ -1175,7 +1182,7 @@ mod tests {
     fn array_v2_zfpy_c() {
         array_v2_to_v3(
             "tests/data/v2/array_zfpy_C.zarr",
-            "tests/data/v3/array_zfp.zarr",
+            "tests/data/v3/array_zfpy.zarr",
         )
     }
 
@@ -1201,24 +1208,6 @@ mod tests {
 
     #[allow(dead_code)]
     fn array_v3_numcodecs(path_in: &str) {
-        {
-            use zarrs_metadata::v3::array::codec;
-            let mut config = crate::config::global_config_mut();
-            let experimental_codec_names = config.experimental_codec_names_mut();
-            experimental_codec_names.insert(
-                codec::zfp::IDENTIFIER.to_string(),
-                "numcodecs.zfpy".to_string(),
-            );
-            experimental_codec_names.insert(
-                codec::pcodec::IDENTIFIER.to_string(),
-                "numcodecs.pcodec".to_string(),
-            );
-            experimental_codec_names.insert(
-                codec::bz2::IDENTIFIER.to_string(),
-                "numcodecs.bz2".to_string(),
-            );
-        }
-
         let store = Arc::new(FilesystemStore::new(path_in).unwrap());
         let array_in = Array::open(store, "/").unwrap();
 
