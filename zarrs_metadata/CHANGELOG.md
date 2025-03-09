@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `Copy` for `ZstdCompressionLevel`
 - Add `zfpy` codec metadata (unmerged from `zfp`)
 - Add `MetadataConfigurationSerialize` trait
+- Add `extensions` field to `v3::{Array,Group}MetadataV3` (ZEP0009)
 
 ### Changed
 - **Breaking**: Move all codecs into a new `codec` module rather than the `v2`/`v3` modules
