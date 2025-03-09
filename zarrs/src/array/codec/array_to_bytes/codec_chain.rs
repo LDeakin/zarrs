@@ -232,7 +232,6 @@ impl CodecChain {
     }
 
     /// Get the array to bytes codec
-    #[allow(clippy::borrowed_box)]
     #[must_use]
     pub fn array_to_bytes_codec(&self) -> &NamedArrayToBytesCodec {
         &self.array_to_bytes
