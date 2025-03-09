@@ -32,12 +32,12 @@ pub struct VlenCodec {
 
 impl Default for VlenCodec {
     fn default() -> Self {
-        let index_codecs = Arc::new(CodecChain::new(
+        let index_codecs = Arc::new(CodecChain::new_named(
             vec![],
             Arc::new(BytesCodec::new(Some(Endianness::Little))).into(),
             vec![],
         ));
-        let data_codecs = Arc::new(CodecChain::new(
+        let data_codecs = Arc::new(CodecChain::new_named(
             vec![],
             Arc::new(BytesCodec::new(None)).into(),
             vec![],

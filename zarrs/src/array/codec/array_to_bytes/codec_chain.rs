@@ -8,10 +8,10 @@ use crate::{
     array::{
         codec::{
             ArrayCodecTraits, ArrayPartialDecoderCache, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderCache,
-            BytesPartialDecoderTraits, BytesPartialEncoderTraits, Codec, CodecError,
-            CodecMetadataOptions, CodecOptions, CodecTraits, NamedArrayToArrayCodec,
-            NamedArrayToBytesCodec, NamedBytesToBytesCodec,
+            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
+            BytesPartialDecoderCache, BytesPartialDecoderTraits, BytesPartialEncoderTraits,
+            BytesToBytesCodecTraits, Codec, CodecError, CodecMetadataOptions, CodecOptions,
+            CodecTraits, NamedArrayToArrayCodec, NamedArrayToBytesCodec, NamedBytesToBytesCodec,
         },
         concurrency::RecommendedConcurrency,
         ArrayBytes, ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation,
@@ -44,6 +44,26 @@ impl CodecChain {
     /// Create a new codec chain.
     #[must_use]
     pub fn new(
+        array_to_array: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
+        array_to_bytes: Arc<dyn ArrayToBytesCodecTraits>,
+        bytes_to_bytes: Vec<Arc<dyn BytesToBytesCodecTraits>>,
+    ) -> Self {
+        let array_to_array = array_to_array
+            .into_iter()
+            .map(|codec| NamedArrayToArrayCodec::new(codec.default_name(), codec))
+            .collect();
+        let array_to_bytes =
+            NamedArrayToBytesCodec::new(array_to_bytes.default_name(), array_to_bytes);
+        let bytes_to_bytes = bytes_to_bytes
+            .into_iter()
+            .map(|codec| NamedBytesToBytesCodec::new(codec.default_name(), codec))
+            .collect();
+        Self::new_named(array_to_array, array_to_bytes, bytes_to_bytes)
+    }
+
+    /// Create a new codec chain from named codecs.
+    #[must_use]
+    pub fn new_named(
         array_to_array: Vec<NamedArrayToArrayCodec>,
         array_to_bytes: NamedArrayToBytesCodec,
         bytes_to_bytes: Vec<NamedBytesToBytesCodec>,
@@ -143,7 +163,13 @@ impl CodecChain {
 
         array_to_bytes.map_or_else(
             || Err(PluginCreateError::from("missing array to bytes codec")),
-            |array_to_bytes| Ok(Self::new(array_to_array, array_to_bytes, bytes_to_bytes)),
+            |array_to_bytes| {
+                Ok(Self::new_named(
+                    array_to_array,
+                    array_to_bytes,
+                    bytes_to_bytes,
+                ))
+            },
         )
     }
 

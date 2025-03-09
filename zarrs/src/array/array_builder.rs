@@ -343,7 +343,7 @@ impl ArrayBuilder {
             }
         }
 
-        let codec_chain = CodecChain::new(
+        let codec_chain = CodecChain::new_named(
             self.array_to_array_codecs.clone(),
             self.array_to_bytes_codec.clone(),
             self.bytes_to_bytes_codecs.clone(),
