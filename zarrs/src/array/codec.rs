@@ -13,12 +13,15 @@
 pub mod array_to_array;
 pub mod array_to_bytes;
 pub mod bytes_to_bytes;
-pub mod metadata_options;
-pub mod options;
+mod options;
+
+mod named_codec;
+pub use named_codec::{
+    NamedArrayToArrayCodec, NamedArrayToBytesCodec, NamedBytesToBytesCodec, NamedCodec,
+};
 
 use derive_more::derive::Display;
-pub use metadata_options::CodecMetadataOptions;
-pub use options::{CodecOptions, CodecOptionsBuilder};
+pub use options::{CodecMetadataOptions, CodecOptions, CodecOptionsBuilder};
 
 // Array to array
 #[cfg(feature = "bitround")]
@@ -43,6 +46,8 @@ pub use array_to_bytes::sharding::{
 };
 #[cfg(feature = "zfp")]
 pub use array_to_bytes::zfp::{ZfpCodec, ZfpCodecConfiguration, ZfpCodecConfigurationV1};
+#[cfg(feature = "zfp")]
+pub use array_to_bytes::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationNumcodecs};
 
 // Bytes to bytes
 #[cfg(feature = "blosc")]
@@ -79,8 +84,11 @@ pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefaul
 
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
-use zarrs_metadata::ArrayShape;
+use zarrs_data_type::DataTypeExtensionError;
+use zarrs_metadata::{ArrayShape, CodecName};
+use zarrs_plugin::{MetadataConfiguration, PluginUnsupportedError};
 
+use crate::config::global_config;
 use crate::storage::{StoreKeyOffsetValue, WritableStorage};
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
@@ -97,16 +105,27 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use super::RawBytesOffsetsOutOfBoundsError;
 use super::{
     array_bytes::RawBytesOffsetsCreateError, concurrency::RecommendedConcurrency, ArrayBytes,
     ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation, ChunkShape, DataType,
-    RawBytes,
+    RawBytes, RawBytesOffsetsOutOfBoundsError,
 };
 
 /// A codec plugin.
-pub type CodecPlugin = Plugin<Codec>;
+#[derive(derive_more::Deref)]
+pub struct CodecPlugin(Plugin<Codec, MetadataV3>);
 inventory::collect!(CodecPlugin);
+
+impl CodecPlugin {
+    /// Create a new [`CodecPlugin`].
+    pub const fn new(
+        identifier: &'static str,
+        match_name_fn: fn(name: &str) -> bool,
+        create_fn: fn(metadata: &MetadataV3) -> Result<Codec, PluginCreateError>,
+    ) -> Self {
+        Self(Plugin::new(identifier, match_name_fn, create_fn))
+    }
+}
 
 /// A generic array to array, array to bytes, or bytes to bytes codec.
 #[derive(Debug)]
@@ -157,6 +176,10 @@ impl Codec {
                 array_to_bytes::zfp::IDENTIFIER => {
                     return array_to_bytes::zfp::create_codec_zfp(metadata);
                 }
+                #[cfg(feature = "zfp")]
+                array_to_bytes::zfpy::IDENTIFIER => {
+                    return array_to_bytes::zfpy::create_codec_zfpy(metadata);
+                }
                 array_to_bytes::vlen::IDENTIFIER => {
                     return array_to_bytes::vlen::create_codec_vlen(metadata);
                 }
@@ -190,25 +213,44 @@ impl Codec {
                 _ => {}
             }
         }
-        Err(PluginCreateError::Unsupported {
-            name: metadata.name().to_string(),
-            plugin_type: "codec".to_string(),
-        })
+        Err(PluginUnsupportedError::new(
+            metadata.name().to_string(),
+            metadata.configuration().cloned(),
+            "codec".to_string(),
+        )
+        .into())
     }
 }
 
 /// Codec traits.
 pub trait CodecTraits: Send + Sync {
-    /// Create metadata.
-    ///
-    /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3>;
+    /// The unique identifier for the codec.
+    fn identifier(&self) -> &str;
 
-    /// Create metadata with default options.
+    /// The default name of the codec.
+    fn default_name(&self) -> String {
+        let identifier = self.identifier();
+        global_config()
+            .codec_map()
+            .get(identifier)
+            .map_or(identifier, CodecName::name)
+            .to_string()
+    }
+
+    /// Create the codec configuration.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn create_metadata(&self) -> Option<MetadataV3> {
-        self.create_metadata_opt(&CodecMetadataOptions::default())
+    fn configuration_opt(
+        &self,
+        name: &str,
+        options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration>;
+
+    /// Create the codec configuration with default options.
+    ///
+    /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
+    fn configuration(&self, name: &str) -> Option<MetadataConfiguration> {
+        self.configuration_opt(name, &CodecMetadataOptions::default())
     }
 
     /// Indicates if the input to a codecs partial decoder should be cached for optimal performance.
@@ -1067,6 +1109,9 @@ pub enum CodecError {
     /// Variable length array bytes offsets are out of bounds.
     #[error(transparent)]
     RawBytesOffsetsOutOfBounds(#[from] RawBytesOffsetsOutOfBoundsError),
+    /// A data type extension error.
+    #[error(transparent)]
+    DataTypeExtension(#[from] DataTypeExtensionError),
 }
 
 impl From<&str> for CodecError {

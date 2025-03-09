@@ -2,17 +2,17 @@
 
 use std::sync::Arc;
 
-use crate::{
-    array::{
-        codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            InvalidBytesLengthError, RecommendedConcurrency,
-        },
-        ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
+use zarrs_data_type::{DataType, DataTypeExtensionError};
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+
+use crate::array::{
+    codec::{
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
+        ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
+        BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        InvalidBytesLengthError, RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -57,10 +57,18 @@ impl BytesCodec {
     }
 
     /// Create a new `bytes` codec from configuration.
-    #[must_use]
-    pub const fn new_with_configuration(configuration: &BytesCodecConfiguration) -> Self {
-        let BytesCodecConfiguration::V1(configuration) = configuration;
-        Self::new(configuration.endian)
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &BytesCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            BytesCodecConfiguration::V1(configuration) => Ok(Self::new(configuration.endian)),
+            _ => Err(PluginCreateError::Other(
+                "this bytes codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 
     fn do_encode_or_decode<'a>(
@@ -99,14 +107,19 @@ impl BytesCodec {
 }
 
 impl CodecTraits for BytesCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = BytesCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = BytesCodecConfiguration::V1(BytesCodecConfigurationV1 {
             endian: self.endian,
-        };
-        Some(
-            MetadataV3::new_with_serializable_configuration(super::IDENTIFIER, &configuration)
-                .unwrap(),
-        )
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -156,7 +169,14 @@ impl ArrayToBytesCodecTraits for BytesCodec {
             decoded_representation.data_type().size(),
         )?;
         let bytes = bytes.into_fixed()?;
-        self.do_encode_or_decode(bytes, decoded_representation)
+        let bytes_encoded = match decoded_representation.data_type() {
+            DataType::Extension(ext) => ext
+                .codec_bytes()?
+                .encode(bytes, self.endian)
+                .map_err(DataTypeExtensionError::from)?,
+            _ => self.do_encode_or_decode(bytes, decoded_representation)?,
+        };
+        Ok(bytes_encoded)
     }
 
     fn decode<'a>(
@@ -165,9 +185,14 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
     ) -> Result<ArrayBytes<'a>, CodecError> {
-        Ok(ArrayBytes::from(
-            self.do_encode_or_decode(bytes, decoded_representation)?,
-        ))
+        let bytes_decoded = match decoded_representation.data_type() {
+            DataType::Extension(ext) => ext
+                .codec_bytes()?
+                .decode(bytes, self.endian)
+                .map_err(DataTypeExtensionError::from)?,
+            _ => self.do_encode_or_decode(bytes, decoded_representation)?,
+        };
+        Ok(ArrayBytes::from(bytes_decoded))
     }
 
     fn partial_decoder(

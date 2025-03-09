@@ -1,6 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::v2::array::codec::zfpy::codec_zfpy_v2_numcodecs_to_v3;
+use zarrs_metadata::codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode};
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use zfp_sys::{
     zfp_compress,
     zfp_stream_maximum_size,
@@ -20,8 +21,7 @@ use crate::{
         },
         BytesRepresentation, ChunkRepresentation, DataType,
     },
-    config::global_config,
-    metadata::v3::{array::codec::zfp::ZfpMode, MetadataV3},
+    metadata::codec::zfp::ZfpMode,
 };
 
 #[cfg(feature = "async")]
@@ -41,7 +41,7 @@ pub struct ZfpCodec {
 }
 
 impl ZfpCodec {
-    /// Create a new `Zfp` codec in expert mode.
+    /// Create a new `zfp` codec in expert mode.
     #[must_use]
     pub const fn new_expert(
         minbits: u32,
@@ -61,7 +61,7 @@ impl ZfpCodec {
         }
     }
 
-    /// Create a new `Zfp` codec in fixed rate mode.
+    /// Create a new `zfp` codec in fixed rate mode.
     #[must_use]
     pub const fn new_fixed_rate(rate: f64, write_header: bool) -> Self {
         Self {
@@ -70,7 +70,7 @@ impl ZfpCodec {
         }
     }
 
-    /// Create a new `Zfp` codec in fixed precision mode.
+    /// Create a new `zfp` codec in fixed precision mode.
     #[must_use]
     pub const fn new_fixed_precision(precision: u32, write_header: bool) -> Self {
         Self {
@@ -79,7 +79,7 @@ impl ZfpCodec {
         }
     }
 
-    /// Create a new `Zfp` codec in fixed accuracy mode.
+    /// Create a new `zfp` codec in fixed accuracy mode.
     #[must_use]
     pub const fn new_fixed_accuracy(tolerance: f64, write_header: bool) -> Self {
         Self {
@@ -88,7 +88,7 @@ impl ZfpCodec {
         }
     }
 
-    /// Create a new `Zfp` codec in reversible mode.
+    /// Create a new `zfp` codec in reversible mode.
     #[must_use]
     pub const fn new_reversible(write_header: bool) -> Self {
         Self {
@@ -97,19 +97,49 @@ impl ZfpCodec {
         }
     }
 
-    /// Create a new `Zfp` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &ZfpCodecConfiguration) -> Self {
+    /// Create a new `zfp` codec a `zfpy` codec configuration.
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration_zfpy(
+        configuration: &ZfpyCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        // zfpy writes a redundant header
+        let write_header = true;
+        match configuration {
+            ZfpyCodecConfiguration::Numcodecs(configuration) => match configuration.mode {
+                ZfpyCodecConfigurationMode::FixedRate { rate } => {
+                    Ok(Self::new_fixed_rate(rate, write_header))
+                }
+                ZfpyCodecConfigurationMode::FixedPrecision { precision } => {
+                    Ok(Self::new_fixed_precision(precision, write_header))
+                }
+                ZfpyCodecConfigurationMode::FixedAccuracy { tolerance } => {
+                    Ok(Self::new_fixed_accuracy(tolerance, write_header))
+                }
+            },
+            _ => Err(PluginCreateError::Other(
+                "this zfpy codec configuration variant is unsupported".to_string(),
+            ))?,
+        }
+    }
+
+    /// Create a new `zfp` codec from configuration.
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &ZfpCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
         let configuration = match configuration {
             ZfpCodecConfiguration::V1(configuration) => configuration.clone(),
-            ZfpCodecConfiguration::NumcodecsZfpy(configuration) => {
-                codec_zfpy_v2_numcodecs_to_v3(configuration)
-            }
+            _ => Err(PluginCreateError::Other(
+                "this zfp codec configuration variant is unsupported".to_string(),
+            ))?,
         };
 
-        let ZfpCodecConfigurationV1 { write_header, mode } = configuration;
-        let write_header = write_header.unwrap_or(false);
-        match mode {
+        let write_header = false;
+        Ok(match configuration.mode {
             ZfpMode::Expert {
                 minbits,
                 maxbits,
@@ -124,26 +154,22 @@ impl ZfpCodec {
                 Self::new_fixed_accuracy(tolerance, write_header)
             }
             ZfpMode::Reversible => Self::new_reversible(write_header),
-        }
+        })
     }
 }
 
 impl CodecTraits for ZfpCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = ZfpCodecConfigurationV1 {
-            write_header: Some(self.write_header),
-            mode: self.mode,
-        };
-        Some(
-            MetadataV3::new_with_serializable_configuration(
-                global_config()
-                    .experimental_codec_names()
-                    .get(super::IDENTIFIER)
-                    .expect("experimental codec identifier in global map"),
-                &configuration,
-            )
-            .unwrap(),
-        )
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        // ZfpyCodecConfigurationNumcodecs is forward compatible with ZfpCodecConfigurationV1
+        Some(ZfpCodecConfiguration::V1(ZfpCodecConfigurationV1 { mode: self.mode }).into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
 - Add `ArrayBytesFixedDisjointView[CreateError]`
+- Add support for data type extensions with `zarrs_data_type` 0.2.0
+- Add `custom_data_type_fixed_size` and `custom_data_type_variable_size` examples
+- Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop
+  - Gated by the `dlpack` feature
+- Add missing `Group::async_child_*` methods
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
@@ -31,6 +36,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use codec identifiers in the example for `experimental_codec_names` remapping
 - Allow `{Array,Group}::new_with_metadata()` and `{Array,Group}Builder` to create arrays with `"must_understand": true` additional fields
   - `{Array,Group}::[async_]open[_opt]` continue to fail with additional fields with `"must_understand": true`
+- Bump `derive_more` to 0.2.0
+- Split the `plugin` module to the `zarrs_plugin` crate
+  - `zarrs_plugin` is re-exported as `zarrs::plugin`
+  - **Breaking**: `Plugin` is now generic over the creation arguments
+  - **Breaking**: `StorageTransformerPlugin` now uses a `Plugin`
+- Add `DataTypeExtension` variant to `CodecError`
+- `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
+- **Breaking**: `ArrayError` is now marked as non-exhaustive
+- Bump `half` to 2.3.1
+- Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
+  - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
+- Refactor `codec` name handling and `CodecTraits` in alignment with ZEP0009 and the [`zarr-extensions`] repository
+  - All "experimental" codecs now use the `zarrs.` prefix (or `numcodecs.` if fully compatible)
+  - Add support for aliased codec names
+  - Enables pass-through of codecs from Zarr V2 to V3 without converting to a V3 equivalent (if supported)
+  - **Breaking**: Add `CodecTraits::{identifier,default_name,configuration[_opt]}()`
+  - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
+- **Breaking**: Change the error type of `node::[async_]get_child_nodes()` and `Group::{children,child_*}()` to `NodeCreateError` instead of `StorageError`
+
+### Fixed
+- Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
 
 ## [0.19.2] - 2025-02-13
 
@@ -1316,6 +1342,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.2.0
+
+[`zarr-extensions`]: https://github.com/zarr-developers/zarr-extensions
 
 [@LDeakin]: https://github.com/LDeakin
 [@lorenzocerrone]: https://github.com/lorenzocerrone

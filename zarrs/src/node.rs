@@ -13,7 +13,6 @@ mod node_path;
 pub use node_path::{NodePath, NodePathError};
 
 mod node_sync;
-pub(crate) use node_sync::_get_child_nodes;
 pub use node_sync::{get_child_nodes, node_exists, node_exists_listable};
 
 mod key;
@@ -24,10 +23,9 @@ pub use key::{
 #[cfg(feature = "async")]
 mod node_async;
 #[cfg(feature = "async")]
-pub(crate) use node_async::_async_get_child_nodes;
-#[cfg(feature = "async")]
 pub use node_async::{async_get_child_nodes, async_node_exists, async_node_exists_listable};
 use zarrs_metadata::v3::group::ConsolidatedMetadataMetadata;
+use zarrs_storage::StorePrefixError;
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -35,8 +33,9 @@ pub use crate::metadata::NodeMetadata;
 use thiserror::Error;
 
 use crate::{
-    array::ArrayMetadata,
+    array::{ArrayCreateError, ArrayMetadata},
     config::MetadataRetrieveVersion,
+    group::GroupCreateError,
     metadata::{
         v2::{ArrayMetadataV2, GroupMetadataV2},
         GroupMetadata,
@@ -77,9 +76,12 @@ impl From<Node> for NodePath {
 /// A node creation error.
 #[derive(Debug, Error)]
 pub enum NodeCreateError {
-    /// An invalid node path
+    /// An invalid node path.
     #[error(transparent)]
     NodePathError(#[from] NodePathError),
+    /// An invalid store prefix.
+    #[error(transparent)]
+    StorePrefixError(#[from] StorePrefixError),
     /// A storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
@@ -91,11 +93,11 @@ pub enum NodeCreateError {
     MissingMetadata,
 }
 
-// FIXME: Remove in the next breaking release
-impl From<NodeCreateError> for StorageError {
+impl From<NodeCreateError> for ArrayCreateError {
     fn from(value: NodeCreateError) -> Self {
-        match value {
+        ArrayCreateError::from(match value {
             NodeCreateError::NodePathError(err) => StorageError::Other(err.to_string()),
+            NodeCreateError::StorePrefixError(err) => StorageError::Other(err.to_string()),
             NodeCreateError::StorageError(err) => err,
             NodeCreateError::MetadataVersionMismatch => {
                 StorageError::Other(NodeCreateError::MetadataVersionMismatch.to_string())
@@ -103,7 +105,23 @@ impl From<NodeCreateError> for StorageError {
             NodeCreateError::MissingMetadata => {
                 StorageError::Other(NodeCreateError::MissingMetadata.to_string())
             }
-        }
+        })
+    }
+}
+
+impl From<NodeCreateError> for GroupCreateError {
+    fn from(value: NodeCreateError) -> Self {
+        GroupCreateError::from(match value {
+            NodeCreateError::NodePathError(err) => StorageError::Other(err.to_string()),
+            NodeCreateError::StorePrefixError(err) => StorageError::Other(err.to_string()),
+            NodeCreateError::StorageError(err) => err,
+            NodeCreateError::MetadataVersionMismatch => {
+                StorageError::Other(NodeCreateError::MetadataVersionMismatch.to_string())
+            }
+            NodeCreateError::MissingMetadata => {
+                StorageError::Other(NodeCreateError::MissingMetadata.to_string())
+            }
+        })
     }
 }
 
@@ -252,7 +270,7 @@ impl Node {
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),
             // TODO: Add consolidated metadata support
-            NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
+            NodeMetadata::Group(_) => get_child_nodes(storage, &path, true)?,
         };
         let node = Self {
             path,
@@ -293,7 +311,7 @@ impl Node {
         let children = match metadata {
             NodeMetadata::Array(_) => Vec::default(),
             // TODO: Add consolidated metadata support
-            NodeMetadata::Group(_) => async_get_child_nodes(&storage, &path).await?,
+            NodeMetadata::Group(_) => async_get_child_nodes(&storage, &path, true).await?,
         };
         let node = Self {
             path,

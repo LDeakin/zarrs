@@ -18,7 +18,7 @@ use zarrs::{
         },
         ArrayBuilder, ArrayMetadataOptions, DataType, FillValue,
     },
-    metadata::v3::array::codec::vlen::VlenCodecConfiguration,
+    metadata::codec::vlen::VlenCodecConfiguration,
     storage::{store::MemoryStore, ReadableWritableListableStorage},
 };
 use zarrs_filesystem::FilesystemStore;

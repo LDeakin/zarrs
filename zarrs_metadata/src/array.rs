@@ -5,6 +5,8 @@
 mod chunk_key_separator;
 pub use chunk_key_separator::ChunkKeySeparator;
 
+pub mod codec;
+
 mod dimension_name;
 pub use dimension_name::DimensionName;
 

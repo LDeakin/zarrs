@@ -216,7 +216,7 @@ impl ElementOwned for String {
     ) -> Result<Vec<Self>, ArrayError> {
         Self::validate_data_type(data_type)?;
         let (bytes, offsets) = bytes.into_variable()?;
-        let mut elements = Vec::with_capacity(offsets.len());
+        let mut elements = Vec::with_capacity(offsets.len().saturating_sub(1));
         for (curr, next) in offsets.iter().tuple_windows() {
             elements.push(
                 Self::from_utf8(bytes[*curr..*next].to_vec())
@@ -276,7 +276,7 @@ impl ElementOwned for Vec<u8> {
     ) -> Result<Vec<Self>, ArrayError> {
         Self::validate_data_type(data_type)?;
         let (bytes, offsets) = bytes.into_variable()?;
-        let mut elements = Vec::with_capacity(offsets.len());
+        let mut elements = Vec::with_capacity(offsets.len().saturating_sub(1));
         for (curr, next) in offsets.iter().tuple_windows() {
             elements.push(bytes[*curr..*next].to_vec());
         }

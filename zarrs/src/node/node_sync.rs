@@ -8,16 +8,19 @@ use crate::{
 };
 
 use super::{
-    meta_key_v2_array, meta_key_v2_group, meta_key_v3, Node, NodeMetadata, NodePath, NodePathError,
+    meta_key_v2_array, meta_key_v2_group, meta_key_v3, Node, NodeCreateError, NodeMetadata,
+    NodePath, NodePathError,
 };
 
-// TODO: Replace get_child_nodes with this method in the next breaking release
-// TODO: Change to NodeCreateError in the next breaking release
-pub(crate) fn _get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
+/// Get the child nodes.
+///
+/// # Errors
+/// Returns a [`StorageError`] if there is an underlying error with the store.
+pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
     storage: &Arc<TStorage>,
     path: &NodePath,
     recursive: bool,
-) -> Result<Vec<Node>, StorageError> {
+) -> Result<Vec<Node>, NodeCreateError> {
     let prefix: StorePrefix = path.try_into()?;
     let prefixes = discover_children(storage, &prefix)?;
     let mut nodes: Vec<Node> = Vec::new();
@@ -33,7 +36,7 @@ pub(crate) fn _get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + Listab
         let children = if recursive {
             match child_metadata {
                 NodeMetadata::Array(_) => Vec::default(),
-                NodeMetadata::Group(_) => get_child_nodes(storage, &path)?,
+                NodeMetadata::Group(_) => get_child_nodes(storage, &path, true)?,
             }
         } else {
             vec![]
@@ -41,19 +44,6 @@ pub(crate) fn _get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + Listab
         nodes.push(Node::new_with_metadata(path, child_metadata, children));
     }
     Ok(nodes)
-}
-
-/// Get the child nodes.
-///
-/// # Errors
-/// Returns a [`StorageError`] if there is an underlying error with the store.
-// FIXME: Change to NodeCreateError in the next breaking release
-pub fn get_child_nodes<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits>(
-    storage: &Arc<TStorage>,
-    path: &NodePath,
-) -> Result<Vec<Node>, StorageError> {
-    #[allow(clippy::used_underscore_items)]
-    _get_child_nodes(storage, path, true)
 }
 
 /// Check if a node exists.

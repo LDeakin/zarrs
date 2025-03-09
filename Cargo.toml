@@ -6,6 +6,7 @@ members = [
     "zarrs",
     "zarrs_data_type",
     "zarrs_metadata",
+    "zarrs_plugin",
     "zarrs_storage",
     "zarrs_filesystem",
     "zarrs_http",
@@ -28,12 +29,16 @@ missing_panics_doc = "warn"
 missing_errors_doc = "warn"
 
 [workspace.dependencies.zarrs_data_type]
-version = "0.1.0"
+version = "0.2.0"
 path = "zarrs_data_type"
 
 [workspace.dependencies.zarrs_metadata]
-version = "0.3.5"
+version = "0.4.0"
 path = "zarrs_metadata"
+
+[workspace.dependencies.zarrs_plugin]
+version = "0.1.0"
+path = "zarrs_plugin"
 
 [workspace.dependencies.zarrs_storage]
 version = "0.3.0"
@@ -52,7 +57,7 @@ version = "0.3.0"
 path = "zarrs_object_store"
 
 [workspace.dependencies.zarrs_opendal]
-version = "0.5.0"
+version = "0.6.0"
 path = "zarrs_opendal"
 
 [workspace.dependencies.zarrs_zip]
@@ -63,14 +68,17 @@ path = "zarrs_zip"
 version = "0.11"
 
 [workspace.dependencies.opendal]
-version = "0.51.0"
+version = "0.52.0"
 
 [workspace.dependencies.zip]
 version = "2.1.3"
 
 [workspace.dependencies.half]
-version = "2.0.0"
+version = "2.3.1"
 features = ["bytemuck"]
 
 [workspace.dependencies.num]
 version = "0.4.1"
+
+[workspace.dependencies.inventory]
+version = "0.3.0"

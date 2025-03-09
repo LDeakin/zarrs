@@ -8,9 +8,7 @@
 
 mod storage_transformer_chain;
 pub use storage_transformer_chain::StorageTransformerChain;
-
-mod storage_transformer_plugin;
-pub use storage_transformer_plugin::StorageTransformerPlugin;
+use zarrs_plugin::{Plugin, PluginUnsupportedError};
 
 use std::sync::Arc;
 
@@ -27,6 +25,24 @@ use crate::storage::{AsyncListableStorage, AsyncReadableStorage, AsyncWritableSt
 /// An [`Arc`] wrapped storage transformer.
 pub type StorageTransformer = Arc<dyn StorageTransformerExtension>;
 
+/// A storage transformer plugin.
+#[derive(derive_more::Deref)]
+pub struct StorageTransformerPlugin(Plugin<StorageTransformer, (MetadataV3, NodePath)>);
+inventory::collect!(StorageTransformerPlugin);
+
+impl StorageTransformerPlugin {
+    /// Create a new [`StorageTransformerPlugin`].
+    pub const fn new(
+        identifier: &'static str,
+        match_name_fn: fn(name: &str) -> bool,
+        create_fn: fn(
+            inputs: &(MetadataV3, NodePath),
+        ) -> Result<StorageTransformer, PluginCreateError>,
+    ) -> Self {
+        Self(Plugin::new(identifier, match_name_fn, create_fn))
+    }
+}
+
 /// Create a storage transformer from metadata.
 ///
 /// # Errors
@@ -38,13 +54,15 @@ pub fn try_create_storage_transformer(
 ) -> Result<StorageTransformer, PluginCreateError> {
     for plugin in inventory::iter::<StorageTransformerPlugin> {
         if plugin.match_name(metadata.name()) {
-            return plugin.create(metadata, path);
+            return plugin.create(&(metadata.clone(), path.clone()));
         }
     }
-    Err(PluginCreateError::Unsupported {
-        name: metadata.name().to_string(),
-        plugin_type: "storage transformer".to_string(),
-    })
+    Err(PluginUnsupportedError::new(
+        metadata.name().to_string(),
+        metadata.configuration().cloned(),
+        "storage transformer".to_string(),
+    )
+    .into())
 }
 
 /// A storage transformer extension.

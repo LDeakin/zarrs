@@ -24,6 +24,7 @@ pub use rectangular::RectangularChunkGrid;
 pub use regular::RegularChunkGrid;
 
 use derive_more::{Deref, From};
+use zarrs_plugin::PluginUnsupportedError;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
@@ -38,8 +39,20 @@ use super::{ArrayIndices, ArrayShape, ChunkShape};
 pub struct ChunkGrid(Arc<dyn ChunkGridTraits>);
 
 /// A chunk grid plugin.
-pub type ChunkGridPlugin = Plugin<ChunkGrid>;
+#[derive(derive_more::Deref)]
+pub struct ChunkGridPlugin(Plugin<ChunkGrid, MetadataV3>);
 inventory::collect!(ChunkGridPlugin);
+
+impl ChunkGridPlugin {
+    /// Create a new [`ChunkGridPlugin`].
+    pub const fn new(
+        identifier: &'static str,
+        match_name_fn: fn(name: &str) -> bool,
+        create_fn: fn(metadata: &MetadataV3) -> Result<ChunkGrid, PluginCreateError>,
+    ) -> Self {
+        Self(Plugin::new(identifier, match_name_fn, create_fn))
+    }
+}
 
 impl ChunkGrid {
     /// Create a chunk grid.
@@ -72,10 +85,12 @@ impl ChunkGrid {
                 _ => {}
             }
         }
-        Err(PluginCreateError::Unsupported {
-            name: metadata.name().to_string(),
-            plugin_type: "chunk grid".to_string(),
-        })
+        Err(PluginUnsupportedError::new(
+            metadata.name().to_string(),
+            metadata.configuration().cloned(),
+            "chunk grid".to_string(),
+        )
+        .into())
     }
 }
 

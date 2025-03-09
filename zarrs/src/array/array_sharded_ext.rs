@@ -35,11 +35,7 @@ pub trait ArrayShardedExt: private::Sealed {
 
 impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
     fn is_sharded(&self) -> bool {
-        self.codecs
-            .array_to_bytes_codec()
-            .create_metadata()
-            .expect("the array to bytes codec should have metadata")
-            .name() // TODO: Add codec::identifier()?
+        self.codecs.array_to_bytes_codec().name()
             == super::codec::array_to_bytes::sharding::IDENTIFIER
     }
 
@@ -50,13 +46,13 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
     }
 
     fn inner_chunk_shape(&self) -> Option<ChunkShape> {
-        let codec_metadata = self
+        let configuration = self
             .codecs
             .array_to_bytes_codec()
-            .create_metadata()
+            .configuration()
             .expect("the array to bytes codec should have metadata");
         if let Ok(ShardingCodecConfiguration::V1(sharding_configuration)) =
-            codec_metadata.to_configuration()
+            ShardingCodecConfiguration::try_from(configuration)
         {
             Some(sharding_configuration.chunk_shape)
         } else {

@@ -8,16 +8,25 @@
 [![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?token=OBKJQNAZPP)](https://codecov.io/gh/LDeakin/zarrs)
 [![DOI](https://zenodo.org/badge/695021547.svg)](https://zenodo.org/badge/latestdoi/695021547)
 
-`zarrs` is a Rust library for the [Zarr] storage format for multidimensional arrays and metadata. It supports [Zarr V3] and a V3 compatible subset of [Zarr V2].
+`zarrs` is a Rust library for the [Zarr] storage format for multidimensional arrays and metadata.
+
+`zarrs` supports [Zarr V3] and a V3 compatible subset of [Zarr V2].
+It is fully up-to-date and conformant with the Zarr 3.0 specification with support for:
+- all *core extensions* (data types, codecs, chunk grids, chunk key encodings, storage transformers),
+- all accepted [Zarr Enhancement Proposals (ZEPs)](https://zarr.dev/zeps/) and several draft ZEPs:
+  - ZEP 0003: Variable chunking
+  - ZEP 0007: Strings
+- experimental codecs and data types intended for standardisation, and
+- user-defined custom extensions and stores.
+
+> [!TIP]
+> If you are a Python user, check out [`zarrs-python`].
+> It includes a high-performance codec pipeline for the reference [`zarr-python`] implementation.
 
 A changelog can be found [here][CHANGELOG].
 Correctness issues with past versions are [detailed here][correctness_issues].
 
 Developed at the [Department of Materials Physics, Australian National University, Canberra, Australia].
-
-> [!TIP]
-> If you are a Python user, check out [`zarrs-python`].
-> It includes a high-performance codec pipeline for the reference [`zarr-python`] implementation.
 
 ## Getting Started
 - Review the [implementation status] ([zarr version support], [array support], [storage support], and the [`zarrs` ecosystem](#zarrs-ecosystem)).
@@ -93,6 +102,7 @@ println!("{array_ndarray:4}");
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
 - [`zarrs_data_type`]: Zarr data types (re-exported as `zarrs::data_type`).
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
+- [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
 
 ### Stores
@@ -137,6 +147,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [`zarrs`]: https://github.com/LDeakin/zarrs/tree/main/zarrs
 [`zarrs_data_type`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_data_type
 [`zarrs_metadata`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
+[`zarrs_plugin`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_plugin
 [`zarrs_storage`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
 [`zarrs_filesystem`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
 [`zarrs_http`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http

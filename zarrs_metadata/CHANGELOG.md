@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for a `must_understand` field to `MetadataV3` (ZEP0009)
   - Extensions can now be parsed in more than just the additional fields of array/group metadata (e.g. codecs)
+  - Automatically skip unsupported codecs/storage transformers with `"must_understand": false`
+- Add `CodecMap` and `CodecName` for codec `nam` overriding and aliasing
+- Implement `From<T> for MetadataConfiguration` for all codec configuration enums
+- Implement `Copy` for `ZstdCompressionLevel`
+- Add `zfpy` codec metadata (unmerged from `zfp`)
+- Add `MetadataConfigurationSerialize` trait
+
+### Changed
+- **Breaking**: Move all codecs into a new `codec` module rather than the `v2`/`v3` modules
+- **Breaking**: Refactor `FillValueMetadataV3` to support arbitrary fill value metadata (for ZEP0009)
+- **Breaking**: Rename `DataTypeMetadataV3::Unknown` variant to `Extension`
+- **Breaking**: Mark versioned codec metadata as non-exhaustive
+- **Breaking**: `{array,codec}_metadata_v2_to_v3` have an additional `CodecMap` parameter
+  - `zarrs` has a default codec map accessible via `zarrs::config::global_config().codec_map()`
+- **Breaking**: Remove `write_header` from `zfp` codec configuration
+- Bump `half` to 2.3.1
+
+### Removed
+- **Breaking**: Remove `DataTypeMetadataV3::size[_fixed]()`
+- **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`
+- **Breaking**: Remove all functions in `v3::array::fill_value`
+- **Breaking**: Remove all `FillValueMetadataV3::try_as_*()` methods
+
+## [0.3.6] - 2025-03-02
+
+### Added
+- Make `FillValueFloat::to_float` public
+
+### Changed
+- Bump `derive_more` to 0.2.0
 
 ## [0.3.5] - 2025-02-18
 
@@ -95,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.5...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.6...HEAD
+[0.3.6]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.6
 [0.3.5]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.5
 [0.3.4]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.4
 [0.3.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.3

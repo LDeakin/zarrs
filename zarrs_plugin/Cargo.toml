@@ -1,0 +1,20 @@
+[package]
+name = "zarrs_plugin"
+version = "0.1.0"
+authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
+edition = "2021"
+rust-version = "1.77"
+description = "The plugin API for the zarrs crate"
+homepage = "https://zarrs.dev"
+documentation = "https://docs.rs/zarrs_plugin"
+repository = "https://github.com/LDeakin/zarrs/tree/main/zarrs_plugin"
+license = "MIT OR Apache-2.0"
+keywords = ["zarr", "zarrs", "plugin"]
+categories = ["encoding"]
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = "2.0.0"
+zarrs_metadata = { workspace = true }

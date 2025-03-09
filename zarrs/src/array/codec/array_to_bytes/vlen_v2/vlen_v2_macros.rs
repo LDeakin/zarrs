@@ -10,7 +10,7 @@ macro_rules! vlen_v2_module {
 
         use crate::{
             array::codec::{Codec, CodecPlugin},
-            metadata::v2::array::codec::$module,
+            metadata::codec::$module,
             metadata::v3::MetadataV3,
             plugin::{PluginCreateError, PluginMetadataInvalidError},
         };
@@ -39,7 +39,7 @@ macro_rules! vlen_v2_codec {
     ($struct:ident,$identifier:expr) => {
         use std::sync::Arc;
 
-        use zarrs_metadata::v3::MetadataV3;
+        use zarrs_metadata::v3::MetadataConfiguration;
 
         use crate::array::{
             codec::{
@@ -66,7 +66,7 @@ macro_rules! vlen_v2_codec {
             #[must_use]
             pub fn new() -> Self {
                 Self {
-                    inner: Arc::new(VlenV2Codec::new($identifier.to_string())),
+                    inner: Arc::new(VlenV2Codec::new()),
                 }
             }
         }
@@ -78,8 +78,16 @@ macro_rules! vlen_v2_codec {
         }
 
         impl CodecTraits for $struct {
-            fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3> {
-                self.inner.create_metadata_opt(options)
+            fn identifier(&self) -> &str {
+                super::IDENTIFIER
+            }
+
+            fn configuration_opt(
+                &self,
+                name: &str,
+                options: &CodecMetadataOptions,
+            ) -> Option<MetadataConfiguration> {
+                self.inner.configuration_opt(name, options)
             }
 
             fn partial_decoder_should_cache_input(&self) -> bool {

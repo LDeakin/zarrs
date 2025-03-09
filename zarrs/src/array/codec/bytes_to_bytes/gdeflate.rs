@@ -1,10 +1,16 @@
-//! The `gdeflate` bytes to bytes codec.
+//! The `gdeflate` bytes to bytes codec (Experimental).
 //!
-//! Applies [gdeflate](https://docs.nvidia.com/cuda/nvcomp/gdeflate.html) compression.
+//! Applies [GDeflate](https://docs.nvidia.com/cuda/nvcomp/gdeflate.html) compression.
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
+//!
+//! ### Compatible Implementations
+//! None
+//!
+//! ### Specification
+//! - <https://codec.zarrs.dev/bytes_to_bytes/gdeflate>
 //!
 //! `gdeflate` encoded data sequentially encodes a static header, a dynamic header, and the compressed bytes.
 //!
@@ -16,11 +22,30 @@
 //!  - `COMPRESSED_PAGE_SIZES`: `NUMBER_OF_PAGES` little-endian 64-bit unsigned integers holding the compressed sizes of each page.
 //!
 //! The remaining bytes are the `gdeflate` encoded pages of total length equal to the sum of all `COMPRESSED_PAGE_SIZES`.
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.gdeflate`
+//! - `https://codec.zarrs.dev/bytes_to_bytes/gdeflate`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`GDeflateCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 9
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::gdeflate::GDeflateCodecConfiguration;
+//! # serde_json::from_str::<GDeflateCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod gdeflate_codec;
 mod gdeflate_partial_decoder;
 
-pub use crate::metadata::v3::array::codec::gdeflate::{
+use crate::metadata::codec::gdeflate;
+pub use crate::metadata::codec::gdeflate::{
     GDeflateCodecConfiguration, GDeflateCodecConfigurationV1, GDeflateCompressionLevel,
     GDeflateCompressionLevelError,
 };
@@ -31,7 +56,8 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin, InvalidBytesLengthError},
         RawBytes,
     },
-    metadata::v3::{array::codec::gdeflate, MetadataV3},
+    config::global_config,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -45,14 +71,17 @@ inventory::submit! {
 }
 
 fn is_name_gdeflate(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    global_config()
+        .codec_map()
+        .get(IDENTIFIER)
+        .is_some_and(|map| map.contains(name))
 }
 
 pub(crate) fn create_codec_gdeflate(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: GDeflateCodecConfiguration = metadata
         .to_configuration()
         .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
+    let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
 
@@ -286,7 +315,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = GDeflateCodec::new_with_configuration(&configuration);
+        let codec = GDeflateCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec
             .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
@@ -305,7 +334,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
@@ -346,7 +375,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GDeflateCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())

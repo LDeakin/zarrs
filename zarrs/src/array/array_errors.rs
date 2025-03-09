@@ -2,9 +2,7 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
-    data_type::{
-        IncompatibleFillValueError, IncompatibleFillValueMetadataError, UnsupportedDataTypeError,
-    },
+    data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
     plugin::PluginCreateError,
@@ -24,7 +22,7 @@ pub enum ArrayCreateError {
     UnsupportedAdditionalFieldError(#[from] UnsupportedAdditionalFieldError),
     /// Unsupported data type.
     #[error(transparent)]
-    DataTypeCreateError(UnsupportedDataTypeError),
+    DataTypeCreateError(PluginCreateError),
     /// Invalid fill value.
     #[error(transparent)]
     InvalidFillValue(#[from] IncompatibleFillValueError),
@@ -62,6 +60,7 @@ pub enum ArrayCreateError {
 
 /// Array errors.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum ArrayError {
     /// A store error.
     #[error(transparent)]
@@ -109,4 +108,8 @@ pub enum ArrayError {
     /// Unsupported method.
     #[error("unsupported array method: {_0}")]
     UnsupportedMethod(String),
+    #[cfg(feature = "dlpack")]
+    /// A `DLPack` error
+    #[error(transparent)]
+    DlPackError(#[from] super::array_dlpack_ext::ArrayDlPackExtError),
 }

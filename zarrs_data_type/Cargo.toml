@@ -1,6 +1,6 @@
 [package]
 name = "zarrs_data_type"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.77"
@@ -22,8 +22,10 @@ all-features = true
 half = { workspace = true }
 num = { workspace = true }
 thiserror = "2.0.0"
-derive_more = { version = "1.0.0", features = ["display", "from"] }
+derive_more = { version = "2.0.0", features = ["deref", "display", "from"] }
 zarrs_metadata = { workspace = true }
+zarrs_plugin = { workspace = true }
+inventory = { workspace = true }
 
 [dev-dependencies]
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }

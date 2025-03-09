@@ -1,23 +1,21 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use zstd::zstd_safe;
 
-use crate::{
-    array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use crate::array::{
+    codec::{
+        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
-use super::{zstd_partial_decoder, ZstdCodecConfiguration, ZstdCodecConfigurationV1, IDENTIFIER};
+use super::{zstd_partial_decoder, ZstdCodecConfiguration, ZstdCodecConfigurationV1};
 
 /// A `zstd` codec implementation.
 #[derive(Clone, Debug)]
@@ -37,23 +35,43 @@ impl ZstdCodec {
     }
 
     /// Create a new `Zstd` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &ZstdCodecConfiguration) -> Self {
-        let ZstdCodecConfiguration::V1(configuration) = configuration;
-        Self {
-            compression: configuration.level.clone().into(),
-            checksum: configuration.checksum,
-        }
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &ZstdCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        let (compression, checksum) = match configuration {
+            ZstdCodecConfiguration::V1(configuration) => {
+                (configuration.level, configuration.checksum)
+            }
+            ZstdCodecConfiguration::Numcodecs(configuration) => (configuration.level, false),
+            _ => Err(PluginCreateError::Other(
+                "this zstd codec configuration variant is unsupported".to_string(),
+            ))?,
+        };
+        Ok(Self {
+            compression: compression.into(),
+            checksum,
+        })
     }
 }
 
 impl CodecTraits for ZstdCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = ZstdCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = ZstdCodecConfiguration::V1(ZstdCodecConfigurationV1 {
             level: self.compression.into(),
             checksum: self.checksum,
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

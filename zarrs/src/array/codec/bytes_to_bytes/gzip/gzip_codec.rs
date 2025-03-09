@@ -5,17 +5,15 @@ use std::{
 };
 
 use flate2::bufread::{GzDecoder, GzEncoder};
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
-use crate::{
-    array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use crate::array::{
+    codec::{
+        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
+        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -23,7 +21,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
     gzip_partial_decoder, GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
-    GzipCompressionLevelError, IDENTIFIER,
+    GzipCompressionLevelError,
 };
 
 /// A `gzip` codec implementation.
@@ -43,21 +41,37 @@ impl GzipCodec {
     }
 
     /// Create a new `gzip` codec from configuration.
-    #[must_use]
-    pub const fn new_with_configuration(configuration: &GzipCodecConfiguration) -> Self {
-        let GzipCodecConfiguration::V1(configuration) = configuration;
-        Self {
-            compression_level: configuration.level,
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &GzipCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            GzipCodecConfiguration::V1(configuration) => Ok(Self {
+                compression_level: configuration.level,
+            }),
+            _ => Err(PluginCreateError::Other(
+                "this gzip codec configuration variant is unsupported".to_string(),
+            )),
         }
     }
 }
 
 impl CodecTraits for GzipCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = GzipCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = GzipCodecConfiguration::V1(GzipCodecConfigurationV1 {
             level: self.compression_level,
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

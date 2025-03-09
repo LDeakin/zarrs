@@ -1,15 +1,17 @@
 use std::sync::Arc;
 
+use zarrs_plugin::MetadataConfiguration;
+
 use crate::{
     array::{
         codec::{
-            options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
-            CodecError, CodecMetadataOptions, CodecTraits, RecommendedConcurrency,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderTraits,
+            ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault, CodecError,
+            CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         ChunkRepresentation, ChunkShape,
     },
-    metadata::v3::{array::codec::transpose::TransposeCodecConfigurationV1, MetadataV3},
+    metadata::codec::transpose::TransposeCodecConfigurationV1,
     plugin::PluginCreateError,
 };
 
@@ -18,7 +20,7 @@ use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 use super::{
     calculate_order_decode, calculate_order_encode, permute, transpose_array,
-    TransposeCodecConfiguration, TransposeOrder, IDENTIFIER,
+    TransposeCodecConfiguration, TransposeOrder,
 };
 
 /// A Transpose codec implementation.
@@ -36,8 +38,14 @@ impl TransposeCodec {
     pub fn new_with_configuration(
         configuration: &TransposeCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
-        let TransposeCodecConfiguration::V1(configuration) = configuration;
-        Ok(Self::new(configuration.order.clone()))
+        match configuration {
+            TransposeCodecConfiguration::V1(configuration) => {
+                Ok(Self::new(configuration.order.clone()))
+            }
+            _ => Err(PluginCreateError::Other(
+                "this transpose codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 
     /// Create a new transpose codec.
@@ -48,11 +56,19 @@ impl TransposeCodec {
 }
 
 impl CodecTraits for TransposeCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = TransposeCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        super::IDENTIFIER
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = TransposeCodecConfiguration::V1(TransposeCodecConfigurationV1 {
             order: self.order.clone(),
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

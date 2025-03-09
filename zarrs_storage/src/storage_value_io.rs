@@ -69,7 +69,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Read for StorageValueIO<TStorage>
         let data = self
             .storage
             .get_partial_values_key(&self.key, &[ByteRange::FromStart(self.pos, Some(len))])
-            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err.to_string()))?
+            .map_err(|err| std::io::Error::other(err.to_string()))?
             .map(|mut v| v.remove(0));
         if let Some(data) = data {
             buf.copy_from_slice(&data);
@@ -77,8 +77,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits> Read for StorageValueIO<TStorage>
             Ok(data.len())
         } else {
             // This shouldn't happen, the data is only None if the key is not found. Which won't be the case if the size is known.
-            Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            Err(std::io::Error::other(
                 "Failed to get partial values in StorageValueIO",
             ))
         }
