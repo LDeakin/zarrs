@@ -45,8 +45,8 @@ pub enum DataTypeMetadataV3 {
     String,
     /// Variable-sized binary data.
     Bytes,
-    /// An unknown data type.
-    Unknown(MetadataV3),
+    /// An unknown extension data type.
+    Extension(MetadataV3),
 }
 
 impl serde::Serialize for DataTypeMetadataV3 {
@@ -105,7 +105,7 @@ impl DataTypeMetadataV3 {
             Self::String => "string".to_string(),
             Self::Bytes => "bytes".to_string(),
             Self::RawBits(size) => format!("r{}", size * 8),
-            Self::Unknown(metadata) => metadata.name().to_string(),
+            Self::Extension(metadata) => metadata.name().to_string(),
         }
     }
 
@@ -113,36 +113,8 @@ impl DataTypeMetadataV3 {
     #[must_use]
     pub fn metadata(&self) -> MetadataV3 {
         match self {
-            Self::Unknown(metadata) => metadata.clone(),
+            Self::Extension(metadata) => metadata.clone(),
             _ => MetadataV3::new(&self.name()),
-        }
-    }
-
-    /// Returns the [`DataTypeSize`]. Returns [`None`] for an unknown data type.
-    #[must_use]
-    pub const fn size(&self) -> Option<DataTypeSize> {
-        match self {
-            Self::Bool | Self::Int8 | Self::UInt8 => Some(DataTypeSize::Fixed(1)),
-            Self::Int16 | Self::UInt16 | Self::Float16 | Self::BFloat16 => {
-                Some(DataTypeSize::Fixed(2))
-            }
-            Self::Int32 | Self::UInt32 | Self::Float32 => Some(DataTypeSize::Fixed(4)),
-            Self::Int64 | Self::UInt64 | Self::Float64 | Self::Complex64 => {
-                Some(DataTypeSize::Fixed(8))
-            }
-            Self::Complex128 => Some(DataTypeSize::Fixed(16)),
-            Self::RawBits(size) => Some(DataTypeSize::Fixed(*size)),
-            Self::String | Self::Bytes => Some(DataTypeSize::Variable),
-            Self::Unknown(_) => None,
-        }
-    }
-
-    /// Returns the size in bytes of a known fixed-size data type, otherwise returns [`None`].
-    #[must_use]
-    pub const fn fixed_size(&self) -> Option<usize> {
-        match self.size() {
-            Some(DataTypeSize::Fixed(size)) => Some(size),
-            Some(DataTypeSize::Variable) | None => None,
         }
     }
 
@@ -181,7 +153,7 @@ impl DataTypeMetadataV3 {
             }
         }
 
-        Self::Unknown(metadata.clone())
+        Self::Extension(metadata.clone())
     }
 }
 

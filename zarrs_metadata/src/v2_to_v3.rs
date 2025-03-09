@@ -7,7 +7,7 @@ use crate::{
         transpose::{TransposeCodecConfigurationV1, TransposeOrder},
         zstd::codec_zstd_v2_numcodecs_to_v3,
     },
-    codec::zstd::ZstdCodecConfiguration,
+    codec::{blosc::BloscShuffleModeNumcodecs, zstd::ZstdCodecConfiguration},
     v2::{
         array::{
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
@@ -18,7 +18,7 @@ use crate::{
     v3::{
         array::{
             chunk_grid::regular::RegularChunkGridConfiguration,
-            chunk_key_encoding::v2::V2ChunkKeyEncodingConfiguration,
+            chunk_key_encoding::v2::V2ChunkKeyEncodingConfiguration, data_type::DataTypeSize,
             fill_value::FillValueMetadataV3,
         },
         ArrayMetadataV3, GroupMetadataV3, MetadataV3,
@@ -174,7 +174,34 @@ pub fn codec_metadata_v2_to_v3(
                 let blosc = serde_json::from_value::<BloscCodecConfigurationNumcodecs>(
                     serde_json::to_value(compressor.configuration())?,
                 )?;
-                let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, data_type.size());
+
+                let data_type_size = if blosc.shuffle == BloscShuffleModeNumcodecs::NoShuffle {
+                    // The data type size does not matter
+                    None
+                } else {
+                    // Special case for known Zarr V2 data types
+                    type M = DataTypeMetadataV3;
+                    match data_type {
+                        M::Bool | M::Int8 | M::UInt8 => Some(DataTypeSize::Fixed(1)),
+                        M::Int16 | M::UInt16 | M::Float16 | M::BFloat16 => {
+                            Some(DataTypeSize::Fixed(2))
+                        }
+                        M::Int32 | M::UInt32 | M::Float32 => Some(DataTypeSize::Fixed(4)),
+                        M::Int64 | M::UInt64 | M::Float64 | M::Complex64 => {
+                            Some(DataTypeSize::Fixed(8))
+                        }
+                        M::Complex128 => Some(DataTypeSize::Fixed(16)),
+                        M::RawBits(size) => Some(DataTypeSize::Fixed(*size)),
+                        M::String | M::Bytes => Some(DataTypeSize::Variable),
+                        M::Extension(_) => {
+                            // In this case the metadata will not match how the data is encoded, but it can still be decoded just fine.
+                            // Resaving the array metadata as v3 will not have optimal blosc encoding parameters
+                            None
+                        }
+                    }
+                };
+
+                let configuration = codec_blosc_v2_numcodecs_to_v3(&blosc, data_type_size);
                 codecs.push(MetadataV3::new_with_serializable_configuration(
                     name,
                     &configuration,

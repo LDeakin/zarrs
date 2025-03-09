@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: All functions in `v3::array::fill_value` have been removed
   - **Breaking**: `try_as_*()` methods in `FillValueMetadataV3` have been replaced with more extensive `as_*()` methods
   - **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`
+- **Breaking**: Rename `DataTypeMetadataV3::Unknown` variant to `Extension`
+
+### Removed
+- **Breaking**: Remove `DataTypeMetadataV3::size[_fixed]()`
 
 ## [0.3.6] - 2025-03-02
 

@@ -212,7 +212,7 @@ impl DataType {
             DataTypeMetadataV3::RawBits(size) => Ok(Self::RawBits(*size)),
             DataTypeMetadataV3::String => Ok(Self::String),
             DataTypeMetadataV3::Bytes => Ok(Self::Bytes),
-            DataTypeMetadataV3::Unknown(metadata) => {
+            DataTypeMetadataV3::Extension(metadata) => {
                 for plugin in inventory::iter::<DataTypePlugin> {
                     if plugin.match_name(metadata.name()) {
                         return plugin.create(metadata);
