@@ -10,8 +10,8 @@ use crate::{
 
 use super::{
     codec::{
-        options::CodecOptions, ArrayPartialEncoderTraits, ArrayToBytesCodecTraits,
-        StoragePartialDecoder, StoragePartialEncoder,
+        ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, CodecOptions, StoragePartialDecoder,
+        StoragePartialEncoder,
     },
     concurrency::concurrency_chunks_and_codec,
     update_array_bytes, Array, ArrayError, Element,

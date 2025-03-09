@@ -108,6 +108,12 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 /// ```rust
 #[doc = include_str!("./config/codec_map_default.rs")]
 /// ```
+///
+/// ### Convert Aliased Extension Names
+/// > default: [`false`]
+///
+/// If true, then aliased extension names will be replaced by the standard name if metadata is resaved.
+/// This is part of [`crate::array::codec::CodecMetadataOptions`] (and [`crate::array::ArrayMetadataOptions`])
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -121,6 +127,7 @@ pub struct Config {
     include_zarrs_metadata: bool,
     codec_map: CodecMap,
     experimental_partial_encoding: bool,
+    convert_aliased_extension_names: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -138,6 +145,7 @@ impl Default for Config {
             include_zarrs_metadata: true,
             codec_map,
             experimental_partial_encoding: false,
+            convert_aliased_extension_names: false,
         }
     }
 }
@@ -265,6 +273,21 @@ impl Config {
         experimental_partial_encoding: bool,
     ) -> &mut Self {
         self.experimental_partial_encoding = experimental_partial_encoding;
+        self
+    }
+
+    /// Set the [convert aliased extension names](#convert-aliased-extension-names) configuration.
+    #[must_use]
+    pub fn convert_aliased_extension_names(&self) -> bool {
+        self.convert_aliased_extension_names
+    }
+
+    /// Set the [convert aliased extension names](#convert-aliased-extension-names) configuration.
+    pub fn set_convert_aliased_extension_names(
+        &mut self,
+        convert_aliased_extension_names: bool,
+    ) -> &mut Self {
+        self.convert_aliased_extension_names = convert_aliased_extension_names;
         self
     }
 }

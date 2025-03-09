@@ -5,9 +5,9 @@ use zarrs_plugin::MetadataConfiguration;
 use crate::{
     array::{
         codec::{
-            options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
-            CodecError, CodecMetadataOptions, CodecTraits, RecommendedConcurrency,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderTraits,
+            ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault, CodecError,
+            CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         ChunkRepresentation, ChunkShape,
     },

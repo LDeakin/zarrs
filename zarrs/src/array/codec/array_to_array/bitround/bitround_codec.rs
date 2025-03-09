@@ -4,10 +4,10 @@ use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        array_to_bytes::vlen_v2::IDENTIFIER, options::CodecOptions, ArrayBytes, ArrayCodecTraits,
+        array_to_bytes::vlen_v2::IDENTIFIER, ArrayBytes, ArrayCodecTraits,
         ArrayPartialDecoderTraits, ArrayPartialEncoderTraits, ArrayToArrayCodecTraits,
-        ArrayToArrayPartialEncoderDefault, CodecError, CodecMetadataOptions, CodecTraits,
-        RecommendedConcurrency,
+        ArrayToArrayPartialEncoderDefault, CodecError, CodecMetadataOptions, CodecOptions,
+        CodecTraits, RecommendedConcurrency,
     },
     ChunkRepresentation, ChunkShape, DataType,
 };

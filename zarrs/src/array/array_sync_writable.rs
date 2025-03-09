@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    codec::{options::CodecOptions, ArrayToBytesCodecTraits},
+    codec::{ArrayToBytesCodecTraits, CodecOptions},
     concurrency::concurrency_chunks_and_codec,
     Array, ArrayError, ArrayMetadata, ArrayMetadataOptions, Element,
 };

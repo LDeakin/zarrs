@@ -17,6 +17,7 @@ use crate::{
         ArrayBytes, ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation,
         ChunkShape, RawBytes,
     },
+    config::global_config,
     metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
@@ -149,12 +150,25 @@ impl CodecChain {
     /// Create codec chain metadata.
     #[must_use]
     pub fn create_metadatas_opt(&self, options: &CodecMetadataOptions) -> Vec<MetadataV3> {
+        let config = global_config();
+        let get_name = |identifier: &str| -> Option<&str> {
+            if options.convert_aliased_extension_names() {
+                if let Some(entry) = config.codec_map().get(identifier) {
+                    Some(entry.name())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
         let mut metadatas =
             Vec::with_capacity(self.array_to_array.len() + 1 + self.bytes_to_bytes.len());
         for codec in &self.array_to_array {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    codec.name(),
+                    get_name(codec.identifier()).unwrap_or(codec.name()),
                     configuration,
                 ));
             }
@@ -163,7 +177,7 @@ impl CodecChain {
             let codec = &self.array_to_bytes;
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    codec.name(),
+                    get_name(codec.identifier()).unwrap_or(codec.name()),
                     configuration,
                 ));
             }
@@ -171,7 +185,7 @@ impl CodecChain {
         for codec in &self.bytes_to_bytes {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    codec.name(),
+                    get_name(codec.identifier()).unwrap_or(codec.name()),
                     configuration,
                 ));
             }

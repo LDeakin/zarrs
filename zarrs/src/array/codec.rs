@@ -13,8 +13,7 @@
 pub mod array_to_array;
 pub mod array_to_bytes;
 pub mod bytes_to_bytes;
-pub mod metadata_options;
-pub mod options;
+mod options;
 
 mod named_codec;
 pub use named_codec::{
@@ -22,8 +21,7 @@ pub use named_codec::{
 };
 
 use derive_more::derive::Display;
-pub use metadata_options::CodecMetadataOptions;
-pub use options::{CodecOptions, CodecOptionsBuilder};
+pub use options::{CodecMetadataOptions, CodecOptions, CodecOptionsBuilder};
 
 // Array to array
 #[cfg(feature = "bitround")]
@@ -107,11 +105,10 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use super::RawBytesOffsetsOutOfBoundsError;
 use super::{
     array_bytes::RawBytesOffsetsCreateError, concurrency::RecommendedConcurrency, ArrayBytes,
     ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation, ChunkShape, DataType,
-    RawBytes,
+    RawBytes, RawBytesOffsetsOutOfBoundsError,
 };
 
 /// A codec plugin.

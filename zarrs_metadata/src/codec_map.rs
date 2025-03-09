@@ -24,16 +24,33 @@ impl CodecName {
         &self.name
     }
 
+    /// The codec name.
+    pub fn set_name(&mut self, name: String) {
+        self.name = name.into();
+    }
+
     /// Zarr V3 aliases for the codec.
     #[must_use]
     pub fn aliases(&self) -> &HashSet<Cow<'static, str>> {
         &self.aliases
     }
 
+    /// Zarr V3 aliases for the codec.
+    #[must_use]
+    pub fn aliases_mut(&mut self) -> &mut HashSet<Cow<'static, str>> {
+        &mut self.aliases
+    }
+
     /// Zarr V2 aliases for the codec.
     #[must_use]
     pub fn aliases_v2(&self) -> &HashSet<Cow<'static, str>> {
         &self.aliases_v2
+    }
+
+    /// Zarr V2 aliases for the codec.
+    #[must_use]
+    pub fn aliases_v2_mut(&mut self) -> &mut HashSet<Cow<'static, str>> {
+        &mut self.aliases_v2
     }
 
     /// Check if a `name` matches the codec name or any of its aliases.
