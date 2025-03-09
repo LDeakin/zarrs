@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for a `must_understand` field to `MetadataV3` (ZEP0009)
   - Extensions can now be parsed in more than just the additional fields of array/group metadata (e.g. codecs)
+  - Automatically skip unsupported codecs/storage transformers with `"must_understand": false`
 - Add `CodecMap` and `CodecName` for codec `nam` overriding and aliasing
 - Implement `From<T> for MetadataConfiguration` for all codec configuration enums
 - Implement `Copy` for `ZstdCompressionLevel`

@@ -37,7 +37,16 @@ impl StorageTransformerChain {
     ) -> Result<Self, PluginCreateError> {
         let mut storage_transformers = Vec::with_capacity(metadatas.len());
         for metadata in metadatas {
-            let storage_transformer = try_create_storage_transformer(metadata, path)?;
+            let storage_transformer = match try_create_storage_transformer(metadata, path) {
+                Ok(storage_transformer) => Ok(storage_transformer),
+                Err(err) => {
+                    if metadata.must_understand() {
+                        Err(err)
+                    } else {
+                        continue;
+                    }
+                }
+            }?;
             storage_transformers.push(storage_transformer);
         }
         Ok(Self(storage_transformers))
