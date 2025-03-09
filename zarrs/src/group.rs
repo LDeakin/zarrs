@@ -45,14 +45,14 @@ use crate::{
         v3::{AdditionalFields, UnsupportedAdditionalFieldError},
     },
     node::{
-        _get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node, NodePath,
-        NodePathError,
+        get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node,
+        NodeCreateError, NodePath, NodePathError,
     },
     storage::{ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits},
 };
 
 #[cfg(feature = "async")]
-use crate::node::_async_get_child_nodes;
+use crate::node::async_get_child_nodes;
 #[cfg(feature = "async")]
 use crate::storage::{
     AsyncListableStorageTraits, AsyncReadableStorageTraits, AsyncWritableStorageTraits,
@@ -287,10 +287,9 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     /// Return the children of the group
     ///
     /// # Errors
-    /// Returns [`StorageError`] if there is an underlying error with the store.
-    pub fn children(&self, recursive: bool) -> Result<Vec<Node>, StorageError> {
-        #[allow(clippy::used_underscore_items)]
-        _get_child_nodes(&self.storage, &self.path, recursive)
+    /// Returns [`NodeCreateError`] if there is a metadata related error, or an underlying store error.
+    pub fn children(&self, recursive: bool) -> Result<Vec<Node>, NodeCreateError> {
+        get_child_nodes(&self.storage, &self.path, recursive)
     }
 
     /// Return the children of the group that are [`Group`]s
@@ -340,8 +339,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     /// Return the paths of the groups children
     ///
     /// # Errors
-    /// Returns [`StorageError`] if there is an underlying error with the store.
-    pub fn child_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+    /// Returns [`NodeCreateError`] if there is an underlying error with the store.
+    pub fn child_paths(&self, recursive: bool) -> Result<Vec<NodePath>, NodeCreateError> {
         let paths = self
             .children(recursive)?
             .into_iter()
@@ -353,8 +352,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     /// Return the paths of the groups children if the child is a group
     ///
     /// # Errors
-    /// Returns [`StorageError`] if there is an underlying error with the store.
-    pub fn child_group_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+    /// Returns [`NodeCreateError`] if there is an underlying error with the store.
+    pub fn child_group_paths(&self, recursive: bool) -> Result<Vec<NodePath>, NodeCreateError> {
         let paths = self
             .children(recursive)?
             .into_iter()
@@ -369,8 +368,8 @@ impl<TStorage: ?Sized + ReadableStorageTraits + ListableStorageTraits> Group<TSt
     /// Return the paths of the groups children if the child is an array
     ///
     /// # Errors
-    /// Returns [`StorageError`] if there is an underlying error with the store.
-    pub fn child_array_paths(&self, recursive: bool) -> Result<Vec<NodePath>, StorageError> {
+    /// Returns [`NodeCreateError`] if there is an underlying error with the store.
+    pub fn child_array_paths(&self, recursive: bool) -> Result<Vec<NodePath>, NodeCreateError> {
         let paths = self
             .children(recursive)?
             .into_iter()
@@ -447,10 +446,9 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits>
     /// Return the children of the group
     ///
     /// # Errors
-    /// Returns [`StorageError`] if there is an underlying error with the store.
-    pub async fn async_children(&self, recursive: bool) -> Result<Vec<Node>, StorageError> {
-        #[allow(clippy::used_underscore_items)]
-        _async_get_child_nodes(&self.storage, &self.path, recursive).await
+    /// Returns [`NodeCreateError`] if there is a metadata related error, or an underlying store error.
+    pub async fn async_children(&self, recursive: bool) -> Result<Vec<Node>, NodeCreateError> {
+        async_get_child_nodes(&self.storage, &self.path, recursive).await
     }
 
     /// Return the children of the group that are [`Group`]s
@@ -500,6 +498,63 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + AsyncListableStorageTraits>
                 }
             })
             .collect()
+    }
+
+    /// Return the paths of the groups children
+    ///
+    /// # Errors
+    /// Returns [`NodeCreateError`] if there is an underlying error with the store.
+    pub async fn async_child_paths(
+        &self,
+        recursive: bool,
+    ) -> Result<Vec<NodePath>, NodeCreateError> {
+        let paths = self
+            .async_children(recursive)
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        Ok(paths)
+    }
+
+    /// Return the paths of the groups children if the child is a group
+    ///
+    /// # Errors
+    /// Returns [`NodeCreateError`] if there is an underlying error with the store.
+    pub async fn async_child_group_paths(
+        &self,
+        recursive: bool,
+    ) -> Result<Vec<NodePath>, NodeCreateError> {
+        let paths = self
+            .async_children(recursive)
+            .await?
+            .into_iter()
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Group(_) => Some(node.into()),
+                NodeMetadata::Array(_) => None,
+            })
+            .collect();
+        Ok(paths)
+    }
+
+    /// Return the paths of the groups children if the child is an array
+    ///
+    /// # Errors
+    /// Returns [`NodeCreateError`] if there is an underlying error with the store.
+    pub async fn async_child_array_paths(
+        &self,
+        recursive: bool,
+    ) -> Result<Vec<NodePath>, NodeCreateError> {
+        let paths = self
+            .async_children(recursive)
+            .await?
+            .into_iter()
+            .filter_map(|node| match node.metadata() {
+                NodeMetadata::Array(_) => Some(node.into()),
+                NodeMetadata::Group(_) => None,
+            })
+            .collect();
+        Ok(paths)
     }
 }
 
