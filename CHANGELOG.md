@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Gated by the `dlpack` feature
 - Add missing `Group::async_child_*` methods
 - Add `numcodecs.zlib` codec support
+- Add `[Async]BytesPartialDecoderDefault`
+- Add `numcodecs.shuffle` codec support
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape

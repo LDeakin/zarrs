@@ -25,6 +25,8 @@ mod ext {
     pub mod fletcher32;
     /// `pcodec` codec metadata.
     pub mod pcodec;
+    /// `shuffle` codec metadata.
+    pub mod shuffle;
     /// `vlen-array` codec metadata.
     pub mod vlen_array;
     /// `vlen-bytes` codec metadata.

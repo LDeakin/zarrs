@@ -29,6 +29,7 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             (codec::gdeflate::IDENTIFIER, "zarrs.gdeflate".into()),
             (codec::gzip::IDENTIFIER, "gzip".into()),
             (codec::fletcher32::IDENTIFIER, "numcodecs.fletcher32".into()),
+            (codec::shuffle::IDENTIFIER, "numcodecs.shuffle".into()),
             (codec::zlib::IDENTIFIER, "numcodecs.zlib".into()),
             (codec::zstd::IDENTIFIER, "zstd".into()),
         ]),
@@ -54,6 +55,7 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             ("numcodecs.zfpy".into(), codec::zfpy::IDENTIFIER),
             ("numcodecs.bz2".into(), codec::bz2::IDENTIFIER),
             ("numcodecs.fletcher32".into(), codec::fletcher32::IDENTIFIER),
+            ("numcodecs.shuffle".into(), codec::shuffle::IDENTIFIER),
             ("numcodecs.zlib".into(), codec::zlib::IDENTIFIER),
             // zarrs 0.18 / zarr-python 3.0
             ("zstd".into(), codec::zstd::IDENTIFIER),
