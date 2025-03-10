@@ -42,7 +42,6 @@
 //! ```
 
 mod gdeflate_codec;
-mod gdeflate_partial_decoder;
 
 use crate::metadata::codec::gdeflate;
 pub use crate::metadata::codec::gdeflate::{

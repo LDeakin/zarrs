@@ -31,7 +31,6 @@
 //! ```
 
 mod zlib_codec;
-mod zlib_partial_decoder;
 
 use std::sync::Arc;
 

@@ -32,7 +32,6 @@
 //! ```
 
 mod bz2_codec;
-mod bz2_partial_decoder;
 
 use std::sync::Arc;
 

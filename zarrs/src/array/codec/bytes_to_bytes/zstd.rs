@@ -35,7 +35,6 @@
 //! # serde_json::from_str::<ZstdCodecConfiguration>(JSON).unwrap();
 
 mod zstd_codec;
-mod zstd_partial_decoder;
 
 use std::sync::Arc;
 

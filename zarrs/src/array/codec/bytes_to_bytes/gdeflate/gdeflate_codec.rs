@@ -4,19 +4,22 @@ use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        BytesPartialDecoderDefault, BytesPartialDecoderTraits, BytesPartialEncoderDefault,
+        BytesPartialEncoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits,
     },
     BytesRepresentation, RawBytes, RecommendedConcurrency,
 };
 
 #[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderDefault;
+#[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
 use super::{
-    gdeflate_decode, gdeflate_partial_decoder, GDeflateCodecConfiguration,
-    GDeflateCodecConfigurationV1, GDeflateCompressionLevel, GDeflateCompressionLevelError,
-    GDeflateCompressor, GDEFLATE_STATIC_HEADER_LENGTH,
+    gdeflate_decode, GDeflateCodecConfiguration, GDeflateCodecConfigurationV1,
+    GDeflateCompressionLevel, GDeflateCompressionLevelError, GDeflateCompressor,
+    GDEFLATE_STATIC_HEADER_LENGTH,
 };
 
 /// A `gdeflate` codec implementation.
@@ -136,13 +139,15 @@ impl BytesToBytesCodecTraits for GDeflateCodec {
 
     fn partial_decoder(
         self: Arc<Self>,
-        r: Arc<dyn BytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
+        input_handle: Arc<dyn BytesPartialDecoderTraits>,
+        decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(
-            gdeflate_partial_decoder::GDeflatePartialDecoder::new(r),
-        ))
+        Ok(Arc::new(BytesPartialDecoderDefault::new(
+            input_handle,
+            *decoded_representation,
+            self,
+        )))
     }
 
     fn partial_encoder(
@@ -163,13 +168,15 @@ impl BytesToBytesCodecTraits for GDeflateCodec {
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
-        r: Arc<dyn AsyncBytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
+        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
+        decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(
-            gdeflate_partial_decoder::AsyncGDeflatePartialDecoder::new(r),
-        ))
+        Ok(Arc::new(AsyncBytesPartialDecoderDefault::new(
+            input_handle,
+            *decoded_representation,
+            self,
+        )))
     }
 
     fn compute_encoded_size(

@@ -8,19 +8,19 @@ use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-        RecommendedConcurrency,
+        BytesPartialDecoderDefault, BytesPartialDecoderTraits, BytesPartialEncoderDefault,
+        BytesPartialEncoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits, RecommendedConcurrency,
     },
     BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
+use crate::array::codec::AsyncBytesPartialDecoderDefault;
+#[cfg(feature = "async")]
 use crate::array::codec::AsyncBytesPartialDecoderTraits;
 
-use super::{
-    zlib_partial_decoder, ZlibCodecConfiguration, ZlibCodecConfigurationV1, ZlibCompressionLevel,
-};
+use super::{ZlibCodecConfiguration, ZlibCodecConfigurationV1, ZlibCompressionLevel};
 
 /// A `zlib` codec implementation.
 #[derive(Clone, Debug)]
@@ -119,11 +119,13 @@ impl BytesToBytesCodecTraits for ZlibCodec {
     fn partial_decoder(
         self: Arc<Self>,
         input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
+        decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(zlib_partial_decoder::ZlibPartialDecoder::new(
+        Ok(Arc::new(BytesPartialDecoderDefault::new(
             input_handle,
+            *decoded_representation,
+            self,
         )))
     }
 
@@ -146,12 +148,14 @@ impl BytesToBytesCodecTraits for ZlibCodec {
     async fn async_partial_decoder(
         self: Arc<Self>,
         input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
+        decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(
-            zlib_partial_decoder::AsyncZlibPartialDecoder::new(input_handle),
-        ))
+        Ok(Arc::new(AsyncBytesPartialDecoderDefault::new(
+            input_handle,
+            *decoded_representation,
+            self,
+        )))
     }
 
     fn compute_encoded_size(

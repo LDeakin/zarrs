@@ -84,6 +84,15 @@ pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefaul
 
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
+
+mod bytes_partial_decoder_default_sync;
+pub use bytes_partial_decoder_default_sync::BytesPartialDecoderDefault;
+
+#[cfg(feature = "async")]
+mod bytes_partial_decoder_default_async;
+#[cfg(feature = "async")]
+pub use bytes_partial_decoder_default_async::AsyncBytesPartialDecoderDefault;
+
 use zarrs_data_type::DataTypeExtensionError;
 use zarrs_metadata::ArrayShape;
 use zarrs_plugin::{MetadataConfiguration, PluginUnsupportedError};

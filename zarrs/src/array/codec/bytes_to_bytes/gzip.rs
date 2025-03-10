@@ -26,7 +26,6 @@
 //! # serde_json::from_str::<GzipCodecConfiguration>(JSON).unwrap();
 
 mod gzip_codec;
-mod gzip_partial_decoder;
 
 use std::sync::Arc;
 
