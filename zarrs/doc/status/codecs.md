@@ -56,5 +56,5 @@ Codec `name`s and aliases are configurable with [`Config::codec_maps_mut`](confi
 `zarrs` will persist codec names if opening an existing array of creating an array from metadata.
 
 `zarrs` supports arrays created with `zarr-python` 3.x.x with various `numcodecs.zarr3` codecs.
-However, arrays must be written with `numcodecs` 0.15+.
+However, arrays must be written with `numcodecs` 0.15.1+.
 
