@@ -103,7 +103,6 @@ use crate::{
         convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
         RawBytes,
     },
-    config::global_config,
     metadata::codec::vlen,
 };
 
@@ -119,14 +118,11 @@ use super::bytes::reverse_endianness;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_vlen, create_codec_vlen)
+    CodecPlugin::new(IDENTIFIER, is_identifier_vlen, create_codec_vlen)
 }
 
-fn is_name_vlen(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_vlen(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_vlen(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

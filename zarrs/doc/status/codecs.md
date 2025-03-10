@@ -52,7 +52,7 @@
 They may change in future releases without maintaining backwards compatibilty.
 These codecs have not been standardised, but many are fully compatible with other Zarr implementations.
 
-Codec `name`s and aliases are configurable with [`Config::codec_map_mut`](config::Config::codec_map_mut).
+Codec `name`s and aliases are configurable with [`Config::codec_maps_mut`](config::Config::codec_maps_mut).
 `zarrs` will persist codec names if opening an existing array of creating an array from metadata.
 
 `zarrs` supports arrays created with `zarr-python` 3.x.x with various `numcodecs.zarr3` codecs.

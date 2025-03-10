@@ -4,9 +4,9 @@
 
 use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-mod codec_map_default;
-use codec_map_default::codec_map_default;
-use zarrs_metadata::CodecMap;
+mod codec_maps_default;
+use codec_maps_default::codec_maps_default;
+use zarrs_metadata::ExtensionMapsCodec;
 
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
@@ -99,21 +99,33 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///  }
 /// ```
 ///
-/// ### Codec Map
+/// ### Codec Maps
 /// > default: See below.
 ///
-/// Sets the codec `name` used when serialising and deserialising codecs.
-/// Aliases can be set so `zarrs` can recognise compatible codecs from other implementations / interim codec names.
+/// The default codec `name`s used when serialising codecs, and recognised codec `name` aliases when deserialising codecs.
+/// Codec default `name`s and aliases can be modified at runtime.
+///
+/// Note that the [`NamedCodec`](crate::array::codec::NamedCodec) mechanism means that a serialised codec `name` can differ from the default `name`.
+/// By default, updating and storing the metadata of an array will NOT convert aliased codec names to the default codec name.
+/// This behaviour can be changed with the [convert aliased extension names](#convert-aliased-extension-names) configuration option.
+///
+/// The codec maps enable support for unstandardised codecs, such as:
+/// - codecs registered in the official [`zarr-extensions`](https://github.com/zarr-developers/zarr-extensions) repository that are compatible with `zarrs`,
+/// - `zarrs` experimental codecs with `name`s that have since changed, and
+/// - user-defined custom codecs.
+///
+/// If a codec is not present in the codec maps, the `name` will be inferred as the unique codec identifier.
+/// Codecs registered for that identifier work without any changes required for the codec maps.
 ///
 /// ```rust
-#[doc = include_str!("./config/codec_map_default.rs")]
+#[doc = include_str!("./config/codec_maps_default.rs")]
 /// ```
 ///
 /// ### Convert Aliased Extension Names
 /// > default: [`false`]
 ///
 /// If true, then aliased extension names will be replaced by the standard name if metadata is resaved.
-/// This is part of [`crate::array::codec::CodecMetadataOptions`] (and [`crate::array::ArrayMetadataOptions`])
+/// This sets the default for [`crate::array::codec::CodecMetadataOptions`] (part of [`crate::array::ArrayMetadataOptions`])
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -125,7 +137,7 @@ pub struct Config {
     metadata_convert_version: MetadataConvertVersion,
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
-    codec_map: CodecMap,
+    codec_maps: ExtensionMapsCodec,
     experimental_partial_encoding: bool,
     convert_aliased_extension_names: bool,
 }
@@ -133,7 +145,7 @@ pub struct Config {
 #[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
-        let codec_map = codec_map_default();
+        let codec_maps = codec_maps_default();
         Self {
             validate_checksums: true,
             store_empty_chunks: false,
@@ -143,7 +155,7 @@ impl Default for Config {
             metadata_convert_version: MetadataConvertVersion::Default,
             metadata_erase_version: MetadataEraseVersion::Default,
             include_zarrs_metadata: true,
-            codec_map,
+            codec_maps,
             experimental_partial_encoding: false,
             convert_aliased_extension_names: false,
         }
@@ -250,15 +262,15 @@ impl Config {
         self
     }
 
-    /// Get the [codec mapping](#codec-mapping) configuration.
+    /// Get the [codec maps](#codec-maps) configuration.
     #[must_use]
-    pub fn codec_map(&self) -> &CodecMap {
-        &self.codec_map
+    pub fn codec_maps(&self) -> &ExtensionMapsCodec {
+        &self.codec_maps
     }
 
-    /// Get a mutable reference to the [codec mapping](#codec-mapping) configuration.
-    pub fn codec_map_mut(&mut self) -> &mut CodecMap {
-        &mut self.codec_map
+    /// Get a mutable reference to the [codec maps](#codec-maps) configuration.
+    pub fn codec_maps_mut(&mut self) -> &mut ExtensionMapsCodec {
+        &mut self.codec_maps
     }
 
     /// Get the [experimental partial encoding](#experimental-partial-encoding) configuration.

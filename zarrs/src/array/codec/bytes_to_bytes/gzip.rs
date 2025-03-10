@@ -47,11 +47,11 @@ pub use gzip::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_gzip, create_codec_gzip)
+    CodecPlugin::new(IDENTIFIER, is_identifier_gzip, create_codec_gzip)
 }
 
-fn is_name_gzip(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_gzip(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_gzip(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

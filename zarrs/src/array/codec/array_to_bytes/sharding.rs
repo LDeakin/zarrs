@@ -85,11 +85,11 @@ pub use sharding::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_sharding, create_codec_sharding)
+    CodecPlugin::new(IDENTIFIER, is_identifier_sharding, create_codec_sharding)
 }
 
-fn is_name_sharding(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_sharding(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_sharding(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

@@ -54,11 +54,11 @@ pub use transpose::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_transpose, create_codec_transpose)
+    CodecPlugin::new(IDENTIFIER, is_identifier_transpose, create_codec_transpose)
 }
 
-fn is_name_transpose(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_transpose(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_transpose(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

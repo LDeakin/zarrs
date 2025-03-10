@@ -58,7 +58,6 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         DataType,
     },
-    config::global_config,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -67,14 +66,11 @@ pub use bitround::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_bitround, create_codec_bitround)
+    CodecPlugin::new(IDENTIFIER, is_identifier_bitround, create_codec_bitround)
 }
 
-fn is_name_bitround(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_bitround(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

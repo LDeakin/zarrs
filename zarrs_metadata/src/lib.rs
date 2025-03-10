@@ -21,8 +21,8 @@ pub mod v2;
 /// Zarr V2 to V3 conversion.
 pub mod v2_to_v3;
 
-mod codec_map;
-pub use codec_map::{CodecMap, CodecName};
+mod extension_map;
+pub use extension_map::{ExtensionAliasMap, ExtensionMaps, ExtensionMapsCodec, ExtensionNameMap};
 
 mod extension_type;
 pub use extension_type::{

@@ -112,7 +112,6 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
-    config::global_config,
     metadata::codec::zfp::{self, ZfpMode},
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
@@ -126,14 +125,11 @@ pub use zfp::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zfp, create_codec_zfp)
+    CodecPlugin::new(IDENTIFIER, is_identifier_zfp, create_codec_zfp)
 }
 
-fn is_name_zfp(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_zfp(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

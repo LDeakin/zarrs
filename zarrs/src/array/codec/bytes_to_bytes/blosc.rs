@@ -71,11 +71,11 @@ pub use blosc::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_blosc, create_codec_blosc)
+    CodecPlugin::new(IDENTIFIER, is_identifier_blosc, create_codec_blosc)
 }
 
-fn is_name_blosc(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_blosc(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_blosc(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

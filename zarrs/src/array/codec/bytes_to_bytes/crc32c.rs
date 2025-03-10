@@ -42,11 +42,11 @@ pub use crc32c::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_crc32c, create_codec_crc32c)
+    CodecPlugin::new(IDENTIFIER, is_identifier_crc32c, create_codec_crc32c)
 }
 
-fn is_name_crc32c(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_crc32c(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_crc32c(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

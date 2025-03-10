@@ -54,11 +54,11 @@ pub use bytes::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_bytes, create_codec_bytes)
+    CodecPlugin::new(IDENTIFIER, is_identifier_bytes, create_codec_bytes)
 }
 
-fn is_name_bytes(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_bytes(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

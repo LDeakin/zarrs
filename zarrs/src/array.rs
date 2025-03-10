@@ -400,7 +400,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         // Convert V2 metadata to V3 if it is a compatible subset
         let metadata_v3 = match &metadata {
             ArrayMetadata::V3(v3) => Ok(v3.clone()),
-            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2, global_config().codec_map())
+            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2, global_config().codec_maps())
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
         }?;
 
@@ -625,7 +625,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
             (AM::V3(metadata), V::Default | V::V3) => ArrayMetadata::V3(metadata),
             (AM::V2(metadata), V::Default) => ArrayMetadata::V2(metadata),
             (AM::V2(metadata), V::V3) => {
-                let metadata = array_metadata_v2_to_v3(&metadata, global_config().codec_map())
+                let metadata = array_metadata_v2_to_v3(&metadata, global_config().codec_maps())
                     .expect("conversion succeeded on array creation");
                 AM::V3(metadata)
             }
@@ -798,7 +798,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
         match self.metadata {
             ArrayMetadata::V2(metadata) => {
                 let metadata: ArrayMetadata =
-                    array_metadata_v2_to_v3(&metadata, global_config().codec_map())?.into();
+                    array_metadata_v2_to_v3(&metadata, global_config().codec_maps())?.into();
                 Ok(Self {
                     storage: self.storage,
                     path: self.path,

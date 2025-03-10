@@ -21,11 +21,11 @@ fn array_future_stabilistation_bz2() {
     );
 
     global_config_mut()
-        .codec_map_mut()
+        .codec_maps_mut()
+        .default_names
         .entry(bz2::IDENTIFIER.into())
         .and_modify(|entry| {
-            entry.set_name("bz2".into());
-            entry.aliases_mut().insert("numcodecs.bz2".into());
+            *entry = "bz2".into();
         });
 
     assert_eq!(
