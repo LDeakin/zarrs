@@ -24,6 +24,12 @@ pub mod v2_to_v3;
 mod codec_map;
 pub use codec_map::{CodecMap, CodecName};
 
+mod extension_type;
+pub use extension_type::{
+    ExtensionType, ExtensionTypeChunkGrid, ExtensionTypeChunkKeyEncoding, ExtensionTypeCodec,
+    ExtensionTypeDataType, ExtensionTypeStorageTransformer,
+};
+
 /// An alias for [`v3::MetadataV3`].
 #[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]
 pub type Metadata = v3::MetadataV3;
