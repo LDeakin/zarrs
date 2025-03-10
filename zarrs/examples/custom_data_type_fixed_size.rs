@@ -1,8 +1,21 @@
-#![allow(missing_docs)]
+//! A custom structured data type {x: u64, y:f32}.
+//!
+//! This structure has 16 bytes in-memory due to padding.
+//! It is passed into the codec pieline with padding removed (12 bytes).
+//! The bytes codec properly serialises each element in the requested endianness.
+//!
+//! Fill values are of the form
+//! ```json
+//! {
+//!   "x": 123,
+//!   "y" 4.56
+//! }
+//! ```
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use num::traits::{FromBytes, ToBytes};
+use serde::Deserialize;
 use zarrs::array::{
     ArrayBuilder, ArrayBytes, ArrayError, DataTypeSize, Element, ElementOwned, FillValueMetadataV3,
 };
@@ -18,12 +31,14 @@ use zarrs_metadata::{
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
 use zarrs_storage::store::MemoryStore;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// The in-memory representation of the custom data type.
+#[derive(Deserialize, Clone, Copy, Debug, PartialEq)]
 struct CustomDataTypeFixedSizeElement {
     x: u64,
     y: f32,
 }
 
+/// Defines the conversion of an element to a fill value
 impl From<CustomDataTypeFixedSizeElement> for FillValueMetadataV3 {
     fn from(value: CustomDataTypeFixedSizeElement) -> Self {
         FillValueMetadataV3::from(HashMap::from([
@@ -33,15 +48,20 @@ impl From<CustomDataTypeFixedSizeElement> for FillValueMetadataV3 {
     }
 }
 
+/// The metadata is structured the same as the data type element
 type CustomDataTypeFixedSizeMetadata = CustomDataTypeFixedSizeElement;
 
+/// The padding bytes of CustomDataTypeFixedSizeElement are not serialised.
+/// These are stripped as soon as the data is converted into ArrayBytes *before* it goes into the codec pipeline.
 type CustomDataTypeFixedSizeBytes = [u8; size_of::<u64>() + size_of::<f32>()];
 
+/// These defines how the CustomDataTypeFixedSizeBytes are converted TO little/big endian
+/// Implementing this particular trait (from num-traits) is not necessary, but it is used in DataTypeExtensionBytesCodec/Element/ElementOwned
 impl ToBytes for CustomDataTypeFixedSizeElement {
     type Bytes = CustomDataTypeFixedSizeBytes;
 
     fn to_be_bytes(&self) -> Self::Bytes {
-        let mut bytes = [0; 12];
+        let mut bytes = [0; size_of::<CustomDataTypeFixedSizeBytes>()];
         let (x, y) = bytes.split_at_mut(size_of::<u64>());
         x.copy_from_slice(&self.x.to_be_bytes());
         y.copy_from_slice(&self.y.to_be_bytes());
@@ -49,7 +69,7 @@ impl ToBytes for CustomDataTypeFixedSizeElement {
     }
 
     fn to_le_bytes(&self) -> Self::Bytes {
-        let mut bytes = [0; 12];
+        let mut bytes = [0; size_of::<CustomDataTypeFixedSizeBytes>()];
         let (x, y) = bytes.split_at_mut(size_of::<u64>());
         x.copy_from_slice(&self.x.to_le_bytes());
         y.copy_from_slice(&self.y.to_le_bytes());
@@ -57,6 +77,8 @@ impl ToBytes for CustomDataTypeFixedSizeElement {
     }
 }
 
+/// These defines how the CustomDataTypeFixedSizeBytes are converted FROM little/big endian
+/// Implementing this particular trait (from num-traits) is not necessary, but it is used in DataTypeExtensionBytesCodec/Element/ElementOwned
 impl FromBytes for CustomDataTypeFixedSizeElement {
     type Bytes = CustomDataTypeFixedSizeBytes;
 
@@ -77,6 +99,7 @@ impl FromBytes for CustomDataTypeFixedSizeElement {
     }
 }
 
+/// This defines how an in-memory CustomDataTypeFixedSizeElement is converted into ArrayBytes before encoding via the codec pipeline.
 impl Element for CustomDataTypeFixedSizeElement {
     fn validate_data_type(data_type: &DataType) -> Result<(), ArrayError> {
         (data_type == &DataType::Extension(Arc::new(CustomDataTypeFixedSize)))
@@ -98,6 +121,7 @@ impl Element for CustomDataTypeFixedSizeElement {
     }
 }
 
+/// This defines how ArrayBytes are converted into a CustomDataTypeFixedSizeElement after decoding via the codec pipeline.
 impl ElementOwned for CustomDataTypeFixedSizeElement {
     fn from_array_bytes(
         data_type: &DataType,
@@ -121,6 +145,7 @@ impl ElementOwned for CustomDataTypeFixedSizeElement {
 #[derive(Debug)]
 struct CustomDataTypeFixedSize;
 
+/// A custom unique identifier
 const CUSTOM_NAME: &'static str = "zarrs.test.CustomDataTypeFixedSize";
 
 fn is_custom_dtype(name: &str) -> bool {
@@ -135,10 +160,12 @@ fn create_custom_dtype(metadata: &MetadataV3) -> Result<DataType, PluginCreateEr
     }
 }
 
+// Register the data type so that it can be recognised when opening arrays.
 inventory::submit! {
     DataTypePlugin::new(CUSTOM_NAME, is_custom_dtype, create_custom_dtype)
 }
 
+/// Implement the core data type extension methods
 impl DataTypeExtension for CustomDataTypeFixedSize {
     fn name(&self) -> String {
         CUSTOM_NAME.to_string()
@@ -154,19 +181,9 @@ impl DataTypeExtension for CustomDataTypeFixedSize {
     ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
         let err =
             || IncompatibleFillValueMetadataError::new(self.name(), fill_value_metadata.clone());
-        let metadata_object = fill_value_metadata.as_object().ok_or_else(err)?;
-        let x = metadata_object
-            .get("x")
-            .ok_or_else(err)?
-            .as_u64()
-            .ok_or_else(err)?;
-        let y = metadata_object
-            .get("y")
-            .ok_or_else(err)?
-            .as_f64()
-            .ok_or_else(err)? as f32;
-        let element = CustomDataTypeFixedSizeElement { x, y };
-        Ok(FillValue::new(element.to_ne_bytes().to_vec()))
+        let element_metadata: CustomDataTypeFixedSizeMetadata =
+            fill_value_metadata.as_custom().ok_or_else(err)?;
+        Ok(FillValue::new(element_metadata.to_ne_bytes().to_vec()))
     }
 
     fn metadata_fill_value(
@@ -191,6 +208,7 @@ impl DataTypeExtension for CustomDataTypeFixedSize {
     }
 }
 
+/// Add support for the `bytes` codec. This must be implemented for fixed-size data types, even if they just pass-through the data type.
 impl DataTypeExtensionBytesCodec for CustomDataTypeFixedSize {
     fn encode<'a>(
         &self,
