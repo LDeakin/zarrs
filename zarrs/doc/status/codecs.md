@@ -18,6 +18,7 @@
 |                | [`zstd`]                 | Experimental | **zstd**      |
 |                | [`numcodecs.bz2`]        | Experimental | bz2           |
 |                | [`numcodecs.fletcher32`] | Experimental | fletcher32    |
+|                | [`numcodecs.shuffle`]    | Experimental |               |
 |                | [`numcodecs.zlib`]       | Experimental | zlib          |
 |                | [`zarrs.gdeflate`]       | Experimental | gdeflate      |
 

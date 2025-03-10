@@ -12,6 +12,7 @@ pub mod fletcher32;
 pub mod gdeflate;
 #[cfg(feature = "gzip")]
 pub mod gzip;
+pub mod shuffle;
 #[cfg(feature = "zlib")]
 pub mod zlib;
 #[cfg(feature = "zstd")]
