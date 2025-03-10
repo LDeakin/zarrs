@@ -31,6 +31,8 @@ mod ext {
     pub mod vlen_bytes;
     /// `vlen-utf8` codec metadata.
     pub mod vlen_utf8;
+    /// `zlib` codec metadata.
+    pub mod zlib;
     /// `zstd` codec metadata.
     pub mod zstd;
 }

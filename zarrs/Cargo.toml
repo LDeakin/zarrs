@@ -27,6 +27,7 @@ pcodec = ["dep:pco"] # Enable the experimental pcodec codec
 sharding = [] # Enable the sharding codec
 transpose = ["dep:ndarray"] # Enable the transpose codec
 zfp = ["dep:zfp-sys"] # Enable the experimental zfp codec
+zlib = ["dep:flate2"] # Enable the experimental zlib codec
 zstd = ["dep:zstd"] # Enable the zstd codec
 ndarray = ["dep:ndarray"] # Adds ndarray utility functions to Array
 dlpack =["dep:dlpark"] # Adds dlpack utility functions to Array

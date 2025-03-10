@@ -24,12 +24,13 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             (codec::zfp::IDENTIFIER, "zarrs.zfp".into()),
             // bytes to bytes
             (codec::blosc::IDENTIFIER, "blosc".into()),
-            (codec::crc32c::IDENTIFIER, "crc32c".into()),
-            (codec::gzip::IDENTIFIER, "gzip".into()),
-            (codec::zstd::IDENTIFIER, "zstd".into()),
             (codec::bz2::IDENTIFIER, "numcodecs.bz2".into()),
-            (codec::fletcher32::IDENTIFIER, "numcodecs.fletcher32".into()),
+            (codec::crc32c::IDENTIFIER, "crc32c".into()),
             (codec::gdeflate::IDENTIFIER, "zarrs.gdeflate".into()),
+            (codec::gzip::IDENTIFIER, "gzip".into()),
+            (codec::fletcher32::IDENTIFIER, "numcodecs.fletcher32".into()),
+            (codec::zlib::IDENTIFIER, "numcodecs.zlib".into()),
+            (codec::zstd::IDENTIFIER, "zstd".into()),
         ]),
         // Zarr v3 aliases
         HashMap::from([
@@ -43,13 +44,9 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             ("gzip".into(), codec::gzip::IDENTIFIER),
             // zarrs 0.20
             ("zarrs.bitround".into(), codec::bitround::IDENTIFIER),
-            ("zarrs.pcodec".into(), codec::pcodec::IDENTIFIER),
             ("zarrs.vlen".into(), codec::vlen::IDENTIFIER),
             ("zarrs.vlen_v2".into(), codec::vlen_v2::IDENTIFIER),
             ("zarrs.zfp".into(), codec::zfp::IDENTIFIER),
-            ("zarrs.zfpy".into(), codec::zfpy::IDENTIFIER),
-            ("zarrs.bz2".into(), codec::bz2::IDENTIFIER),
-            ("zarrs.fletcher32".into(), codec::fletcher32::IDENTIFIER),
             ("zarrs.gdeflate".into(), codec::gdeflate::IDENTIFIER),
             // zarrs 0.20 / zarr-python 3.0
             ("numcodecs.bitround".into(), codec::bitround::IDENTIFIER),
@@ -57,6 +54,7 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             ("numcodecs.zfpy".into(), codec::zfpy::IDENTIFIER),
             ("numcodecs.bz2".into(), codec::bz2::IDENTIFIER),
             ("numcodecs.fletcher32".into(), codec::fletcher32::IDENTIFIER),
+            ("numcodecs.zlib".into(), codec::zlib::IDENTIFIER),
             // zarrs 0.18 / zarr-python 3.0
             ("zstd".into(), codec::zstd::IDENTIFIER),
             ("vlen-array".into(), codec::vlen_array::IDENTIFIER),
@@ -86,9 +84,10 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             ("blosc".into(), codec::blosc::IDENTIFIER),
             ("bz2".into(), codec::bz2::IDENTIFIER),
             ("crc32c".into(), codec::crc32c::IDENTIFIER),
-            ("gzip".into(), codec::gzip::IDENTIFIER),
-            ("zstd".into(), codec::zstd::IDENTIFIER),
             ("fletcher32".into(), codec::fletcher32::IDENTIFIER),
+            ("gzip".into(), codec::gzip::IDENTIFIER),
+            ("zlib".into(), codec::zlib::IDENTIFIER),
+            ("zstd".into(), codec::zstd::IDENTIFIER),
         ]),
     )
 }
