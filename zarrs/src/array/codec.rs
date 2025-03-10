@@ -85,7 +85,7 @@ pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefaul
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
 use zarrs_data_type::DataTypeExtensionError;
-use zarrs_metadata::{ArrayShape, CodecName};
+use zarrs_metadata::ArrayShape;
 use zarrs_plugin::{MetadataConfiguration, PluginUnsupportedError};
 
 use crate::config::global_config;
@@ -144,8 +144,14 @@ impl Codec {
     /// # Errors
     /// Returns [`PluginCreateError`] if the metadata is invalid or not associated with a registered codec plugin.
     pub fn from_metadata(metadata: &MetadataV3) -> Result<Self, PluginCreateError> {
+        let identifier = (*global_config()
+            .codec_maps()
+            .aliases_v3
+            .get(metadata.name())
+            .unwrap_or(&metadata.name()))
+        .to_string();
         for plugin in inventory::iter::<CodecPlugin> {
-            if plugin.match_name(metadata.name()) {
+            if plugin.match_name(&identifier) {
                 return plugin.create(metadata);
             }
         }
@@ -231,10 +237,10 @@ pub trait CodecTraits: Send + Sync {
     fn default_name(&self) -> String {
         let identifier = self.identifier();
         global_config()
-            .codec_map()
+            .codec_maps()
+            .default_names
             .get(identifier)
-            .map_or(identifier, CodecName::name)
-            .to_string()
+            .map_or_else(|| identifier.to_string(), ToString::to_string)
     }
 
     /// Create the codec configuration.

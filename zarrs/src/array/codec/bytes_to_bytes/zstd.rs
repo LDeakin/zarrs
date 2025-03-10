@@ -55,11 +55,11 @@ pub use zstd::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zstd, create_codec_zstd)
+    CodecPlugin::new(IDENTIFIER, is_identifier_zstd, create_codec_zstd)
 }
 
-fn is_name_zstd(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_zstd(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_zstd(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

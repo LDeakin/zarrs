@@ -61,7 +61,6 @@ use std::sync::Arc;
 pub use crate::metadata::codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationNumcodecs};
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    config::global_config,
     metadata::codec::zfpy,
 };
 
@@ -72,14 +71,11 @@ use super::zfp::ZfpCodec;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zfpy, create_codec_zfpy)
+    CodecPlugin::new(IDENTIFIER, is_identifier_zfpy, create_codec_zfpy)
 }
 
-fn is_name_zfpy(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_zfpy(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_zfpy(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

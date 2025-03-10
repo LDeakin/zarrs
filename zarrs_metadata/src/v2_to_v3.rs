@@ -8,6 +8,7 @@ use crate::{
         zstd::codec_zstd_v2_numcodecs_to_v3,
     },
     codec::{blosc::BloscShuffleModeNumcodecs, zstd::ZstdCodecConfiguration},
+    extension_map::ExtensionMapsCodec,
     v2::{
         array::{
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
@@ -23,7 +24,7 @@ use crate::{
         },
         ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
-    CodecMap, CodecName, Endianness,
+    Endianness, ExtensionAliasMap, ExtensionNameMap,
 };
 
 use super::v3::array::data_type::DataTypeMetadataV3;
@@ -60,21 +61,16 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     Other(String),
 }
 
-/// Convert a v2 codec `id` to a `zarrs` unique codec identifier.
-fn v2_id_to_identifier<'a>(v2_id: &'a str, codec_map: &'a CodecMap) -> &'a str {
-    for (identifier, name) in codec_map {
-        if name.contains_v2(v2_id) {
-            return identifier;
-        }
-    }
-    v2_id
+/// Convert a v2 extension `id` to a `zarrs` unique codec identifier.
+fn v2_id_to_identifier<'a>(v2_id: &'a str, codec_map: &'a ExtensionAliasMap) -> &'a str {
+    codec_map.get(v2_id).unwrap_or(&v2_id)
 }
 
-/// Convert a `zarrs` unique codec identifier to a Zarr V3 codec name.
-fn identifier_to_name<'a>(identifier: &'a str, codec_map: &'a CodecMap) -> &'a str {
-    codec_map
+/// Convert a `zarrs` unique extension identifier to a Zarr V3 extension `name`.
+fn identifier_to_name<'a>(identifier: &'a str, codec_name_map: &'a ExtensionNameMap) -> &'a str {
+    codec_name_map
         .get(identifier)
-        .map_or(identifier, CodecName::name)
+        .map_or(identifier, AsRef::as_ref)
 }
 
 /// Convert Zarr V2 codec metadata to the equivalent Zarr V3 codec metadata.
@@ -89,7 +85,7 @@ pub fn codec_metadata_v2_to_v3(
     endianness: Option<Endianness>,
     filters: &Option<Vec<MetadataV2>>,
     compressor: &Option<MetadataV2>,
-    codec_map: &CodecMap,
+    codec_maps: &ExtensionMapsCodec,
 ) -> Result<Vec<MetadataV3>, ArrayMetadataV2ToV3ConversionError> {
     let mut codecs: Vec<MetadataV3> = vec![];
 
@@ -114,8 +110,8 @@ pub fn codec_metadata_v2_to_v3(
     let mut has_array_to_bytes = false;
     if let Some(filters) = filters {
         for filter in filters {
-            let identifier = v2_id_to_identifier(filter.id(), codec_map);
-            let name = identifier_to_name(identifier, codec_map);
+            let identifier = v2_id_to_identifier(filter.id(), &codec_maps.aliases_v2);
+            let name = identifier_to_name(identifier, &codec_maps.default_names);
             match identifier {
                 crate::array::codec::vlen_array::IDENTIFIER
                 | crate::array::codec::vlen_bytes::IDENTIFIER
@@ -137,8 +133,8 @@ pub fn codec_metadata_v2_to_v3(
 
     // Compressor (array to bytes codec)
     if let Some(compressor) = compressor {
-        let identifier = v2_id_to_identifier(compressor.id(), codec_map);
-        let name = identifier_to_name(identifier, codec_map);
+        let identifier = v2_id_to_identifier(compressor.id(), &codec_maps.aliases_v2);
+        let name = identifier_to_name(identifier, &codec_maps.default_names);
         match identifier {
             crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
                 // zfpy / pcodec are v2/v3 compatible
@@ -164,8 +160,8 @@ pub fn codec_metadata_v2_to_v3(
 
     // Compressor (bytes to bytes codec)
     if let Some(compressor) = compressor {
-        let identifier = v2_id_to_identifier(compressor.id(), codec_map);
-        let name = identifier_to_name(identifier, codec_map);
+        let identifier = v2_id_to_identifier(compressor.id(), &codec_maps.aliases_v2);
+        let name = identifier_to_name(identifier, &codec_maps.default_names);
         match identifier {
             crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
                 // already handled above
@@ -234,7 +230,7 @@ pub fn codec_metadata_v2_to_v3(
 #[allow(clippy::too_many_lines)]
 pub fn array_metadata_v2_to_v3(
     array_metadata_v2: &ArrayMetadataV2,
-    codec_map: &CodecMap,
+    codec_maps: &ExtensionMapsCodec,
 ) -> Result<ArrayMetadataV3, ArrayMetadataV2ToV3ConversionError> {
     let shape = array_metadata_v2.shape.clone();
     let chunk_grid = MetadataV3::new_with_serializable_configuration(
@@ -304,7 +300,7 @@ pub fn array_metadata_v2_to_v3(
         endianness,
         &array_metadata_v2.filters,
         &array_metadata_v2.compressor,
-        codec_map,
+        codec_maps,
     )?;
 
     let chunk_key_encoding = MetadataV3::new_with_serializable_configuration(

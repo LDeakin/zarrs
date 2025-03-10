@@ -56,7 +56,6 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin, InvalidBytesLengthError},
         RawBytes,
     },
-    config::global_config,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -67,14 +66,11 @@ use std::sync::Arc;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_gdeflate, create_codec_gdeflate)
+    CodecPlugin::new(IDENTIFIER, is_identifier_gdeflate, create_codec_gdeflate)
 }
 
-fn is_name_gdeflate(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_gdeflate(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_gdeflate(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

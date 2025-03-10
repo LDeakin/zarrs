@@ -43,7 +43,6 @@ pub use fletcher32_codec::Fletcher32Codec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    config::global_config,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -52,14 +51,11 @@ pub use fletcher32::IDENTIFIER;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_fletcher32, create_codec_fletcher32)
+    CodecPlugin::new(IDENTIFIER, is_identifier_fletcher32, create_codec_fletcher32)
 }
 
-fn is_name_fletcher32(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_fletcher32(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
 pub(crate) fn create_codec_fletcher32(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

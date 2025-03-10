@@ -51,32 +51,32 @@ use crate::{
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_vlen_v2, create_codec_vlen_v2)
+    CodecPlugin::new(IDENTIFIER, is_identifier_vlen_v2, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::codec::vlen_array::IDENTIFIER, is_name_vlen_array, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_array::IDENTIFIER, is_identifier_vlen_array, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::codec::vlen_bytes::IDENTIFIER, is_name_vlen_bytes, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_bytes::IDENTIFIER, is_identifier_vlen_bytes, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(crate::metadata::codec::vlen_utf8::IDENTIFIER, is_name_vlen_utf8, create_codec_vlen_v2)
+    CodecPlugin::new(crate::metadata::codec::vlen_utf8::IDENTIFIER, is_identifier_vlen_utf8, create_codec_vlen_v2)
 }
 
-fn is_name_vlen_v2(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_vlen_v2(identifier: &str) -> bool {
+    identifier == IDENTIFIER
 }
 
-fn is_name_vlen_array(name: &str) -> bool {
-    name.eq(crate::metadata::codec::vlen_array::IDENTIFIER)
+fn is_identifier_vlen_array(identifier: &str) -> bool {
+    identifier == crate::metadata::codec::vlen_array::IDENTIFIER
 }
 
-fn is_name_vlen_bytes(name: &str) -> bool {
-    name.eq(crate::metadata::codec::vlen_bytes::IDENTIFIER)
+fn is_identifier_vlen_bytes(identifier: &str) -> bool {
+    identifier == crate::metadata::codec::vlen_bytes::IDENTIFIER
 }
 
-fn is_name_vlen_utf8(name: &str) -> bool {
-    name.eq(crate::metadata::codec::vlen_utf8::IDENTIFIER)
+fn is_identifier_vlen_utf8(identifier: &str) -> bool {
+    identifier == crate::metadata::codec::vlen_utf8::IDENTIFIER
 }
 
 pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {

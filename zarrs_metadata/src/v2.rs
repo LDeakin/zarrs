@@ -33,7 +33,7 @@ mod tests {
             transpose::{self, TransposeCodecConfigurationV1},
         },
         v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3_data_type},
-        ChunkKeySeparator, ChunkShape, CodecMap, Endianness,
+        ChunkKeySeparator, ChunkShape, Endianness, ExtensionMaps,
     };
 
     #[test]
@@ -82,8 +82,8 @@ mod tests {
         );
         println!("{array_metadata_v2:?}");
 
-        let codec_map = CodecMap::default();
-        let array_metadata_v3 = array_metadata_v2_to_v3(&array_metadata_v2, &codec_map)?;
+        let codec_maps = ExtensionMaps::default();
+        let array_metadata_v3 = array_metadata_v2_to_v3(&array_metadata_v2, &codec_maps)?;
         println!("{array_metadata_v3:?}");
 
         let first_codec = array_metadata_v3.codecs.first().unwrap();
