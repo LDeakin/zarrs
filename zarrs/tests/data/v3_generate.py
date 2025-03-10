@@ -11,7 +11,7 @@
 
 import zarr
 import numpy as np
-from numcodecs.zarr3 import BZ2, ZFPY, PCodec, Fletcher32
+from numcodecs.zarr3 import BZ2, ZFPY, PCodec, Fletcher32, Zlib
 
 compressor_blosc = zarr.codecs.BloscCodec(cname="zstd", clevel=1, shuffle=zarr.codecs.BloscShuffle.bitshuffle)
 compressor_gzip = zarr.codecs.GzipCodec(level=9)
@@ -20,6 +20,7 @@ serializer_zfpy = ZFPY(mode = 4, tolerance=0.01) # fixed accuracy
 serializer_pcodec = PCodec(level = 8, mode_spec="auto")
 compressor_zstd = zarr.codecs.ZstdCodec(level=5, checksum=False)
 compressor_fletcher32 = Fletcher32()
+compressor_zlib = Zlib(level=8)
 
 data = np.array(
     [
@@ -43,6 +44,7 @@ for compressor_name, compressor in [
     ("bz2", compressor_bz2),
     ("zstd", compressor_zstd),
     ("fletcher32", compressor_fletcher32),
+    ("zlib", compressor_zlib),
 ]:
     array = zarr.create_array(
         f"tests/data/v3_zarr_python/array_{compressor_name}.zarr",

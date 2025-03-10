@@ -18,6 +18,7 @@
 |                | [`zstd`]                 | Experimental | **zstd**      |
 |                | [`numcodecs.bz2`]        | Experimental | bz2           |
 |                | [`numcodecs.fletcher32`] | Experimental | fletcher32    |
+|                | [`numcodecs.zlib`]       | Experimental | zlib          |
 |                | [`zarrs.gdeflate`]       | Experimental | gdeflate      |
 
 <sup>\* Bolded feature flags are part of the default set of features.</sup>
@@ -46,6 +47,7 @@
 [`zstd`]: crate::array::codec::bytes_to_bytes::zstd
 [`numcodecs.bz2`]: crate::array::codec::bytes_to_bytes::gzip
 [`numcodecs.fletcher32`]: crate::array::codec::bytes_to_bytes::fletcher32
+[`numcodecs.zlib`]: crate::array::codec::bytes_to_bytes::zlib
 [`zarrs.gdeflate`]: crate::array::codec::bytes_to_bytes::gdeflate
 
 **Experimental codecs are recommended for evaluation only**.
