@@ -1262,6 +1262,13 @@ mod tests {
         array_v3_numcodecs("tests/data/v3_zarr_python/array_bz2.zarr")
     }
 
+    #[cfg(feature = "fletcher32")]
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn array_v3_fletcher32() {
+        array_v3_numcodecs("tests/data/v3_zarr_python/array_fletcher32.zarr")
+    }
+
     #[cfg(feature = "gzip")]
     #[test]
     #[cfg_attr(miri, ignore)]
