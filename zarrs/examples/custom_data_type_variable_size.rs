@@ -175,10 +175,7 @@ fn main() {
     // .storage_transformers(vec![].into())
     .build(store, array_path)
     .unwrap();
-    println!(
-        "{}",
-        serde_json::to_string_pretty(array.metadata()).unwrap()
-    );
+    println!("{}", array.metadata().to_string_pretty());
 
     let data = [
         CustomDataTypeVariableSizeElement::from(Some(1.0)),

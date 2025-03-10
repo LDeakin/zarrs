@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `zfpy` codec metadata (unmerged from `zfp`)
 - Add `MetadataConfigurationSerialize` trait
 - Add `ExtensionType` marker trait and `ExtensionType{DataType,ChunkGrid,ChunkKeyEncoding,Codec,StorageTranformer}`
+- Add `{Array,Group,Node}Metadata::to_string_pretty()`
+- Add `{Array,Group}Metadata{V2,V3}::to_string_pretty()`
 
 ### Changed
 - **Breaking**: Move all codecs into a new `codec` module rather than the `v2`/`v3` modules

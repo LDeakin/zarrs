@@ -70,7 +70,7 @@ let array = ArrayBuilder::new(
 
 // Store the array metadata
 array.store_metadata()?;
-println!("{}", serde_json::to_string_pretty(array.metadata())?);
+println!("{}", array.metadata().to_string_pretty());
 // {
 //     "zarr_format": 3,
 //     "node_type": "array",

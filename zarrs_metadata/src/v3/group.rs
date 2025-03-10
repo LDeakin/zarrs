@@ -69,6 +69,13 @@ impl GroupMetadataV3 {
         }
     }
 
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("group metadata is valid JSON")
+    }
+
     /// Set the user attributes.
     #[must_use]
     pub fn with_attributes(

@@ -47,6 +47,15 @@ pub enum ArrayMetadata {
     V2(v2::ArrayMetadataV2),
 }
 
+impl ArrayMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("array metadata is valid JSON")
+    }
+}
+
 impl TryFrom<&str> for ArrayMetadata {
     type Error = serde_json::Error;
     fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
@@ -62,6 +71,15 @@ pub enum GroupMetadata {
     V3(v3::GroupMetadataV3),
     /// Zarr Version 2.0.
     V2(v2::GroupMetadataV2),
+}
+
+impl GroupMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("group metadata is valid JSON")
+    }
 }
 
 impl TryFrom<&str> for GroupMetadata {
@@ -81,6 +99,15 @@ pub enum NodeMetadata {
 
     /// Group metadata.
     Group(GroupMetadata),
+}
+
+impl NodeMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("node metadata is valid JSON")
+    }
 }
 
 #[cfg(test)]
