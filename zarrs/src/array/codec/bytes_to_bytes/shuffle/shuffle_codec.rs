@@ -76,7 +76,7 @@ impl CodecTraits for ShuffleCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for ShuffleCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -98,7 +98,9 @@ impl BytesToBytesCodecTraits for ShuffleCodec {
             let offset = i * self.elementsize;
             for byte_index in 0..self.elementsize {
                 let j = byte_index * count + i;
-                encoded_value[j] = decoded_value[offset + byte_index];
+                if j.max(offset + byte_index) < decoded_value.len() {
+                    encoded_value[j] = decoded_value[offset + byte_index];
+                }
             }
         }
         Ok(Cow::Owned(encoded_value))
@@ -116,7 +118,9 @@ impl BytesToBytesCodecTraits for ShuffleCodec {
             let offset = i * count;
             for byte_index in 0..count {
                 let j = byte_index * self.elementsize + i;
-                decoded_value[j] = encoded_value[offset + byte_index];
+                if j.max(offset + byte_index) < decoded_value.len() {
+                    decoded_value[j] = encoded_value[offset + byte_index];
+                }
             }
         }
         Ok(Cow::Owned(decoded_value))
@@ -164,7 +168,7 @@ impl BytesToBytesCodecTraits for ShuffleCodec {
         )))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

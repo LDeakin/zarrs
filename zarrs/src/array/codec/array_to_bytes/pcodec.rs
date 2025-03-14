@@ -116,7 +116,7 @@ mod tests {
         let bytes: Vec<u8> = (0..size).map(|s| s as u8).collect();
         let bytes: ArrayBytes = bytes.into();
 
-        let max_encoded_size = codec.compute_encoded_size(&chunk_representation)?;
+        let max_encoded_size = codec.encoded_representation(&chunk_representation)?;
         let encoded = codec.encode(
             bytes.clone(),
             &chunk_representation,

@@ -85,7 +85,7 @@ impl CodecTraits for GDeflateCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for GDeflateCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -179,13 +179,13 @@ impl BytesToBytesCodecTraits for GDeflateCodec {
         )))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
         match decoded_representation {
             BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {
-                let compressor = GDeflateCompressor::new(self.compression_level).unwrap(); // FIXME: Make compute_encoded_size fallible?
+                let compressor = GDeflateCompressor::new(self.compression_level).unwrap(); // FIXME: Make encoded_representation fallible?
                 let size = usize::try_from(*size).unwrap();
                 let (_, compress_bound) = compressor.get_npages_compress_bound(size);
                 let compress_bound = u64::try_from(compress_bound).unwrap();

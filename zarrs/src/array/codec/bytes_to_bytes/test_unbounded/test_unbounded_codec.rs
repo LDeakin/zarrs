@@ -54,7 +54,7 @@ impl CodecTraits for TestUnboundedCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for TestUnboundedCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -121,7 +121,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         _decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

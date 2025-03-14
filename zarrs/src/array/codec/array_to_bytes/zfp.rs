@@ -651,7 +651,7 @@ mod tests {
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
         let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap());
 
-        let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
+        let max_encoded_size = codec.encoded_representation(&chunk_representation).unwrap();
         let encoded = codec
             .encode(
                 bytes.clone(),
