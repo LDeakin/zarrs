@@ -76,11 +76,19 @@ pub use byte_interval_partial_decoder::ByteIntervalPartialDecoder;
 #[cfg(feature = "async")]
 pub use byte_interval_partial_decoder::AsyncByteIntervalPartialDecoder;
 
-mod array_partial_encoder_default;
-pub use array_partial_encoder_default::ArrayPartialEncoderDefault;
+mod array_partial_encoder_default_sync;
+pub use array_partial_encoder_default_sync::ArrayPartialEncoderDefault;
 
 mod array_to_array_partial_encoder_default;
 pub use array_to_array_partial_encoder_default::ArrayToArrayPartialEncoderDefault;
+
+mod array_partial_decoder_default_sync;
+pub use array_partial_decoder_default_sync::ArrayPartialDecoderDefault;
+
+#[cfg(feature = "async")]
+mod array_partial_decoder_default_async;
+#[cfg(feature = "async")]
+pub use array_partial_decoder_default_async::AsyncArrayPartialDecoderDefault;
 
 mod bytes_partial_encoder_default;
 pub use bytes_partial_encoder_default::BytesPartialEncoderDefault;
