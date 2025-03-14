@@ -65,7 +65,7 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
         if let Some(mut inner_chunk_shape) = inner_chunk_shape {
             for codec in self.codecs().array_to_array_codecs().iter().rev() {
                 inner_chunk_shape = codec
-                    .compute_decoded_shape(inner_chunk_shape)
+                    .decoded_shape(&inner_chunk_shape)
                     .expect("the inner chunk shape is compatible");
             }
             Some(inner_chunk_shape)

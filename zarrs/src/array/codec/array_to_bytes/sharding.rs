@@ -131,7 +131,7 @@ fn compute_index_encoded_size(
     index_codecs: &dyn ArrayToBytesCodecTraits,
     index_array_representation: &ChunkRepresentation,
 ) -> Result<u64, CodecError> {
-    let bytes_representation = index_codecs.compute_encoded_size(index_array_representation)?;
+    let bytes_representation = index_codecs.encoded_representation(index_array_representation)?;
     match bytes_representation {
         BytesRepresentation::FixedSize(size) => Ok(size),
         _ => Err(CodecError::Other(

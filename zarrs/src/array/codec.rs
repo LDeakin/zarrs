@@ -93,7 +93,7 @@ mod bytes_partial_decoder_default_async;
 #[cfg(feature = "async")]
 pub use bytes_partial_decoder_default_async::AsyncBytesPartialDecoderDefault;
 
-use zarrs_data_type::DataTypeExtensionError;
+use zarrs_data_type::{DataTypeExtensionError, FillValue, IncompatibleFillValueError};
 use zarrs_metadata::ArrayShape;
 use zarrs_plugin::{MetadataConfiguration, PluginUnsupportedError};
 
@@ -112,8 +112,10 @@ use crate::storage::AsyncReadableStorage;
 
 use std::any::Any;
 use std::borrow::Cow;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
+use super::ArraySize;
 use super::{
     array_bytes::RawBytesOffsetsCreateError, concurrency::RecommendedConcurrency, ArrayBytes,
     ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation, ChunkShape, DataType,
@@ -631,27 +633,90 @@ impl BytesPartialEncoderTraits for StoragePartialEncoder {
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// Return a dynamic version of the codec.
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits>;
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits>;
 
-    /// Returns the size of the encoded representation given a size of the decoded representation.
+    /// Returns the encoded data type for a given decoded data type.
     ///
     /// # Errors
+    /// Returns a [`CodecError`] if the data type is not supported by this codec.
+    fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError>;
+
+    /// Returns the encoded fill value for a given decoded fill value
     ///
-    /// Returns a [`CodecError`] if the decoded representation is not supported by this codec.
-    fn compute_encoded_size(
+    /// The encoded fill value is computed by applying [`ArrayToArrayCodecTraits::encode`] to the `decoded_fill_value`.
+    /// This may need to be implemented manually if a codec does not support encoding a single element or the encoding is otherwise dependent on the chunk shape.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if the data type is not supported by this codec.
+    fn encoded_fill_value(
+        &self,
+        decoded_data_type: &DataType,
+        decoded_fill_value: &FillValue,
+    ) -> Result<FillValue, CodecError> {
+        let element_representation = ChunkRepresentation::new(
+            vec![unsafe { NonZeroU64::new_unchecked(1) }],
+            decoded_data_type.clone(),
+            decoded_fill_value.clone(),
+        )
+        .map_err(|err| CodecError::Other(err.to_string()))?;
+
+        // Calculate the changed fill value
+        let fill_value = self
+            .encode(
+                ArrayBytes::new_fill_value(
+                    ArraySize::new(decoded_data_type.size(), 1),
+                    decoded_fill_value,
+                ),
+                &element_representation,
+                &CodecOptions::default(),
+            )?
+            .into_fixed()?
+            .into_owned();
+        Ok(FillValue::new(fill_value))
+    }
+
+    /// Returns the shape of the encoded chunk for a given decoded chunk shape.
+    ///
+    /// The default implementation returns the shape unchanged.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if the shape is not supported by this codec.
+    fn encoded_shape(&self, decoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
+        Ok(decoded_shape.to_vec().into())
+    }
+
+    /// Returns the shape of the decoded chunk for a given encoded chunk shape.
+    ///
+    /// The default implementation returns the shape unchanged.
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if the shape is not supported by this codec.
+    fn decoded_shape(&self, encoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
+        Ok(encoded_shape.to_vec().into())
+    }
+
+    /// Returns the encoded chunk representation given the decoded chunk representation.
+    ///
+    /// The default implementation returns the chunk representation from the outputs of
+    /// - [`encoded_data_type`](ArrayToArrayCodecTraits::encoded_data_type),
+    /// - [`encoded_fill_value`](ArrayToArrayCodecTraits::encoded_fill_value), and
+    /// - [`encoded_shape`](ArrayToArrayCodecTraits::encoded_shape).
+    ///
+    /// # Errors
+    /// Returns a [`CodecError`] if the decoded chunk representation is not supported by this codec.
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
-    ) -> Result<ChunkRepresentation, CodecError>;
-
-    /// Returns the size of the decoded representation given a size of the encoded representation.
-    ///
-    /// # Errors
-    ///
-    /// Returns a [`CodecError`] if the encoded representation is not supported by this codec.
-    fn compute_decoded_shape(
-        &self,
-        encoded_representation: ChunkShape,
-    ) -> Result<ChunkShape, CodecError>;
+    ) -> Result<ChunkRepresentation, CodecError> {
+        Ok(ChunkRepresentation::new(
+            self.encoded_shape(decoded_representation.shape())?.into(),
+            self.encoded_data_type(decoded_representation.data_type())?,
+            self.encoded_fill_value(
+                decoded_representation.data_type(),
+                decoded_representation.fill_value(),
+            )?,
+        )?)
+    }
 
     /// Encode a chunk.
     ///
@@ -717,13 +782,13 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     /// Return a dynamic version of the codec.
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits>;
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits>;
 
     /// Returns the size of the encoded representation given a size of the decoded representation.
     ///
     /// # Errors
     /// Returns a [`CodecError`] if the decoded representation is not supported by this codec.
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError>;
@@ -825,7 +890,7 @@ pub trait ArrayToBytesCodecTraits: ArrayCodecTraits + core::fmt::Debug {
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     /// Return a dynamic version of the codec.
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits>;
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits>;
 
     /// Return the maximum internal concurrency supported for the requested decoded representation.
     ///
@@ -837,7 +902,7 @@ pub trait BytesToBytesCodecTraits: CodecTraits + core::fmt::Debug {
     ) -> Result<RecommendedConcurrency, CodecError>;
 
     /// Returns the size of the encoded representation given a size of the decoded representation.
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation;
@@ -1068,6 +1133,7 @@ impl SubsetOutOfBoundsError {
 }
 
 /// A codec error.
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum CodecError {
     /// An IO error.
@@ -1127,6 +1193,9 @@ pub enum CodecError {
     /// A data type extension error.
     #[error(transparent)]
     DataTypeExtension(#[from] DataTypeExtensionError),
+    /// An incompatible fill value error
+    #[error(transparent)]
+    IncompatibleFillValueError(#[from] IncompatibleFillValueError),
 }
 
 impl From<&str> for CodecError {

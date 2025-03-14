@@ -143,7 +143,7 @@ impl ArrayCodecTraits for ShardingCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for ShardingCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
         self as Arc<dyn ArrayToBytesCodecTraits>
     }
 
@@ -163,7 +163,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                 shard_rep.fill_value().clone(),
             )
         };
-        let chunk_bytes_representation = self.inner_codecs.compute_encoded_size(&chunk_rep)?;
+        let chunk_bytes_representation = self.inner_codecs.encoded_representation(&chunk_rep)?;
 
         let bytes = match chunk_bytes_representation {
             BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {
@@ -476,7 +476,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
@@ -490,7 +490,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         };
         let chunk_bytes_representation = self
             .inner_codecs
-            .compute_encoded_size(&chunk_representation)?;
+            .encoded_representation(&chunk_representation)?;
 
         match chunk_bytes_representation {
             BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {

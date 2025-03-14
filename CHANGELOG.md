@@ -58,6 +58,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
 - **Breaking**: Change the error type of `node::[async_]get_child_nodes()` and `Group::{children,child_*}()` to `NodeCreateError` instead of `StorageError`
 - Bump `thiserror` to 2.0.2
+- **Breaking**: Refactor `ArrayToArrayCodecTraits`:
+  - Rename `compute_encoded_size()` to `encoded_representation()` and add a default implementation
+  - Rename `compute_decoded_shape()` to `decoded_shape()`
+  - Add `encoded_shape()`
+  - Add `encoded_fill_value()`
+- **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::compute_encoded_size()` to `encoded_representation()`
+- **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::dynamic()` to `into_dyn()`
+- **Breaking**: Mark `CodecError` as non-exhaustive
+    - Add `IncompatibleFillValueError` variant to `CodecError::IncompatibleFillValueError`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
