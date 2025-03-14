@@ -10,6 +10,7 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
         HashMap::from([
             // array to array
             (codec::transpose::IDENTIFIER, "transpose".into()),
+            (codec::fixedscaleoffset::IDENTIFIER, "numcodecs.fixedscaleoffset".into()),
             (codec::bitround::IDENTIFIER, "zarrs.bitround".into()),
             // array to bytes
             (codec::bytes::IDENTIFIER, "bytes".into()),
@@ -51,6 +52,7 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             ("zarrs.gdeflate".into(), codec::gdeflate::IDENTIFIER),
             // zarrs 0.20 / zarr-python 3.0
             ("numcodecs.bitround".into(), codec::bitround::IDENTIFIER),
+            ("numcodecs.fixedscaleoffset".into(), codec::fixedscaleoffset::IDENTIFIER),
             ("numcodecs.pcodec".into(), codec::pcodec::IDENTIFIER),
             ("numcodecs.zfpy".into(), codec::zfpy::IDENTIFIER),
             ("numcodecs.bz2".into(), codec::bz2::IDENTIFIER),
@@ -76,6 +78,7 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
         HashMap::from([
             // array to array
             ("bitround".into(), codec::bitround::IDENTIFIER),
+            ("fixedscaleoffset".into(), codec::fixedscaleoffset::IDENTIFIER),
             // array to bytes
             ("vlen-array".into(), codec::vlen_array::IDENTIFIER),
             ("vlen-bytes".into(), codec::vlen_bytes::IDENTIFIER),
