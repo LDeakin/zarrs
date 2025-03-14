@@ -6,7 +6,10 @@ use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 mod codec_maps_default;
 use codec_maps_default::codec_maps_default;
-use zarrs_metadata::ExtensionMapsCodec;
+mod data_type_maps_default;
+use data_type_maps_default::data_type_maps_default;
+
+use zarrs_metadata::{ExtensionMapsCodec, ExtensionMapsDataType};
 
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
@@ -121,6 +124,15 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 #[doc = include_str!("./config/codec_maps_default.rs")]
 /// ```
 ///
+/// ### Data Type Maps
+/// > default: See below.
+///
+/// These operate similarly to codec maps, but for data types.
+///
+/// ```rust
+#[doc = include_str!("./config/data_type_maps_default.rs")]
+/// ```
+///
 /// ### Convert Aliased Extension Names
 /// > default: [`false`]
 ///
@@ -138,6 +150,7 @@ pub struct Config {
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
     codec_maps: ExtensionMapsCodec,
+    data_type_maps: ExtensionMapsDataType,
     experimental_partial_encoding: bool,
     convert_aliased_extension_names: bool,
 }
@@ -146,6 +159,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         let codec_maps = codec_maps_default();
+        let data_type_maps = data_type_maps_default();
         Self {
             validate_checksums: true,
             store_empty_chunks: false,
@@ -156,6 +170,7 @@ impl Default for Config {
             metadata_erase_version: MetadataEraseVersion::Default,
             include_zarrs_metadata: true,
             codec_maps,
+            data_type_maps,
             experimental_partial_encoding: false,
             convert_aliased_extension_names: false,
         }
@@ -271,6 +286,17 @@ impl Config {
     /// Get a mutable reference to the [codec maps](#codec-maps) configuration.
     pub fn codec_maps_mut(&mut self) -> &mut ExtensionMapsCodec {
         &mut self.codec_maps
+    }
+
+    /// Get the [data type maps](#data-type-maps) configuration.
+    #[must_use]
+    pub fn data_type_maps(&self) -> &ExtensionMapsDataType {
+        &self.data_type_maps
+    }
+
+    /// Get a mutable reference to the [data type maps](#data-type-maps) configuration.
+    pub fn data_type_maps_mut(&mut self) -> &mut ExtensionMapsDataType {
+        &mut self.data_type_maps
     }
 
     /// Get the [experimental partial encoding](#experimental-partial-encoding) configuration.

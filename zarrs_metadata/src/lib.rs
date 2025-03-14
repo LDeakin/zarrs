@@ -22,7 +22,10 @@ pub mod v2;
 pub mod v2_to_v3;
 
 mod extension_map;
-pub use extension_map::{ExtensionAliasMap, ExtensionMaps, ExtensionMapsCodec, ExtensionNameMap};
+pub use extension_map::{
+    ExtensionAliasMap, ExtensionMaps, ExtensionMapsCodec, ExtensionMapsDataType, ExtensionNameMap,
+    ExtensionRegexReplacements,
+};
 
 mod extension_type;
 pub use extension_type::{

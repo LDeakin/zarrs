@@ -91,5 +91,9 @@ pub(crate) fn codec_maps_default() -> ExtensionMapsCodec {
             ("zlib".into(), codec::zlib::IDENTIFIER),
             ("zstd".into(), codec::zstd::IDENTIFIER),
         ]),
+        // Zarr V3 regex replacements
+        vec![],
+        // Zarr V3 regex replacements
+        vec![],
     )
 }
