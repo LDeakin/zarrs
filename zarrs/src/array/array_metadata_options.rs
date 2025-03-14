@@ -8,6 +8,7 @@ pub struct ArrayMetadataOptions {
     codec_options: CodecMetadataOptions,
     convert_version: MetadataConvertVersion,
     include_zarrs_metadata: bool,
+    convert_aliased_extension_names: bool,
 }
 
 impl Default for ArrayMetadataOptions {
@@ -16,6 +17,7 @@ impl Default for ArrayMetadataOptions {
             codec_options: CodecMetadataOptions::default(),
             convert_version: global_config().metadata_convert_version(),
             include_zarrs_metadata: global_config().include_zarrs_metadata(),
+            convert_aliased_extension_names: global_config().convert_aliased_extension_names(),
         }
     }
 }
@@ -74,6 +76,31 @@ impl ArrayMetadataOptions {
     /// Set the [include zarrs metadata](crate::config::Config#include-zarrs-metadata) configuration.
     pub fn set_include_zarrs_metadata(&mut self, include_zarrs_metadata: bool) -> &mut Self {
         self.include_zarrs_metadata = include_zarrs_metadata;
+        self
+    }
+
+    /// Return the [convert aliased extension names](crate::config::Config#convert-aliased-extension-names) configuration
+    #[must_use]
+    pub fn convert_aliased_extension_names(&self) -> bool {
+        self.convert_aliased_extension_names
+    }
+
+    /// Set the [convert aliased extension names](crate::config::Config#convert-aliased-extension-names) configuration.
+    #[must_use]
+    pub fn with_convert_aliased_extension_names(
+        mut self,
+        convert_aliased_extension_names: bool,
+    ) -> Self {
+        self.convert_aliased_extension_names = convert_aliased_extension_names;
+        self
+    }
+
+    /// Set the [convert aliased extension names](crate::config::Config#convert-aliased-extension-names) configuration.
+    pub fn set_convert_aliased_extension_names(
+        &mut self,
+        convert_aliased_extension_names: bool,
+    ) -> &mut Self {
+        self.convert_aliased_extension_names = convert_aliased_extension_names;
         self
     }
 }

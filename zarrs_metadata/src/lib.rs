@@ -21,14 +21,25 @@ pub mod v2;
 /// Zarr V2 to V3 conversion.
 pub mod v2_to_v3;
 
-mod extension_map;
-pub use extension_map::{ExtensionAliasMap, ExtensionMaps, ExtensionMapsCodec, ExtensionNameMap};
+mod zarr_version;
+pub use zarr_version::{ZarrVersion, ZarrVersion2, ZarrVersion3};
 
 mod extension_type;
 pub use extension_type::{
     ExtensionType, ExtensionTypeChunkGrid, ExtensionTypeChunkKeyEncoding, ExtensionTypeCodec,
     ExtensionTypeDataType, ExtensionTypeStorageTransformer,
 };
+
+mod extension_aliases;
+pub use extension_aliases::{
+    ExtensionAliasMapRegex, ExtensionAliasMapString, ExtensionAliases, ExtensionNameMap,
+};
+
+mod extension_aliases_codec;
+pub use extension_aliases_codec::{ExtensionAliasesCodecV2, ExtensionAliasesCodecV3};
+
+mod extension_aliases_data_type;
+pub use extension_aliases_data_type::{ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3};
 
 /// An alias for [`v3::MetadataV3`].
 #[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]

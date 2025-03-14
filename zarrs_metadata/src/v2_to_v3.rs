@@ -8,7 +8,6 @@ use crate::{
         zstd::codec_zstd_v2_numcodecs_to_v3,
     },
     codec::{blosc::BloscShuffleModeNumcodecs, zstd::ZstdCodecConfiguration},
-    extension_map::ExtensionMapsCodec,
     v2::{
         array::{
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
@@ -24,7 +23,8 @@ use crate::{
         },
         ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
-    Endianness, ExtensionAliasMap, ExtensionNameMap,
+    Endianness, ExtensionAliasesCodecV2, ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2,
+    ExtensionAliasesDataTypeV3,
 };
 
 use super::v3::array::data_type::DataTypeMetadataV3;
@@ -61,23 +61,11 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     Other(String),
 }
 
-/// Convert a v2 extension `id` to a `zarrs` unique codec identifier.
-fn v2_id_to_identifier<'a>(v2_id: &'a str, codec_map: &'a ExtensionAliasMap) -> &'a str {
-    codec_map.get(v2_id).unwrap_or(&v2_id)
-}
-
-/// Convert a `zarrs` unique extension identifier to a Zarr V3 extension `name`.
-fn identifier_to_name<'a>(identifier: &'a str, codec_name_map: &'a ExtensionNameMap) -> &'a str {
-    codec_name_map
-        .get(identifier)
-        .map_or(identifier, AsRef::as_ref)
-}
-
 /// Convert Zarr V2 codec metadata to the equivalent Zarr V3 codec metadata.
 ///
 /// # Errors
 /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is invalid or is not compatible with Zarr V3 metadata.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub fn codec_metadata_v2_to_v3(
     order: ArrayMetadataV2Order,
     dimensionality: usize,
@@ -85,7 +73,8 @@ pub fn codec_metadata_v2_to_v3(
     endianness: Option<Endianness>,
     filters: &Option<Vec<MetadataV2>>,
     compressor: &Option<MetadataV2>,
-    codec_maps: &ExtensionMapsCodec,
+    codec_aliases_v2: &ExtensionAliasesCodecV2,
+    codec_aliases_v3: &ExtensionAliasesCodecV3,
 ) -> Result<Vec<MetadataV3>, ArrayMetadataV2ToV3ConversionError> {
     let mut codecs: Vec<MetadataV3> = vec![];
 
@@ -110,8 +99,8 @@ pub fn codec_metadata_v2_to_v3(
     let mut has_array_to_bytes = false;
     if let Some(filters) = filters {
         for filter in filters {
-            let identifier = v2_id_to_identifier(filter.id(), &codec_maps.aliases_v2);
-            let name = identifier_to_name(identifier, &codec_maps.default_names).to_string();
+            let identifier = codec_aliases_v2.identifier(filter.id());
+            let name = codec_aliases_v3.default_name(identifier).to_string();
             match identifier {
                 crate::array::codec::vlen_array::IDENTIFIER
                 | crate::array::codec::vlen_bytes::IDENTIFIER
@@ -133,8 +122,8 @@ pub fn codec_metadata_v2_to_v3(
 
     // Compressor (array to bytes codec)
     if let Some(compressor) = compressor {
-        let identifier = v2_id_to_identifier(compressor.id(), &codec_maps.aliases_v2);
-        let name = identifier_to_name(identifier, &codec_maps.default_names).to_string();
+        let identifier = codec_aliases_v2.identifier(compressor.id());
+        let name = codec_aliases_v3.default_name(identifier).to_string();
         match identifier {
             crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
                 // zfpy / pcodec are v2/v3 compatible
@@ -160,8 +149,8 @@ pub fn codec_metadata_v2_to_v3(
 
     // Compressor (bytes to bytes codec)
     if let Some(compressor) = compressor {
-        let identifier = v2_id_to_identifier(compressor.id(), &codec_maps.aliases_v2);
-        let name = identifier_to_name(identifier, &codec_maps.default_names).to_string();
+        let identifier = codec_aliases_v2.identifier(compressor.id());
+        let name = codec_aliases_v3.default_name(identifier).to_string();
         match identifier {
             crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
                 // already handled above
@@ -230,7 +219,10 @@ pub fn codec_metadata_v2_to_v3(
 #[allow(clippy::too_many_lines)]
 pub fn array_metadata_v2_to_v3(
     array_metadata_v2: &ArrayMetadataV2,
-    codec_maps: &ExtensionMapsCodec,
+    codec_aliases_v2: &ExtensionAliasesCodecV2,
+    codec_aliases_v3: &ExtensionAliasesCodecV3,
+    data_type_aliases_v2: &ExtensionAliasesDataTypeV2,
+    data_type_aliases_v3: &ExtensionAliasesDataTypeV3,
 ) -> Result<ArrayMetadataV3, ArrayMetadataV2ToV3ConversionError> {
     let shape = array_metadata_v2.shape.clone();
     let chunk_grid = MetadataV3::new_with_serializable_configuration(
@@ -241,7 +233,11 @@ pub fn array_metadata_v2_to_v3(
     )?;
 
     let (Ok(data_type), endianness) = (
-        data_type_metadata_v2_to_v3_data_type(&array_metadata_v2.dtype),
+        data_type_metadata_v2_to_v3_data_type(
+            &array_metadata_v2.dtype,
+            data_type_aliases_v2,
+            data_type_aliases_v3,
+        ),
         data_type_metadata_v2_to_endianness(&array_metadata_v2.dtype)
             .map_err(ArrayMetadataV2ToV3ConversionError::InvalidEndianness)?,
     ) else {
@@ -300,7 +296,8 @@ pub fn array_metadata_v2_to_v3(
         endianness,
         &array_metadata_v2.filters,
         &array_metadata_v2.compressor,
-        codec_maps,
+        codec_aliases_v2,
+        codec_aliases_v3,
     )?;
 
     let chunk_key_encoding = MetadataV3::new_with_serializable_configuration(
@@ -331,34 +328,14 @@ pub struct DataTypeMetadataV2UnsupportedDataTypeError(DataTypeMetadataV2);
 /// Returns a [`DataTypeMetadataV2UnsupportedDataTypeError`] if the data type is not supported.
 pub fn data_type_metadata_v2_to_v3_data_type(
     data_type: &DataTypeMetadataV2,
+    data_type_aliases_v2: &ExtensionAliasesDataTypeV2,
+    data_type_aliases_v3: &ExtensionAliasesDataTypeV3,
 ) -> Result<DataTypeMetadataV3, DataTypeMetadataV2UnsupportedDataTypeError> {
     match data_type {
-        DataTypeMetadataV2::Simple(data_type_str) => {
-            match data_type_str.as_str() {
-                "|b1" => Ok(DataTypeMetadataV3::Bool),
-                "|i1" => Ok(DataTypeMetadataV3::Int8),
-                "<i2" | ">i2" => Ok(DataTypeMetadataV3::Int16),
-                "<i4" | ">i4" => Ok(DataTypeMetadataV3::Int32),
-                "<i8" | ">i8" => Ok(DataTypeMetadataV3::Int64),
-                "|u1" => Ok(DataTypeMetadataV3::UInt8),
-                "<u2" | ">u2" => Ok(DataTypeMetadataV3::UInt16),
-                "<u4" | ">u4" => Ok(DataTypeMetadataV3::UInt32),
-                "<u8" | ">u8" => Ok(DataTypeMetadataV3::UInt64),
-                "<f2" | ">f2" => Ok(DataTypeMetadataV3::Float16),
-                "<f4" | ">f4" => Ok(DataTypeMetadataV3::Float32),
-                "<f8" | ">f8" => Ok(DataTypeMetadataV3::Float64),
-                "<c8" | ">c8" => Ok(DataTypeMetadataV3::Complex64),
-                "<c16" | ">c16" => Ok(DataTypeMetadataV3::Complex128),
-                "|O" => Ok(DataTypeMetadataV3::String), // LEGACY: This is not part of the spec. The dtype for a PyObject, which is what zarr-python 2 uses for string arrays.
-                // TODO "|mX" timedelta
-                // TODO "|MX" datetime
-                // TODO "|SX" string (fixed length sequence of char)
-                // TODO "|UX" string (fixed length sequence of Py_UNICODE)
-                // TODO "|VX" other (void * – each item is a fixed-size chunk of memory)
-                _ => Err(DataTypeMetadataV2UnsupportedDataTypeError(
-                    data_type.clone(),
-                )),
-            }
+        DataTypeMetadataV2::Simple(name) => {
+            let identifier = data_type_aliases_v2.identifier(name);
+            let name = data_type_aliases_v3.default_name(identifier).to_string();
+            Ok(DataTypeMetadataV3::from_metadata(MetadataV3::new(name)))
         }
         DataTypeMetadataV2::Structured(_) => Err(DataTypeMetadataV2UnsupportedDataTypeError(
             data_type.clone(),

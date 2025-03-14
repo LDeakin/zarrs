@@ -2,9 +2,6 @@
 
 use std::sync::Arc;
 
-use zarrs_metadata::ExtensionNameMap;
-use zarrs_plugin::MetadataConfiguration;
-
 use crate::{
     array::{
         codec::{
@@ -13,14 +10,13 @@ use crate::{
             BytesPartialDecoderCache, BytesPartialDecoderTraits, BytesPartialEncoderTraits,
             BytesToBytesCodecTraits, Codec, CodecError, CodecMetadataOptions, CodecOptions,
             CodecTraits, NamedArrayToArrayCodec, NamedArrayToBytesCodec, NamedBytesToBytesCodec,
-            NamedCodec,
         },
         concurrency::RecommendedConcurrency,
         ArrayBytes, ArrayBytesFixedDisjointView, BytesRepresentation, ChunkRepresentation,
         ChunkShape, RawBytes,
     },
     config::global_config,
-    metadata::v3::MetadataV3,
+    metadata::v3::{MetadataConfiguration, MetadataV3},
     plugin::PluginCreateError,
 };
 
@@ -40,20 +36,6 @@ pub struct CodecChain {
     array_to_bytes: NamedArrayToBytesCodec,
     bytes_to_bytes: Vec<NamedBytesToBytesCodec>,
     cache_index: Option<usize>, // for partial decoders
-}
-
-fn get_codec_name<'a, T: CodecTraits + ?Sized>(
-    codec: &'a NamedCodec<T>,
-    codec_names: &'a ExtensionNameMap,
-    convert_aliased: bool,
-) -> &'a str {
-    if convert_aliased {
-        codec_names
-            .get(codec.identifier())
-            .map_or(codec.name(), AsRef::as_ref)
-    } else {
-        codec.name()
-    }
 }
 
 impl CodecChain {
@@ -150,7 +132,7 @@ impl CodecChain {
         let mut array_to_bytes: Option<NamedArrayToBytesCodec> = None;
         let mut bytes_to_bytes: Vec<NamedBytesToBytesCodec> = vec![];
         for metadata in metadatas {
-            let codec = match Codec::from_metadata(metadata) {
+            let codec = match Codec::from_metadata(metadata, global_config().codec_aliases_v3()) {
                 Ok(codec) => Ok(codec),
                 Err(err) => {
                     if metadata.must_understand() {
@@ -202,16 +184,12 @@ impl CodecChain {
     /// Create codec chain metadata.
     #[must_use]
     pub fn create_metadatas_opt(&self, options: &CodecMetadataOptions) -> Vec<MetadataV3> {
-        let config = global_config();
-        let convert_aliased = options.convert_aliased_extension_names();
-
         let mut metadatas =
             Vec::with_capacity(self.array_to_array.len() + 1 + self.bytes_to_bytes.len());
         for codec in &self.array_to_array {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased)
-                        .to_string(),
+                    codec.name().to_string(),
                     configuration,
                 ));
             }
@@ -220,8 +198,7 @@ impl CodecChain {
             let codec = &self.array_to_bytes;
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased)
-                        .to_string(),
+                    codec.name().to_string(),
                     configuration,
                 ));
             }
@@ -229,8 +206,7 @@ impl CodecChain {
         for codec in &self.bytes_to_bytes {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased)
-                        .to_string(),
+                    codec.name().to_string(),
                     configuration,
                 ));
             }

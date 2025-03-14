@@ -99,7 +99,7 @@ pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
 
-use zarrs_metadata::v3::UnsupportedAdditionalFieldError;
+use zarrs_metadata::{v2::array::DataTypeMetadataV2, v3::UnsupportedAdditionalFieldError};
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use crate::{
@@ -398,14 +398,26 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let path = NodePath::new(path)?;
 
         // Convert V2 metadata to V3 if it is a compatible subset
-        let metadata_v3 = match &metadata {
-            ArrayMetadata::V3(v3) => Ok(v3.clone()),
-            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2, global_config().codec_maps())
+        let metadata_v3 = {
+            let config = global_config();
+            match &metadata {
+                ArrayMetadata::V3(v3) => Ok(v3.clone()),
+                ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(
+                    v2,
+                    config.codec_aliases_v2(),
+                    config.codec_aliases_v3(),
+                    config.data_type_aliases_v2(),
+                    config.data_type_aliases_v3(),
+                )
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
-        }?;
+            }?
+        };
 
-        let data_type = DataType::from_metadata(&metadata_v3.data_type)
-            .map_err(ArrayCreateError::DataTypeCreateError)?;
+        let data_type = DataType::from_metadata(
+            &metadata_v3.data_type,
+            global_config().data_type_aliases_v3(),
+        )
+        .map_err(ArrayCreateError::DataTypeCreateError)?;
         let chunk_grid = ChunkGrid::from_metadata(&metadata_v3.chunk_grid)
             .map_err(ArrayCreateError::ChunkGridCreateError)?;
         if chunk_grid.dimensionality() != metadata_v3.shape.len() {
@@ -621,15 +633,75 @@ impl<TStorage: ?Sized> Array<TStorage> {
         }
 
         // Convert version
-        match (metadata, options.metadata_convert_version()) {
+        let mut metadata = match (metadata, options.metadata_convert_version()) {
             (AM::V3(metadata), V::Default | V::V3) => ArrayMetadata::V3(metadata),
             (AM::V2(metadata), V::Default) => ArrayMetadata::V2(metadata),
             (AM::V2(metadata), V::V3) => {
-                let metadata = array_metadata_v2_to_v3(&metadata, global_config().codec_maps())
-                    .expect("conversion succeeded on array creation");
+                let metadata = {
+                    let config = global_config();
+                    array_metadata_v2_to_v3(
+                        &metadata,
+                        config.codec_aliases_v2(),
+                        config.codec_aliases_v3(),
+                        config.data_type_aliases_v2(),
+                        config.data_type_aliases_v3(),
+                    )
+                    .expect("conversion succeeded on array creation")
+                };
                 AM::V3(metadata)
             }
+        };
+
+        // Convert aliased extension names
+        if options.convert_aliased_extension_names() {
+            let config = global_config();
+            match &mut metadata {
+                AM::V3(metadata) => {
+                    let codec_aliases = config.codec_aliases_v3();
+                    metadata.codecs.iter_mut().for_each(|codec| {
+                        let identifier = codec_aliases.identifier(codec.name());
+                        codec.set_name(codec_aliases.default_name(identifier).to_string());
+                    });
+                    let data_type_aliases = config.data_type_aliases_v3();
+                    {
+                        let name = metadata.data_type.name();
+                        let identifier = data_type_aliases.identifier(&name);
+                        metadata
+                            .data_type
+                            .set_name(data_type_aliases.default_name(identifier).to_string());
+                    }
+                }
+                AM::V2(metadata) => {
+                    let codec_aliases = config.codec_aliases_v2();
+                    {
+                        if let Some(filters) = &mut metadata.filters {
+                            for filter in filters.iter_mut() {
+                                let identifier = codec_aliases.identifier(filter.id());
+                                filter.set_id(codec_aliases.default_name(identifier).to_string());
+                            }
+                        }
+                        if let Some(compressor) = &mut metadata.compressor {
+                            let identifier = codec_aliases.identifier(compressor.id());
+                            compressor.set_id(codec_aliases.default_name(identifier).to_string());
+                        }
+                    }
+                    let data_type_aliases = config.data_type_aliases_v2();
+                    {
+                        match &mut metadata.dtype {
+                            DataTypeMetadataV2::Simple(dtype) => {
+                                let identifier = data_type_aliases.identifier(dtype);
+                                *dtype = data_type_aliases.default_name(identifier).to_string();
+                            }
+                            DataTypeMetadataV2::Structured(_) => {
+                                // FIXME: structured data type support
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        metadata
     }
 
     /// Create an array builder matching the parameters of this array.
@@ -797,8 +869,17 @@ impl<TStorage: ?Sized> Array<TStorage> {
     pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
         match self.metadata {
             ArrayMetadata::V2(metadata) => {
-                let metadata: ArrayMetadata =
-                    array_metadata_v2_to_v3(&metadata, global_config().codec_maps())?.into();
+                let metadata: ArrayMetadata = {
+                    let config = global_config();
+                    array_metadata_v2_to_v3(
+                        &metadata,
+                        config.codec_aliases_v2(),
+                        config.codec_aliases_v3(),
+                        config.data_type_aliases_v2(),
+                        config.data_type_aliases_v3(),
+                    )?
+                    .into()
+                };
                 Ok(Self {
                     storage: self.storage,
                     path: self.path,
