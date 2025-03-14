@@ -9,7 +9,7 @@ use crate::array::{
         ArrayToArrayPartialEncoderDefault, CodecError, CodecMetadataOptions, CodecOptions,
         CodecTraits, RecommendedConcurrency,
     },
-    ChunkRepresentation, ChunkShape, DataType,
+    ChunkRepresentation, DataType,
 };
 
 #[cfg(feature = "async")]
@@ -93,7 +93,7 @@ impl ArrayCodecTraits for BitroundCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for BitroundCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
         self as Arc<dyn ArrayToArrayCodecTraits>
     }
 
@@ -167,12 +167,8 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         ))
     }
 
-    fn compute_encoded_size(
-        &self,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<ChunkRepresentation, CodecError> {
-        let data_type = decoded_representation.data_type();
-        match data_type {
+    fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
+        match decoded_data_type {
             DataType::Float16
             | DataType::BFloat16
             | DataType::Float32
@@ -186,15 +182,11 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
             | DataType::UInt64
             | DataType::Int64
             | DataType::Complex64
-            | DataType::Complex128 => Ok(decoded_representation.clone()),
+            | DataType::Complex128 => Ok(decoded_data_type.clone()),
             _ => Err(CodecError::UnsupportedDataType(
-                data_type.clone(),
+                decoded_data_type.clone(),
                 IDENTIFIER.to_string(),
             )),
         }
-    }
-
-    fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
-        Ok(encoded_shape)
     }
 }

@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::{num::NonZeroU64, sync::Arc};
 
+use zarrs_data_type::{DataType, FillValue};
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
@@ -82,11 +83,30 @@ impl CodecTraits for TransposeCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for TransposeCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
         self as Arc<dyn ArrayToArrayCodecTraits>
     }
 
-    fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
+    fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
+        Ok(decoded_data_type.clone())
+    }
+
+    fn encoded_fill_value(
+        &self,
+        _decoded_data_type: &DataType,
+        decoded_fill_value: &FillValue,
+    ) -> Result<FillValue, CodecError> {
+        Ok(decoded_fill_value.clone())
+    }
+
+    fn encoded_shape(&self, decoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
+        if self.order.0.len() != decoded_shape.len() {
+            return Err(CodecError::Other("Invalid shape".to_string()));
+        }
+        Ok(permute(decoded_shape, &self.order.0).into())
+    }
+
+    fn decoded_shape(&self, encoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
         if self.order.0.len() != encoded_shape.len() {
             return Err(CodecError::Other("Invalid shape".to_string()));
         }
@@ -94,7 +114,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         for (i, val) in self.order.0.iter().enumerate() {
             permutation_decode[*val] = i;
         }
-        let transposed_shape = permute(&encoded_shape, &permutation_decode);
+        let transposed_shape = permute(encoded_shape, &permutation_decode);
         Ok(transposed_shape.into())
     }
 
@@ -226,20 +246,6 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
             decoded_representation.clone(),
             self,
         )))
-    }
-
-    fn compute_encoded_size(
-        &self,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<ChunkRepresentation, CodecError> {
-        let transposed_shape = permute(decoded_representation.shape(), &self.order.0);
-        Ok(unsafe {
-            ChunkRepresentation::new_unchecked(
-                transposed_shape,
-                decoded_representation.data_type().clone(),
-                decoded_representation.fill_value().clone(),
-            )
-        })
     }
 }
 

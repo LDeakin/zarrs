@@ -110,7 +110,7 @@ macro_rules! vlen_v2_codec {
 
         #[cfg_attr(feature = "async", async_trait::async_trait)]
         impl ArrayToBytesCodecTraits for $struct {
-            fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+            fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
                 self as Arc<dyn ArrayToBytesCodecTraits>
             }
 
@@ -171,11 +171,11 @@ macro_rules! vlen_v2_codec {
                     .await
             }
 
-            fn compute_encoded_size(
+            fn encoded_representation(
                 &self,
                 decoded_representation: &ChunkRepresentation,
             ) -> Result<BytesRepresentation, CodecError> {
-                self.inner.compute_encoded_size(decoded_representation)
+                self.inner.encoded_representation(decoded_representation)
             }
         }
     };
