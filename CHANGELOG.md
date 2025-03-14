@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Gated by the `dlpack` feature
 - Add missing `Group::async_child_*` methods
 - Add `numcodecs.zlib` codec support
-- Add `[Async]BytesPartialDecoderDefault`
+- Add `[Async]{Array,Bytes}PartialDecoderDefault`
 - Add `numcodecs.shuffle` codec support
 
 ### Changed
