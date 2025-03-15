@@ -492,7 +492,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     }
 
     /// Set the array shape.
-    pub fn set_shape(&mut self, shape: ArrayShape) {
+    pub fn set_shape(&mut self, shape: ArrayShape) -> &mut Self {
         match &mut self.metadata {
             ArrayMetadata::V3(metadata) => {
                 metadata.shape = shape;
@@ -501,6 +501,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 metadata.shape = shape;
             }
         }
+        self
     }
 
     /// Get the array dimensionality.

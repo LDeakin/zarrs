@@ -225,8 +225,9 @@ impl MetadataV3 {
     }
 
     /// Mutate the metadata `name`.
-    pub fn set_name(&mut self, name: String) {
+    pub fn set_name(&mut self, name: String) -> &mut Self {
         self.name = name;
+        self
     }
 
     /// Returns the metadata configuration.

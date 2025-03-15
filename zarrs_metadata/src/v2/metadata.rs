@@ -27,8 +27,9 @@ impl MetadataV2 {
     }
 
     /// Mutate the "id".
-    pub fn set_id(&mut self, id: String) {
+    pub fn set_id(&mut self, id: String) -> &mut Self {
         self.id = id;
+        self
     }
 
     /// Return the configuration, which includes all fields excluding the "id".

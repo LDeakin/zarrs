@@ -110,7 +110,7 @@ impl DataTypeMetadataV3 {
     }
 
     /// Set the metadata `name`.
-    pub fn set_name(&mut self, name: String) {
+    pub fn set_name(&mut self, name: String) -> &mut Self {
         *self = match self {
             Self::Extension(extension) => Self::Extension(MetadataV3::new_with_configuration(
                 name,
@@ -118,6 +118,7 @@ impl DataTypeMetadataV3 {
             )),
             _ => Self::from_metadata(MetadataV3::new(name)),
         };
+        self
     }
 
     /// Returns the metadata.
