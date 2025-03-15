@@ -1,7 +1,7 @@
 | Codec Type     | Default codec `name`     | Status       | Feature Flag* |
 | -------------- | -------------------------| ------------ | ------------- |
 | Array to Array | [`transpose`]            | Core         | **transpose** |
-|                | [`zarrs.bitround`]       | Experimental | bitround      |
+|                | [`numcodecs.bitround`]†  | Experimental | bitround      |
 | Array to Bytes | [`bytes`]                | Core         |               |
 |                | [`sharding_indexed`]     | Core         | **sharding**  |
 |                | [`vlen-array`]           | Experimental |               |
@@ -23,13 +23,14 @@
 |                | [`zarrs.gdeflate`]       | Experimental | gdeflate      |
 
 <sup>\* Bolded feature flags are part of the default set of features.</sup>
+<sup>† `numcodecs.bitround` supports additional data types not supported by `zarr-python`/`numcodecs`</sup>
 
 [ZEP0001]: https://zarr.dev/zeps/accepted/ZEP0001.html
 [ZEP0002]: https://zarr.dev/zeps/accepted/ZEP0001.html
 [zarr-specs #256]: https://github.com/zarr-developers/zarr-specs/pull/256
 
 [`transpose`]: crate::array::codec::array_to_array::transpose
-[`zarrs.bitround`]: crate::array::codec::array_to_array::bitround
+[`numcodecs.bitround`]: crate::array::codec::array_to_array::bitround
 
 [`bytes`]: crate::array::codec::array_to_bytes::bytes
 [`vlen-array`]: crate::array::codec::array_to_bytes::vlen_array
@@ -56,7 +57,7 @@
 They may change in future releases without maintaining backwards compatibilty.
 These codecs have not been standardised, but many are fully compatible with other Zarr implementations.
 
-Codec `name`s and aliases are configurable with [`Config::codec_maps_mut`](config::Config::codec_maps_mut).
+Codec `name`s and aliases are configurable with [`Config::codec_aliases_v3_mut`](config::Config::codec_aliases_v3_mut) and [`Config::codec_aliases_v2_mut`](config::Config::codec_aliases_v2_mut).
 `zarrs` will persist codec names if opening an existing array of creating an array from metadata.
 
 `zarrs` supports arrays created with `zarr-python` 3.x.x with various `numcodecs.zarr3` codecs.

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `numcodecs.zlib` codec support
 - Add `[Async]{Array,Bytes}PartialDecoderDefault`
 - Add `numcodecs.shuffle` codec support
+- Add `Config::{codec,data_type}_aliases_{v2,v3}[_mut]`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape

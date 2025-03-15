@@ -33,7 +33,8 @@ mod tests {
             transpose::{self, TransposeCodecConfigurationV1},
         },
         v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3_data_type},
-        ChunkKeySeparator, ChunkShape, Endianness, ExtensionMaps,
+        ChunkKeySeparator, ChunkShape, Endianness, ExtensionAliasesCodecV2,
+        ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3,
     };
 
     #[test]
@@ -72,8 +73,17 @@ mod tests {
             array_metadata_v2.dimension_separator,
             ChunkKeySeparator::Dot
         );
+        let codec_aliases_v2 = ExtensionAliasesCodecV2::default();
+        let codec_aliases_v3 = ExtensionAliasesCodecV3::default();
+        let data_type_aliases_v2 = ExtensionAliasesDataTypeV2::default();
+        let data_type_aliases_v3 = ExtensionAliasesDataTypeV3::default();
         assert_eq!(
-            data_type_metadata_v2_to_v3_data_type(&array_metadata_v2.dtype)?.name(),
+            data_type_metadata_v2_to_v3_data_type(
+                &array_metadata_v2.dtype,
+                &data_type_aliases_v2,
+                &data_type_aliases_v3
+            )?
+            .name(),
             "float64"
         );
         assert_eq!(
@@ -82,8 +92,13 @@ mod tests {
         );
         println!("{array_metadata_v2:?}");
 
-        let codec_maps = ExtensionMaps::default();
-        let array_metadata_v3 = array_metadata_v2_to_v3(&array_metadata_v2, &codec_maps)?;
+        let array_metadata_v3 = array_metadata_v2_to_v3(
+            &array_metadata_v2,
+            &codec_aliases_v2,
+            &codec_aliases_v3,
+            &data_type_aliases_v2,
+            &data_type_aliases_v3,
+        )?;
         println!("{array_metadata_v3:?}");
 
         let first_codec = array_metadata_v3.codecs.first().unwrap();
