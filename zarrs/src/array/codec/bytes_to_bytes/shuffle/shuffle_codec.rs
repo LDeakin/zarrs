@@ -74,6 +74,14 @@ impl CodecTraits for ShuffleCodec {
     }
 }
 
+fn is_multiple_of(lhs: usize, rhs: usize) -> bool {
+    match rhs {
+        // prevent division by zero
+        0 => lhs == 0,
+        _ => lhs % rhs == 0,
+    }
+}
+
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for ShuffleCodec {
     fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
@@ -92,15 +100,17 @@ impl BytesToBytesCodecTraits for ShuffleCodec {
         decoded_value: RawBytes<'a>,
         _options: &CodecOptions,
     ) -> Result<RawBytes<'a>, CodecError> {
+        if !is_multiple_of(decoded_value.len(), self.elementsize) {
+            return Err(CodecError::Other("the shuffle codec expects the input byte length to be an integer multiple of the elementsize".to_string()));
+        }
+
         let mut encoded_value = decoded_value.to_vec();
         let count = encoded_value.len().div_ceil(self.elementsize);
         for i in 0..count {
             let offset = i * self.elementsize;
             for byte_index in 0..self.elementsize {
                 let j = byte_index * count + i;
-                if j.max(offset + byte_index) < decoded_value.len() {
-                    encoded_value[j] = decoded_value[offset + byte_index];
-                }
+                encoded_value[j] = decoded_value[offset + byte_index];
             }
         }
         Ok(Cow::Owned(encoded_value))
@@ -112,15 +122,17 @@ impl BytesToBytesCodecTraits for ShuffleCodec {
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<RawBytes<'a>, CodecError> {
+        if !is_multiple_of(encoded_value.len(), self.elementsize) {
+            return Err(CodecError::Other("the shuffle codec expects the input byte length to be an integer multiple of the elementsize".to_string()));
+        }
+
         let mut decoded_value = encoded_value.to_vec();
         let count = decoded_value.len().div_ceil(self.elementsize);
         for i in 0..self.elementsize {
             let offset = i * count;
             for byte_index in 0..count {
                 let j = byte_index * self.elementsize + i;
-                if j.max(offset + byte_index) < decoded_value.len() {
-                    decoded_value[j] = encoded_value[offset + byte_index];
-                }
+                decoded_value[j] = encoded_value[offset + byte_index];
             }
         }
         Ok(Cow::Owned(decoded_value))

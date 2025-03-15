@@ -48,6 +48,7 @@
 [`zstd`]: crate::array::codec::bytes_to_bytes::zstd
 [`numcodecs.bz2`]: crate::array::codec::bytes_to_bytes::gzip
 [`numcodecs.fletcher32`]: crate::array::codec::bytes_to_bytes::fletcher32
+[`numcodecs.shuffle`]: crate::array::codec::bytes_to_bytes::shuffle
 [`numcodecs.zlib`]: crate::array::codec::bytes_to_bytes::zlib
 [`zarrs.gdeflate`]: crate::array::codec::bytes_to_bytes::gdeflate
 

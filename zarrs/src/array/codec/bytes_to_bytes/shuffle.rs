@@ -2,6 +2,8 @@
 //!
 //! Shuffles bytes.
 //!
+//! The byte length of the input to this codec must be an integer multiple of the shuffle `elementsize`.
+//!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
@@ -22,7 +24,9 @@
 //! ### Codec `configuration` Example - [`ShuffleCodecConfiguration`]:
 //! ```rust
 //! # let JSON = r#"
-//! {"elementsize":2}
+//! {
+//!   "elementsize": 2
+//! }
 //! # "#;
 //! # use zarrs_metadata::codec::shuffle::ShuffleCodecConfiguration;
 //! # serde_json::from_str::<ShuffleCodecConfiguration>(JSON).unwrap();
