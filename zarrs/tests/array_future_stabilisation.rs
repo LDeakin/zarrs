@@ -14,14 +14,14 @@ use zarrs_filesystem::FilesystemStore;
 
 /// bz2 could stabilise as is, so test supporting that via the codec map
 #[test]
-fn array_future_stabilistation_bz2() {
+fn array_future_stabilisation_bz2() {
     assert_eq!(
         Bz2Codec::new(5u32.try_into().unwrap()).default_name(),
         "numcodecs.bz2"
     );
 
     global_config_mut()
-        .codec_maps_mut()
+        .codec_aliases_v3_mut()
         .default_names
         .entry(bz2::IDENTIFIER.into())
         .and_modify(|entry| {

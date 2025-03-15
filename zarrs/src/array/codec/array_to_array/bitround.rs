@@ -24,7 +24,6 @@
 //! The `bitround` codec in `zarrs` additionally supports integers by rounding from the most significant set bit.
 //!
 //! ### Codec `name` Aliases (Zarr V3)
-//! - `zarrs.bitround`
 //! - `numcodecs.bitround`
 //! - `https://codec.zarrs.dev/array_to_array/bitround`
 //!

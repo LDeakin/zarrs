@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use zarrs_metadata::ExtensionNameMap;
+use zarrs_metadata::ExtensionAliasesCodecV3;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
@@ -44,13 +44,11 @@ pub struct CodecChain {
 
 fn get_codec_name<'a, T: CodecTraits + ?Sized>(
     codec: &'a NamedCodec<T>,
-    codec_names: &'a ExtensionNameMap,
+    codec_aliases: &'a ExtensionAliasesCodecV3,
     convert_aliased: bool,
 ) -> &'a str {
     if convert_aliased {
-        codec_names
-            .get(codec.identifier())
-            .map_or(codec.name(), AsRef::as_ref)
+        codec_aliases.default_name(codec.identifier())
     } else {
         codec.name()
     }
@@ -150,7 +148,7 @@ impl CodecChain {
         let mut array_to_bytes: Option<NamedArrayToBytesCodec> = None;
         let mut bytes_to_bytes: Vec<NamedBytesToBytesCodec> = vec![];
         for metadata in metadatas {
-            let codec = match Codec::from_metadata(metadata) {
+            let codec = match Codec::from_metadata(metadata, global_config().codec_aliases_v3()) {
                 Ok(codec) => Ok(codec),
                 Err(err) => {
                     if metadata.must_understand() {
@@ -210,7 +208,7 @@ impl CodecChain {
         for codec in &self.array_to_array {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased),
+                    get_codec_name(codec, config.codec_aliases_v3(), convert_aliased),
                     configuration,
                 ));
             }
@@ -219,7 +217,7 @@ impl CodecChain {
             let codec = &self.array_to_bytes;
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased),
+                    get_codec_name(codec, config.codec_aliases_v3(), convert_aliased),
                     configuration,
                 ));
             }
@@ -227,7 +225,7 @@ impl CodecChain {
         for codec in &self.bytes_to_bytes {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased),
+                    get_codec_name(codec, config.codec_aliases_v3(), convert_aliased),
                     configuration,
                 ));
             }

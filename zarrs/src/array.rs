@@ -398,14 +398,25 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let path = NodePath::new(path)?;
 
         // Convert V2 metadata to V3 if it is a compatible subset
-        let metadata_v3 = match &metadata {
-            ArrayMetadata::V3(v3) => Ok(v3.clone()),
-            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2, global_config().codec_maps())
+        let metadata_v3 = {
+            let config = global_config();
+            match &metadata {
+                ArrayMetadata::V3(v3) => Ok(v3.clone()),
+                ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(
+                    v2,
+                    config.codec_aliases_v2(),
+                    config.codec_aliases_v3(),
+                    config.data_type_aliases_v2(),
+                )
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
-        }?;
+            }?
+        };
 
-        let data_type = DataType::from_metadata(&metadata_v3.data_type)
-            .map_err(ArrayCreateError::DataTypeCreateError)?;
+        let data_type = DataType::from_metadata(
+            &metadata_v3.data_type,
+            global_config().data_type_aliases_v3(),
+        )
+        .map_err(ArrayCreateError::DataTypeCreateError)?;
         let chunk_grid = ChunkGrid::from_metadata(&metadata_v3.chunk_grid)
             .map_err(ArrayCreateError::ChunkGridCreateError)?;
         if chunk_grid.dimensionality() != metadata_v3.shape.len() {
@@ -625,8 +636,16 @@ impl<TStorage: ?Sized> Array<TStorage> {
             (AM::V3(metadata), V::Default | V::V3) => ArrayMetadata::V3(metadata),
             (AM::V2(metadata), V::Default) => ArrayMetadata::V2(metadata),
             (AM::V2(metadata), V::V3) => {
-                let metadata = array_metadata_v2_to_v3(&metadata, global_config().codec_maps())
-                    .expect("conversion succeeded on array creation");
+                let metadata = {
+                    let config = global_config();
+                    array_metadata_v2_to_v3(
+                        &metadata,
+                        config.codec_aliases_v2(),
+                        config.codec_aliases_v3(),
+                        config.data_type_aliases_v2(),
+                    )
+                    .expect("conversion succeeded on array creation")
+                };
                 AM::V3(metadata)
             }
         }
@@ -797,8 +816,16 @@ impl<TStorage: ?Sized> Array<TStorage> {
     pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
         match self.metadata {
             ArrayMetadata::V2(metadata) => {
-                let metadata: ArrayMetadata =
-                    array_metadata_v2_to_v3(&metadata, global_config().codec_maps())?.into();
+                let metadata: ArrayMetadata = {
+                    let config = global_config();
+                    array_metadata_v2_to_v3(
+                        &metadata,
+                        config.codec_aliases_v2(),
+                        config.codec_aliases_v3(),
+                        config.data_type_aliases_v2(),
+                    )?
+                    .into()
+                };
                 Ok(Self {
                     storage: self.storage,
                     path: self.path,
