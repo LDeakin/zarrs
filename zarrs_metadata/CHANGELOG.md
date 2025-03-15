@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `{Array,Group}Metadata{V2,V3}::to_string_pretty()`
 - Add `zlib` codec metadata
 - Add `shuffle` codec metadata
+- Add `DataTypeMetadataV3::set_name()`
+- Add `MetadataV3::set_name()`
+- Add `MetadataV2::set_id()`
 
 ### Changed
 - **Breaking**: Move all codecs into a new `codec` module rather than the `v2`/`v3` modules
@@ -33,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Remove `write_header` from `zfp` codec configuration
 - Bump `half` to 2.3.1
 - Bump `thiserror` to 2.0.12
+- **Breaking**: `DataType::from_metadata()` now takes an owned `MetadataV3` instead of a reference
+- **Breaking**: `MetadataV3::new[_with_{configuration,serializable_configuration}]` now take a `String` name instead of `&str`
 
 ### Removed
 - **Breaking**: Remove `DataTypeMetadataV3::size[_fixed]()`

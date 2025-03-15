@@ -114,7 +114,8 @@ impl ChunkGridTraits for RectangularChunkGrid {
             })
             .collect();
         let configuration = RectangularChunkGridConfiguration { chunk_shape };
-        MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
+        MetadataV3::new_with_serializable_configuration(IDENTIFIER.to_string(), &configuration)
+            .unwrap()
     }
 
     fn dimensionality(&self) -> usize {

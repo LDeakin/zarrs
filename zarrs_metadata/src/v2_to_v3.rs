@@ -92,7 +92,7 @@ pub fn codec_metadata_v2_to_v3(
     // Array-to-array codecs
     if order == ArrayMetadataV2Order::F {
         let transpose_metadata = MetadataV3::new_with_serializable_configuration(
-            crate::array::codec::transpose::IDENTIFIER,
+            crate::array::codec::transpose::IDENTIFIER.to_string(),
             &TransposeCodecConfigurationV1 {
                 order: {
                     let f_order: Vec<usize> = (0..dimensionality).rev().collect();
@@ -111,7 +111,7 @@ pub fn codec_metadata_v2_to_v3(
     if let Some(filters) = filters {
         for filter in filters {
             let identifier = v2_id_to_identifier(filter.id(), &codec_maps.aliases_v2);
-            let name = identifier_to_name(identifier, &codec_maps.default_names);
+            let name = identifier_to_name(identifier, &codec_maps.default_names).to_string();
             match identifier {
                 crate::array::codec::vlen_array::IDENTIFIER
                 | crate::array::codec::vlen_bytes::IDENTIFIER
@@ -134,7 +134,7 @@ pub fn codec_metadata_v2_to_v3(
     // Compressor (array to bytes codec)
     if let Some(compressor) = compressor {
         let identifier = v2_id_to_identifier(compressor.id(), &codec_maps.aliases_v2);
-        let name = identifier_to_name(identifier, &codec_maps.default_names);
+        let name = identifier_to_name(identifier, &codec_maps.default_names).to_string();
         match identifier {
             crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
                 // zfpy / pcodec are v2/v3 compatible
@@ -150,7 +150,7 @@ pub fn codec_metadata_v2_to_v3(
 
     if !has_array_to_bytes {
         let bytes_metadata = MetadataV3::new_with_serializable_configuration(
-            crate::array::codec::bytes::IDENTIFIER,
+            crate::array::codec::bytes::IDENTIFIER.to_string(),
             &BytesCodecConfigurationV1 {
                 endian: Some(endianness.unwrap_or(Endianness::native())),
             },
@@ -161,7 +161,7 @@ pub fn codec_metadata_v2_to_v3(
     // Compressor (bytes to bytes codec)
     if let Some(compressor) = compressor {
         let identifier = v2_id_to_identifier(compressor.id(), &codec_maps.aliases_v2);
-        let name = identifier_to_name(identifier, &codec_maps.default_names);
+        let name = identifier_to_name(identifier, &codec_maps.default_names).to_string();
         match identifier {
             crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
                 // already handled above
@@ -234,7 +234,7 @@ pub fn array_metadata_v2_to_v3(
 ) -> Result<ArrayMetadataV3, ArrayMetadataV2ToV3ConversionError> {
     let shape = array_metadata_v2.shape.clone();
     let chunk_grid = MetadataV3::new_with_serializable_configuration(
-        crate::v3::array::chunk_grid::regular::IDENTIFIER,
+        crate::v3::array::chunk_grid::regular::IDENTIFIER.to_string(),
         &RegularChunkGridConfiguration {
             chunk_shape: array_metadata_v2.chunks.clone(),
         },
@@ -304,7 +304,7 @@ pub fn array_metadata_v2_to_v3(
     )?;
 
     let chunk_key_encoding = MetadataV3::new_with_serializable_configuration(
-        crate::v3::array::chunk_key_encoding::v2::IDENTIFIER,
+        crate::v3::array::chunk_key_encoding::v2::IDENTIFIER.to_string(),
         &V2ChunkKeyEncodingConfiguration {
             separator: array_metadata_v2.dimension_separator,
         },

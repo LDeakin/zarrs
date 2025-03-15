@@ -26,6 +26,11 @@ impl MetadataV2 {
         &self.id
     }
 
+    /// Mutate the "id".
+    pub fn set_id(&mut self, id: String) {
+        self.id = id;
+    }
+
     /// Return the configuration, which includes all fields excluding the "id".
     #[must_use]
     pub fn configuration(&self) -> &serde_json::Map<String, serde_json::Value> {

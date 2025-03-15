@@ -61,7 +61,7 @@ impl serde::Serialize for DataTypeMetadataV3 {
 impl<'de> serde::Deserialize<'de> for DataTypeMetadataV3 {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let metadata = MetadataV3::deserialize(d)?;
-        Ok(Self::from_metadata(&metadata))
+        Ok(Self::from_metadata(metadata))
     }
 }
 
@@ -109,18 +109,29 @@ impl DataTypeMetadataV3 {
         }
     }
 
+    /// Set the metadata `name`.
+    pub fn set_name(&mut self, name: String) {
+        *self = match self {
+            Self::Extension(extension) => Self::Extension(MetadataV3::new_with_configuration(
+                name,
+                extension.configuration().cloned().unwrap_or_default(),
+            )),
+            _ => Self::from_metadata(MetadataV3::new(name)),
+        };
+    }
+
     /// Returns the metadata.
     #[must_use]
     pub fn metadata(&self) -> MetadataV3 {
         match self {
             Self::Extension(metadata) => metadata.clone(),
-            _ => MetadataV3::new(&self.name()),
+            _ => MetadataV3::new(self.name()),
         }
     }
 
     /// Create a data type from metadata.
     #[must_use]
-    pub fn from_metadata(metadata: &MetadataV3) -> Self {
+    pub fn from_metadata(metadata: MetadataV3) -> Self {
         let name = metadata.name();
 
         match name {
@@ -153,13 +164,13 @@ impl DataTypeMetadataV3 {
             }
         }
 
-        Self::Extension(metadata.clone())
+        Self::Extension(metadata)
     }
 }
 
 impl From<MetadataV3> for DataTypeMetadataV3 {
     fn from(metadata: MetadataV3) -> Self {
-        Self::from_metadata(&metadata)
+        Self::from_metadata(metadata)
     }
 }
 

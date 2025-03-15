@@ -73,7 +73,8 @@ impl ChunkGridTraits for RegularChunkGrid {
         let configuration = RegularChunkGridConfiguration {
             chunk_shape: self.chunk_shape.clone(),
         };
-        MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
+        MetadataV3::new_with_serializable_configuration(IDENTIFIER.to_string(), &configuration)
+            .unwrap()
     }
 
     fn dimensionality(&self) -> usize {

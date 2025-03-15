@@ -84,7 +84,8 @@ impl ChunkKeyEncodingTraits for DefaultChunkKeyEncoding {
         let configuration = DefaultChunkKeyEncodingConfiguration {
             separator: self.separator,
         };
-        MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
+        MetadataV3::new_with_serializable_configuration(IDENTIFIER.to_string(), &configuration)
+            .unwrap()
     }
 
     fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey {

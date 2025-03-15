@@ -158,7 +158,7 @@ impl DataType {
             Self::String => DataTypeMetadataV3::String,
             Self::Bytes => DataTypeMetadataV3::Bytes,
             Self::Extension(ext) => DataTypeMetadataV3::from_metadata(
-                &MetadataV3::new_with_configuration(&ext.name(), ext.configuration().clone()),
+                MetadataV3::new_with_configuration(ext.name(), ext.configuration()),
             ),
         }
     }

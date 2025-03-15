@@ -159,9 +159,9 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
 impl MetadataV3 {
     /// Create metadata from `name`.
     #[must_use]
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: String) -> Self {
         Self {
-            name: name.into(),
+            name,
             configuration: None,
             must_understand: true,
         }
@@ -170,11 +170,11 @@ impl MetadataV3 {
     /// Create metadata from `name` and `configuration`.
     #[must_use]
     pub fn new_with_configuration(
-        name: &str,
+        name: String,
         configuration: impl Into<MetadataConfiguration>,
     ) -> Self {
         Self {
-            name: name.into(),
+            name,
             configuration: Some(configuration.into()),
             must_understand: true,
         }
@@ -192,7 +192,7 @@ impl MetadataV3 {
     /// # Errors
     /// Returns [`serde_json::Error`] if `configuration` cannot be converted to [`MetadataV3`].
     pub fn new_with_serializable_configuration<TConfiguration: serde::Serialize>(
-        name: &str,
+        name: String,
         configuration: &TConfiguration,
     ) -> Result<Self, serde_json::Error> {
         let configuration = serde_json::to_value(configuration)?;
@@ -218,10 +218,15 @@ impl MetadataV3 {
         serde_json::from_value(value).map_err(err)
     }
 
-    /// Returns the metadata name.
+    /// Returns the metadata `name`.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    /// Mutate the metadata `name`.
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     /// Returns the metadata configuration.
@@ -454,10 +459,10 @@ mod tests {
         let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
         assert!(metadata.name() == "test");
         assert!(!metadata.must_understand());
-        assert_ne!(metadata, MetadataV3::new("test"));
+        assert_ne!(metadata, MetadataV3::new("test".to_string()));
         assert_eq!(
             metadata,
-            MetadataV3::new("test").with_must_understand(false)
+            MetadataV3::new("test".to_string()).with_must_understand(false)
         );
     }
 }

@@ -210,7 +210,8 @@ impl CodecChain {
         for codec in &self.array_to_array {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased),
+                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased)
+                        .to_string(),
                     configuration,
                 ));
             }
@@ -219,7 +220,8 @@ impl CodecChain {
             let codec = &self.array_to_bytes;
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased),
+                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased)
+                        .to_string(),
                     configuration,
                 ));
             }
@@ -227,7 +229,8 @@ impl CodecChain {
         for codec in &self.bytes_to_bytes {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased),
+                    get_codec_name(codec, &config.codec_maps().default_names, convert_aliased)
+                        .to_string(),
                     configuration,
                 ));
             }
