@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Breaking**: `DataType::metadata_fill_value()` is now fallible
-- **Breaking**: `DataType::{identifier,size,fixed_size}()` are no longer `const`
+- **Breaking**: `DataType::{size,fixed_size}()` are no longer `const`
 - **Breaking**: `DataType::from_metadata()` now returns a `PluginCreateError` on error instead of `UnsupportedDataTypeError`
 - **Breaking**: `DataType::from_metadata()` has an additional `ExtensionAliasesDataTypeV3` parameter
 - **Breaking**: `DataType::[fixed_]size()` are no longer `const`
