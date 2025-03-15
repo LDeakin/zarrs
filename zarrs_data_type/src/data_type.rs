@@ -114,32 +114,6 @@ impl IncompatibleFillValueError {
 impl DataType {
     /// Returns the name.
     #[must_use]
-    pub fn identifier(&self) -> String {
-        match self {
-            Self::Bool => "bool".to_string(),
-            Self::Int8 => "int8".to_string(),
-            Self::Int16 => "int16".to_string(),
-            Self::Int32 => "int32".to_string(),
-            Self::Int64 => "int64".to_string(),
-            Self::UInt8 => "uint8".to_string(),
-            Self::UInt16 => "uint16".to_string(),
-            Self::UInt32 => "uint32".to_string(),
-            Self::UInt64 => "uint64".to_string(),
-            Self::Float16 => "float16".to_string(),
-            Self::Float32 => "float32".to_string(),
-            Self::Float64 => "float64".to_string(),
-            Self::BFloat16 => "bfloat16".to_string(),
-            Self::Complex64 => "complex64".to_string(),
-            Self::Complex128 => "complex128".to_string(),
-            Self::RawBits(_) => "r*".to_string(),
-            Self::String => "string".to_string(),
-            Self::Bytes => "bytes".to_string(),
-            Self::Extension(extension) => extension.name(),
-        }
-    }
-
-    /// Returns the name.
-    #[must_use]
     pub fn name(&self) -> String {
         match self {
             Self::Bool => "bool".to_string(),
