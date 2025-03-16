@@ -16,6 +16,7 @@ impl Default for ExtensionAliasesCodecV3 {
             HashMap::from([
                 // The default serialised `name`s
                 (codec::bitround::IDENTIFIER, "numcodecs.bitround".into()),
+                (codec::fixedscaleoffset::IDENTIFIER, "numcodecs.fixedscaleoffset".into()),
                 // array to bytes
                 (codec::pcodec::IDENTIFIER, "numcodecs.pcodec".into()),
                 (codec::zfpy::IDENTIFIER, "numcodecs.zfpy".into()),
@@ -40,6 +41,7 @@ impl Default for ExtensionAliasesCodecV3 {
                 ("zarrs.gdeflate".into(), codec::gdeflate::IDENTIFIER),
                 // zarrs 0.20 / zarr-python 3.0
                 ("numcodecs.bitround".into(), codec::bitround::IDENTIFIER),
+                ("numcodecs.fixedscaleoffset".into(), codec::fixedscaleoffset::IDENTIFIER),
                 ("numcodecs.pcodec".into(), codec::pcodec::IDENTIFIER),
                 ("numcodecs.zfpy".into(), codec::zfpy::IDENTIFIER),
                 ("numcodecs.bz2".into(), codec::bz2::IDENTIFIER),

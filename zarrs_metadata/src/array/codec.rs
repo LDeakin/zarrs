@@ -57,6 +57,8 @@ pub use zarrs::*;
 
 /// `numcodecs` codec metadata.
 mod numcodecs {
+    /// `fixedscaleoffset` codec metadata.
+    pub mod fixedscaleoffset;
     /// `zfpy` codec metadata.
     pub mod zfpy;
 }
