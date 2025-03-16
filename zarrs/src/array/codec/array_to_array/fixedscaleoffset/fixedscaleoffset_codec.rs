@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use zarrs_data_type::FillValue;
 use zarrs_metadata::{
     v2::array::DataTypeMetadataV2, v2_to_v3::data_type_metadata_v2_to_v3_data_type,
 };
@@ -14,7 +13,7 @@ use crate::{
             ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault, CodecError,
             CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
-        ArraySize, ChunkRepresentation, DataType,
+        ChunkRepresentation, DataType,
     },
     config::global_config,
 };
@@ -478,38 +477,6 @@ impl ArrayToArrayCodecTraits for FixedScaleOffsetCodec {
                 decoded_data_type.clone(),
                 IDENTIFIER.to_string(),
             )),
-        }
-    }
-
-    fn encoded_representation(
-        &self,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<ChunkRepresentation, CodecError> {
-        let decoded_data_type = decoded_representation.data_type();
-        let encoded_data_type = self.encoded_data_type(decoded_data_type)?;
-        if &encoded_data_type == decoded_data_type {
-            Ok(decoded_representation.clone())
-        } else {
-            // Calculate the changed fill value
-            let fill_value = do_encode(
-                ArrayBytes::new_fill_value(
-                    ArraySize::new(decoded_representation.data_type().size(), 1),
-                    decoded_representation.fill_value(),
-                ),
-                decoded_representation.data_type(),
-                self.offset,
-                self.scale,
-                self.astype.as_ref(),
-            )?
-            .into_fixed()?
-            .into_owned();
-            let fill_value = FillValue::new(fill_value);
-            Ok(ChunkRepresentation::new(
-                decoded_representation.shape().to_vec(),
-                encoded_data_type,
-                fill_value,
-            )
-            .expect("Falid fill value for encoded data type"))
         }
     }
 }
