@@ -1,7 +1,10 @@
 use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
-use zarrs_metadata::codec::pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration};
+use zarrs_metadata::codec::{
+    pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration},
+    PCODEC,
+};
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::{
@@ -23,7 +26,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{
     pcodec_partial_decoder, PcodecCodecConfiguration, PcodecCodecConfigurationV1,
-    PcodecCompressionLevel, PcodecDeltaEncodingOrder, IDENTIFIER,
+    PcodecCompressionLevel, PcodecDeltaEncodingOrder,
 };
 
 /// A `pcodec` codec implementation.
@@ -93,7 +96,7 @@ impl PcodecCodec {
 
 impl CodecTraits for PcodecCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        PCODEC
     }
 
     fn configuration_opt(
@@ -208,7 +211,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             }
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }
     }
@@ -258,7 +261,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             }
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }?;
         Ok(ArrayBytes::from(bytes))
@@ -332,7 +335,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             ),
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }?;
         Ok(BytesRepresentation::BoundedSize(

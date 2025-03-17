@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{v3::MetadataConfigurationSerialize, Endianness};
 
-/// The identifier for the `bytes` codec.
-pub const IDENTIFIER: &str = "bytes";
-
 /// A wrapper to handle various versions of `bytes` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

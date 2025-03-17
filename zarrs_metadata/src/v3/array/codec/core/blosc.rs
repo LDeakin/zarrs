@@ -2,10 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::v3::{array::data_type::DataTypeSize, MetadataConfigurationSerialize};
-
-/// The identifier for the `blosc` codec.
-pub const IDENTIFIER: &str = "blosc";
+use crate::{v3::MetadataConfigurationSerialize, DataTypeSize};
 
 /// A wrapper to handle various versions of `blosc` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]

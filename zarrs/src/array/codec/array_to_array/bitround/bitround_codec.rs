@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec::BITROUND;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        array_to_bytes::vlen_v2::IDENTIFIER, ArrayBytes, ArrayCodecTraits,
-        ArrayPartialDecoderTraits, ArrayPartialEncoderTraits, ArrayToArrayCodecTraits,
-        ArrayToArrayPartialEncoderDefault, CodecError, CodecMetadataOptions, CodecOptions,
-        CodecTraits, RecommendedConcurrency,
+        ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderTraits,
+        ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault, CodecError,
+        CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
     },
     ChunkRepresentation, DataType,
 };
@@ -54,7 +54,7 @@ impl BitroundCodec {
 
 impl CodecTraits for BitroundCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BITROUND
     }
 
     fn configuration_opt(
@@ -185,7 +185,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
             | DataType::Complex128 => Ok(decoded_data_type.clone()),
             _ => Err(CodecError::UnsupportedDataType(
                 decoded_data_type.clone(),
-                IDENTIFIER.to_string(),
+                BITROUND.to_string(),
             )),
         }
     }

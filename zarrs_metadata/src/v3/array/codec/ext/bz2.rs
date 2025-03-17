@@ -3,10 +3,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `bz2` codec.
-// TODO: ZEP for bz2
-pub const IDENTIFIER: &str = "bz2";
-
 /// A wrapper to handle various versions of `bz2` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]
@@ -27,7 +23,7 @@ impl MetadataConfigurationSerialize for Bz2CodecConfiguration {}
 ///     "level": 9
 /// }
 /// # "#;
-/// # use zarrs_metadata::codec::bz2::Bz2CodecConfigurationV1;
+/// # use zarrs_metadata::v3::array::codec::bz2::Bz2CodecConfigurationV1;
 /// # let configuration: Bz2CodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

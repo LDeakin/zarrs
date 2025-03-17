@@ -51,25 +51,23 @@ pub use pcodec_codec::PcodecCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::{codec::pcodec, v3::MetadataV3},
+    metadata::{codec::PCODEC, v3::MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use pcodec::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_pcodec, create_codec_pcodec)
+    CodecPlugin::new(PCODEC, is_identifier_pcodec, create_codec_pcodec)
 }
 
 fn is_identifier_pcodec(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == PCODEC
 }
 
 pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(PCODEC, "codec", metadata.clone()))?;
     let codec = Arc::new(PcodecCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

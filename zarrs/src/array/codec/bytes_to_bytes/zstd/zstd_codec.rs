@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::codec::ZSTD;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use zstd::zstd_safe;
 
@@ -61,7 +62,7 @@ impl ZstdCodec {
 
 impl CodecTraits for ZstdCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        ZSTD
     }
 
     fn configuration_opt(

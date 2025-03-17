@@ -3,10 +3,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `gdeflate` codec.
-// TODO: ZEP for gdeflate
-pub const IDENTIFIER: &str = "gdeflate";
-
 /// A wrapper to handle various versions of `gdeflate` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]
@@ -27,7 +23,7 @@ impl MetadataConfigurationSerialize for GDeflateCodecConfiguration {}
 ///     "level": 12
 /// }
 /// # "#;
-/// # use zarrs_metadata::codec::gdeflate::GDeflateCodecConfigurationV1;
+/// # use zarrs_metadata::v3::array::codec::gdeflate::GDeflateCodecConfigurationV1;
 /// # let configuration: GDeflateCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

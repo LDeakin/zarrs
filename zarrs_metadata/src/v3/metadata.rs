@@ -159,9 +159,9 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
 impl MetadataV3 {
     /// Create metadata from `name`.
     #[must_use]
-    pub fn new(name: String) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self {
-            name,
+            name: name.into(),
             configuration: None,
             must_understand: true,
         }
@@ -170,11 +170,11 @@ impl MetadataV3 {
     /// Create metadata from `name` and `configuration`.
     #[must_use]
     pub fn new_with_configuration(
-        name: String,
+        name: impl Into<String>,
         configuration: impl Into<MetadataConfiguration>,
     ) -> Self {
         Self {
-            name,
+            name: name.into(),
             configuration: Some(configuration.into()),
             must_understand: true,
         }

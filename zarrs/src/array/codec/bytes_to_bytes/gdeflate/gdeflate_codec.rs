@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::codec::GDEFLATE;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
@@ -60,7 +61,7 @@ impl GDeflateCodec {
 
 impl CodecTraits for GDeflateCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        GDEFLATE
     }
 
     fn configuration_opt(

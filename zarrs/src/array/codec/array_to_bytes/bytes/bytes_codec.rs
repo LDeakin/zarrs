@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use zarrs_data_type::{DataType, DataTypeExtensionError};
+use zarrs_metadata::codec::BYTES;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
@@ -80,7 +81,7 @@ impl BytesCodec {
             DataTypeSize::Variable => {
                 return Err(CodecError::UnsupportedDataType(
                     decoded_representation.data_type().clone(),
-                    super::IDENTIFIER.to_string(),
+                    BYTES.to_string(),
                 ));
             }
             DataTypeSize::Fixed(data_type_size) => {
@@ -108,7 +109,7 @@ impl BytesCodec {
 
 impl CodecTraits for BytesCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BYTES
     }
 
     fn configuration_opt(
@@ -246,7 +247,7 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         match decoded_representation.data_type().size() {
             DataTypeSize::Variable => Err(CodecError::UnsupportedDataType(
                 decoded_representation.data_type().clone(),
-                super::IDENTIFIER.to_string(),
+                BYTES.to_string(),
             )),
             DataTypeSize::Fixed(data_type_size) => Ok(BytesRepresentation::FixedSize(
                 decoded_representation.num_elements() * data_type_size as u64,

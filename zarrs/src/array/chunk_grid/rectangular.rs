@@ -8,25 +8,24 @@ use std::num::NonZeroU64;
 
 use crate::{
     array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape},
-    metadata::v3::{array::chunk_grid::rectangular, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 use derive_more::From;
 use itertools::Itertools;
+use zarrs_metadata::chunk_grid::RECTANGULAR;
 
 use super::{ChunkGrid, ChunkGridTraits};
 pub use super::{RectangularChunkGridConfiguration, RectangularChunkGridDimensionConfiguration};
 
-pub use rectangular::IDENTIFIER;
-
 // Register the chunk grid.
 inventory::submit! {
-    ChunkGridPlugin::new(IDENTIFIER, is_name_rectangular, create_chunk_grid_rectangular)
+    ChunkGridPlugin::new(RECTANGULAR, is_name_rectangular, create_chunk_grid_rectangular)
 }
 
 fn is_name_rectangular(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(RECTANGULAR)
 }
 
 /// Create a `rectangular` chunk grid from metadata.
@@ -36,9 +35,10 @@ fn is_name_rectangular(name: &str) -> bool {
 pub(crate) fn create_chunk_grid_rectangular(
     metadata: &MetadataV3,
 ) -> Result<ChunkGrid, PluginCreateError> {
-    let configuration: RectangularChunkGridConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
+    let configuration: RectangularChunkGridConfiguration =
+        metadata.to_configuration().map_err(|_| {
+            PluginMetadataInvalidError::new(RECTANGULAR, "chunk grid", metadata.clone())
+        })?;
     let chunk_grid = RectangularChunkGrid::new(&configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))
 }
@@ -114,7 +114,7 @@ impl ChunkGridTraits for RectangularChunkGrid {
             })
             .collect();
         let configuration = RectangularChunkGridConfiguration { chunk_shape };
-        MetadataV3::new_with_serializable_configuration(IDENTIFIER.to_string(), &configuration)
+        MetadataV3::new_with_serializable_configuration(RECTANGULAR.to_string(), &configuration)
             .unwrap()
     }
 

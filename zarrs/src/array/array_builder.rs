@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::codec::{vlen_bytes, vlen_utf8};
+use zarrs_metadata::codec;
 
 use crate::{
     metadata::{v3::AdditionalFields, ChunkKeySeparator},
@@ -105,11 +105,11 @@ impl ArrayBuilder {
             // FIXME: Default to VlenCodec if ever stabilised
             match data_type {
                 DataType::String => NamedArrayToBytesCodec::new(
-                    vlen_utf8::IDENTIFIER.to_string(),
+                    codec::VLEN_UTF8.to_string(),
                     Arc::new(VlenV2Codec::new()),
                 ),
                 DataType::RawBits(_) => NamedArrayToBytesCodec::new(
-                    vlen_bytes::IDENTIFIER.to_string(),
+                    codec::VLEN_BYTES.to_string(),
                     Arc::new(VlenV2Codec::new()),
                 ),
                 _ => Arc::new(VlenCodec::default()).into(),

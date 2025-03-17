@@ -33,6 +33,7 @@ use super::{
 
 use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
+use zarrs_metadata::codec::SHARDING;
 use zarrs_plugin::MetadataConfiguration;
 
 /// A `sharding` codec implementation.
@@ -94,7 +95,7 @@ impl ShardingCodec {
 
 impl CodecTraits for ShardingCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        SHARDING
     }
 
     fn configuration_opt(

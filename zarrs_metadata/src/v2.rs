@@ -28,11 +28,11 @@ mod tests {
     use super::*;
 
     use crate::{
-        array::codec::{
-            blosc::{self, BloscCodecConfigurationV1},
-            transpose::{self, TransposeCodecConfigurationV1},
-        },
         v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3_data_type},
+        v3::array::codec::{
+            blosc::BloscCodecConfigurationV1, transpose::TransposeCodecConfigurationV1, BLOSC,
+            TRANSPOSE,
+        },
         ChunkKeySeparator, ChunkShape, Endianness, ExtensionAliasesCodecV2,
         ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3,
     };
@@ -102,14 +102,14 @@ mod tests {
         println!("{array_metadata_v3:?}");
 
         let first_codec = array_metadata_v3.codecs.first().unwrap();
-        assert_eq!(first_codec.name(), transpose::IDENTIFIER);
+        assert_eq!(first_codec.name(), TRANSPOSE);
         let configuration = first_codec
             .to_configuration::<TransposeCodecConfigurationV1>()
             .unwrap();
         assert_eq!(configuration.order.0, vec![1, 0]);
 
         let last_codec = array_metadata_v3.codecs.last().unwrap();
-        assert_eq!(last_codec.name(), blosc::IDENTIFIER);
+        assert_eq!(last_codec.name(), BLOSC);
         let configuration = last_codec
             .to_configuration::<BloscCodecConfigurationV1>()
             .unwrap();

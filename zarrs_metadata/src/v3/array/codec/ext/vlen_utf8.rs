@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `vlen-utf8` codec.
-pub const IDENTIFIER: &str = "vlen-utf8";
-
 /// A wrapper to handle various versions of `vlen-utf8` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

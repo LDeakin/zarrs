@@ -3,10 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `bitround` codec.
-// TODO: ZEP for bitround
-pub const IDENTIFIER: &str = "bitround";
-
 /// A wrapper to handle various versions of `bitround` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

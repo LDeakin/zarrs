@@ -1,6 +1,7 @@
 use std::{num::NonZeroU64, sync::Arc};
 
 use zarrs_data_type::{DataType, FillValue};
+use zarrs_metadata::codec::TRANSPOSE;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
@@ -58,7 +59,7 @@ impl TransposeCodec {
 
 impl CodecTraits for TransposeCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        TRANSPOSE
     }
 
     fn configuration_opt(

@@ -46,10 +46,10 @@ mod bitround_partial_decoder;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::bitround;
 pub use crate::metadata::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
+use crate::metadata::codec::BITROUND;
 pub use bitround_codec::BitroundCodec;
 
 use crate::{
@@ -61,21 +61,19 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use bitround::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_bitround, create_codec_bitround)
+    CodecPlugin::new(BITROUND, is_identifier_bitround, create_codec_bitround)
 }
 
 fn is_identifier_bitround(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == BITROUND
 }
 
 pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BitroundCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(BITROUND, "codec", metadata.clone()))?;
     let codec = Arc::new(BitroundCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }
@@ -201,7 +199,7 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
         }
         _ => Err(CodecError::UnsupportedDataType(
             data_type.clone(),
-            IDENTIFIER.to_string(),
+            BITROUND.to_string(),
         )),
     }
 }

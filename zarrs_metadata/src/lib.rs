@@ -41,11 +41,13 @@ pub use extension_aliases_codec::{ExtensionAliasesCodecV2, ExtensionAliasesCodec
 mod extension_aliases_data_type;
 pub use extension_aliases_data_type::{ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3};
 
+pub use crate::v3::array::{chunk_grid, chunk_key_encoding, codec, data_type};
+
 /// An alias for [`v3::MetadataV3`].
 #[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]
 pub type Metadata = v3::MetadataV3;
 
-pub use array::{codec, ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
+pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
 
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
@@ -119,6 +121,17 @@ impl NodeMetadata {
     pub fn to_string_pretty(&self) -> String {
         serde_json::to_string_pretty(self).expect("node metadata is valid JSON")
     }
+}
+
+/// The size of a data type.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DataTypeSize {
+    /// Fixed size (in bytes).
+    Fixed(usize),
+    /// Variable sized.
+    ///
+    /// <https://github.com/zarr-developers/zeps/pull/47>
+    Variable,
 }
 
 #[cfg(test)]

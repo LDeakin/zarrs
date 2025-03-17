@@ -28,4 +28,4 @@ pub use crate::metadata::codec::vlen_array::{
     VlenArrayCodecConfiguration, VlenArrayCodecConfigurationV1,
 };
 
-vlen_v2_macros::vlen_v2_module!(vlen_array, vlen_array_codec, VlenArrayCodec);
+vlen_v2_macros::vlen_v2_module!(vlen_array, vlen_array_codec, VlenArrayCodec, VLEN_ARRAY);

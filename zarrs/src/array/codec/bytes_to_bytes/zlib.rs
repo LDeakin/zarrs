@@ -34,9 +34,10 @@ mod zlib_codec;
 
 use std::sync::Arc;
 
+use zarrs_metadata::codec::ZLIB;
+
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::codec::zlib,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -47,21 +48,19 @@ pub use crate::metadata::codec::zlib::{
 
 pub use self::zlib_codec::ZlibCodec;
 
-pub use zlib::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_zlib, create_codec_zlib)
+    CodecPlugin::new(ZLIB, is_identifier_zlib, create_codec_zlib)
 }
 
 fn is_identifier_zlib(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == ZLIB
 }
 
 pub(crate) fn create_codec_zlib(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZlibCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(ZLIB, "codec", metadata.clone()))?;
     let codec = Arc::new(ZlibCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

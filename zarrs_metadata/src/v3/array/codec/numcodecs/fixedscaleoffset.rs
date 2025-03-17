@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `fixedscaleoffset` codec.
-pub const IDENTIFIER: &str = "fixedscaleoffset";
-
 /// A wrapper to handle various versions of `fixedscaleoffset` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

@@ -4,9 +4,6 @@ use thiserror::Error;
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `transpose` codec.
-pub const IDENTIFIER: &str = "transpose";
-
 /// A wrapper to handle various versions of Transpose codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

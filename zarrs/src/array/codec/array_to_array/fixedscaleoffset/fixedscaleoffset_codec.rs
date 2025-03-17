@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use zarrs_metadata::{
-    v2::array::DataTypeMetadataV2, v2_to_v3::data_type_metadata_v2_to_v3_data_type,
+    codec::FIXEDSCALEOFFSET, v2::array::DataTypeMetadataV2,
+    v2_to_v3::data_type_metadata_v2_to_v3_data_type,
 };
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::{
     array::{
         codec::{
-            array_to_bytes::vlen_v2::IDENTIFIER, ArrayBytes, ArrayCodecTraits,
-            ArrayPartialDecoderDefault, ArrayPartialDecoderTraits, ArrayPartialEncoderTraits,
-            ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault, CodecError,
-            CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderDefault, ArrayPartialDecoderTraits,
+            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
+            CodecError, CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         ChunkRepresentation, DataType,
     },
@@ -119,7 +119,7 @@ impl FixedScaleOffsetCodec {
 
 impl CodecTraits for FixedScaleOffsetCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        super::FIXEDSCALEOFFSET
     }
 
     fn configuration_opt(
@@ -172,7 +172,7 @@ macro_rules! scale_data_type {
             }),*
             _ => Err(CodecError::UnsupportedDataType(
                 $data_type.clone(),
-                IDENTIFIER.to_string(),
+                FIXEDSCALEOFFSET.to_string(),
             )),
         }
     };
@@ -194,7 +194,7 @@ macro_rules! unscale_data_type {
             }),*
             _ => Err(CodecError::UnsupportedDataType(
                 $data_type.clone(),
-                IDENTIFIER.to_string(),
+                FIXEDSCALEOFFSET.to_string(),
             )),
         }
     };
@@ -268,7 +268,7 @@ macro_rules! cast_to_float {
             }),*
             _ => Err(CodecError::UnsupportedDataType(
                 $data_type.clone(),
-                IDENTIFIER.to_string(),
+                FIXEDSCALEOFFSET.to_string(),
             )),
         }
     };
@@ -289,7 +289,7 @@ macro_rules! cast_from_float {
             }),*
             _ => Err(CodecError::UnsupportedDataType(
                 $data_type.clone(),
-                IDENTIFIER.to_string(),
+                FIXEDSCALEOFFSET.to_string(),
             )),
         }
     };
@@ -475,7 +475,7 @@ impl ArrayToArrayCodecTraits for FixedScaleOffsetCodec {
             }
             _ => Err(CodecError::UnsupportedDataType(
                 decoded_data_type.clone(),
-                IDENTIFIER.to_string(),
+                FIXEDSCALEOFFSET.to_string(),
             )),
         }
     }

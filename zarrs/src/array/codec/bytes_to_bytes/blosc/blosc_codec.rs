@@ -1,6 +1,7 @@
 use std::{borrow::Cow, ffi::c_char, sync::Arc};
 
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
+use zarrs_metadata::codec::BLOSC;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
@@ -143,7 +144,7 @@ impl BloscCodec {
 
 impl CodecTraits for BloscCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BLOSC
     }
 
     fn configuration_opt(

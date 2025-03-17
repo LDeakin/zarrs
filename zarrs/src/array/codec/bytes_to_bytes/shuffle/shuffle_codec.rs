@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::codec::SHUFFLE;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
@@ -51,7 +52,7 @@ impl ShuffleCodec {
 
 impl CodecTraits for ShuffleCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        SHUFFLE
     }
 
     fn configuration_opt(

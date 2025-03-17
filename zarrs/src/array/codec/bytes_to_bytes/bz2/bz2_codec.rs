@@ -4,6 +4,7 @@ use std::{
     sync::Arc,
 };
 
+use zarrs_metadata::codec::BZ2;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
@@ -54,7 +55,7 @@ impl Bz2Codec {
 
 impl CodecTraits for Bz2Codec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BZ2
     }
 
     fn configuration_opt(

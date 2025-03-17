@@ -15,10 +15,10 @@ pub mod regular;
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::chunk_grid::rectangular::{
+pub use crate::metadata::chunk_grid::rectangular::{
     RectangularChunkGridConfiguration, RectangularChunkGridDimensionConfiguration,
 };
-pub use crate::metadata::v3::array::chunk_grid::regular::RegularChunkGridConfiguration;
+pub use crate::metadata::chunk_grid::regular::RegularChunkGridConfiguration;
 
 pub use rectangular::RectangularChunkGrid;
 pub use regular::RegularChunkGrid;
@@ -76,10 +76,10 @@ impl ChunkGrid {
         {
             // Inventory does not work in miri, so manually handle all known chunk grids
             match metadata.name() {
-                regular::IDENTIFIER => {
+                chunk_grid::REGULAR => {
                     return regular::create_chunk_grid_regular(metadata);
                 }
-                rectangular::IDENTIFIER => {
+                chunk_grid::RECTANGULAR => {
                     return rectangular::create_chunk_grid_rectangular(metadata);
                 }
                 _ => {}

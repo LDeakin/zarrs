@@ -11,8 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for a `must_understand` field to `MetadataV3` (ZEP0009)
   - Extensions can now be parsed in more than just the additional fields of array/group metadata (e.g. codecs)
   - Automatically skip unsupported codecs/storage transformers with `"must_understand": false`
-- Add `ExtensionAliases[Codec]` and `Extension{Name,Alias}Map` for extension `name` overriding and aliasing
-  - This API will also be introduced for data types in the future.
+- Add `ExtensionAliases[Codec,DataType]{V2,V3}` and `Extension{Name,Alias}Map` for extension `name` overriding and aliasing
 - Implement `From<T> for MetadataConfiguration` for all codec configuration enums
 - Implement `Copy` for `ZstdCompressionLevel`
 - Add `zfpy` codec metadata (unmerged from `zfp`)
@@ -22,15 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `{Array,Group}Metadata{V2,V3}::to_string_pretty()`
 - Add `zlib` codec metadata
 - Add `shuffle` codec metadata
-- Add `DataTypeMetadataV3::set_name()`
 - Add `MetadataV3::set_name()`
 - Add `MetadataV2::set_id()`
 - Add `ZarrVersion` marker trait and `ZarrVersion{2,3}`
+- Add re-exports for `v3::array::{chunk_grid,chunk_key_encoding,codec,data_type}` at the crate root
 
 ### Changed
-- **Breaking**: Move all codecs into a new `codec` module rather than the `v2`/`v3` modules
 - **Breaking**: Refactor `FillValueMetadataV3` to support arbitrary fill value metadata (for ZEP0009)
-- **Breaking**: Rename `DataTypeMetadataV3::Unknown` variant to `Extension`
 - **Breaking**: Mark versioned codec metadata as non-exhaustive
 - **Breaking**: `{array,codec}_metadata_v2_to_v3` have an additional `ExtensionAliasesCodec` parameter
   - `zarrs` has a default codec map accessible via `zarrs::config::global_config().codec_aliases()`
@@ -39,12 +36,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `thiserror` to 2.0.12
 - **Breaking**: `DataType::from_metadata()` now takes an owned `MetadataV3` instead of a reference
 - **Breaking**: `MetadataV3::new[_with_{configuration,serializable_configuration}]` now take a `String` name instead of `&str`
+- **Breaking**: Move `v3::array::data_type::DataTypeSize` to the crate root
 
 ### Removed
-- **Breaking**: Remove `DataTypeMetadataV3::size[_fixed]()`
 - **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`
 - **Breaking**: Remove all functions in `v3::array::fill_value`
 - **Breaking**: Remove all `FillValueMetadataV3::try_as_*()` methods
+- **Breaking**: Remove `DataTypeMetadataV3`
+- **Breaking**: Remove the `v2::array::codec` module which just contained re-exports of V3 codecs
 
 ## [0.3.6] - 2025-03-02
 

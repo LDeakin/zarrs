@@ -4,9 +4,6 @@ use serde_json::Value;
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `zstd` codec.
-pub const IDENTIFIER: &str = "zstd";
-
 /// A wrapper to handle various versions of `zstd` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]
