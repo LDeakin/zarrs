@@ -35,11 +35,11 @@ mod fletcher32_codec;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::fletcher32;
 pub use crate::metadata::codec::fletcher32::{
     Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1,
 };
 pub use fletcher32_codec::Fletcher32Codec;
+use zarrs_metadata::codec::FLETCHER32;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
@@ -47,21 +47,19 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use fletcher32::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_fletcher32, create_codec_fletcher32)
+    CodecPlugin::new(FLETCHER32, is_identifier_fletcher32, create_codec_fletcher32)
 }
 
 fn is_identifier_fletcher32(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == FLETCHER32
 }
 
 pub(crate) fn create_codec_fletcher32(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(FLETCHER32, "codec", metadata.clone()))?;
     let codec = Arc::new(Fletcher32Codec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }

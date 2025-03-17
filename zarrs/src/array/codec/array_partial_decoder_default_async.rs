@@ -1,6 +1,6 @@
 use std::{num::NonZero, sync::Arc};
 
-use zarrs_metadata::v3::array::data_type::DataTypeSize;
+use zarrs_metadata::DataTypeSize;
 
 use crate::{
     array::{ArrayBytes, ChunkRepresentation, RawBytesOffsets},

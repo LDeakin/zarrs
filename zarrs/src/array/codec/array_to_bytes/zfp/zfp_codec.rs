@@ -1,6 +1,9 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode};
+use zarrs_metadata::codec::{
+    zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode},
+    ZFP,
+};
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use zfp_sys::{
     zfp_compress,
@@ -30,7 +33,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 use super::{
     promote_before_zfp_encoding, zarr_to_zfp_data_type, zfp_bitstream::ZfpBitstream, zfp_decode,
     zfp_field::ZfpField, zfp_partial_decoder, zfp_stream::ZfpStream, ZfpCodecConfiguration,
-    ZfpCodecConfigurationV1, IDENTIFIER,
+    ZfpCodecConfigurationV1,
 };
 
 /// A `zfp` codec implementation.
@@ -160,7 +163,7 @@ impl ZfpCodec {
 
 impl CodecTraits for ZfpCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        ZFP
     }
 
     fn configuration_opt(
@@ -361,7 +364,7 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
             | DataType::Float64 => Ok(BytesRepresentation::BoundedSize(bufsize as u64)),
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                ZFP.to_string(),
             )),
         }
     }

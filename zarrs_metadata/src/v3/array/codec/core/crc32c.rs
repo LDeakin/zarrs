@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `crc32c` codec.
-pub const IDENTIFIER: &str = "crc32c";
-
 /// A wrapper to handle various versions of `crc32c` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

@@ -1,13 +1,10 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{
+use crate::v3::{
     array::codec::zfp::{ZfpCodecConfigurationV1, ZfpMode},
-    v3::MetadataConfigurationSerialize,
+    MetadataConfigurationSerialize,
 };
-
-/// The identifier for the `zfpy` codec.
-pub const IDENTIFIER: &str = "zfpy";
 
 /// A wrapper to handle various versions of `zfpy` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
@@ -138,7 +135,7 @@ pub fn codec_zfpy_v2_numcodecs_to_v3(
 
 #[cfg(test)]
 mod tests {
-    use crate::array::codec::zfp::ZfpCodecConfigurationV1;
+    use crate::codec::zfp::ZfpCodecConfigurationV1;
 
     use super::*;
 

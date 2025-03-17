@@ -1,8 +1,10 @@
 //! The default chunk key encoding.
 
+use zarrs_metadata::chunk_key_encoding::DEFAULT;
+
 use crate::{
     array::chunk_key_encoding::ChunkKeyEncodingPlugin,
-    metadata::v3::{array::chunk_key_encoding::default, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
     storage::StoreKey,
 };
@@ -12,15 +14,13 @@ use super::{
     DefaultChunkKeyEncodingConfiguration,
 };
 
-pub use default::IDENTIFIER;
-
 // Register the chunk key encoding.
 inventory::submit! {
-    ChunkKeyEncodingPlugin::new(IDENTIFIER, is_name_default, create_chunk_key_encoding_default)
+    ChunkKeyEncodingPlugin::new(DEFAULT, is_name_default, create_chunk_key_encoding_default)
 }
 
 fn is_name_default(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(DEFAULT)
 }
 
 pub(crate) fn create_chunk_key_encoding_default(
@@ -28,7 +28,7 @@ pub(crate) fn create_chunk_key_encoding_default(
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: DefaultChunkKeyEncodingConfiguration =
         metadata.to_configuration().map_err(|_| {
-            PluginMetadataInvalidError::new(IDENTIFIER, "chunk key encoding", metadata.clone())
+            PluginMetadataInvalidError::new(DEFAULT, "chunk key encoding", metadata.clone())
         })?;
     let default = DefaultChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(default))
@@ -84,7 +84,7 @@ impl ChunkKeyEncodingTraits for DefaultChunkKeyEncoding {
         let configuration = DefaultChunkKeyEncodingConfiguration {
             separator: self.separator,
         };
-        MetadataV3::new_with_serializable_configuration(IDENTIFIER.to_string(), &configuration)
+        MetadataV3::new_with_serializable_configuration(DEFAULT.to_string(), &configuration)
             .unwrap()
     }
 

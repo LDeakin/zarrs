@@ -94,7 +94,6 @@ mod vlen_partial_decoder;
 use std::{num::NonZeroU64, sync::Arc};
 
 use itertools::Itertools;
-pub use vlen::IDENTIFIER;
 
 pub use crate::metadata::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
 use crate::{
@@ -103,7 +102,7 @@ use crate::{
         convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
         RawBytes,
     },
-    metadata::codec::vlen,
+    metadata::codec::VLEN,
 };
 
 pub use vlen_codec::VlenCodec;
@@ -118,17 +117,17 @@ use super::bytes::reverse_endianness;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_vlen, create_codec_vlen)
+    CodecPlugin::new(VLEN, is_identifier_vlen, create_codec_vlen)
 }
 
 fn is_identifier_vlen(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == VLEN
 }
 
 pub(crate) fn create_codec_vlen(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: VlenCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(VLEN, "codec", metadata.clone()))?;
     let codec = Arc::new(VlenCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

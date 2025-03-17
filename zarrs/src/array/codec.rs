@@ -177,60 +177,60 @@ impl Codec {
             // Inventory does not work in miri, so manually handle all known codecs
             match metadata.name() {
                 #[cfg(feature = "transpose")]
-                array_to_array::transpose::IDENTIFIER => {
+                codec::TRANSPOSE => {
                     return array_to_array::transpose::create_codec_transpose(metadata);
                 }
                 #[cfg(feature = "bitround")]
-                array_to_array::bitround::IDENTIFIER => {
+                codec::BITROUND => {
                     return array_to_array::bitround::create_codec_bitround(metadata);
                 }
-                array_to_bytes::bytes::IDENTIFIER => {
+                codec::BYTES => {
                     return array_to_bytes::bytes::create_codec_bytes(metadata);
                 }
                 #[cfg(feature = "pcodec")]
-                array_to_bytes::pcodec::IDENTIFIER => {
+                codec::PCODEC => {
                     return array_to_bytes::pcodec::create_codec_pcodec(metadata);
                 }
                 #[cfg(feature = "sharding")]
-                array_to_bytes::sharding::IDENTIFIER => {
+                codec::SHARDING => {
                     return array_to_bytes::sharding::create_codec_sharding(metadata);
                 }
                 #[cfg(feature = "zfp")]
-                array_to_bytes::zfp::IDENTIFIER => {
+                codec::ZFP => {
                     return array_to_bytes::zfp::create_codec_zfp(metadata);
                 }
                 #[cfg(feature = "zfp")]
-                array_to_bytes::zfpy::IDENTIFIER => {
+                codec::ZFPY => {
                     return array_to_bytes::zfpy::create_codec_zfpy(metadata);
                 }
-                array_to_bytes::vlen::IDENTIFIER => {
+                codec::VLEN => {
                     return array_to_bytes::vlen::create_codec_vlen(metadata);
                 }
-                array_to_bytes::vlen_v2::IDENTIFIER => {
+                codec::VLEN_V2 => {
                     return array_to_bytes::vlen_v2::create_codec_vlen_v2(metadata);
                 }
                 #[cfg(feature = "blosc")]
-                bytes_to_bytes::blosc::IDENTIFIER => {
+                codec::BLOSC => {
                     return bytes_to_bytes::blosc::create_codec_blosc(metadata);
                 }
                 #[cfg(feature = "bz2")]
-                bytes_to_bytes::bz2::IDENTIFIER => {
+                codec::BZ2 => {
                     return bytes_to_bytes::bz2::create_codec_bz2(metadata);
                 }
                 #[cfg(feature = "crc32c")]
-                bytes_to_bytes::crc32c::IDENTIFIER => {
+                codec::CRC32C => {
                     return bytes_to_bytes::crc32c::create_codec_crc32c(metadata);
                 }
                 #[cfg(feature = "gdeflate")]
-                bytes_to_bytes::gdeflate::IDENTIFIER => {
+                codec::GDEFLATE => {
                     return bytes_to_bytes::gdeflate::create_codec_gdeflate(metadata);
                 }
                 #[cfg(feature = "gzip")]
-                bytes_to_bytes::gzip::IDENTIFIER => {
+                codec::GZIP => {
                     return bytes_to_bytes::gzip::create_codec_gzip(metadata);
                 }
                 #[cfg(feature = "zstd")]
-                bytes_to_bytes::zstd::IDENTIFIER => {
+                codec::ZSTD => {
                     return bytes_to_bytes::zstd::create_codec_zstd(metadata);
                 }
                 _ => {}
@@ -247,7 +247,7 @@ impl Codec {
 
 /// Codec traits.
 pub trait CodecTraits: Send + Sync {
-    /// The unique identifier for the codec.
+    /// Unique identifier for the codec.
     fn identifier(&self) -> &str;
 
     /// The default name of the codec.

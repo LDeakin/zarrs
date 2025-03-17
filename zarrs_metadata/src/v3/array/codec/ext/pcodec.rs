@@ -3,10 +3,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `pcodec` codec.
-// TODO: ZEP for pcodec when stabilised
-pub const IDENTIFIER: &str = "pcodec";
-
 /// A wrapper to handle various versions of `pcodec` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

@@ -7,9 +7,6 @@ use crate::{
     ChunkShape,
 };
 
-/// The identifier for the `sharding_indexed` codec.
-pub const IDENTIFIER: &str = "sharding_indexed";
-
 /// A wrapper to handle various versions of Sharding codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

@@ -43,12 +43,12 @@
 
 mod gdeflate_codec;
 
-use crate::metadata::codec::gdeflate;
 pub use crate::metadata::codec::gdeflate::{
     GDeflateCodecConfiguration, GDeflateCodecConfigurationV1, GDeflateCompressionLevel,
     GDeflateCompressionLevelError,
 };
 pub use gdeflate_codec::GDeflateCodec;
+use zarrs_metadata::codec::GDEFLATE;
 
 use crate::{
     array::{
@@ -59,23 +59,21 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use gdeflate::IDENTIFIER;
-
 use std::sync::Arc;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_gdeflate, create_codec_gdeflate)
+    CodecPlugin::new(GDEFLATE, is_identifier_gdeflate, create_codec_gdeflate)
 }
 
 fn is_identifier_gdeflate(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == GDEFLATE
 }
 
 pub(crate) fn create_codec_gdeflate(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: GDeflateCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(GDEFLATE, "codec", metadata.clone()))?;
     let codec = Arc::new(GDeflateCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

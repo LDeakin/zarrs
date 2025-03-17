@@ -4,6 +4,7 @@ use std::{
     sync::Arc,
 };
 
+use zarrs_metadata::codec::ZLIB;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
@@ -54,7 +55,7 @@ impl ZlibCodec {
 
 impl CodecTraits for ZlibCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        ZLIB
     }
 
     fn configuration_opt(

@@ -32,7 +32,7 @@ impl TestUnboundedCodec {
 
 impl CodecTraits for TestUnboundedCodec {
     fn identifier(&self) -> &'static str {
-        super::IDENTIFIER
+        "zarrs.test_unbounded"
     }
 
     fn configuration_opt(

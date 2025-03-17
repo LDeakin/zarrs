@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `vlen-bytes` codec.
-pub const IDENTIFIER: &str = "vlen-bytes";
-
 /// A wrapper to handle various versions of `vlen-bytes` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

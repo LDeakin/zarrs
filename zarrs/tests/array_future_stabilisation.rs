@@ -5,12 +5,13 @@ use std::sync::Arc;
 
 use zarrs::{
     array::{
-        codec::{bytes_to_bytes::bz2, Bz2Codec, CodecTraits},
+        codec::{Bz2Codec, CodecTraits},
         Array, ArrayMetadataOptions,
     },
     config::global_config_mut,
 };
 use zarrs_filesystem::FilesystemStore;
+use zarrs_metadata::codec::BZ2;
 
 /// bz2 could stabilise as is, so test supporting that via the codec map
 #[test]
@@ -23,7 +24,7 @@ fn array_future_stabilisation_bz2() {
     global_config_mut()
         .codec_aliases_v3_mut()
         .default_names
-        .entry(bz2::IDENTIFIER.into())
+        .entry(BZ2.into())
         .and_modify(|entry| {
             *entry = "bz2".into();
         });

@@ -38,10 +38,10 @@ mod zstd_codec;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::zstd;
 pub use crate::metadata::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
+use zarrs_metadata::codec::ZSTD;
 pub use zstd_codec::ZstdCodec;
 
 use crate::{
@@ -50,21 +50,19 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use zstd::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_zstd, create_codec_zstd)
+    CodecPlugin::new(ZSTD, is_identifier_zstd, create_codec_zstd)
 }
 
 fn is_identifier_zstd(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == ZSTD
 }
 
 pub(crate) fn create_codec_zstd(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZstdCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(ZSTD, "codec", metadata.clone()))?;
     let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

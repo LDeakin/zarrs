@@ -4,9 +4,6 @@ use derive_more::Display;
 
 use crate::ChunkKeySeparator;
 
-/// The identifier for the `v2` chunk key encoding.
-pub const IDENTIFIER: &str = "v2";
-
 /// A `v2` chunk key encoding configuration.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

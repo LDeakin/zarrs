@@ -1,3 +1,5 @@
+use zarrs_metadata::codec::SHARDING;
+
 use super::{codec::ShardingCodecConfiguration, Array, ArrayShape, ChunkGrid, ChunkShape};
 
 /// An [`Array`] extension trait to simplify working with arrays using the `sharding_indexed` codec.
@@ -35,8 +37,7 @@ pub trait ArrayShardedExt: private::Sealed {
 
 impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
     fn is_sharded(&self) -> bool {
-        self.codecs.array_to_bytes_codec().name()
-            == super::codec::array_to_bytes::sharding::IDENTIFIER
+        self.codecs.array_to_bytes_codec().name() == SHARDING
     }
 
     fn is_exclusively_sharded(&self) -> bool {

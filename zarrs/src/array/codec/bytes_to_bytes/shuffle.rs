@@ -38,9 +38,9 @@ mod shuffle_codec;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::shuffle;
 pub use crate::metadata::codec::shuffle::{ShuffleCodecConfiguration, ShuffleCodecConfigurationV1};
 pub use shuffle_codec::ShuffleCodec;
+use zarrs_metadata::codec::SHUFFLE;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
@@ -48,21 +48,19 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use shuffle::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_shuffle, create_codec_shuffle)
+    CodecPlugin::new(SHUFFLE, is_identifier_shuffle, create_codec_shuffle)
 }
 
 fn is_identifier_shuffle(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == SHUFFLE
 }
 
 pub(crate) fn create_codec_shuffle(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(SHUFFLE, "codec", metadata.clone()))?;
     let codec = Arc::new(ShuffleCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

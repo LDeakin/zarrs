@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec::BYTES;
+
 use crate::{
     array::{
         codec::{
@@ -55,7 +57,7 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder {
                 DataTypeSize::Variable => {
                     return Err(CodecError::UnsupportedDataType(
                         self.data_type().clone(),
-                        super::IDENTIFIER.to_string(),
+                        BYTES.to_string(),
                     ));
                 }
                 DataTypeSize::Fixed(data_type_size) => {
@@ -165,7 +167,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder {
                 DataTypeSize::Variable => {
                     return Err(CodecError::UnsupportedDataType(
                         self.data_type().clone(),
-                        super::IDENTIFIER.to_string(),
+                        BYTES.to_string(),
                     ));
                 }
                 DataTypeSize::Fixed(data_type_size) => array_subset

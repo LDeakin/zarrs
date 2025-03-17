@@ -1,27 +1,24 @@
 macro_rules! vlen_v2_module {
-    ($module:ident, $module_codec:ident, $struct:ident) => {
+    ($module:ident, $module_codec:ident, $struct:ident, $identifier:ident) => {
         mod $module_codec;
 
         use std::sync::Arc;
-
-        pub use $module::IDENTIFIER;
 
         pub use $module_codec::$struct;
 
         use crate::{
             array::codec::{Codec, CodecPlugin},
-            metadata::codec::$module,
-            metadata::v3::MetadataV3,
+            metadata::{codec::$identifier, v3::MetadataV3},
             plugin::{PluginCreateError, PluginMetadataInvalidError},
         };
 
         // Register the codec.
         inventory::submit! {
-            CodecPlugin::new(IDENTIFIER, is_name, create_codec)
+            CodecPlugin::new($identifier, is_name, create_codec)
         }
 
         fn is_name(name: &str) -> bool {
-            name.eq(IDENTIFIER)
+            name.eq($identifier)
         }
 
         fn create_codec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
@@ -29,14 +26,14 @@ macro_rules! vlen_v2_module {
                 let codec = Arc::new($struct::new());
                 Ok(Codec::ArrayToBytes(codec))
             } else {
-                Err(PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()).into())
+                Err(PluginMetadataInvalidError::new($identifier, "codec", metadata.clone()).into())
             }
         }
     };
 }
 
 macro_rules! vlen_v2_codec {
-    ($struct:ident,$identifier:expr) => {
+    ($struct:ident,$identifier:ident) => {
         use std::sync::Arc;
 
         use zarrs_metadata::v3::MetadataConfiguration;
@@ -55,14 +52,14 @@ macro_rules! vlen_v2_codec {
         #[cfg(feature = "async")]
         use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-        #[doc = concat!("The `", $identifier, "` codec implementation.")]
+        #[doc = concat!("The `", stringify!($identifier), "` codec implementation.")]
         #[derive(Debug, Clone)]
         pub struct $struct {
             inner: Arc<VlenV2Codec>,
         }
 
         impl $struct {
-            #[doc = concat!("Create a new `", $identifier, "` codec.")]
+            #[doc = concat!("Create a new `", stringify!($identifier), "` codec.")]
             #[must_use]
             pub fn new() -> Self {
                 Self {
@@ -79,7 +76,7 @@ macro_rules! vlen_v2_codec {
 
         impl CodecTraits for $struct {
             fn identifier(&self) -> &str {
-                super::IDENTIFIER
+                $identifier
             }
 
             fn configuration_opt(

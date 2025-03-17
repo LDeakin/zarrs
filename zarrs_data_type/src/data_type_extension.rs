@@ -1,7 +1,7 @@
 use std::fmt::Debug;
-use zarrs_metadata::v3::{
-    array::{data_type::DataTypeSize, fill_value::FillValueMetadataV3},
-    MetadataConfiguration,
+use zarrs_metadata::{
+    v3::{array::fill_value::FillValueMetadataV3, MetadataConfiguration},
+    DataTypeSize,
 };
 
 use crate::{

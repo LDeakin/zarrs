@@ -5,9 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::ChunkShape;
 
-/// The identifier for the `regular` chunk grid.
-pub const IDENTIFIER: &str = "regular";
-
 /// Configuration parameters for a `regular` chunk grid.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

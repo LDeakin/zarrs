@@ -1,5 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::codec::CRC32C;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::array::{
@@ -40,7 +41,7 @@ impl Crc32cCodec {
 
 impl CodecTraits for Crc32cCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        CRC32C
     }
 
     fn configuration_opt(

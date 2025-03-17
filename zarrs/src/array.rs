@@ -73,12 +73,13 @@ pub use crate::data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 c
 
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{
-    array::data_type::DataTypeSize,
     array::fill_value::FillValueMetadataV3,
     array::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     ArrayMetadataV3,
 };
-pub use crate::metadata::{ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness};
+pub use crate::metadata::{
+    ArrayMetadata, ArrayShape, ChunkShape, DataTypeSize, DimensionName, Endianness,
+};
 use crate::{config::global_config, metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError};
 
 /// An alias for [`FillValueMetadataV3`].
@@ -666,7 +667,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
                     let data_type_aliases = config.data_type_aliases_v3();
                     {
                         let name = metadata.data_type.name();
-                        let identifier = data_type_aliases.identifier(&name);
+                        let identifier = data_type_aliases.identifier(name);
                         metadata
                             .data_type
                             .set_name(data_type_aliases.default_name(identifier).to_string());

@@ -4,24 +4,24 @@
 
 use std::num::NonZeroU64;
 
+use zarrs_metadata::chunk_grid::REGULAR;
+
 use crate::{
     array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape},
-    metadata::v3::{array::chunk_grid::regular, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
 pub use super::RegularChunkGridConfiguration;
 use super::{ChunkGrid, ChunkGridTraits};
 
-pub use regular::IDENTIFIER;
-
 // Register the chunk grid.
 inventory::submit! {
-    ChunkGridPlugin::new(IDENTIFIER, is_name_regular, create_chunk_grid_regular)
+    ChunkGridPlugin::new(REGULAR, is_name_regular, create_chunk_grid_regular)
 }
 
 fn is_name_regular(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(REGULAR)
 }
 
 /// Create a `regular` chunk grid from metadata.
@@ -33,7 +33,7 @@ pub(crate) fn create_chunk_grid_regular(
 ) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RegularChunkGridConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "chunk grid", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(REGULAR, "chunk grid", metadata.clone()))?;
     let chunk_grid = RegularChunkGrid::new(configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))
 }
@@ -73,7 +73,7 @@ impl ChunkGridTraits for RegularChunkGrid {
         let configuration = RegularChunkGridConfiguration {
             chunk_shape: self.chunk_shape.clone(),
         };
-        MetadataV3::new_with_serializable_configuration(IDENTIFIER.to_string(), &configuration)
+        MetadataV3::new_with_serializable_configuration(REGULAR.to_string(), &configuration)
             .unwrap()
     }
 

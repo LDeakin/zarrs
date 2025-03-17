@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `shuffle` codec.
-pub const IDENTIFIER: &str = "shuffle";
-
 /// A wrapper to handle various versions of `shuffle` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

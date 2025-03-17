@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `gzip` codec.
-pub const IDENTIFIER: &str = "gzip";
-
 /// A wrapper to handle various versions of `gzip` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]

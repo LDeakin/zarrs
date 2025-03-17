@@ -3,9 +3,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::v3::MetadataConfigurationSerialize;
 
-/// The identifier for the `zlib` codec.
-pub const IDENTIFIER: &str = "zlib";
-
 /// A wrapper to handle various versions of `zlib` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[non_exhaustive]
@@ -26,7 +23,7 @@ impl MetadataConfigurationSerialize for ZlibCodecConfiguration {}
 ///     "level": 9
 /// }
 /// # "#;
-/// # use zarrs_metadata::codec::zlib::ZlibCodecConfigurationV1;
+/// # use zarrs_metadata::v3::array::codec::zlib::ZlibCodecConfigurationV1;
 /// # let configuration: ZlibCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

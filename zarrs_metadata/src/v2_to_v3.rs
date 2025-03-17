@@ -1,13 +1,6 @@
 use thiserror::Error;
 
 use crate::{
-    array::codec::{
-        blosc::{codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs},
-        bytes::BytesCodecConfigurationV1,
-        transpose::{TransposeCodecConfigurationV1, TransposeOrder},
-        zstd::codec_zstd_v2_numcodecs_to_v3,
-    },
-    codec::{blosc::BloscShuffleModeNumcodecs, zstd::ZstdCodecConfiguration},
     v2::{
         array::{
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
@@ -17,17 +10,26 @@ use crate::{
     },
     v3::{
         array::{
-            chunk_grid::regular::RegularChunkGridConfiguration,
-            chunk_key_encoding::v2::V2ChunkKeyEncodingConfiguration, data_type::DataTypeSize,
+            chunk_grid::{self, regular::RegularChunkGridConfiguration},
+            chunk_key_encoding::{self, v2::V2ChunkKeyEncodingConfiguration},
+            codec::{
+                self,
+                blosc::{
+                    codec_blosc_v2_numcodecs_to_v3, BloscCodecConfigurationNumcodecs,
+                    BloscShuffleModeNumcodecs,
+                },
+                bytes::BytesCodecConfigurationV1,
+                transpose::{TransposeCodecConfigurationV1, TransposeOrder},
+                zstd::{codec_zstd_v2_numcodecs_to_v3, ZstdCodecConfiguration},
+            },
+            data_type::{self},
             fill_value::FillValueMetadataV3,
         },
         ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
-    Endianness, ExtensionAliasesCodecV2, ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2,
-    ExtensionAliasesDataTypeV3,
+    DataTypeSize, Endianness, ExtensionAliasesCodecV2, ExtensionAliasesCodecV3,
+    ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3,
 };
-
-use super::v3::array::data_type::DataTypeMetadataV3;
 
 /// Convert Zarr V2 group metadata to V3.
 #[allow(clippy::too_many_lines)]
@@ -69,7 +71,7 @@ pub enum ArrayMetadataV2ToV3ConversionError {
 pub fn codec_metadata_v2_to_v3(
     order: ArrayMetadataV2Order,
     dimensionality: usize,
-    data_type: &DataTypeMetadataV3,
+    data_type: &MetadataV3,
     endianness: Option<Endianness>,
     filters: &Option<Vec<MetadataV2>>,
     compressor: &Option<MetadataV2>,
@@ -81,7 +83,7 @@ pub fn codec_metadata_v2_to_v3(
     // Array-to-array codecs
     if order == ArrayMetadataV2Order::F {
         let transpose_metadata = MetadataV3::new_with_serializable_configuration(
-            crate::array::codec::transpose::IDENTIFIER.to_string(),
+            codec::TRANSPOSE.to_string(),
             &TransposeCodecConfigurationV1 {
                 order: {
                     let f_order: Vec<usize> = (0..dimensionality).rev().collect();
@@ -102,9 +104,7 @@ pub fn codec_metadata_v2_to_v3(
             let identifier = codec_aliases_v2.identifier(filter.id());
             let name = codec_aliases_v3.default_name(identifier).to_string();
             match identifier {
-                crate::array::codec::vlen_array::IDENTIFIER
-                | crate::array::codec::vlen_bytes::IDENTIFIER
-                | crate::array::codec::vlen_utf8::IDENTIFIER => {
+                codec::VLEN_ARRAY | codec::VLEN_BYTES | codec::VLEN_UTF8 => {
                     has_array_to_bytes = true;
                     let vlen_v2_metadata =
                         MetadataV3::new_with_configuration(name, serde_json::Map::default());
@@ -125,7 +125,7 @@ pub fn codec_metadata_v2_to_v3(
         let identifier = codec_aliases_v2.identifier(compressor.id());
         let name = codec_aliases_v3.default_name(identifier).to_string();
         match identifier {
-            crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
+            codec::ZFPY | codec::PCODEC => {
                 // zfpy / pcodec are v2/v3 compatible
                 has_array_to_bytes = true;
                 codecs.push(MetadataV3::new_with_configuration(
@@ -139,7 +139,7 @@ pub fn codec_metadata_v2_to_v3(
 
     if !has_array_to_bytes {
         let bytes_metadata = MetadataV3::new_with_serializable_configuration(
-            crate::array::codec::bytes::IDENTIFIER.to_string(),
+            codec::BYTES.to_string(),
             &BytesCodecConfigurationV1 {
                 endian: Some(endianness.unwrap_or(Endianness::native())),
             },
@@ -152,10 +152,10 @@ pub fn codec_metadata_v2_to_v3(
         let identifier = codec_aliases_v2.identifier(compressor.id());
         let name = codec_aliases_v3.default_name(identifier).to_string();
         match identifier {
-            crate::array::codec::zfpy::IDENTIFIER | crate::array::codec::pcodec::IDENTIFIER => {
+            codec::ZFPY | codec::PCODEC => {
                 // already handled above
             }
-            crate::array::codec::blosc::IDENTIFIER => {
+            codec::BLOSC => {
                 let blosc = serde_json::from_value::<BloscCodecConfigurationNumcodecs>(
                     serde_json::to_value(compressor.configuration())?,
                 )?;
@@ -164,24 +164,47 @@ pub fn codec_metadata_v2_to_v3(
                     // The data type size does not matter
                     None
                 } else {
-                    // Special case for known Zarr V2 data types
-                    type M = DataTypeMetadataV3;
-                    match data_type {
-                        M::Bool | M::Int8 | M::UInt8 => Some(DataTypeSize::Fixed(1)),
-                        M::Int16 | M::UInt16 | M::Float16 | M::BFloat16 => {
-                            Some(DataTypeSize::Fixed(2))
+                    // Special case for known Zarr V2 / Zarr V3 compatible data types
+                    // If the data type has an unknown size
+                    //  - the metadata will not match how the data is encoded, but it can still be decoded just fine
+                    //  - resaving the array metadata as v3 will not have optimal blosc encoding parameters
+                    match data_type.name() {
+                        data_type::BOOL | data_type::INT8 | data_type::UINT8 => {
+                            Some(DataTypeSize::Fixed(1))
                         }
-                        M::Int32 | M::UInt32 | M::Float32 => Some(DataTypeSize::Fixed(4)),
-                        M::Int64 | M::UInt64 | M::Float64 | M::Complex64 => {
-                            Some(DataTypeSize::Fixed(8))
+                        data_type::INT16
+                        | data_type::UINT16
+                        | data_type::FLOAT16
+                        | data_type::BFLOAT16 => Some(DataTypeSize::Fixed(2)),
+                        data_type::INT32 | data_type::UINT32 | data_type::FLOAT32 => {
+                            Some(DataTypeSize::Fixed(4))
                         }
-                        M::Complex128 => Some(DataTypeSize::Fixed(16)),
-                        M::RawBits(size) => Some(DataTypeSize::Fixed(*size)),
-                        M::String | M::Bytes => Some(DataTypeSize::Variable),
-                        M::Extension(_) => {
-                            // In this case the metadata will not match how the data is encoded, but it can still be decoded just fine.
-                            // Resaving the array metadata as v3 will not have optimal blosc encoding parameters
-                            None
+                        data_type::INT64
+                        | data_type::UINT64
+                        | data_type::FLOAT64
+                        | data_type::COMPLEX64 => Some(DataTypeSize::Fixed(8)),
+                        data_type::COMPLEX128 => Some(DataTypeSize::Fixed(16)),
+                        data_type::STRING | data_type::BYTES => Some(DataTypeSize::Variable),
+                        name => {
+                            // Special case for raw bits data types
+                            if name.starts_with('r') && name.len() > 1 {
+                                if let Ok(size_bits) = name[1..].parse::<usize>() {
+                                    if size_bits % 8 == 0 {
+                                        let size_bytes = size_bits / 8;
+                                        Some(DataTypeSize::Fixed(size_bytes))
+                                    } else {
+                                        return Err(
+                                            ArrayMetadataV2ToV3ConversionError::UnsupportedDataType(
+                                                name.to_string(),
+                                            ),
+                                        );
+                                    }
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
                         }
                     }
                 };
@@ -192,7 +215,7 @@ pub fn codec_metadata_v2_to_v3(
                     &configuration,
                 )?);
             }
-            crate::array::codec::zstd::IDENTIFIER => {
+            codec::ZSTD => {
                 let zstd = serde_json::from_value::<ZstdCodecConfiguration>(serde_json::to_value(
                     compressor.configuration(),
                 )?)?;
@@ -226,7 +249,7 @@ pub fn array_metadata_v2_to_v3(
 ) -> Result<ArrayMetadataV3, ArrayMetadataV2ToV3ConversionError> {
     let shape = array_metadata_v2.shape.clone();
     let chunk_grid = MetadataV3::new_with_serializable_configuration(
-        crate::v3::array::chunk_grid::regular::IDENTIFIER.to_string(),
+        chunk_grid::REGULAR.to_string(),
         &RegularChunkGridConfiguration {
             chunk_shape: array_metadata_v2.chunks.clone(),
         },
@@ -257,7 +280,7 @@ pub fn array_metadata_v2_to_v3(
     let mut fill_value = array_metadata_fill_value_v2_to_v3(&array_metadata_v2.fill_value)
         .or_else(|| {
             // Support zarr-python encoded string arrays with a `null` fill value
-            match data_type.name().as_str() {
+            match data_type.name() {
                 "string" => Some(FillValueMetadataV3::from("")),
                 _ => None,
             }
@@ -301,7 +324,7 @@ pub fn array_metadata_v2_to_v3(
     )?;
 
     let chunk_key_encoding = MetadataV3::new_with_serializable_configuration(
-        crate::v3::array::chunk_key_encoding::v2::IDENTIFIER.to_string(),
+        chunk_key_encoding::V2.to_string(),
         &V2ChunkKeyEncodingConfiguration {
             separator: array_metadata_v2.dimension_separator,
         },
@@ -330,12 +353,12 @@ pub fn data_type_metadata_v2_to_v3_data_type(
     data_type: &DataTypeMetadataV2,
     data_type_aliases_v2: &ExtensionAliasesDataTypeV2,
     data_type_aliases_v3: &ExtensionAliasesDataTypeV3,
-) -> Result<DataTypeMetadataV3, DataTypeMetadataV2UnsupportedDataTypeError> {
+) -> Result<MetadataV3, DataTypeMetadataV2UnsupportedDataTypeError> {
     match data_type {
         DataTypeMetadataV2::Simple(name) => {
             let identifier = data_type_aliases_v2.identifier(name);
             let name = data_type_aliases_v3.default_name(identifier).to_string();
-            Ok(DataTypeMetadataV3::from_metadata(MetadataV3::new(name)))
+            Ok(MetadataV3::new(name))
         }
         DataTypeMetadataV2::Structured(_) => Err(DataTypeMetadataV2UnsupportedDataTypeError(
             data_type.clone(),

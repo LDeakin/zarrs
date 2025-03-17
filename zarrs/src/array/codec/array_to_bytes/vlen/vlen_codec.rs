@@ -1,5 +1,6 @@
 use std::{num::NonZeroU64, sync::Arc};
 
+use zarrs_metadata::codec::VLEN;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
@@ -92,7 +93,7 @@ impl VlenCodec {
 
 impl CodecTraits for VlenCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        VLEN
     }
 
     fn configuration_opt(
@@ -340,7 +341,7 @@ impl ArrayToBytesCodecTraits for VlenCodec {
             DataTypeSize::Variable => Ok(BytesRepresentation::UnboundedSize),
             DataTypeSize::Fixed(_) => Err(CodecError::UnsupportedDataType(
                 decoded_representation.data_type().clone(),
-                super::IDENTIFIER.to_string(),
+                VLEN.to_string(),
             )),
         }
     }

@@ -1,6 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use num::Integer;
+use zarrs_metadata::codec::FLETCHER32;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::array::{
@@ -41,7 +42,7 @@ impl Fletcher32Codec {
 
 impl CodecTraits for Fletcher32Codec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        FLETCHER32
     }
 
     fn configuration_opt(

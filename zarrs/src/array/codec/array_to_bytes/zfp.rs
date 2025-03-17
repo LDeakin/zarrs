@@ -112,7 +112,7 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
-    metadata::codec::zfp::{self, ZfpMode},
+    metadata::codec::{zfp::ZfpMode, ZFP},
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -121,21 +121,19 @@ use self::{
     zfp_array::ZfpArray, zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream,
 };
 
-pub use zfp::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_zfp, create_codec_zfp)
+    CodecPlugin::new(ZFP, is_identifier_zfp, create_codec_zfp)
 }
 
 fn is_identifier_zfp(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == ZFP
 }
 
 pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZfpCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(ZFP, "codec", metadata.clone()))?;
     let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
@@ -223,7 +221,7 @@ fn promote_before_zfp_encoding(
         ))),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -244,7 +242,7 @@ fn init_zfp_decoding_output(
         DataType::Float64 => Ok(ZfpArray::Double(vec![0.0; num_elements])),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -295,7 +293,7 @@ fn demote_after_zfp_decoding(
         )),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }

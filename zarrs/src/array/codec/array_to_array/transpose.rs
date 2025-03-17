@@ -33,11 +33,11 @@ mod transpose_partial_decoder;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::transpose;
 pub use crate::metadata::codec::transpose::{
     InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
     TransposeOrder,
 };
+use crate::metadata::codec::TRANSPOSE;
 pub use transpose_codec::TransposeCodec;
 
 use crate::{
@@ -50,21 +50,19 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use transpose::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_identifier_transpose, create_codec_transpose)
+    CodecPlugin::new(TRANSPOSE, is_identifier_transpose, create_codec_transpose)
 }
 
 fn is_identifier_transpose(identifier: &str) -> bool {
-    identifier == IDENTIFIER
+    identifier == TRANSPOSE
 }
 
 pub(crate) fn create_codec_transpose(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: TransposeCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(TRANSPOSE, "codec", metadata.clone()))?;
     let codec = Arc::new(TransposeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }
