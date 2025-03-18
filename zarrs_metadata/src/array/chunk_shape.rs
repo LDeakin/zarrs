@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ArrayShape;
 
-/// The shape of a chunk. All dimensions must be non-zero.
+/// A chunk shape. All dimensions must be non-zero.
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub struct ChunkShape(Vec<NonZeroU64>);

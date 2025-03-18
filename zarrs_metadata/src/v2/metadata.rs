@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Metadata with a id and optional configuration.
+/// Metadata with an `id` and optional `configuration`.
 ///
 /// Can be deserialised from a JSON string or name/configuration map.
 /// For example:

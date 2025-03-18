@@ -1,6 +1,10 @@
 use thiserror::Error;
 
 use crate::{
+    extension::{
+        ExtensionAliasesCodecV2, ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2,
+        ExtensionAliasesDataTypeV3,
+    },
     v2::{
         array::{
             data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
@@ -27,11 +31,10 @@ use crate::{
         },
         ArrayMetadataV3, GroupMetadataV3, MetadataV3,
     },
-    DataTypeSize, Endianness, ExtensionAliasesCodecV2, ExtensionAliasesCodecV3,
-    ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3,
+    DataTypeSize, Endianness,
 };
 
-/// Convert Zarr V2 group metadata to V3.
+/// Convert Zarr V2 group metadata to Zarr V3.
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMetadataV3 {
@@ -40,12 +43,12 @@ pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMeta
         .with_additional_fields(group_metadata_v2.additional_fields.clone())
 }
 
-/// An error converting Zarr V2 array metadata to V3.
+/// An error converting Zarr V2 array metadata to Zarr V3.
 #[derive(Debug, Error)]
 pub enum ArrayMetadataV2ToV3ConversionError {
     /// Unsupported data type.
     #[error("unsupported data type {_0:?}")]
-    UnsupportedDataType(String),
+    UnsupportedDataType(DataTypeMetadataV2),
     /// Invalid data type endianness.
     #[error(transparent)]
     InvalidEndianness(DataTypeMetadataV2InvalidEndiannessError),
@@ -63,7 +66,7 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     Other(String),
 }
 
-/// Convert Zarr V2 codec metadata to the equivalent Zarr V3 codec metadata.
+/// Convert Zarr V2 codec metadata to Zarr V3.
 ///
 /// # Errors
 /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is invalid or is not compatible with Zarr V3 metadata.
@@ -195,7 +198,7 @@ pub fn codec_metadata_v2_to_v3(
                                     } else {
                                         return Err(
                                             ArrayMetadataV2ToV3ConversionError::UnsupportedDataType(
-                                                name.to_string(),
+                                                DataTypeMetadataV2::Simple(name.to_string()),
                                             ),
                                         );
                                     }
@@ -235,7 +238,7 @@ pub fn codec_metadata_v2_to_v3(
     Ok(codecs)
 }
 
-/// Convert Zarr V2 array metadata to V3.
+/// Convert Zarr V2 array metadata to Zarr V3.
 ///
 /// # Errors
 /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is invalid or is not compatible with Zarr V3 metadata.
@@ -256,7 +259,7 @@ pub fn array_metadata_v2_to_v3(
     )?;
 
     let (Ok(data_type), endianness) = (
-        data_type_metadata_v2_to_v3_data_type(
+        data_type_metadata_v2_to_v3(
             &array_metadata_v2.dtype,
             data_type_aliases_v2,
             data_type_aliases_v3,
@@ -265,19 +268,12 @@ pub fn array_metadata_v2_to_v3(
             .map_err(ArrayMetadataV2ToV3ConversionError::InvalidEndianness)?,
     ) else {
         return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedDataType(
-            match &array_metadata_v2.dtype {
-                DataTypeMetadataV2::Simple(dtype) => dtype.clone(),
-                DataTypeMetadataV2::Structured(dtype) => {
-                    return Err(ArrayMetadataV2ToV3ConversionError::UnsupportedDataType(
-                        format!("{dtype:?}"),
-                    ))
-                }
-            },
+            array_metadata_v2.dtype.clone(),
         ));
     };
 
     // Fill value
-    let mut fill_value = array_metadata_fill_value_v2_to_v3(&array_metadata_v2.fill_value)
+    let mut fill_value = fill_value_metadata_v2_to_v3(&array_metadata_v2.fill_value)
         .or_else(|| {
             // Support zarr-python encoded string arrays with a `null` fill value
             match data_type.name() {
@@ -340,37 +336,32 @@ pub fn array_metadata_v2_to_v3(
     )
 }
 
-/// An unsupported Zarr V2 data type error.
-#[derive(Debug, Error)]
-#[error("V2 data type {_0:?} is not supported")]
-pub struct DataTypeMetadataV2UnsupportedDataTypeError(DataTypeMetadataV2);
-
-/// Convert a Zarr V2 data type to a compatible V3 data type.
+/// Convert Zarr V2 data type metadata to Zarr V3.
 ///
 /// # Errors
-/// Returns a [`DataTypeMetadataV2UnsupportedDataTypeError`] if the data type is not supported.
-pub fn data_type_metadata_v2_to_v3_data_type(
+/// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the data type is not supported.
+pub fn data_type_metadata_v2_to_v3(
     data_type: &DataTypeMetadataV2,
     data_type_aliases_v2: &ExtensionAliasesDataTypeV2,
     data_type_aliases_v3: &ExtensionAliasesDataTypeV3,
-) -> Result<MetadataV3, DataTypeMetadataV2UnsupportedDataTypeError> {
+) -> Result<MetadataV3, ArrayMetadataV2ToV3ConversionError> {
     match data_type {
         DataTypeMetadataV2::Simple(name) => {
             let identifier = data_type_aliases_v2.identifier(name);
             let name = data_type_aliases_v3.default_name(identifier).to_string();
             Ok(MetadataV3::new(name))
         }
-        DataTypeMetadataV2::Structured(_) => Err(DataTypeMetadataV2UnsupportedDataTypeError(
-            data_type.clone(),
-        )),
+        DataTypeMetadataV2::Structured(_) => Err(
+            ArrayMetadataV2ToV3ConversionError::UnsupportedDataType(data_type.clone()),
+        ),
     }
 }
 
-/// Convert Zarr V2 fill value metadata to [`FillValueMetadataV3`].
+/// Convert Zarr V2 fill value metadata to Zarr V3.
 ///
 /// Returns [`None`] for [`FillValueMetadataV2::Null`].
 #[must_use]
-pub fn array_metadata_fill_value_v2_to_v3(
+pub fn fill_value_metadata_v2_to_v3(
     fill_value: &FillValueMetadataV2,
 ) -> Option<FillValueMetadataV3> {
     match fill_value {

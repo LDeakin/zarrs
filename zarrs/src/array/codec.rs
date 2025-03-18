@@ -102,7 +102,7 @@ mod bytes_partial_decoder_default_async;
 pub use bytes_partial_decoder_default_async::AsyncBytesPartialDecoderDefault;
 
 use zarrs_data_type::{DataTypeExtensionError, FillValue, IncompatibleFillValueError};
-use zarrs_metadata::{ArrayShape, ExtensionAliasesCodecV3};
+use zarrs_metadata::{extension::ExtensionAliasesCodecV3, ArrayShape};
 use zarrs_plugin::{MetadataConfiguration, PluginUnsupportedError};
 
 use crate::config::global_config;

@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use zarrs_metadata::{
-    codec::FIXEDSCALEOFFSET, v2::array::DataTypeMetadataV2,
-    v2_to_v3::data_type_metadata_v2_to_v3_data_type,
+    codec::FIXEDSCALEOFFSET, v2::array::DataTypeMetadataV2, v2_to_v3::data_type_metadata_v2_to_v3,
 };
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
@@ -79,7 +78,7 @@ impl FixedScaleOffsetCodec {
                 let data_type_aliases_v2 = config.data_type_aliases_v2();
                 let data_type_aliases_v3 = config.data_type_aliases_v3();
                 let dtype = DataType::from_metadata(
-                    &data_type_metadata_v2_to_v3_data_type(
+                    &data_type_metadata_v2_to_v3(
                         &dtype,
                         data_type_aliases_v2,
                         data_type_aliases_v3,
@@ -89,7 +88,7 @@ impl FixedScaleOffsetCodec {
                 )?;
                 let astype = if let Some(astype) = astype {
                     Some(DataType::from_metadata(
-                        &data_type_metadata_v2_to_v3_data_type(
+                        &data_type_metadata_v2_to_v3(
                             &astype,
                             data_type_aliases_v2,
                             data_type_aliases_v3,

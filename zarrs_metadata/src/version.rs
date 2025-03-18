@@ -1,6 +1,11 @@
+//! Zarr versions.
+//!
+//! - [Zarr Version 3 Specification](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html)
+//! - [Zarr Version 2 Specification](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html)
+
 use std::fmt::Debug;
 
-/// Marker trait for zarr versions.
+/// Marker trait for Zarr versions.
 pub trait ZarrVersion: Debug + Default {}
 
 /// Zarr Version 3.

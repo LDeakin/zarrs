@@ -3,23 +3,23 @@ use std::fmt::Debug;
 /// Marker trait for extension types.
 pub trait ExtensionType: Debug + Default {}
 
-/// The data type extension type.
+/// The *data type* extension type.
 #[derive(Debug, Default)]
 pub struct ExtensionTypeDataType;
 
-/// The chunk grid extension type.
+/// The *chunk grid* extension type.
 #[derive(Debug, Default)]
 pub struct ExtensionTypeChunkGrid;
 
-/// The chunk key encoding extension type.
+/// The *chunk key encoding* extension type.
 #[derive(Debug, Default)]
 pub struct ExtensionTypeChunkKeyEncoding;
 
-/// The codec extension type.
+/// The *codec* extension type.
 #[derive(Debug, Default)]
 pub struct ExtensionTypeCodec;
 
-/// The storage transformer extension type.
+/// The *storage transformer* extension type.
 #[derive(Debug, Default)]
 pub struct ExtensionTypeStorageTransformer;
 

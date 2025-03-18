@@ -6,7 +6,7 @@ use crate::{
     v2::MetadataV2, v3::AdditionalFields, ArrayShape, ChunkKeySeparator, ChunkShape, Endianness,
 };
 
-/// Zarr array metadata (storage specification v2).
+/// Zarr V2 array metadata.
 ///
 /// An example `JSON` document for a Zarr V2 array:
 /// ```json
@@ -158,7 +158,7 @@ const fn chunk_key_separator_default_zarr_v2() -> ChunkKeySeparator {
     ChunkKeySeparator::Dot
 }
 
-/// Structure data type metadata.
+/// Zarr V2 structured data type metadata.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(
     from = "DataTypeMetadataV2StructuredTuple",
@@ -238,7 +238,9 @@ pub fn data_type_metadata_v2_to_endianness(
     }
 }
 
-/// A scalar value providing the default value to use for uninitialized portions of the array, or null if no fill value is to be used.
+/// Zarr V2 fill value metadata.
+///
+/// Provides the default value to use for uninitialized portions of the array, or null if no fill value is to be used.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum FillValueMetadataV2 {
     /// No fill value.
@@ -294,7 +296,7 @@ impl Serialize for FillValueMetadataV2 {
     }
 }
 
-/// The layout of bytes within each chunk of the array.
+/// The layout of bytes within a Zarr V2 array chunk.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ArrayMetadataV2Order {
     /// Row-major order. The last dimension varies fastest.

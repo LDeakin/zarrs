@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
-use crate::{ExtensionAliases, ExtensionTypeCodec, ZarrVersion2, ZarrVersion3};
+use super::{ExtensionAliases, ExtensionTypeCodec};
+use crate::version::{ZarrVersion2, ZarrVersion3};
 
 use crate::v3::array::codec;
 
-/// Zarr V3 codec extension aliases.
+/// Zarr V3 *codec* extension aliases.
 pub type ExtensionAliasesCodecV3 = ExtensionAliases<ZarrVersion3, ExtensionTypeCodec>;
 
-/// Zarr V2 codec extension aliases.
+/// Zarr V2 *codec* extension aliases.
 pub type ExtensionAliasesCodecV2 = ExtensionAliases<ZarrVersion2, ExtensionTypeCodec>;
 
 impl Default for ExtensionAliasesCodecV3 {

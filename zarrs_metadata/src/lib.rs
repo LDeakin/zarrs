@@ -21,31 +21,11 @@ pub mod v2;
 /// Zarr V2 to V3 conversion.
 pub mod v2_to_v3;
 
-mod zarr_version;
-pub use zarr_version::{ZarrVersion, ZarrVersion2, ZarrVersion3};
+pub mod version;
 
-mod extension_type;
-pub use extension_type::{
-    ExtensionType, ExtensionTypeChunkGrid, ExtensionTypeChunkKeyEncoding, ExtensionTypeCodec,
-    ExtensionTypeDataType, ExtensionTypeStorageTransformer,
-};
-
-mod extension_aliases;
-pub use extension_aliases::{
-    ExtensionAliasMapRegex, ExtensionAliasMapString, ExtensionAliases, ExtensionNameMap,
-};
-
-mod extension_aliases_codec;
-pub use extension_aliases_codec::{ExtensionAliasesCodecV2, ExtensionAliasesCodecV3};
-
-mod extension_aliases_data_type;
-pub use extension_aliases_data_type::{ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3};
+pub mod extension;
 
 pub use crate::v3::array::{chunk_grid, chunk_key_encoding, codec, data_type};
-
-/// An alias for [`v3::MetadataV3`].
-#[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]
-pub type Metadata = v3::MetadataV3;
 
 pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
 
@@ -123,7 +103,7 @@ impl NodeMetadata {
     }
 }
 
-/// The size of a data type.
+/// A data type size. Fixed or variable.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum DataTypeSize {
     /// Fixed size (in bytes).

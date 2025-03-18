@@ -7,11 +7,12 @@ use std::{fmt::Debug, mem::discriminant, sync::Arc};
 use thiserror::Error;
 
 use zarrs_metadata::{
+    extension::ExtensionAliasesDataTypeV3,
     v3::array::{
         data_type::{self},
         fill_value::FillValueMetadataV3,
     },
-    DataTypeSize, ExtensionAliasesDataTypeV3,
+    DataTypeSize,
 };
 use zarrs_plugin::{MetadataV3, PluginCreateError, PluginUnsupportedError};
 

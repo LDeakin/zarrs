@@ -5,7 +5,7 @@ use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
-/// Metadata with a name and optional configuration.
+/// Metadata with a `name`, and optional `configuration` and `must_understand`.
 ///
 /// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::v3::ArrayMetadataV3)) which is either:
 /// - a string name / identifier, or
@@ -65,7 +65,7 @@ impl<T: MetadataConfigurationSerialize> From<T> for MetadataConfiguration {
     }
 }
 
-/// A trait for metadata configurations.
+/// A marker trait indicating metadata is JSON serialisable.
 ///
 /// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
 pub trait MetadataConfigurationSerialize: Serialize + DeserializeOwned {}

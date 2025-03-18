@@ -10,7 +10,7 @@ pub use group::GroupMetadataV2;
 mod metadata;
 pub use metadata::MetadataV2;
 
-/// V2 node metadata ([`ArrayMetadataV2`] or [`GroupMetadataV2`]).
+/// Zarr V2 node metadata ([`ArrayMetadataV2`] or [`GroupMetadataV2`]).
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
@@ -28,13 +28,16 @@ mod tests {
     use super::*;
 
     use crate::{
-        v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3_data_type},
+        extension::{
+            ExtensionAliasesCodecV2, ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2,
+            ExtensionAliasesDataTypeV3,
+        },
+        v2_to_v3::{array_metadata_v2_to_v3, data_type_metadata_v2_to_v3},
         v3::array::codec::{
             blosc::BloscCodecConfigurationV1, transpose::TransposeCodecConfigurationV1, BLOSC,
             TRANSPOSE,
         },
-        ChunkKeySeparator, ChunkShape, Endianness, ExtensionAliasesCodecV2,
-        ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3,
+        ChunkKeySeparator, ChunkShape, Endianness,
     };
 
     #[test]
@@ -78,7 +81,7 @@ mod tests {
         let data_type_aliases_v2 = ExtensionAliasesDataTypeV2::default();
         let data_type_aliases_v3 = ExtensionAliasesDataTypeV3::default();
         assert_eq!(
-            data_type_metadata_v2_to_v3_data_type(
+            data_type_metadata_v2_to_v3(
                 &array_metadata_v2.dtype,
                 &data_type_aliases_v2,
                 &data_type_aliases_v3

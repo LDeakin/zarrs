@@ -8,7 +8,7 @@ pub use chunk_key_separator::ChunkKeySeparator;
 mod dimension_name;
 pub use dimension_name::DimensionName;
 
-/// The shape of an array.
+/// An array shape.
 pub type ArrayShape = Vec<u64>;
 
 mod chunk_shape;

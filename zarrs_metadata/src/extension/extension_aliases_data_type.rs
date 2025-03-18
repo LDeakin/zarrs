@@ -2,17 +2,18 @@ use std::collections::HashMap;
 
 use regex::Regex;
 
-use crate::{ExtensionAliases, ExtensionTypeDataType, ZarrVersion2, ZarrVersion3};
+use super::{ExtensionAliases, ExtensionTypeDataType};
 
 use crate::v3::array::data_type::{
     BOOL, BYTES, COMPLEX128, COMPLEX64, FLOAT16, FLOAT32, FLOAT64, INT16, INT32, INT64, INT8,
     STRING, UINT16, UINT32, UINT64, UINT8,
 };
+use crate::version::{ZarrVersion2, ZarrVersion3};
 
-/// Zarr V3 data type extension aliases.
+/// Zarr V3 *data type* extension aliases.
 pub type ExtensionAliasesDataTypeV3 = ExtensionAliases<ZarrVersion3, ExtensionTypeDataType>;
 
-/// Zarr V2 data type extension aliases.
+/// Zarr V2 *data type* extension aliases.
 pub type ExtensionAliasesDataTypeV2 = ExtensionAliases<ZarrVersion2, ExtensionTypeDataType>;
 
 impl Default for ExtensionAliasesDataTypeV3 {

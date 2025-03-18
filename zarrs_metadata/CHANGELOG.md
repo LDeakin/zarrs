@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `DataType::from_metadata()` now takes an owned `MetadataV3` instead of a reference
 - **Breaking**: `MetadataV3::new[_with_{configuration,serializable_configuration}]` now take a `String` name instead of `&str`
 - **Breaking**: Move `v3::array::data_type::DataTypeSize` to the crate root
+- **Breaking**: Rename `v2_to_v3::array_metadata_fill_value_v2_to_v3` to `fill_value_metadata_v2_to_v3`
+- **Breaking**: Rename `v2_to_v3::data_type_metadata_v2_to_v3_data_type` to `data_type_metadata_v2_to_v3`
 
 ### Removed
 - **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`
@@ -44,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Remove all `FillValueMetadataV3::try_as_*()` methods
 - **Breaking**: Remove `DataTypeMetadataV3`
 - **Breaking**: Remove the `v2::array::codec` module which just contained re-exports of V3 codecs
+- **Breaking**: Remove `v2_to_v3::DataTypeMetadataV2UnsupportedDataTypeError`
+- **Breaking**: Remove the `Metadata` alias in the crate root (deprecated since 0.17)
 
 ## [0.3.6] - 2025-03-02
 

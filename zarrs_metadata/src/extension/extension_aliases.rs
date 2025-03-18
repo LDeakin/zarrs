@@ -1,24 +1,25 @@
 use std::{borrow::Cow, collections::HashMap, marker::PhantomData};
 
-use crate::{ExtensionType, ZarrVersion};
+use super::ExtensionType;
 
-/// A mapping from unique extension identifiers to an extension `name`.
+use crate::version::ZarrVersion;
+
+/// A mapping of extension identifiers to default extension `name`s.
 pub type ExtensionNameMap = HashMap<&'static str, Cow<'static, str>>;
 
-/// A mapping from extension `name` aliases to a unique extension identifier.
+/// A mapping of extension aliases to extension identifiers (string match).
 ///
 /// Extension identifiers are an implementation detail and may not match the extension `name`.
 pub type ExtensionAliasMapString = HashMap<Cow<'static, str>, &'static str>;
 
-/// Regex replacements for extension names to identifiers.
+/// A mapping of extension aliases to extension identifiers (regex match).
 ///
 /// For example:
 ///  - "^r\d+$" to "r*"
 ///  - "^\|m\d+$" to "|mX"
 pub type ExtensionAliasMapRegex = Vec<(regex::Regex, &'static str)>;
 
-/// Aliases for Zarr extensions (e.g. codecs and data types).
-// FIXME: Rename
+/// Aliases for Zarr extensions.
 #[derive(Debug)]
 pub struct ExtensionAliases<Z: ZarrVersion, T: ExtensionType> {
     zarr_version: PhantomData<Z>,
