@@ -77,25 +77,21 @@ impl BytesCodec {
         mut value: RawBytes<'a>,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<RawBytes<'a>, CodecError> {
-        match decoded_representation.data_type().size() {
-            DataTypeSize::Variable => {
-                return Err(CodecError::UnsupportedDataType(
-                    decoded_representation.data_type().clone(),
-                    BYTES.to_string(),
-                ));
-            }
-            DataTypeSize::Fixed(data_type_size) => {
-                let array_size =
-                    usize::try_from(decoded_representation.num_elements() * data_type_size as u64)
-                        .unwrap();
-                if value.len() != array_size {
-                    return Err(InvalidBytesLengthError::new(value.len(), array_size).into());
-                } else if data_type_size > 1 && self.endian.is_none() {
-                    return Err(CodecError::Other(format!(
-                        "tried to encode an array with element size {data_type_size} with endianness None"
-                    )));
-                }
-            }
+        let Some(data_type_size) = decoded_representation.data_type().fixed_size() else {
+            return Err(CodecError::UnsupportedDataType(
+                decoded_representation.data_type().clone(),
+                BYTES.to_string(),
+            ));
+        };
+
+        let array_size =
+            usize::try_from(decoded_representation.num_elements() * data_type_size as u64).unwrap();
+        if value.len() != array_size {
+            return Err(InvalidBytesLengthError::new(value.len(), array_size).into());
+        } else if data_type_size > 1 && self.endian.is_none() {
+            return Err(CodecError::Other(format!(
+                "tried to encode an array with element size {data_type_size} with endianness None"
+            )));
         }
 
         if let Some(endian) = &self.endian {
