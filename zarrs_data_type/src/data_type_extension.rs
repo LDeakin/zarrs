@@ -5,6 +5,7 @@ use zarrs_metadata::{
 };
 
 use crate::{
+    data_type_extension_packbits_codec::DataTypeExtensionPackBitsCodec,
     DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError, FillValue,
     IncompatibleFillValueError, IncompatibleFillValueMetadataError,
 };
@@ -63,6 +64,23 @@ pub trait DataTypeExtension: Debug + Send + Sync {
     /// # Errors
     /// Returns [`DataTypeExtensionError::CodecUnsupported`] if the `bytes` codec is unsupported.
     fn codec_bytes(&self) -> Result<&dyn DataTypeExtensionBytesCodec, DataTypeExtensionError> {
+        Err(DataTypeExtensionError::CodecUnsupported {
+            data_type: self.name(),
+            codec: "bytes".to_string(),
+        })
+    }
+
+    /// Return [`DataTypeExtensionPackBitsCodec`] if the data type supports the `packbits` codec.
+    ///
+    /// Types that can be encoded smaller in less than a byte should support the `packbits` codec.
+    ///
+    /// The default implementation returns [`DataTypeExtensionError::CodecUnsupported`].
+    ///
+    /// # Errors
+    /// Returns [`DataTypeExtensionError::CodecUnsupported`] if the `bytes` codec is unsupported.
+    fn codec_packbits(
+        &self,
+    ) -> Result<&dyn DataTypeExtensionPackBitsCodec, DataTypeExtensionError> {
         Err(DataTypeExtensionError::CodecUnsupported {
             data_type: self.name(),
             codec: "bytes".to_string(),
