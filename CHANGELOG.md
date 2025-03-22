@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
 - Add `ArrayBytesFixedDisjointView[CreateError]`
 - Add support for data type extensions with `zarrs_data_type` 0.2.0
-- Add `custom_data_type_fixed_size` and `custom_data_type_variable_size` examples
+- Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
 - Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop
   - Gated by the `dlpack` feature
 - Add missing `Group::async_child_*` methods
@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `[Async]{Array,Bytes}PartialDecoderDefault`
 - Add `numcodecs.shuffle` codec support
 - Add `Config::{codec,data_type}_aliases_{v2,v3}[_mut]`
+- Add `packbits` codec support
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
