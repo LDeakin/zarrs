@@ -23,6 +23,8 @@ mod ext {
     pub mod bz2;
     /// `fletcher32` codec metadata.
     pub mod fletcher32;
+    /// `packbits` codec metadata.
+    pub mod packbits;
     /// `pcodec` codec metadata.
     pub mod pcodec;
     /// `shuffle` codec metadata.
@@ -87,6 +89,9 @@ pub const BZ2: &str = "bz2";
 
 /// Unique identifier for the `fletcher32` codec (extension).
 pub const FLETCHER32: &str = "fletcher32";
+
+/// Unique identifier for the `packbits` codec (extension).
+pub const PACKBITS: &str = "packbits";
 
 /// Unique identifier for the `pcodec` codec (extension).
 pub const PCODEC: &str = "pcodec";

@@ -36,6 +36,9 @@ pub use array_to_array::transpose::{
 // Array to bytes
 pub use array_to_bytes::bytes::{BytesCodec, BytesCodecConfiguration, BytesCodecConfigurationV1};
 pub use array_to_bytes::codec_chain::CodecChain;
+pub use array_to_bytes::packbits::{
+    PackBitsCodec, PackBitsCodecConfiguration, PackBitsCodecConfigurationV1,
+};
 #[cfg(feature = "pcodec")]
 pub use array_to_bytes::pcodec::{
     PcodecCodec, PcodecCodecConfiguration, PcodecCodecConfigurationV1,

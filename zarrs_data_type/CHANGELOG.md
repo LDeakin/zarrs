@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add support for data type extensions
-  - Adds `DataTypeExtension[BytesCodec]`, `DataTypeExtension[BytesCodec]Error`, and `DataTypePlugin`
+  - Add `DataTypePlugin` and `DataTypeExtension`
   - Add `Extension` variant to `DataType`
+  - Add `DataTypeExtensionBytesCodec`, `DataTypeExtensionBytesCodecError`
+  - Add `DataTypeExtensionPackBitsCodec`
 
 ### Changed
 - **Breaking**: `DataType::metadata_fill_value()` is now fallible
