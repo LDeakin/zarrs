@@ -8,17 +8,13 @@ use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use crate::{
     array::{
         codec::{
-            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderDefault, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
-            CodecError, CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
+            ArrayBytes, ArrayCodecTraits, ArrayToArrayCodecTraits, CodecError,
+            CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         ChunkRepresentation, DataType,
     },
     config::global_config,
 };
-
-#[cfg(feature = "async")]
-use crate::array::codec::{AsyncArrayPartialDecoderDefault, AsyncArrayPartialDecoderTraits};
 
 use super::{FixedScaleOffsetCodecConfiguration, FixedScaleOffsetCodecConfigurationNumcodecs};
 
@@ -406,48 +402,6 @@ impl ArrayToArrayCodecTraits for FixedScaleOffsetCodec {
             self.scale,
         )?;
         Ok(bytes.into())
-    }
-
-    fn partial_decoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayPartialDecoderDefault::new(
-            input_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
-        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayToArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
-    #[cfg(feature = "async")]
-    async fn async_partial_decoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn AsyncArrayPartialDecoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncArrayPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(AsyncArrayPartialDecoderDefault::new(
-            input_handle,
-            decoded_representation.clone(),
-            self,
-        )))
     }
 
     fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {

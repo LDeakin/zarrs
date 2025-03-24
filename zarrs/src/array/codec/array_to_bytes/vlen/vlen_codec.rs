@@ -6,10 +6,9 @@ use zarrs_plugin::MetadataConfiguration;
 use crate::{
     array::{
         codec::{
-            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesCodec,
-            BytesPartialDecoderTraits, BytesPartialEncoderTraits, CodecError, CodecMetadataOptions,
-            CodecOptions, CodecTraits, RecommendedConcurrency,
+            ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits, BytesCodec,
+            BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            RecommendedConcurrency,
         },
         transmute_to_bytes_vec, ArrayBytes, BytesRepresentation, ChunkRepresentation, CodecChain,
         DataType, DataTypeSize, Endianness, FillValue, RawBytes, RawBytesOffsets,
@@ -297,21 +296,6 @@ impl ArrayToBytesCodecTraits for VlenCodec {
             self.index_codecs.clone(),
             self.data_codecs.clone(),
             self.index_data_type,
-        )))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
         )))
     }
 

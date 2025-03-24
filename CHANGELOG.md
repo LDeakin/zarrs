@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `numcodecs.shuffle` codec support
 - Add `Config::{codec,data_type}_aliases_{v2,v3}[_mut]`
 - Add `packbits` codec support
+- Add `Async{Array,Bytes}PartialEncoderTraits` and `*CodecTraits::async_partial_encoder()`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
@@ -69,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::dynamic()` to `into_dyn()`
 - **Breaking**: Mark `CodecError` as non-exhaustive
     - Add `IncompatibleFillValueError` variant to `CodecError::IncompatibleFillValueError`
+- Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
+- **Breaking**: Rename `[Async]ArrayPartial{Encoder,Decoder}Default` to `[Async]ArrayToBytesPartial{Encoder,Decoder}Default`
+- **Breaking**: Rename `[Async]BytesPartial{Encoder,Decoder}Default` to `[Async]BytesToBytesPartial{Encoder,Decoder}Default`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements

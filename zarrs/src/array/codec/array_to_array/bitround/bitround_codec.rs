@@ -5,9 +5,8 @@ use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderTraits,
-        ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault, CodecError,
-        CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
+        ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
+        CodecError, CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
     },
     ChunkRepresentation, DataType,
 };
@@ -134,21 +133,6 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
                 self.keepbits,
             )?,
         ))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
-        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayToArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
     }
 
     #[cfg(feature = "async")]
