@@ -4,9 +4,8 @@ use zarrs_plugin::MetadataConfiguration;
 
 use crate::array::{
     codec::{
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-        RecommendedConcurrency,
+        BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits, RecommendedConcurrency,
     },
     BytesRepresentation, RawBytes,
 };
@@ -92,21 +91,6 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         Ok(Arc::new(
             test_unbounded_partial_decoder::TestUnboundedPartialDecoder::new(r),
         ))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
     }
 
     #[cfg(feature = "async")]

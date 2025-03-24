@@ -8,9 +8,8 @@ use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-        ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-        BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+        BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
         InvalidBytesLengthError, RecommendedConcurrency,
     },
     ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
@@ -202,21 +201,6 @@ impl ArrayToBytesCodecTraits for BytesCodec {
             input_handle,
             decoded_representation.clone(),
             self.endian,
-        )))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
         )))
     }
 

@@ -7,9 +7,8 @@ use zarrs_plugin::MetadataConfiguration;
 use crate::array::{
     codec::{
         bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-        RecommendedConcurrency,
+        BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits, RecommendedConcurrency,
     },
     BytesRepresentation, RawBytes,
 };
@@ -157,21 +156,6 @@ impl BytesToBytesCodecTraits for Fletcher32Codec {
         Ok(Arc::new(StripSuffixPartialDecoder::new(
             input_handle,
             CHECKSUM_SIZE,
-        )))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
         )))
     }
 
