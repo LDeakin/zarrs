@@ -16,6 +16,9 @@ identifiers:
 type: software
 keywords:
   - zarr
+license:
+  - Apache-2.0
+  - MIT
 references:
   - type: standard
     abstract: "This specification defines the Zarr format for N-dimensional typed arrays."
