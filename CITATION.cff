@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "zarrs"
+title: "zarrs: A High-Performance Rust Library for the Zarr Array Storage Format"
 version: 0.19.2
 date-released: 2025-02-13
 repository-code: "https://github.com/LDeakin/zarrs"
