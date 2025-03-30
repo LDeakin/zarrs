@@ -797,9 +797,10 @@ impl<TStorage: ?Sized> Array<TStorage> {
             Some(end) => {
                 let chunk0 = self.chunk_subset(chunks.start())?;
                 let chunk1 = self.chunk_subset(&end)?;
-                let start = chunk0.start();
+                let start = chunk0.start().to_vec();
                 let end = chunk1.end_exc();
-                Ok(unsafe { ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end) })
+                let shape = start.iter().zip(&end).map(|(&s, &e)| e.saturating_sub(s)).collect(); 
+                Ok(ArraySubset::new_with_start_shape(start, shape)?)
             }
             None => Ok(ArraySubset::new_empty(chunks.dimensionality())),
         }
