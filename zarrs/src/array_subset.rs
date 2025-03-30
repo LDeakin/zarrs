@@ -386,34 +386,24 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
     pub fn overlap(&self, subset_other: &Self) -> Result<Self, IncompatibleDimensionalityError> {
         if subset_other.dimensionality() == self.dimensionality() {
-            Ok(unsafe { self.overlap_unchecked(subset_other) })
+            let mut ranges = Vec::with_capacity(self.dimensionality());
+            for (start, size, other_start, other_size) in izip!(
+                &self.start,
+                &self.shape,
+                subset_other.start(),
+                subset_other.shape(),
+            ) {
+                let overlap_start = *std::cmp::max(start, other_start);
+                let overlap_end = std::cmp::min(start + size, other_start + other_size);
+                ranges.push(overlap_start..overlap_end);
+            }
+            Ok(Self::new_with_ranges(&ranges))
         } else {
             Err(IncompatibleDimensionalityError::new(
                 subset_other.dimensionality(),
                 self.dimensionality(),
             ))
         }
-    }
-
-    /// Return the overlapping subset between this array subset and `subset_other`.
-    ///
-    /// # Safety
-    /// Panics if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
-    #[must_use]
-    pub unsafe fn overlap_unchecked(&self, subset_other: &Self) -> Self {
-        debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
-        let mut ranges = Vec::with_capacity(self.dimensionality());
-        for (start, size, other_start, other_size) in izip!(
-            &self.start,
-            &self.shape,
-            subset_other.start(),
-            subset_other.shape(),
-        ) {
-            let overlap_start = *std::cmp::max(start, other_start);
-            let overlap_end = std::cmp::min(start + size, other_start + other_size);
-            ranges.push(overlap_start..overlap_end);
-        }
-        Self::new_with_ranges(&ranges)
     }
 
     /// Return the subset relative to `start`.

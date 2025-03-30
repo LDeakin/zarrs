@@ -278,7 +278,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
 
             let store_chunk = |chunk_indices: Vec<u64>| {
                 let chunk_subset = self.chunk_subset(&chunk_indices).unwrap(); // FIXME: unwrap
-                let overlap = unsafe { array_subset.overlap_unchecked(&chunk_subset) };
+                let overlap = array_subset.overlap(&chunk_subset)?;
                 let chunk_subset_in_array_subset =
                     unsafe { overlap.relative_to_unchecked(array_subset.start()) };
                 let array_subset_in_chunk_subset =
