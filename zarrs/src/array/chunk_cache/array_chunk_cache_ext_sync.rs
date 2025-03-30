@@ -330,8 +330,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> ArrayChunkCacheExt<TSto
                         options,
                     )?))
                 } else {
-                    let array_subset_in_chunk_subset =
-                        unsafe { array_subset.relative_to_unchecked(chunk_subset.start()) };
+                    let array_subset_in_chunk_subset = array_subset.relative_to(chunk_subset.start())?;
                     self.retrieve_chunk_subset_opt_cached(
                         cache,
                         chunk_indices,

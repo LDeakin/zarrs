@@ -309,15 +309,13 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
             let store_chunk = |chunk_indices: Vec<u64>| -> Result<(), ArrayError> {
                 let chunk_subset_in_array = self.chunk_subset(&chunk_indices)?;
                 let overlap = array_subset.overlap(&chunk_subset_in_array)?;
-                let chunk_subset_in_array_subset =
-                    unsafe { overlap.relative_to_unchecked(array_subset.start()) };
+                let chunk_subset_in_array_subset = overlap.relative_to(array_subset.start())?;
                 let chunk_subset_bytes = subset_bytes.extract_array_subset(
                     &chunk_subset_in_array_subset,
                     array_subset.shape(),
                     self.data_type(),
                 )?;
-                let array_subset_in_chunk_subset =
-                    unsafe { overlap.relative_to_unchecked(chunk_subset_in_array.start()) };
+                let array_subset_in_chunk_subset = overlap.relative_to(chunk_subset_in_array.start())?;
                 self.store_chunk_subset_opt(
                     &chunk_indices,
                     &array_subset_in_chunk_subset,

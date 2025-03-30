@@ -648,8 +648,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     // Single chunk fast path if the array subset domain matches the chunk domain
                     self.retrieve_chunk_opt(chunk_indices, options)
                 } else {
-                    let array_subset_in_chunk_subset =
-                        unsafe { array_subset.relative_to_unchecked(chunk_subset.start()) };
+                    let array_subset_in_chunk_subset = array_subset.relative_to(chunk_subset.start())?;
                     self.retrieve_chunk_subset_opt(
                         chunk_indices,
                         &array_subset_in_chunk_subset,

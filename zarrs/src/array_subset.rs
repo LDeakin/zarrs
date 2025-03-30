@@ -414,29 +414,17 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the length of `start` does not match the dimensionality of this array subset.
     pub fn relative_to(&self, start: &[u64]) -> Result<Self, IncompatibleDimensionalityError> {
         if start.len() == self.dimensionality() {
-            Ok(unsafe { self.relative_to_unchecked(start) })
+            Ok(Self {
+                start: std::iter::zip(self.start(), start)
+                    .map(|(a, b)| a - b)
+                    .collect::<Vec<_>>(),
+                shape: self.shape().to_vec(),
+            })
         } else {
             Err(IncompatibleDimensionalityError::new(
                 start.len(),
                 self.dimensionality(),
             ))
-        }
-    }
-
-    /// Return the subset relative to `start`.
-    ///
-    /// Creates an array subset starting at [`ArraySubset::start()`] - `start`.
-    ///
-    /// # Safety
-    /// Panics if the length of `start` does not match the dimensionality of this array subset.
-    #[must_use]
-    pub unsafe fn relative_to_unchecked(&self, start: &[u64]) -> Self {
-        debug_assert_eq!(start.len(), self.dimensionality());
-        Self {
-            start: std::iter::zip(self.start(), start)
-                .map(|(a, b)| a - b)
-                .collect::<Vec<_>>(),
-            shape: self.shape().to_vec(),
         }
     }
 
