@@ -104,24 +104,13 @@ impl ArraySubset {
         {
             Err(IncompatibleStartEndIndicesError::from((start, end)))
         } else {
-            Ok(unsafe { Self::new_with_start_end_inc_unchecked(start, end) })
+            let shape = std::iter::zip(&start, end)
+                .map(|(&start, end)| {
+                    end.saturating_sub(start) + 1
+                })
+                .collect();
+            Ok(Self { start, shape })
         }
-    }
-
-    /// Create a new array subset from a start and end (inclusive).
-    ///
-    /// # Safety
-    /// The length of `start` and `end` must match.
-    #[must_use]
-    pub unsafe fn new_with_start_end_inc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
-        debug_assert_eq!(start.len(), end.len());
-        let shape = std::iter::zip(&start, end)
-            .map(|(&start, end)| {
-                debug_assert!(end >= start);
-                end.saturating_sub(start) + 1
-            })
-            .collect();
-        Self { start, shape }
     }
 
     /// Create a new array subset from a start and end (exclusive).
@@ -409,19 +398,6 @@ impl ArraySubset {
         chunk_shape: &[NonZeroU64],
     ) -> Result<Chunks, IncompatibleDimensionalityError> {
         Chunks::new(self, chunk_shape)
-    }
-
-    /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
-    ///
-    /// All chunks overlapping the array subset are returned, and they all have the same shape `chunk_shape`.
-    /// Thus, the subsets of the chunks may extend out over the subset.
-    ///
-    /// # Safety
-    /// The length of `chunk_shape` must match the array subset dimensionality.
-    #[must_use]
-    pub unsafe fn chunks_unchecked(&self, chunk_shape: &[NonZeroU64]) -> Chunks {
-        // SAFETY: the dimensionality of chunk_shape matches the dimensionality.
-        unsafe { Chunks::new_unchecked(self, chunk_shape) }
     }
 
     /// Return the overlapping subset between this array subset and `subset_other`.

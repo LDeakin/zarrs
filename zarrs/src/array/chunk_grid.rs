@@ -484,9 +484,8 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
 
                 Ok(
                     if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
-                        Some(unsafe {
-                            ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
-                        })
+                        let shape = std::iter::zip(&chunks_start, &chunks_end).map(|(&s, e)| e.saturating_sub(s) + 1).collect();
+                        Some(ArraySubset::new_with_start_shape(chunks_start, shape)?)
                     } else {
                         None
                     },

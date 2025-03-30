@@ -167,7 +167,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
 
         let mut out = Vec::with_capacity(array_subsets.len());
         for array_subset in array_subsets {
-            let chunks = unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
+            let chunks = array_subset.chunks(chunk_representation.shape())?;
 
             match self.decoded_representation.element_size() {
                 DataTypeSize::Variable => {
@@ -429,8 +429,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
         for array_subset in array_subsets {
             match self.decoded_representation.element_size() {
                 DataTypeSize::Variable => {
-                    let chunks =
-                        unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
+                    let chunks = array_subset.chunks(chunk_representation.shape())?;
 
                     let decode_inner_chunk_subset = |(chunk_indices, chunk_subset): (
                         Vec<u64>,
@@ -507,8 +506,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                 }
                 DataTypeSize::Fixed(data_type_size) => {
                     // Find filled / non filled chunks
-                    let chunk_info =
-                        unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) }
+                    let chunk_info = array_subset.chunks_unchecked(chunk_representation.shape())?
                             .into_iter()
                             .map(|(chunk_indices, chunk_subset)| {
                                 let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
