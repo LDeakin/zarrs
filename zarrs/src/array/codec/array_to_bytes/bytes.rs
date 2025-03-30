@@ -1,8 +1,33 @@
-//! The `bytes` array to bytes codec.
+//! The `bytes` array to bytes codec (Core).
 //!
 //! Encodes arrays of fixed-size numeric data types as little endian or big endian in lexicographical order.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/bytes/v1.0.html>.
+//! ### Compatible Implementations:
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/bytes/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/bytes>
+//!
+//! ### Specification Deviations
+//! The `bytes` specification defines a fixed set of supported data types, whereas the `bytes` codec in `zarrs` supports any fixed size data type that implements the [`DataTypeExtensionBytesCodec`](crate::data_type::DataTypeExtensionBytesCodec) trait.
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `bytes`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`BytesCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "endian": "little"
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::bytes::BytesCodecConfiguration;
+//! # serde_json::from_str::<BytesCodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod bytes_codec;
 mod bytes_partial_decoder;
@@ -11,10 +36,8 @@ use std::sync::Arc;
 
 use crate::metadata::Endianness;
 
-use crate::metadata::v3::array::codec::bytes;
-pub use crate::metadata::v3::array::codec::bytes::{
-    BytesCodecConfiguration, BytesCodecConfigurationV1,
-};
+pub use crate::metadata::codec::bytes::{BytesCodecConfiguration, BytesCodecConfigurationV1};
+use crate::metadata::codec::BYTES;
 
 pub use bytes_codec::BytesCodec;
 
@@ -27,22 +50,20 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use bytes::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_bytes, create_codec_bytes)
+    CodecPlugin::new(BYTES, is_identifier_bytes, create_codec_bytes)
 }
 
-fn is_name_bytes(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_bytes(identifier: &str) -> bool {
+    identifier == BYTES
 }
 
 pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BytesCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(BytesCodec::new_with_configuration(&configuration));
+        .map_err(|_| PluginMetadataInvalidError::new(BYTES, "codec", metadata.clone()))?;
+    let codec = Arc::new(BytesCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
 
@@ -98,11 +119,11 @@ mod tests {
     fn codec_bytes_configuration_big() {
         let codec_configuration: BytesCodecConfiguration =
             serde_json::from_str(r#"{"endian":"big"}"#).unwrap();
-        let codec = BytesCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
+        let codec = BytesCodec::new_with_configuration(&codec_configuration).unwrap();
+        let configuration = codec.configuration(BYTES).unwrap();
         assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"bytes","configuration":{"endian":"big"}}"#
+            serde_json::to_string(&configuration).unwrap(),
+            r#"{"endian":"big"}"#
         );
     }
 
@@ -110,23 +131,20 @@ mod tests {
     fn codec_bytes_configuration_little() {
         let codec_configuration: BytesCodecConfiguration =
             serde_json::from_str(r#"{"endian":"little"}"#).unwrap();
-        let codec = BytesCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
+        let codec = BytesCodec::new_with_configuration(&codec_configuration).unwrap();
+        let configuration = codec.configuration(BYTES).unwrap();
         assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"bytes","configuration":{"endian":"little"}}"#
+            serde_json::to_string(&configuration).unwrap(),
+            r#"{"endian":"little"}"#
         );
     }
 
     #[test]
     fn codec_bytes_configuration_none() {
         let codec_configuration: BytesCodecConfiguration = serde_json::from_str(r#"{}"#).unwrap();
-        let codec = BytesCodec::new_with_configuration(&codec_configuration);
-        let metadata = codec.create_metadata().unwrap();
-        assert_eq!(
-            serde_json::to_string(&metadata).unwrap(),
-            r#"{"name":"bytes"}"#
-        );
+        let codec = BytesCodec::new_with_configuration(&codec_configuration).unwrap();
+        let configuration = codec.configuration(BYTES).unwrap();
+        assert_eq!(serde_json::to_string(&configuration).unwrap(), r#"{}"#);
     }
 
     fn codec_bytes_round_trip_impl(

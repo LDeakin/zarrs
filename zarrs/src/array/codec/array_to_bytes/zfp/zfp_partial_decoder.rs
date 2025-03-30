@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec::ZFP;
+
 use crate::{
     array::{
         codec::{
@@ -59,7 +61,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder {
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let data_type_size = self.data_type().fixed_size().ok_or_else(|| {
-            CodecError::UnsupportedDataType(self.data_type().clone(), super::IDENTIFIER.to_string())
+            CodecError::UnsupportedDataType(self.data_type().clone(), ZFP.to_string())
         })?;
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
@@ -154,7 +156,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder {
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let data_type_size = self.data_type().fixed_size().ok_or_else(|| {
-            CodecError::UnsupportedDataType(self.data_type().clone(), super::IDENTIFIER.to_string())
+            CodecError::UnsupportedDataType(self.data_type().clone(), ZFP.to_string())
         })?;
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {

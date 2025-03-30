@@ -33,7 +33,7 @@ version = "0.2.0"
 path = "zarrs_data_type"
 
 [workspace.dependencies.zarrs_metadata]
-version = "0.3.6"
+version = "0.4.0"
 path = "zarrs_metadata"
 
 [workspace.dependencies.zarrs_plugin]
@@ -53,7 +53,7 @@ version = "0.2.0"
 path = "zarrs_http"
 
 [workspace.dependencies.zarrs_object_store]
-version = "0.3.0"
+version = "0.4.0"
 path = "zarrs_object_store"
 
 [workspace.dependencies.zarrs_opendal]
@@ -65,7 +65,7 @@ version = "0.2.0"
 path = "zarrs_zip"
 
 [workspace.dependencies.object_store]
-version = "0.11"
+version = "0.12"
 
 [workspace.dependencies.opendal]
 version = "0.52.0"
@@ -74,7 +74,7 @@ version = "0.52.0"
 version = "2.1.3"
 
 [workspace.dependencies.half]
-version = "2.0.0"
+version = "2.3.1"
 features = ["bytemuck"]
 
 [workspace.dependencies.num]
@@ -82,3 +82,6 @@ version = "0.4.1"
 
 [workspace.dependencies.inventory]
 version = "0.3.0"
+
+[workspace.dependencies.thiserror]
+version = "2.0.12"

@@ -1,23 +1,23 @@
 use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
-use zarrs_metadata::v3::array::codec::pcodec::{
-    PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration,
+use zarrs_metadata::codec::{
+    pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration},
+    PCODEC,
 };
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::{
     array::{
         codec::{
-            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
             RawBytes, RecommendedConcurrency,
         },
         convert_from_bytes_slice, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
         DataType,
     },
-    config::global_config,
-    metadata::v3::{array::codec::pcodec::PcodecModeSpecConfiguration, MetadataV3},
+    metadata::codec::pcodec::PcodecModeSpecConfiguration,
 };
 
 #[cfg(feature = "async")]
@@ -25,7 +25,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{
     pcodec_partial_decoder, PcodecCodecConfiguration, PcodecCodecConfigurationV1,
-    PcodecCompressionLevel, PcodecDeltaEncodingOrder, IDENTIFIER,
+    PcodecCompressionLevel, PcodecDeltaEncodingOrder,
 };
 
 /// A `pcodec` codec implementation.
@@ -75,16 +75,34 @@ fn configuration_to_chunk_config(configuration: &PcodecCodecConfigurationV1) -> 
 
 impl PcodecCodec {
     /// Create a new `pcodec` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &PcodecCodecConfiguration) -> Self {
-        let PcodecCodecConfiguration::V1(configuration) = configuration;
-        let chunk_config = configuration_to_chunk_config(configuration);
-        Self { chunk_config }
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &PcodecCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            PcodecCodecConfiguration::V1(configuration) => {
+                let chunk_config = configuration_to_chunk_config(configuration);
+                Ok(Self { chunk_config })
+            }
+            _ => Err(PluginCreateError::Other(
+                "this pcodec codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 }
 
 impl CodecTraits for PcodecCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
+    fn identifier(&self) -> &str {
+        PCODEC
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
         let mode_spec = mode_spec_pco_to_config(&self.chunk_config.mode_spec);
         let (delta_spec, delta_encoding_order) = match self.chunk_config.delta_spec {
             DeltaSpec::Auto => (PcodecDeltaSpecConfiguration::Auto, None),
@@ -115,16 +133,7 @@ impl CodecTraits for PcodecCodec {
             equal_pages_up_to,
         });
 
-        Some(
-            MetadataV3::new_with_serializable_configuration(
-                global_config()
-                    .experimental_codec_names()
-                    .get(super::IDENTIFIER)
-                    .expect("experimental codec identifier in global map"),
-                &configuration,
-            )
-            .expect("pcodec configuration is valid json"),
-        )
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -148,7 +157,7 @@ impl ArrayCodecTraits for PcodecCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for PcodecCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
         self as Arc<dyn ArrayToBytesCodecTraits>
     }
 
@@ -201,7 +210,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             }
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }
     }
@@ -251,7 +260,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             }
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }?;
         Ok(ArrayBytes::from(bytes))
@@ -266,21 +275,6 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         Ok(Arc::new(pcodec_partial_decoder::PcodecPartialDecoder::new(
             input_handle,
             decoded_representation.clone(),
-        )))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
         )))
     }
 
@@ -299,7 +293,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
@@ -325,7 +319,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             ),
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }?;
         Ok(BytesRepresentation::BoundedSize(

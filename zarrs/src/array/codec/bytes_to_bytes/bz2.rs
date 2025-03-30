@@ -1,4 +1,4 @@
-//! The `bz2` (bzip2) bytes to bytes codec.
+//! The `bz2` (bzip2) bytes to bytes codec (Experimental).
 //!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
@@ -6,47 +6,63 @@
 //!
 //! This codec requires the `bz2` feature, which is disabled by default.
 //!
-//! See [`Bz2CodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! This codec is fully compatible with the `numcodecs.bz2` codec in `zarr-python`.
+//!
+//! ### Specification
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/numcodecs/codecs/numcodecs.bz2>
+//! - <https://codec.zarrs.dev/bytes_to_bytes/bz2>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `numcodecs.bz2`
+//! - `https://codec.zarrs.dev/bytes_to_bytes/bz2`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `bz2`
+//!
+//! ### Codec `configuration` Example - [`Bz2CodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 9
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::bz2::Bz2CodecConfiguration;
+//! # serde_json::from_str::<Bz2CodecConfiguration>(JSON).unwrap();
+//! ```
 
 mod bz2_codec;
-mod bz2_partial_decoder;
 
 use std::sync::Arc;
 
+use zarrs_metadata::codec::BZ2;
+
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    config::global_config,
-    metadata::v3::{array::codec::bz2, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use crate::metadata::v3::array::codec::bz2::{
+pub use crate::metadata::codec::bz2::{
     Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
 };
 
 pub use self::bz2_codec::Bz2Codec;
 
-pub use bz2::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_bz2, create_codec_bz2)
+    CodecPlugin::new(BZ2, is_identifier_bz2, create_codec_bz2)
 }
 
-fn is_name_bz2(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+fn is_identifier_bz2(identifier: &str) -> bool {
+    identifier == BZ2
 }
 
 pub(crate) fn create_codec_bz2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: Bz2CodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(Bz2Codec::new_with_configuration(&configuration));
+        .map_err(|_| PluginMetadataInvalidError::new(BZ2, "codec", metadata.clone()))?;
+    let codec = Arc::new(Bz2Codec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
 
@@ -78,7 +94,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Bz2Codec::new_with_configuration(&codec_configuration);
+        let codec = Bz2Codec::new_with_configuration(&codec_configuration).unwrap();
 
         let encoded = codec
             .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
@@ -103,7 +119,7 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
@@ -149,7 +165,7 @@ mod tests {
         let bytes = crate::array::transmute_to_bytes_vec(elements);
 
         let codec_configuration: Bz2CodecConfiguration = serde_json::from_str(JSON_VALID1).unwrap();
-        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration));
+        let codec = Arc::new(Bz2Codec::new_with_configuration(&codec_configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())

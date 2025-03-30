@@ -2,10 +2,11 @@
 //!
 //! See [`Config`] for the list of options.
 
-use crate::metadata::v3::array::codec;
-use std::{
-    collections::HashMap,
-    sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard},
+use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
+
+use zarrs_metadata::extension::{
+    ExtensionAliasesCodecV2, ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2,
+    ExtensionAliasesDataTypeV3,
 };
 
 #[cfg(doc)]
@@ -99,11 +100,34 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///  }
 /// ```
 ///
-/// ### Experimental Codec Names
-/// > default: See the [crate root documentation](crate#array-support).
+/// ### Codec Aliases
+/// > default: see [`ExtensionAliasesCodecV3::default`] and [`ExtensionAliasesCodecV2::default`].
 ///
-/// Sets the names used when serialising and deserialising the names of experimental codecs.
-/// Deserialisation also accepts the standard `IDENTIFIER` of the codec.
+/// The default codec `name`s used when serialising codecs, and recognised codec `name` aliases when deserialising codecs.
+/// Codec default `name`s and aliases can be modified at runtime.
+///
+/// Note that the [`NamedCodec`](crate::array::codec::NamedCodec) mechanism means that a serialised codec `name` can differ from the default `name`.
+/// By default, updating and storing the metadata of an array will NOT convert aliased codec names to the default codec name.
+/// This behaviour can be changed with the [convert aliased extension names](#convert-aliased-extension-names) configuration option.
+///
+/// The codec maps enable support for unstandardised codecs, such as:
+/// - codecs registered in the official [`zarr-extensions`](https://github.com/zarr-developers/zarr-extensions) repository that are compatible with `zarrs`,
+/// - `zarrs` experimental codecs with `name`s that have since changed, and
+/// - user-defined custom codecs.
+///
+/// If a codec is not present in the codec maps, the `name` will be inferred as the unique codec identifier.
+/// Codecs registered for that identifier work without any changes required for the codec maps.
+///
+/// ### Data Type Aliases
+/// > default: see [`ExtensionAliasesDataTypeV3::default`] and [`ExtensionAliasesDataTypeV2::default`].
+///
+/// These operate similarly to codec maps, but for data types.
+///
+/// ### Convert Aliased Extension Names
+/// > default: [`false`]
+///
+/// If true, then aliased extension names will be replaced by the standard name if metadata is resaved.
+/// This sets the default for [`crate::array::codec::CodecMetadataOptions`] (part of [`crate::array::ArrayMetadataOptions`])
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -115,31 +139,17 @@ pub struct Config {
     metadata_convert_version: MetadataConvertVersion,
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
-    experimental_codec_names: HashMap<String, String>,
+    codec_aliases_v3: ExtensionAliasesCodecV3,
+    codec_aliases_v2: ExtensionAliasesCodecV2,
+    data_type_aliases_v3: ExtensionAliasesDataTypeV3,
+    data_type_aliases_v2: ExtensionAliasesDataTypeV2,
     experimental_partial_encoding: bool,
+    convert_aliased_extension_names: bool,
 }
 
 #[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
-        #[rustfmt::skip]
-        let experimental_codec_names = HashMap::from([
-            // Array to array
-            #[cfg(feature = "bitround")]
-            (codec::bitround::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_array/bitround".to_string()),
-            // Array to bytes
-            #[cfg(feature = "zfp")]
-            (codec::zfp::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/zfp".to_string()),
-            #[cfg(feature = "pcodec")]
-            (codec::pcodec::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/pcodec".to_string()),
-            (codec::vlen::IDENTIFIER.to_string(), "https://codec.zarrs.dev/array_to_bytes/vlen".to_string()),
-            // Bytes to bytes
-            #[cfg(feature = "bz2")]
-            (codec::bz2::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/bz2".to_string()),
-            #[cfg(feature = "fletcher32")]
-            (codec::fletcher32::IDENTIFIER.to_string(), "https://codec.zarrs.dev/bytes_to_bytes/fletcher32".to_string()),
-        ]);
-
         Self {
             validate_checksums: true,
             store_empty_chunks: false,
@@ -149,8 +159,12 @@ impl Default for Config {
             metadata_convert_version: MetadataConvertVersion::Default,
             metadata_erase_version: MetadataEraseVersion::Default,
             include_zarrs_metadata: true,
-            experimental_codec_names,
+            codec_aliases_v3: ExtensionAliasesCodecV3::default(),
+            codec_aliases_v2: ExtensionAliasesCodecV2::default(),
+            data_type_aliases_v3: ExtensionAliasesDataTypeV3::default(),
+            data_type_aliases_v2: ExtensionAliasesDataTypeV2::default(),
             experimental_partial_encoding: false,
+            convert_aliased_extension_names: false,
         }
     }
 }
@@ -255,15 +269,48 @@ impl Config {
         self
     }
 
-    /// Get the [experimental codec names](#experimental-codec-names) configuration.
+    /// Get the Zarr V3 [codec aliases](#codec-aliases) configuration.
     #[must_use]
-    pub fn experimental_codec_names(&self) -> &HashMap<String, String> {
-        &self.experimental_codec_names
+    pub fn codec_aliases_v3(&self) -> &ExtensionAliasesCodecV3 {
+        &self.codec_aliases_v3
     }
 
-    /// Get a mutable reference to the [experimental codec names](#experimental-codec-names) configuration.
-    pub fn experimental_codec_names_mut(&mut self) -> &mut HashMap<String, String> {
-        &mut self.experimental_codec_names
+    /// Get a mutable reference to the Zarr V3 [codec aliases](#codec-aliases) configuration.
+    pub fn codec_aliases_v3_mut(&mut self) -> &mut ExtensionAliasesCodecV3 {
+        &mut self.codec_aliases_v3
+    }
+
+    /// Get the Zarr V3 [data type aliases](#data-type-aliases) configuration.
+    #[must_use]
+    pub fn data_type_aliases_v3(&self) -> &ExtensionAliasesDataTypeV3 {
+        &self.data_type_aliases_v3
+    }
+
+    /// Get a mutable reference to the Zarr V3 [data type aliases](#data-type-aliases) configuration.
+    pub fn data_type_aliases_v3_mut(&mut self) -> &mut ExtensionAliasesDataTypeV3 {
+        &mut self.data_type_aliases_v3
+    }
+
+    /// Get the Zarr V2 [codec aliases](#codec-aliases) configuration.
+    #[must_use]
+    pub fn codec_aliases_v2(&self) -> &ExtensionAliasesCodecV2 {
+        &self.codec_aliases_v2
+    }
+
+    /// Get a mutable reference to the Zarr V2 [codec aliases](#codec-aliases) configuration.
+    pub fn codec_aliases_v2_mut(&mut self) -> &mut ExtensionAliasesCodecV2 {
+        &mut self.codec_aliases_v2
+    }
+
+    /// Get the Zarr V2 [data type aliases](#data-type-aliases) configuration.
+    #[must_use]
+    pub fn data_type_aliases_v2(&self) -> &ExtensionAliasesDataTypeV2 {
+        &self.data_type_aliases_v2
+    }
+
+    /// Get a mutable reference to the Zarr V2 [data type aliases](#data-type-aliases) configuration.
+    pub fn data_type_aliases_v2_mut(&mut self) -> &mut ExtensionAliasesDataTypeV2 {
+        &mut self.data_type_aliases_v2
     }
 
     /// Get the [experimental partial encoding](#experimental-partial-encoding) configuration.
@@ -278,6 +325,21 @@ impl Config {
         experimental_partial_encoding: bool,
     ) -> &mut Self {
         self.experimental_partial_encoding = experimental_partial_encoding;
+        self
+    }
+
+    /// Set the [convert aliased extension names](#convert-aliased-extension-names) configuration.
+    #[must_use]
+    pub fn convert_aliased_extension_names(&self) -> bool {
+        self.convert_aliased_extension_names
+    }
+
+    /// Set the [convert aliased extension names](#convert-aliased-extension-names) configuration.
+    pub fn set_convert_aliased_extension_names(
+        &mut self,
+        convert_aliased_extension_names: bool,
+    ) -> &mut Self {
+        self.convert_aliased_extension_names = convert_aliased_extension_names;
         self
     }
 }

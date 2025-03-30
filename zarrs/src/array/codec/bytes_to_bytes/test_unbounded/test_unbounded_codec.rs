@@ -1,15 +1,13 @@
 use std::sync::Arc;
 
-use crate::{
-    array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use zarrs_plugin::MetadataConfiguration;
+
+use crate::array::{
+    codec::{
+        BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits, RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -32,7 +30,15 @@ impl TestUnboundedCodec {
 }
 
 impl CodecTraits for TestUnboundedCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
+    fn identifier(&self) -> &'static str {
+        "zarrs.test_unbounded"
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
         None
     }
 
@@ -47,7 +53,7 @@ impl CodecTraits for TestUnboundedCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for TestUnboundedCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -87,21 +93,6 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         ))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -114,7 +105,7 @@ impl BytesToBytesCodecTraits for TestUnboundedCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         _decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

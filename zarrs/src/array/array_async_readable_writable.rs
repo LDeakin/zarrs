@@ -5,7 +5,7 @@ use crate::{
 };
 
 use super::{
-    array_bytes::update_array_bytes, codec::options::CodecOptions,
+    array_bytes::update_array_bytes, codec::CodecOptions,
     concurrency::concurrency_chunks_and_codec, Array, ArrayError, Element,
 };
 

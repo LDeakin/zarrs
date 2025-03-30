@@ -1,4 +1,4 @@
-//! The `zfp` array to bytes codec.
+//! The `zfp` array to bytes codec (Experimental).
 //!
 //! [zfp](https://zfp.io/) is a compressed number format for 1D to 4D arrays of 32/64-bit floating point or integer data.
 //! 8/16-bit integer types are supported through promotion to 32-bit in accordance with the [zfp utility functions](https://zfp.readthedocs.io/en/release1.0.1/low-level-api.html#utility-functions).
@@ -9,7 +9,85 @@
 //!
 //! This codec requires the `zfp` feature, which is disabled by default.
 //!
-//! See [`ZfpCodecConfigurationV1`] for example `JSON` metadata.
+//! ### Compatible Implementations
+//! None
+//!
+//! ### Specification:
+//! - <https://codec.zarrs.dev/array_to_bytes/zfp>
+//!
+//! This codec is similar to `numcodecs.zfpy` with the following except:
+//! - `"mode"`s are specified as strings
+//! - reversible mode and expert mode are supported
+//! - a zfp header is **not** written, as it is redundant with the codec metadata
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zarrs.zfp`
+//! - `https://codec.zarrs.dev/array_to_bytes/zfp`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Examples - [`ZfpCodecConfiguration`]:
+//! #### Encode in fixed rate mode with 10.5 compressed bits per value
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "fixed_rate",
+//!     "rate": 10.5
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in fixed precision mode with 19 uncompressed bits per value
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "fixed_precision",
+//!     "precision": 19
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in fixed accuracy mode with a tolerance of 0.05
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "fixed_accuracy",
+//!     "tolerance": 0.05
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in reversible mode
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "reversible"
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+//! ```
+//!
+//! #### Encode in expert mode
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "mode": "expert",
+//!     "minbits": 1,
+//!     "maxbits": 13,
+//!     "maxprec": 19,
+//!     "minexp": -2
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 
 mod zfp_array;
 mod zfp_bitstream;
@@ -20,7 +98,7 @@ mod zfp_stream;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
+pub use crate::metadata::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use zfp_codec::ZfpCodec;
 
 use zfp_sys::{
@@ -34,11 +112,8 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
-    config::global_config,
-    metadata::v3::{
-        array::codec::zfp::{self, ZfpMode},
-        MetadataV3,
-    },
+    metadata::codec::{zfp::ZfpMode, ZFP},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
@@ -46,27 +121,20 @@ use self::{
     zfp_array::ZfpArray, zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream,
 };
 
-pub use zfp::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zfp, create_codec_zfp)
+    CodecPlugin::new(ZFP, is_identifier_zfp, create_codec_zfp)
 }
 
-fn is_name_zfp(name: &str) -> bool {
-    name.eq(IDENTIFIER)
-        || name
-            == global_config()
-                .experimental_codec_names()
-                .get(IDENTIFIER)
-                .expect("experimental codec identifier in global map")
+fn is_identifier_zfp(identifier: &str) -> bool {
+    identifier == ZFP
 }
 
 pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZfpCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
+        .map_err(|_| PluginMetadataInvalidError::new(ZFP, "codec", metadata.clone()))?;
+    let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
 
@@ -153,7 +221,7 @@ fn promote_before_zfp_encoding(
         ))),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -174,7 +242,7 @@ fn init_zfp_decoding_output(
         DataType::Float64 => Ok(ZfpArray::Double(vec![0.0; num_elements])),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -225,7 +293,7 @@ fn demote_after_zfp_decoding(
         )),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -340,7 +408,7 @@ mod tests {
         let bytes = T::into_array_bytes(chunk_representation.data_type(), &elements).unwrap();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(configuration).unwrap();
-        let codec = ZfpCodec::new_with_configuration(&configuration);
+        let codec = ZfpCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec
             .encode(
@@ -523,7 +591,7 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
-        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(
@@ -579,9 +647,9 @@ mod tests {
         let bytes: ArrayBytes = bytes.into();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
-        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap());
 
-        let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
+        let max_encoded_size = codec.encoded_representation(&chunk_representation).unwrap();
         let encoded = codec
             .encode(
                 bytes.clone(),

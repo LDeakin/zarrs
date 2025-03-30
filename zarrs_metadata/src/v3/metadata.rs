@@ -1,24 +1,30 @@
-use derive_more::From;
+use std::fmt::Debug;
+
+use derive_more::{Deref, From, Into};
 use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
-/// Metadata with a name and optional configuration.
+/// Metadata with a `name`, and optional `configuration` and `must_understand`.
 ///
-/// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::v3::ArrayMetadataV3)), which is structured as JSON with a name and optional configuration, or just a string representing the name.
+/// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::v3::ArrayMetadataV3)) which is either:
+/// - a string name / identifier, or
+/// - a JSON object with a required `name` field and optional `configuration` and `must_understand` fields.
 ///
-/// Can be deserialised from a JSON string or name/configuration map.
-/// For example:
+/// `must_understand` is implicitly set to [`true`] if omitted.
+/// See [ZEP0009](https://zarr.dev/zeps/draft/ZEP0009.html) for more information on this field and Zarr V3 extensions.
+///
+/// ### Example Metadata
 /// ```json
 /// "bytes"
 /// ```
-/// or
+///
 /// ```json
 /// {
 ///     "name": "bytes",
 /// }
 /// ```
-/// or
+///
 /// ```json
 /// {
 ///     "name": "bytes",
@@ -26,15 +32,43 @@ use thiserror::Error;
 ///       "endian": "little"
 ///     }
 /// }
+/// ```
 ///
+/// ```json
+/// {
+///     "name": "bytes",
+///     "configuration": {
+///       "endian": "little"
+///     },
+///     "must_understand": False
+/// }
+/// ```
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct MetadataV3 {
     name: String,
     configuration: Option<MetadataConfiguration>,
+    must_understand: bool,
 }
 
 /// Configuration metadata.
-pub type MetadataConfiguration = serde_json::Map<String, Value>;
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Deref, From, Into, Eq, PartialEq)]
+pub struct MetadataConfiguration(serde_json::Map<String, Value>);
+
+impl<T: MetadataConfigurationSerialize> From<T> for MetadataConfiguration {
+    fn from(value: T) -> Self {
+        match serde_json::to_value(value) {
+            Ok(serde_json::Value::Object(configuration)) => configuration.into(),
+            _ => {
+                panic!("the configuration could not be converted to a JSON object")
+            }
+        }
+    }
+}
+
+/// A marker trait indicating metadata is JSON serialisable.
+///
+/// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
+pub trait MetadataConfigurationSerialize: Serialize + DeserializeOwned {}
 
 impl TryFrom<&str> for MetadataV3 {
     type Error = serde_json::Error;
@@ -67,15 +101,22 @@ impl serde::Serialize for MetadataV3 {
                 s.serialize_entry("name", &self.name)?;
                 s.end()
             } else {
-                let mut s = s.serialize_map(Some(2))?;
+                let mut s = s.serialize_map(Some(if self.must_understand { 2 } else { 3 }))?;
                 s.serialize_entry("name", &self.name)?;
                 s.serialize_entry("configuration", configuration)?;
+                if !self.must_understand {
+                    s.serialize_entry("must_understand", &false)?;
+                }
                 s.end()
             }
         } else {
             s.serialize_str(self.name.as_str())
         }
     }
+}
+
+fn default_must_understand() -> bool {
+    true
 }
 
 impl<'de> serde::Deserialize<'de> for MetadataV3 {
@@ -86,6 +127,8 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
             name: String,
             #[serde(default)]
             configuration: Option<MetadataConfiguration>,
+            #[serde(default = "default_must_understand")]
+            must_understand: bool,
         }
 
         #[derive(Deserialize)]
@@ -102,10 +145,12 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
             MetadataIntermediate::Name(name) => Ok(Self {
                 name,
                 configuration: None,
+                must_understand: true,
             }),
             MetadataIntermediate::NameConfiguration(metadata) => Ok(Self {
                 name: metadata.name,
                 configuration: metadata.configuration,
+                must_understand: metadata.must_understand,
             }),
         }
     }
@@ -114,20 +159,32 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
 impl MetadataV3 {
     /// Create metadata from `name`.
     #[must_use]
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
             configuration: None,
+            must_understand: true,
         }
     }
 
     /// Create metadata from `name` and `configuration`.
     #[must_use]
-    pub fn new_with_configuration(name: &str, configuration: MetadataConfiguration) -> Self {
+    pub fn new_with_configuration(
+        name: impl Into<String>,
+        configuration: impl Into<MetadataConfiguration>,
+    ) -> Self {
         Self {
             name: name.into(),
-            configuration: Some(configuration),
+            configuration: Some(configuration.into()),
+            must_understand: true,
         }
+    }
+
+    /// Set the value of the `must_understand` field.
+    #[must_use]
+    pub fn with_must_understand(mut self, must_understand: bool) -> Self {
+        self.must_understand = must_understand;
+        self
     }
 
     /// Convert a serializable configuration to [`MetadataV3`].
@@ -135,7 +192,7 @@ impl MetadataV3 {
     /// # Errors
     /// Returns [`serde_json::Error`] if `configuration` cannot be converted to [`MetadataV3`].
     pub fn new_with_serializable_configuration<TConfiguration: serde::Serialize>(
-        name: &str,
+        name: String,
         configuration: &TConfiguration,
     ) -> Result<Self, serde_json::Error> {
         let configuration = serde_json::to_value(configuration)?;
@@ -161,10 +218,16 @@ impl MetadataV3 {
         serde_json::from_value(value).map_err(err)
     }
 
-    /// Returns the metadata name.
+    /// Returns the metadata `name`.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    /// Mutate the metadata `name`.
+    pub fn set_name(&mut self, name: String) -> &mut Self {
+        self.name = name;
+        self
     }
 
     /// Returns the metadata configuration.
@@ -173,12 +236,20 @@ impl MetadataV3 {
         self.configuration.as_ref()
     }
 
+    /// Return whether the metadata must be understood as indicated by the `must_understand` field.
+    ///
+    /// The `must_understand` field is implicitly `true` if omitted.
+    #[must_use]
+    pub fn must_understand(&self) -> bool {
+        self.must_understand
+    }
+
     /// Returns true if the configuration is none or an empty map.
     #[must_use]
     pub fn configuration_is_none_or_empty(&self) -> bool {
         self.configuration
             .as_ref()
-            .map_or(true, serde_json::Map::is_empty)
+            .map_or(true, |configuration| configuration.is_empty())
     }
 }
 
@@ -346,3 +417,53 @@ where
 /// Additional fields in array or group metadata.
 // NOTE: It would be nice if this was just a serde_json::Map, but it only has implementations for `<String, Value>`.
 pub type AdditionalFields = std::collections::BTreeMap<String, AdditionalField>;
+
+#[cfg(test)]
+mod tests {
+    use super::MetadataV3;
+
+    #[test]
+    fn metadata_must_understand_implicit_string() {
+        let metadata = r#""test""#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(metadata.must_understand());
+    }
+
+    #[test]
+    fn metadata_must_understand_implicit() {
+        let metadata = r#"{
+    "name": "test"
+}"#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(metadata.must_understand());
+    }
+
+    #[test]
+    fn metadata_must_understand_true() {
+        let metadata = r#"{
+    "name": "test",
+    "must_understand": true
+}"#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(metadata.must_understand());
+    }
+
+    #[test]
+    fn metadata_must_understand_false() {
+        let metadata = r#"{
+    "name": "test",
+    "must_understand": false
+}"#;
+        let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
+        assert!(metadata.name() == "test");
+        assert!(!metadata.must_understand());
+        assert_ne!(metadata, MetadataV3::new("test".to_string()));
+        assert_eq!(
+            metadata,
+            MetadataV3::new("test".to_string()).with_must_understand(false)
+        );
+    }
+}

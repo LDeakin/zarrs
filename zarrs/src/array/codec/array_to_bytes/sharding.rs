@@ -1,14 +1,56 @@
-//! The `sharding` array to bytes codec.
+//! The `sharding` array to bytes codec (Core).
 //!
 //! Sharding logically splits chunks (shards) into sub-chunks (inner chunks) that can be individually compressed and accessed.
 //! This allows to colocate multiple chunks within one storage object, bundling them in shards.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/v1.0.html>.
-//!
 //! This codec requires the `sharding` feature, which is enabled by default.
 //!
-//! See [`ShardingCodecConfigurationV1`] for example `JSON` metadata.
 //! The [`ShardingCodecBuilder`] can help with creating a [`ShardingCodec`].
+//!
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//!
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/sharding_indexed>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `sharding_indexed`
+//!
+//! ### Codec `configuration` Example - [`ShardingCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "chunk_shape": [32, 32, 32],
+//!     "codecs": [
+//!         {
+//!             "name": "endian",
+//!             "configuration": {
+//!                 "endian": "little"
+//!             }
+//!         },
+//!         {
+//!             "name": "gzip",
+//!             "configuration": {
+//!                 "level": 1
+//!             }
+//!         }
+//!     ],
+//!     "index_codecs": [
+//!         {
+//!             "name": "endian",
+//!             "configuration": {
+//!                 "endian": "little"
+//!             }
+//!         },
+//!         { "name": "crc32c" }
+//!     ]
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::sharding::ShardingCodecConfigurationV1;
+//! # serde_json::from_str::<ShardingCodecConfigurationV1>(JSON).unwrap();
+//!
 
 mod sharding_codec;
 mod sharding_codec_builder;
@@ -17,7 +59,7 @@ mod sharding_partial_encoder;
 
 use std::{borrow::Cow, num::NonZeroU64, sync::Arc};
 
-pub use crate::metadata::v3::array::codec::sharding::{
+pub use crate::metadata::codec::sharding::{
     ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
 };
 
@@ -34,25 +76,24 @@ use crate::{
         BytesRepresentation, ChunkRepresentation, ChunkShape, CodecChain, DataType, FillValue,
     },
     byte_range::ByteRange,
-    metadata::v3::{array::codec::sharding, MetadataV3},
+    metadata::codec::SHARDING,
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use sharding::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_sharding, create_codec_sharding)
+    CodecPlugin::new(SHARDING, is_identifier_sharding, create_codec_sharding)
 }
 
-fn is_name_sharding(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_sharding(identifier: &str) -> bool {
+    identifier == SHARDING
 }
 
 pub(crate) fn create_codec_sharding(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ShardingCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(SHARDING, "codec", metadata.clone()))?;
     let codec = Arc::new(ShardingCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
@@ -88,7 +129,7 @@ fn compute_index_encoded_size(
     index_codecs: &dyn ArrayToBytesCodecTraits,
     index_array_representation: &ChunkRepresentation,
 ) -> Result<u64, CodecError> {
-    let bytes_representation = index_codecs.compute_encoded_size(index_array_representation)?;
+    let bytes_representation = index_codecs.encoded_representation(index_array_representation)?;
     match bytes_representation {
         BytesRepresentation::FixedSize(size) => Ok(size),
         _ => Err(CodecError::Other(

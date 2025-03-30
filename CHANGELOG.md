@@ -12,7 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
 - Add `ArrayBytesFixedDisjointView[CreateError]`
 - Add support for data type extensions with `zarrs_data_type` 0.2.0
-- Add `custom_data_type_fixed_size` and `custom_data_type_variable_size` examples
+- Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
+- Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop
+  - Gated by the `dlpack` feature
+- Add missing `Group::async_child_*` methods
+- Add `numcodecs.zlib` codec support
+- Add `[Async]{Array,Bytes}PartialDecoderDefault`
+- Add `numcodecs.shuffle` codec support
+- Add `Config::{codec,data_type}_aliases_{v2,v3}[_mut]`
+- Add `packbits` codec support
+- Add `Async{Array,Bytes}PartialEncoderTraits` and `*CodecTraits::async_partial_encoder()`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
@@ -40,6 +49,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: `StorageTransformerPlugin` now uses a `Plugin`
 - Add `DataTypeExtension` variant to `CodecError`
 - `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
+- **Breaking**: `ArrayError` is now marked as non-exhaustive
+- Bump `half` to 2.3.1
+- Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
+  - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
+- Refactor `codec` name handling and `CodecTraits` in alignment with ZEP0009 and the [`zarr-extensions`] repository
+  - All "experimental" codecs now use the `zarrs.` prefix (or `numcodecs.` if fully compatible)
+  - Add support for aliased codec names
+  - Enables pass-through of codecs from Zarr V2 to V3 without converting to a V3 equivalent (if supported)
+  - **Breaking**: Add `CodecTraits::{identifier,default_name,configuration[_opt]}()`
+  - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
+- **Breaking**: Change the error type of `node::[async_]get_child_nodes()` and `Group::{children,child_*}()` to `NodeCreateError` instead of `StorageError`
+- Bump `thiserror` to 2.0.2
+- **Breaking**: Refactor `ArrayToArrayCodecTraits`:
+  - Rename `compute_encoded_size()` to `encoded_representation()` and add a default implementation
+  - Rename `compute_decoded_shape()` to `decoded_shape()`
+  - Add `encoded_shape()`
+  - Add `encoded_fill_value()`
+- **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::compute_encoded_size()` to `encoded_representation()`
+- **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::dynamic()` to `into_dyn()`
+- **Breaking**: Mark `CodecError` as non-exhaustive
+    - Add `IncompatibleFillValueError` variant to `CodecError::IncompatibleFillValueError`
+- Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
+- **Breaking**: Rename `[Async]ArrayPartial{Encoder,Decoder}Default` to `[Async]ArrayToBytesPartial{Encoder,Decoder}Default`
+- **Breaking**: Rename `[Async]BytesPartial{Encoder,Decoder}Default` to `[Async]BytesToBytesPartial{Encoder,Decoder}Default`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
@@ -1328,6 +1361,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/v0.2.0
+
+[`zarr-extensions`]: https://github.com/zarr-developers/zarr-extensions
 
 [@LDeakin]: https://github.com/LDeakin
 [@lorenzocerrone]: https://github.com/lorenzocerrone

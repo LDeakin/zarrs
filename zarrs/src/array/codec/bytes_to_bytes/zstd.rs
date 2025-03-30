@@ -1,4 +1,4 @@
-//! The `zstd` bytes to bytes codec.
+//! The `zstd` bytes to bytes codec (Experimental).
 //!
 //! Applies [Zstd](https://tools.ietf.org/html/rfc8878) compression.
 //!
@@ -6,40 +6,64 @@
 //! This codec is based on a draft specification and may be incompatible with other Zarr V3 implementations.
 //! </div>
 //!
-//! See <https://github.com/zarr-developers/zarr-specs/pull/256>.
+//! ### Compatible Implementations
+//! This is expected to become a standardised extension.
+//!
+//! Some implementations have compatibility issues due to how the content size is encoded:
+//! - <https://github.com/zarr-developers/numcodecs/issues/424>
+//! - <https://github.com/google/neuroglancer/issues/625>
+//!
+//! ### Specification:
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/zarr-python-exts/codecs/zstd>
+//! - <https://github.com/zarr-developers/zarr-specs/pull/256>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `zstd`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `zstd`
+//!
+//! ### Codec `configuration` Example - [`ZstdCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 1,
+//!     "checksum": true
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::zstd::ZstdCodecConfiguration;
+//! # serde_json::from_str::<ZstdCodecConfiguration>(JSON).unwrap();
 
 mod zstd_codec;
-mod zstd_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::zstd::{
+pub use crate::metadata::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
+use zarrs_metadata::codec::ZSTD;
 pub use zstd_codec::ZstdCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::zstd, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use zstd::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zstd, create_codec_zstd)
+    CodecPlugin::new(ZSTD, is_identifier_zstd, create_codec_zstd)
 }
 
-fn is_name_zstd(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_zstd(identifier: &str) -> bool {
+    identifier == ZSTD
 }
 
 pub(crate) fn create_codec_zstd(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZstdCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration));
+        .map_err(|_| PluginMetadataInvalidError::new(ZSTD, "codec", metadata.clone()))?;
+    let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
 
@@ -70,7 +94,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: ZstdCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = ZstdCodec::new_with_configuration(&configuration);
+        let codec = ZstdCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec
             .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
@@ -89,7 +113,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: ZstdCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
@@ -130,7 +154,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: ZstdCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())

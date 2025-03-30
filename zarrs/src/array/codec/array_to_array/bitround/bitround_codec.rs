@@ -1,24 +1,21 @@
 use std::sync::Arc;
 
-use crate::{
-    array::{
-        codec::{
-            options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
-            CodecError, CodecMetadataOptions, CodecTraits, RecommendedConcurrency,
-        },
-        ChunkRepresentation, ChunkShape, DataType,
+use zarrs_metadata::codec::BITROUND;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+
+use crate::array::{
+    codec::{
+        ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
+        CodecError, CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
     },
-    config::global_config,
-    metadata::v3::MetadataV3,
+    ChunkRepresentation, DataType,
 };
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 use super::{
-    bitround_partial_decoder, round_bytes, BitroundCodecConfiguration,
-    BitroundCodecConfigurationV1, IDENTIFIER,
+    bitround_partial_decoder, round_bytes, BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
 
 /// A `bitround` codec implementation.
@@ -37,31 +34,38 @@ impl BitroundCodec {
     }
 
     /// Create a new `bitround` codec from a configuration.
-    #[must_use]
-    pub const fn new_with_configuration(configuration: &BitroundCodecConfiguration) -> Self {
-        let BitroundCodecConfiguration::V1(configuration) = configuration;
-        Self {
-            keepbits: configuration.keepbits,
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &BitroundCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        match configuration {
+            BitroundCodecConfiguration::V1(configuration) => Ok(Self {
+                keepbits: configuration.keepbits,
+            }),
+            _ => Err(PluginCreateError::Other(
+                "this bitround codec configuration variant is unsupported".to_string(),
+            )),
         }
     }
 }
 
 impl CodecTraits for BitroundCodec {
-    fn create_metadata_opt(&self, options: &CodecMetadataOptions) -> Option<MetadataV3> {
+    fn identifier(&self) -> &str {
+        BITROUND
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
         if options.experimental_codec_store_metadata_if_encode_only() {
-            let configuration = BitroundCodecConfigurationV1 {
+            let configuration = BitroundCodecConfiguration::V1(BitroundCodecConfigurationV1 {
                 keepbits: self.keepbits,
-            };
-            Some(
-                MetadataV3::new_with_serializable_configuration(
-                    global_config()
-                        .experimental_codec_names()
-                        .get(super::IDENTIFIER)
-                        .expect("experimental codec identifier in global map"),
-                    &configuration,
-                )
-                .unwrap(),
-            )
+            });
+            Some(configuration.into())
         } else {
             None
         }
@@ -88,7 +92,7 @@ impl ArrayCodecTraits for BitroundCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for BitroundCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
         self as Arc<dyn ArrayToArrayCodecTraits>
     }
 
@@ -131,21 +135,6 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         ))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
-        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayToArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -162,12 +151,8 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         ))
     }
 
-    fn compute_encoded_size(
-        &self,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<ChunkRepresentation, CodecError> {
-        let data_type = decoded_representation.data_type();
-        match data_type {
+    fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
+        match decoded_data_type {
             DataType::Float16
             | DataType::BFloat16
             | DataType::Float32
@@ -181,15 +166,11 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
             | DataType::UInt64
             | DataType::Int64
             | DataType::Complex64
-            | DataType::Complex128 => Ok(decoded_representation.clone()),
+            | DataType::Complex128 => Ok(decoded_data_type.clone()),
             _ => Err(CodecError::UnsupportedDataType(
-                data_type.clone(),
-                IDENTIFIER.to_string(),
+                decoded_data_type.clone(),
+                BITROUND.to_string(),
             )),
         }
-    }
-
-    fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
-        Ok(encoded_shape)
     }
 }

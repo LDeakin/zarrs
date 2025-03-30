@@ -51,7 +51,7 @@ async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Err
 
     println!(
         "The array metadata is:\n{}\n",
-        serde_json::to_string_pretty(&array.metadata()).unwrap()
+        array.metadata().to_string_pretty()
     );
 
     // Read the whole array

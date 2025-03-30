@@ -1,3 +1,5 @@
+use zarrs_metadata::codec::SHARDING;
+
 use super::{codec::ShardingCodecConfiguration, Array, ArrayShape, ChunkGrid, ChunkShape};
 
 /// An [`Array`] extension trait to simplify working with arrays using the `sharding_indexed` codec.
@@ -35,12 +37,7 @@ pub trait ArrayShardedExt: private::Sealed {
 
 impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
     fn is_sharded(&self) -> bool {
-        self.codecs
-            .array_to_bytes_codec()
-            .create_metadata()
-            .expect("the array to bytes codec should have metadata")
-            .name() // TODO: Add codec::identifier()?
-            == super::codec::array_to_bytes::sharding::IDENTIFIER
+        self.codecs.array_to_bytes_codec().name() == SHARDING
     }
 
     fn is_exclusively_sharded(&self) -> bool {
@@ -50,13 +47,13 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
     }
 
     fn inner_chunk_shape(&self) -> Option<ChunkShape> {
-        let codec_metadata = self
+        let configuration = self
             .codecs
             .array_to_bytes_codec()
-            .create_metadata()
+            .configuration()
             .expect("the array to bytes codec should have metadata");
         if let Ok(ShardingCodecConfiguration::V1(sharding_configuration)) =
-            codec_metadata.to_configuration()
+            ShardingCodecConfiguration::try_from(configuration)
         {
             Some(sharding_configuration.chunk_shape)
         } else {
@@ -69,7 +66,7 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
         if let Some(mut inner_chunk_shape) = inner_chunk_shape {
             for codec in self.codecs().array_to_array_codecs().iter().rev() {
                 inner_chunk_shape = codec
-                    .compute_decoded_shape(inner_chunk_shape)
+                    .decoded_shape(&inner_chunk_shape)
                     .expect("the inner chunk shape is compatible");
             }
             Some(inner_chunk_shape)

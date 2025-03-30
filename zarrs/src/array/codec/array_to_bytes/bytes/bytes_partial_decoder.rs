@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec::BYTES;
+
 use crate::{
     array::{
         codec::{
             ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
             CodecOptions,
         },
-        ArrayBytes, ArraySize, ChunkRepresentation, DataType, DataTypeSize,
+        ArrayBytes, ArraySize, ChunkRepresentation, DataType,
     },
     array_subset::IncompatibleArraySubsetAndShapeError,
 };
@@ -48,58 +50,55 @@ impl ArrayPartialDecoderTraits for BytesPartialDecoder {
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
+        let Some(data_type_size) = self.data_type().fixed_size() else {
+            return Err(CodecError::UnsupportedDataType(
+                self.data_type().clone(),
+                BYTES.to_string(),
+            ));
+        };
+
         let mut bytes = Vec::with_capacity(decoded_regions.len());
         let chunk_shape = self.decoded_representation.shape_u64();
         for array_subset in decoded_regions {
-            match self.decoded_representation.data_type().size() {
-                DataTypeSize::Variable => {
-                    return Err(CodecError::UnsupportedDataType(
-                        self.data_type().clone(),
-                        super::IDENTIFIER.to_string(),
-                    ));
-                }
-                DataTypeSize::Fixed(data_type_size) => {
-                    // Get byte ranges
-                    let byte_ranges = array_subset
-                        .byte_ranges(&chunk_shape, data_type_size)
-                        .map_err(|_| {
-                            IncompatibleArraySubsetAndShapeError::from((
-                                array_subset.clone(),
-                                self.decoded_representation.shape_u64(),
-                            ))
-                        })?;
+            // Get byte ranges
+            let byte_ranges = array_subset
+                .byte_ranges(&chunk_shape, data_type_size)
+                .map_err(|_| {
+                    IncompatibleArraySubsetAndShapeError::from((
+                        array_subset.clone(),
+                        self.decoded_representation.shape_u64(),
+                    ))
+                })?;
 
-                    // Decode
-                    let decoded = self
-                        .input_handle
-                        .partial_decode_concat(&byte_ranges, options)?
-                        .map_or_else(
-                            || {
-                                let array_size = ArraySize::new(
-                                    self.decoded_representation.data_type().size(),
-                                    array_subset.num_elements(),
-                                );
-                                ArrayBytes::new_fill_value(
-                                    array_size,
-                                    self.decoded_representation.fill_value(),
-                                )
-                            },
-                            |mut decoded| {
-                                if let Some(endian) = &self.endian {
-                                    if !endian.is_native() {
-                                        reverse_endianness(
-                                            decoded.to_mut(),
-                                            self.decoded_representation.data_type(),
-                                        );
-                                    }
-                                }
-                                ArrayBytes::from(decoded)
-                            },
+            // Decode
+            let decoded = self
+                .input_handle
+                .partial_decode_concat(&byte_ranges, options)?
+                .map_or_else(
+                    || {
+                        let array_size = ArraySize::new(
+                            self.decoded_representation.data_type().size(),
+                            array_subset.num_elements(),
                         );
+                        ArrayBytes::new_fill_value(
+                            array_size,
+                            self.decoded_representation.fill_value(),
+                        )
+                    },
+                    |mut decoded| {
+                        if let Some(endian) = &self.endian {
+                            if !endian.is_native() {
+                                reverse_endianness(
+                                    decoded.to_mut(),
+                                    self.decoded_representation.data_type(),
+                                );
+                            }
+                        }
+                        ArrayBytes::from(decoded)
+                    },
+                );
 
-                    bytes.push(decoded);
-                }
-            }
+            bytes.push(decoded);
         }
         Ok(bytes)
     }
@@ -141,6 +140,13 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder {
         decoded_regions: &[ArraySubset],
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
+        let Some(data_type_size) = self.data_type().fixed_size() else {
+            return Err(CodecError::UnsupportedDataType(
+                self.data_type().clone(),
+                BYTES.to_string(),
+            ));
+        };
+
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
                 return Err(CodecError::InvalidArraySubsetDimensionalityError(
@@ -161,22 +167,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncBytesPartialDecoder {
             }
 
             // Get byte ranges
-            let byte_ranges = match self.decoded_representation.element_size() {
-                DataTypeSize::Variable => {
-                    return Err(CodecError::UnsupportedDataType(
-                        self.data_type().clone(),
-                        super::IDENTIFIER.to_string(),
-                    ));
-                }
-                DataTypeSize::Fixed(data_type_size) => array_subset
-                    .byte_ranges(&chunk_shape, data_type_size)
-                    .map_err(|_| {
-                        IncompatibleArraySubsetAndShapeError::from((
-                            array_subset.clone(),
-                            self.decoded_representation.shape_u64(),
-                        ))
-                    })?,
-            };
+            let byte_ranges = array_subset
+                .byte_ranges(&chunk_shape, data_type_size)
+                .map_err(|_| {
+                    IncompatibleArraySubsetAndShapeError::from((
+                        array_subset.clone(),
+                        self.decoded_representation.shape_u64(),
+                    ))
+                })?;
 
             // Decode
             let decoded = self

@@ -8,7 +8,7 @@ pub mod v2;
 use std::sync::Arc;
 
 pub use crate::metadata::{
-    v3::array::chunk_key_encoding::{
+    chunk_key_encoding::{
         default::DefaultChunkKeyEncodingConfiguration, v2::V2ChunkKeyEncodingConfiguration,
     },
     ChunkKeySeparator,
@@ -67,10 +67,10 @@ impl ChunkKeyEncoding {
         {
             // Inventory does not work in miri, so manually handle all known chunk key encodings
             match metadata.name() {
-                default::IDENTIFIER => {
+                chunk_key_encoding::DEFAULT => {
                     return default::create_chunk_key_encoding_default(metadata);
                 }
-                v2::IDENTIFIER => {
+                chunk_key_encoding::V2 => {
                     return v2::create_chunk_key_encoding_v2(metadata);
                 }
                 _ => {}

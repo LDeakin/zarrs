@@ -1,8 +1,36 @@
-//! The `blosc` bytes to bytes codec.
+//! The `blosc` bytes to bytes codec (Core).
 //!
 //! It uses the [blosc](https://www.blosc.org/) container format.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/blosc/v1.0.html>.
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/blosc/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/blosc>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `blosc`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `blosc`
+//!
+//! `zarrs` automatically converts Zarr V2 `blosc` metadata (without a `typesize` field) to Zarr V3.
+//!
+//! ### Codec `configuration` Example - [`BloscCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "cname": "lz4",
+//!     "clevel": 1,
+//!     "shuffle": "shuffle",
+//!     "typesize": 4,
+//!     "blocksize": 0
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::blosc::BloscCodecConfiguration;
+//! # serde_json::from_str::<BloscCodecConfiguration>(JSON).unwrap();
+//! ```
 
 // NOTE: Zarr implementations MAY provide users an option to choose a shuffle mode automatically based on the typesize or other information, but MUST record in the metadata the mode that is chosen.
 // TODO: Need to validate blosc typesize matches element size and also that endianness is specified if typesize > 1
@@ -20,7 +48,7 @@ use std::{
     sync::Arc,
 };
 
-pub use crate::metadata::v3::array::codec::blosc::{
+pub use crate::metadata::codec::blosc::{
     BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
     BloscShuffleMode,
 };
@@ -31,28 +59,27 @@ use blosc_sys::{
 };
 use derive_more::From;
 use thiserror::Error;
+use zarrs_metadata::codec::BLOSC;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::blosc, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use blosc::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_blosc, create_codec_blosc)
+    CodecPlugin::new(BLOSC, is_identifier_blosc, create_codec_blosc)
 }
 
-fn is_name_blosc(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_blosc(identifier: &str) -> bool {
+    identifier == BLOSC
 }
 
 pub(crate) fn create_codec_blosc(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BloscCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(BLOSC, "codec", metadata.clone()))?;
     let codec = Arc::new(BloscCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

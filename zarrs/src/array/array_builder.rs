@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec;
+
 use crate::{
     metadata::{v3::AdditionalFields, ChunkKeySeparator},
     node::NodePath,
@@ -8,8 +10,9 @@ use crate::{
 use super::{
     chunk_key_encoding::{ChunkKeyEncoding, DefaultChunkKeyEncoding},
     codec::{
-        array_to_bytes::vlen::VlenCodec, ArrayToArrayCodecTraits, ArrayToBytesCodecTraits,
-        BytesCodec, BytesToBytesCodecTraits,
+        array_to_bytes::{vlen::VlenCodec, vlen_v2::VlenV2Codec},
+        ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesCodec, BytesToBytesCodecTraits,
+        NamedArrayToArrayCodec, NamedArrayToBytesCodec, NamedBytesToBytesCodec,
     },
     Array, ArrayCreateError, ArrayMetadata, ArrayMetadataV3, ArrayShape, ChunkGrid, CodecChain,
     DataType, DimensionName, FillValue, StorageTransformerChain,
@@ -69,11 +72,11 @@ pub struct ArrayBuilder {
     /// Fill value.
     pub fill_value: FillValue,
     /// Array to array codecs.
-    pub array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
+    pub array_to_array_codecs: Vec<NamedArrayToArrayCodec>,
     /// Array to bytes codec.
-    pub array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
+    pub array_to_bytes_codec: NamedArrayToBytesCodec,
     /// Bytes to bytes codecs.
-    pub bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
+    pub bytes_to_bytes_codecs: Vec<NamedBytesToBytesCodec>,
     /// Storage transformer chain.
     pub storage_transformers: StorageTransformerChain,
     /// Attributes.
@@ -96,7 +99,23 @@ impl ArrayBuilder {
         chunk_grid: ChunkGrid,
         fill_value: FillValue,
     ) -> Self {
-        let is_fixed_size = data_type.fixed_size().is_some();
+        let array_to_bytes_codec: NamedArrayToBytesCodec = if data_type.fixed_size().is_some() {
+            Arc::<BytesCodec>::default().into()
+        } else {
+            // FIXME: Default to VlenCodec if ever stabilised
+            match data_type {
+                DataType::String => NamedArrayToBytesCodec::new(
+                    codec::VLEN_UTF8.to_string(),
+                    Arc::new(VlenV2Codec::new()),
+                ),
+                DataType::RawBits(_) => NamedArrayToBytesCodec::new(
+                    codec::VLEN_BYTES.to_string(),
+                    Arc::new(VlenV2Codec::new()),
+                ),
+                _ => Arc::new(VlenCodec::default()).into(),
+            }
+        };
+
         Self {
             shape,
             data_type,
@@ -104,12 +123,7 @@ impl ArrayBuilder {
             chunk_key_encoding: ChunkKeyEncoding::new(DefaultChunkKeyEncoding::default()),
             fill_value,
             array_to_array_codecs: Vec::default(),
-            array_to_bytes_codec: if is_fixed_size {
-                Arc::<BytesCodec>::default()
-            } else {
-                Arc::<VlenCodec>::default()
-                // Arc::<VlenV2Codec>::default()
-            },
+            array_to_bytes_codec,
             bytes_to_bytes_codecs: Vec::default(),
             attributes: serde_json::Map::default(),
             storage_transformers: StorageTransformerChain::default(),
@@ -132,9 +146,9 @@ impl ArrayBuilder {
             .attributes(array.attributes().clone())
             .chunk_key_encoding(array.chunk_key_encoding().clone())
             .dimension_names(array.dimension_names().clone())
-            .array_to_array_codecs(array.codecs().array_to_array_codecs().to_vec())
-            .array_to_bytes_codec(array.codecs().array_to_bytes_codec().clone())
-            .bytes_to_bytes_codecs(array.codecs().bytes_to_bytes_codecs().to_vec())
+            .array_to_array_codecs_named(array.codecs().array_to_array_codecs().to_vec())
+            .array_to_bytes_codec_named(array.codecs().array_to_bytes_codec().clone())
+            .bytes_to_bytes_codecs_named(array.codecs().bytes_to_bytes_codecs().to_vec())
             .storage_transformers(array.storage_transformers().clone());
         builder
     }
@@ -189,7 +203,18 @@ impl ArrayBuilder {
         &mut self,
         array_to_array_codecs: Vec<Arc<dyn ArrayToArrayCodecTraits>>,
     ) -> &mut Self {
-        self.array_to_array_codecs = array_to_array_codecs;
+        self.array_to_array_codecs = array_to_array_codecs.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Set the array to array codecs with non-default names.
+    ///
+    /// If left unmodified, the array will have no array to array codecs.
+    pub fn array_to_array_codecs_named(
+        &mut self,
+        array_to_array_codecs: Vec<impl Into<NamedArrayToArrayCodec>>,
+    ) -> &mut Self {
+        self.array_to_array_codecs = array_to_array_codecs.into_iter().map(Into::into).collect();
         self
     }
 
@@ -200,7 +225,18 @@ impl ArrayBuilder {
         &mut self,
         array_to_bytes_codec: Arc<dyn ArrayToBytesCodecTraits>,
     ) -> &mut Self {
-        self.array_to_bytes_codec = array_to_bytes_codec;
+        self.array_to_bytes_codec = array_to_bytes_codec.into();
+        self
+    }
+
+    /// Set the array to bytes codec with non-default names.
+    ///
+    /// If left unmodified, the array will default to using the `bytes` codec with native endian encoding.
+    pub fn array_to_bytes_codec_named(
+        &mut self,
+        array_to_bytes_codec: impl Into<NamedArrayToBytesCodec>,
+    ) -> &mut Self {
+        self.array_to_bytes_codec = array_to_bytes_codec.into();
         self
     }
 
@@ -211,7 +247,18 @@ impl ArrayBuilder {
         &mut self,
         bytes_to_bytes_codecs: Vec<Arc<dyn BytesToBytesCodecTraits>>,
     ) -> &mut Self {
-        self.bytes_to_bytes_codecs = bytes_to_bytes_codecs;
+        self.bytes_to_bytes_codecs = bytes_to_bytes_codecs.into_iter().map(Into::into).collect();
+        self
+    }
+
+    /// Set the bytes to bytes codecs with non-default names.
+    ///
+    /// If left unmodified, the array will have no bytes to bytes codecs.
+    pub fn bytes_to_bytes_codecs_named(
+        &mut self,
+        bytes_to_bytes_codecs: Vec<impl Into<NamedBytesToBytesCodec>>,
+    ) -> &mut Self {
+        self.bytes_to_bytes_codecs = bytes_to_bytes_codecs.into_iter().map(Into::into).collect();
         self
     }
 
@@ -296,7 +343,7 @@ impl ArrayBuilder {
             }
         }
 
-        let codec_chain = CodecChain::new(
+        let codec_chain = CodecChain::new_named(
             self.array_to_array_codecs.clone(),
             self.array_to_bytes_codec.clone(),
             self.bytes_to_bytes_codecs.clone(),

@@ -1,15 +1,18 @@
-use std::sync::Arc;
+use std::{num::NonZeroU64, sync::Arc};
+
+use zarrs_data_type::{DataType, FillValue};
+use zarrs_metadata::codec::TRANSPOSE;
+use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
     array::{
         codec::{
-            options::CodecOptions, ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits,
-            ArrayPartialEncoderTraits, ArrayToArrayCodecTraits, ArrayToArrayPartialEncoderDefault,
-            CodecError, CodecMetadataOptions, CodecTraits, RecommendedConcurrency,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
+            CodecError, CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         ChunkRepresentation, ChunkShape,
     },
-    metadata::v3::{array::codec::transpose::TransposeCodecConfigurationV1, MetadataV3},
+    metadata::codec::transpose::TransposeCodecConfigurationV1,
     plugin::PluginCreateError,
 };
 
@@ -18,7 +21,7 @@ use crate::array::codec::AsyncArrayPartialDecoderTraits;
 
 use super::{
     calculate_order_decode, calculate_order_encode, permute, transpose_array,
-    TransposeCodecConfiguration, TransposeOrder, IDENTIFIER,
+    TransposeCodecConfiguration, TransposeOrder,
 };
 
 /// A Transpose codec implementation.
@@ -36,8 +39,14 @@ impl TransposeCodec {
     pub fn new_with_configuration(
         configuration: &TransposeCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
-        let TransposeCodecConfiguration::V1(configuration) = configuration;
-        Ok(Self::new(configuration.order.clone()))
+        match configuration {
+            TransposeCodecConfiguration::V1(configuration) => {
+                Ok(Self::new(configuration.order.clone()))
+            }
+            _ => Err(PluginCreateError::Other(
+                "this transpose codec configuration variant is unsupported".to_string(),
+            )),
+        }
     }
 
     /// Create a new transpose codec.
@@ -48,11 +57,19 @@ impl TransposeCodec {
 }
 
 impl CodecTraits for TransposeCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = TransposeCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        TRANSPOSE
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = TransposeCodecConfiguration::V1(TransposeCodecConfigurationV1 {
             order: self.order.clone(),
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -66,11 +83,30 @@ impl CodecTraits for TransposeCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for TransposeCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
         self as Arc<dyn ArrayToArrayCodecTraits>
     }
 
-    fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
+    fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
+        Ok(decoded_data_type.clone())
+    }
+
+    fn encoded_fill_value(
+        &self,
+        _decoded_data_type: &DataType,
+        decoded_fill_value: &FillValue,
+    ) -> Result<FillValue, CodecError> {
+        Ok(decoded_fill_value.clone())
+    }
+
+    fn encoded_shape(&self, decoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
+        if self.order.0.len() != decoded_shape.len() {
+            return Err(CodecError::Other("Invalid shape".to_string()));
+        }
+        Ok(permute(decoded_shape, &self.order.0).into())
+    }
+
+    fn decoded_shape(&self, encoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
         if self.order.0.len() != encoded_shape.len() {
             return Err(CodecError::Other("Invalid shape".to_string()));
         }
@@ -78,7 +114,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         for (i, val) in self.order.0.iter().enumerate() {
             permutation_decode[*val] = i;
         }
-        let transposed_shape = permute(&encoded_shape, &permutation_decode);
+        let transposed_shape = permute(encoded_shape, &permutation_decode);
         Ok(transposed_shape.into())
     }
 
@@ -195,35 +231,6 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
                 self.order.clone(),
             ),
         ))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
-        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayToArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
-    fn compute_encoded_size(
-        &self,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<ChunkRepresentation, CodecError> {
-        let transposed_shape = permute(decoded_representation.shape(), &self.order.0);
-        Ok(unsafe {
-            ChunkRepresentation::new_unchecked(
-                transposed_shape,
-                decoded_representation.data_type().clone(),
-                decoded_representation.fill_value().clone(),
-            )
-        })
     }
 }
 

@@ -60,6 +60,7 @@ pub enum ArrayCreateError {
 
 /// Array errors.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum ArrayError {
     /// Error when a disjoint view creation cannot be done
     #[error(transparent)]
@@ -110,4 +111,8 @@ pub enum ArrayError {
     /// Unsupported method.
     #[error("unsupported array method: {_0}")]
     UnsupportedMethod(String),
+    #[cfg(feature = "dlpack")]
+    /// A `DLPack` error
+    #[error(transparent)]
+    DlPackError(#[from] super::array_dlpack_ext::ArrayDlPackExtError),
 }

@@ -1,18 +1,43 @@
-//! The transpose array to array codec.
+//! The `transpose` array to array codec (Core).
 //!
 //! Permutes the dimensions of arrays.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/v1.0.html>.
+//! ### [`TransposeCodecConfiguration`] Example:
+//!
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/transpose>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `transpose`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! None
+//!
+//! ### Codec `configuration` Example - [`TransposeCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "order": [2, 1, 0]
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::transpose::TransposeCodecConfiguration;
+//! # let configuration: TransposeCodecConfiguration = serde_json::from_str(JSON).unwrap();
+//! ```
 
 mod transpose_codec;
 mod transpose_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::transpose::{
+pub use crate::metadata::codec::transpose::{
     InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
     TransposeOrder,
 };
+use crate::metadata::codec::TRANSPOSE;
 pub use transpose_codec::TransposeCodec;
 
 use crate::{
@@ -21,25 +46,23 @@ use crate::{
         codec::{Codec, CodecPlugin},
         ArrayBytes, RawBytes,
     },
-    metadata::v3::{array::codec::transpose, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use transpose::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_transpose, create_codec_transpose)
+    CodecPlugin::new(TRANSPOSE, is_identifier_transpose, create_codec_transpose)
 }
 
-fn is_name_transpose(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_transpose(identifier: &str) -> bool {
+    identifier == TRANSPOSE
 }
 
 pub(crate) fn create_codec_transpose(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: TransposeCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(TRANSPOSE, "codec", metadata.clone()))?;
     let codec = Arc::new(TransposeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }

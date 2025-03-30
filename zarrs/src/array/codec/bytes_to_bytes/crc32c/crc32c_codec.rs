@@ -1,16 +1,15 @@
 use std::{borrow::Cow, sync::Arc};
 
-use crate::{
-    array::{
-        codec::{
-            bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use zarrs_metadata::codec::CRC32C;
+use zarrs_plugin::MetadataConfiguration;
+
+use crate::array::{
+    codec::{
+        bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
+        BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits, RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
 #[cfg(feature = "async")]
@@ -19,9 +18,9 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 #[cfg(feature = "async")]
 use crate::array::codec::bytes_to_bytes::strip_suffix_partial_decoder::AsyncStripSuffixPartialDecoder;
 
-use super::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE, IDENTIFIER};
+use super::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1, CHECKSUM_SIZE};
 
-/// A `crc32c` (CRC32C checksum) codec implementation.
+/// A `crc32c` codec implementation.
 #[derive(Clone, Debug, Default)]
 pub struct Crc32cCodec;
 
@@ -40,9 +39,17 @@ impl Crc32cCodec {
 }
 
 impl CodecTraits for Crc32cCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = Crc32cCodecConfigurationV1 {};
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+    fn identifier(&self) -> &str {
+        CRC32C
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = Crc32cCodecConfiguration::V1(Crc32cCodecConfigurationV1 {});
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -56,7 +63,7 @@ impl CodecTraits for Crc32cCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Crc32cCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -114,21 +121,6 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         )))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -142,7 +134,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         )))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

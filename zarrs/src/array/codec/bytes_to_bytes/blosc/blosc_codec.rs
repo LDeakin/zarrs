@@ -1,17 +1,17 @@
 use std::{borrow::Cow, ffi::c_char, sync::Arc};
 
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
+use zarrs_metadata::codec::BLOSC;
+use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+            CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation, RawBytes,
     },
-    metadata::v3::MetadataV3,
     plugin::PluginCreateError,
 };
 
@@ -21,7 +21,7 @@ use crate::array::codec::AsyncBytesPartialDecoderTraits;
 use super::{
     blosc_compress_bytes, blosc_decompress_bytes, blosc_partial_decoder, blosc_validate,
     compressor_as_cstr, BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel,
-    BloscCompressor, BloscError, BloscShuffleMode, IDENTIFIER,
+    BloscCompressor, BloscError, BloscShuffleMode,
 };
 
 /// A `blosc` codec implementation.
@@ -99,6 +99,16 @@ impl BloscCodec {
                 configuration.shuffle,
                 configuration.typesize,
             ),
+            BloscCodecConfiguration::Numcodecs(_) => {
+                // Note: this situation is avoided with codec_metadata_v2_to_v3
+                Err(PluginCreateError::Other(
+                    "the blosc codec cannot be created from numcodecs.blosc metadata directly"
+                        .to_string(),
+                ))?
+            }
+            _ => Err(PluginCreateError::Other(
+                "this blosc codec configuration variant is unsupported".to_string(),
+            )),
         }
     }
 
@@ -132,8 +142,16 @@ impl BloscCodec {
 }
 
 impl CodecTraits for BloscCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = BloscCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        BLOSC
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = BloscCodecConfiguration::V1(BloscCodecConfigurationV1 {
             cname: self.cname,
             clevel: self.clevel,
             shuffle: self.shuffle_mode.unwrap_or_else(|| {
@@ -145,8 +163,8 @@ impl CodecTraits for BloscCodec {
             }),
             typesize: self.typesize,
             blocksize: self.blocksize,
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -160,7 +178,7 @@ impl CodecTraits for BloscCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for BloscCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -212,21 +230,6 @@ impl BytesToBytesCodecTraits for BloscCodec {
         )))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -239,7 +242,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

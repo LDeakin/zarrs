@@ -21,20 +21,32 @@ pub mod v2;
 /// Zarr V2 to V3 conversion.
 pub mod v2_to_v3;
 
-/// An alias for [`v3::MetadataV3`].
-#[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]
-pub type Metadata = v3::MetadataV3;
+pub mod version;
+
+pub mod extension;
+
+pub use crate::v3::array::{chunk_grid, chunk_key_encoding, codec, data_type};
 
 pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
 
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum ArrayMetadata {
     /// Zarr Version 3.0.
     V3(v3::ArrayMetadataV3),
     /// Zarr Version 2.0.
     V2(v2::ArrayMetadataV2),
+}
+
+impl ArrayMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("array metadata is valid JSON")
+    }
 }
 
 impl TryFrom<&str> for ArrayMetadata {
@@ -54,6 +66,15 @@ pub enum GroupMetadata {
     V2(v2::GroupMetadataV2),
 }
 
+impl GroupMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("group metadata is valid JSON")
+    }
+}
+
 impl TryFrom<&str> for GroupMetadata {
     type Error = serde_json::Error;
     fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
@@ -64,12 +85,33 @@ impl TryFrom<&str> for GroupMetadata {
 /// Node metadata ([`ArrayMetadata`] or [`GroupMetadata`]).
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum NodeMetadata {
     /// Array metadata.
     Array(ArrayMetadata),
 
     /// Group metadata.
     Group(GroupMetadata),
+}
+
+impl NodeMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("node metadata is valid JSON")
+    }
+}
+
+/// A data type size. Fixed or variable.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DataTypeSize {
+    /// Fixed size (in bytes).
+    Fixed(usize),
+    /// Variable sized.
+    ///
+    /// <https://github.com/zarr-developers/zeps/pull/47>
+    Variable,
 }
 
 #[cfg(test)]
@@ -107,7 +149,7 @@ mod tests {
                 .unwrap();
         let mut configuration = serde_json::Map::new();
         configuration.insert("endian".to_string(), "little".into());
-        assert_eq!(metadata.configuration(), Some(&configuration));
+        assert_eq!(metadata.configuration(), Some(&configuration.into()));
     }
 
     #[test]

@@ -1,42 +1,61 @@
-//! The `gzip` bytes to bytes codec.
+//! The `gzip` bytes to bytes codec (Core).
 //!
 //! Applies [gzip](https://datatracker.ietf.org/doc/html/rfc1952) compression.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/v1.0.html>.
+//! ### Compatible Implementations
+//! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
+//!
+//! ### Specification
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/v1.0.html>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/gzip>
+//!
+//! ### Codec `name` Aliases (Zarr V3)
+//! - `gzip`
+//!
+//! ### Codec `id` Aliases (Zarr V2)
+//! - `gzip`
+//!
+//! ### Codec `configuration` Example - [`GzipCodecConfiguration`]:
+//! ```rust
+//! # let JSON = r#"
+//! {
+//!     "level": 1
+//! }
+//! # "#;
+//! # use zarrs_metadata::codec::gzip::GzipCodecConfiguration;
+//! # serde_json::from_str::<GzipCodecConfiguration>(JSON).unwrap();
 
 mod gzip_codec;
-mod gzip_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::v3::array::codec::gzip::{
+pub use crate::metadata::codec::gzip::{
     GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
     GzipCompressionLevelError,
 };
 pub use gzip_codec::GzipCodec;
+use zarrs_metadata::codec::GZIP;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::v3::{array::codec::gzip, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use gzip::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_gzip, create_codec_gzip)
+    CodecPlugin::new(GZIP, is_identifier_gzip, create_codec_gzip)
 }
 
-fn is_name_gzip(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_gzip(identifier: &str) -> bool {
+    identifier == GZIP
 }
 
 pub(crate) fn create_codec_gzip(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: GzipCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
-    let codec = Arc::new(GzipCodec::new_with_configuration(&configuration));
+        .map_err(|_| PluginMetadataInvalidError::new(GZIP, "codec", metadata.clone()))?;
+    let codec = Arc::new(GzipCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }
 
@@ -86,7 +105,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = GzipCodec::new_with_configuration(&configuration);
+        let codec = GzipCodec::new_with_configuration(&configuration).unwrap();
 
         let encoded = codec
             .encode(Cow::Borrowed(&bytes), &CodecOptions::default())
@@ -104,7 +123,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(GzipCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(GzipCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())
@@ -144,7 +163,7 @@ mod tests {
         let bytes_representation = BytesRepresentation::FixedSize(bytes.len() as u64);
 
         let configuration: GzipCodecConfiguration = serde_json::from_str(JSON_VALID).unwrap();
-        let codec = Arc::new(GzipCodec::new_with_configuration(&configuration));
+        let codec = Arc::new(GzipCodec::new_with_configuration(&configuration).unwrap());
 
         let encoded = codec
             .encode(Cow::Owned(bytes), &CodecOptions::default())

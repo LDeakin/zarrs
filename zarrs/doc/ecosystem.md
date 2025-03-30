@@ -12,6 +12,8 @@
 - [`zarrs_http`]: A synchronous http store.
 - [`zarrs_zip`]: A storage adapter for zip files.
 - [`zarrs_icechunk`]: [`icechunk`] store support.
+  - `git`-like version control for Zarr hierachies.
+  - Read "virtual Zarr datacubes" of archival formats (e.g., [`netCDF4`](https://www.unidata.ucar.edu/software/netcdf/), [`HDF5`](https://www.hdfgroup.org/solutions/hdf5/), etc.) created by [`VirtualiZarr`](https://github.com/zarr-developers/VirtualiZarr) and backed by [`icechunk`].
 
 #### Bindings
 - [`zarrs-python`]: A high-performance codec pipeline for [`zarr-python`].

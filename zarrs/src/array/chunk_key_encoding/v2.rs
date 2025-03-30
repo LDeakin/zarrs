@@ -1,8 +1,10 @@
 //! The v2 chunk key encoding.
 
+use zarrs_metadata::chunk_key_encoding::V2;
+
 use crate::{
     array::chunk_key_encoding::ChunkKeyEncodingPlugin,
-    metadata::v3::{array::chunk_key_encoding::v2, MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
     storage::StoreKey,
 };
@@ -11,24 +13,21 @@ use super::{
     ChunkKeyEncoding, ChunkKeyEncodingTraits, ChunkKeySeparator, V2ChunkKeyEncodingConfiguration,
 };
 
-pub use v2::IDENTIFIER;
-
 // Register the chunk key encoding.
 inventory::submit! {
-    ChunkKeyEncodingPlugin::new(IDENTIFIER, is_name_v2, create_chunk_key_encoding_v2)
+    ChunkKeyEncodingPlugin::new(V2, is_name_v2, create_chunk_key_encoding_v2)
 }
 
 fn is_name_v2(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+    name.eq(V2)
 }
 
 pub(crate) fn create_chunk_key_encoding_v2(
     metadata: &MetadataV3,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
-    let configuration: V2ChunkKeyEncodingConfiguration =
-        metadata.to_configuration().map_err(|_| {
-            PluginMetadataInvalidError::new(IDENTIFIER, "chunk key encoding", metadata.clone())
-        })?;
+    let configuration: V2ChunkKeyEncodingConfiguration = metadata
+        .to_configuration()
+        .map_err(|_| PluginMetadataInvalidError::new(V2, "chunk key encoding", metadata.clone()))?;
     let v2 = V2ChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(v2))
 }
@@ -83,7 +82,7 @@ impl ChunkKeyEncodingTraits for V2ChunkKeyEncoding {
         let configuration = V2ChunkKeyEncodingConfiguration {
             separator: self.separator,
         };
-        MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap()
+        MetadataV3::new_with_serializable_configuration(V2.to_string(), &configuration).unwrap()
     }
 
     fn encode(&self, chunk_grid_indices: &[u64]) -> StoreKey {

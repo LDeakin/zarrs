@@ -1,23 +1,18 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::codec::ZSTD;
+use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 use zstd::zstd_safe;
 
-use crate::{
-    array::{
-        codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
-        },
-        BytesRepresentation, RawBytes,
+use crate::array::{
+    codec::{
+        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RecommendedConcurrency,
     },
-    metadata::v3::MetadataV3,
+    BytesRepresentation, RawBytes,
 };
 
-#[cfg(feature = "async")]
-use crate::array::codec::AsyncBytesPartialDecoderTraits;
-
-use super::{zstd_partial_decoder, ZstdCodecConfiguration, ZstdCodecConfigurationV1, IDENTIFIER};
+use super::{ZstdCodecConfiguration, ZstdCodecConfigurationV1};
 
 /// A `zstd` codec implementation.
 #[derive(Clone, Debug)]
@@ -37,23 +32,43 @@ impl ZstdCodec {
     }
 
     /// Create a new `Zstd` codec from configuration.
-    #[must_use]
-    pub fn new_with_configuration(configuration: &ZstdCodecConfiguration) -> Self {
-        let ZstdCodecConfiguration::V1(configuration) = configuration;
-        Self {
-            compression: configuration.level.clone().into(),
-            checksum: configuration.checksum,
-        }
+    ///
+    /// # Errors
+    /// Returns an error if the configuration is not supported.
+    pub fn new_with_configuration(
+        configuration: &ZstdCodecConfiguration,
+    ) -> Result<Self, PluginCreateError> {
+        let (compression, checksum) = match configuration {
+            ZstdCodecConfiguration::V1(configuration) => {
+                (configuration.level, configuration.checksum)
+            }
+            ZstdCodecConfiguration::Numcodecs(configuration) => (configuration.level, false),
+            _ => Err(PluginCreateError::Other(
+                "this zstd codec configuration variant is unsupported".to_string(),
+            ))?,
+        };
+        Ok(Self {
+            compression: compression.into(),
+            checksum,
+        })
     }
 }
 
 impl CodecTraits for ZstdCodec {
-    fn create_metadata_opt(&self, _options: &CodecMetadataOptions) -> Option<MetadataV3> {
-        let configuration = ZstdCodecConfigurationV1 {
+    fn identifier(&self) -> &str {
+        ZSTD
+    }
+
+    fn configuration_opt(
+        &self,
+        _name: &str,
+        _options: &CodecMetadataOptions,
+    ) -> Option<MetadataConfiguration> {
+        let configuration = ZstdCodecConfiguration::V1(ZstdCodecConfigurationV1 {
             level: self.compression.into(),
             checksum: self.checksum,
-        };
-        Some(MetadataV3::new_with_serializable_configuration(IDENTIFIER, &configuration).unwrap())
+        });
+        Some(configuration.into())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {
@@ -67,7 +82,7 @@ impl CodecTraits for ZstdCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for ZstdCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -107,43 +122,7 @@ impl BytesToBytesCodecTraits for ZstdCodec {
             .map(Cow::Owned)
     }
 
-    fn partial_decoder(
-        self: Arc<Self>,
-        r: Arc<dyn BytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(zstd_partial_decoder::ZstdPartialDecoder::new(r)))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
-    #[cfg(feature = "async")]
-    async fn async_partial_decoder(
-        self: Arc<Self>,
-        r: Arc<dyn AsyncBytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(
-            zstd_partial_decoder::AsyncZstdPartialDecoder::new(r),
-        ))
-    }
-
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

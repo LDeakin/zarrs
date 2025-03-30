@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Metadata with a id and optional configuration.
+/// Metadata with an `id` and optional `configuration`.
 ///
 /// Can be deserialised from a JSON string or name/configuration map.
 /// For example:
@@ -24,6 +24,12 @@ impl MetadataV2 {
     #[must_use]
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    /// Mutate the "id".
+    pub fn set_id(&mut self, id: String) -> &mut Self {
+        self.id = id;
+        self
     }
 
     /// Return the configuration, which includes all fields excluding the "id".
