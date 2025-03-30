@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 use crate::{
-    array_subset::{ArraySubset, IncompatibleDimensionalityError},
+    array_subset::{ArraySubset, IncompatibleDimensionalityError, IncompatibleStartEndIndicesError},
     data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
@@ -80,6 +80,9 @@ pub enum ArrayError {
     /// Incompatible dimensionality.
     #[error(transparent)]
     IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
+    /// Incompatible start and end
+    #[error(transparent)]
+    IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
     /// Incompatible array subset.
     #[error("array subset {_0} is not compatible with array shape {_1:?}")]
     InvalidArraySubset(ArraySubset, ArrayShape),

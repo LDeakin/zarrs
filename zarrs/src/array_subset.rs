@@ -9,6 +9,7 @@
 //!  - computing the byte ranges of array subsets within an array with a fixed element size.
 
 pub mod iterators;
+use thiserror::Error;
 
 use std::{
     fmt::{Debug, Display},
@@ -22,10 +23,9 @@ use iterators::{
 
 use derive_more::From;
 use itertools::izip;
-use thiserror::Error;
 
 use crate::{
-    array::{ArrayIndices, ArrayShape, codec::array_to_array::transpose::permute},
+    array::{codec::array_to_array::transpose::permute, ArrayError, ArrayIndices, ArrayShape},
     storage::byte_range::ByteRange,
 };
 
@@ -146,31 +146,21 @@ impl ArraySubset {
     ///
     /// # Errors
     /// Returns an error if `end` does not match the array subset dimensionality.
-    pub fn bound(&self, end: &[u64]) -> Result<Self, IncompatibleDimensionalityError> {
+    pub fn bound(&self, end: &[u64]) -> Result<Self, ArraySubsetError> {
         if end.len() == self.dimensionality() {
-            Ok(unsafe { self.bound_unchecked(end) })
+            let start = std::iter::zip(self.start(), end)
+                .map(|(&a, &b)| std::cmp::min(a, b))
+                .collect();
+            let end = std::iter::zip(self.end_exc(), end)
+                .map(|(a, &b)| std::cmp::min(a, b))
+                .collect();
+            Ok(Self::new_with_start_end_exc(start, end)?)
         } else {
             Err(IncompatibleDimensionalityError(
                 end.len(),
                 self.dimensionality(),
-            ))
+            ).into())
         }
-    }
-
-    /// Bound the array subset to the domain within `end` (exclusive).
-    ///
-    /// # Safety
-    /// The length of `end` must match the array subset dimensionality.
-    #[must_use]
-    pub unsafe fn bound_unchecked(&self, end: &[u64]) -> Self {
-        debug_assert_eq!(end.len(), self.dimensionality());
-        let start = std::iter::zip(self.start(), end)
-            .map(|(&a, &b)| std::cmp::min(a, b))
-            .collect();
-        let end = std::iter::zip(self.end_exc(), end)
-            .map(|(a, &b)| std::cmp::min(a, b))
-            .collect();
-        unsafe { Self::new_with_start_end_exc_unchecked(start, end) }
     }
 
     /// Return the start of the array subset.
@@ -531,6 +521,23 @@ impl IncompatibleArraySubsetAndShapeError {
 #[error("incompatible start {0:?} with end {1:?}")]
 pub struct IncompatibleStartEndIndicesError(ArrayIndices, ArrayIndices);
 
+/// Array errors.
+#[derive(Debug, Error)]
+pub enum ArraySubsetError {
+    #[error(transparent)]
+    IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
+    #[error(transparent)]
+    IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
+}
+
+impl Into<ArrayError> for ArraySubsetError {
+    fn into(self) -> ArrayError {
+        match self {
+            Self::IncompatibleDimensionalityError(v) => v.into(),
+            Self::IncompatibleStartEndIndicesError(v) => v.into()
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
