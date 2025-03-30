@@ -331,16 +331,6 @@ impl ArraySubset {
         LinearisedIndices::new(self.clone(), array_shape.to_vec())
     }
 
-    /// Returns an iterator over the indices of elements within the subset.
-    ///
-    /// # Safety
-    /// `array_shape` must encapsulate this array subset.
-    #[must_use]
-    pub unsafe fn linearised_indices_unchecked(&self, array_shape: &[u64]) -> LinearisedIndices {
-        // SAFETY: array_shape encapsulated this array subset
-        unsafe { LinearisedIndices::new_unchecked(self.clone(), array_shape.to_vec()) }
-    }
-
     /// Returns an iterator over the indices of contiguous elements within the subset.
     ///
     /// # Errors
@@ -564,7 +554,8 @@ mod tests {
         let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);
         assert!(array_subset0.overlap(&array_subset2).is_err());
         assert_eq!(
-            unsafe { array_subset2.linearised_indices_unchecked(&[6, 7, 1]) }
+            array_subset2.linearised_indices(&[6, 7, 1])
+                .unwrap()
                 .into_iter()
                 .next(),
             Some(4 * 1 + 3 * 7 * 1)
