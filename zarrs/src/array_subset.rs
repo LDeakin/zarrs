@@ -25,7 +25,7 @@ use derive_more::From;
 use itertools::izip;
 
 use crate::{
-    array::{codec::array_to_array::transpose::permute, ArrayError, ArrayIndices, ArrayShape},
+    array::{ArrayError, ArrayIndices, ArrayShape},
     storage::byte_range::ByteRange,
 };
 
@@ -448,13 +448,6 @@ impl ArraySubset {
             }
         }
         true
-    }
-
-    /// Create a permuted ArraySubset according to an order
-    pub fn permute(&self, order: &Vec<usize>) -> Self {
-        let start = permute(self.start(), order);
-        let shape = permute(self.shape(), order);
-        Self { start, shape }
     }
 }
 
