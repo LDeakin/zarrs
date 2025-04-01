@@ -315,8 +315,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
             let chunk1 = self.subset(&end, array_shape)?;
             if let (Some(chunk0), Some(chunk1)) = (chunk0, chunk1) {
                 let start = chunk0.start().to_vec();
-                let end = chunk1.end_exc();
-                let shape = std::iter::zip(&start, &end).map(|(&s, &e)| e.saturating_sub(s)).collect();
+                let shape = std::iter::zip(&start, chunk1.end_exc()).map(|(&s, e)| e.saturating_sub(s)).collect();
                 Ok(Some(ArraySubset::new_with_start_shape(start, shape)?))
             } else {
                 Ok(None)
@@ -483,7 +482,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
 
                 Ok(
                     if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
-                        let shape = std::iter::zip(&chunks_start, &chunks_end).map(|(&s, e)| e.saturating_sub(s) + 1).collect();
+                        let shape = std::iter::zip(&chunks_start, chunks_end).map(|(&s, e)| e.saturating_sub(s) + 1).collect();
                         Some(ArraySubset::new_with_start_shape(chunks_start, shape)?)
                     } else {
                         None

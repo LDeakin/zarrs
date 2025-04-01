@@ -1,6 +1,6 @@
 use std::{iter::FusedIterator, num::NonZeroU64};
 
-use itertools::izip;
+use itertools::{izip, Itertools};
 use rayon::iter::{
     plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer},
     IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
@@ -60,8 +60,8 @@ impl Chunks {
                     let chunk_start: ArrayIndices = std::iter::zip(subset.start(), &chunk_shape)
                         .map(|(s, c)| s / c)
                         .collect();
-                    let shape: ArrayIndices = izip!(&end, &chunk_shape, &chunk_start)
-                        .map(|(&e, &c, &s)| (e / c).saturating_sub(s) + 1)
+                    let shape: ArrayIndices = izip!(end, &chunk_shape, &chunk_start)
+                        .map(|(e, &c, &s)| (e / c).saturating_sub(s) + 1)
                         .collect();
                     let subset_chunks = ArraySubset::new_with_start_shape(chunk_start, shape)?;
                     Self {
@@ -102,7 +102,7 @@ impl Chunks {
 }
 
 impl<'a> IntoIterator for &'a Chunks {
-    type Item = Result<(ArrayIndices, ArraySubset), IncompatibleDimensionalityError>;
+    type Item = (ArrayIndices, ArraySubset);
     type IntoIter = ChunksIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -114,7 +114,7 @@ impl<'a> IntoIterator for &'a Chunks {
 }
 
 impl<'a> IntoParallelIterator for &'a Chunks {
-    type Item = Result<(ArrayIndices, ArraySubset), IncompatibleDimensionalityError>;
+    type Item = (ArrayIndices, ArraySubset);
     type Iter = ParChunksIterator<'a>;
 
     fn into_par_iter(self) -> Self::Iter {
@@ -134,17 +134,16 @@ pub struct ChunksIterator<'a> {
 }
 
 impl ChunksIterator<'_> {
-    fn chunk_indices_with_subset(&self, chunk_indices: Vec<u64>) -> Result<(Vec<u64>, ArraySubset), IncompatibleDimensionalityError> {
-        let start = std::iter::zip(&chunk_indices, self.chunk_shape)
-            .map(|(i, c)| i * c)
-            .collect();
-        let chunk_subset = ArraySubset::new_with_start_shape(start, self.chunk_shape.to_vec())?;
-        Ok((chunk_indices, chunk_subset))
+    fn chunk_indices_with_subset(&self, chunk_indices: Vec<u64>) -> (Vec<u64>, ArraySubset) {
+        let ranges = std::iter::zip(&chunk_indices, self.chunk_shape)
+            .map(|(i, c)| ((i * c)..(i * c) + c)).collect_vec();
+        let chunk_subset = ArraySubset::new_with_ranges(&ranges);
+        (chunk_indices, chunk_subset)
     }
 }
 
 impl Iterator for ChunksIterator<'_> {
-    type Item = Result<(ArrayIndices, ArraySubset), IncompatibleDimensionalityError>;
+    type Item = (ArrayIndices, ArraySubset);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
@@ -178,7 +177,7 @@ pub struct ParChunksIterator<'a> {
 }
 
 impl ParallelIterator for ParChunksIterator<'_> {
-    type Item = Result<(Vec<u64>, ArraySubset), IncompatibleDimensionalityError>;
+    type Item = (Vec<u64>, ArraySubset);
 
     fn drive_unindexed<C>(self, consumer: C) -> C::Result
     where
@@ -214,7 +213,7 @@ struct ParChunksIteratorProducer<'a> {
 }
 
 impl<'a> Producer for ParChunksIteratorProducer<'a> {
-    type Item = Result<(Vec<u64>, ArraySubset), IncompatibleDimensionalityError>;
+    type Item = (Vec<u64>, ArraySubset);
     type IntoIter = ChunksIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
