@@ -219,7 +219,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             DataTypeSize::Variable => {
                 let decode_inner_chunk = |chunk_index: usize| {
                     let chunk_subset =
-                        self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice())?;
+                        self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
 
                     // Read the offset/size
                     let offset = shard_index[chunk_index * 2];
@@ -274,7 +274,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                     let shard_shape = shard_representation.shape_u64();
                     let decode_chunk = |chunk_index: usize| {
                         let chunk_subset = self
-                            .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice())?;
+                            .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                         let mut output_view_inner_chunk = unsafe {
                             // SAFETY: chunks represent disjoint array subsets
                             ArrayBytesFixedDisjointView::new(
@@ -366,7 +366,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
 
         let decode_chunk = |chunk_index: usize| {
             let chunk_subset =
-                self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice())?;
+                self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
 
             let output_subset_chunk = ArraySubset::new_with_start_shape(
                 std::iter::zip(output_view.subset().start(), chunk_subset.start())
@@ -521,14 +521,15 @@ impl ShardingCodec {
         &self,
         chunk_index: u64,
         chunks_per_shard: &[NonZeroU64],
-    ) -> Result<ArraySubset, CodecError> {
+    ) -> ArraySubset {
         let chunks_per_shard = chunk_shape_to_array_shape(chunks_per_shard);
         let chunk_indices = unravel_index(chunk_index, chunks_per_shard.as_slice());
         let chunk_start = std::iter::zip(&chunk_indices, self.chunk_shape.as_slice())
             .map(|(i, c)| i * c.get())
-            .collect();
-        let shape = self.chunk_shape.to_array_shape();
-        ArraySubset::new_with_start_shape(chunk_start, shape).map_err(CodecError::from)
+            .collect::<Vec<_>>();
+        let shape = self.chunk_shape.as_slice();
+        let ranges = shape.iter().zip(&chunk_start).map(|(&sh, &st)| st..(st+sh.get())).collect::<Vec<_>>();
+        ArraySubset::new_with_ranges(&ranges)
     }
 
     /// Computed the bounded size of an encoded shard from
@@ -617,7 +618,7 @@ impl ShardingCodec {
                     let chunk_subset =
                         self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                     let bytes = decoded_value.extract_array_subset(
-                        &chunk_subset?,
+                        &chunk_subset,
                         &shard_shape,
                         chunk_representation.data_type(),
                     )?;
@@ -729,10 +730,7 @@ impl ShardingCodec {
             .build();
 
         let encode_chunk = |chunk_index| {
-            let chunk_subset = match self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice()) {
-                Ok(subset) => subset,
-                Err(err) => return Some(Err(err)),
-            };
+            let chunk_subset = self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
 
             let bytes = decoded_value.extract_array_subset(
                 &chunk_subset,
