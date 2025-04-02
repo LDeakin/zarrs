@@ -274,17 +274,7 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
                 self.dimensionality(),
             ))
         } else {
-            let chunk_origin =
-            // SAFETY: The length of `chunk_indices` and `array_shape` matches the dimensionality of the chunk grid
-            unsafe {self.chunk_origin_unchecked(chunk_indices, array_shape) };
-            let chunk_shape =
-            // SAFETY: The length of `chunk_indices` and `array_shape` matches the dimensionality of the chunk grid
-            unsafe { self.chunk_shape_u64_unchecked(chunk_indices, array_shape) };
-            if let (Some(chunk_origin), Some(chunk_shape)) = (chunk_origin, chunk_shape) {
-                Ok(Some(ArraySubset::new_with_start_shape(chunk_origin, chunk_shape)?))
-            } else {
-                Ok(None)
-            }
+            Ok(unsafe { self.subset_unchecked(chunk_indices, array_shape) })
         }
     }
 
@@ -461,6 +451,29 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
         array_shape: &[u64],
     ) -> Option<ArrayIndices>;
 
+    /// See [`ChunkGridTraits::subset`].
+    ///
+    /// # Safety
+    /// The length of `chunk_indices` and `array_shape` must match the dimensionality of the chunk grid.
+    unsafe fn subset_unchecked(
+        &self,
+        chunk_indices: &[u64],
+        array_shape: &[u64],
+    ) -> Option<ArraySubset> {
+        debug_assert_eq!(self.dimensionality(), chunk_indices.len());
+        let chunk_origin =
+        // SAFETY: The length of `chunk_indices` and `array_shape` matches the dimensionality of the chunk grid
+        unsafe { self.chunk_origin_unchecked(chunk_indices, array_shape) };
+        let chunk_shape =
+        // SAFETY: The length of `chunk_indices` and `array_shape` matches the dimensionality of the chunk grid
+        unsafe { self.chunk_shape_u64_unchecked(chunk_indices, array_shape) };
+        if let (Some(chunk_origin), Some(chunk_shape)) = (chunk_origin, chunk_shape) {
+            let ranges = chunk_origin.iter().zip(&chunk_shape).map(|(&o, &s)| o..(o+s)).collect::<Vec<_>>();
+            Some(ArraySubset::new_with_ranges(&ranges))
+        } else {
+            None
+        }
+    }
 
     /// Return an array subset indicating the chunks intersecting `array_subset`.
     ///
