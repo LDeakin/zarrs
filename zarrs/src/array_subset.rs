@@ -105,9 +105,7 @@ impl ArraySubset {
             Err(IncompatibleStartEndIndicesError::from((start, end)))
         } else {
             let shape = std::iter::zip(&start, end)
-                .map(|(&start, end)| {
-                    end.saturating_sub(start) + 1
-                })
+                .map(|(&start, end)| end.saturating_sub(start) + 1)
                 .collect();
             Ok(Self { start, shape })
         }
@@ -126,10 +124,8 @@ impl ArraySubset {
             Err(IncompatibleStartEndIndicesError::from((start, end)))
         } else {
             let shape = std::iter::zip(&start, end)
-            .map(|(&start, end)| {
-                end.saturating_sub(start)
-            })
-            .collect();
+                .map(|(&start, end)| end.saturating_sub(start))
+                .collect();
             Ok(Self { start, shape })
         }
     }
@@ -156,10 +152,7 @@ impl ArraySubset {
                 .collect();
             Ok(Self::new_with_start_end_exc(start, end)?)
         } else {
-            Err(IncompatibleDimensionalityError(
-                end.len(),
-                self.dimensionality(),
-            ).into())
+            Err(IncompatibleDimensionalityError(end.len(), self.dimensionality()).into())
         }
     }
 
@@ -283,10 +276,10 @@ impl ArraySubset {
         let is_same_shape = elements.len() as u64 == array_shape.iter().product::<u64>();
         let is_correct_dimensionality = array_shape.len() == self.dimensionality();
         let is_in_bounds = self
-                .end_exc()
-                .iter()
-                .zip(array_shape)
-                .all(|(end, shape)| end <= shape);
+            .end_exc()
+            .iter()
+            .zip(array_shape)
+            .all(|(end, shape)| end <= shape);
         if !(is_correct_dimensionality && is_in_bounds && is_same_shape) {
             return Err(IncompatibleArraySubsetAndShapeError(
                 self.clone(),
@@ -310,7 +303,6 @@ impl ArraySubset {
         }
         unsafe { elements_subset.set_len(num_elements) };
         Ok(elements_subset)
-
     }
 
     /// Returns an iterator over the indices of elements within the subset.
@@ -497,7 +489,7 @@ impl Into<ArrayError> for ArraySubsetError {
     fn into(self) -> ArrayError {
         match self {
             Self::IncompatibleDimensionalityError(v) => v.into(),
-            Self::IncompatibleStartEndIndicesError(v) => v.into()
+            Self::IncompatibleStartEndIndicesError(v) => v.into(),
         }
     }
 }
@@ -549,7 +541,8 @@ mod tests {
         let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);
         assert!(array_subset0.overlap(&array_subset2).is_err());
         assert_eq!(
-            array_subset2.linearised_indices(&[6, 7, 1])
+            array_subset2
+                .linearised_indices(&[6, 7, 1])
                 .unwrap()
                 .into_iter()
                 .next(),

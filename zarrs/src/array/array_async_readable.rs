@@ -576,7 +576,8 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                     // Single chunk fast path if the array subset domain matches the chunk domain
                     self.async_retrieve_chunk_opt(chunk_indices, options).await
                 } else {
-                    let array_subset_in_chunk_subset = array_subset.relative_to(chunk_subset.start())?;
+                    let array_subset_in_chunk_subset =
+                        array_subset.relative_to(chunk_subset.start())?;
                     self.async_retrieve_chunk_subset_opt(
                         chunk_indices,
                         &array_subset_in_chunk_subset,
@@ -646,14 +647,16 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                     let chunk_subset_overlap =
                                         chunk_subset.overlap(array_subset)?;
 
-                                    let mut output_view = unsafe { ArrayBytesFixedDisjointView::new(
+                                    let mut output_view = unsafe {
+                                        ArrayBytesFixedDisjointView::new(
                                             output,
                                             data_type_size,
                                             array_subset.shape(),
                                             chunk_subset_overlap
                                                 .relative_to(array_subset.start())
                                                 .unwrap(),
-                                    ) }?;
+                                        )
+                                    }?;
                                     self.async_retrieve_chunk_subset_into(
                                         &chunk_indices,
                                         &chunk_subset_overlap.relative_to(chunk_subset.start())?,

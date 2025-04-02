@@ -1,7 +1,9 @@
 use thiserror::Error;
 
 use crate::{
-    array_subset::{ArraySubset, IncompatibleDimensionalityError, IncompatibleStartEndIndicesError},
+    array_subset::{
+        ArraySubset, IncompatibleDimensionalityError, IncompatibleStartEndIndicesError,
+    },
     data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,

@@ -528,7 +528,11 @@ impl ShardingCodec {
             .map(|(i, c)| i * c.get())
             .collect::<Vec<_>>();
         let shape = self.chunk_shape.as_slice();
-        let ranges = shape.iter().zip(&chunk_start).map(|(&sh, &st)| st..(st+sh.get())).collect::<Vec<_>>();
+        let ranges = shape
+            .iter()
+            .zip(&chunk_start)
+            .map(|(&sh, &st)| st..(st + sh.get()))
+            .collect::<Vec<_>>();
         ArraySubset::new_with_ranges(&ranges)
     }
 
@@ -730,7 +734,8 @@ impl ShardingCodec {
             .build();
 
         let encode_chunk = |chunk_index| {
-            let chunk_subset = self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
+            let chunk_subset =
+                self.chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
 
             let bytes = decoded_value.extract_array_subset(
                 &chunk_subset,

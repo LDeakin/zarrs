@@ -171,7 +171,10 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
 
             match self.decoded_representation.element_size() {
                 DataTypeSize::Variable => {
-                    let decode_inner_chunk_subset = | (chunk_indices, chunk_subset): (Vec<u64>, ArraySubset)| {
+                    let decode_inner_chunk_subset = |(chunk_indices, chunk_subset): (
+                        Vec<u64>,
+                        ArraySubset,
+                    )| {
                         let shard_index_idx: usize =
                             usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
                                 .unwrap();
@@ -247,7 +250,10 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                     let out_array_subset_slice =
                         UnsafeCellSlice::new(out_array_subset.as_mut_slice());
 
-                    let decode_inner_chunk_subset_into_slice = |(chunk_indices, chunk_subset): (Vec<u64>, ArraySubset)| {
+                    let decode_inner_chunk_subset_into_slice = |(chunk_indices, chunk_subset): (
+                        Vec<u64>,
+                        ArraySubset,
+                    )| {
                         let shard_index_idx: usize =
                             usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
                                 .unwrap();
@@ -255,7 +261,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         let size = shard_index[shard_index_idx + 1];
 
                         // Get the subset of bytes from the chunk which intersect the array
-                        let chunk_subset_overlap =  array_subset.overlap(&chunk_subset)?;
+                        let chunk_subset_overlap = array_subset.overlap(&chunk_subset)?;
 
                         let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
                             let array_size = ArraySize::new(
@@ -495,24 +501,25 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                 }
                 DataTypeSize::Fixed(data_type_size) => {
                     // Find filled / non filled chunks
-                    let chunk_info = array_subset.chunks(chunk_representation.shape())?
-                            .into_iter()
-                            .map(|(chunk_indices, chunk_subset)| {
-                                let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
-                                let chunk_index = usize::try_from(chunk_index).unwrap();
+                    let chunk_info = array_subset
+                        .chunks(chunk_representation.shape())?
+                        .into_iter()
+                        .map(|(chunk_indices, chunk_subset)| {
+                            let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
+                            let chunk_index = usize::try_from(chunk_index).unwrap();
 
-                                // Read the offset/size
-                                let offset = shard_index[chunk_index * 2];
-                                let size = shard_index[chunk_index * 2 + 1];
-                                if offset == u64::MAX && size == u64::MAX {
-                                    (chunk_subset, None)
-                                } else {
-                                    let offset: usize = offset.try_into().unwrap();
-                                    let size: usize = size.try_into().unwrap();
-                                    (chunk_subset, Some((offset, size)))
-                                }
-                            })
-                            .collect::<Vec<_>>();
+                            // Read the offset/size
+                            let offset = shard_index[chunk_index * 2];
+                            let size = shard_index[chunk_index * 2 + 1];
+                            if offset == u64::MAX && size == u64::MAX {
+                                (chunk_subset, None)
+                            } else {
+                                let offset: usize = offset.try_into().unwrap();
+                                let size: usize = size.try_into().unwrap();
+                                (chunk_subset, Some((offset, size)))
+                            }
+                        })
+                        .collect::<Vec<_>>();
 
                     let shard_size = array_subset.num_elements_usize() * data_type_size;
                     let mut shard = Vec::with_capacity(shard_size);

@@ -3,7 +3,8 @@ use thiserror::Error;
 use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::array_subset::{
-    iterators::{ContiguousIndices, ContiguousLinearisedIndices}, ArraySubset, IncompatibleArraySubsetAndShapeError
+    iterators::{ContiguousIndices, ContiguousLinearisedIndices},
+    ArraySubset, IncompatibleArraySubsetAndShapeError,
 };
 
 use super::codec::{CodecError, InvalidBytesLengthError, SubsetOutOfBoundsError};
@@ -28,8 +29,8 @@ pub enum ArrayBytesFixedDisjointViewCreateError {
     SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
     /// The length of the bytes is not the correct length.
     InvalidBytesLength(#[from] InvalidBytesLengthError),
-    /// The array subset 
-    IncompatibleArraySubsetAndShapeError(#[from] IncompatibleArraySubsetAndShapeError)
+    /// The array subset
+    IncompatibleArraySubsetAndShapeError(#[from] IncompatibleArraySubsetAndShapeError),
 }
 
 impl From<ArrayBytesFixedDisjointViewCreateError> for CodecError {
@@ -37,7 +38,9 @@ impl From<ArrayBytesFixedDisjointViewCreateError> for CodecError {
         match value {
             ArrayBytesFixedDisjointViewCreateError::SubsetOutOfBounds(e) => e.into(),
             ArrayBytesFixedDisjointViewCreateError::InvalidBytesLength(e) => e.into(),
-            ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError(e) => e.into(),
+            ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError(e) => {
+                e.into()
+            }
         }
     }
 }
@@ -81,7 +84,7 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
             subset,
             bytes_in_subset_len,
             contiguous_indices,
-            contiguous_linearised_indices
+            contiguous_linearised_indices,
         })
     }
 
@@ -182,7 +185,10 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
             ));
         }
 
-        let length = self.contiguous_linearised_indices.contiguous_elements_usize() * self.data_type_size;
+        let length = self
+            .contiguous_linearised_indices
+            .contiguous_elements_usize()
+            * self.data_type_size;
 
         let bytes_copied = self.contiguous_linearised_indices.iter().fold(
             0,

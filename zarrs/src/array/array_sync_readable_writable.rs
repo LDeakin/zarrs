@@ -315,7 +315,8 @@ impl<TStorage: ?Sized + ReadableWritableStorageTraits + 'static> Array<TStorage>
                     array_subset.shape(),
                     self.data_type(),
                 )?;
-                let array_subset_in_chunk_subset = overlap.relative_to(chunk_subset_in_array.start())?;
+                let array_subset_in_chunk_subset =
+                    overlap.relative_to(chunk_subset_in_array.start())?;
                 self.store_chunk_subset_opt(
                     &chunk_indices,
                     &array_subset_in_chunk_subset,

@@ -692,7 +692,8 @@ mod tests {
                     size_of::<u8>(),
                     &[4, 4],
                     ArraySubset::new_with_ranges(&[1..2, 1..3]),
-                ).unwrap()
+                )
+                .unwrap()
             };
             output_non_overlapping_0.copy_from_slice(&[1u8, 2]).unwrap();
 
@@ -703,7 +704,8 @@ mod tests {
                     size_of::<u8>(),
                     &[4, 4],
                     ArraySubset::new_with_ranges(&[3..4, 0..2]),
-                ).unwrap()
+                )
+                .unwrap()
             };
             output_non_overlapping_1.copy_from_slice(&[3u8, 4]).unwrap();
         }
