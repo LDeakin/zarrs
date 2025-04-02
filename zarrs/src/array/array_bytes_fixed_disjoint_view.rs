@@ -119,14 +119,6 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         self.subset.num_elements()
     }
 
-    fn contiguous_indices(&self) -> Result<ContiguousIndices, IncompatibleArraySubsetAndShapeError> {
-        self.subset.contiguous_indices(self.shape)
-    }
-
-    fn contiguous_linearised_indices(&self) -> Result<ContiguousLinearisedIndices, IncompatibleArraySubsetAndShapeError> {
-        self.subset.contiguous_linearised_indices(self.shape)
-    }
-
     /// Return the contiguous element length of the view.
     ///
     /// This is the number of elements that are accessed in a single contiguous block.
