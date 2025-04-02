@@ -485,8 +485,10 @@ pub struct IncompatibleStartEndIndicesError(ArrayIndices, ArrayIndices);
 /// Array errors.
 #[derive(Debug, Error)]
 pub enum ArraySubsetError {
+    /// Incompatible dimensionality
     #[error(transparent)]
     IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
+    /// Start and end are not compatible
     #[error(transparent)]
     IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
 }

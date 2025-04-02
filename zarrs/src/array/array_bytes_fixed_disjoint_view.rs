@@ -28,6 +28,7 @@ pub enum ArrayBytesFixedDisjointViewCreateError {
     SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
     /// The length of the bytes is not the correct length.
     InvalidBytesLength(#[from] InvalidBytesLengthError),
+    /// The array subset 
     IncompatibleArraySubsetAndShapeError(#[from] IncompatibleArraySubsetAndShapeError)
 }
 

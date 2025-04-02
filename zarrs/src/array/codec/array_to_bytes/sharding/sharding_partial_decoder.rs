@@ -4,7 +4,7 @@ use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
 use zarrs_storage::byte_range::ByteRange;
 
-use crate::{array::{
+use crate::array::{
     array_bytes::merge_chunks_vlen,
     codec::{
         ArrayCodecTraits, ArrayPartialDecoderTraits, ArraySubset, ArrayToBytesCodecTraits,
@@ -14,7 +14,7 @@ use crate::{array::{
     concurrency::{calc_concurrency_outer_inner, RecommendedConcurrency},
     ravel_indices, ArrayBytes, ArrayBytesFixedDisjointView, ArraySize, ChunkRepresentation,
     ChunkShape, DataType, DataTypeSize, RawBytes,
-}, array_subset::IncompatibleDimensionalityError};
+};
 
 #[cfg(feature = "async")]
 use crate::array::codec::{
