@@ -31,7 +31,7 @@ jobs:
       - run: cargo build ${{ matrix.features }}
       - run: cargo test ${{ matrix.features }}
       - run: cargo test ${{ matrix.features }} --examples
-  build_and_test_windows:
+  test_windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,9 +39,8 @@ jobs:
         with:
           toolchain: "stable"
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build
-      - run: cargo test
-  build_and_test_macos:
+      - run: cargo test --all-features --examples
+  test_macos:
     strategy:
       fail-fast: false
       matrix:
@@ -53,8 +52,27 @@ jobs:
         with:
           toolchain: "stable"
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build
-      - run: cargo test
+      - run: cargo test --all-features --examples
+  test_s390x:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup multiarch/qemu-user-static
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static:register --reset
+      - name: ubuntu-core:s390x-focal
+        uses: docker://multiarch/ubuntu-core:s390x-focal
+        with:
+          args: >
+            bash -c
+            "uname -a &&
+            lscpu | grep Endian 
+            "
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "stable"
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all-features --examples
   fmt:
     runs-on: ubuntu-latest
     steps:
