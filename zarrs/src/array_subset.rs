@@ -485,7 +485,7 @@ pub enum ArraySubsetError {
     IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
 }
 
-impl From<ArraySubsetError> for ArrayError  {
+impl From<ArraySubsetError> for ArrayError {
     fn from(arr_subset_err: ArraySubsetError) -> Self {
         match arr_subset_err {
             ArraySubsetError::IncompatibleDimensionalityError(v) => v.into(),
