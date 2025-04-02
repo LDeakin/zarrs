@@ -70,10 +70,13 @@ impl ContiguousIndices {
         }
         // SAFETY: each element is initialised
         unsafe { shape_out.set_len(array_shape.len()) };
-        let subset_contiguous_start =
-            ArraySubset::new_with_start_shape(subset.start().to_vec(), shape_out.clone()).map_err(
-                |_| IncompatibleArraySubsetAndShapeError(subset.clone(), shape_out.clone()),
-            )?;
+        let ranges = subset
+            .start()
+            .iter()
+            .zip(shape_out)
+            .map(|(&st, sh)| st..(st + sh))
+            .collect::<Vec<_>>();
+        let subset_contiguous_start = ArraySubset::new_with_ranges(&ranges);
         // let inner = subset_contiguous_start.iter_indices();
         Ok(Self {
             subset_contiguous_start,
