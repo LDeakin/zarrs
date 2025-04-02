@@ -485,11 +485,11 @@ pub enum ArraySubsetError {
     IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
 }
 
-impl Into<ArrayError> for ArraySubsetError {
-    fn into(self) -> ArrayError {
-        match self {
-            Self::IncompatibleDimensionalityError(v) => v.into(),
-            Self::IncompatibleStartEndIndicesError(v) => v.into(),
+impl From<ArraySubsetError> for ArrayError  {
+    fn from(arr_subset_err: ArraySubsetError) -> Self {
+        match arr_subset_err {
+            ArraySubsetError::IncompatibleDimensionalityError(v) => v.into(),
+            ArraySubsetError::IncompatibleStartEndIndicesError(v) => v.into(),
         }
     }
 }
