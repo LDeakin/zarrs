@@ -4,7 +4,7 @@ use unsafe_cell_slice::UnsafeCellSlice;
 
 use crate::array_subset::{
     iterators::{ContiguousIndices, ContiguousLinearisedIndices},
-    ArraySubset,
+    ArraySubset, IncompatibleArraySubsetAndShapeError,
 };
 
 use super::codec::{CodecError, InvalidBytesLengthError, SubsetOutOfBoundsError};
@@ -18,6 +18,8 @@ pub struct ArrayBytesFixedDisjointView<'a> {
     shape: &'a [u64],
     subset: ArraySubset,
     bytes_in_subset_len: usize,
+    contiguous_indices: ContiguousIndices,
+    contiguous_linearised_indices: ContiguousLinearisedIndices,
 }
 
 /// Errors that can occur when creating a [`ArrayBytesFixedDisjointView`].
@@ -27,6 +29,8 @@ pub enum ArrayBytesFixedDisjointViewCreateError {
     SubsetOutOfBounds(#[from] SubsetOutOfBoundsError),
     /// The length of the bytes is not the correct length.
     InvalidBytesLength(#[from] InvalidBytesLengthError),
+    /// The array subset and shape did not match on construction.
+    IncompatibleArraySubsetAndShapeError(#[from] IncompatibleArraySubsetAndShapeError),
 }
 
 impl From<ArrayBytesFixedDisjointViewCreateError> for CodecError {
@@ -34,6 +38,9 @@ impl From<ArrayBytesFixedDisjointViewCreateError> for CodecError {
         match value {
             ArrayBytesFixedDisjointViewCreateError::SubsetOutOfBounds(e) => e.into(),
             ArrayBytesFixedDisjointViewCreateError::InvalidBytesLength(e) => e.into(),
+            ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError(e) => {
+                e.into()
+            }
         }
     }
 }
@@ -68,45 +75,17 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         }
 
         let bytes_in_subset_len = subset.num_elements_usize() * data_type_size;
+        let contiguous_indices = subset.contiguous_indices(shape)?;
+        let contiguous_linearised_indices = subset.contiguous_linearised_indices(shape)?;
         Ok(Self {
             bytes,
             data_type_size,
             shape,
             subset,
             bytes_in_subset_len,
+            contiguous_indices,
+            contiguous_linearised_indices,
         })
-    }
-
-    /// Create a new non-overlapping view of the bytes in an array.
-    ///
-    /// # Safety
-    /// - `subset` must be inbounds of `shape`,
-    /// - the length of `bytes` must be the product of the elements in `shape` multiplied by `data_type_size`, and
-    /// - the `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
-    ///
-    /// # Panics
-    /// Panics if the product of the elements in `shape` multiplied by `data_type_size` exceeds [`usize::MAX`].
-    #[must_use]
-    pub unsafe fn new_unchecked(
-        bytes: UnsafeCellSlice<'a, u8>,
-        data_type_size: usize,
-        shape: &'a [u64],
-        subset: ArraySubset,
-    ) -> Self {
-        debug_assert!(subset.inbounds_shape(shape));
-        debug_assert_eq!(
-            bytes.len(),
-            usize::try_from(shape.iter().product::<u64>()).unwrap() * data_type_size
-        );
-
-        let bytes_in_subset_len = subset.num_elements_usize() * data_type_size;
-        Self {
-            bytes,
-            data_type_size,
-            shape,
-            subset,
-            bytes_in_subset_len,
-        }
     }
 
     /// Create a new non-overlapping view of the bytes in an array that is a subset of the current view.
@@ -119,30 +98,11 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     pub unsafe fn subdivide(
         &self,
         subset: ArraySubset,
-    ) -> Result<ArrayBytesFixedDisjointView<'a>, SubsetOutOfBoundsError> {
+    ) -> Result<ArrayBytesFixedDisjointView<'a>, ArrayBytesFixedDisjointViewCreateError> {
         if !subset.inbounds(&self.subset) {
-            return Err(SubsetOutOfBoundsError::new(subset, self.subset.clone()));
+            return Err(SubsetOutOfBoundsError::new(subset, self.subset.clone()).into());
         }
-
-        Ok(unsafe {
-            // SAFETY: all inputs have been validated
-            Self::new_unchecked(self.bytes, self.data_type_size, self.shape, subset)
-        })
-    }
-
-    /// Create a new non-overlapping view of the bytes in an array that is a subset of the current view.
-    ///
-    /// # Safety
-    /// - `subset` must be inbounds of the parent subset, and
-    /// - the `subset` represented by this view must not overlap with the `subset` of any other created views that reference the same array bytes.
-    #[must_use]
-    pub unsafe fn subdivide_unchecked(
-        &self,
-        subset: ArraySubset,
-    ) -> ArrayBytesFixedDisjointView<'a> {
-        debug_assert!(subset.inbounds(&self.subset));
-
-        unsafe { Self::new_unchecked(self.bytes, self.data_type_size, self.shape, subset) }
+        unsafe { Self::new(self.bytes, self.data_type_size, self.shape, subset) }
     }
 
     /// Return the shape of the bytes this view is created from.
@@ -163,27 +123,12 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         self.subset.num_elements()
     }
 
-    fn contiguous_indices(&self) -> ContiguousIndices {
-        unsafe {
-            // SAFETY: the output shape encapsulates the output subset, checked in constructor
-            self.subset.contiguous_indices_unchecked(self.shape)
-        }
-    }
-
-    fn contiguous_linearised_indices(&self) -> ContiguousLinearisedIndices {
-        unsafe {
-            // SAFETY: the output shape encapsulates the output subset, checked in constructor
-            self.subset
-                .contiguous_linearised_indices_unchecked(self.shape)
-        }
-    }
-
     /// Return the contiguous element length of the view.
     ///
     /// This is the number of elements that are accessed in a single contiguous block.
     #[must_use]
     pub fn num_contiguous_elements(&self) -> usize {
-        self.contiguous_indices().contiguous_elements_usize()
+        self.contiguous_indices.contiguous_elements_usize()
     }
 
     /// Return the size in bytes of contiguous elements in the view.
@@ -191,7 +136,7 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
     /// This is the number of elements that are accessed in a single contiguous block.
     #[must_use]
     pub fn contiguous_bytes_len(&self) -> usize {
-        self.contiguous_indices().contiguous_elements_usize() * self.data_type_size
+        self.contiguous_indices.contiguous_elements_usize() * self.data_type_size
     }
 
     /// Fill the view with the fill value.
@@ -212,8 +157,7 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
         let fill_value_contiguous = fill_value.repeat(self.num_contiguous_elements());
         let length = self.contiguous_bytes_len();
         debug_assert_eq!(fill_value_contiguous.len(), length);
-        let contiguous_indices = self.contiguous_linearised_indices();
-        contiguous_indices.into_iter().for_each(|index| {
+        self.contiguous_linearised_indices.iter().for_each(|index| {
             let offset = usize::try_from(index * self.data_type_size as u64).unwrap();
             unsafe {
                 self.bytes
@@ -241,10 +185,12 @@ impl<'a> ArrayBytesFixedDisjointView<'a> {
             ));
         }
 
-        let contiguous_indices = self.contiguous_linearised_indices();
-        let length = contiguous_indices.contiguous_elements_usize() * self.data_type_size;
+        let length = self
+            .contiguous_linearised_indices
+            .contiguous_elements_usize()
+            * self.data_type_size;
 
-        let bytes_copied = contiguous_indices.into_iter().fold(
+        let bytes_copied = self.contiguous_linearised_indices.iter().fold(
             0,
             |subset_offset: usize, array_subset_element_index: u64| {
                 let output_offset =

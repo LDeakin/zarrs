@@ -1,7 +1,9 @@
 use thiserror::Error;
 
 use crate::{
-    array_subset::{ArraySubset, IncompatibleDimensionalityError},
+    array_subset::{
+        ArraySubset, IncompatibleDimensionalityError, IncompatibleStartEndIndicesError,
+    },
     data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
@@ -9,7 +11,7 @@ use crate::{
     storage::StorageError,
 };
 
-use super::{codec::CodecError, ArrayIndices, ArrayShape};
+use super::{codec::CodecError, ArrayBytesFixedDisjointViewCreateError, ArrayIndices, ArrayShape};
 
 /// An array creation error.
 #[derive(Debug, Error)]
@@ -62,6 +64,9 @@ pub enum ArrayCreateError {
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum ArrayError {
+    /// Error when a disjoint view creation cannot be done
+    #[error(transparent)]
+    ArrayBytesFixedDisjointViewCreateError(#[from] ArrayBytesFixedDisjointViewCreateError),
     /// A store error.
     #[error(transparent)]
     StorageError(#[from] StorageError),
@@ -77,6 +82,9 @@ pub enum ArrayError {
     /// Incompatible dimensionality.
     #[error(transparent)]
     IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
+    /// Incompatible start and end
+    #[error(transparent)]
+    IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
     /// Incompatible array subset.
     #[error("array subset {_0} is not compatible with array shape {_1:?}")]
     InvalidArraySubset(ArraySubset, ArrayShape),

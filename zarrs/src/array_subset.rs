@@ -9,6 +9,7 @@
 //!  - computing the byte ranges of array subsets within an array with a fixed element size.
 
 pub mod iterators;
+use thiserror::Error;
 
 use std::{
     fmt::{Debug, Display},
@@ -22,16 +23,13 @@ use iterators::{
 
 use derive_more::From;
 use itertools::izip;
-use thiserror::Error;
 
 use crate::{
-    array::{ArrayIndices, ArrayShape},
+    array::{ArrayError, ArrayIndices, ArrayShape},
     storage::byte_range::ByteRange,
 };
 
 /// An array subset.
-///
-/// The unsafe `_unchecked methods` are mostly intended for internal use to avoid redundant input validation.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct ArraySubset {
     /// The start of the array subset.
@@ -92,16 +90,6 @@ impl ArraySubset {
         }
     }
 
-    /// Create a new array subset.
-    ///
-    /// # Safety
-    /// The length of `start` and `size` must match.
-    #[must_use]
-    pub unsafe fn new_with_start_shape_unchecked(start: ArrayIndices, shape: ArrayShape) -> Self {
-        debug_assert_eq!(start.len(), shape.len());
-        Self { start, shape }
-    }
-
     /// Create a new array subset from a start and end (inclusive).
     ///
     /// # Errors
@@ -114,24 +102,11 @@ impl ArraySubset {
         {
             Err(IncompatibleStartEndIndicesError::from((start, end)))
         } else {
-            Ok(unsafe { Self::new_with_start_end_inc_unchecked(start, end) })
+            let shape = std::iter::zip(&start, end)
+                .map(|(&start, end)| end.saturating_sub(start) + 1)
+                .collect();
+            Ok(Self { start, shape })
         }
-    }
-
-    /// Create a new array subset from a start and end (inclusive).
-    ///
-    /// # Safety
-    /// The length of `start` and `end` must match.
-    #[must_use]
-    pub unsafe fn new_with_start_end_inc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
-        debug_assert_eq!(start.len(), end.len());
-        let shape = std::iter::zip(&start, end)
-            .map(|(&start, end)| {
-                debug_assert!(end >= start);
-                end.saturating_sub(start) + 1
-            })
-            .collect();
-        Self { start, shape }
     }
 
     /// Create a new array subset from a start and end (exclusive).
@@ -146,24 +121,11 @@ impl ArraySubset {
         {
             Err(IncompatibleStartEndIndicesError::from((start, end)))
         } else {
-            Ok(unsafe { Self::new_with_start_end_exc_unchecked(start, end) })
+            let shape = std::iter::zip(&start, end)
+                .map(|(&start, end)| end.saturating_sub(start))
+                .collect();
+            Ok(Self { start, shape })
         }
-    }
-
-    /// Create a new array subset from a start and end (exclusive).
-    ///
-    /// # Safety
-    /// The length of `start` and `end` must match.
-    #[must_use]
-    pub unsafe fn new_with_start_end_exc_unchecked(start: ArrayIndices, end: ArrayIndices) -> Self {
-        debug_assert_eq!(start.len(), end.len());
-        let shape = std::iter::zip(&start, end)
-            .map(|(&start, end)| {
-                debug_assert!(end >= start);
-                end.saturating_sub(start)
-            })
-            .collect();
-        Self { start, shape }
     }
 
     /// Return the array subset as a vec of ranges.
@@ -178,31 +140,18 @@ impl ArraySubset {
     ///
     /// # Errors
     /// Returns an error if `end` does not match the array subset dimensionality.
-    pub fn bound(&self, end: &[u64]) -> Result<Self, IncompatibleDimensionalityError> {
+    pub fn bound(&self, end: &[u64]) -> Result<Self, ArraySubsetError> {
         if end.len() == self.dimensionality() {
-            Ok(unsafe { self.bound_unchecked(end) })
+            let start = std::iter::zip(self.start(), end)
+                .map(|(&a, &b)| std::cmp::min(a, b))
+                .collect();
+            let end = std::iter::zip(self.end_exc(), end)
+                .map(|(a, &b)| std::cmp::min(a, b))
+                .collect();
+            Ok(Self::new_with_start_end_exc(start, end)?)
         } else {
-            Err(IncompatibleDimensionalityError(
-                end.len(),
-                self.dimensionality(),
-            ))
+            Err(IncompatibleDimensionalityError(end.len(), self.dimensionality()).into())
         }
-    }
-
-    /// Bound the array subset to the domain within `end` (exclusive).
-    ///
-    /// # Safety
-    /// The length of `end` must match the array subset dimensionality.
-    #[must_use]
-    pub unsafe fn bound_unchecked(&self, end: &[u64]) -> Self {
-        debug_assert_eq!(end.len(), self.dimensionality());
-        let start = std::iter::zip(self.start(), end)
-            .map(|(&a, &b)| std::cmp::min(a, b))
-            .collect();
-        let end = std::iter::zip(self.end_exc(), end)
-            .map(|(a, &b)| std::cmp::min(a, b))
-            .collect();
-        unsafe { Self::new_with_start_end_exc_unchecked(start, end) }
     }
 
     /// Return the start of the array subset.
@@ -309,28 +258,6 @@ impl ArraySubset {
         Ok(byte_ranges)
     }
 
-    /// Return the byte ranges of an array subset in an array with `array_shape` and `element_size`.
-    ///
-    /// # Safety
-    /// The length of `array_shape` must match the dimensionality of `array_subset`.
-    #[must_use]
-    pub unsafe fn byte_ranges_unchecked(
-        &self,
-        array_shape: &[u64],
-        element_size: usize,
-    ) -> Vec<ByteRange> {
-        let mut byte_ranges: Vec<ByteRange> = Vec::new();
-        // SAFETY: The length of array_shape matches the dimensionality
-        let contiguous_indices =
-            unsafe { self.contiguous_linearised_indices_unchecked(array_shape) };
-        let byte_length = contiguous_indices.contiguous_elements_usize() * element_size;
-        for array_index in &contiguous_indices {
-            let byte_index = array_index * element_size as u64;
-            byte_ranges.push(ByteRange::FromStart(byte_index, Some(byte_length as u64)));
-        }
-        byte_ranges
-    }
-
     /// Return the elements in this array subset from an array with shape `array_shape`.
     ///
     /// # Errors
@@ -344,44 +271,25 @@ impl ArraySubset {
         elements: &[T],
         array_shape: &[u64],
     ) -> Result<Vec<T>, IncompatibleArraySubsetAndShapeError> {
-        if elements.len() as u64 == array_shape.iter().product::<u64>()
-            && array_shape.len() == self.dimensionality()
-            && self
-                .end_exc()
-                .iter()
-                .zip(array_shape)
-                .all(|(end, shape)| end <= shape)
-        {
-            Ok(unsafe { self.extract_elements_unchecked(elements, array_shape) })
-        } else {
-            Err(IncompatibleArraySubsetAndShapeError(
+        let is_same_shape = elements.len() as u64 == array_shape.iter().product::<u64>();
+        let is_correct_dimensionality = array_shape.len() == self.dimensionality();
+        let is_in_bounds = self
+            .end_exc()
+            .iter()
+            .zip(array_shape)
+            .all(|(end, shape)| end <= shape);
+        if !(is_correct_dimensionality && is_in_bounds && is_same_shape) {
+            return Err(IncompatibleArraySubsetAndShapeError(
                 self.clone(),
                 array_shape.to_vec(),
-            ))
+            ));
         }
-    }
-
-    /// Return the elements in this array subset from an array with shape `array_shape`.
-    ///
-    /// # Safety
-    /// The length of `array_shape` must match the array subset dimensionality and the array subset must be within the bounds of `array_shape`.
-    ///
-    /// # Panics
-    /// Panics if attempting to reference a byte beyond `usize::MAX`.
-    #[must_use]
-    pub unsafe fn extract_elements_unchecked<T: std::marker::Copy>(
-        &self,
-        elements: &[T],
-        array_shape: &[u64],
-    ) -> Vec<T> {
-        debug_assert_eq!(elements.len() as u64, array_shape.iter().product::<u64>());
         let num_elements = usize::try_from(self.num_elements()).unwrap();
         let mut elements_subset = Vec::with_capacity(num_elements);
         let elements_subset_slice = crate::vec_spare_capacity_to_mut_slice(&mut elements_subset);
         let mut subset_offset = 0;
         // SAFETY: `array_shape` is encapsulated by an array with `array_shape`.
-        let contiguous_elements =
-            unsafe { self.contiguous_linearised_indices_unchecked(array_shape) };
+        let contiguous_elements = self.contiguous_linearised_indices(array_shape)?;
         let element_length = contiguous_elements.contiguous_elements_usize();
         for array_index in &contiguous_elements {
             let element_offset = usize::try_from(array_index).unwrap();
@@ -392,7 +300,7 @@ impl ArraySubset {
             subset_offset += element_length;
         }
         unsafe { elements_subset.set_len(num_elements) };
-        elements_subset
+        Ok(elements_subset)
     }
 
     /// Returns an iterator over the indices of elements within the subset.
@@ -413,16 +321,6 @@ impl ArraySubset {
         LinearisedIndices::new(self.clone(), array_shape.to_vec())
     }
 
-    /// Returns an iterator over the indices of elements within the subset.
-    ///
-    /// # Safety
-    /// `array_shape` must encapsulate this array subset.
-    #[must_use]
-    pub unsafe fn linearised_indices_unchecked(&self, array_shape: &[u64]) -> LinearisedIndices {
-        // SAFETY: array_shape encapsulated this array subset
-        unsafe { LinearisedIndices::new_unchecked(self.clone(), array_shape.to_vec()) }
-    }
-
     /// Returns an iterator over the indices of contiguous elements within the subset.
     ///
     /// # Errors
@@ -435,16 +333,6 @@ impl ArraySubset {
         ContiguousIndices::new(self, array_shape)
     }
 
-    /// Returns an iterator over the indices of contiguous elements within the subset.
-    ///
-    /// # Safety
-    /// `array_shape` must encapsulate this array subset.
-    #[must_use]
-    pub unsafe fn contiguous_indices_unchecked(&self, array_shape: &[u64]) -> ContiguousIndices {
-        // SAFETY: array_shape encapsulated this array subset
-        unsafe { ContiguousIndices::new_unchecked(self, array_shape) }
-    }
-
     /// Returns an iterator over the linearised indices of contiguous elements within the subset.
     ///
     /// # Errors
@@ -455,19 +343,6 @@ impl ArraySubset {
         array_shape: &[u64],
     ) -> Result<ContiguousLinearisedIndices, IncompatibleArraySubsetAndShapeError> {
         ContiguousLinearisedIndices::new(self, array_shape.to_vec())
-    }
-
-    /// Returns an iterator over the linearised indices of contiguous elements within the subset.
-    ///
-    /// # Safety
-    /// `array_shape` must encapsulate this array subset.
-    #[must_use]
-    pub unsafe fn contiguous_linearised_indices_unchecked(
-        &self,
-        array_shape: &[u64],
-    ) -> ContiguousLinearisedIndices {
-        // SAFETY: array_shape encapsulated this array subset
-        unsafe { ContiguousLinearisedIndices::new_unchecked(self, array_shape.to_vec()) }
     }
 
     /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
@@ -484,19 +359,6 @@ impl ArraySubset {
         Chunks::new(self, chunk_shape)
     }
 
-    /// Returns the [`Chunks`] with `chunk_shape` in the array subset which can be iterated over.
-    ///
-    /// All chunks overlapping the array subset are returned, and they all have the same shape `chunk_shape`.
-    /// Thus, the subsets of the chunks may extend out over the subset.
-    ///
-    /// # Safety
-    /// The length of `chunk_shape` must match the array subset dimensionality.
-    #[must_use]
-    pub unsafe fn chunks_unchecked(&self, chunk_shape: &[NonZeroU64]) -> Chunks {
-        // SAFETY: the dimensionality of chunk_shape matches the dimensionality.
-        unsafe { Chunks::new_unchecked(self, chunk_shape) }
-    }
-
     /// Return the overlapping subset between this array subset and `subset_other`.
     ///
     /// # Errors
@@ -504,34 +366,24 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
     pub fn overlap(&self, subset_other: &Self) -> Result<Self, IncompatibleDimensionalityError> {
         if subset_other.dimensionality() == self.dimensionality() {
-            Ok(unsafe { self.overlap_unchecked(subset_other) })
+            let mut ranges = Vec::with_capacity(self.dimensionality());
+            for (start, size, other_start, other_size) in izip!(
+                &self.start,
+                &self.shape,
+                subset_other.start(),
+                subset_other.shape(),
+            ) {
+                let overlap_start = *std::cmp::max(start, other_start);
+                let overlap_end = std::cmp::min(start + size, other_start + other_size);
+                ranges.push(overlap_start..overlap_end);
+            }
+            Ok(Self::new_with_ranges(&ranges))
         } else {
             Err(IncompatibleDimensionalityError::new(
                 subset_other.dimensionality(),
                 self.dimensionality(),
             ))
         }
-    }
-
-    /// Return the overlapping subset between this array subset and `subset_other`.
-    ///
-    /// # Safety
-    /// Panics if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
-    #[must_use]
-    pub unsafe fn overlap_unchecked(&self, subset_other: &Self) -> Self {
-        debug_assert_eq!(subset_other.dimensionality(), self.dimensionality());
-        let mut ranges = Vec::with_capacity(self.dimensionality());
-        for (start, size, other_start, other_size) in izip!(
-            &self.start,
-            &self.shape,
-            subset_other.start(),
-            subset_other.shape(),
-        ) {
-            let overlap_start = *std::cmp::max(start, other_start);
-            let overlap_end = std::cmp::min(start + size, other_start + other_size);
-            ranges.push(overlap_start..overlap_end);
-        }
-        Self::new_with_ranges(&ranges)
     }
 
     /// Return the subset relative to `start`.
@@ -542,29 +394,17 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the length of `start` does not match the dimensionality of this array subset.
     pub fn relative_to(&self, start: &[u64]) -> Result<Self, IncompatibleDimensionalityError> {
         if start.len() == self.dimensionality() {
-            Ok(unsafe { self.relative_to_unchecked(start) })
+            Ok(Self {
+                start: std::iter::zip(self.start(), start)
+                    .map(|(a, b)| a - b)
+                    .collect::<Vec<_>>(),
+                shape: self.shape().to_vec(),
+            })
         } else {
             Err(IncompatibleDimensionalityError::new(
                 start.len(),
                 self.dimensionality(),
             ))
-        }
-    }
-
-    /// Return the subset relative to `start`.
-    ///
-    /// Creates an array subset starting at [`ArraySubset::start()`] - `start`.
-    ///
-    /// # Safety
-    /// Panics if the length of `start` does not match the dimensionality of this array subset.
-    #[must_use]
-    pub unsafe fn relative_to_unchecked(&self, start: &[u64]) -> Self {
-        debug_assert_eq!(start.len(), self.dimensionality());
-        Self {
-            start: std::iter::zip(self.start(), start)
-                .map(|(a, b)| a - b)
-                .collect::<Vec<_>>(),
-            shape: self.shape().to_vec(),
         }
     }
 
@@ -632,6 +472,25 @@ impl IncompatibleArraySubsetAndShapeError {
 #[error("incompatible start {0:?} with end {1:?}")]
 pub struct IncompatibleStartEndIndicesError(ArrayIndices, ArrayIndices);
 
+/// Array errors.
+#[derive(Debug, Error)]
+pub enum ArraySubsetError {
+    /// Incompatible dimensionality
+    #[error(transparent)]
+    IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
+    /// Start and end are not compatible
+    #[error(transparent)]
+    IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
+}
+
+impl From<ArraySubsetError> for ArrayError {
+    fn from(arr_subset_err: ArraySubsetError) -> Self {
+        match arr_subset_err {
+            ArraySubsetError::IncompatibleDimensionalityError(v) => v.into(),
+            ArraySubsetError::IncompatibleStartEndIndicesError(v) => v.into(),
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -680,7 +539,9 @@ mod tests {
         let array_subset2 = ArraySubset::new_with_ranges(&[3..6, 4..7, 0..1]);
         assert!(array_subset0.overlap(&array_subset2).is_err());
         assert_eq!(
-            unsafe { array_subset2.linearised_indices_unchecked(&[6, 7, 1]) }
+            array_subset2
+                .linearised_indices(&[6, 7, 1])
+                .unwrap()
                 .into_iter()
                 .next(),
             Some(4 * 1 + 3 * 7 * 1)
@@ -702,7 +563,7 @@ mod tests {
         );
 
         assert_eq!(
-            unsafe { array_subset.byte_ranges_unchecked(&[4, 4], 1) },
+            array_subset.byte_ranges(&[4, 4], 1).unwrap(),
             vec![
                 ByteRange::FromStart(5, Some(2)),
                 ByteRange::FromStart(9, Some(2))

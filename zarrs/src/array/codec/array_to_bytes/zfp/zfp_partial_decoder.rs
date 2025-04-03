@@ -85,8 +85,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges =
-                        unsafe { array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size) };
+                    let byte_ranges = array_subset.byte_ranges(&chunk_shape, data_type_size)?;
                     out.push(ArrayBytes::from(extract_byte_ranges_concat(
                         &decoded_value,
                         &byte_ranges,
@@ -181,8 +180,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges =
-                        unsafe { array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size) };
+                    let byte_ranges = array_subset.byte_ranges(&chunk_shape, data_type_size)?;
                     out.push(ArrayBytes::from(extract_byte_ranges_concat(
                         &decoded_value,
                         &byte_ranges,
