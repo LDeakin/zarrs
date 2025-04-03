@@ -784,9 +784,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
     pub fn chunk_subset_bounded(&self, chunk_indices: &[u64]) -> Result<ArraySubset, ArrayError> {
         let chunk_subset = self.chunk_subset(chunk_indices)?;
-        chunk_subset
-            .bound(self.shape())
-            .map_err(std::convert::Into::into)
+        Ok(chunk_subset.bound(self.shape())?)
     }
 
     /// Return the array subset of `chunks`.
@@ -813,9 +811,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
     pub fn chunks_subset_bounded(&self, chunks: &ArraySubset) -> Result<ArraySubset, ArrayError> {
         let chunks_subset = self.chunks_subset(chunks)?;
-        chunks_subset
-            .bound(self.shape())
-            .map_err(std::convert::Into::into)
+        Ok(chunks_subset.bound(self.shape())?)
     }
 
     /// Get the chunk array representation at `chunk_index`.
