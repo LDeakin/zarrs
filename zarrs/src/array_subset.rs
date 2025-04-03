@@ -30,8 +30,6 @@ use crate::{
 };
 
 /// An array subset.
-///
-/// The unsafe `_unchecked methods` are mostly intended for internal use to avoid redundant input validation.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct ArraySubset {
     /// The start of the array subset.
