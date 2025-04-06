@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bump `thiserror` to 2.0.12
+ - **Breaking**: Bump `opendal` supported range to 0.51-0.53
 
 ## [0.6.0] - 2025-02-24
 
