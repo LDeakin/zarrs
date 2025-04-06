@@ -577,7 +577,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                     self.async_retrieve_chunk_opt(chunk_indices, options).await
                 } else {
                     let array_subset_in_chunk_subset =
-                        unsafe { array_subset.relative_to_unchecked(chunk_subset.start()) };
+                        array_subset.relative_to(chunk_subset.start())?;
                     self.async_retrieve_chunk_subset_opt(
                         chunk_indices,
                         &array_subset_in_chunk_subset,
@@ -649,7 +649,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
 
                                     let mut output_view = unsafe {
                                         // SAFETY: chunks represent disjoint array subsets
-                                        ArrayBytesFixedDisjointView::new_unchecked(
+                                        ArrayBytesFixedDisjointView::new(
                                             output,
                                             data_type_size,
                                             array_subset.shape(),
@@ -657,7 +657,7 @@ impl<TStorage: ?Sized + AsyncReadableStorageTraits + 'static> Array<TStorage> {
                                                 .relative_to(array_subset.start())
                                                 .unwrap(),
                                         )
-                                    };
+                                    }?;
                                     self.async_retrieve_chunk_subset_into(
                                         &chunk_indices,
                                         &chunk_subset_overlap.relative_to(chunk_subset.start())?,

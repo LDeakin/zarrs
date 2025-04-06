@@ -163,16 +163,16 @@ mod tests {
         assert!(!chunks.is_empty());
         let mut iter = chunks.iter();
         assert_eq!(iter.size_hint(), (9, Some(9)));
-        assert_eq!(iter.next(), Some((vec![0, 0], ArraySubset::new_with_ranges(&[0..2, 0..2]))));
-        assert_eq!(iter.next_back(), Some((vec![2, 2], ArraySubset::new_with_ranges(&[4..6, 4..6]))));
-        assert_eq!(iter.next(), Some((vec![0, 1], ArraySubset::new_with_ranges(&[0..2, 2..4]))));
-        assert_eq!(iter.next(), Some((vec![0, 2], ArraySubset::new_with_ranges(&[0..2, 4..6]))));
-        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..2]))));
-        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 2..4]))));
-        assert_eq!(iter.next(), Some((vec![1, 2], ArraySubset::new_with_ranges(&[2..4, 4..6]))));
-        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..2]))));
-        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 2..4]))));
-        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next().unwrap(), (vec![0, 0], ArraySubset::new_with_ranges(&[0..2, 0..2])));
+        assert_eq!(iter.next_back().unwrap(), (vec![2, 2], ArraySubset::new_with_ranges(&[4..6, 4..6])));
+        assert_eq!(iter.next().unwrap(), (vec![0, 1], ArraySubset::new_with_ranges(&[0..2, 2..4])));
+        assert_eq!(iter.next().unwrap(), (vec![0, 2], ArraySubset::new_with_ranges(&[0..2, 4..6])));
+        assert_eq!(iter.next().unwrap(), (vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..2])));
+        assert_eq!(iter.next().unwrap(), (vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 2..4])));
+        assert_eq!(iter.next().unwrap(), (vec![1, 2], ArraySubset::new_with_ranges(&[2..4, 4..6])));
+        assert_eq!(iter.next().unwrap(), (vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..2])));
+        assert_eq!(iter.next().unwrap(), (vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 2..4])));
+        assert!(iter.next().is_none());
     }
 
     #[test]
@@ -183,11 +183,11 @@ mod tests {
         let chunks = subset.chunks(&chunk_shape).unwrap();
         let mut iter = chunks.into_iter();
         assert_eq!(iter.size_hint(), (4, Some(4)));
-        assert_eq!(iter.next(), Some((vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..3]))));
-        assert_eq!(iter.next(), Some((vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 3..6]))));
-        assert_eq!(iter.next(), Some((vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..3]))));
-        assert_eq!(iter.next(), Some((vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 3..6]))));
-        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next().unwrap(), (vec![1, 0], ArraySubset::new_with_ranges(&[2..4, 0..3])));
+        assert_eq!(iter.next().unwrap(), (vec![1, 1], ArraySubset::new_with_ranges(&[2..4, 3..6])));
+        assert_eq!(iter.next().unwrap(), (vec![2, 0], ArraySubset::new_with_ranges(&[4..6, 0..3])));
+        assert_eq!(iter.next().unwrap(), (vec![2, 1], ArraySubset::new_with_ranges(&[4..6, 3..6])));
+        assert!(iter.next().is_none());
     }
 
     #[test]

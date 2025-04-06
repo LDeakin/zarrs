@@ -649,7 +649,7 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                     self.retrieve_chunk_opt(chunk_indices, options)
                 } else {
                     let array_subset_in_chunk_subset =
-                        unsafe { array_subset.relative_to_unchecked(chunk_subset.start()) };
+                        array_subset.relative_to(chunk_subset.start())?;
                     self.retrieve_chunk_subset_opt(
                         chunk_indices,
                         &array_subset_in_chunk_subset,
@@ -719,12 +719,12 @@ impl<TStorage: ?Sized + ReadableStorageTraits + 'static> Array<TStorage> {
                                 let chunk_subset_overlap = chunk_subset.overlap(array_subset)?;
                                 let mut output_view = unsafe {
                                     // SAFETY: chunks represent disjoint array subsets
-                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new(
                                         output,
                                         data_type_size,
                                         array_subset.shape(),
                                         chunk_subset_overlap.relative_to(array_subset.start())?,
-                                    )
+                                    )?
                                 };
                                 self.retrieve_chunk_subset_into(
                                     &chunk_indices,

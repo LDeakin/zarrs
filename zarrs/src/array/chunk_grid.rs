@@ -304,11 +304,11 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
             let chunk0 = self.subset(start, array_shape)?;
             let chunk1 = self.subset(&end, array_shape)?;
             if let (Some(chunk0), Some(chunk1)) = (chunk0, chunk1) {
-                let start = chunk0.start();
-                let end = chunk1.end_exc();
-                Ok(Some(unsafe {
-                    ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end)
-                }))
+                let start = chunk0.start().to_vec();
+                let shape = std::iter::zip(&start, chunk1.end_exc())
+                    .map(|(&s, e)| e.saturating_sub(s))
+                    .collect();
+                Ok(Some(ArraySubset::new_with_start_shape(start, shape)?))
             } else {
                 Ok(None)
             }
@@ -470,7 +470,12 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
         // SAFETY: The length of `chunk_indices` and `array_shape` matches the dimensionality of the chunk grid
         unsafe { self.chunk_shape_u64_unchecked(chunk_indices, array_shape) };
         if let (Some(chunk_origin), Some(chunk_shape)) = (chunk_origin, chunk_shape) {
-            Some(unsafe { ArraySubset::new_with_start_shape_unchecked(chunk_origin, chunk_shape) })
+            let ranges = chunk_origin
+                .iter()
+                .zip(&chunk_shape)
+                .map(|(&o, &s)| o..(o + s))
+                .collect::<Vec<_>>();
+            Some(ArraySubset::new_with_ranges(&ranges))
         } else {
             None
         }
@@ -496,9 +501,10 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
 
                 Ok(
                     if let (Some(chunks_start), Some(chunks_end)) = (chunks_start, chunks_end) {
-                        Some(unsafe {
-                            ArraySubset::new_with_start_end_inc_unchecked(chunks_start, chunks_end)
-                        })
+                        let shape = std::iter::zip(&chunks_start, chunks_end)
+                            .map(|(&s, e)| e.saturating_sub(s) + 1)
+                            .collect();
+                        Some(ArraySubset::new_with_start_shape(chunks_start, shape)?)
                     } else {
                         None
                     },
