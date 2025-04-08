@@ -17,10 +17,7 @@ use zarrs_data_type::{
     DataTypeExtensionError, DataTypeExtensionPackBitsCodec, DataTypePlugin, FillValue,
     IncompatibleFillValueError, IncompatibleFillValueMetadataError,
 };
-use zarrs_metadata::{
-    codec::packbits::PackBitsPaddingEncoding,
-    v3::{MetadataConfiguration, MetadataV3},
-};
+use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
 use zarrs_storage::store::MemoryStore;
 
@@ -212,9 +209,7 @@ fn main() {
             zarrs::array::codec::array_to_array::transpose::TransposeOrder::new(&[1, 0]).unwrap(),
         )),
     ])
-    .array_to_bytes_codec(Arc::new(zarrs::array::codec::PackBitsCodec::new(
-        PackBitsPaddingEncoding::StartByte,
-    )))
+    .array_to_bytes_codec(Arc::new(zarrs::array::codec::PackBitsCodec::default()))
     .bytes_to_bytes_codecs(vec![
         #[cfg(feature = "gzip")]
         Arc::new(zarrs::array::codec::GzipCodec::new(5).unwrap()),

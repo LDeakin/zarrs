@@ -53,8 +53,8 @@ fn partial_decode<'a>(
     let encoded_length_bits = decoded_representation.num_elements() * element_size_bits;
 
     let offset = match padding_encoding {
-        PackBitsPaddingEncoding::StartByte => 1,
-        PackBitsPaddingEncoding::None | PackBitsPaddingEncoding::EndByte => 0,
+        PackBitsPaddingEncoding::FirstByte => 1,
+        PackBitsPaddingEncoding::None | PackBitsPaddingEncoding::LastByte => 0,
     };
 
     let chunk_shape = decoded_representation.shape_u64();

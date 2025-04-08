@@ -34,6 +34,16 @@ impl MetadataConfigurationSerialize for PackBitsCodecConfiguration {}
 pub struct PackBitsCodecConfigurationV1 {
     /// Specifies how the number of padding bits is encoded, such that the number of decoded elements may be determined from the encoded representation alone.
     pub padding_encoding: Option<PackBitsPaddingEncoding>,
+    /// Specifies the index (starting from the least-significant bit) of the first bit to be encoded.
+    ///
+    /// If omitted, or specified as `null`, defaults to `0`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_bit: Option<u64>,
+    /// Specifies the index (starting from the least-significant bit) of the (inclusive) last bit to be encoded.
+    ///
+    /// If omitted, or specified as `null`, defaults to `N - 1`, where `N` is the total number of bits per component of the data type.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_bit: Option<u64>,
 }
 
 /// `padding_encoding` for the `packbits` codec.
@@ -44,9 +54,9 @@ pub enum PackBitsPaddingEncoding {
     #[default]
     None,
     /// The first byte specifies the number of padding bits that were added.
-    StartByte,
+    FirstByte,
     /// The final byte specifies the number of padding bits that were added.
-    EndByte,
+    LastByte,
 }
 
 #[cfg(test)]
@@ -86,14 +96,14 @@ mod tests {
         let configuration = serde_json::from_str::<PackBitsCodecConfigurationV1>(
             r#"
         {
-            "padding_encoding": "start_byte"
+            "padding_encoding": "first_byte"
         }
         "#,
         )
         .unwrap();
         assert_eq!(
             configuration.padding_encoding,
-            Some(PackBitsPaddingEncoding::StartByte)
+            Some(PackBitsPaddingEncoding::FirstByte)
         );
     }
 
@@ -102,14 +112,14 @@ mod tests {
         let configuration = serde_json::from_str::<PackBitsCodecConfigurationV1>(
             r#"
         {
-            "padding_encoding": "end_byte"
+            "padding_encoding": "last_byte"
         }
         "#,
         )
         .unwrap();
         assert_eq!(
             configuration.padding_encoding,
-            Some(PackBitsPaddingEncoding::EndByte)
+            Some(PackBitsPaddingEncoding::LastByte)
         );
     }
 }
