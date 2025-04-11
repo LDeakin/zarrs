@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] - 2025-04-11
+
 ### Changed
 - Permit (and ignore) `typesize` in `blosc` codec in Zarr V2 arrays
 
@@ -102,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.6...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.7...HEAD
+[0.3.7]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.7
 [0.3.6]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.6
 [0.3.5]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.5
 [0.3.4]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.4
