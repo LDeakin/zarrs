@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Move `v3::array::data_type::DataTypeSize` to the crate root
 - **Breaking**: Rename `v2_to_v3::array_metadata_fill_value_v2_to_v3` to `fill_value_metadata_v2_to_v3`
 - **Breaking**: Rename `v2_to_v3::data_type_metadata_v2_to_v3_data_type` to `data_type_metadata_v2_to_v3`
+- **Breaking**: Add `typesize` to `BloscCodecConfigurationNumcodecs` and use it (if present) in `codec_blosc_v2_numcodecs_to_v3`
 
 ### Removed
 - **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`

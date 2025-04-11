@@ -2,8 +2,8 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "zarr==3.0.1",
-#     "numcodecs==0.15.0",
+#     "zarr==3.0.6",
+#     "numcodecs==0.16.0",
 #     "zfpy==1.0.1",
 #     "pcodec==0.3.2",
 # ]
