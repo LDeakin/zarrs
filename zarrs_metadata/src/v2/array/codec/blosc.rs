@@ -12,7 +12,7 @@ use crate::v3::array::{
 
 /// Configuration parameters for the `blosc` codec (numcodecs).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
-#[serde(deny_unknown_fields)]
+// #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct BloscCodecConfigurationNumcodecs {
     /// The compressor.

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Permit (and ignore) `typesize` in `blosc` codec in Zarr V2 arrays
+
 ## [0.3.6] - 2025-03-02
 
 ### Added
