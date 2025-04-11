@@ -16,7 +16,8 @@
     "cname": "zstd",
     "clevel": 1,
     "shuffle": 2,
-    "blocksize": 0
+    "blocksize": 0,
+    "typesize": null
   },
   "zarr_format": 2,
   "dtype": "<f4"

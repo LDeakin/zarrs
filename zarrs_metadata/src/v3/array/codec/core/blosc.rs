@@ -123,6 +123,8 @@ pub struct BloscCodecConfigurationNumcodecs {
     /// The compression block size. Automatically determined if 0.
     #[serde(default)]
     pub blocksize: usize,
+    /// The typesize.
+    pub typesize: Option<usize>,
 }
 
 /// Blosc shuffle modes (numcodecs).
@@ -145,6 +147,10 @@ pub fn codec_blosc_v2_numcodecs_to_v3(
     blosc: &BloscCodecConfigurationNumcodecs,
     data_type_size: Option<DataTypeSize>,
 ) -> BloscCodecConfiguration {
+    let data_type_size = blosc
+        .typesize
+        .map(|size| DataTypeSize::Fixed(size))
+        .or_else(|| data_type_size);
     let (shuffle, typesize) = match (&blosc.shuffle, data_type_size) {
         (BloscShuffleModeNumcodecs::NoShuffle, _) | (_, None) => {
             (BloscShuffleMode::NoShuffle, None)
