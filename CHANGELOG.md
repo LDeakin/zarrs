@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
 - **Breaking**: Rename `[Async]ArrayPartial{Encoder,Decoder}Default` to `[Async]ArrayToBytesPartial{Encoder,Decoder}Default`
 - **Breaking**: Rename `[Async]BytesPartial{Encoder,Decoder}Default` to `[Async]BytesToBytesPartial{Encoder,Decoder}Default`
+- Enable true partial decoding in the `blosc` codec
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
