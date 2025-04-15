@@ -121,8 +121,16 @@ impl DataTypeExtensionBytesCodec for CustomDataTypeUInt12 {
 
 /// Add support for the `packbits` codec.
 impl DataTypeExtensionPackBitsCodec for CustomDataTypeUInt12 {
-    fn size_bits(&self) -> u8 {
+    fn component_size_bits(&self) -> u64 {
         12
+    }
+
+    fn num_components(&self) -> u64 {
+        1
+    }
+
+    fn sign_extension(&self) -> bool {
+        false
     }
 }
 
