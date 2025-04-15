@@ -41,6 +41,10 @@ use crate::metadata::codec::BYTES;
 
 pub use bytes_codec::BytesCodec;
 
+#[cfg(feature = "async")]
+pub(crate) use bytes_partial_decoder::AsyncBytesPartialDecoder;
+pub(crate) use bytes_partial_decoder::BytesPartialDecoder;
+
 use crate::{
     array::{
         codec::{Codec, CodecPlugin},

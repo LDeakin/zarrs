@@ -78,7 +78,7 @@ pub trait DataTypeExtension: Debug + Send + Sync {
     /// The default implementation returns [`DataTypeExtensionError::CodecUnsupported`].
     ///
     /// # Errors
-    /// Returns [`DataTypeExtensionError::CodecUnsupported`] if the `bytes` codec is unsupported.
+    /// Returns [`DataTypeExtensionError::CodecUnsupported`] if the `packbits` codec is unsupported.
     fn codec_packbits(
         &self,
     ) -> Result<&dyn DataTypeExtensionPackBitsCodec, DataTypeExtensionError> {
