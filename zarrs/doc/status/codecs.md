@@ -11,7 +11,7 @@
 |                | [`numcodecs.zfpy`]       | Experimental | zfp           |
 |                | [`zarrs.vlen`]           | Experimental |               |
 |                | [`zarrs.vlen_v2`]        | Experimental |               |
-|                | [`zarrs.zfp`]            | Experimental | zfp           |
+|                | [`zfp`]                  | Experimental | zfp           |
 | Bytes to Bytes | [`blosc`]                | Core         | **blosc**     |
 |                | [`crc32c`]               | Core         | **crc32c**    |
 |                | [`gzip`]                 | Core         | **gzip**      |
@@ -41,7 +41,7 @@
 [`numcodecs.zfpy`]: crate::array::codec::array_to_bytes::zfpy
 [`zarrs.vlen`]: crate::array::codec::array_to_bytes::vlen
 [`zarrs.vlen_v2`]: crate::array::codec::array_to_bytes::vlen_v2
-[`zarrs.zfp`]: crate::array::codec::array_to_bytes::zfp
+[`zfp`]: crate::array::codec::array_to_bytes::zfp
 
 [`blosc`]: crate::array::codec::bytes_to_bytes::blosc
 [`crc32c`]: crate::array::codec::bytes_to_bytes::crc32c
