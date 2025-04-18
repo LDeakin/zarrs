@@ -96,7 +96,7 @@ mod zfp_field;
 mod zfp_partial_decoder;
 mod zfp_stream;
 
-use std::sync::Arc;
+use std::{num::NonZeroU64, sync::Arc};
 
 pub use crate::metadata::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use zfp_codec::ZfpCodec;
@@ -150,6 +150,16 @@ const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type
         DataType::Float32 => Some(zfp_sys::zfp_type_zfp_type_float),
         DataType::Float64 => Some(zfp_sys::zfp_type_zfp_type_double),
         _ => None,
+    }
+}
+
+/// Zfp only supports 1D to 4D arrays. If the chunk has more than 4 dimensions, ignore dimensions with size 1.
+fn chunk_shape_to_zfp_shape(shape: &[NonZeroU64]) -> Vec<usize> {
+    let shape_usize = shape.iter().map(|u| usize::try_from(u.get()).unwrap());
+    if shape.len() <= 4 {
+        shape_usize.collect()
+    } else {
+        shape_usize.filter(|&u| u > 1).collect()
     }
 }
 
@@ -307,13 +317,11 @@ fn zfp_decode(
 ) -> Result<Vec<u8>, CodecError> {
     let mut array = init_zfp_decoding_output(decoded_representation)?;
     let zfp_type = array.zfp_type();
-    let Some(stream) = ZfpStream::new(zfp_mode, zfp_type) else {
-        return Err(CodecError::from("failed to create zfp stream"));
-    };
+    let stream = ZfpStream::new(zfp_mode, zfp_type)
+        .ok_or_else(|| CodecError::from("failed to create zfp stream"))?;
 
-    let Some(bitstream) = ZfpBitstream::new(encoded_value) else {
-        return Err(CodecError::from("failed to create zfp bitstream"));
-    };
+    let bitstream = ZfpBitstream::new(encoded_value)
+        .ok_or_else(|| CodecError::from("failed to create zfp bitstream"))?;
     if write_header {
         let ret = unsafe {
             let field = zfp_field_alloc();
@@ -330,16 +338,11 @@ fn zfp_decode(
             return Err(CodecError::from("zfp decompression failed"));
         }
     } else {
-        let Some(field) = ZfpField::new(
+        let field = ZfpField::new(
             &mut array,
-            &decoded_representation
-                .shape()
-                .iter()
-                .map(|u| usize::try_from(u.get()).unwrap())
-                .collect::<Vec<usize>>(),
-        ) else {
-            return Err(CodecError::from("failed to create zfp field"));
-        };
+            &chunk_shape_to_zfp_shape(decoded_representation.shape()),
+        )
+        .ok_or_else(|| CodecError::from("failed to create zfp field"))?;
         let ret = unsafe {
             zfp_stream_set_bit_stream(stream.as_zfp_stream(), bitstream.as_bitstream());
             zfp_stream_rewind(stream.as_zfp_stream());
@@ -402,9 +405,11 @@ mod tests {
         chunk_representation: &ChunkRepresentation,
         configuration: &str,
     ) where
-        i32: num::traits::AsPrimitive<T>,
+        u64: num::traits::AsPrimitive<T>,
     {
-        let elements: Vec<T> = (0..27).map(|i: i32| i.as_()).collect();
+        let elements: Vec<T> = (0..chunk_representation.num_elements())
+            .map(|i: u64| i.as_())
+            .collect();
         let bytes = T::into_array_bytes(chunk_representation.data_type(), &elements).unwrap();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(configuration).unwrap();
@@ -689,5 +694,37 @@ mod tests {
             0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 8.0, 14.0, 17.0, 23.0, 26.0,
         ];
         assert_eq!(answer, decoded_partial_chunk);
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_f32_6d() {
+        let chunk_shape = || {
+            vec![
+                NonZeroU64::new(4).unwrap(),
+                NonZeroU64::new(1).unwrap(),
+                NonZeroU64::new(3).unwrap(),
+                NonZeroU64::new(1).unwrap(),
+                NonZeroU64::new(2).unwrap(),
+                NonZeroU64::new(1).unwrap(),
+            ]
+        };
+
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedrate(2.5),
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedaccuracy(1.0),
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedprecision(13),
+        );
     }
 }
