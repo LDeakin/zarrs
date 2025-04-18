@@ -21,6 +21,7 @@
 //! - a zfp header is **not** written, as it is redundant with the codec metadata
 //!
 //! ### Codec `name` Aliases (Zarr V3)
+//! - `zfp`
 //! - `zarrs.zfp`
 //! - `https://codec.zarrs.dev/array_to_bytes/zfp`
 //!
