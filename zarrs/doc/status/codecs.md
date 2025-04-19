@@ -1,28 +1,28 @@
 | Codec Type     | Default codec `name`               | Status       | Feature Flag* |
 | -------------- | ---------------------------------- | ------------ | ------------- |
 | Array to Array | [`transpose`]                      | Core         | **transpose** |
-|                | [`numcodecs.bitround`]†            | Experimental | bitround      |
-|                | [`numcodecs.fixedscaleoffset`]     | Experimental |               |
+|                | [`numcodecs.bitround`]†            | Registered   | bitround      |
+|                | [`numcodecs.fixedscaleoffset`]     | Registered   |               |
 |                | [`zarrs.squeeze`]                  | Experimental |               |
 | Array to Bytes | [`bytes`]                          | Core         |               |
 |                | [`sharding_indexed`]               | Core         | **sharding**  |
 |                | [`vlen-array`]                     | Experimental |               |
-|                | [`vlen-bytes`]                     | Experimental |               |
-|                | [`vlen-utf8`]                      | Experimental |               |
-|                | [`numcodecs.pcodec`]               | Experimental | pcodec        |
-|                | [`numcodecs.zfpy`]                 | Experimental | zfp           |
-|                | [`packbits`]                       | Experimental |               |
+|                | [`vlen-bytes`]                     | Registered   |               |
+|                | [`vlen-utf8`]                      | Registered   |               |
+|                | [`numcodecs.pcodec`]               | Registered   | pcodec        |
+|                | [`numcodecs.zfpy`]                 | Registered   | zfp           |
+|                | [`packbits`]                       | Registered   |               |
 |                | [`zarrs.vlen`]                     | Experimental |               |
 |                | [`zarrs.vlen_v2`]                  | Experimental |               |
-|                | [`zarrs.zfp`]                      | Experimental | zfp           |
+|                | [`zfp`]                            | Registered   | zfp           |
 | Bytes to Bytes | [`blosc`]                          | Core         | **blosc**     |
 |                | [`crc32c`]                         | Core         | **crc32c**    |
 |                | [`gzip`]                           | Core         | **gzip**      |
-|                | [`zstd`]                           | Experimental | **zstd**      |
-|                | [`numcodecs.bz2`]                  | Experimental | bz2           |
-|                | [`numcodecs.fletcher32`]           | Experimental | fletcher32    |
-|                | [`numcodecs.shuffle`]              | Experimental |               |
-|                | [`numcodecs.zlib`]                 | Experimental | zlib          |
+|                | [`zstd`]                           | Registered   | **zstd**      |
+|                | [`numcodecs.bz2`]                  | Registered   | bz2           |
+|                | [`numcodecs.fletcher32`]           | Registered   | fletcher32    |
+|                | [`numcodecs.shuffle`]              | Registered   |               |
+|                | [`numcodecs.zlib`]                 | Registered   | zlib          |
 |                | [`zarrs.gdeflate`]                 | Experimental | gdeflate      |
 
 <sup>\* Bolded feature flags are part of the default set of features.</sup>
@@ -47,7 +47,7 @@
 [`packbits`]: crate::array::codec::array_to_bytes::packbits
 [`zarrs.vlen`]: crate::array::codec::array_to_bytes::vlen
 [`zarrs.vlen_v2`]: crate::array::codec::array_to_bytes::vlen_v2
-[`zarrs.zfp`]: crate::array::codec::array_to_bytes::zfp
+[`zfp`]: crate::array::codec::array_to_bytes::zfp
 
 [`blosc`]: crate::array::codec::bytes_to_bytes::blosc
 [`crc32c`]: crate::array::codec::bytes_to_bytes::crc32c

@@ -1,4 +1,4 @@
-//! The `packbits` array to packbits codec (Extension).
+//! The `packbits` array to bytes codec.
 //!
 //! Packs together values with non-byte-aligned sizes.
 //!

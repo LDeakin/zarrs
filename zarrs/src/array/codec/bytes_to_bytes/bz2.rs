@@ -1,8 +1,4 @@
-//! The `bz2` (bzip2) bytes to bytes codec (Experimental).
-//!
-//! <div class="warning">
-//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
-//! </div>
+//! The `bz2` (bzip2) bytes to bytes codec.
 //!
 //! This codec requires the `bz2` feature, which is disabled by default.
 //!

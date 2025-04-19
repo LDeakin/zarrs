@@ -1,10 +1,10 @@
-| Data Type<sup>†</sup> | ZEP | V3 | V2 | Feature Flag |
+| Data Type<sup>†</sup> | Specification | V3 | V2 | Feature Flag |
 | --------- | --- | ----- | -- | ------------ |
 | [bool]<br>[int8] [int16] [int32] [int64] [uint8] [uint16] [uint32] [uint64]<br>[float16] [float32] [float64]<br>[complex64] [complex128] | [ZEP0001] | &check; | &check; | |
 [r* (raw bits)] | [ZEP0001] | &check; | | |
 | [bfloat16] | [zarr-specs #130] | &check; | | |
-| [string] (experimental) | [ZEP0007 (draft)] | &check; | | |
-| [bytes](crate::data_type::DataType::Bytes) (experimental) | [ZEP0007 (draft)] | &check; | | |
+| [string] | [zarr-extensions/data-types/string] | &check; | | |
+| [bytes](crate::data_type::DataType::Bytes) | [zarr-extensions/data-types/bytes] | &check; | | |
 
 <sup>† Experimental data types are recommended for evaluation only.</sup>
 
@@ -29,3 +29,5 @@
 [ZEP0001]: https://zarr.dev/zeps/accepted/ZEP0001.html
 [zarr-specs #130]: https://github.com/zarr-developers/zarr-specs/issues/130
 [ZEP0007 (draft)]: https://github.com/zarr-developers/zeps/pull/47
+[zarr-extensions/data-types/string]: https://github.com/zarr-developers/zarr-extensions/tree/main/data-types/string
+[zarr-extensions/data-types/bytes]: https://github.com/zarr-developers/zarr-extensions/tree/main/data-types/bytes
