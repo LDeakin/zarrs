@@ -48,6 +48,8 @@ mod zarrs {
     pub mod bitround;
     /// `gdeflate` codec metadata.
     pub mod gdeflate;
+    /// `squeeze` codec metadata.
+    pub mod squeeze;
     /// `vlen` codec metadata.
     pub mod vlen;
     /// `vlen_v2` codec metadata.
@@ -80,6 +82,9 @@ pub const GZIP: &str = "gzip";
 
 /// Unique identifier for the `sharding_indexed` codec (core).
 pub const SHARDING: &str = "sharding_indexed";
+
+/// Unique identifier for the `squeeze` codec (extension).
+pub const SQUEEZE: &str = "squeeze";
 
 /// Unique identifier for the `transpose` codec (core).
 pub const TRANSPOSE: &str = "transpose";

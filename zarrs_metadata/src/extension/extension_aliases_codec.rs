@@ -20,6 +20,7 @@ impl Default for ExtensionAliasesCodecV3 {
                 // The default serialised `name`s
                 (codec::BITROUND, "numcodecs.bitround".into()),
                 (codec::FIXEDSCALEOFFSET, "numcodecs.fixedscaleoffset".into()),
+                (codec::SQUEEZE, "zarrs.squeeze".into()),
                 // array to bytes
                 (codec::PCODEC, "numcodecs.pcodec".into()),
                 (codec::ZFPY, "numcodecs.zfpy".into()),
@@ -74,6 +75,7 @@ impl Default for ExtensionAliasesCodecV2 {
             // The default serialised `name`s
             HashMap::from([
                 // array to array
+                (codec::SQUEEZE, "zarrs.squeeze".into()),
                 // array to bytes
                 (codec::VLEN, "zarrs.vlen".into()),
                 (codec::VLEN_V2, "zarrs.vlen_v2".into()),
