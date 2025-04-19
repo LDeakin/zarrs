@@ -744,10 +744,15 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     ///
     /// The default implementation returns the shape unchanged.
     ///
+    /// Returns [`None`] if the decoded shape cannot be determined from the encoded shape.
+    ///
     /// # Errors
     /// Returns a [`CodecError`] if the shape is not supported by this codec.
-    fn decoded_shape(&self, encoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
-        Ok(encoded_shape.to_vec().into())
+    fn decoded_shape(
+        &self,
+        encoded_shape: &[NonZeroU64],
+    ) -> Result<Option<ChunkShape>, CodecError> {
+        Ok(Some(encoded_shape.to_vec().into()))
     }
 
     /// Returns the encoded chunk representation given the decoded chunk representation.
