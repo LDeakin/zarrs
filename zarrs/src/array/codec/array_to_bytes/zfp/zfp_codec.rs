@@ -343,7 +343,11 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         };
 
         match data_type {
-            DataType::Int32
+            DataType::Int8
+            | DataType::UInt8
+            | DataType::Int16
+            | DataType::UInt16
+            | DataType::Int32
             | DataType::UInt32
             | DataType::Int64
             | DataType::UInt64
