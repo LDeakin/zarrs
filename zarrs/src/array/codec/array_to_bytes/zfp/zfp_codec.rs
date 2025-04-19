@@ -45,13 +45,7 @@ pub struct ZfpCodec {
 impl ZfpCodec {
     /// Create a new `zfp` codec in expert mode.
     #[must_use]
-    pub const fn new_expert(
-        minbits: u32,
-        maxbits: u32,
-        maxprec: u32,
-        minexp: i32,
-        write_header: bool,
-    ) -> Self {
+    pub const fn new_expert(minbits: u32, maxbits: u32, maxprec: u32, minexp: i32) -> Self {
         Self {
             mode: ZfpMode::Expert {
                 minbits,
@@ -59,43 +53,43 @@ impl ZfpCodec {
                 maxprec,
                 minexp,
             },
-            write_header,
+            write_header: false,
         }
     }
 
     /// Create a new `zfp` codec in fixed rate mode.
     #[must_use]
-    pub const fn new_fixed_rate(rate: f64, write_header: bool) -> Self {
+    pub const fn new_fixed_rate(rate: f64) -> Self {
         Self {
             mode: ZfpMode::FixedRate { rate },
-            write_header,
+            write_header: false,
         }
     }
 
     /// Create a new `zfp` codec in fixed precision mode.
     #[must_use]
-    pub const fn new_fixed_precision(precision: u32, write_header: bool) -> Self {
+    pub const fn new_fixed_precision(precision: u32) -> Self {
         Self {
             mode: ZfpMode::FixedPrecision { precision },
-            write_header,
+            write_header: false,
         }
     }
 
     /// Create a new `zfp` codec in fixed accuracy mode.
     #[must_use]
-    pub const fn new_fixed_accuracy(tolerance: f64, write_header: bool) -> Self {
+    pub const fn new_fixed_accuracy(tolerance: f64) -> Self {
         Self {
             mode: ZfpMode::FixedAccuracy { tolerance },
-            write_header,
+            write_header: false,
         }
     }
 
     /// Create a new `zfp` codec in reversible mode.
     #[must_use]
-    pub const fn new_reversible(write_header: bool) -> Self {
+    pub const fn new_reversible() -> Self {
         Self {
             mode: ZfpMode::Reversible,
-            write_header,
+            write_header: false,
         }
     }
 
@@ -107,18 +101,20 @@ impl ZfpCodec {
         configuration: &ZfpyCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         // zfpy writes a redundant header
-        let write_header = true;
         match configuration {
             ZfpyCodecConfiguration::Numcodecs(configuration) => match configuration.mode {
-                ZfpyCodecConfigurationMode::FixedRate { rate } => {
-                    Ok(Self::new_fixed_rate(rate, write_header))
-                }
-                ZfpyCodecConfigurationMode::FixedPrecision { precision } => {
-                    Ok(Self::new_fixed_precision(precision, write_header))
-                }
-                ZfpyCodecConfigurationMode::FixedAccuracy { tolerance } => {
-                    Ok(Self::new_fixed_accuracy(tolerance, write_header))
-                }
+                ZfpyCodecConfigurationMode::FixedRate { rate } => Ok(Self {
+                    mode: ZfpMode::FixedRate { rate },
+                    write_header: true,
+                }),
+                ZfpyCodecConfigurationMode::FixedPrecision { precision } => Ok(Self {
+                    mode: ZfpMode::FixedPrecision { precision },
+                    write_header: true,
+                }),
+                ZfpyCodecConfigurationMode::FixedAccuracy { tolerance } => Ok(Self {
+                    mode: ZfpMode::FixedAccuracy { tolerance },
+                    write_header: true,
+                }),
             },
             _ => Err(PluginCreateError::Other(
                 "this zfpy codec configuration variant is unsupported".to_string(),
@@ -140,22 +136,17 @@ impl ZfpCodec {
             ))?,
         };
 
-        let write_header = false;
         Ok(match configuration.mode {
             ZfpMode::Expert {
                 minbits,
                 maxbits,
                 maxprec,
                 minexp,
-            } => Self::new_expert(minbits, maxbits, maxprec, minexp, write_header),
-            ZfpMode::FixedRate { rate } => Self::new_fixed_rate(rate, write_header),
-            ZfpMode::FixedPrecision { precision } => {
-                Self::new_fixed_precision(precision, write_header)
-            }
-            ZfpMode::FixedAccuracy { tolerance } => {
-                Self::new_fixed_accuracy(tolerance, write_header)
-            }
-            ZfpMode::Reversible => Self::new_reversible(write_header),
+            } => Self::new_expert(minbits, maxbits, maxprec, minexp),
+            ZfpMode::FixedRate { rate } => Self::new_fixed_rate(rate),
+            ZfpMode::FixedPrecision { precision } => Self::new_fixed_precision(precision),
+            ZfpMode::FixedAccuracy { tolerance } => Self::new_fixed_accuracy(tolerance),
+            ZfpMode::Reversible => Self::new_reversible(),
         })
     }
 }
