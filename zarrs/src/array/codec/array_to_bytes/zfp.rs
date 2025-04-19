@@ -96,7 +96,7 @@ mod zfp_field;
 mod zfp_partial_decoder;
 mod zfp_stream;
 
-use std::{num::NonZeroU64, sync::Arc};
+use std::sync::Arc;
 
 pub use crate::metadata::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
 pub use zfp_codec::ZfpCodec;
@@ -150,16 +150,6 @@ const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type
         DataType::Float32 => Some(zfp_sys::zfp_type_zfp_type_float),
         DataType::Float64 => Some(zfp_sys::zfp_type_zfp_type_double),
         _ => None,
-    }
-}
-
-/// Zfp only supports 1D to 4D arrays. If the chunk has more than 4 dimensions, ignore dimensions with size 1.
-fn chunk_shape_to_zfp_shape(shape: &[NonZeroU64]) -> Vec<usize> {
-    let shape_usize = shape.iter().map(|u| usize::try_from(u.get()).unwrap());
-    if shape.len() <= 4 {
-        shape_usize.collect()
-    } else {
-        shape_usize.filter(|&u| u > 1).collect()
     }
 }
 
@@ -340,7 +330,11 @@ fn zfp_decode(
     } else {
         let field = ZfpField::new(
             &mut array,
-            &chunk_shape_to_zfp_shape(decoded_representation.shape()),
+            &decoded_representation
+                .shape()
+                .iter()
+                .map(|u| usize::try_from(u.get()).unwrap())
+                .collect::<Vec<usize>>(),
         )
         .ok_or_else(|| CodecError::from("failed to create zfp field"))?;
         let ret = unsafe {
@@ -366,9 +360,9 @@ mod tests {
 
     use crate::{
         array::{
-            codec::{ArrayToBytesCodecTraits, CodecOptions},
+            codec::{array_to_array::squeeze::SqueezeCodec, ArrayToBytesCodecTraits, CodecOptions},
             element::ElementOwned,
-            ArrayBytes,
+            ArrayBytes, CodecChain,
         },
         array_subset::ArraySubset,
     };
@@ -413,7 +407,11 @@ mod tests {
         let bytes = T::into_array_bytes(chunk_representation.data_type(), &elements).unwrap();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(configuration).unwrap();
-        let codec = ZfpCodec::new_with_configuration(&configuration).unwrap();
+        let codec = CodecChain::new(
+            vec![Arc::new(SqueezeCodec::new())],
+            Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap()),
+            vec![],
+        );
 
         let encoded = codec
             .encode(

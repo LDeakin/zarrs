@@ -30,9 +30,9 @@ use crate::{
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
 use super::{
-    chunk_shape_to_zfp_shape, promote_before_zfp_encoding, zarr_to_zfp_data_type,
-    zfp_bitstream::ZfpBitstream, zfp_decode, zfp_field::ZfpField, zfp_partial_decoder,
-    zfp_stream::ZfpStream, ZfpCodecConfiguration, ZfpCodecConfigurationV1,
+    promote_before_zfp_encoding, zarr_to_zfp_data_type, zfp_bitstream::ZfpBitstream, zfp_decode,
+    zfp_field::ZfpField, zfp_partial_decoder, zfp_stream::ZfpStream, ZfpCodecConfiguration,
+    ZfpCodecConfigurationV1,
 };
 
 /// A `zfp` codec implementation.
@@ -210,7 +210,11 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
         let zfp_type = bytes_promoted.zfp_type();
         let field = ZfpField::new(
             &mut bytes_promoted,
-            &chunk_shape_to_zfp_shape(decoded_representation.shape()),
+            &decoded_representation
+                .shape()
+                .iter()
+                .map(|u| usize::try_from(u.get()).unwrap())
+                .collect::<Vec<usize>>(),
         )
         .ok_or_else(|| CodecError::from("failed to create zfp field"))?;
         let stream = ZfpStream::new(&self.mode, zfp_type)
@@ -320,7 +324,11 @@ impl ArrayToBytesCodecTraits for ZfpCodec {
                 // SAFETY: zfp_stream_maximum_size does not use the data in the field, so it can be empty
                 ZfpField::new_empty(
                     zfp_type,
-                    &chunk_shape_to_zfp_shape(decoded_representation.shape()),
+                    &decoded_representation
+                        .shape()
+                        .iter()
+                        .map(|u| usize::try_from(u.get()).unwrap())
+                        .collect::<Vec<usize>>(),
                 )
             }
             .ok_or_else(|| CodecError::from("failed to create zfp field"))?;
