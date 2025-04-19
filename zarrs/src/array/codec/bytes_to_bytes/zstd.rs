@@ -1,10 +1,6 @@
-//! The `zstd` bytes to bytes codec (Experimental).
+//! The `zstd` bytes to bytes codec.
 //!
 //! Applies [Zstd](https://tools.ietf.org/html/rfc8878) compression.
-//!
-//! <div class="warning">
-//! This codec is based on a draft specification and may be incompatible with other Zarr V3 implementations.
-//! </div>
 //!
 //! ### Compatible Implementations
 //! This is expected to become a standardised extension.

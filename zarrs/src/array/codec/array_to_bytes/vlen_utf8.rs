@@ -1,8 +1,4 @@
-//! The `vlen-utf8` array to bytes codec (Experimental).
-//!
-//! <div class="warning">
-//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
-//! </div>
+//! The `vlen-utf8` array to bytes codec.
 //!
 //! ### Compatible Implementations
 //! This codec is fully compatible with the `vlen-utf8` codec in `zarr-python`.
