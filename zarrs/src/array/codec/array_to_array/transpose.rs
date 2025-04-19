@@ -2,8 +2,6 @@
 //!
 //! Permutes the dimensions of arrays.
 //!
-//! ### [`TransposeCodecConfiguration`] Example:
-//!
 //! ### Compatible Implementations
 //! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
 //!
