@@ -2,6 +2,7 @@
 | -------------- | -------------------------| ------------ | ------------- |
 | Array to Array | [`transpose`]            | Core         | **transpose** |
 |                | [`numcodecs.bitround`]†  | Experimental | bitround      |
+|                | [`zarrs.squeeze`]        | Experimental |               |
 | Array to Bytes | [`bytes`]                | Core         |               |
 |                | [`sharding_indexed`]     | Core         | **sharding**  |
 |                | [`vlen-array`]           | Experimental |               |
@@ -31,6 +32,7 @@
 
 [`transpose`]: crate::array::codec::array_to_array::transpose
 [`numcodecs.bitround`]: crate::array::codec::array_to_array::bitround
+[`zarrs.squeeze`]: crate::array::codec::array_to_array::squeeze
 
 [`bytes`]: crate::array::codec::array_to_bytes::bytes
 [`vlen-array`]: crate::array::codec::array_to_bytes::vlen_array
