@@ -106,7 +106,10 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
         Ok(permute(decoded_shape, &self.order.0).into())
     }
 
-    fn decoded_shape(&self, encoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
+    fn decoded_shape(
+        &self,
+        encoded_shape: &[NonZeroU64],
+    ) -> Result<Option<ChunkShape>, CodecError> {
         if self.order.0.len() != encoded_shape.len() {
             return Err(CodecError::Other("Invalid shape".to_string()));
         }
@@ -115,7 +118,7 @@ impl ArrayToArrayCodecTraits for TransposeCodec {
             permutation_decode[*val] = i;
         }
         let transposed_shape = permute(encoded_shape, &permutation_decode);
-        Ok(transposed_shape.into())
+        Ok(Some(transposed_shape.into()))
     }
 
     fn encode<'a>(

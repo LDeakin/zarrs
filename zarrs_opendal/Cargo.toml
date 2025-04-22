@@ -1,9 +1,9 @@
 [package]
 name = "zarrs_opendal"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
-rust-version = "1.77"
+rust-version = "1.80"
 description = "opendal store support for the zarrs crate"
 homepage = "https://zarrs.dev"
 documentation = "https://docs.rs/zarrs_opendal"
@@ -18,7 +18,7 @@ workspace = true
 [dependencies]
 async-trait = "0.1.74"
 futures = "0.3.29"
-opendal = { version = ">=0.51,<0.53", default-features = false }
+opendal = { version = ">=0.51,<0.54", default-features = false }
 zarrs_storage = { workspace = true, features = ["async"] }
 
 [dev-dependencies]

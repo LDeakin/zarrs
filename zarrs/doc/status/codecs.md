@@ -1,26 +1,29 @@
-| Codec Type     | Default codec `name`     | Status       | Feature Flag* |
-| -------------- | -------------------------| ------------ | ------------- |
-| Array to Array | [`transpose`]            | Core         | **transpose** |
-|                | [`numcodecs.bitround`]†  | Experimental | bitround      |
-| Array to Bytes | [`bytes`]                | Core         |               |
-|                | [`sharding_indexed`]     | Core         | **sharding**  |
-|                | [`vlen-array`]           | Experimental |               |
-|                | [`vlen-bytes`]           | Experimental |               |
-|                | [`vlen-utf8`]            | Experimental |               |
-|                | [`numcodecs.pcodec`]     | Experimental | pcodec        |
-|                | [`numcodecs.zfpy`]       | Experimental | zfp           |
-|                | [`zarrs.vlen`]           | Experimental |               |
-|                | [`zarrs.vlen_v2`]        | Experimental |               |
-|                | [`zarrs.zfp`]            | Experimental | zfp           |
-| Bytes to Bytes | [`blosc`]                | Core         | **blosc**     |
-|                | [`crc32c`]               | Core         | **crc32c**    |
-|                | [`gzip`]                 | Core         | **gzip**      |
-|                | [`zstd`]                 | Experimental | **zstd**      |
-|                | [`numcodecs.bz2`]        | Experimental | bz2           |
-|                | [`numcodecs.fletcher32`] | Experimental | fletcher32    |
-|                | [`numcodecs.shuffle`]    | Experimental |               |
-|                | [`numcodecs.zlib`]       | Experimental | zlib          |
-|                | [`zarrs.gdeflate`]       | Experimental | gdeflate      |
+| Codec Type     | Default codec `name`               | Status       | Feature Flag* |
+| -------------- | ---------------------------------- | ------------ | ------------- |
+| Array to Array | [`transpose`]                      | Core         | **transpose** |
+|                | [`numcodecs.bitround`]†            | Experimental | bitround      |
+|                | [`numcodecs.fixedscaleoffset`]     | Experimental |               |
+|                | [`zarrs.squeeze`]                  | Experimental |               |
+| Array to Bytes | [`bytes`]                          | Core         |               |
+|                | [`sharding_indexed`]               | Core         | **sharding**  |
+|                | [`vlen-array`]                     | Experimental |               |
+|                | [`vlen-bytes`]                     | Experimental |               |
+|                | [`vlen-utf8`]                      | Experimental |               |
+|                | [`numcodecs.pcodec`]               | Experimental | pcodec        |
+|                | [`numcodecs.zfpy`]                 | Experimental | zfp           |
+|                | [`packbits`]                       | Experimental |               |
+|                | [`zarrs.vlen`]                     | Experimental |               |
+|                | [`zarrs.vlen_v2`]                  | Experimental |               |
+|                | [`zarrs.zfp`]                      | Experimental | zfp           |
+| Bytes to Bytes | [`blosc`]                          | Core         | **blosc**     |
+|                | [`crc32c`]                         | Core         | **crc32c**    |
+|                | [`gzip`]                           | Core         | **gzip**      |
+|                | [`zstd`]                           | Experimental | **zstd**      |
+|                | [`numcodecs.bz2`]                  | Experimental | bz2           |
+|                | [`numcodecs.fletcher32`]           | Experimental | fletcher32    |
+|                | [`numcodecs.shuffle`]              | Experimental |               |
+|                | [`numcodecs.zlib`]                 | Experimental | zlib          |
+|                | [`zarrs.gdeflate`]                 | Experimental | gdeflate      |
 
 <sup>\* Bolded feature flags are part of the default set of features.</sup>
 <sup>† `numcodecs.bitround` supports additional data types not supported by `zarr-python`/`numcodecs`</sup>
@@ -31,6 +34,8 @@
 
 [`transpose`]: crate::array::codec::array_to_array::transpose
 [`numcodecs.bitround`]: crate::array::codec::array_to_array::bitround
+[`numcodecs.fixedscaleoffset`]: crate::array::codec::array_to_array::fixedscaleoffset
+[`zarrs.squeeze`]: crate::array::codec::array_to_array::squeeze
 
 [`bytes`]: crate::array::codec::array_to_bytes::bytes
 [`vlen-array`]: crate::array::codec::array_to_bytes::vlen_array
@@ -39,6 +44,7 @@
 [`sharding_indexed`]: crate::array::codec::array_to_bytes::sharding
 [`numcodecs.pcodec`]: crate::array::codec::array_to_bytes::pcodec
 [`numcodecs.zfpy`]: crate::array::codec::array_to_bytes::zfpy
+[`packbits`]: crate::array::codec::array_to_bytes::packbits
 [`zarrs.vlen`]: crate::array::codec::array_to_bytes::vlen
 [`zarrs.vlen_v2`]: crate::array::codec::array_to_bytes::vlen_v2
 [`zarrs.zfp`]: crate::array::codec::array_to_bytes::zfp

@@ -111,7 +111,7 @@ pub struct BloscCodecConfigurationV1 {
 
 /// `blosc` codec configuration parameters (numcodecs).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
-#[serde(deny_unknown_fields)]
+#[serde(from = "BloscCodecConfigurationNumcodecs16_0")]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
 pub struct BloscCodecConfigurationNumcodecs {
     /// The compressor.
@@ -123,6 +123,33 @@ pub struct BloscCodecConfigurationNumcodecs {
     /// The compression block size. Automatically determined if 0.
     #[serde(default)]
     pub blocksize: usize,
+}
+
+/// `typesize` was temporarily added in numcodecs 0.16.0 and will likely be removed in 0.16.1
+///
+/// <https://github.com/zarr-developers/numcodecs/pull/713#issuecomment-2797357740>
+/// <https://github.com/zarr-developers/numcodecs/pull/739>
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BloscCodecConfigurationNumcodecs16_0 {
+    cname: BloscCompressor,
+    clevel: BloscCompressionLevel,
+    shuffle: BloscShuffleModeNumcodecs,
+    #[serde(default)]
+    blocksize: usize,
+    #[allow(dead_code)]
+    typesize: Option<usize>,
+}
+
+impl From<BloscCodecConfigurationNumcodecs16_0> for BloscCodecConfigurationNumcodecs {
+    fn from(value: BloscCodecConfigurationNumcodecs16_0) -> Self {
+        BloscCodecConfigurationNumcodecs {
+            cname: value.cname,
+            clevel: value.clevel,
+            shuffle: value.shuffle,
+            blocksize: value.blocksize,
+        }
+    }
 }
 
 /// Blosc shuffle modes (numcodecs).

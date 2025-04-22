@@ -1,7 +1,7 @@
 # zarrs_opendal
 
 [![Latest Version](https://img.shields.io/crates/v/zarrs_opendal.svg)](https://crates.io/crates/zarrs_opendal)
-[![opendal 0.52](https://img.shields.io/badge/opendal-0.52-blue)](https://crates.io/crates/opendal)
+[![opendal 0.53](https://img.shields.io/badge/opendal-0.53-blue)](https://crates.io/crates/opendal)
 [![zarrs_opendal documentation](https://docs.rs/zarrs_opendal/badge.svg)](https://docs.rs/zarrs_opendal)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_opendal)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
@@ -25,9 +25,9 @@ See [doc/version_compatibility_matrix.md](./doc/version_compatibility_matrix.md)
 However, if `opendal` is a direct dependency, it is necessary to ensure that the version used by this crate is compatible.
 This crate can depend on a range of semver-incompatible versions of `opendal`, and Cargo will not automatically choose a single version of `opendal` that satisfies all dependencies.
 Use a precise cargo update to ensure compatibility.
-For example, if this crate resolves to `opendal` 0.52.0 and your code uses 0.51.0:
+For example, if this crate resolves to `opendal` 0.53.0 and your code uses 0.52.0:
 ```shell
-cargo update --package opendal:0.52.0 --precise 0.51.0
+cargo update --package opendal:0.53.0 --precise 0.52.0
 ```
 
 ## Licence
