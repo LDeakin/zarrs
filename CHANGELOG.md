@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Config::{codec,data_type}_aliases_{v2,v3}[_mut]`
 - Add `packbits` codec support
 - Add `Async{Array,Bytes}PartialEncoderTraits` and `*CodecTraits::async_partial_encoder()`
+- Add `array_subset::ArraySubsetError` [#156] by [@ilan-gold]
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
@@ -73,9 +74,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
 - **Breaking**: Rename `[Async]ArrayPartial{Encoder,Decoder}Default` to `[Async]ArrayToBytesPartial{Encoder,Decoder}Default`
 - **Breaking**: Rename `[Async]BytesPartial{Encoder,Decoder}Default` to `[Async]BytesToBytesPartial{Encoder,Decoder}Default`
+- Add `ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError` [#156] by [@ilan-gold]
+- Add `CodecError::IncompatibleDimensionalityError` [#156] by [@ilan-gold]
+- **Breaking**: `ArraySubset::bound` error type changed to `ArraySubsetError` [#156] by [@ilan-gold]
+
+### Removed
+- **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
+
+[#156]: https://github.com/LDeakin/zarrs/pull/156
 
 ## [0.19.2] - 2025-02-13
 
@@ -1369,3 +1378,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [@dustinlagoy]: https://github.com/dustinlagoy
 [@sk1p]: https://github.com/sk1p
 [@niklasmueboe]: https://github.com/niklasmueboe
+[@ilan-gold]: https://github.com/ilan-gold

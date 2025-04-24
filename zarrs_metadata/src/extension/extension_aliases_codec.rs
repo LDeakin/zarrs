@@ -26,7 +26,7 @@ impl Default for ExtensionAliasesCodecV3 {
                 (codec::ZFPY, "numcodecs.zfpy".into()),
                 (codec::VLEN, "zarrs.vlen".into()),
                 (codec::VLEN_V2, "zarrs.vlen_v2".into()),
-                (codec::ZFP, "zarrs.zfp".into()),
+                (codec::ZFP, "zfp".into()),
                 // bytes to bytes
                 (codec::BZ2, "numcodecs.bz2".into()),
                 (codec::GDEFLATE, "zarrs.gdeflate".into()),
@@ -41,7 +41,8 @@ impl Default for ExtensionAliasesCodecV3 {
                 // zarrs 0.20
                 ("zarrs.vlen".into(), codec::VLEN),
                 ("zarrs.vlen_v2".into(), codec::VLEN_V2),
-                ("zarrs.zfp".into(), codec::ZFP),
+                ("zfp".into(), codec::ZFP),
+                ("zarrs.zfp".into(), codec::ZFP), // 0.20.0-dev
                 ("zarrs.gdeflate".into(), codec::GDEFLATE),
                 // zarrs 0.20 / zarr-python 3.0
                 ("numcodecs.bitround".into(), codec::BITROUND),
@@ -79,7 +80,7 @@ impl Default for ExtensionAliasesCodecV2 {
                 // array to bytes
                 (codec::VLEN, "zarrs.vlen".into()),
                 (codec::VLEN_V2, "zarrs.vlen_v2".into()),
-                (codec::ZFP, "zarrs.zfp".into()),
+                (codec::ZFP, "zfp".into()),
                 // bytes to bytes
                 (codec::GDEFLATE, "zarrs.gdeflate".into()),
             ]),
@@ -88,7 +89,8 @@ impl Default for ExtensionAliasesCodecV2 {
                 // zarrs 0.20
                 ("zarrs.vlen".into(), codec::VLEN),
                 ("zarrs.vlen_v2".into(), codec::VLEN_V2),
-                ("zarrs.zfp".into(), codec::ZFP),
+                ("zfp".into(), codec::ZFP),
+                ("zarrs.zfp".into(), codec::ZFP), // 0.20.0-dev
                 ("zarrs.gdeflate".into(), codec::GDEFLATE),
                 // zarrs < 0.20
                 ("https://codec.zarrs.dev/array_to_bytes/bitround".into(), codec::BITROUND),
