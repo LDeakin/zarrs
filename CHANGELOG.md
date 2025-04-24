@@ -88,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
 - Check offset is valid in `ArraySubset::relative_to`
+- Reject arrays and groups with unsupported `"must_understand": true` extensions
 
 [#156]: https://github.com/LDeakin/zarrs/pull/156
 

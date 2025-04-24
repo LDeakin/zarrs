@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ZarrVersion` marker trait and `ZarrVersion{2,3}`
 - Add re-exports for `v3::array::{chunk_grid,chunk_key_encoding,codec,data_type}` at the crate root
 - Add `packbits` codec metadata
+- Add `extensions` field to `v3::{Array,Group}MetadataV3` (ZEP0009)
 
 ### Changed
 - **Breaking**: Refactor `FillValueMetadataV3` to support arbitrary fill value metadata (for ZEP0009)

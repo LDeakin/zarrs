@@ -204,8 +204,29 @@ impl<TStorage: ?Sized> Group<TStorage> {
         }
     }
 
-    /// Reject the group if it contains additional fields with `"must_understand": true`.
+    /// Reject the group if it contains unsupported extensions or additional fields with `"must_understand": true`.
     fn validate_metadata(metadata: &GroupMetadata) -> Result<(), GroupCreateError> {
+        match &metadata {
+            GroupMetadata::V2(_) => {}
+            GroupMetadata::V3(metadata) => {
+                for extension in &metadata.extensions {
+                    if extension.must_understand() {
+                        return Err(GroupCreateError::UnsupportedAdditionalFieldError(
+                            UnsupportedAdditionalFieldError::new(
+                                extension.name().to_string(),
+                                extension
+                                    .configuration()
+                                    .map(|configuration| {
+                                        serde_json::Value::Object(configuration.clone().into())
+                                    })
+                                    .unwrap_or_default(),
+                            ),
+                        ));
+                    }
+                }
+            }
+        }
+
         let additional_fields = match &metadata {
             GroupMetadata::V2(metadata) => &metadata.additional_fields,
             GroupMetadata::V3(metadata) => &metadata.additional_fields,
