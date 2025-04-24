@@ -25,46 +25,43 @@ pub use options::{CodecMetadataOptions, CodecOptions, CodecOptionsBuilder};
 
 // Array to array
 #[cfg(feature = "bitround")]
-pub use array_to_array::bitround::{
-    BitroundCodec, BitroundCodecConfiguration, BitroundCodecConfigurationV1,
-};
+pub use array_to_array::bitround::*;
 #[cfg(feature = "transpose")]
-pub use array_to_array::transpose::{
-    TransposeCodec, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
-};
+pub use array_to_array::transpose::*;
+pub use array_to_array::{fixedscaleoffset::*, squeeze::*};
 
 // Array to bytes
-pub use array_to_bytes::bytes::{BytesCodec, BytesCodecConfiguration, BytesCodecConfigurationV1};
-pub use array_to_bytes::codec_chain::CodecChain;
-pub use array_to_bytes::packbits::{
-    PackBitsCodec, PackBitsCodecConfiguration, PackBitsCodecConfigurationV1,
-};
 #[cfg(feature = "pcodec")]
-pub use array_to_bytes::pcodec::{
-    PcodecCodec, PcodecCodecConfiguration, PcodecCodecConfigurationV1,
-};
+pub use array_to_bytes::pcodec::*;
 #[cfg(feature = "sharding")]
-pub use array_to_bytes::sharding::{
-    ShardingCodec, ShardingCodecConfiguration, ShardingCodecConfigurationV1,
+pub use array_to_bytes::sharding::*;
+#[cfg(feature = "zfp")]
+pub use array_to_bytes::zfp::*;
+#[cfg(feature = "zfp")]
+pub use array_to_bytes::zfpy::*;
+pub use array_to_bytes::{
+    bytes::*, codec_chain::CodecChain, packbits::*, vlen::*, vlen_array::*, vlen_bytes::*,
+    vlen_utf8::*, vlen_v2::*,
 };
-#[cfg(feature = "zfp")]
-pub use array_to_bytes::zfp::{ZfpCodec, ZfpCodecConfiguration, ZfpCodecConfigurationV1};
-#[cfg(feature = "zfp")]
-pub use array_to_bytes::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationNumcodecs};
 
 // Bytes to bytes
 #[cfg(feature = "blosc")]
-pub use bytes_to_bytes::blosc::{BloscCodec, BloscCodecConfiguration, BloscCodecConfigurationV1};
+pub use bytes_to_bytes::blosc::*;
 #[cfg(feature = "bz2")]
-pub use bytes_to_bytes::bz2::{Bz2Codec, Bz2CodecConfiguration, Bz2CodecConfigurationV1};
+pub use bytes_to_bytes::bz2::*;
 #[cfg(feature = "crc32c")]
-pub use bytes_to_bytes::crc32c::{
-    Crc32cCodec, Crc32cCodecConfiguration, Crc32cCodecConfigurationV1,
-};
+pub use bytes_to_bytes::crc32c::*;
+#[cfg(feature = "fletcher32")]
+pub use bytes_to_bytes::fletcher32::*;
+#[cfg(feature = "gdeflate")]
+pub use bytes_to_bytes::gdeflate::*;
 #[cfg(feature = "gzip")]
-pub use bytes_to_bytes::gzip::{GzipCodec, GzipCodecConfiguration, GzipCodecConfigurationV1};
+pub use bytes_to_bytes::gzip::*;
+pub use bytes_to_bytes::shuffle::*;
+#[cfg(feature = "zlib")]
+pub use bytes_to_bytes::zlib::*;
 #[cfg(feature = "zstd")]
-pub use bytes_to_bytes::zstd::{ZstdCodec, ZstdCodecConfiguration, ZstdCodecConfigurationV1};
+pub use bytes_to_bytes::zstd::*;
 
 use thiserror::Error;
 
@@ -89,6 +86,7 @@ pub use array_to_bytes_partial_encoder_default::ArrayToBytesPartialEncoderDefaul
 #[cfg(feature = "async")]
 pub use array_to_bytes_partial_encoder_default::AsyncArrayToBytesPartialEncoderDefault;
 
+use crate::array_subset::IncompatibleDimensionalityError;
 mod array_to_array_partial_decoder_default;
 pub use array_to_array_partial_decoder_default::ArrayToArrayPartialDecoderDefault;
 #[cfg(feature = "async")]
@@ -744,10 +742,15 @@ pub trait ArrayToArrayCodecTraits: ArrayCodecTraits + core::fmt::Debug {
     ///
     /// The default implementation returns the shape unchanged.
     ///
+    /// Returns [`None`] if the decoded shape cannot be determined from the encoded shape.
+    ///
     /// # Errors
     /// Returns a [`CodecError`] if the shape is not supported by this codec.
-    fn decoded_shape(&self, encoded_shape: &[NonZeroU64]) -> Result<ChunkShape, CodecError> {
-        Ok(encoded_shape.to_vec().into())
+    fn decoded_shape(
+        &self,
+        encoded_shape: &[NonZeroU64],
+    ) -> Result<Option<ChunkShape>, CodecError> {
+        Ok(Some(encoded_shape.to_vec().into()))
     }
 
     /// Returns the encoded chunk representation given the decoded chunk representation.
@@ -1338,6 +1341,9 @@ impl SubsetOutOfBoundsError {
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum CodecError {
+    /// An error creating a subset while decoding
+    #[error(transparent)]
+    IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),

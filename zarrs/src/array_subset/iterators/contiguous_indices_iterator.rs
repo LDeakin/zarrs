@@ -43,30 +43,14 @@ impl ContiguousIndices {
         subset: &ArraySubset,
         array_shape: &[u64],
     ) -> Result<Self, IncompatibleArraySubsetAndShapeError> {
-        if subset.dimensionality() == array_shape.len()
-            && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
+        if !(subset.dimensionality() == array_shape.len()
+            && std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape))
         {
-            Ok(unsafe { Self::new_unchecked(subset, array_shape) })
-        } else {
-            Err(IncompatibleArraySubsetAndShapeError(
+            return Err(IncompatibleArraySubsetAndShapeError(
                 subset.clone(),
                 array_shape.to_vec(),
-            ))
+            ));
         }
-    }
-
-    /// Create a new contiguous indices iterator.
-    ///
-    /// # Safety
-    /// `array_shape` must encapsulate `subset`.
-    #[must_use]
-    #[allow(clippy::missing_panics_doc)]
-    pub unsafe fn new_unchecked(subset: &ArraySubset, array_shape: &[u64]) -> Self {
-        debug_assert_eq!(subset.dimensionality(), array_shape.len());
-        debug_assert!(
-            std::iter::zip(subset.end_exc(), array_shape).all(|(end, shape)| end <= *shape)
-        );
-
         let mut contiguous = true;
         let mut contiguous_elements = 1;
         let mut shape_out: Vec<u64> = Vec::with_capacity(array_shape.len());
@@ -86,15 +70,18 @@ impl ContiguousIndices {
         }
         // SAFETY: each element is initialised
         unsafe { shape_out.set_len(array_shape.len()) };
-        // SAFETY: The length of shape_out matches the subset dimensionality
-        let subset_contiguous_start = unsafe {
-            ArraySubset::new_with_start_shape_unchecked(subset.start().to_vec(), shape_out)
-        };
+        let ranges = subset
+            .start()
+            .iter()
+            .zip(shape_out)
+            .map(|(&st, sh)| st..(st + sh))
+            .collect::<Vec<_>>();
+        let subset_contiguous_start = ArraySubset::new_with_ranges(&ranges);
         // let inner = subset_contiguous_start.iter_indices();
-        Self {
+        Ok(Self {
             subset_contiguous_start,
             contiguous_elements,
-        }
+        })
     }
 
     /// Return the number of starting indices (i.e. the length of the iterator).
