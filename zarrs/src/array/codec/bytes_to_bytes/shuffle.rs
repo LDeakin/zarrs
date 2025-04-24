@@ -1,12 +1,12 @@
 //! The `shuffle` bytes to bytes codec (Experimental).
 //!
-//! Shuffles bytes.
-//!
-//! The byte length of the input to this codec must be an integer multiple of the shuffle `elementsize`.
-//!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
+//!
+//! Shuffles bytes.
+//!
+//! The byte length of the input to this codec must be an integer multiple of the shuffle `elementsize`.
 //!
 //! ### Compatible Implementations
 //! This codec is fully compatible with the `numcodecs.shuffle` codec in `zarr-python`.

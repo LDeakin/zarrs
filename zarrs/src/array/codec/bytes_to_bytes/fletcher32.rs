@@ -1,10 +1,10 @@
 //! The `fletcher32` bytes to bytes codec (Experimental).
 //!
-//! Appends a fletcher32 checksum of the input bytestream.
-//!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
+//!
+//! Appends a fletcher32 checksum of the input bytestream.
 //!
 //! This codec requires the `fletcher32` feature, which is disabled by default.
 //!

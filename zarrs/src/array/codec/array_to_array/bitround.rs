@@ -1,12 +1,12 @@
 //! The `bitround` array to array codec (Experimental).
 //!
-//! Round the mantissa of floating point data types to the specified number of bits.
-//! Rounds integers from the most significant set bit.
-//! Bit rounding leaves an array more amenable to compression.
-//!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
+//!
+//! Round the mantissa of floating point data types to the specified number of bits.
+//! Rounds integers from the most significant set bit.
+//! Bit rounding leaves an array more amenable to compression.
 //!
 //! This codec requires the `bitround` feature, which is disabled by default.
 //!
