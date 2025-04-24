@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `packbits` codec support
 - Add `Async{Array,Bytes}PartialEncoderTraits` and `*CodecTraits::async_partial_encoder()`
 - Add `array_subset::ArraySubsetError` [#156] by [@ilan-gold]
+- Add `array_subset::IncompatibleOffsetError`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
@@ -51,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `DataTypeExtension` variant to `CodecError`
 - `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
 - **Breaking**: `ArrayError` is now marked as non-exhaustive
+  - Add `ArrayBytesFixedDisjointViewCreateError`, `IncompatibleStartEndIndicesError`, `IncompatibleOffset`, `DlPackError` variants
 - Bump `half` to 2.3.1
 - Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
   - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
@@ -77,12 +79,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError` [#156] by [@ilan-gold]
 - Add `CodecError::IncompatibleDimensionalityError` [#156] by [@ilan-gold]
 - **Breaking**: `ArraySubset::bound` error type changed to `ArraySubsetError` [#156] by [@ilan-gold]
+- **Breaking**: `ArraySubset::relative_to` error type changed to `ArraySubsetError`
 
 ### Removed
 - **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
+- Check offset is valid in `ArraySubset::relative_to`
 
 [#156]: https://github.com/LDeakin/zarrs/pull/156
 
@@ -1033,7 +1037,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Highlights
  - Experimental `async` feature: Support async stores and array/group operations
-   - See `async_array_write_read` and `async_http_array_read` examples 
+   - See `async_array_write_read` and `async_http_array_read` examples
  - Experimental `s3`/`gcp`/`azure` features for experimental async Amazon S3/Google Cloud Storage/Microsoft Azure Blob Storage stores
 
 ### Added
@@ -1051,7 +1055,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Bump itertools to `0.12` and zstd to `0.13`
  - Set minimum supported rust version (MSRV) to `1.70` (1 June, 2023)
-   - Required by `half` since `2.3.1` (26 June, 2023) 
+   - Required by `half` since `2.3.1` (26 June, 2023)
  - Make `StoreKeyRange` and `StoreKeyStartValue` clonable
  - **Breaking**: Remove `ReadableWritableStorageTraits`, `ReadableWritableStorage`, `ReadableWritableStore`, and `StorageTransformerExtension::create_readable_writable_transformer`
    - These were redundant because `WritableStorageTraits` requires `ReadableStorageTraits` since 6e69a4d

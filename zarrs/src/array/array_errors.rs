@@ -2,7 +2,8 @@ use thiserror::Error;
 
 use crate::{
     array_subset::{
-        ArraySubset, IncompatibleDimensionalityError, IncompatibleStartEndIndicesError,
+        ArraySubset, IncompatibleDimensionalityError, IncompatibleOffsetError,
+        IncompatibleStartEndIndicesError,
     },
     data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     metadata::v3::UnsupportedAdditionalFieldError,
@@ -82,9 +83,12 @@ pub enum ArrayError {
     /// Incompatible dimensionality.
     #[error(transparent)]
     IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
-    /// Incompatible start and end
+    /// Incompatible start and end indices.
     #[error(transparent)]
     IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
+    /// An incompatible offset.
+    #[error(transparent)]
+    IncompatibleOffset(#[from] IncompatibleOffsetError),
     /// Incompatible array subset.
     #[error("array subset {_0} is not compatible with array shape {_1:?}")]
     InvalidArraySubset(ArraySubset, ArrayShape),

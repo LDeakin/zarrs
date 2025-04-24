@@ -386,25 +386,29 @@ impl ArraySubset {
         }
     }
 
-    /// Return the subset relative to `start`.
+    /// Return the subset relative to `offset`.
     ///
-    /// Creates an array subset starting at [`ArraySubset::start()`] - `start`.
+    /// Creates an array subset starting at [`ArraySubset::start()`] - `offset`.
     ///
     /// # Errors
     /// Returns [`IncompatibleDimensionalityError`] if the length of `start` does not match the dimensionality of this array subset.
-    pub fn relative_to(&self, start: &[u64]) -> Result<Self, IncompatibleDimensionalityError> {
-        if start.len() == self.dimensionality() {
+    pub fn relative_to(&self, offset: &[u64]) -> Result<Self, ArraySubsetError> {
+        if offset.len() != self.dimensionality() {
+            Err(IncompatibleDimensionalityError::new(offset.len(), self.dimensionality()).into())
+        } else if std::iter::zip(self.start(), offset.iter()).any(|(start, offset)| start < offset)
+        {
+            Err(IncompatibleOffsetError {
+                offset: offset.to_vec(),
+                start: self.start.clone(),
+            }
+            .into())
+        } else {
             Ok(Self {
-                start: std::iter::zip(self.start(), start)
-                    .map(|(a, b)| a - b)
+                start: std::iter::zip(self.start(), offset)
+                    .map(|(start, offset)| start - offset)
                     .collect::<Vec<_>>(),
                 shape: self.shape().to_vec(),
             })
-        } else {
-            Err(IncompatibleDimensionalityError::new(
-                start.len(),
-                self.dimensionality(),
-            ))
         }
     }
 
@@ -472,15 +476,26 @@ impl IncompatibleArraySubsetAndShapeError {
 #[error("incompatible start {0:?} with end {1:?}")]
 pub struct IncompatibleStartEndIndicesError(ArrayIndices, ArrayIndices);
 
+/// An incompatible offset error.
+#[derive(Clone, Debug, Error, From)]
+#[error("incompatible offset {offset:?} for start {start:?}")]
+pub struct IncompatibleOffsetError {
+    offset: ArrayIndices,
+    start: ArrayIndices,
+}
+
 /// Array errors.
 #[derive(Debug, Error)]
 pub enum ArraySubsetError {
-    /// Incompatible dimensionality
+    /// Incompatible dimensionality.
     #[error(transparent)]
     IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
-    /// Start and end are not compatible
+    /// Start and end are not compatible.
     #[error(transparent)]
     IncompatibleStartEndIndicesError(#[from] IncompatibleStartEndIndicesError),
+    /// An incompatible offset.
+    #[error(transparent)]
+    IncompatibleOffset(#[from] IncompatibleOffsetError),
 }
 
 impl From<ArraySubsetError> for ArrayError {
@@ -488,9 +503,11 @@ impl From<ArraySubsetError> for ArrayError {
         match arr_subset_err {
             ArraySubsetError::IncompatibleDimensionalityError(v) => v.into(),
             ArraySubsetError::IncompatibleStartEndIndicesError(v) => v.into(),
+            ArraySubsetError::IncompatibleOffset(v) => v.into(),
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
