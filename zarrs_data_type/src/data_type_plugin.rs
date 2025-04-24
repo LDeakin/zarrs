@@ -18,3 +18,30 @@ impl DataTypePlugin {
         Self(Plugin::new(identifier, match_name_fn, create_fn))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
+
+    inventory::submit! {
+        DataTypePlugin::new("test", is_test, create_test)
+    }
+
+    fn is_test(name: &str) -> bool {
+        name == "test"
+    }
+
+    fn create_test(metadata: &MetadataV3) -> Result<DataType, PluginCreateError> {
+        Err(PluginMetadataInvalidError::new("test", "codec", metadata.clone()).into())
+    }
+
+    #[test]
+    fn data_type_plugin() {
+        let mut found = false;
+        for plugin in inventory::iter::<DataTypePlugin> {
+            found |= plugin.match_name("test");
+        }
+        assert!(found);
+    }
+}
