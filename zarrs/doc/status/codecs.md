@@ -14,7 +14,7 @@
 |                | [`packbits`]                       | Experimental |               |
 |                | [`zarrs.vlen`]                     | Experimental |               |
 |                | [`zarrs.vlen_v2`]                  | Experimental |               |
-|                | [`zarrs.zfp`]                      | Experimental | zfp           |
+|                | [`zfp`]                            | Experimental | zfp           |
 | Bytes to Bytes | [`blosc`]                          | Core         | **blosc**     |
 |                | [`crc32c`]                         | Core         | **crc32c**    |
 |                | [`gzip`]                           | Core         | **gzip**      |
@@ -47,7 +47,7 @@
 [`packbits`]: crate::array::codec::array_to_bytes::packbits
 [`zarrs.vlen`]: crate::array::codec::array_to_bytes::vlen
 [`zarrs.vlen_v2`]: crate::array::codec::array_to_bytes::vlen_v2
-[`zarrs.zfp`]: crate::array::codec::array_to_bytes::zfp
+[`zfp`]: crate::array::codec::array_to_bytes::zfp
 
 [`blosc`]: crate::array::codec::bytes_to_bytes::blosc
 [`crc32c`]: crate::array::codec::bytes_to_bytes::crc32c
@@ -68,4 +68,3 @@ Codec `name`s and aliases are configurable with [`Config::codec_aliases_v3_mut`]
 
 `zarrs` supports arrays created with `zarr-python` 3.x.x with various `numcodecs.zarr3` codecs.
 However, arrays must be written with `numcodecs` 0.15.1+.
-
