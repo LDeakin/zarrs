@@ -86,6 +86,7 @@ pub use array_to_bytes_partial_encoder_default::ArrayToBytesPartialEncoderDefaul
 #[cfg(feature = "async")]
 pub use array_to_bytes_partial_encoder_default::AsyncArrayToBytesPartialEncoderDefault;
 
+use crate::array_subset::IncompatibleDimensionalityError;
 mod array_to_array_partial_decoder_default;
 pub use array_to_array_partial_decoder_default::ArrayToArrayPartialDecoderDefault;
 #[cfg(feature = "async")]
@@ -1340,6 +1341,9 @@ impl SubsetOutOfBoundsError {
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum CodecError {
+    /// An error creating a subset while decoding
+    #[error(transparent)]
+    IncompatibleDimensionalityError(#[from] IncompatibleDimensionalityError),
     /// An IO error.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
