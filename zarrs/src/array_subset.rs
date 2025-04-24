@@ -44,6 +44,16 @@ impl Display for ArraySubset {
     }
 }
 
+impl<T: IntoIterator<Item = Range<u64>>> From<T> for ArraySubset {
+    fn from(ranges: T) -> Self {
+        let (start, shape) = ranges
+            .into_iter()
+            .map(|range| (range.start, range.end.saturating_sub(range.start)))
+            .unzip();
+        Self { start, shape }
+    }
+}
+
 impl ArraySubset {
     /// Create a new empty array subset.
     #[must_use]
@@ -57,8 +67,10 @@ impl ArraySubset {
     /// Create a new array subset from a list of [`Range`]s.
     #[must_use]
     pub fn new_with_ranges(ranges: &[Range<u64>]) -> Self {
-        let start = ranges.iter().map(|range| range.start).collect();
-        let shape = ranges.iter().map(|range| range.end - range.start).collect();
+        let (start, shape) = ranges
+            .iter()
+            .map(|range| (range.start, range.end.saturating_sub(range.start)))
+            .unzip();
         Self { start, shape }
     }
 
@@ -366,18 +378,18 @@ impl ArraySubset {
     /// Returns [`IncompatibleDimensionalityError`] if the dimensionality of `subset_other` does not match the dimensionality of this array subset.
     pub fn overlap(&self, subset_other: &Self) -> Result<Self, IncompatibleDimensionalityError> {
         if subset_other.dimensionality() == self.dimensionality() {
-            let mut ranges = Vec::with_capacity(self.dimensionality());
-            for (start, size, other_start, other_size) in izip!(
+            let ranges = izip!(
                 &self.start,
                 &self.shape,
                 subset_other.start(),
                 subset_other.shape(),
-            ) {
+            )
+            .map(|(start, size, other_start, other_size)| {
                 let overlap_start = *std::cmp::max(start, other_start);
                 let overlap_end = std::cmp::min(start + size, other_start + other_size);
-                ranges.push(overlap_start..overlap_end);
-            }
-            Ok(Self::new_with_ranges(&ranges))
+                overlap_start..overlap_end
+            });
+            Ok(Self::from(ranges))
         } else {
             Err(IncompatibleDimensionalityError::new(
                 subset_other.dimensionality(),

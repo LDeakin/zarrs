@@ -74,9 +74,8 @@ impl ContiguousIndices {
             .start()
             .iter()
             .zip(shape_out)
-            .map(|(&st, sh)| st..(st + sh))
-            .collect::<Vec<_>>();
-        let subset_contiguous_start = ArraySubset::new_with_ranges(&ranges);
+            .map(|(&st, sh)| st..(st + sh));
+        let subset_contiguous_start = ArraySubset::from(ranges);
         // let inner = subset_contiguous_start.iter_indices();
         Ok(Self {
             subset_contiguous_start,

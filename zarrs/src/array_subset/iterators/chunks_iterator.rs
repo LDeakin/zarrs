@@ -1,6 +1,6 @@
 use std::{iter::FusedIterator, num::NonZeroU64};
 
-use itertools::{izip, Itertools};
+use itertools::izip;
 use rayon::iter::{
     plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer},
     IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
@@ -135,10 +135,9 @@ pub struct ChunksIterator<'a> {
 
 impl ChunksIterator<'_> {
     fn chunk_indices_with_subset(&self, chunk_indices: Vec<u64>) -> (Vec<u64>, ArraySubset) {
-        let ranges = std::iter::zip(&chunk_indices, self.chunk_shape)
-            .map(|(i, c)| ((i * c)..(i * c) + c))
-            .collect_vec();
-        let chunk_subset = ArraySubset::new_with_ranges(&ranges);
+        let ranges =
+            std::iter::zip(&chunk_indices, self.chunk_shape).map(|(i, c)| ((i * c)..(i * c) + c));
+        let chunk_subset = ArraySubset::from(ranges);
         (chunk_indices, chunk_subset)
     }
 }
