@@ -83,7 +83,7 @@ fn sharded_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // The array metadata is
     println!(
         "The array metadata is:\n{}\n",
-        serde_json::to_string_pretty(&array.metadata()).unwrap()
+        array.metadata().to_string_pretty()
     );
 
     // Use default codec options (concurrency etc)

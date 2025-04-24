@@ -3,13 +3,13 @@
 use std::sync::Arc;
 
 use zarrs_data_type::{DataType, DataTypeExtensionError};
+use zarrs_metadata::codec::BYTES;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-        ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-        BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+        BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
         InvalidBytesLengthError, RecommendedConcurrency,
     },
     ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes,
@@ -76,25 +76,21 @@ impl BytesCodec {
         mut value: RawBytes<'a>,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<RawBytes<'a>, CodecError> {
-        match decoded_representation.data_type().size() {
-            DataTypeSize::Variable => {
-                return Err(CodecError::UnsupportedDataType(
-                    decoded_representation.data_type().clone(),
-                    super::IDENTIFIER.to_string(),
-                ));
-            }
-            DataTypeSize::Fixed(data_type_size) => {
-                let array_size =
-                    usize::try_from(decoded_representation.num_elements() * data_type_size as u64)
-                        .unwrap();
-                if value.len() != array_size {
-                    return Err(InvalidBytesLengthError::new(value.len(), array_size).into());
-                } else if data_type_size > 1 && self.endian.is_none() {
-                    return Err(CodecError::Other(format!(
-                        "tried to encode an array with element size {data_type_size} with endianness None"
-                    )));
-                }
-            }
+        let Some(data_type_size) = decoded_representation.data_type().fixed_size() else {
+            return Err(CodecError::UnsupportedDataType(
+                decoded_representation.data_type().clone(),
+                BYTES.to_string(),
+            ));
+        };
+
+        let array_size =
+            usize::try_from(decoded_representation.num_elements() * data_type_size as u64).unwrap();
+        if value.len() != array_size {
+            return Err(InvalidBytesLengthError::new(value.len(), array_size).into());
+        } else if data_type_size > 1 && self.endian.is_none() {
+            return Err(CodecError::Other(format!(
+                "tried to encode an array with element size {data_type_size} with endianness None"
+            )));
         }
 
         if let Some(endian) = &self.endian {
@@ -108,7 +104,7 @@ impl BytesCodec {
 
 impl CodecTraits for BytesCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BYTES
     }
 
     fn configuration_opt(
@@ -154,7 +150,7 @@ impl ArrayCodecTraits for BytesCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for BytesCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
         self as Arc<dyn ArrayToBytesCodecTraits>
     }
 
@@ -208,21 +204,6 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         )))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -239,14 +220,14 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         match decoded_representation.data_type().size() {
             DataTypeSize::Variable => Err(CodecError::UnsupportedDataType(
                 decoded_representation.data_type().clone(),
-                super::IDENTIFIER.to_string(),
+                BYTES.to_string(),
             )),
             DataTypeSize::Fixed(data_type_size) => Ok(BytesRepresentation::FixedSize(
                 decoded_representation.num_elements() * data_type_size as u64,

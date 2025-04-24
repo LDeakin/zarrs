@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec::PCODEC;
+
 use crate::array::{
     codec::{
         ArrayBytes, ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
@@ -92,7 +94,7 @@ fn do_partial_decode<'a>(
                 _ => {
                     return Err(CodecError::UnsupportedDataType(
                         data_type.clone(),
-                        super::IDENTIFIER.to_string(),
+                        PCODEC.to_string(),
                     ));
                 }
             }

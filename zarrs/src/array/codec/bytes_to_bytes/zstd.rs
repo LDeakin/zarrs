@@ -1,10 +1,6 @@
-//! The `zstd` bytes to bytes codec (Experimental).
+//! The `zstd` bytes to bytes codec.
 //!
 //! Applies [Zstd](https://tools.ietf.org/html/rfc8878) compression.
-//!
-//! <div class="warning">
-//! This codec is based on a draft specification and may be incompatible with other Zarr V3 implementations.
-//! </div>
 //!
 //! ### Compatible Implementations
 //! This is expected to become a standardised extension.
@@ -35,14 +31,13 @@
 //! # serde_json::from_str::<ZstdCodecConfiguration>(JSON).unwrap();
 
 mod zstd_codec;
-mod zstd_partial_decoder;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::zstd;
 pub use crate::metadata::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
+use zarrs_metadata::codec::ZSTD;
 pub use zstd_codec::ZstdCodec;
 
 use crate::{
@@ -51,21 +46,19 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use zstd::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zstd, create_codec_zstd)
+    CodecPlugin::new(ZSTD, is_identifier_zstd, create_codec_zstd)
 }
 
-fn is_name_zstd(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_zstd(identifier: &str) -> bool {
+    identifier == ZSTD
 }
 
 pub(crate) fn create_codec_zstd(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZstdCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(ZSTD, "codec", metadata.clone()))?;
     let codec = Arc::new(ZstdCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

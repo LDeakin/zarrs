@@ -5,9 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::ChunkShape;
 
-/// The identifier for the `rectangular` chunk grid.
-pub const IDENTIFIER: &str = "rectangular";
-
 /// Configuration parameters for a `rectangular` chunk grid.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]

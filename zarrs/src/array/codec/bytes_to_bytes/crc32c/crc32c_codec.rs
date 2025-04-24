@@ -1,13 +1,13 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::codec::CRC32C;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::array::{
     codec::{
         bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-        RecommendedConcurrency,
+        BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits, RecommendedConcurrency,
     },
     BytesRepresentation, RawBytes,
 };
@@ -40,7 +40,7 @@ impl Crc32cCodec {
 
 impl CodecTraits for Crc32cCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        CRC32C
     }
 
     fn configuration_opt(
@@ -63,7 +63,7 @@ impl CodecTraits for Crc32cCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Crc32cCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -121,21 +121,6 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         )))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -149,7 +134,7 @@ impl BytesToBytesCodecTraits for Crc32cCodec {
         )))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

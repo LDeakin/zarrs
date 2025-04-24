@@ -13,7 +13,7 @@ pub use metadata::{
     MetadataConfigurationSerialize, MetadataV3, UnsupportedAdditionalFieldError,
 };
 
-/// V3 node metadata ([`ArrayMetadataV3`] or [`GroupMetadataV3`]).
+/// Zarr V3 node metadata ([`ArrayMetadataV3`] or [`GroupMetadataV3`]).
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]

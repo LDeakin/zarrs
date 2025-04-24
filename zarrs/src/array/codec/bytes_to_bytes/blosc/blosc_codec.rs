@@ -1,14 +1,14 @@
 use std::{borrow::Cow, ffi::c_char, sync::Arc};
 
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
+use zarrs_metadata::codec::BLOSC;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::{
     array::{
         codec::{
-            BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-            BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RecommendedConcurrency,
+            BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+            CodecOptions, CodecTraits, RecommendedConcurrency,
         },
         BytesRepresentation, RawBytes,
     },
@@ -143,7 +143,7 @@ impl BloscCodec {
 
 impl CodecTraits for BloscCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BLOSC
     }
 
     fn configuration_opt(
@@ -178,7 +178,7 @@ impl CodecTraits for BloscCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for BloscCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -230,21 +230,6 @@ impl BytesToBytesCodecTraits for BloscCodec {
         )))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -257,7 +242,7 @@ impl BytesToBytesCodecTraits for BloscCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

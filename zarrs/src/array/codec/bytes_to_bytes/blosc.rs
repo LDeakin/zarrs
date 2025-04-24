@@ -59,29 +59,27 @@ use blosc_sys::{
 };
 use derive_more::From;
 use thiserror::Error;
+use zarrs_metadata::codec::BLOSC;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::codec::blosc,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use blosc::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_blosc, create_codec_blosc)
+    CodecPlugin::new(BLOSC, is_identifier_blosc, create_codec_blosc)
 }
 
-fn is_name_blosc(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_blosc(identifier: &str) -> bool {
+    identifier == BLOSC
 }
 
 pub(crate) fn create_codec_blosc(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BloscCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(BLOSC, "codec", metadata.clone()))?;
     let codec = Arc::new(BloscCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

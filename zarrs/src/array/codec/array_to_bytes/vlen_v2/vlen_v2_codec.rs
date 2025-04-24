@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
+use zarrs_metadata::codec::VLEN_V2;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::array::{
     codec::{
-        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-        ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-        BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+        BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
         RecommendedConcurrency,
     },
     ArrayBytes, BytesRepresentation, ChunkRepresentation, DataTypeSize, RawBytes, RawBytesOffsets,
@@ -30,7 +30,7 @@ impl VlenV2Codec {
 
 impl CodecTraits for VlenV2Codec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        VLEN_V2
     }
 
     fn configuration_opt(
@@ -61,7 +61,7 @@ impl ArrayCodecTraits for VlenV2Codec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for VlenV2Codec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
         self as Arc<dyn ArrayToBytesCodecTraits>
     }
 
@@ -124,21 +124,6 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
         ))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -154,7 +139,7 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
@@ -162,7 +147,7 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
             DataTypeSize::Variable => Ok(BytesRepresentation::UnboundedSize),
             DataTypeSize::Fixed(_) => Err(CodecError::UnsupportedDataType(
                 decoded_representation.data_type().clone(),
-                super::IDENTIFIER.to_string(),
+                VLEN_V2.to_string(),
             )),
         }
     }

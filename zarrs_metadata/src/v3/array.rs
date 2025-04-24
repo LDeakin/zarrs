@@ -1,5 +1,4 @@
 use chunk_key_encoding::default::DefaultChunkKeyEncodingConfiguration;
-use data_type::DataTypeMetadataV3;
 use derive_more::Display;
 use fill_value::FillValueMetadataV3;
 use serde::{Deserialize, Serialize};
@@ -10,8 +9,16 @@ use super::AdditionalFields;
 
 pub mod data_type;
 
+pub mod codec;
+
 /// Zarr V3 chunk grid metadata.
 pub mod chunk_grid {
+    /// Unique identifier for the `regular` chunk grid (core).
+    pub const REGULAR: &str = "regular";
+
+    /// Unique identifier for the `rectangular` chunk grid (extension).
+    pub const RECTANGULAR: &str = "rectangular";
+
     /// `rectangular` chunk grid metadata.
     pub mod rectangular;
     /// `regular` chunk grid metadata.
@@ -20,6 +27,12 @@ pub mod chunk_grid {
 
 /// Zarr V3 chunk key encoding metadata.
 pub mod chunk_key_encoding {
+    /// Unique identifier for the `default` chunk key encoding (core).
+    pub const DEFAULT: &str = "default";
+
+    /// Unique identifier for the `v2` chunk key encoding (core).
+    pub const V2: &str = "v2";
+
     /// `default` chunk key encoding metadata.
     pub mod default;
     /// `v2` chunk key encoding metadata.
@@ -77,7 +90,7 @@ pub struct ArrayMetadataV3 {
     /// An array of integers providing the length of each dimension of the Zarr array.
     pub shape: ArrayShape,
     /// The data type of the Zarr array.
-    pub data_type: DataTypeMetadataV3,
+    pub data_type: MetadataV3,
     /// The chunk grid of the Zarr array.
     pub chunk_grid: MetadataV3,
     /// The mapping from chunk grid cell coordinates to keys in the underlying store.
@@ -139,14 +152,14 @@ impl ArrayMetadataV3 {
     pub fn new(
         shape: ArrayShape,
         chunk_grid: MetadataV3,
-        data_type: DataTypeMetadataV3,
+        data_type: MetadataV3,
         fill_value: FillValueMetadataV3,
         codecs: Vec<MetadataV3>,
     ) -> Self {
         let chunk_key_encoding = unsafe {
             // SAFETY: The default chunk key encoding configuration is valid JSON.
             MetadataV3::new_with_serializable_configuration(
-                crate::v3::array::chunk_key_encoding::default::IDENTIFIER,
+                chunk_key_encoding::DEFAULT.to_string(),
                 &DefaultChunkKeyEncodingConfiguration {
                     separator: crate::ChunkKeySeparator::Slash,
                 },
@@ -169,6 +182,13 @@ impl ArrayMetadataV3 {
             additional_fields: AdditionalFields::default(),
             extensions: Vec::default(),
         }
+    }
+
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("array metadata is valid JSON")
     }
 
     /// Set the user attributes.

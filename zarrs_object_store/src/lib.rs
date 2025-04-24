@@ -106,7 +106,7 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
         };
         let ranges = byte_ranges
             .iter()
-            .map(|byte_range| byte_range.to_range_usize(size))
+            .map(|byte_range| byte_range.to_range(size))
             .collect::<Vec<_>>();
         let get_ranges = self
             .object_store
@@ -116,12 +116,13 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
             Ok(get_ranges) => Ok(Some(
                 std::iter::zip(ranges, get_ranges)
                     .map(|(range, bytes)| {
-                        if range.len() == bytes.len() {
+                        let range_len = range.end.saturating_sub(range.start);
+                        if range_len == bytes.len() as u64 {
                             Ok(bytes)
                         } else {
                             Err(StorageError::Other(format!(
                                 "Unexpected length of bytes returned, expected {}, got {}",
-                                range.len(),
+                                range_len,
                                 bytes.len()
                             )))
                         }
@@ -141,7 +142,7 @@ impl<T: object_store::ObjectStore> AsyncReadableStorageTraits for AsyncObjectSto
     async fn size_key(&self, key: &StoreKey) -> Result<Option<u64>, StorageError> {
         Ok(
             handle_result_notfound(self.object_store.head(&key_to_path(key)).await)?
-                .map(|meta| meta.size as u64),
+                .map(|meta| meta.size),
         )
     }
 }
@@ -254,7 +255,7 @@ impl<T: object_store::ObjectStore> AsyncListableStorageTraits for AsyncObjectSto
         let mut size = 0;
         while let Some(item) = locations.next().await {
             let meta = handle_result(item)?;
-            size += u64::try_from(meta.size).unwrap();
+            size += meta.size;
         }
         Ok(size)
     }
@@ -264,7 +265,7 @@ impl<T: object_store::ObjectStore> AsyncListableStorageTraits for AsyncObjectSto
         let mut size = 0;
         while let Some(item) = locations.next().await {
             let meta = handle_result(item)?;
-            size += u64::try_from(meta.size).unwrap();
+            size += meta.size;
         }
         Ok(size)
     }

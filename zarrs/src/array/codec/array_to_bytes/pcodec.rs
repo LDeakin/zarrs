@@ -1,10 +1,10 @@
 //! The `pcodec` array to bytes codec (Experimental).
 //!
-//! [Pcodec](https://github.com/mwlon/pcodec) (or Pco, pronounced "pico") losslessly compresses and decompresses numerical sequences with high compression ratio and fast speed.
-//!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
+//!
+//! [Pcodec](https://github.com/mwlon/pcodec) (or Pco, pronounced "pico") losslessly compresses and decompresses numerical sequences with high compression ratio and fast speed.
 //!
 //! This codec requires the `pcodec` feature, which is disabled by default.
 //!
@@ -51,29 +51,23 @@ pub use pcodec_codec::PcodecCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    config::global_config,
-    metadata::{codec::pcodec, v3::MetadataV3},
+    metadata::{codec::PCODEC, v3::MetadataV3},
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use pcodec::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_pcodec, create_codec_pcodec)
+    CodecPlugin::new(PCODEC, is_identifier_pcodec, create_codec_pcodec)
 }
 
-fn is_name_pcodec(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_pcodec(identifier: &str) -> bool {
+    identifier == PCODEC
 }
 
 pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(PCODEC, "codec", metadata.clone()))?;
     let codec = Arc::new(PcodecCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
@@ -120,7 +114,7 @@ mod tests {
         let bytes: Vec<u8> = (0..size).map(|s| s as u8).collect();
         let bytes: ArrayBytes = bytes.into();
 
-        let max_encoded_size = codec.compute_encoded_size(&chunk_representation)?;
+        let max_encoded_size = codec.encoded_representation(&chunk_representation)?;
         let encoded = codec.encode(
             bytes.clone(),
             &chunk_representation,

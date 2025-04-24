@@ -4,9 +4,10 @@
 
 use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-mod codec_map_default;
-use codec_map_default::codec_map_default;
-use zarrs_metadata::CodecMap;
+use zarrs_metadata::extension::{
+    ExtensionAliasesCodecV2, ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2,
+    ExtensionAliasesDataTypeV3,
+};
 
 #[cfg(doc)]
 use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
@@ -99,21 +100,34 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 ///  }
 /// ```
 ///
-/// ### Codec Map
-/// > default: See below.
+/// ### Codec Aliases
+/// > default: see [`ExtensionAliasesCodecV3::default`] and [`ExtensionAliasesCodecV2::default`].
 ///
-/// Sets the codec `name` used when serialising and deserialising codecs.
-/// Aliases can be set so `zarrs` can recognise compatible codecs from other implementations / interim codec names.
+/// The default codec `name`s used when serialising codecs, and recognised codec `name` aliases when deserialising codecs.
+/// Codec default `name`s and aliases can be modified at runtime.
 ///
-/// ```rust
-#[doc = include_str!("./config/codec_map_default.rs")]
-/// ```
+/// Note that the [`NamedCodec`](crate::array::codec::NamedCodec) mechanism means that a serialised codec `name` can differ from the default `name`.
+/// By default, updating and storing the metadata of an array will NOT convert aliased codec names to the default codec name.
+/// This behaviour can be changed with the [convert aliased extension names](#convert-aliased-extension-names) configuration option.
+///
+/// The codec maps enable support for unstandardised codecs, such as:
+/// - codecs registered in the official [`zarr-extensions`](https://github.com/zarr-developers/zarr-extensions) repository that are compatible with `zarrs`,
+/// - `zarrs` experimental codecs with `name`s that have since changed, and
+/// - user-defined custom codecs.
+///
+/// If a codec is not present in the codec maps, the `name` will be inferred as the unique codec identifier.
+/// Codecs registered for that identifier work without any changes required for the codec maps.
+///
+/// ### Data Type Aliases
+/// > default: see [`ExtensionAliasesDataTypeV3::default`] and [`ExtensionAliasesDataTypeV2::default`].
+///
+/// These operate similarly to codec maps, but for data types.
 ///
 /// ### Convert Aliased Extension Names
 /// > default: [`false`]
 ///
 /// If true, then aliased extension names will be replaced by the standard name if metadata is resaved.
-/// This is part of [`crate::array::codec::CodecMetadataOptions`] (and [`crate::array::ArrayMetadataOptions`])
+/// This sets the default for [`crate::array::codec::CodecMetadataOptions`] (part of [`crate::array::ArrayMetadataOptions`])
 #[derive(Debug)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
@@ -125,7 +139,10 @@ pub struct Config {
     metadata_convert_version: MetadataConvertVersion,
     metadata_erase_version: MetadataEraseVersion,
     include_zarrs_metadata: bool,
-    codec_map: CodecMap,
+    codec_aliases_v3: ExtensionAliasesCodecV3,
+    codec_aliases_v2: ExtensionAliasesCodecV2,
+    data_type_aliases_v3: ExtensionAliasesDataTypeV3,
+    data_type_aliases_v2: ExtensionAliasesDataTypeV2,
     experimental_partial_encoding: bool,
     convert_aliased_extension_names: bool,
 }
@@ -133,7 +150,6 @@ pub struct Config {
 #[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
-        let codec_map = codec_map_default();
         Self {
             validate_checksums: true,
             store_empty_chunks: false,
@@ -143,7 +159,10 @@ impl Default for Config {
             metadata_convert_version: MetadataConvertVersion::Default,
             metadata_erase_version: MetadataEraseVersion::Default,
             include_zarrs_metadata: true,
-            codec_map,
+            codec_aliases_v3: ExtensionAliasesCodecV3::default(),
+            codec_aliases_v2: ExtensionAliasesCodecV2::default(),
+            data_type_aliases_v3: ExtensionAliasesDataTypeV3::default(),
+            data_type_aliases_v2: ExtensionAliasesDataTypeV2::default(),
             experimental_partial_encoding: false,
             convert_aliased_extension_names: false,
         }
@@ -250,15 +269,48 @@ impl Config {
         self
     }
 
-    /// Get the [codec mapping](#codec-mapping) configuration.
+    /// Get the Zarr V3 [codec aliases](#codec-aliases) configuration.
     #[must_use]
-    pub fn codec_map(&self) -> &CodecMap {
-        &self.codec_map
+    pub fn codec_aliases_v3(&self) -> &ExtensionAliasesCodecV3 {
+        &self.codec_aliases_v3
     }
 
-    /// Get a mutable reference to the [codec mapping](#codec-mapping) configuration.
-    pub fn codec_map_mut(&mut self) -> &mut CodecMap {
-        &mut self.codec_map
+    /// Get a mutable reference to the Zarr V3 [codec aliases](#codec-aliases) configuration.
+    pub fn codec_aliases_v3_mut(&mut self) -> &mut ExtensionAliasesCodecV3 {
+        &mut self.codec_aliases_v3
+    }
+
+    /// Get the Zarr V3 [data type aliases](#data-type-aliases) configuration.
+    #[must_use]
+    pub fn data_type_aliases_v3(&self) -> &ExtensionAliasesDataTypeV3 {
+        &self.data_type_aliases_v3
+    }
+
+    /// Get a mutable reference to the Zarr V3 [data type aliases](#data-type-aliases) configuration.
+    pub fn data_type_aliases_v3_mut(&mut self) -> &mut ExtensionAliasesDataTypeV3 {
+        &mut self.data_type_aliases_v3
+    }
+
+    /// Get the Zarr V2 [codec aliases](#codec-aliases) configuration.
+    #[must_use]
+    pub fn codec_aliases_v2(&self) -> &ExtensionAliasesCodecV2 {
+        &self.codec_aliases_v2
+    }
+
+    /// Get a mutable reference to the Zarr V2 [codec aliases](#codec-aliases) configuration.
+    pub fn codec_aliases_v2_mut(&mut self) -> &mut ExtensionAliasesCodecV2 {
+        &mut self.codec_aliases_v2
+    }
+
+    /// Get the Zarr V2 [data type aliases](#data-type-aliases) configuration.
+    #[must_use]
+    pub fn data_type_aliases_v2(&self) -> &ExtensionAliasesDataTypeV2 {
+        &self.data_type_aliases_v2
+    }
+
+    /// Get a mutable reference to the Zarr V2 [data type aliases](#data-type-aliases) configuration.
+    pub fn data_type_aliases_v2_mut(&mut self) -> &mut ExtensionAliasesDataTypeV2 {
+        &mut self.data_type_aliases_v2
     }
 
     /// Get the [experimental partial encoding](#experimental-partial-encoding) configuration.

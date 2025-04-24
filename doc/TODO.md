@@ -7,12 +7,8 @@
     - Support internal task spawning?
     - Add `array_sharded_ext::{AsyncArrayShardedExt,AsyncArrayShardedReadableExt}`
     - Async support for `StorageValueIO` to enable `ZipStorageAdapter` with async stores
-    - Async support for partial encoding
 - Remove most/all `_opt` methods when Rust [`import-trait-associated-functions`](https://github.com/rust-lang/rfcs/pull/3591) stabilises
 - Use lending iterators where/if possible to avoid `Vec` allocations in iterators?
-
-### Codecs
-- Implement codecs for compatibility with virtual NetCDF/HDF5 data with compression?
 
 ### Experiments
 - Test an io_uring backed filesystem store
@@ -22,6 +18,7 @@
 - Increase test coverage
 - Reduce code duplication in tests
 - Review documentation
+- Use `async_generic` to reduce `async` code duplication
 
 ### Write/Review ZEPs?
 - **Pending**: [the new Zarr ZEP process](https://github.com/zarr-developers/zeps/pull/59)

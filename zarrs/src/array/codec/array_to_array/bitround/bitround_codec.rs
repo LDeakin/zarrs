@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec::BITROUND;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        array_to_bytes::vlen_v2::IDENTIFIER, ArrayBytes, ArrayCodecTraits,
-        ArrayPartialDecoderTraits, ArrayPartialEncoderTraits, ArrayToArrayCodecTraits,
-        ArrayToArrayPartialEncoderDefault, CodecError, CodecMetadataOptions, CodecOptions,
-        CodecTraits, RecommendedConcurrency,
+        ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToArrayCodecTraits,
+        CodecError, CodecMetadataOptions, CodecOptions, CodecTraits, RecommendedConcurrency,
     },
-    ChunkRepresentation, ChunkShape, DataType,
+    ChunkRepresentation, DataType,
 };
 
 #[cfg(feature = "async")]
@@ -54,7 +53,7 @@ impl BitroundCodec {
 
 impl CodecTraits for BitroundCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BITROUND
     }
 
     fn configuration_opt(
@@ -93,7 +92,7 @@ impl ArrayCodecTraits for BitroundCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToArrayCodecTraits for BitroundCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToArrayCodecTraits> {
         self as Arc<dyn ArrayToArrayCodecTraits>
     }
 
@@ -136,21 +135,6 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         ))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn ArrayPartialDecoderTraits>,
-        output_handle: Arc<dyn ArrayPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayToArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -167,12 +151,8 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
         ))
     }
 
-    fn compute_encoded_size(
-        &self,
-        decoded_representation: &ChunkRepresentation,
-    ) -> Result<ChunkRepresentation, CodecError> {
-        let data_type = decoded_representation.data_type();
-        match data_type {
+    fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
+        match decoded_data_type {
             DataType::Float16
             | DataType::BFloat16
             | DataType::Float32
@@ -186,15 +166,11 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
             | DataType::UInt64
             | DataType::Int64
             | DataType::Complex64
-            | DataType::Complex128 => Ok(decoded_representation.clone()),
+            | DataType::Complex128 => Ok(decoded_data_type.clone()),
             _ => Err(CodecError::UnsupportedDataType(
-                data_type.clone(),
-                IDENTIFIER.to_string(),
+                decoded_data_type.clone(),
+                BITROUND.to_string(),
             )),
         }
-    }
-
-    fn compute_decoded_shape(&self, encoded_shape: ChunkShape) -> Result<ChunkShape, CodecError> {
-        Ok(encoded_shape)
     }
 }

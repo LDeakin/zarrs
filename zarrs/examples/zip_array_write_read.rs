@@ -68,7 +68,7 @@ fn write_array_to_storage<TStorage: ReadableWritableStorageTraits + ?Sized + 'st
 
     println!(
         "The array metadata is:\n{}\n",
-        serde_json::to_string_pretty(&array.metadata()).unwrap()
+        array.metadata().to_string_pretty()
     );
 
     // Write a subset spanning multiple chunks, including updating chunks already written

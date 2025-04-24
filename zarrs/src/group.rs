@@ -180,10 +180,11 @@ impl<TStorage: ?Sized> Group<TStorage> {
     pub fn set_consolidated_metadata(
         &mut self,
         consolidated_metadata: Option<ConsolidatedMetadata>,
-    ) {
+    ) -> &mut Self {
         if let GroupMetadata::V3(group_metadata) = &mut self.metadata {
             group_metadata.consolidated_metadata = consolidated_metadata;
         }
+        self
     }
 
     /// Convert the group to Zarr V3.

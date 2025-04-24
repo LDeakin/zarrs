@@ -1,22 +1,17 @@
 use std::{borrow::Cow, sync::Arc};
 
+use zarrs_metadata::codec::GDEFLATE;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
-    codec::{
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-    },
+    codec::{BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits},
     BytesRepresentation, RawBytes, RecommendedConcurrency,
 };
 
-#[cfg(feature = "async")]
-use crate::array::codec::AsyncBytesPartialDecoderTraits;
-
 use super::{
-    gdeflate_decode, gdeflate_partial_decoder, GDeflateCodecConfiguration,
-    GDeflateCodecConfigurationV1, GDeflateCompressionLevel, GDeflateCompressionLevelError,
-    GDeflateCompressor, GDEFLATE_STATIC_HEADER_LENGTH,
+    gdeflate_decode, GDeflateCodecConfiguration, GDeflateCodecConfigurationV1,
+    GDeflateCompressionLevel, GDeflateCompressionLevelError, GDeflateCompressor,
+    GDEFLATE_STATIC_HEADER_LENGTH,
 };
 
 /// A `gdeflate` codec implementation.
@@ -57,7 +52,7 @@ impl GDeflateCodec {
 
 impl CodecTraits for GDeflateCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        GDEFLATE
     }
 
     fn configuration_opt(
@@ -82,7 +77,7 @@ impl CodecTraits for GDeflateCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for GDeflateCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -134,51 +129,13 @@ impl BytesToBytesCodecTraits for GDeflateCodec {
         Ok(Cow::Owned(gdeflate_decode(&encoded_value)?))
     }
 
-    fn partial_decoder(
-        self: Arc<Self>,
-        r: Arc<dyn BytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(
-            gdeflate_partial_decoder::GDeflatePartialDecoder::new(r),
-        ))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
-    #[cfg(feature = "async")]
-    async fn async_partial_decoder(
-        self: Arc<Self>,
-        r: Arc<dyn AsyncBytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(
-            gdeflate_partial_decoder::AsyncGDeflatePartialDecoder::new(r),
-        ))
-    }
-
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {
         match decoded_representation {
             BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {
-                let compressor = GDeflateCompressor::new(self.compression_level).unwrap(); // FIXME: Make compute_encoded_size fallible?
+                let compressor = GDeflateCompressor::new(self.compression_level).unwrap(); // FIXME: Make encoded_representation fallible?
                 let size = usize::try_from(*size).unwrap();
                 let (_, compress_bound) = compressor.get_npages_compress_bound(size);
                 let compress_bound = u64::try_from(compress_bound).unwrap();

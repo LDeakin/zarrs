@@ -5,7 +5,7 @@ use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
-/// Metadata with a name and optional configuration.
+/// Metadata with a `name`, and optional `configuration` and `must_understand`.
 ///
 /// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::v3::ArrayMetadataV3)) which is either:
 /// - a string name / identifier, or
@@ -65,7 +65,7 @@ impl<T: MetadataConfigurationSerialize> From<T> for MetadataConfiguration {
     }
 }
 
-/// A trait for metadata configurations.
+/// A marker trait indicating metadata is JSON serialisable.
 ///
 /// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
 pub trait MetadataConfigurationSerialize: Serialize + DeserializeOwned {}
@@ -159,7 +159,7 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
 impl MetadataV3 {
     /// Create metadata from `name`.
     #[must_use]
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
             configuration: None,
@@ -170,7 +170,7 @@ impl MetadataV3 {
     /// Create metadata from `name` and `configuration`.
     #[must_use]
     pub fn new_with_configuration(
-        name: &str,
+        name: impl Into<String>,
         configuration: impl Into<MetadataConfiguration>,
     ) -> Self {
         Self {
@@ -192,7 +192,7 @@ impl MetadataV3 {
     /// # Errors
     /// Returns [`serde_json::Error`] if `configuration` cannot be converted to [`MetadataV3`].
     pub fn new_with_serializable_configuration<TConfiguration: serde::Serialize>(
-        name: &str,
+        name: String,
         configuration: &TConfiguration,
     ) -> Result<Self, serde_json::Error> {
         let configuration = serde_json::to_value(configuration)?;
@@ -218,10 +218,16 @@ impl MetadataV3 {
         serde_json::from_value(value).map_err(err)
     }
 
-    /// Returns the metadata name.
+    /// Returns the metadata `name`.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    /// Mutate the metadata `name`.
+    pub fn set_name(&mut self, name: String) -> &mut Self {
+        self.name = name;
+        self
     }
 
     /// Returns the metadata configuration.
@@ -454,10 +460,10 @@ mod tests {
         let metadata: MetadataV3 = serde_json::from_str(&metadata).unwrap();
         assert!(metadata.name() == "test");
         assert!(!metadata.must_understand());
-        assert_ne!(metadata, MetadataV3::new("test"));
+        assert_ne!(metadata, MetadataV3::new("test".to_string()));
         assert_eq!(
             metadata,
-            MetadataV3::new("test").with_must_understand(false)
+            MetadataV3::new("test".to_string()).with_must_understand(false)
         );
     }
 }

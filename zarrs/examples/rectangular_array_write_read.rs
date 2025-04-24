@@ -51,7 +51,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "The group metadata is:\n{}\n",
-        serde_json::to_string_pretty(&group.metadata()).unwrap()
+        group.metadata().to_string_pretty()
     );
 
     // Create an array
@@ -98,7 +98,7 @@ fn rectangular_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "The array metadata is:\n{}\n",
-        serde_json::to_string_pretty(&array.metadata()).unwrap()
+        array.metadata().to_string_pretty()
     );
 
     // Write a subset spanning multiple chunks, including updating chunks already written

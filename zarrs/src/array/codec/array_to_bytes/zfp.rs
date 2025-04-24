@@ -1,11 +1,11 @@
-//! The `zfp` array to bytes codec (Experimental).
+//! The `zfp` array to bytes codec.
+//!
+//! <div class="warning">
+//! This is a registered codec that originated in `zarrs`. It may not be supported by other Zarr V3 implementations.
+//! </div>
 //!
 //! [zfp](https://zfp.io/) is a compressed number format for 1D to 4D arrays of 32/64-bit floating point or integer data.
 //! 8/16-bit integer types are supported through promotion to 32-bit in accordance with the [zfp utility functions](https://zfp.readthedocs.io/en/release1.0.1/low-level-api.html#utility-functions).
-//!
-//! <div class="warning">
-//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
-//! </div>
 //!
 //! This codec requires the `zfp` feature, which is disabled by default.
 //!
@@ -21,6 +21,7 @@
 //! - a zfp header is **not** written, as it is redundant with the codec metadata
 //!
 //! ### Codec `name` Aliases (Zarr V3)
+//! - `zfp`
 //! - `zarrs.zfp`
 //! - `https://codec.zarrs.dev/array_to_bytes/zfp`
 //!
@@ -112,8 +113,7 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
-    config::global_config,
-    metadata::codec::zfp::{self, ZfpMode},
+    metadata::codec::{zfp::ZfpMode, ZFP},
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
@@ -122,24 +122,19 @@ use self::{
     zfp_array::ZfpArray, zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream,
 };
 
-pub use zfp::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zfp, create_codec_zfp)
+    CodecPlugin::new(ZFP, is_identifier_zfp, create_codec_zfp)
 }
 
-fn is_name_zfp(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_zfp(identifier: &str) -> bool {
+    identifier == ZFP
 }
 
 pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZfpCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(ZFP, "codec", metadata.clone()))?;
     let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
@@ -227,7 +222,7 @@ fn promote_before_zfp_encoding(
         ))),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -248,7 +243,7 @@ fn init_zfp_decoding_output(
         DataType::Float64 => Ok(ZfpArray::Double(vec![0.0; num_elements])),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -299,7 +294,7 @@ fn demote_after_zfp_decoding(
         )),
         _ => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
-            IDENTIFIER.to_string(),
+            ZFP.to_string(),
         )),
     }
 }
@@ -313,13 +308,11 @@ fn zfp_decode(
 ) -> Result<Vec<u8>, CodecError> {
     let mut array = init_zfp_decoding_output(decoded_representation)?;
     let zfp_type = array.zfp_type();
-    let Some(stream) = ZfpStream::new(zfp_mode, zfp_type) else {
-        return Err(CodecError::from("failed to create zfp stream"));
-    };
+    let stream = ZfpStream::new(zfp_mode, zfp_type)
+        .ok_or_else(|| CodecError::from("failed to create zfp stream"))?;
 
-    let Some(bitstream) = ZfpBitstream::new(encoded_value) else {
-        return Err(CodecError::from("failed to create zfp bitstream"));
-    };
+    let bitstream = ZfpBitstream::new(encoded_value)
+        .ok_or_else(|| CodecError::from("failed to create zfp bitstream"))?;
     if write_header {
         let ret = unsafe {
             let field = zfp_field_alloc();
@@ -336,16 +329,15 @@ fn zfp_decode(
             return Err(CodecError::from("zfp decompression failed"));
         }
     } else {
-        let Some(field) = ZfpField::new(
+        let field = ZfpField::new(
             &mut array,
             &decoded_representation
                 .shape()
                 .iter()
                 .map(|u| usize::try_from(u.get()).unwrap())
                 .collect::<Vec<usize>>(),
-        ) else {
-            return Err(CodecError::from("failed to create zfp field"));
-        };
+        )
+        .ok_or_else(|| CodecError::from("failed to create zfp field"))?;
         let ret = unsafe {
             zfp_stream_set_bit_stream(stream.as_zfp_stream(), bitstream.as_bitstream());
             zfp_stream_rewind(stream.as_zfp_stream());
@@ -369,9 +361,9 @@ mod tests {
 
     use crate::{
         array::{
-            codec::{ArrayToBytesCodecTraits, CodecOptions},
+            codec::{array_to_array::squeeze::SqueezeCodec, ArrayToBytesCodecTraits, CodecOptions},
             element::ElementOwned,
-            ArrayBytes,
+            ArrayBytes, CodecChain,
         },
         array_subset::ArraySubset,
     };
@@ -408,13 +400,19 @@ mod tests {
         chunk_representation: &ChunkRepresentation,
         configuration: &str,
     ) where
-        i32: num::traits::AsPrimitive<T>,
+        u64: num::traits::AsPrimitive<T>,
     {
-        let elements: Vec<T> = (0..27).map(|i: i32| i.as_()).collect();
+        let elements: Vec<T> = (0..chunk_representation.num_elements())
+            .map(|i: u64| i.as_())
+            .collect();
         let bytes = T::into_array_bytes(chunk_representation.data_type(), &elements).unwrap();
 
         let configuration: ZfpCodecConfiguration = serde_json::from_str(configuration).unwrap();
-        let codec = ZfpCodec::new_with_configuration(&configuration).unwrap();
+        let codec = CodecChain::new(
+            vec![Arc::new(SqueezeCodec::new())],
+            Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap()),
+            vec![],
+        );
 
         let encoded = codec
             .encode(
@@ -655,7 +653,7 @@ mod tests {
         let configuration: ZfpCodecConfiguration = serde_json::from_str(JSON_REVERSIBLE).unwrap();
         let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration).unwrap());
 
-        let max_encoded_size = codec.compute_encoded_size(&chunk_representation).unwrap();
+        let max_encoded_size = codec.encoded_representation(&chunk_representation).unwrap();
         let encoded = codec
             .encode(
                 bytes.clone(),
@@ -695,5 +693,37 @@ mod tests {
             0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 8.0, 14.0, 17.0, 23.0, 26.0,
         ];
         assert_eq!(answer, decoded_partial_chunk);
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn codec_zfp_round_trip_f32_6d() {
+        let chunk_shape = || {
+            vec![
+                NonZeroU64::new(4).unwrap(),
+                NonZeroU64::new(1).unwrap(),
+                NonZeroU64::new(3).unwrap(),
+                NonZeroU64::new(1).unwrap(),
+                NonZeroU64::new(2).unwrap(),
+                NonZeroU64::new(1).unwrap(),
+            ]
+        };
+
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            JSON_REVERSIBLE,
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedrate(2.5),
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedaccuracy(1.0),
+        );
+        codec_zfp_round_trip::<f32>(
+            &ChunkRepresentation::new(chunk_shape(), DataType::Float32, 0.0f32.into()).unwrap(),
+            &json_fixedprecision(13),
+        );
     }
 }

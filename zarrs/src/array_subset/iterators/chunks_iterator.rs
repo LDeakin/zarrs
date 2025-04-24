@@ -1,5 +1,6 @@
 use std::{iter::FusedIterator, num::NonZeroU64};
 
+use itertools::izip;
 use rayon::iter::{
     plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer},
     IndexedParallelIterator, IntoParallelIterator, ParallelIterator,
@@ -53,43 +54,31 @@ impl Chunks {
         chunk_shape: &[NonZeroU64],
     ) -> Result<Self, IncompatibleDimensionalityError> {
         if subset.dimensionality() == chunk_shape.len() {
-            Ok(unsafe { Self::new_unchecked(subset, chunk_shape) })
+            let chunk_shape = chunk_shape_to_array_shape(chunk_shape);
+            Ok(match subset.end_inc() {
+                Some(end) => {
+                    let chunk_start: ArrayIndices = std::iter::zip(subset.start(), &chunk_shape)
+                        .map(|(s, c)| s / c)
+                        .collect();
+                    let shape: ArrayIndices = izip!(end, &chunk_shape, &chunk_start)
+                        .map(|(e, &c, &s)| (e / c).saturating_sub(s) + 1)
+                        .collect();
+                    let subset_chunks = ArraySubset::new_with_start_shape(chunk_start, shape)?;
+                    Self {
+                        indices: subset_chunks.indices(),
+                        chunk_shape,
+                    }
+                }
+                None => Self {
+                    indices: ArraySubset::new_empty(subset.dimensionality()).indices(),
+                    chunk_shape,
+                },
+            })
         } else {
             Err(IncompatibleDimensionalityError(
                 chunk_shape.len(),
                 subset.dimensionality(),
             ))
-        }
-    }
-
-    /// Create a new chunks iterator.
-    ///
-    /// # Safety
-    /// The dimensionality of `chunk_shape` must match the dimensionality of `subset`.
-    #[must_use]
-    pub unsafe fn new_unchecked(subset: &ArraySubset, chunk_shape: &[NonZeroU64]) -> Self {
-        debug_assert_eq!(subset.dimensionality(), chunk_shape.len());
-        let chunk_shape = chunk_shape_to_array_shape(chunk_shape);
-        match subset.end_inc() {
-            Some(end) => {
-                let chunk_start: ArrayIndices = std::iter::zip(subset.start(), &chunk_shape)
-                    .map(|(s, c)| s / c)
-                    .collect();
-                let chunk_end_inc: ArrayIndices = std::iter::zip(end, &chunk_shape)
-                    .map(|(e, c)| e / c)
-                    .collect();
-                let subset_chunks = unsafe {
-                    ArraySubset::new_with_start_end_inc_unchecked(chunk_start, chunk_end_inc)
-                };
-                Self {
-                    indices: subset_chunks.indices(),
-                    chunk_shape,
-                }
-            }
-            None => Self {
-                indices: ArraySubset::new_empty(subset.dimensionality()).indices(),
-                chunk_shape,
-            },
         }
     }
 
@@ -146,12 +135,9 @@ pub struct ChunksIterator<'a> {
 
 impl ChunksIterator<'_> {
     fn chunk_indices_with_subset(&self, chunk_indices: Vec<u64>) -> (Vec<u64>, ArraySubset) {
-        let start = std::iter::zip(&chunk_indices, self.chunk_shape)
-            .map(|(i, c)| i * c)
-            .collect();
-        let chunk_subset = unsafe {
-            ArraySubset::new_with_start_shape_unchecked(start, self.chunk_shape.to_vec())
-        };
+        let ranges =
+            std::iter::zip(&chunk_indices, self.chunk_shape).map(|(i, c)| ((i * c)..(i * c) + c));
+        let chunk_subset = ArraySubset::from(ranges);
         (chunk_indices, chunk_subset)
     }
 }

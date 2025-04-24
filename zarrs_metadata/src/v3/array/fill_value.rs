@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use derive_more::From;
 use half::{bf16, f16};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Number;
 
 use super::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
@@ -195,6 +195,13 @@ impl FillValueMetadataV3 {
             Self::Number(number) => number.as_i64(),
             _ => None,
         }
+    }
+
+    /// Convert fill value metadata to a custom structure.
+    #[must_use]
+    pub fn as_custom<T: DeserializeOwned>(&self) -> Option<T> {
+        let custom = serde_json::from_value(serde_json::to_value(self).ok()?).ok()?;
+        Some(custom)
     }
 }
 

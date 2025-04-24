@@ -1,8 +1,4 @@
-//! The `vlen-bytes` array to bytes codec (Experimental).
-//!
-//! <div class="warning">
-//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
-//! </div>
+//! The `vlen-bytes` array to bytes codec.
 //!
 //! ### Compatible Implementations
 //! This codec is fully compatible with the `vlen-bytes` codec in `zarr-python`.
@@ -28,4 +24,4 @@ pub use crate::metadata::codec::vlen_bytes::{
     VlenBytesCodecConfiguration, VlenBytesCodecConfigurationV1,
 };
 
-vlen_v2_macros::vlen_v2_module!(vlen_bytes, vlen_bytes_codec, VlenBytesCodec);
+vlen_v2_macros::vlen_v2_module!(vlen_bytes, vlen_bytes_codec, VlenBytesCodec, VLEN_BYTES);

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use zarrs_metadata::codec::ZFP;
+
 use crate::{
     array::{
         codec::{
@@ -59,7 +61,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder {
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let data_type_size = self.data_type().fixed_size().ok_or_else(|| {
-            CodecError::UnsupportedDataType(self.data_type().clone(), super::IDENTIFIER.to_string())
+            CodecError::UnsupportedDataType(self.data_type().clone(), ZFP.to_string())
         })?;
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
@@ -83,8 +85,7 @@ impl ArrayPartialDecoderTraits for ZfpPartialDecoder {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges =
-                        unsafe { array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size) };
+                    let byte_ranges = array_subset.byte_ranges(&chunk_shape, data_type_size)?;
                     out.push(ArrayBytes::from(extract_byte_ranges_concat(
                         &decoded_value,
                         &byte_ranges,
@@ -155,7 +156,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder {
         options: &CodecOptions,
     ) -> Result<Vec<ArrayBytes<'_>>, CodecError> {
         let data_type_size = self.data_type().fixed_size().ok_or_else(|| {
-            CodecError::UnsupportedDataType(self.data_type().clone(), super::IDENTIFIER.to_string())
+            CodecError::UnsupportedDataType(self.data_type().clone(), ZFP.to_string())
         })?;
         for array_subset in decoded_regions {
             if array_subset.dimensionality() != self.decoded_representation.dimensionality() {
@@ -179,8 +180,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncZfpPartialDecoder {
                     false, // FIXME
                 )?;
                 for array_subset in decoded_regions {
-                    let byte_ranges =
-                        unsafe { array_subset.byte_ranges_unchecked(&chunk_shape, data_type_size) };
+                    let byte_ranges = array_subset.byte_ranges(&chunk_shape, data_type_size)?;
                     out.push(ArrayBytes::from(extract_byte_ranges_concat(
                         &decoded_value,
                         &byte_ranges,

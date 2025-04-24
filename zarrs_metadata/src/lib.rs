@@ -21,14 +21,13 @@ pub mod v2;
 /// Zarr V2 to V3 conversion.
 pub mod v2_to_v3;
 
-mod codec_map;
-pub use codec_map::{CodecMap, CodecName};
+pub mod version;
 
-/// An alias for [`v3::MetadataV3`].
-#[deprecated(since = "0.17.0", note = "use v3::MetadataV3 explicitly")]
-pub type Metadata = v3::MetadataV3;
+pub mod extension;
 
-pub use array::{codec, ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
+pub use crate::v3::array::{chunk_grid, chunk_key_encoding, codec, data_type};
+
+pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
 
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
@@ -39,6 +38,15 @@ pub enum ArrayMetadata {
     V3(v3::ArrayMetadataV3),
     /// Zarr Version 2.0.
     V2(v2::ArrayMetadataV2),
+}
+
+impl ArrayMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("array metadata is valid JSON")
+    }
 }
 
 impl TryFrom<&str> for ArrayMetadata {
@@ -58,6 +66,15 @@ pub enum GroupMetadata {
     V2(v2::GroupMetadataV2),
 }
 
+impl GroupMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("group metadata is valid JSON")
+    }
+}
+
 impl TryFrom<&str> for GroupMetadata {
     type Error = serde_json::Error;
     fn try_from(metadata_json: &str) -> Result<Self, Self::Error> {
@@ -75,6 +92,26 @@ pub enum NodeMetadata {
 
     /// Group metadata.
     Group(GroupMetadata),
+}
+
+impl NodeMetadata {
+    /// Serialize the metadata as a pretty-printed String of JSON.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn to_string_pretty(&self) -> String {
+        serde_json::to_string_pretty(self).expect("node metadata is valid JSON")
+    }
+}
+
+/// A data type size. Fixed or variable.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DataTypeSize {
+    /// Fixed size (in bytes).
+    Fixed(usize),
+    /// Variable sized.
+    ///
+    /// <https://github.com/zarr-developers/zeps/pull/47>
+    Variable,
 }
 
 #[cfg(test)]

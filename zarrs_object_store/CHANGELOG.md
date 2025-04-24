@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-03-10
+
+### Changed
+- **Breaking**: Bump `object_store` to 0.12.0
+- Bump `thiserror` to 2.0.12
+
 ## [0.3.0] - 2024-11-15
 
 ### Added
@@ -35,7 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `storage` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_object_store-v0.3.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_object_store-v0.4.0...HEAD
+[0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.4.0
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.3.0
 [0.2.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.2.1
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_object_store-v0.2.0

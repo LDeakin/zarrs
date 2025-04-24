@@ -1,15 +1,17 @@
 use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
-use zarrs_metadata::codec::pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration};
+use zarrs_metadata::codec::{
+    pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration},
+    PCODEC,
+};
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::{
     array::{
         codec::{
-            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayPartialEncoderDefault,
-            ArrayPartialEncoderTraits, ArrayToBytesCodecTraits, BytesPartialDecoderTraits,
-            BytesPartialEncoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+            BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
             RawBytes, RecommendedConcurrency,
         },
         convert_from_bytes_slice, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
@@ -23,7 +25,7 @@ use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecod
 
 use super::{
     pcodec_partial_decoder, PcodecCodecConfiguration, PcodecCodecConfigurationV1,
-    PcodecCompressionLevel, PcodecDeltaEncodingOrder, IDENTIFIER,
+    PcodecCompressionLevel, PcodecDeltaEncodingOrder,
 };
 
 /// A `pcodec` codec implementation.
@@ -93,7 +95,7 @@ impl PcodecCodec {
 
 impl CodecTraits for PcodecCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        PCODEC
     }
 
     fn configuration_opt(
@@ -155,7 +157,7 @@ impl ArrayCodecTraits for PcodecCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for PcodecCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
         self as Arc<dyn ArrayToBytesCodecTraits>
     }
 
@@ -208,7 +210,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             }
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }
     }
@@ -258,7 +260,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             }
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }?;
         Ok(ArrayBytes::from(bytes))
@@ -273,21 +275,6 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         Ok(Arc::new(pcodec_partial_decoder::PcodecPartialDecoder::new(
             input_handle,
             decoded_representation.clone(),
-        )))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &ChunkRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn ArrayPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(ArrayPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            decoded_representation.clone(),
-            self,
         )))
     }
 
@@ -306,7 +293,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
@@ -332,7 +319,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             ),
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
-                IDENTIFIER.to_string(),
+                PCODEC.to_string(),
             )),
         }?;
         Ok(BytesRepresentation::BoundedSize(

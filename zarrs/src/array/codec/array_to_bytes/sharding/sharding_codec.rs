@@ -33,6 +33,7 @@ use super::{
 
 use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
+use zarrs_metadata::codec::SHARDING;
 use zarrs_plugin::MetadataConfiguration;
 
 /// A `sharding` codec implementation.
@@ -94,7 +95,7 @@ impl ShardingCodec {
 
 impl CodecTraits for ShardingCodec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        SHARDING
     }
 
     fn configuration_opt(
@@ -143,7 +144,7 @@ impl ArrayCodecTraits for ShardingCodec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for ShardingCodec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
         self as Arc<dyn ArrayToBytesCodecTraits>
     }
 
@@ -163,7 +164,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                 shard_rep.fill_value().clone(),
             )
         };
-        let chunk_bytes_representation = self.inner_codecs.compute_encoded_size(&chunk_rep)?;
+        let chunk_bytes_representation = self.inner_codecs.encoded_representation(&chunk_rep)?;
 
         let bytes = match chunk_bytes_representation {
             BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {
@@ -276,12 +277,12 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                             .chunk_index_to_subset(chunk_index as u64, chunks_per_shard.as_slice());
                         let mut output_view_inner_chunk = unsafe {
                             // SAFETY: chunks represent disjoint array subsets
-                            ArrayBytesFixedDisjointView::new_unchecked(
+                            ArrayBytesFixedDisjointView::new(
                                 output,
                                 data_type_size,
                                 &shard_shape,
                                 chunk_subset,
-                            )
+                            )?
                         };
 
                         // Read the offset/size
@@ -305,8 +306,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
                                 &options,
                             )?;
                             output_view_inner_chunk
-                                .copy_from_slice(&decoded_chunk.into_fixed()?)
-                                .map_err(CodecError::from)?;
+                                .copy_from_slice(&decoded_chunk.into_fixed()?)?;
                         }
 
                         Ok::<_, CodecError>(())
@@ -377,7 +377,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
             .unwrap();
             let mut output_view_inner_chunk = unsafe {
                 // SAFETY: inner chunks represent disjoint array subsets
-                output_view.subdivide_unchecked(output_subset_chunk)
+                output_view.subdivide(output_subset_chunk)?
             };
 
             // Read the offset/size
@@ -476,7 +476,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         ))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
@@ -490,7 +490,7 @@ impl ArrayToBytesCodecTraits for ShardingCodec {
         };
         let chunk_bytes_representation = self
             .inner_codecs
-            .compute_encoded_size(&chunk_representation)?;
+            .encoded_representation(&chunk_representation)?;
 
         match chunk_bytes_representation {
             BytesRepresentation::BoundedSize(size) | BytesRepresentation::FixedSize(size) => {
@@ -526,9 +526,13 @@ impl ShardingCodec {
         let chunk_indices = unravel_index(chunk_index, chunks_per_shard.as_slice());
         let chunk_start = std::iter::zip(&chunk_indices, self.chunk_shape.as_slice())
             .map(|(i, c)| i * c.get())
-            .collect();
-        let shape = self.chunk_shape.to_array_shape();
-        unsafe { ArraySubset::new_with_start_shape_unchecked(chunk_start, shape) }
+            .collect::<Vec<_>>();
+        let shape = self.chunk_shape.as_slice();
+        let ranges = shape
+            .iter()
+            .zip(&chunk_start)
+            .map(|(&sh, &st)| st..(st + sh.get()));
+        ArraySubset::from(ranges)
     }
 
     /// Computed the bounded size of an encoded shard from

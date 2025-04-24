@@ -1,3 +1,5 @@
+use zarrs_metadata::codec::SHARDING;
+
 use super::{codec::ShardingCodecConfiguration, Array, ArrayShape, ChunkGrid, ChunkShape};
 
 /// An [`Array`] extension trait to simplify working with arrays using the `sharding_indexed` codec.
@@ -18,6 +20,8 @@ pub trait ArrayShardedExt: private::Sealed {
     /// The effective inner chunk shape is the "read granularity" of the sharded array that accounts for array-to-array codecs preceding the sharding codec.
     /// For example, the transpose codec changes the shape of an array subset that corresponds to a single inner chunk.
     /// The effective inner chunk shape is used when determining the inner chunk grid of a sharded array.
+    ///
+    /// Returns [`None`] for an unsharded array of if the effective inner chunk shape is indeterminate.
     fn effective_inner_chunk_shape(&self) -> Option<ChunkShape>;
 
     /// Retrieve the inner chunk grid.
@@ -35,8 +39,7 @@ pub trait ArrayShardedExt: private::Sealed {
 
 impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
     fn is_sharded(&self) -> bool {
-        self.codecs.array_to_bytes_codec().name()
-            == super::codec::array_to_bytes::sharding::IDENTIFIER
+        self.codecs.array_to_bytes_codec().name() == SHARDING
     }
 
     fn is_exclusively_sharded(&self) -> bool {
@@ -64,9 +67,11 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
         let inner_chunk_shape = self.inner_chunk_shape();
         if let Some(mut inner_chunk_shape) = inner_chunk_shape {
             for codec in self.codecs().array_to_array_codecs().iter().rev() {
-                inner_chunk_shape = codec
-                    .compute_decoded_shape(inner_chunk_shape)
-                    .expect("the inner chunk shape is compatible");
+                if let Ok(Some(inner_chunk_shape_)) = codec.decoded_shape(&inner_chunk_shape) {
+                    inner_chunk_shape = inner_chunk_shape_;
+                } else {
+                    return None;
+                }
             }
             Some(inner_chunk_shape)
         } else {

@@ -1,8 +1,4 @@
-//! The `vlen-utf8` array to bytes codec (Experimental).
-//!
-//! <div class="warning">
-//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
-//! </div>
+//! The `vlen-utf8` array to bytes codec.
 //!
 //! ### Compatible Implementations
 //! This codec is fully compatible with the `vlen-utf8` codec in `zarr-python`.
@@ -28,4 +24,4 @@ pub use crate::metadata::codec::vlen_utf8::{
     VlenUtf8CodecConfiguration, VlenUtf8CodecConfigurationV1,
 };
 
-vlen_v2_macros::vlen_v2_module!(vlen_utf8, vlen_utf8_codec, VlenUtf8Codec);
+vlen_v2_macros::vlen_v2_module!(vlen_utf8, vlen_utf8_codec, VlenUtf8Codec, VLEN_UTF8);

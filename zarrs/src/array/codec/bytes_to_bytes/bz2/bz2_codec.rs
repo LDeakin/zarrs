@@ -4,23 +4,18 @@ use std::{
     sync::Arc,
 };
 
+use zarrs_metadata::codec::BZ2;
 use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
 
 use crate::array::{
     codec::{
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
         BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
         RecommendedConcurrency,
     },
     BytesRepresentation, RawBytes,
 };
 
-#[cfg(feature = "async")]
-use crate::array::codec::AsyncBytesPartialDecoderTraits;
-
-use super::{
-    bz2_partial_decoder, Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
-};
+use super::{Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel};
 
 /// A `bz2` codec implementation.
 #[derive(Clone, Debug)]
@@ -54,7 +49,7 @@ impl Bz2Codec {
 
 impl CodecTraits for Bz2Codec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        BZ2
     }
 
     fn configuration_opt(
@@ -80,7 +75,7 @@ impl CodecTraits for Bz2Codec {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Bz2Codec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -115,45 +110,7 @@ impl BytesToBytesCodecTraits for Bz2Codec {
         Ok(Cow::Owned(out))
     }
 
-    fn partial_decoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(bz2_partial_decoder::Bz2PartialDecoder::new(
-            input_handle,
-        )))
-    }
-
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
-    #[cfg(feature = "async")]
-    async fn async_partial_decoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn AsyncBytesPartialDecoderTraits>,
-        _decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn AsyncBytesPartialDecoderTraits>, CodecError> {
-        Ok(Arc::new(bz2_partial_decoder::AsyncBz2PartialDecoder::new(
-            input_handle,
-        )))
-    }
-
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

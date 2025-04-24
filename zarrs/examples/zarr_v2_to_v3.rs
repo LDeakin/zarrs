@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     // println!(
     //     "The equivalent Zarr V3 group metadata is\n{}\n",
-    //     serde_json::to_string_pretty(&group.metadata_opt(&convert_group_metadata_to_v3))?
+    //     group.metadata_opt(&convert_group_metadata_to_v3).to_string_pretty()
     // );
 
     // Create a Zarr V2 array
@@ -95,7 +95,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     // println!(
     //     "The equivalent Zarr V3 array metadata is\n{}\n",
-    //     serde_json::to_string_pretty(&array.metadata_opt(&convert_array_metadata_to_v3))?
+    //     array.metadata_opt(&convert_array_metadata_to_v3).to_string_pretty()
     // );
 
     array.store_chunk_elements::<f32>(&[0, 1], &[0.0; 5 * 5])?;

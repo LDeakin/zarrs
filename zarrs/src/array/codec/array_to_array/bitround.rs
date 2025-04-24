@@ -1,12 +1,12 @@
 //! The `bitround` array to array codec (Experimental).
 //!
-//! Round the mantissa of floating point data types to the specified number of bits.
-//! Rounds integers from the most significant set bit.
-//! Bit rounding leaves an array more amenable to compression.
-//!
 //! <div class="warning">
 //! This codec is experimental and may be incompatible with other Zarr V3 implementations.
 //! </div>
+//!
+//! Round the mantissa of floating point data types to the specified number of bits.
+//! Rounds integers from the most significant set bit.
+//! Bit rounding leaves an array more amenable to compression.
 //!
 //! This codec requires the `bitround` feature, which is disabled by default.
 //!
@@ -24,7 +24,6 @@
 //! The `bitround` codec in `zarrs` additionally supports integers by rounding from the most significant set bit.
 //!
 //! ### Codec `name` Aliases (Zarr V3)
-//! - `zarrs.bitround`
 //! - `numcodecs.bitround`
 //! - `https://codec.zarrs.dev/array_to_array/bitround`
 //!
@@ -47,10 +46,10 @@ mod bitround_partial_decoder;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::bitround;
 pub use crate::metadata::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
+use crate::metadata::codec::BITROUND;
 pub use bitround_codec::BitroundCodec;
 
 use crate::{
@@ -58,29 +57,23 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         DataType,
     },
-    config::global_config,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use bitround::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_bitround, create_codec_bitround)
+    CodecPlugin::new(BITROUND, is_identifier_bitround, create_codec_bitround)
 }
 
-fn is_name_bitround(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_bitround(identifier: &str) -> bool {
+    identifier == BITROUND
 }
 
 pub(crate) fn create_codec_bitround(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BitroundCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(BITROUND, "codec", metadata.clone()))?;
     let codec = Arc::new(BitroundCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }
@@ -206,7 +199,7 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
         }
         _ => Err(CodecError::UnsupportedDataType(
             data_type.clone(),
-            IDENTIFIER.to_string(),
+            BITROUND.to_string(),
         )),
     }
 }

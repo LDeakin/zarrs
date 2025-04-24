@@ -73,12 +73,13 @@ pub use crate::data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 c
 
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{
-    array::data_type::DataTypeSize,
     array::fill_value::FillValueMetadataV3,
     array::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     ArrayMetadataV3,
 };
-pub use crate::metadata::{ArrayMetadata, ArrayShape, ChunkShape, DimensionName, Endianness};
+pub use crate::metadata::{
+    ArrayMetadata, ArrayShape, ChunkShape, DataTypeSize, DimensionName, Endianness,
+};
 use crate::{config::global_config, metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError};
 
 /// An alias for [`FillValueMetadataV3`].
@@ -99,7 +100,7 @@ pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
 
-use zarrs_metadata::v3::UnsupportedAdditionalFieldError;
+use zarrs_metadata::{v2::array::DataTypeMetadataV2, v3::UnsupportedAdditionalFieldError};
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use crate::{
@@ -398,14 +399,26 @@ impl<TStorage: ?Sized> Array<TStorage> {
         let path = NodePath::new(path)?;
 
         // Convert V2 metadata to V3 if it is a compatible subset
-        let metadata_v3 = match &metadata {
-            ArrayMetadata::V3(v3) => Ok(v3.clone()),
-            ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(v2, global_config().codec_map())
+        let metadata_v3 = {
+            let config = global_config();
+            match &metadata {
+                ArrayMetadata::V3(v3) => Ok(v3.clone()),
+                ArrayMetadata::V2(v2) => array_metadata_v2_to_v3(
+                    v2,
+                    config.codec_aliases_v2(),
+                    config.codec_aliases_v3(),
+                    config.data_type_aliases_v2(),
+                    config.data_type_aliases_v3(),
+                )
                 .map_err(|err| ArrayCreateError::UnsupportedZarrV2Array(err.to_string())),
-        }?;
+            }?
+        };
 
-        let data_type = DataType::from_metadata(&metadata_v3.data_type)
-            .map_err(ArrayCreateError::DataTypeCreateError)?;
+        let data_type = DataType::from_metadata(
+            &metadata_v3.data_type,
+            global_config().data_type_aliases_v3(),
+        )
+        .map_err(ArrayCreateError::DataTypeCreateError)?;
         let chunk_grid = ChunkGrid::from_metadata(&metadata_v3.chunk_grid)
             .map_err(ArrayCreateError::ChunkGridCreateError)?;
         if chunk_grid.dimensionality() != metadata_v3.shape.len() {
@@ -480,7 +493,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     }
 
     /// Set the array shape.
-    pub fn set_shape(&mut self, shape: ArrayShape) {
+    pub fn set_shape(&mut self, shape: ArrayShape) -> &mut Self {
         match &mut self.metadata {
             ArrayMetadata::V3(metadata) => {
                 metadata.shape = shape;
@@ -489,6 +502,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
                 metadata.shape = shape;
             }
         }
+        self
     }
 
     /// Get the array dimensionality.
@@ -621,15 +635,75 @@ impl<TStorage: ?Sized> Array<TStorage> {
         }
 
         // Convert version
-        match (metadata, options.metadata_convert_version()) {
+        let mut metadata = match (metadata, options.metadata_convert_version()) {
             (AM::V3(metadata), V::Default | V::V3) => ArrayMetadata::V3(metadata),
             (AM::V2(metadata), V::Default) => ArrayMetadata::V2(metadata),
             (AM::V2(metadata), V::V3) => {
-                let metadata = array_metadata_v2_to_v3(&metadata, global_config().codec_map())
-                    .expect("conversion succeeded on array creation");
+                let metadata = {
+                    let config = global_config();
+                    array_metadata_v2_to_v3(
+                        &metadata,
+                        config.codec_aliases_v2(),
+                        config.codec_aliases_v3(),
+                        config.data_type_aliases_v2(),
+                        config.data_type_aliases_v3(),
+                    )
+                    .expect("conversion succeeded on array creation")
+                };
                 AM::V3(metadata)
             }
+        };
+
+        // Convert aliased extension names
+        if options.convert_aliased_extension_names() {
+            let config = global_config();
+            match &mut metadata {
+                AM::V3(metadata) => {
+                    let codec_aliases = config.codec_aliases_v3();
+                    metadata.codecs.iter_mut().for_each(|codec| {
+                        let identifier = codec_aliases.identifier(codec.name());
+                        codec.set_name(codec_aliases.default_name(identifier).to_string());
+                    });
+                    let data_type_aliases = config.data_type_aliases_v3();
+                    {
+                        let name = metadata.data_type.name();
+                        let identifier = data_type_aliases.identifier(name);
+                        metadata
+                            .data_type
+                            .set_name(data_type_aliases.default_name(identifier).to_string());
+                    }
+                }
+                AM::V2(metadata) => {
+                    let codec_aliases = config.codec_aliases_v2();
+                    {
+                        if let Some(filters) = &mut metadata.filters {
+                            for filter in filters.iter_mut() {
+                                let identifier = codec_aliases.identifier(filter.id());
+                                filter.set_id(codec_aliases.default_name(identifier).to_string());
+                            }
+                        }
+                        if let Some(compressor) = &mut metadata.compressor {
+                            let identifier = codec_aliases.identifier(compressor.id());
+                            compressor.set_id(codec_aliases.default_name(identifier).to_string());
+                        }
+                    }
+                    let data_type_aliases = config.data_type_aliases_v2();
+                    {
+                        match &mut metadata.dtype {
+                            DataTypeMetadataV2::Simple(dtype) => {
+                                let identifier = data_type_aliases.identifier(dtype);
+                                *dtype = data_type_aliases.default_name(identifier).to_string();
+                            }
+                            DataTypeMetadataV2::Structured(_) => {
+                                // FIXME: structured data type support
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        metadata
     }
 
     /// Create an array builder matching the parameters of this array.
@@ -710,7 +784,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
     pub fn chunk_subset_bounded(&self, chunk_indices: &[u64]) -> Result<ArraySubset, ArrayError> {
         let chunk_subset = self.chunk_subset(chunk_indices)?;
-        Ok(unsafe { chunk_subset.bound_unchecked(self.shape()) })
+        Ok(chunk_subset.bound(self.shape())?)
     }
 
     /// Return the array subset of `chunks`.
@@ -723,9 +797,9 @@ impl<TStorage: ?Sized> Array<TStorage> {
             Some(end) => {
                 let chunk0 = self.chunk_subset(chunks.start())?;
                 let chunk1 = self.chunk_subset(&end)?;
-                let start = chunk0.start();
+                let start = chunk0.start().to_vec();
                 let end = chunk1.end_exc();
-                Ok(unsafe { ArraySubset::new_with_start_end_exc_unchecked(start.to_vec(), end) })
+                ArraySubset::new_with_start_end_exc(start, end).map_err(std::convert::Into::into)
             }
             None => Ok(ArraySubset::new_empty(chunks.dimensionality())),
         }
@@ -737,7 +811,7 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Returns [`ArrayError::InvalidChunkGridIndicesError`] if the `chunk_indices` are incompatible with the chunk grid.
     pub fn chunks_subset_bounded(&self, chunks: &ArraySubset) -> Result<ArraySubset, ArrayError> {
         let chunks_subset = self.chunks_subset(chunks)?;
-        Ok(unsafe { chunks_subset.bound_unchecked(self.shape()) })
+        Ok(chunks_subset.bound(self.shape())?)
     }
 
     /// Get the chunk array representation at `chunk_index`.
@@ -797,8 +871,17 @@ impl<TStorage: ?Sized> Array<TStorage> {
     pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
         match self.metadata {
             ArrayMetadata::V2(metadata) => {
-                let metadata: ArrayMetadata =
-                    array_metadata_v2_to_v3(&metadata, global_config().codec_map())?.into();
+                let metadata: ArrayMetadata = {
+                    let config = global_config();
+                    array_metadata_v2_to_v3(
+                        &metadata,
+                        config.codec_aliases_v2(),
+                        config.codec_aliases_v3(),
+                        config.data_type_aliases_v2(),
+                        config.data_type_aliases_v3(),
+                    )?
+                    .into()
+                };
                 Ok(Self {
                     storage: self.storage,
                     path: self.path,
@@ -1281,6 +1364,20 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     fn array_v3_bz2() {
         array_v3_numcodecs("tests/data/v3_zarr_python/array_bz2.zarr")
+    }
+
+    #[cfg(feature = "fletcher32")]
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn array_v3_fletcher32() {
+        array_v3_numcodecs("tests/data/v3_zarr_python/array_fletcher32.zarr")
+    }
+
+    #[cfg(feature = "zlib")]
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn array_v3_zlib() {
+        array_v3_numcodecs("tests/data/v3_zarr_python/array_zlib.zarr")
     }
 
     #[cfg(feature = "gzip")]

@@ -167,7 +167,6 @@ impl CodecOptionsBuilder {
 #[derive(Debug, Clone, Default)]
 pub struct CodecMetadataOptions {
     experimental_codec_store_metadata_if_encode_only: bool,
-    convert_aliased_extension_names: bool,
 }
 
 // impl Default for CodecMetadataOptions {
@@ -198,31 +197,6 @@ impl CodecMetadataOptions {
         enabled: bool,
     ) -> &mut Self {
         self.experimental_codec_store_metadata_if_encode_only = enabled;
-        self
-    }
-
-    /// Return the [convert aliased extension names](crate::config::Config#convert-aliased-extension-names) configuration
-    #[must_use]
-    pub fn convert_aliased_extension_names(&self) -> bool {
-        self.convert_aliased_extension_names
-    }
-
-    /// Set the [convert aliased extension names](crate::config::Config#convert-aliased-extension-names) configuration.
-    #[must_use]
-    pub fn with_convert_aliased_extension_names(
-        mut self,
-        convert_aliased_extension_names: bool,
-    ) -> Self {
-        self.convert_aliased_extension_names = convert_aliased_extension_names;
-        self
-    }
-
-    /// Set the [convert aliased extension names](crate::config::Config#convert-aliased-extension-names) configuration.
-    pub fn set_convert_aliased_extension_names(
-        &mut self,
-        convert_aliased_extension_names: bool,
-    ) -> &mut Self {
-        self.convert_aliased_extension_names = convert_aliased_extension_names;
         self
     }
 }

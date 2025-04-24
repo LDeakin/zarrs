@@ -167,13 +167,13 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
 
         let mut out = Vec::with_capacity(array_subsets.len());
         for array_subset in array_subsets {
-            let chunks = unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
+            let chunks = array_subset.chunks(chunk_representation.shape())?;
 
             match self.decoded_representation.element_size() {
                 DataTypeSize::Variable => {
                     let decode_inner_chunk_subset = |(chunk_indices, chunk_subset): (
                         Vec<u64>,
-                        _,
+                        ArraySubset,
                     )| {
                         let shard_index_idx: usize =
                             usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
@@ -182,8 +182,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         let size = shard_index[shard_index_idx + 1];
 
                         // Get the subset of bytes from the chunk which intersect the array
-                        let chunk_subset_overlap =
-                            unsafe { array_subset.overlap_unchecked(&chunk_subset) };
+                        let chunk_subset_overlap = array_subset.overlap(&chunk_subset)?;
 
                         let chunk_subset_bytes = if offset == u64::MAX && size == u64::MAX {
                             let array_size = ArraySize::new(
@@ -230,7 +229,6 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                                 .unwrap(),
                         ))
                     };
-
                     // Decode the inner chunk subsets
                     let chunk_bytes_and_subsets =
                         rayon_iter_concurrent_limit::iter_concurrent_limit!(
@@ -254,7 +252,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
 
                     let decode_inner_chunk_subset_into_slice = |(chunk_indices, chunk_subset): (
                         Vec<u64>,
-                        _,
+                        ArraySubset,
                     )| {
                         let shard_index_idx: usize =
                             usize::try_from(ravel_indices(&chunk_indices, &chunks_per_shard) * 2)
@@ -263,8 +261,7 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         let size = shard_index[shard_index_idx + 1];
 
                         // Get the subset of bytes from the chunk which intersect the array
-                        let chunk_subset_overlap =
-                            unsafe { array_subset.overlap_unchecked(&chunk_subset) };
+                        let chunk_subset_overlap = array_subset.overlap(&chunk_subset)?;
 
                         let decoded_bytes = if offset == u64::MAX && size == u64::MAX {
                             let array_size = ArraySize::new(
@@ -307,14 +304,14 @@ impl ArrayPartialDecoderTraits for ShardingPartialDecoder {
                         let decoded_bytes = decoded_bytes.into_fixed()?;
                         let mut output_view = unsafe {
                             // SAFETY: chunks represent disjoint array subsets
-                            ArrayBytesFixedDisjointView::new_unchecked(
+                            ArrayBytesFixedDisjointView::new(
                                 out_array_subset_slice,
                                 data_type_size,
                                 array_subset.shape(),
                                 chunk_subset_overlap
                                     .relative_to(array_subset.start())
                                     .unwrap(),
-                            )
+                            )?
                         };
                         output_view
                             .copy_from_slice(&decoded_bytes)
@@ -428,8 +425,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
         for array_subset in array_subsets {
             match self.decoded_representation.element_size() {
                 DataTypeSize::Variable => {
-                    let chunks =
-                        unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) };
+                    let chunks = array_subset.chunks(chunk_representation.shape())?;
 
                     let decode_inner_chunk_subset = |(chunk_indices, chunk_subset): (
                         Vec<u64>,
@@ -444,8 +440,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                             let size = shard_index[shard_index_idx + 1];
 
                             // Get the subset of bytes from the chunk which intersect the array
-                            let chunk_subset_overlap =
-                                unsafe { array_subset.overlap_unchecked(&chunk_subset) };
+                            let chunk_subset_overlap = array_subset.overlap(&chunk_subset).unwrap(); // FIXME: unwrap
 
                             let chunk_subset_bytes = if offset == u64::MAX && size == u64::MAX {
                                 let array_size = ArraySize::new(
@@ -506,25 +501,25 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                 }
                 DataTypeSize::Fixed(data_type_size) => {
                     // Find filled / non filled chunks
-                    let chunk_info =
-                        unsafe { array_subset.chunks_unchecked(chunk_representation.shape()) }
-                            .into_iter()
-                            .map(|(chunk_indices, chunk_subset)| {
-                                let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
-                                let chunk_index = usize::try_from(chunk_index).unwrap();
+                    let chunk_info = array_subset
+                        .chunks(chunk_representation.shape())?
+                        .into_iter()
+                        .map(|(chunk_indices, chunk_subset)| {
+                            let chunk_index = ravel_indices(&chunk_indices, &chunks_per_shard);
+                            let chunk_index = usize::try_from(chunk_index).unwrap();
 
-                                // Read the offset/size
-                                let offset = shard_index[chunk_index * 2];
-                                let size = shard_index[chunk_index * 2 + 1];
-                                if offset == u64::MAX && size == u64::MAX {
-                                    (chunk_subset, None)
-                                } else {
-                                    let offset: usize = offset.try_into().unwrap();
-                                    let size: usize = size.try_into().unwrap();
-                                    (chunk_subset, Some((offset, size)))
-                                }
-                            })
-                            .collect::<Vec<_>>();
+                            // Read the offset/size
+                            let offset = shard_index[chunk_index * 2];
+                            let size = shard_index[chunk_index * 2 + 1];
+                            if offset == u64::MAX && size == u64::MAX {
+                                (chunk_subset, None)
+                            } else {
+                                let offset: usize = offset.try_into().unwrap();
+                                let size: usize = size.try_into().unwrap();
+                                (chunk_subset, Some((offset, size)))
+                            }
+                        })
+                        .collect::<Vec<_>>();
 
                     let shard_size = array_subset.num_elements_usize() * data_type_size;
                     let mut shard = Vec::with_capacity(shard_size);
@@ -563,7 +558,7 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                     } else {
                                         err
                                     })?;
-                                let chunk_subset_overlap = unsafe { array_subset.overlap_unchecked(chunk_subset) };
+                                let chunk_subset_overlap = array_subset.overlap(chunk_subset).unwrap(); // FIXME: unwrap
                                 // Partial decoding is actually really slow with the blosc codec! Assume sharded chunks are small, and just decode the whole thing and extract bytes
                                 // TODO: Investigate further
                                 // let decoded_chunk = partial_decoder
@@ -603,14 +598,14 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                                 ) = subset_and_decoded_chunk?;
                                 let mut output_view = unsafe {
                                     // SAFETY: chunks represent disjoint array subsets
-                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new(
                                         shard_slice,
                                         data_type_size,
                                         array_subset.shape(),
                                         chunk_subset_overlap
                                             .relative_to(array_subset.start())
                                             .unwrap(),
-                                    )
+                                    )?
                                 };
                                 output_view
                                     .copy_from_slice(&chunk_subset_bytes)
@@ -638,18 +633,17 @@ impl AsyncArrayPartialDecoderTraits for AsyncShardingPartialDecoder {
                             filled_chunks,
                             try_for_each,
                             |chunk_subset: &ArraySubset| {
-                                let chunk_subset_overlap =
-                                    unsafe { array_subset.overlap_unchecked(chunk_subset) };
+                                let chunk_subset_overlap = array_subset.overlap(chunk_subset)?;
                                 let mut output_view = unsafe {
                                     // SAFETY: chunks represent disjoint array subsets
-                                    ArrayBytesFixedDisjointView::new_unchecked(
+                                    ArrayBytesFixedDisjointView::new(
                                         shard_slice,
                                         data_type_size,
                                         array_subset.shape(),
                                         chunk_subset_overlap
                                             .relative_to(array_subset.start())
                                             .unwrap(),
-                                    )
+                                    )?
                                 };
                                 output_view
                                     .fill(self.decoded_representation.fill_value().as_ne_bytes())

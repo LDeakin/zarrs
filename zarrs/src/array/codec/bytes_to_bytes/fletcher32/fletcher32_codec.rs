@@ -1,14 +1,14 @@
 use std::{borrow::Cow, sync::Arc};
 
 use num::Integer;
+use zarrs_metadata::codec::FLETCHER32;
 use zarrs_plugin::MetadataConfiguration;
 
 use crate::array::{
     codec::{
         bytes_to_bytes::strip_suffix_partial_decoder::StripSuffixPartialDecoder,
-        BytesPartialDecoderTraits, BytesPartialEncoderDefault, BytesPartialEncoderTraits,
-        BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-        RecommendedConcurrency,
+        BytesPartialDecoderTraits, BytesToBytesCodecTraits, CodecError, CodecMetadataOptions,
+        CodecOptions, CodecTraits, RecommendedConcurrency,
     },
     BytesRepresentation, RawBytes,
 };
@@ -41,7 +41,7 @@ impl Fletcher32Codec {
 
 impl CodecTraits for Fletcher32Codec {
     fn identifier(&self) -> &str {
-        super::IDENTIFIER
+        FLETCHER32
     }
 
     fn configuration_opt(
@@ -101,7 +101,7 @@ fn h5_checksum_fletcher32(data: &[u8]) -> u32 {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl BytesToBytesCodecTraits for Fletcher32Codec {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn BytesToBytesCodecTraits> {
         self as Arc<dyn BytesToBytesCodecTraits>
     }
 
@@ -159,21 +159,6 @@ impl BytesToBytesCodecTraits for Fletcher32Codec {
         )))
     }
 
-    fn partial_encoder(
-        self: Arc<Self>,
-        input_handle: Arc<dyn BytesPartialDecoderTraits>,
-        output_handle: Arc<dyn BytesPartialEncoderTraits>,
-        decoded_representation: &BytesRepresentation,
-        _options: &CodecOptions,
-    ) -> Result<Arc<dyn BytesPartialEncoderTraits>, CodecError> {
-        Ok(Arc::new(BytesPartialEncoderDefault::new(
-            input_handle,
-            output_handle,
-            *decoded_representation,
-            self,
-        )))
-    }
-
     #[cfg(feature = "async")]
     async fn async_partial_decoder(
         self: Arc<Self>,
@@ -187,7 +172,7 @@ impl BytesToBytesCodecTraits for Fletcher32Codec {
         )))
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &BytesRepresentation,
     ) -> BytesRepresentation {

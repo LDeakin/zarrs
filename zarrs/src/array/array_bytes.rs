@@ -8,7 +8,7 @@ use unsafe_cell_slice::UnsafeCellSlice;
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
     byte_range::extract_byte_ranges_concat_unchecked,
-    metadata::v3::array::data_type::DataTypeSize,
+    metadata::DataTypeSize,
 };
 
 use super::{
@@ -687,23 +687,25 @@ mod tests {
             let bytes_array = UnsafeCellSlice::new(&mut bytes_array);
             let mut output_non_overlapping_0 = unsafe {
                 // SAFETY: Only one view is created, so it is disjoint
-                ArrayBytesFixedDisjointView::new_unchecked(
+                ArrayBytesFixedDisjointView::new(
                     bytes_array,
                     size_of::<u8>(),
                     &[4, 4],
                     ArraySubset::new_with_ranges(&[1..2, 1..3]),
                 )
+                .unwrap()
             };
             output_non_overlapping_0.copy_from_slice(&[1u8, 2]).unwrap();
 
             let mut output_non_overlapping_1 = unsafe {
                 // SAFETY: Only one view is created, so it is disjoint
-                ArrayBytesFixedDisjointView::new_unchecked(
+                ArrayBytesFixedDisjointView::new(
                     bytes_array,
                     size_of::<u8>(),
                     &[4, 4],
                     ArraySubset::new_with_ranges(&[3..4, 0..2]),
                 )
+                .unwrap()
             };
             output_non_overlapping_1.copy_from_slice(&[3u8, 4]).unwrap();
         }

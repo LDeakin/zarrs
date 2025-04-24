@@ -2,8 +2,6 @@
 
 use std::sync::Arc;
 
-use zarrs_plugin::MetadataConfiguration;
-
 use crate::{
     array::{
         codec::{
@@ -18,7 +16,7 @@ use crate::{
         ChunkShape, RawBytes,
     },
     config::global_config,
-    metadata::v3::MetadataV3,
+    metadata::v3::{MetadataConfiguration, MetadataV3},
     plugin::PluginCreateError,
 };
 
@@ -134,7 +132,7 @@ impl CodecChain {
         let mut array_to_bytes: Option<NamedArrayToBytesCodec> = None;
         let mut bytes_to_bytes: Vec<NamedBytesToBytesCodec> = vec![];
         for metadata in metadatas {
-            let codec = match Codec::from_metadata(metadata) {
+            let codec = match Codec::from_metadata(metadata, global_config().codec_aliases_v3()) {
                 Ok(codec) => Ok(codec),
                 Err(err) => {
                     if metadata.must_understand() {
@@ -186,25 +184,12 @@ impl CodecChain {
     /// Create codec chain metadata.
     #[must_use]
     pub fn create_metadatas_opt(&self, options: &CodecMetadataOptions) -> Vec<MetadataV3> {
-        let config = global_config();
-        let get_name = |identifier: &str| -> Option<&str> {
-            if options.convert_aliased_extension_names() {
-                if let Some(entry) = config.codec_map().get(identifier) {
-                    Some(entry.name())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        };
-
         let mut metadatas =
             Vec::with_capacity(self.array_to_array.len() + 1 + self.bytes_to_bytes.len());
         for codec in &self.array_to_array {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_name(codec.identifier()).unwrap_or(codec.name()),
+                    codec.name().to_string(),
                     configuration,
                 ));
             }
@@ -213,7 +198,7 @@ impl CodecChain {
             let codec = &self.array_to_bytes;
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_name(codec.identifier()).unwrap_or(codec.name()),
+                    codec.name().to_string(),
                     configuration,
                 ));
             }
@@ -221,7 +206,7 @@ impl CodecChain {
         for codec in &self.bytes_to_bytes {
             if let Some(configuration) = codec.configuration_opt(options) {
                 metadatas.push(MetadataV3::new_with_configuration(
-                    get_name(codec.identifier()).unwrap_or(codec.name()),
+                    codec.name().to_string(),
                     configuration,
                 ));
             }
@@ -261,7 +246,7 @@ impl CodecChain {
         array_representations.push(decoded_representation);
         for codec in &self.array_to_array {
             array_representations
-                .push(codec.compute_encoded_size(array_representations.last().unwrap())?);
+                .push(codec.encoded_representation(array_representations.last().unwrap())?);
         }
         Ok(array_representations)
     }
@@ -274,11 +259,11 @@ impl CodecChain {
         bytes_representations.push(
             self.array_to_bytes
                 .codec()
-                .compute_encoded_size(array_representation_last)?,
+                .encoded_representation(array_representation_last)?,
         );
         for codec in &self.bytes_to_bytes {
             bytes_representations
-                .push(codec.compute_encoded_size(bytes_representations.last().unwrap()));
+                .push(codec.encoded_representation(bytes_representations.last().unwrap()));
         }
         Ok(bytes_representations)
     }
@@ -311,7 +296,7 @@ impl CodecTraits for CodecChain {
 
 #[cfg_attr(feature = "async", async_trait::async_trait)]
 impl ArrayToBytesCodecTraits for CodecChain {
-    fn dynamic(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
+    fn into_dyn(self: Arc<Self>) -> Arc<dyn ArrayToBytesCodecTraits> {
         self as Arc<dyn ArrayToBytesCodecTraits>
     }
 
@@ -331,7 +316,7 @@ impl ArrayToBytesCodecTraits for CodecChain {
         // array->array
         for codec in &self.array_to_array {
             bytes = codec.encode(bytes, &decoded_representation, options)?;
-            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
+            decoded_representation = codec.encoded_representation(&decoded_representation)?;
         }
 
         // array->bytes
@@ -342,12 +327,12 @@ impl ArrayToBytesCodecTraits for CodecChain {
         let mut decoded_representation = self
             .array_to_bytes
             .codec()
-            .compute_encoded_size(&decoded_representation)?;
+            .encoded_representation(&decoded_representation)?;
 
         // bytes->bytes
         for codec in &self.bytes_to_bytes {
             bytes = codec.encode(bytes, options)?;
-            decoded_representation = codec.compute_encoded_size(&decoded_representation);
+            decoded_representation = codec.encoded_representation(&decoded_representation);
         }
 
         Ok(bytes)
@@ -679,22 +664,22 @@ impl ArrayToBytesCodecTraits for CodecChain {
         Ok(input_handle)
     }
 
-    fn compute_encoded_size(
+    fn encoded_representation(
         &self,
         decoded_representation: &ChunkRepresentation,
     ) -> Result<BytesRepresentation, CodecError> {
         let mut decoded_representation = decoded_representation.clone();
         for codec in &self.array_to_array {
-            decoded_representation = codec.compute_encoded_size(&decoded_representation)?;
+            decoded_representation = codec.encoded_representation(&decoded_representation)?;
         }
 
         let mut bytes_representation = self
             .array_to_bytes
             .codec()
-            .compute_encoded_size(&decoded_representation)?;
+            .encoded_representation(&decoded_representation)?;
 
         for codec in &self.bytes_to_bytes {
-            bytes_representation = codec.compute_encoded_size(&bytes_representation);
+            bytes_representation = codec.encoded_representation(&bytes_representation);
         }
 
         Ok(bytes_representation)

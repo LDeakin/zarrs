@@ -12,10 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
 - Add `ArrayBytesFixedDisjointView[CreateError]`
 - Add support for data type extensions with `zarrs_data_type` 0.2.0
-- Add `custom_data_type_fixed_size` and `custom_data_type_variable_size` examples
+- Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
 - Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop
   - Gated by the `dlpack` feature
 - Add missing `Group::async_child_*` methods
+- Add `numcodecs.zlib` codec support
+- Add `[Async]{Array,Bytes}PartialDecoderDefault`
+- Add `numcodecs.shuffle` codec support
+- Add `Config::{codec,data_type}_aliases_{v2,v3}[_mut]`
+- Add `packbits` codec support
+- Add `Async{Array,Bytes}PartialEncoderTraits` and `*CodecTraits::async_partial_encoder()`
+- Add `array_subset::ArraySubsetError` [#156] by [@ilan-gold]
+- Add `array_subset::IncompatibleOffsetError`
+- Implement `From<T: IntoIterator<Item = Range<u64>>>` for `ArraySubset`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
@@ -44,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `DataTypeExtension` variant to `CodecError`
 - `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
 - **Breaking**: `ArrayError` is now marked as non-exhaustive
+  - Add `ArrayBytesFixedDisjointViewCreateError`, `IncompatibleStartEndIndicesError`, `IncompatibleOffset`, `DlPackError` variants
 - Bump `half` to 2.3.1
 - Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
   - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
@@ -54,10 +64,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: Add `CodecTraits::{identifier,default_name,configuration[_opt]}()`
   - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
 - **Breaking**: Change the error type of `node::[async_]get_child_nodes()` and `Group::{children,child_*}()` to `NodeCreateError` instead of `StorageError`
+- Bump `thiserror` to 2.0.2
+- **Breaking**: Refactor `ArrayToArrayCodecTraits`:
+  - Rename `compute_encoded_size()` to `encoded_representation()` and add a default implementation
+  - Rename `compute_decoded_shape()` to `decoded_shape()`
+  - Add `encoded_shape()`
+  - Add `encoded_fill_value()`
+- **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::compute_encoded_size()` to `encoded_representation()`
+- **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::dynamic()` to `into_dyn()`
+- **Breaking**: Mark `CodecError` as non-exhaustive
+    - Add `IncompatibleFillValueError` variant to `CodecError::IncompatibleFillValueError`
+- Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
+- **Breaking**: Rename `[Async]ArrayPartial{Encoder,Decoder}Default` to `[Async]ArrayToBytesPartial{Encoder,Decoder}Default`
+- **Breaking**: Rename `[Async]BytesPartial{Encoder,Decoder}Default` to `[Async]BytesToBytesPartial{Encoder,Decoder}Default`
+- Add `ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError` [#156] by [@ilan-gold]
+- Add `CodecError::IncompatibleDimensionalityError` [#156] by [@ilan-gold]
+- **Breaking**: `ArraySubset::bound` error type changed to `ArraySubsetError` [#156] by [@ilan-gold]
+- **Breaking**: `ArraySubset::relative_to` error type changed to `ArraySubsetError`
+
+### Removed
+- **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
+- Check offset is valid in `ArraySubset::relative_to`
 - Reject arrays and groups with unsupported `"must_understand": true` extensions
+
+[#156]: https://github.com/LDeakin/zarrs/pull/156
 
 ## [0.19.2] - 2025-02-13
 
@@ -1006,7 +1039,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Highlights
  - Experimental `async` feature: Support async stores and array/group operations
-   - See `async_array_write_read` and `async_http_array_read` examples 
+   - See `async_array_write_read` and `async_http_array_read` examples
  - Experimental `s3`/`gcp`/`azure` features for experimental async Amazon S3/Google Cloud Storage/Microsoft Azure Blob Storage stores
 
 ### Added
@@ -1024,7 +1057,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Bump itertools to `0.12` and zstd to `0.13`
  - Set minimum supported rust version (MSRV) to `1.70` (1 June, 2023)
-   - Required by `half` since `2.3.1` (26 June, 2023) 
+   - Required by `half` since `2.3.1` (26 June, 2023)
  - Make `StoreKeyRange` and `StoreKeyStartValue` clonable
  - **Breaking**: Remove `ReadableWritableStorageTraits`, `ReadableWritableStorage`, `ReadableWritableStore`, and `StorageTransformerExtension::create_readable_writable_transformer`
    - These were redundant because `WritableStorageTraits` requires `ReadableStorageTraits` since 6e69a4d
@@ -1351,3 +1384,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [@dustinlagoy]: https://github.com/dustinlagoy
 [@sk1p]: https://github.com/sk1p
 [@niklasmueboe]: https://github.com/niklasmueboe
+[@ilan-gold]: https://github.com/ilan-gold

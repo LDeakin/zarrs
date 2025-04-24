@@ -5,27 +5,28 @@ use std::sync::Arc;
 
 use zarrs::{
     array::{
-        codec::{bytes_to_bytes::bz2, Bz2Codec, CodecTraits},
+        codec::{Bz2Codec, CodecTraits},
         Array, ArrayMetadataOptions,
     },
     config::global_config_mut,
 };
 use zarrs_filesystem::FilesystemStore;
+use zarrs_metadata::codec::BZ2;
 
 /// bz2 could stabilise as is, so test supporting that via the codec map
 #[test]
-fn array_future_stabilistation_bz2() {
+fn array_future_stabilisation_bz2() {
     assert_eq!(
         Bz2Codec::new(5u32.try_into().unwrap()).default_name(),
         "numcodecs.bz2"
     );
 
     global_config_mut()
-        .codec_map_mut()
-        .entry(bz2::IDENTIFIER.into())
+        .codec_aliases_v3_mut()
+        .default_names
+        .entry(BZ2.into())
         .and_modify(|entry| {
-            entry.set_name("bz2".into());
-            entry.aliases_mut().insert("numcodecs.bz2".into());
+            *entry = "bz2".into();
         });
 
     assert_eq!(
@@ -62,8 +63,6 @@ fn array_future_stabilistation_bz2() {
         .contains(r#""numcodecs.bz2"#));
     assert!(!array.metadata_opt(&options).to_string().contains(r#""bz2"#));
 
-    options
-        .codec_options_mut()
-        .set_convert_aliased_extension_names(true);
+    options.set_convert_aliased_extension_names(true);
     assert!(array.metadata_opt(&options).to_string().contains(r#""bz2"#));
 }

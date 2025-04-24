@@ -76,26 +76,24 @@ use crate::{
         BytesRepresentation, ChunkRepresentation, ChunkShape, CodecChain, DataType, FillValue,
     },
     byte_range::ByteRange,
-    metadata::codec::sharding,
+    metadata::codec::SHARDING,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use sharding::IDENTIFIER;
-
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_sharding, create_codec_sharding)
+    CodecPlugin::new(SHARDING, is_identifier_sharding, create_codec_sharding)
 }
 
-fn is_name_sharding(name: &str) -> bool {
-    name.eq(IDENTIFIER)
+fn is_identifier_sharding(identifier: &str) -> bool {
+    identifier == SHARDING
 }
 
 pub(crate) fn create_codec_sharding(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ShardingCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(SHARDING, "codec", metadata.clone()))?;
     let codec = Arc::new(ShardingCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
@@ -131,7 +129,7 @@ fn compute_index_encoded_size(
     index_codecs: &dyn ArrayToBytesCodecTraits,
     index_array_representation: &ChunkRepresentation,
 ) -> Result<u64, CodecError> {
-    let bytes_representation = index_codecs.compute_encoded_size(index_array_representation)?;
+    let bytes_representation = index_codecs.encoded_representation(index_array_representation)?;
     match bytes_representation {
         BytesRepresentation::FixedSize(size) => Ok(size),
         _ => Err(CodecError::Other(

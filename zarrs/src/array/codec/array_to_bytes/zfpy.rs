@@ -1,5 +1,9 @@
 //! The `zfpy` array to bytes codec (Experimental).
 //!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
+//!
 //! [zfp](https://zfp.io/) is a compressed number format for 1D to 4D arrays of 32/64-bit floating point or integer data.
 //! 8/16-bit integer types are supported through promotion to 32-bit in accordance with the [zfp utility functions](https://zfp.readthedocs.io/en/release1.0.1/low-level-api.html#utility-functions).
 //!
@@ -61,31 +65,26 @@ use std::sync::Arc;
 pub use crate::metadata::codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationNumcodecs};
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    config::global_config,
-    metadata::codec::zfpy,
+    metadata::codec::ZFPY,
 };
 
 use zarrs_plugin::{MetadataV3, PluginCreateError, PluginMetadataInvalidError};
-pub use zfpy::IDENTIFIER;
 
 use super::zfp::ZfpCodec;
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(IDENTIFIER, is_name_zfpy, create_codec_zfpy)
+    CodecPlugin::new(ZFPY, is_identifier_zfpy, create_codec_zfpy)
 }
 
-fn is_name_zfpy(name: &str) -> bool {
-    global_config()
-        .codec_map()
-        .get(IDENTIFIER)
-        .is_some_and(|map| map.contains(name))
+fn is_identifier_zfpy(identifier: &str) -> bool {
+    identifier == ZFPY
 }
 
 pub(crate) fn create_codec_zfpy(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZfpyCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(IDENTIFIER, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(ZFPY, "codec", metadata.clone()))?;
     let codec = Arc::new(ZfpCodec::new_with_configuration_zfpy(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }
