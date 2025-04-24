@@ -71,8 +71,9 @@
 Codecs have three potential statuses:
 - *Core*: These are defined in the Zarr V3 specification and are fully supported.
 - *Registered*: These are specified at <https://github.com/zarr-developers/zarr-extensions/> and are fully supported unless otherwise indicated.
-- *Experimental*: These are **recommended for evaluation only** and may have no formal specification.
-  - These codecs may change in future releases without maintaining backwards compatibilty.
+- *Experimental*: These are **recommended for evaluation only**.
+  - These codecs may have no formal specification or are pending registration at <https://github.com/zarr-developers/zarr-extensions/>.
+  - These codecs may change in future releases without maintaining backwards compatibility.
 
 Codec `name`s and aliases are configurable with [`Config::codec_aliases_v3_mut`](config::Config::codec_aliases_v3_mut) and [`Config::codec_aliases_v2_mut`](config::Config::codec_aliases_v2_mut).
 `zarrs` will persist codec names if opening an existing array of creating an array from metadata.

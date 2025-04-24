@@ -1,4 +1,8 @@
-//! The `pcodec` array to bytes codec.
+//! The `pcodec` array to bytes codec (Experimental).
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
 //!
 //! [Pcodec](https://github.com/mwlon/pcodec) (or Pco, pronounced "pico") losslessly compresses and decompresses numerical sequences with high compression ratio and fast speed.
 //!

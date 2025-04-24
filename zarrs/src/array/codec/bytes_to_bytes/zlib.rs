@@ -1,4 +1,8 @@
-//! The `zlib` bytes to bytes codec.
+//! The `zlib` bytes to bytes codec (Experimental).
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
 //!
 //! This codec requires the `zlib` feature, which is disabled by default.
 //!

@@ -1,4 +1,8 @@
-//! The `bitround` array to array codec.
+//! The `bitround` array to array codec (Experimental).
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
 //!
 //! Round the mantissa of floating point data types to the specified number of bits.
 //! Rounds integers from the most significant set bit.

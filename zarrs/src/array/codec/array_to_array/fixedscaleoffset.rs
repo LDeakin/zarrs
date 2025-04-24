@@ -1,4 +1,8 @@
-//! The `fixedscaleoffset` array to array codec.
+//! The `fixedscaleoffset` array to array codec (Experimental).
+//!
+//! <div class="warning">
+//! This codec is experimental and may be incompatible with other Zarr V3 implementations.
+//! </div>
 //!
 //! ### Compatible Implementations
 //! This codec is fully compatible with the `numcodecs.fixedscaleoffset` codec in `zarr-python`.
