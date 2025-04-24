@@ -473,9 +473,8 @@ pub trait ChunkGridTraits: core::fmt::Debug + Send + Sync {
             let ranges = chunk_origin
                 .iter()
                 .zip(&chunk_shape)
-                .map(|(&o, &s)| o..(o + s))
-                .collect::<Vec<_>>();
-            Some(ArraySubset::new_with_ranges(&ranges))
+                .map(|(&o, &s)| o..(o + s));
+            Some(ArraySubset::from(ranges))
         } else {
             None
         }

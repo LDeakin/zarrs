@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Async{Array,Bytes}PartialEncoderTraits` and `*CodecTraits::async_partial_encoder()`
 - Add `array_subset::ArraySubsetError` [#156] by [@ilan-gold]
 - Add `array_subset::IncompatibleOffsetError`
+- Implement `From<T: IntoIterator<Item = Range<u64>>>` for `ArraySubset`
 
 ### Changed
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape

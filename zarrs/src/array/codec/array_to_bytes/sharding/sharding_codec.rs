@@ -531,9 +531,8 @@ impl ShardingCodec {
         let ranges = shape
             .iter()
             .zip(&chunk_start)
-            .map(|(&sh, &st)| st..(st + sh.get()))
-            .collect::<Vec<_>>();
-        ArraySubset::new_with_ranges(&ranges)
+            .map(|(&sh, &st)| st..(st + sh.get()));
+        ArraySubset::from(ranges)
     }
 
     /// Computed the bounded size of an encoded shard from
