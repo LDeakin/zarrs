@@ -4,6 +4,7 @@
 [![zarrs_metadata documentation](https://docs.rs/zarrs_metadata/badge.svg)](https://docs.rs/zarrs_metadata)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_metadata)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_metadata)](https://codecov.io/gh/LDeakin/zarrs)
 
 [Zarr](https://zarr-specs.readthedocs.io/) metadata support for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

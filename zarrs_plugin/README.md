@@ -4,6 +4,7 @@
 [![zarrs_plugin documentation](https://docs.rs/zarrs_plugin/badge.svg)](https://docs.rs/zarrs_plugin)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_plugin)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_plugin)](https://codecov.io/gh/LDeakin/zarrs)
 
 The plugin API for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

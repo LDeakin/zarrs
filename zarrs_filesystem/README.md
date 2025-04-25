@@ -4,6 +4,7 @@
 [![zarrs_filesystem documentation](https://docs.rs/zarrs_filesystem/badge.svg)](https://docs.rs/zarrs_filesystem)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_filesystem)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_filesystem)](https://codecov.io/gh/LDeakin/zarrs)
 
 A filesystem store for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

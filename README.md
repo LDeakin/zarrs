@@ -5,7 +5,7 @@
 ![msrv](https://img.shields.io/crates/msrv/zarrs)
 [![downloads](https://img.shields.io/crates/d/zarrs)](https://crates.io/crates/zarrs)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?token=OBKJQNAZPP)](https://codecov.io/gh/LDeakin/zarrs)
+[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs)](https://codecov.io/gh/LDeakin/zarrs)
 [![DOI](https://zenodo.org/badge/695021547.svg)](https://zenodo.org/badge/latestdoi/695021547)
 
 `zarrs` is a Rust library for the [Zarr] storage format for multidimensional arrays and metadata.

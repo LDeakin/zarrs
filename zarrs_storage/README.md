@@ -4,6 +4,7 @@
 [![zarrs_storage documentation](https://docs.rs/zarrs_storage/badge.svg)](https://docs.rs/zarrs_storage)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_storage)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_storage)](https://codecov.io/gh/LDeakin/zarrs)
 
 The storage API for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

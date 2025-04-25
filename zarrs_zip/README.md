@@ -4,6 +4,7 @@
 [![zarrs_zip documentation](https://docs.rs/zarrs_zip/badge.svg)](https://docs.rs/zarrs_zip)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_zip)
 [![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_zip)](https://codecov.io/gh/LDeakin/zarrs)
 
 A storage adapter for `zip` files for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 
