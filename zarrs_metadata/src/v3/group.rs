@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::NodeMetadata;
 
@@ -35,10 +36,6 @@ pub struct GroupMetadataV3 {
     /// Extension definitions (Zarr 3.1, [ZEP0009](https://zarr.dev/zeps/draft/ZEP0009.html)).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<MetadataV3>,
-    /// Consolidated metadata.
-    // FIXME: Deprecate in the next breaking release (but support deserialisation to `extensions`)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub consolidated_metadata: Option<ConsolidatedMetadata>,
     /// Additional fields.
     #[serde(flatten)]
     pub additional_fields: AdditionalFields,
@@ -70,7 +67,6 @@ impl GroupMetadataV3 {
             attributes: serde_json::Map::new(),
             extensions: Vec::default(),
             additional_fields: AdditionalFields::default(),
-            consolidated_metadata: None,
         }
     }
 
@@ -104,16 +100,6 @@ impl GroupMetadataV3 {
         self.extensions = extensions;
         self
     }
-
-    /// Set the consolidated metadata.
-    #[must_use]
-    pub fn with_consolidated_metadata(
-        mut self,
-        consolidated_metadata: Option<ConsolidatedMetadata>,
-    ) -> Self {
-        self.consolidated_metadata = consolidated_metadata;
-        self
-    }
 }
 
 /// Consolidated metadata of a Zarr hierarchy.
@@ -124,8 +110,12 @@ pub struct ConsolidatedMetadata {
     pub metadata: ConsolidatedMetadataMetadata,
     /// The kind of the consolidated metadata. Must be `'inline'`. Reserved for future use.
     pub kind: ConsolidatedMetadataKind,
-    /// The boolean literal `false`. Indicates that the field is not required to load the Zarr hierarchy.
-    pub must_understand: monostate::MustBe!(false),
+}
+
+impl From<ConsolidatedMetadata> for Value {
+    fn from(value: ConsolidatedMetadata) -> Self {
+        serde_json::to_value(value).expect("consolidated metadata is serializable to value")
+    }
 }
 
 /// The `metadata` field of `consolidated_metadata` in [`GroupMetadataV3`].
@@ -136,7 +126,6 @@ impl Default for ConsolidatedMetadata {
         Self {
             metadata: HashMap::default(),
             kind: ConsolidatedMetadataKind::Inline,
-            must_understand: monostate::MustBe!(false),
         }
     }
 }
@@ -180,13 +169,17 @@ mod tests {
         }"#,
         )
         .unwrap();
+
+        let consolidated_metadata = group_metadata
+            .additional_fields
+            .get("consolidated_metadata")
+            .unwrap();
+        assert!(!consolidated_metadata.must_understand());
+        let consolidated_metadata: ConsolidatedMetadata =
+            serde_json::from_value(consolidated_metadata.as_value().clone()).unwrap();
+
         assert_eq!(
-            group_metadata
-                .consolidated_metadata
-                .unwrap()
-                .metadata
-                .get("/subgroup")
-                .unwrap(),
+            consolidated_metadata.metadata.get("/subgroup").unwrap(),
             &serde_json::from_str::<NodeMetadata>(
                 r#"{
                     "zarr_format": 3,

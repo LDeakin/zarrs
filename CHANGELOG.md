@@ -81,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `CodecError::IncompatibleDimensionalityError` [#156] by [@ilan-gold]
 - **Breaking**: `ArraySubset::bound` error type changed to `ArraySubsetError` [#156] by [@ilan-gold]
 - **Breaking**: `ArraySubset::relative_to` error type changed to `ArraySubsetError`
+- **Breaking**: `Group::consolidated_metadata` now returns an owned `ConsolidatedMetadata` instead of a reference
 
 ### Removed
 - **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]

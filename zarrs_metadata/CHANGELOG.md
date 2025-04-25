@@ -51,6 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Remove the `v2::array::codec` module which just contained re-exports of V3 codecs
 - **Breaking**: Remove `v2_to_v3::DataTypeMetadataV2UnsupportedDataTypeError`
 - **Breaking**: Remove the `Metadata` alias in the crate root (deprecated since 0.17)
+- **Breaking**: Remove the `consolidated_metadata` field from `GroupMetadataV3`
+  - Consolidated metadata must be manually deserialised from `additional_fields` instead
+- **Breaking**: Remove `GroupMetadataV3::with_consolidated_metadata`
 
 ### Fixed
 - Stricter parameter validation for the `zfpy` Codec

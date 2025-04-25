@@ -30,7 +30,7 @@ use std::sync::Arc;
 
 use derive_more::Display;
 use thiserror::Error;
-use zarrs_metadata::v3::group::ConsolidatedMetadata;
+use zarrs_metadata::v3::{group::ConsolidatedMetadata, AdditionalField};
 use zarrs_metadata::NodeMetadata;
 use zarrs_storage::ListableStorageTraits;
 
@@ -166,9 +166,19 @@ impl<TStorage: ?Sized> Group<TStorage> {
     ///
     /// Consolidated metadata is not currently supported for Zarr V2 groups.
     #[must_use]
-    pub fn consolidated_metadata(&self) -> Option<&ConsolidatedMetadata> {
+    pub fn consolidated_metadata(&self) -> Option<ConsolidatedMetadata> {
         if let GroupMetadata::V3(group_metadata) = &self.metadata {
-            group_metadata.consolidated_metadata.as_ref()
+            if let Some(consolidated_metadata) = group_metadata
+                .additional_fields
+                .get("consolidated_metadata")
+            {
+                if let Ok(consolidated_metadata) = serde_json::from_value::<ConsolidatedMetadata>(
+                    consolidated_metadata.as_value().clone(),
+                ) {
+                    return Some(consolidated_metadata);
+                }
+            }
+            None
         } else {
             None
         }
@@ -182,7 +192,16 @@ impl<TStorage: ?Sized> Group<TStorage> {
         consolidated_metadata: Option<ConsolidatedMetadata>,
     ) -> &mut Self {
         if let GroupMetadata::V3(group_metadata) = &mut self.metadata {
-            group_metadata.consolidated_metadata = consolidated_metadata;
+            if let Some(consolidated_metadata) = consolidated_metadata {
+                group_metadata.additional_fields.insert(
+                    "consolidated_metadata".to_string(),
+                    AdditionalField::new(consolidated_metadata, false),
+                );
+            } else {
+                group_metadata
+                    .additional_fields
+                    .remove("consolidated_metadata");
+            }
         }
         self
     }
