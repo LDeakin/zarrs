@@ -206,8 +206,31 @@ mod tests {
     #[test]
     #[cfg_attr(miri, ignore)]
     fn http_store() -> Result<(), Box<dyn Error>> {
-        let store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
+        let mut store = HTTPStore::new(HTTP_TEST_PATH_REF).unwrap();
         zarrs_storage::store_test::store_read(&store)?;
+        store.set_batch_range_requests(false);
+        zarrs_storage::store_test::store_read(&store)?;
+        Ok(())
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn http_store_bad_url() {
+        assert!(HTTPStore::new("invalid").is_err());
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn http_store_bad_request() -> Result<(), Box<dyn Error>> {
+        let store = HTTPStore::new("https://raw.githubusercontent.com/bad").unwrap();
+        assert!(store.get(&"zarr.json".try_into().unwrap()).is_err());
+        assert!(store
+            .get_partial_values_key(
+                &"zarr.json".try_into().unwrap(),
+                &[ByteRange::FromStart(0, None)]
+            )
+            .is_err());
+        assert!(store.size_key(&"zarr.json".try_into().unwrap()).is_err());
         Ok(())
     }
 }
