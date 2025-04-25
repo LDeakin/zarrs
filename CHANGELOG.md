@@ -82,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `ArraySubset::bound` error type changed to `ArraySubsetError` [#156] by [@ilan-gold]
 - **Breaking**: `ArraySubset::relative_to` error type changed to `ArraySubsetError`
 - **Breaking**: `Group::consolidated_metadata` now returns an owned `ConsolidatedMetadata` instead of a reference
+- Bump `lru` to 0.14.0
 
 ### Removed
 - **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
