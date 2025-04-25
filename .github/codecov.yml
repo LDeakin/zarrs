@@ -8,6 +8,9 @@ coverage:
       default:
         informational: true
 
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer, components"
+
 component_management:
   default_rules:
     statuses:
