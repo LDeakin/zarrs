@@ -22,7 +22,7 @@ impl From<ConsolidatedMetadata> for Value {
     }
 }
 
-/// The `metadata` field of `consolidated_metadata` in [`GroupMetadataV3`].
+/// The `metadata` field of `consolidated_metadata`.
 pub type ConsolidatedMetadataMetadata = HashMap<String, NodeMetadata>;
 
 impl Default for ConsolidatedMetadata {
