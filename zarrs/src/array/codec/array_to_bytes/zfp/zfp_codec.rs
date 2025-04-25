@@ -115,6 +115,10 @@ impl ZfpCodec {
                     mode: ZfpMode::FixedAccuracy { tolerance },
                     write_header: true,
                 }),
+                ZfpyCodecConfigurationMode::Reversible => Ok(Self {
+                    mode: ZfpMode::Reversible,
+                    write_header: true,
+                }),
             },
             _ => Err(PluginCreateError::Other(
                 "this zfpy codec configuration variant is unsupported".to_string(),

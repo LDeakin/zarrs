@@ -49,6 +49,8 @@ pub enum ZfpyCodecConfigurationMode {
         /// The tolerance ensures that values in the decompressed array differ from the input array by no more than this tolerance.
         tolerance: f64,
     },
+    /// Reversible mode.
+    Reversible,
 }
 
 // Custom deserialize because serde does not support integer tags https://github.com/serde-rs/serde/issues/745
@@ -64,16 +66,19 @@ impl<'de> Deserialize<'de> for ZfpyCodecConfigurationMode {
 
         let value = Tagged::deserialize(d)?;
         match value {
-            Tagged{mode: 2, rate: Some(rate), precision: _, tolerance: _} => {
+            Tagged{mode: 2, rate: Some(rate), precision: None | Some(-1), tolerance: None | Some(-1.0)} => {
                 Ok(ZfpyCodecConfigurationMode::FixedRate { rate })
             }
-            Tagged{mode: 3, rate: _, precision: Some(precision), tolerance: _} => {
+            Tagged{mode: 3, rate: None | Some(-1.0), precision: Some(precision), tolerance: None | Some(-1.0)} => {
                 Ok(ZfpyCodecConfigurationMode::FixedPrecision { precision:
                     u32::try_from(precision).map_err(|_| serde::de::Error::custom("`precision` must be a positive integer"))?
                 })
             }
-            Tagged{mode: 4, rate: _, precision: _, tolerance: Some(tolerance)} => {
+            Tagged{mode: 4, rate: None | Some(-1.0), precision: None | Some(-1), tolerance: Some(tolerance)} => {
                 Ok(ZfpyCodecConfigurationMode::FixedAccuracy { tolerance })
+            }
+            Tagged{mode: 5, rate: None | Some(-1.0), precision: None | Some(-1), tolerance: None | Some(-1.0)} => {
+                Ok(ZfpyCodecConfigurationMode::Reversible)
             }
             _ => Err(serde::de::Error::custom("expected `mode` to be 2, 3, or 4 with `rate`/`precision`/`tolerance` set appropriately")),
         }
@@ -111,6 +116,10 @@ impl Serialize for ZfpyCodecConfigurationMode {
                 tolerance: Some(*tolerance),
                 ..Default::default()
             },
+            ZfpyCodecConfigurationMode::Reversible => Tagged {
+                mode: 5,
+                ..Default::default()
+            },
         }
         .serialize(serializer)
     }
@@ -129,6 +138,7 @@ pub fn codec_zfpy_v2_numcodecs_to_v3(
         ZfpyCodecConfigurationMode::FixedAccuracy { tolerance } => {
             ZfpMode::FixedAccuracy { tolerance }
         }
+        ZfpyCodecConfigurationMode::Reversible => ZfpMode::Reversible,
     };
     ZfpCodecConfigurationV1 { mode }
 }
@@ -155,10 +165,9 @@ mod tests {
             ZfpyCodecConfigurationMode::FixedRate { rate: 0.123 }
         );
         let ZfpCodecConfigurationV1 { mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
-        let ZfpMode::FixedRate { rate } = mode else {
-            panic!()
+        if let ZfpMode::FixedRate { rate } = mode {
+            assert_eq!(rate, 0.123);
         };
-        assert_eq!(rate, 0.123);
     }
 
     #[test]
@@ -177,10 +186,9 @@ mod tests {
             ZfpyCodecConfigurationMode::FixedPrecision { precision: 10 }
         );
         let ZfpCodecConfigurationV1 { mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
-        let ZfpMode::FixedPrecision { precision } = mode else {
-            panic!()
+        if let ZfpMode::FixedPrecision { precision } = mode {
+            assert_eq!(precision, 10);
         };
-        assert_eq!(precision, 10);
     }
 
     #[test]
@@ -199,25 +207,23 @@ mod tests {
             ZfpyCodecConfigurationMode::FixedAccuracy { tolerance: 0.123 }
         );
         let ZfpCodecConfigurationV1 { mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
-        let ZfpMode::FixedAccuracy { tolerance } = mode else {
-            panic!()
+        if let ZfpMode::FixedAccuracy { tolerance } = mode {
+            assert_eq!(tolerance, 0.123);
         };
-        assert_eq!(tolerance, 0.123);
     }
 
-    // #[test]
-    // fn codec_zfpy_reversible() {
-    //     let v2 = serde_json::from_str::<ZfpyCodecConfigurationNumcodecs>(
-    //         r#"
-    //     {
-    //         "mode": 5
-    //     }
-    //     "#,
-    //     )
-    //     .unwrap();
-    //     assert_eq!(v2.mode, ZfpyCodecConfigurationMode::Reversible);
-    //     let ZfpCodecConfigurationV1 { write_header, mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
-    //     assert_eq!(write_header, Some(true));
-    //     let ZfpMode::Reversible = mode else { panic!() };
-    // }
+    #[test]
+    fn codec_zfpy_reversible() {
+        let v2 = serde_json::from_str::<ZfpyCodecConfigurationNumcodecs>(
+            r#"
+        {
+            "mode": 5
+        }
+        "#,
+        )
+        .unwrap();
+        assert_eq!(v2.mode, ZfpyCodecConfigurationMode::Reversible);
+        let ZfpCodecConfigurationV1 { mode } = codec_zfpy_v2_numcodecs_to_v3(&v2);
+        assert!(matches!(mode, ZfpMode::Reversible));
+    }
 }
