@@ -201,10 +201,13 @@ impl AsyncListableStorageTraits for AsyncOpendalStore {
 
 #[cfg(test)]
 mod tests {
-    use zarrs_storage::storage_adapter::{
-        async_to_sync::{AsyncToSyncBlockOn, AsyncToSyncStorageAdapter},
-        performance_metrics::PerformanceMetricsStorageAdapter,
-        usage_log::UsageLogStorageAdapter,
+    use zarrs_storage::{
+        storage_adapter::{
+            async_to_sync::{AsyncToSyncBlockOn, AsyncToSyncStorageAdapter},
+            performance_metrics::PerformanceMetricsStorageAdapter,
+            usage_log::UsageLogStorageAdapter,
+        },
+        StorageHandle,
     };
 
     use super::*;
@@ -230,10 +233,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn memory_adapters() -> Result<(), Box<dyn Error>> {
+    async fn memory_async_storage_adapters() -> Result<(), Box<dyn Error>> {
         let builder = opendal::services::Memory::default();
         let op = Operator::new(builder)?.finish();
         let store = Arc::new(AsyncOpendalStore::new(op));
+        let store = Arc::new(StorageHandle::new(store));
         let store = Arc::new(PerformanceMetricsStorageAdapter::new(store));
         let log_writer = Arc::new(std::sync::Mutex::new(
             // std::io::BufWriter::new(
