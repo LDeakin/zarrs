@@ -132,3 +132,32 @@ impl<TPlugin, TInputs> Plugin<TPlugin, TInputs> {
         self.identifier
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestPlugin;
+
+    fn is_test(name: &str) -> bool {
+        name == "test"
+    }
+
+    fn create_test(input: &MetadataV3) -> Result<TestPlugin, PluginCreateError> {
+        if input.name() == "test" {
+            Ok(TestPlugin)
+        } else {
+            Err(PluginCreateError::from("invalid name".to_string()))
+        }
+    }
+
+    #[test]
+    fn plugin() {
+        let plugin = Plugin::new("test", is_test, create_test);
+        assert!(!plugin.match_name("fail"));
+        assert!(plugin.match_name("test"));
+        assert_eq!(plugin.identifier(), "test");
+        assert!(plugin.create(&MetadataV3::new("test")).is_ok());
+        assert!(plugin.create(&MetadataV3::new("fail")).is_err());
+    }
+}
