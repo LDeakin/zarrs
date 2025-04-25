@@ -7,3 +7,55 @@ coverage:
     patch:
       default:
         informational: true
+
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer, components"
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        # branches:
+        #   - "!main"
+  individual_components:
+    - component_id: zarrs
+      name: zarrs
+      paths:
+        - zarrs/**
+    - component_id: zarrs_data_type
+      name: zarrs_data_type
+      paths:
+        - zarrs_data_type/**
+    - component_id: zarrs_filesystem
+      name: zarrs_filesystem
+      paths:
+        - zarrs_filesystem/**
+    - component_id: zarrs_http
+      name: zarrs_http
+      paths:
+        - zarrs_http/**
+    - component_id: zarrs_metadata
+      name: zarrs_metadata
+      paths:
+        - zarrs_metadata/**
+    - component_id: zarrs_object_store
+      name: zarrs_object_store
+      paths:
+        - zarrs_object_store/**
+    - component_id: zarrs_opendal
+      name: zarrs_opendal
+      paths:
+        - zarrs_opendal/**
+    - component_id: zarrs_plugin
+      name: zarrs_plugin
+      paths:
+        - zarrs_plugin/**
+    - component_id: zarrs_storage
+      name: zarrs_storage
+      paths:
+        - zarrs_storage/**
+    - component_id: zarrs_zip
+      name: zarrs_zip
+      paths:
+        - zarrs_zip/**
