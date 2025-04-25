@@ -258,6 +258,10 @@ mod tests {
             FillValue::from(vec![0u8, 1u8, 2u8]).as_ne_bytes(),
             &[0u8, 1u8, 2u8]
         );
+        assert_eq!(
+            FillValue::new(vec![0u8, 1u8, 2u8]).as_ne_bytes(),
+            &[0u8, 1u8, 2u8]
+        );
         assert_eq!(FillValue::from(false).as_ne_bytes(), &[0u8]);
         assert_eq!(FillValue::from(true).as_ne_bytes(), &[1u8]);
         assert_eq!(FillValue::from(1u8).as_ne_bytes(), 1u8.to_ne_bytes());
@@ -292,6 +296,11 @@ mod tests {
             FillValue::from(num::complex::Complex64::new(1.0, 2.0)).as_ne_bytes(),
             [1.0_f64.to_ne_bytes(), 2.0_f64.to_ne_bytes()].concat()
         );
+        assert_eq!(FillValue::from("test").as_ne_bytes(), "test".as_bytes());
+        assert_eq!(
+            FillValue::from("test".to_string()).as_ne_bytes(),
+            "test".as_bytes()
+        );
     }
 
     #[test]
@@ -315,6 +324,11 @@ mod tests {
     fn fill_value_equals_u64() {
         assert!(FillValue::from(1u64).equals_all(&transmute_to_bytes_vec(vec![1u64; 5])));
         assert!(!FillValue::from(1u64).equals_all(&transmute_to_bytes_vec(vec![0u64; 5])));
+    }
+
+    #[test]
+    fn fill_value_equals_u128() {
+        assert!(FillValue::from(vec![1u8; 16]).equals_all(&transmute_to_bytes_vec(vec![1u8; 16])));
     }
 
     #[test]

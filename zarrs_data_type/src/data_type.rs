@@ -491,6 +491,18 @@ mod tests {
     }
 
     #[test]
+    fn data_type_must_understand_false() {
+        let json = r#"{"name":"unknown","must_understand": false}"#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default())
+                .unwrap_err()
+                .to_string(),
+            r#"data type must not have `"must_understand": false`"#
+        );
+    }
+
+    #[test]
     fn data_type_bool() {
         let json = r#""bool""#;
         let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
@@ -508,12 +520,13 @@ mod tests {
             data_type.metadata_fill_value(&fill_value).unwrap()
         );
 
-        let fillvalue = data_type
-            .fill_value_from_metadata(
-                &serde_json::from_str::<FillValueMetadataV3>("false").unwrap(),
-            )
-            .unwrap();
-        assert_eq!(fillvalue.as_ne_bytes(), u8::from(false).to_ne_bytes());
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("false").unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), u8::from(false).to_ne_bytes());
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
     }
 
     #[test]
@@ -959,6 +972,9 @@ mod tests {
             metadata,
             data_type.metadata_fill_value(&fill_value).unwrap()
         );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
     }
 
     #[test]
@@ -986,6 +1002,9 @@ mod tests {
             metadata,
             data_type.metadata_fill_value(&fill_value).unwrap()
         );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
     }
 
     #[test]
@@ -1316,6 +1335,25 @@ mod tests {
         let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0x7fc00000""#).unwrap();
         let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
         assert_eq!(fill_value.as_ne_bytes(), "0x7fc00000".as_bytes(),);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_bytes() {
+        let json = r#""bytes""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "bytes");
+        assert_eq!(data_type.size(), DataTypeSize::Variable);
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"[0, 1, 2, 3]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [0, 1, 2, 3],);
         assert_eq!(
             metadata,
             data_type.metadata_fill_value(&fill_value).unwrap()
