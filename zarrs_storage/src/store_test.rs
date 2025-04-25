@@ -90,6 +90,16 @@ pub fn store_read<T: ReadableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
         ),])
         .is_err());
 
+    assert_eq!(
+        store
+            .get_partial_values(&[StoreKeyRange::new(
+                "notfound".try_into()?,
+                ByteRange::FromStart(1, Some(10))
+            ),])
+            .unwrap(),
+        vec![None]
+    );
+
     Ok(())
 }
 
@@ -99,6 +109,7 @@ pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
     assert_eq!(store.size()?, 7);
     assert_eq!(store.size_prefix(&"a/".try_into()?)?, 5);
     assert_eq!(store.size_prefix(&"i/".try_into()?)?, 2);
+    assert_eq!(store.size_prefix(&"notfound/".try_into()?)?, 0);
 
     assert_eq!(
         store.list()?,
@@ -138,6 +149,7 @@ pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
         store.list_prefix(&"i/".try_into()?)?,
         &["i/j/k".try_into()?]
     );
+    assert_eq!(store.list_prefix(&"notfound/".try_into()?)?, &[]);
 
     {
         let list_dir = store.list_dir(&"a/".try_into()?)?;
@@ -146,6 +158,11 @@ pub fn store_list<T: ListableStorageTraits>(store: &T) -> Result<(), Box<dyn Err
             list_dir.prefixes(),
             &["a/d/".try_into()?, "a/f/".try_into()?,]
         );
+    }
+    {
+        let list_dir = store.list_dir(&"notfound/".try_into()?)?;
+        assert_eq!(list_dir.keys(), &[]);
+        assert_eq!(list_dir.prefixes(), &[]);
     }
     Ok(())
 }
@@ -261,6 +278,17 @@ pub async fn async_store_read<T: AsyncReadableStorageTraits>(
         .await
         .is_err());
 
+    assert_eq!(
+        store
+            .get_partial_values(&[StoreKeyRange::new(
+                "notfound".try_into()?,
+                ByteRange::FromStart(1, Some(10))
+            ),])
+            .await
+            .unwrap(),
+        vec![None]
+    );
+
     Ok(())
 }
 
@@ -273,6 +301,7 @@ pub async fn async_store_list<T: AsyncListableStorageTraits>(
     assert_eq!(store.size().await?, 7);
     assert_eq!(store.size_prefix(&"a/".try_into()?).await?, 5);
     assert_eq!(store.size_prefix(&"i/".try_into()?).await?, 2);
+    assert_eq!(store.size_prefix(&"notfound/".try_into()?).await?, 0);
 
     assert_eq!(
         store.list().await?,
@@ -312,6 +341,7 @@ pub async fn async_store_list<T: AsyncListableStorageTraits>(
         store.list_prefix(&"i/".try_into()?).await?,
         &["i/j/k".try_into()?]
     );
+    assert_eq!(store.list_prefix(&"notfound/".try_into()?).await?, &[]);
 
     {
         let list_dir = store.list_dir(&"a/".try_into()?).await?;
@@ -320,6 +350,11 @@ pub async fn async_store_list<T: AsyncListableStorageTraits>(
             list_dir.prefixes(),
             &["a/d/".try_into()?, "a/f/".try_into()?,]
         );
+    }
+    {
+        let list_dir = store.list_dir(&"notfound/".try_into()?).await?;
+        assert_eq!(list_dir.keys(), &[]);
+        assert_eq!(list_dir.prefixes(), &[]);
     }
     Ok(())
 }
