@@ -20,6 +20,21 @@ use std::sync::{
 /// The performance metrics storage transformer. Accumulates metrics, such as bytes read and written.
 ///
 /// It is intended to aid in testing by allowing the application to validate that metrics (e.g., bytes read/written, total read/write operations) match expected values for specific operations.
+///
+/// ### Example
+/// ```rust
+/// # use std::sync::{Arc, Mutex};
+/// # use zarrs_storage::store::MemoryStore;
+/// # use zarrs_storage::storage_adapter::performance_metrics::PerformanceMetricsStorageAdapter;
+/// let store = Arc::new(MemoryStore::new());
+/// let store = Arc::new(PerformanceMetricsStorageAdapter::new(store));
+/// // do some store operations...
+/// // assert_eq!(store.bytes_read(), ...);
+/// // assert_eq!(store.bytes_written(), ...);
+/// // assert_eq!(store.reads(), ...);
+/// // assert_eq!(store.writes(), ...);
+/// // assert_eq!(store.keys_erased(), ...);
+/// ```
 #[derive(Debug)]
 pub struct PerformanceMetricsStorageAdapter<TStorage: ?Sized> {
     storage: Arc<TStorage>,
@@ -302,5 +317,30 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
 
     async fn erase_prefix(&self, prefix: &StorePrefix) -> Result<(), StorageError> {
         self.storage.erase_prefix(prefix).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::store::MemoryStore;
+    use crate::store_test;
+    use std::sync::Arc;
+
+    use super::*;
+
+    #[test]
+    fn performance_metrics() {
+        let store = Arc::new(MemoryStore::new());
+        let store = Arc::new(PerformanceMetricsStorageAdapter::new(store));
+        store_test::store_write(&store).unwrap();
+        store_test::store_read(&store).unwrap();
+        store_test::store_list(&store).unwrap();
+        assert!(store.bytes_read() >= 12);
+        assert!(store.bytes_written() >= 10);
+        assert!(store.reads() >= 8);
+        assert!(store.writes() >= 14);
+        assert!(store.keys_erased() >= 4);
+        store.reset();
+        assert_eq!(store.bytes_read(), 0);
     }
 }

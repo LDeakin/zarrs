@@ -191,3 +191,21 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         self.0.erase_prefix(prefix).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{store::MemoryStore, StorageHandle};
+
+    use super::*;
+    use std::error::Error;
+
+    #[test]
+    fn memory_storage_handle() -> Result<(), Box<dyn Error>> {
+        let store = Arc::new(MemoryStore::new());
+        let store = Arc::new(StorageHandle::new(store));
+        crate::store_test::store_write(&store)?;
+        crate::store_test::store_read(&store)?;
+        crate::store_test::store_list(&store)?;
+        Ok(())
+    }
+}

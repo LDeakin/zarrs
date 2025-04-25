@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- auto derive storage traits for Arc stores
+
 ## [0.3.2] - 2025-03-10
 
 ### Changed
@@ -58,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2024-09-15
 
-### Changed 
+### Changed
  - Remove unused code related to store plugins
  - **Breaking**: Move filesystem/http/zip store implementations into separate crates:
    - `zarrs_filesystem`

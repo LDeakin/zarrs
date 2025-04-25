@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use auto_impl::auto_impl;
 use futures::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 
@@ -10,6 +11,7 @@ use super::{
 
 /// Async readable storage traits.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
+#[auto_impl(Arc)]
 pub trait AsyncReadableStorageTraits: Send + Sync {
     /// Retrieve the value (bytes) associated with a given [`StoreKey`].
     ///
@@ -119,6 +121,7 @@ pub trait AsyncReadableStorageTraits: Send + Sync {
 
 /// Async listable storage traits.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
+#[auto_impl(Arc)]
 pub trait AsyncListableStorageTraits: Send + Sync {
     /// Retrieve all [`StoreKeys`] in the store.
     ///
@@ -224,6 +227,7 @@ pub async fn async_store_set_partial_values<T: AsyncReadableWritableStorageTrait
 
 /// Async writable storage traits.
 #[cfg_attr(feature = "async", async_trait::async_trait)]
+#[auto_impl(Arc)]
 pub trait AsyncWritableStorageTraits: Send + Sync {
     /// Store bytes at a [`StoreKey`].
     ///

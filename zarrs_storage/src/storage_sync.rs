@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use auto_impl::auto_impl;
 use itertools::Itertools;
 
 use super::{
@@ -8,6 +9,7 @@ use super::{
 };
 
 /// Readable storage traits.
+#[auto_impl(Arc)]
 pub trait ReadableStorageTraits: Send + Sync {
     /// Retrieve the value (bytes) associated with a given [`StoreKey`].
     ///
@@ -107,6 +109,7 @@ pub trait ReadableStorageTraits: Send + Sync {
 }
 
 /// Listable storage traits.
+#[auto_impl(Arc)]
 pub trait ListableStorageTraits: Send + Sync {
     /// Retrieve all [`StoreKeys`] in the store.
     ///
@@ -204,6 +207,7 @@ pub fn store_set_partial_values<T: ReadableWritableStorageTraits>(
 }
 
 /// Writable storage traits.
+#[auto_impl(Arc)]
 pub trait WritableStorageTraits: Send + Sync {
     /// Store bytes at a [`StoreKey`].
     ///

@@ -476,3 +476,27 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits> AsyncWritableStorageTraits
         result
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{store::MemoryStore, store_test};
+    use std::sync::{Arc, Mutex};
+
+    use super::*;
+
+    #[test]
+    fn usage_log() {
+        let store = Arc::new(MemoryStore::new());
+        let log_writer = Arc::new(Mutex::new(
+            // std::io::BufWriter::new(
+            std::io::stdout(),
+            //    )
+        ));
+        let store = Arc::new(UsageLogStorageAdapter::new(store, log_writer, || {
+            chrono::Utc::now().format("[%T%.3f] ").to_string()
+        }));
+        store_test::store_write(&store).unwrap();
+        store_test::store_read(&store).unwrap();
+        store_test::store_list(&store).unwrap();
+    }
+}
