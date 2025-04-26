@@ -9,8 +9,6 @@
 
 use thiserror::Error;
 
-pub use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
-
 /// A plugin.
 pub struct Plugin<TPlugin, TInputs> {
     /// the identifier of the plugin.
@@ -26,23 +24,14 @@ pub struct Plugin<TPlugin, TInputs> {
 #[error("{plugin_type} {name} is not supported")]
 pub struct PluginUnsupportedError {
     name: String,
-    configuration: Option<MetadataConfiguration>,
     plugin_type: String,
 }
 
 impl PluginUnsupportedError {
     /// Create a new [`PluginUnsupportedError`].
     #[must_use]
-    pub fn new(
-        name: String,
-        configuration: Option<MetadataConfiguration>,
-        plugin_type: String,
-    ) -> Self {
-        Self {
-            name,
-            configuration,
-            plugin_type,
-        }
+    pub fn new(name: String, plugin_type: String) -> Self {
+        Self { name, plugin_type }
     }
 }
 
@@ -52,17 +41,17 @@ impl PluginUnsupportedError {
 pub struct PluginMetadataInvalidError {
     identifier: &'static str,
     plugin_type: &'static str,
-    metadata: Box<MetadataV3>,
+    metadata: String,
 }
 
 impl PluginMetadataInvalidError {
     /// Create a new [`PluginMetadataInvalidError`].
     #[must_use]
-    pub fn new(identifier: &'static str, plugin_type: &'static str, metadata: MetadataV3) -> Self {
+    pub fn new(identifier: &'static str, plugin_type: &'static str, metadata: String) -> Self {
         Self {
             identifier,
             plugin_type,
-            metadata: Box::new(metadata),
+            metadata,
         }
     }
 }
@@ -139,15 +128,20 @@ mod tests {
 
     struct TestPlugin;
 
+    // plugin can be an arbitraty input, usually zarrs_metadata::MetadataV3.
+    enum Input {
+        Accept,
+        Reject,
+    }
+
     fn is_test(name: &str) -> bool {
         name == "test"
     }
 
-    fn create_test(input: &MetadataV3) -> Result<TestPlugin, PluginCreateError> {
-        if input.name() == "test" {
-            Ok(TestPlugin)
-        } else {
-            Err(PluginCreateError::from("invalid name".to_string()))
+    fn create_test(input: &Input) -> Result<TestPlugin, PluginCreateError> {
+        match input {
+            Input::Accept => Ok(TestPlugin),
+            Input::Reject => Err(PluginCreateError::from("rejected".to_string())),
         }
     }
 
@@ -157,7 +151,7 @@ mod tests {
         assert!(!plugin.match_name("fail"));
         assert!(plugin.match_name("test"));
         assert_eq!(plugin.identifier(), "test");
-        assert!(plugin.create(&MetadataV3::new("test")).is_ok());
-        assert!(plugin.create(&MetadataV3::new("fail")).is_err());
+        assert!(plugin.create(&Input::Accept).is_ok());
+        assert!(plugin.create(&Input::Reject).is_err());
     }
 }

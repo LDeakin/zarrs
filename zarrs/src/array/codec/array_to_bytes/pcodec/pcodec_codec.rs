@@ -1,23 +1,26 @@
 use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
-use zarrs_metadata::codec::{
-    pcodec::{PcodecDeltaSpecConfiguration, PcodecPagingSpecConfiguration},
-    PCODEC,
-};
-use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
-
-use crate::{
-    array::{
-        codec::{
-            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RawBytes, RecommendedConcurrency,
+use zarrs_metadata::{
+    codec::{
+        pcodec::{
+            PcodecDeltaSpecConfiguration, PcodecModeSpecConfiguration,
+            PcodecPagingSpecConfiguration,
         },
-        convert_from_bytes_slice, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
-        DataType,
+        PCODEC,
     },
-    metadata::codec::pcodec::PcodecModeSpecConfiguration,
+    v3::MetadataConfiguration,
+};
+use zarrs_plugin::PluginCreateError;
+
+use crate::array::{
+    codec::{
+        ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+        BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RawBytes, RecommendedConcurrency,
+    },
+    convert_from_bytes_slice, transmute_to_bytes_vec, BytesRepresentation, ChunkRepresentation,
+    DataType,
 };
 
 #[cfg(feature = "async")]

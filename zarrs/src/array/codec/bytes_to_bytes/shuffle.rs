@@ -60,7 +60,7 @@ fn is_identifier_shuffle(identifier: &str) -> bool {
 pub(crate) fn create_codec_shuffle(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(SHUFFLE, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(SHUFFLE, "codec", metadata.to_string()))?;
     let codec = Arc::new(ShuffleCodec::new_with_configuration(&configuration)?);
     Ok(Codec::BytesToBytes(codec))
 }

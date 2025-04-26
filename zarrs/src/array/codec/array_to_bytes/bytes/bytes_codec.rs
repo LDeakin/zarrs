@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use zarrs_data_type::{DataType, DataTypeExtensionError};
-use zarrs_metadata::codec::BYTES;
-use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+use zarrs_metadata::{codec::BYTES, v3::MetadataConfiguration};
+use zarrs_plugin::PluginCreateError;
 
 use crate::array::{
     codec::{

@@ -31,9 +31,10 @@ fn is_name_regular(name: &str) -> bool {
 pub(crate) fn create_chunk_grid_regular(
     metadata: &MetadataV3,
 ) -> Result<ChunkGrid, PluginCreateError> {
-    let configuration: RegularChunkGridConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(REGULAR, "chunk grid", metadata.clone()))?;
+    let configuration: RegularChunkGridConfiguration =
+        metadata.to_configuration().map_err(|_| {
+            PluginMetadataInvalidError::new(REGULAR, "chunk grid", metadata.to_string())
+        })?;
     let chunk_grid = RegularChunkGrid::new(configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))
 }

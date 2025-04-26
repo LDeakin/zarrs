@@ -1,8 +1,7 @@
 use std::{borrow::Cow, ffi::c_char, sync::Arc};
 
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
-use zarrs_metadata::codec::BLOSC;
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_metadata::{codec::BLOSC, v3::MetadataConfiguration};
 
 use crate::{
     array::{

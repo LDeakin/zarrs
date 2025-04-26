@@ -28,7 +28,7 @@ pub(crate) fn create_chunk_key_encoding_default(
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
     let configuration: DefaultChunkKeyEncodingConfiguration =
         metadata.to_configuration().map_err(|_| {
-            PluginMetadataInvalidError::new(DEFAULT, "chunk key encoding", metadata.clone())
+            PluginMetadataInvalidError::new(DEFAULT, "chunk key encoding", metadata.to_string())
         })?;
     let default = DefaultChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(default))

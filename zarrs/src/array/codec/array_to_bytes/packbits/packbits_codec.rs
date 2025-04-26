@@ -5,9 +5,10 @@ use std::{borrow::Cow, sync::Arc};
 use num::Integer;
 use zarrs_metadata::{
     codec::{packbits::PackBitsPaddingEncoding, PACKBITS},
+    v3::MetadataConfiguration,
     Endianness,
 };
-use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+use zarrs_plugin::PluginCreateError;
 
 use crate::array::{
     codec::{

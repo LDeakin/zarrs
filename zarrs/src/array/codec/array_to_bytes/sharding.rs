@@ -93,7 +93,7 @@ fn is_identifier_sharding(identifier: &str) -> bool {
 pub(crate) fn create_codec_sharding(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ShardingCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(SHARDING, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(SHARDING, "codec", metadata.to_string()))?;
     let codec = Arc::new(ShardingCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

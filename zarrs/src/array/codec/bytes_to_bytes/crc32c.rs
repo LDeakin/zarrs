@@ -50,7 +50,7 @@ fn is_identifier_crc32c(identifier: &str) -> bool {
 pub(crate) fn create_codec_crc32c(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(CRC32C, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(CRC32C, "codec", metadata.to_string()))?;
     let codec = Arc::new(Crc32cCodec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }

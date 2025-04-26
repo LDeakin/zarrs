@@ -59,7 +59,7 @@ fn is_identifier_fletcher32(identifier: &str) -> bool {
 pub(crate) fn create_codec_fletcher32(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(FLETCHER32, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(FLETCHER32, "codec", metadata.to_string()))?;
     let codec = Arc::new(Fletcher32Codec::new_with_configuration(&configuration));
     Ok(Codec::BytesToBytes(codec))
 }

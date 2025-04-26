@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use zarrs_metadata::codec::VLEN_V2;
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_metadata::{codec::VLEN_V2, v3::MetadataConfiguration};
 
 use crate::array::{
     codec::{

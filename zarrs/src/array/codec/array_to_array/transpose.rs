@@ -60,7 +60,7 @@ fn is_identifier_transpose(identifier: &str) -> bool {
 pub(crate) fn create_codec_transpose(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: TransposeCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(TRANSPOSE, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(TRANSPOSE, "codec", metadata.to_string()))?;
     let codec = Arc::new(TransposeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }

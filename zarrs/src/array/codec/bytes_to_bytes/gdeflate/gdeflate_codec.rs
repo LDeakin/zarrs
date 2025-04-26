@@ -1,7 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::codec::GDEFLATE;
-use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+use zarrs_metadata::{codec::GDEFLATE, v3::MetadataConfiguration};
+use zarrs_plugin::PluginCreateError;
 
 use crate::array::{
     codec::{BytesToBytesCodecTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits},

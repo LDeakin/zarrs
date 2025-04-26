@@ -1,7 +1,9 @@
 use std::{num::NonZeroU64, sync::Arc};
 
-use zarrs_metadata::codec::VLEN;
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_metadata::{
+    codec::{vlen::VlenIndexDataType, VLEN},
+    v3::MetadataConfiguration,
+};
 
 use crate::{
     array::{
@@ -13,7 +15,6 @@ use crate::{
         transmute_to_bytes_vec, ArrayBytes, BytesRepresentation, ChunkRepresentation, CodecChain,
         DataType, DataTypeSize, Endianness, FillValue, RawBytes, RawBytesOffsets,
     },
-    metadata::codec::vlen::VlenIndexDataType,
     plugin::PluginCreateError,
 };
 

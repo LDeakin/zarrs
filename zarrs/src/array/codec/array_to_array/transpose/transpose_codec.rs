@@ -1,8 +1,7 @@
 use std::{num::NonZeroU64, sync::Arc};
 
 use zarrs_data_type::{DataType, FillValue};
-use zarrs_metadata::codec::TRANSPOSE;
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_metadata::{codec::TRANSPOSE, v3::MetadataConfiguration};
 
 use crate::{
     array::{

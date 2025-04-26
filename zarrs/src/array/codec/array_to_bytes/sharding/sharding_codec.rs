@@ -4,6 +4,8 @@ use std::{
     sync::{atomic::AtomicUsize, Arc},
 };
 
+use zarrs_metadata::v3::MetadataConfiguration;
+
 use crate::{
     array::{
         array_bytes::merge_chunks_vlen,
@@ -34,7 +36,6 @@ use super::{
 use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
 use zarrs_metadata::codec::SHARDING;
-use zarrs_plugin::MetadataConfiguration;
 
 /// A `sharding` codec implementation.
 #[derive(Clone, Debug)]

@@ -1,10 +1,13 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::codec::{
-    zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode},
-    ZFP,
+use zarrs_metadata::{
+    codec::{
+        zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode},
+        ZFP,
+    },
+    v3::MetadataConfiguration,
 };
-use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+use zarrs_plugin::PluginCreateError;
 use zfp_sys::{
     zfp_compress,
     zfp_stream_maximum_size,

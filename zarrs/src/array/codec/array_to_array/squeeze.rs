@@ -54,7 +54,7 @@ fn is_identifier_squeeze(identifier: &str) -> bool {
 pub(crate) fn create_codec_squeeze(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: SqueezeCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(SQUEEZE, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(SQUEEZE, "codec", metadata.to_string()))?;
     let codec = Arc::new(SqueezeCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToArray(codec))
 }

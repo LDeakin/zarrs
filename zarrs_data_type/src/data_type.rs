@@ -8,13 +8,16 @@ use thiserror::Error;
 
 use zarrs_metadata::{
     extension::ExtensionAliasesDataTypeV3,
-    v3::array::{
-        data_type::{self},
-        fill_value::FillValueMetadataV3,
+    v3::{
+        array::{
+            data_type::{self},
+            fill_value::FillValueMetadataV3,
+        },
+        MetadataV3,
     },
     DataTypeSize,
 };
-use zarrs_plugin::{MetadataV3, PluginCreateError, PluginUnsupportedError};
+use zarrs_plugin::{PluginCreateError, PluginUnsupportedError};
 
 use crate::{DataTypeExtension, DataTypePlugin};
 
@@ -231,7 +234,6 @@ impl DataType {
                             }
                             return Err(PluginUnsupportedError::new(
                                 name.to_string(),
-                                metadata.configuration().cloned(),
                                 "data type".to_string(),
                             )
                             .into());
@@ -250,12 +252,10 @@ impl DataType {
         }
 
         // The data type is not supported
-        Err(PluginUnsupportedError::new(
-            metadata.name().to_string(),
-            metadata.configuration().cloned(),
-            "data type".to_string(),
+        Err(
+            PluginUnsupportedError::new(metadata.name().to_string(), "data type".to_string())
+                .into(),
         )
-        .into())
     }
 
     /// Create a fill value from metadata.
