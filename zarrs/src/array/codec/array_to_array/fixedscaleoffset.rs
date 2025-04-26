@@ -62,7 +62,7 @@ pub(crate) fn create_codec_fixedscaleoffset(
 ) -> Result<Codec, PluginCreateError> {
     let configuration: FixedScaleOffsetCodecConfiguration =
         metadata.to_configuration().map_err(|_| {
-            PluginMetadataInvalidError::new(FIXEDSCALEOFFSET, "codec", metadata.clone())
+            PluginMetadataInvalidError::new(FIXEDSCALEOFFSET, "codec", metadata.to_string())
         })?;
     let codec = Arc::new(FixedScaleOffsetCodec::new_with_configuration(
         &configuration,

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_metadata::v3::MetadataConfiguration;
 
 use crate::array::{
     codec::{

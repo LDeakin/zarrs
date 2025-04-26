@@ -86,7 +86,7 @@ pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, Plugi
         let codec = Arc::new(VlenV2Codec::new());
         Ok(Codec::ArrayToBytes(codec))
     } else {
-        Err(PluginMetadataInvalidError::new(VLEN_V2, "codec", metadata.clone()).into())
+        Err(PluginMetadataInvalidError::new(VLEN_V2, "codec", metadata.to_string()).into())
     }
 }
 

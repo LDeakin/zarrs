@@ -37,7 +37,7 @@ pub(crate) fn create_chunk_grid_rectangular(
 ) -> Result<ChunkGrid, PluginCreateError> {
     let configuration: RectangularChunkGridConfiguration =
         metadata.to_configuration().map_err(|_| {
-            PluginMetadataInvalidError::new(RECTANGULAR, "chunk grid", metadata.clone())
+            PluginMetadataInvalidError::new(RECTANGULAR, "chunk grid", metadata.to_string())
         })?;
     let chunk_grid = RectangularChunkGrid::new(&configuration.chunk_shape);
     Ok(ChunkGrid::new(chunk_grid))

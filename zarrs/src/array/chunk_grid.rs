@@ -85,12 +85,10 @@ impl ChunkGrid {
                 _ => {}
             }
         }
-        Err(PluginUnsupportedError::new(
-            metadata.name().to_string(),
-            metadata.configuration().cloned(),
-            "chunk grid".to_string(),
+        Err(
+            PluginUnsupportedError::new(metadata.name().to_string(), "chunk grid".to_string())
+                .into(),
         )
-        .into())
     }
 }
 

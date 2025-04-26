@@ -56,7 +56,7 @@ fn is_identifier_packbits(identifier: &str) -> bool {
 pub(crate) fn create_codec_packbits(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: PackBitsCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(PACKBITS, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(PACKBITS, "codec", metadata.to_string()))?;
     let codec = Arc::new(PackBitsCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

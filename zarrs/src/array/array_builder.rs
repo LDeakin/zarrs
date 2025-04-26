@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use zarrs_metadata::codec;
+use zarrs_metadata::{codec, v3::AdditionalFields, ChunkKeySeparator};
 
-use crate::{
-    metadata::{v3::AdditionalFields, ChunkKeySeparator},
-    node::NodePath,
-};
+use crate::node::NodePath;
 
 use super::{
     chunk_key_encoding::{ChunkKeyEncoding, DefaultChunkKeyEncoding},

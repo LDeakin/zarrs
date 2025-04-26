@@ -66,7 +66,7 @@ fn is_identifier_bytes(identifier: &str) -> bool {
 pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: BytesCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(BYTES, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(BYTES, "codec", metadata.to_string()))?;
     let codec = Arc::new(BytesCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

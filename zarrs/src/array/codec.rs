@@ -85,6 +85,7 @@ mod array_to_bytes_partial_encoder_default;
 pub use array_to_bytes_partial_encoder_default::ArrayToBytesPartialEncoderDefault;
 #[cfg(feature = "async")]
 pub use array_to_bytes_partial_encoder_default::AsyncArrayToBytesPartialEncoderDefault;
+use zarrs_metadata::v3::MetadataConfiguration;
 
 use crate::array_subset::IncompatibleDimensionalityError;
 mod array_to_array_partial_decoder_default;
@@ -108,15 +109,14 @@ pub use bytes_to_bytes_partial_decoder_default::AsyncBytesToBytesPartialDecoderD
 pub use bytes_to_bytes_partial_decoder_default::BytesToBytesPartialDecoderDefault;
 
 use zarrs_data_type::{DataTypeExtensionError, FillValue, IncompatibleFillValueError};
-use zarrs_metadata::{extension::ExtensionAliasesCodecV3, ArrayShape};
-use zarrs_plugin::{MetadataConfiguration, PluginUnsupportedError};
+use zarrs_metadata::{extension::ExtensionAliasesCodecV3, v3::MetadataV3, ArrayShape};
+use zarrs_plugin::PluginUnsupportedError;
 
 use crate::config::global_config;
 use crate::storage::{StoreKeyOffsetValue, WritableStorage};
 use crate::{
     array_subset::{ArraySubset, IncompatibleArraySubsetAndShapeError},
     byte_range::{extract_byte_ranges_read_seek, ByteOffset, ByteRange, InvalidByteRangeError},
-    metadata::v3::MetadataV3,
     plugin::{Plugin, PluginCreateError},
     storage::{ReadableStorage, StorageError, StoreKey},
 };
@@ -242,12 +242,7 @@ impl Codec {
                 _ => {}
             }
         }
-        Err(PluginUnsupportedError::new(
-            metadata.name().to_string(),
-            metadata.configuration().cloned(),
-            "codec".to_string(),
-        )
-        .into())
+        Err(PluginUnsupportedError::new(metadata.name().to_string(), "codec".to_string()).into())
     }
 }
 

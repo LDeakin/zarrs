@@ -134,7 +134,7 @@ fn is_identifier_zfp(identifier: &str) -> bool {
 pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: ZfpCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(ZFP, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(ZFP, "codec", metadata.to_string()))?;
     let codec = Arc::new(ZfpCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

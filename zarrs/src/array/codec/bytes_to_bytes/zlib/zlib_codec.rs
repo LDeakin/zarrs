@@ -4,8 +4,8 @@ use std::{
     sync::Arc,
 };
 
-use zarrs_metadata::codec::ZLIB;
-use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+use zarrs_metadata::{codec::ZLIB, v3::MetadataConfiguration};
+use zarrs_plugin::PluginCreateError;
 
 use crate::array::{
     codec::{

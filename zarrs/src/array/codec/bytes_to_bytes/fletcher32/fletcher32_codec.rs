@@ -1,8 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use num::Integer;
-use zarrs_metadata::codec::FLETCHER32;
-use zarrs_plugin::MetadataConfiguration;
+use zarrs_metadata::{codec::FLETCHER32, v3::MetadataConfiguration};
 
 use crate::array::{
     codec::{

@@ -26,7 +26,10 @@ macro_rules! vlen_v2_module {
                 let codec = Arc::new($struct::new());
                 Ok(Codec::ArrayToBytes(codec))
             } else {
-                Err(PluginMetadataInvalidError::new($identifier, "codec", metadata.clone()).into())
+                Err(
+                    PluginMetadataInvalidError::new($identifier, "codec", metadata.to_string())
+                        .into(),
+                )
             }
         }
     };

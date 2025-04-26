@@ -29,8 +29,11 @@ mod tests {
     };
 
     use super::*;
-    use zarrs_metadata::{v3::array::fill_value::FillValueMetadataV3, DataTypeSize};
-    use zarrs_plugin::{MetadataConfiguration, PluginCreateError};
+    use zarrs_metadata::{
+        v3::{array::fill_value::FillValueMetadataV3, MetadataConfiguration},
+        DataTypeSize,
+    };
+    use zarrs_plugin::PluginCreateError;
 
     inventory::submit! {
         DataTypePlugin::new("zarrs.test_void", is_test_void, create_test_void)

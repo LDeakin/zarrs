@@ -156,7 +156,7 @@ fn create_custom_dtype(metadata: &MetadataV3) -> Result<DataType, PluginCreateEr
     if metadata.configuration_is_none_or_empty() {
         Ok(DataType::Extension(Arc::new(CustomDataTypeFixedSize)))
     } else {
-        Err(PluginMetadataInvalidError::new(CUSTOM_NAME, "codec", metadata.clone()).into())
+        Err(PluginMetadataInvalidError::new(CUSTOM_NAME, "codec", metadata.to_string()).into())
     }
 }
 

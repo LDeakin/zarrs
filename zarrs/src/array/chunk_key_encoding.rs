@@ -78,7 +78,6 @@ impl ChunkKeyEncoding {
         }
         Err(PluginUnsupportedError::new(
             metadata.name().to_string(),
-            metadata.configuration().cloned(),
             "chunk key encoding".to_string(),
         )
         .into())

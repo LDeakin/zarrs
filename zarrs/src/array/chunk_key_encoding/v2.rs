@@ -25,9 +25,10 @@ fn is_name_v2(name: &str) -> bool {
 pub(crate) fn create_chunk_key_encoding_v2(
     metadata: &MetadataV3,
 ) -> Result<ChunkKeyEncoding, PluginCreateError> {
-    let configuration: V2ChunkKeyEncodingConfiguration = metadata
-        .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(V2, "chunk key encoding", metadata.clone()))?;
+    let configuration: V2ChunkKeyEncodingConfiguration =
+        metadata.to_configuration().map_err(|_| {
+            PluginMetadataInvalidError::new(V2, "chunk key encoding", metadata.to_string())
+        })?;
     let v2 = V2ChunkKeyEncoding::new(configuration.separator);
     Ok(ChunkKeyEncoding::new(v2))
 }

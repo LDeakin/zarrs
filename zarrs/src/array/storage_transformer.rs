@@ -59,7 +59,6 @@ pub fn try_create_storage_transformer(
     }
     Err(PluginUnsupportedError::new(
         metadata.name().to_string(),
-        metadata.configuration().cloned(),
         "storage transformer".to_string(),
     )
     .into())

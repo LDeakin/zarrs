@@ -127,7 +127,7 @@ fn is_identifier_vlen(identifier: &str) -> bool {
 pub(crate) fn create_codec_vlen(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
     let configuration: VlenCodecConfiguration = metadata
         .to_configuration()
-        .map_err(|_| PluginMetadataInvalidError::new(VLEN, "codec", metadata.clone()))?;
+        .map_err(|_| PluginMetadataInvalidError::new(VLEN, "codec", metadata.to_string()))?;
     let codec = Arc::new(VlenCodec::new_with_configuration(&configuration)?);
     Ok(Codec::ArrayToBytes(codec))
 }

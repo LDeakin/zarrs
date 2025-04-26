@@ -45,7 +45,7 @@ fn create_custom_dtype(metadata: &MetadataV3) -> Result<DataType, PluginCreateEr
     if metadata.configuration_is_none_or_empty() {
         Ok(DataType::Extension(Arc::new(CustomDataTypeUInt4)))
     } else {
-        Err(PluginMetadataInvalidError::new(UINT4, "codec", metadata.clone()).into())
+        Err(PluginMetadataInvalidError::new(UINT4, "codec", metadata.to_string()).into())
     }
 }
 
