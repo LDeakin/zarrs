@@ -35,7 +35,7 @@ Developed at the [Department of Materials Physics, Australian National Universit
 - Read [The `zarrs` Book].
 - View the [examples] and [the example below](#example).
 - Read the [documentation].
-- Check out the [`zarrs` ecosystem](#zarrs-ecosystem)).
+- Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
 
 ## Example
 ```rust
