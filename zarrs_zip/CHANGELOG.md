@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-04-26
+
 ## Changed
 - Bump `itertools` to 0.14
 - Bump `derive_more` to 2.0.0
 - Bump `thiserror` to 2.0.12
+- Bump `zarrs_storage` to 0.3.3
 
 ## [0.2.0] - 2024-11-15
 
@@ -23,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Split from the `zarrs_storage` crate
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_zip-v0.2.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_zip-v0.2.1...HEAD
+[0.2.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_zip-v0.2.1
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_zip-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_zip-v0.1.0
