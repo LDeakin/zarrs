@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `FillValueFloat::to_float` public
 
 ### Changed
-- Bump `derive_more` to 0.2.0
+- Bump `derive_more` to 2.0.0
 
 ## [0.3.5] - 2025-02-18
 
