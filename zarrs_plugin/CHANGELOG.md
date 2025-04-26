@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-04-26
+
+### Added
+- Add additional tests
+
 ### Changed
 - Bump `thiserror` to 2.0.12
+- **Breaking**: `PluginUnsupportedError` no longer has a `configuration` parameter
+- **Breaking**: `PluginMetadataInvalidError` now uses a `String` representation of metadata
+
+### Removed
+- Dependency on `zarrs_metadata`
+
+### Fixed
+- Broken Zarr spec URLs
 
 ## [0.1.0] - 2025-03-02
 
@@ -16,5 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `plugin` module of `zarrs` 0.20.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_plugin-v0.1.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_plugin-v0.2.0...HEAD
+[0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_plugin-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_plugin-v0.1.0
