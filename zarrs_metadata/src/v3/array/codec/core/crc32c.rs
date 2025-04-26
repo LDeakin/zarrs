@@ -16,7 +16,7 @@ impl MetadataConfigurationSerialize for Crc32cCodecConfiguration {}
 
 /// `crc32c` codec configuration parameters (version 1.0).
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/v1.0.html#configuration-parameters>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/crc32c/index.html#configuration-parameters>.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn codec_crc32c_config_outer1() {
         serde_json::from_str::<MetadataV3>(
-            r#"{ 
+            r#"{
             "name": "crc32c",
             "configuration": {}
         }"#,
@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn codec_crc32c_config_outer2() {
         serde_json::from_str::<MetadataV3>(
-            r#"{ 
+            r#"{
             "name": "crc32c"
         }"#,
         )

@@ -48,7 +48,7 @@ use crate::storage::{AsyncListableStorageTraits, AsyncReadableStorageTraits};
 
 /// A Zarr hierarchy node.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#hierarchy>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#hierarchy>.
 #[derive(Debug, Clone)]
 pub struct Node {
     /// Node path.

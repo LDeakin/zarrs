@@ -1,6 +1,6 @@
 //! The `regular` chunk grid.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#regular-grids>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/chunk-grids/regular-grid/index.html>.
 
 use std::num::NonZeroU64;
 

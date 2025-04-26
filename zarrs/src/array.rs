@@ -1,7 +1,7 @@
 //! Zarr arrays.
 //!
 //! An array is a node in a Zarr hierarchy used to hold multidimensional array data and associated metadata.
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#array>.
 //!
 //! A Zarr V3 array is defined by the following parameters (which are encoded in its JSON metadata):
 //!  - **shape**: defines the length of the array dimensions,
@@ -14,7 +14,7 @@
 //!  - (optional) **storage transformers**: used to intercept and alter the storage keys and bytes of an array before they reach the underlying physical storage, and
 //!  - (optional) **dimension names**: defines the names of the array dimensions.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata> for more information on array metadata.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#array-metadata> for more information on array metadata.
 //!
 //! `zarrs` supports a subset of Zarr V2 arrays which are a compatible subset of Zarr V3 arrays.
 //! This encompasses Zarr V2 array that use supported codecs and **could** be converted to a Zarr V3 array with only a metadata change.

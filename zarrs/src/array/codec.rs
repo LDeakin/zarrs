@@ -8,7 +8,7 @@
 //! A codec chain is itself an array to bytes codec.
 //! A cache may be inserted into a codec chain to optimise partial decoding where appropriate.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id18>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#chunk-encoding>.
 
 pub mod array_to_array;
 pub mod array_to_bytes;

@@ -1,6 +1,6 @@
 //! Zarr common array metadata.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#array-metadata>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#array-metadata>.
 
 mod chunk_key_separator;
 pub use chunk_key_separator::ChunkKeySeparator;

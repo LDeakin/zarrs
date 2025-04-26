@@ -8,7 +8,7 @@
 
 The plugin API for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 
-A `Plugin` creates concrete implementations of [Zarr V3 extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#extension-points) from inputs.
+A `Plugin` creates concrete implementations of [Zarr V3 extension points](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#extension-points) from inputs.
 Extension points include chunk grids, chunk key encodings, codecs, data types, and storage transformers.
 
 In `zarrs`, plugins are registered at compile time using the [`inventory`](https://docs.rs/inventory/latest/inventory/) crate.

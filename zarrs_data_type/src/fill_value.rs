@@ -1,6 +1,6 @@
 //! Zarr fill values.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#fill-value>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#fill-value>.
 
 /// The fill value of the Zarr array.
 ///

@@ -28,7 +28,7 @@ impl TryFrom<MetadataConfiguration> for ShardingCodecConfiguration {
 
 /// Sharding codec configuration parameters.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/v1.0.html#configuration-parameters>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/index.html#configuration-parameters>.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]

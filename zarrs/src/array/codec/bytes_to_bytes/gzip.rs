@@ -6,7 +6,7 @@
 //! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
 //!
 //! ### Specification
-//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/v1.0.html>
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/gzip/index.html>
 //! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/gzip>
 //!
 //! ### Codec `name` Aliases (Zarr V3)

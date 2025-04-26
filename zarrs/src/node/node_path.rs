@@ -5,7 +5,7 @@ use thiserror::Error;
 
 /// A Zarr hierarchy node path.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#path>
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#path>
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display)]
 #[display("{}", _0.to_string_lossy())]
 pub struct NodePath(PathBuf);

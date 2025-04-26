@@ -12,7 +12,7 @@
 //!
 //! ### Specification
 //!
-//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/v1.0.html>
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/index.html>
 //! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/sharding_indexed>
 //!
 //! ### Codec `name` Aliases (Zarr V3)

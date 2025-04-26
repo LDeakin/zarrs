@@ -1,6 +1,6 @@
 //! Zarr chunk grids. Includes a [regular grid](RegularChunkGrid) implementation.
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#chunk-grids>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#chunk-grids>.
 //!
 //! A [`ChunkGrid`] is a [`Box`] wrapped chunk grid which implements [`ChunkGridTraits`].
 //! Chunk grids are Zarr extension points and they can be registered through [`inventory`] as a [`ChunkGridPlugin`].

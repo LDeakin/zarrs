@@ -4,7 +4,7 @@
 //! A [`StorageTransformerChain`] represents a sequence of storage transformers.
 //! A storage transformer chain and individual storage transformers all have the same interface as a [store](crate::storage::store).
 //!
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#id23>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#storage-transformers>.
 
 mod storage_transformer_chain;
 pub use storage_transformer_chain::StorageTransformerChain;

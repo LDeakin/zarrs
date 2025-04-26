@@ -40,7 +40,7 @@ pub(crate) fn create_chunk_key_encoding_default(
 /// - the separator character, followed by,
 /// - the ASCII decimal string representation of the chunk index within that dimension.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#chunk-key-encoding>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/chunk-key-encodings/default/index.html>.
 #[derive(Debug, Clone)]
 pub struct DefaultChunkKeyEncoding {
     separator: ChunkKeySeparator,

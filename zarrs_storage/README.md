@@ -10,7 +10,7 @@ The storage API for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 
 A Zarr store is a system that can be used to store and retrieve data from a Zarr hierarchy.
 For example: a filesystem, HTTP server, FTP server, Amazon S3 bucket, ZIP file, etc.
-The Zarr V3 storage API is detailed here: <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#storage>.
+The Zarr V3 storage API is detailed here: <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#storage>.
 
 This crate includes an in-memory store implementation. See [`zarrs` storage support](https://docs.rs/zarrs/latest/zarrs/index.html#storage-support) for a list of stores that implement the `zarrs_storage` API.
 

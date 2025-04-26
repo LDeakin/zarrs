@@ -4,7 +4,7 @@ use thiserror::Error;
 
 /// A Zarr abstract store prefix.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#abstract-store-interface>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#abstract-store-interface>.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display)]
 pub struct StorePrefix(String);
 

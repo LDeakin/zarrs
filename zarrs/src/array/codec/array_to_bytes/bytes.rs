@@ -6,7 +6,7 @@
 //! This is a core codec and should be compatible with all Zarr V3 implementations that support it.
 //!
 //! ### Specification
-//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/bytes/v1.0.html>
+//! - <https://zarr-specs.readthedocs.io/en/latest/v3/codecs/bytes/index.html>
 //! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/bytes>
 //!
 //! ### Specification Deviations

@@ -1,6 +1,6 @@
 //! A filesystem store for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 //!
-//! This implementation is conformant with the filesystem store defined in the Zarr V3 specification: <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
+//! This implementation is conformant with the filesystem store defined in the Zarr V3 specification: <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/index.html>.
 //!
 //! ## Licence
 //! `zarrs_filesystem` is licensed under either of
@@ -80,7 +80,7 @@ impl FilesystemStoreOptions {
 
 /// A synchronous file system store.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/v1.0.html>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/stores/filesystem/index.html>.
 #[derive(Debug)]
 pub struct FilesystemStore {
     base_path: PathBuf,

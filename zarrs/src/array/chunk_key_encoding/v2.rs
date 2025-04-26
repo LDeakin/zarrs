@@ -38,7 +38,7 @@ pub(crate) fn create_chunk_key_encoding_v2(
 /// - the ASCII decimal string representation of the chunk index within that dimension, followed by
 /// - the separator character, except that it is omitted for the last dimension.
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#chunk-key-encoding>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/chunk-key-encodings/v2/index.html>.
 #[derive(Debug, Clone)]
 pub struct V2ChunkKeyEncoding {
     separator: ChunkKeySeparator,

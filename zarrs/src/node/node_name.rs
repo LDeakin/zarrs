@@ -3,8 +3,8 @@ use thiserror::Error;
 /// A Zarr hierarchy node name.
 ///
 /// See
-/// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#name>, and
-/// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#node-names>.
+/// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#name>, and
+/// - <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#node-names>.
 #[derive(Debug, PartialEq, Eq, derive_more::Display)]
 pub struct NodeName(String);
 

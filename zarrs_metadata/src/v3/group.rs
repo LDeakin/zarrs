@@ -11,7 +11,7 @@ pub use consolidated_metadata::{
 
 /// Zarr group metadata (storage specification v3).
 ///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group-metadata>.
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#group-metadata>.
 ///
 /// An example `JSON` document for an explicit Zarr V3 group:
 /// ```json

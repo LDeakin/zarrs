@@ -2,7 +2,7 @@
 //!
 //! A Zarr group is a node in a Zarr hierarchy.
 //! It can have associated attributes and may have child nodes (groups or [`arrays`](crate::array)).
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group>.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#group>.
 //!
 //! Use [`GroupBuilder`] to setup a new group, or use [`Group::open`] to read and/or write an existing group.
 //!
@@ -21,7 +21,7 @@
 //!     }
 //! }
 //! ```
-//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html#group-metadata> for more information on group metadata.
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#group-metadata> for more information on group metadata.
 
 mod group_builder;
 mod group_metadata_options;
