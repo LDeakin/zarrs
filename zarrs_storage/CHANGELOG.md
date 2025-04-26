@@ -7,13 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add additional tests
+
 ### Changed
 - auto derive storage traits for Arc stores
 
 ## [0.3.2] - 2025-03-10
 
 ### Changed
-- Bump `derive_more` to 0.2.0
+- Bump `derive_more` to 2.0.0
 - Bump `thiserror` to 2.0.12
 - Fix clippy lints
 
