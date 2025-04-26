@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2025-04-26
+
 ### Added
 - Add additional tests
 
@@ -90,7 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Initial release
  - Split from the `storage` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.3.2...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_storage-v0.3.3...HEAD
+[0.3.3]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.3.3
 [0.3.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.3.2
 [0.3.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.3.1
 [0.3.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_storage-v0.3.0
