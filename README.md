@@ -10,18 +10,20 @@
 
 `zarrs` is a Rust library for the [Zarr] storage format for multidimensional arrays and metadata.
 
+> [!TIP]
+> If you are a Python user, check out [`zarrs-python`].
+> It includes a high-performance codec pipeline for the reference [`zarr-python`] implementation.
+
 `zarrs` supports [Zarr V3] and a V3 compatible subset of [Zarr V2].
-It is fully up-to-date and conformant with the Zarr 3.0 specification with support for:
+It is fully up-to-date and conformant with the Zarr 3.1 specification with support for:
 - all *core extensions* (data types, codecs, chunk grids, chunk key encodings, storage transformers),
 - all accepted [Zarr Enhancement Proposals (ZEPs)](https://zarr.dev/zeps/) and several draft ZEPs:
   - ZEP 0003: Variable chunking
   - ZEP 0007: Strings
-- experimental codecs and data types intended for standardisation, and
+  - ZEP 0009: Zarr Extension Naming
+- various registered extensions from [zarr-developers/zarr-extensions/](https://github.com/zarr-developers/zarr-extensions/),
+- experimental codecs and data types intended for future registration, and
 - user-defined custom extensions and stores.
-
-> [!TIP]
-> If you are a Python user, check out [`zarrs-python`].
-> It includes a high-performance codec pipeline for the reference [`zarr-python`] implementation.
 
 A changelog can be found [here][CHANGELOG].
 Correctness issues with past versions are [detailed here][correctness_issues].
@@ -29,10 +31,11 @@ Correctness issues with past versions are [detailed here][correctness_issues].
 Developed at the [Department of Materials Physics, Australian National University, Canberra, Australia].
 
 ## Getting Started
-- Review the [implementation status] ([zarr version support], [array support], [storage support], and the [`zarrs` ecosystem](#zarrs-ecosystem)).
+- Review the [implementation status] which summarises zarr version support, array support (codecs, data types, etc.) and storage support.
 - Read [The `zarrs` Book].
 - View the [examples] and [the example below](#example).
 - Read the [documentation].
+- Check out the [`zarrs` ecosystem](#zarrs-ecosystem)).
 
 ## Example
 ```rust
@@ -139,9 +142,6 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [CHANGELOG]: https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md
 [correctness_issues]: https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md
 [implementation status]: https://docs.rs/zarrs/latest/zarrs/#implementation-status
-[zarr version support]: https://docs.rs/zarrs/latest/zarrs/#zarr-version-support
-[array support]: https://docs.rs/zarrs/latest/zarrs/#array-support
-[storage support]: https://docs.rs/zarrs/latest/zarrs/#storage-support
 [examples]: https://github.com/LDeakin/zarrs/tree/main/zarrs/examples
 [documentation]: https://docs.rs/zarrs/latest/zarrs/
 [The `zarrs` Book]: https://book.zarrs.dev
@@ -167,7 +167,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [`icechunk`]: https://github.com/earth-mover/icechunk
 
 [Zarr]: https://zarr.dev
-[Zarr V3]: https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
+[Zarr V3]: https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html
 [Zarr V2]: https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
 [OME-Zarr]: https://ngff.openmicroscopy.org/latest/
 

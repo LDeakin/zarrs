@@ -1,17 +1,18 @@
 //! `zarrs` is Rust library for the [Zarr](https://zarr.dev) storage format for multidimensional arrays and metadata.
 //!
-//! It supports [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html) and a [V3 compatible subset](#implementation-status) of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
-//! It is fully up-to-date and conformant with the Zarr 3.0 specification with support for:
+//! If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
+//! It includes a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation.
+//!
+//! `zarrs` supports [Zarr V3](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html) and a V3 compatible subset of [Zarr V2](https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html).
+//! It is fully up-to-date and conformant with the Zarr 3.1 specification with support for:
 //! - all *core extensions* (data types, codecs, chunk grids, chunk key encodings, storage transformers),
 //! - all accepted [Zarr Enhancement Proposals (ZEPs)](https://zarr.dev/zeps/) and several draft ZEPs:
 //!   - ZEP 0003: Variable chunking
 //!   - ZEP 0007: Strings
-// TODO: ZEP 0009
-//! - experimental codecs, data types, and chunk grids intended for Zarr V3 standardisation, and
+//!   - ZEP 0009: Zarr Extension Naming
+//! - various registered extensions from [zarr-developers/zarr-extensions/](https://github.com/zarr-developers/zarr-extensions/),
+//! - experimental codecs and data types intended for future registration, and
 //! - user-defined custom extensions and stores.
-//!
-//! If you are a Python user, check out [`zarrs-python`](https://github.com/ilan-gold/zarrs-python).
-//! It includes a high-performance codec pipeline for the reference [`zarr-python`](https://github.com/zarr-developers/zarr-python) implementation.
 //!
 //! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
 //! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
@@ -19,10 +20,10 @@
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
 //! ## Getting Started
-//! - Review the [implementation status](#implementation-status), [array support](#array-support), and [storage support](#storage-support).
+//! - Review the [implementation status](#implementation-status) which summarises zarr version support, array support (codecs, data types, etc.) and storage support.
 //! - Read [The `zarrs` Book].
 //! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#examples).
-//! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/). [`array::Array`] is a good place to start.
+//! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/).
 //! - Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
 //!
 //! ## Implementation Status
