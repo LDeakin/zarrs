@@ -10,7 +10,7 @@
 //! - <https://github.com/google/neuroglancer/issues/625>
 //!
 //! ### Specification:
-//! - <https://github.com/zarr-developers/zarr-extensions/tree/zarr-python-exts/codecs/zstd>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/zstd>
 //! - <https://github.com/zarr-developers/zarr-specs/pull/256>
 //!
 //! ### Codec `name` Aliases (Zarr V3)

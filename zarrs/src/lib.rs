@@ -83,7 +83,7 @@
 //! The [`opendal`] and [`object_store`] crates are popular Rust storage backends that are fully supported via [`zarrs_opendal`] and [`zarrs_object_store`].
 //! These backends provide more feature complete HTTP stores than [`zarrs_http`].
 //!
-//! [`zarrs_icechunk`] implements the [Icechunk](https://icechunk.io/overview/) transactional storage engine, a storage specification for Zarr that supports [`object_store`] stores.
+//! [`zarrs_icechunk`] implements the [Icechunk](https://icechunk.io) transactional storage engine, a storage specification for Zarr that supports [`object_store`] stores.
 //!
 //! The [`AsyncToSyncStorageAdapter`](crate::storage::storage_adapter::async_to_sync::AsyncToSyncStorageAdapter) enables some async stores to be used in a sync context.
 //!

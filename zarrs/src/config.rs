@@ -245,13 +245,13 @@ impl Config {
         self
     }
 
-    /// Get the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
+    /// Get the [metadata erase version](#metadata-erase-version) configuration.
     #[must_use]
     pub fn metadata_erase_version(&self) -> MetadataEraseVersion {
         self.metadata_erase_version
     }
 
-    /// Set the [metadata erase version behaviour](#metadata-erase-version-behaviour) configuration.
+    /// Set the [metadata erase version](#metadata-erase-version) configuration.
     pub fn set_metadata_erase_version(&mut self, version: MetadataEraseVersion) -> &mut Self {
         self.metadata_erase_version = version;
         self

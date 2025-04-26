@@ -184,7 +184,7 @@ impl PcodecCompressionLevel {
 /// An integer from 0 to 7 controlling the delta encoding order.
 ///
 /// It is the number of times to apply delta encoding before compressing.
-/// See <https://docs.rs/pco/latest/pco/struct.ChunkConfig.html#structfield.delta_encoding_order>.
+/// See <https://docs.rs/pco/latest/pco/enum.DeltaSpec.html>.
 ///
 /// - 0th order takes numbers as-is. This is perfect for columnar data were the order is essentially random.
 /// - 1st order takes consecutive differences, leaving `[0, 2, 0, 2, 0, 2, 0]`. This is best for continuous but noisy time series data, like stock prices or most time series data.

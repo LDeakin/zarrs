@@ -4,7 +4,7 @@
 //! This codec is fully compatible with the `vlen-utf8` codec in `zarr-python`.
 //!
 //! ### Specification
-//! - <https://github.com/zarr-developers/zarr-extensions/tree/zarr-python-exts/codecs/vlen-utf8>
+//! - <https://github.com/zarr-developers/zarr-extensions/tree/main/codecs/vlen-utf8>
 //!
 //! ### Codec `name` Aliases (Zarr V3)
 //! - `vlen-utf8`
