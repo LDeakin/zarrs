@@ -7,10 +7,11 @@ use std::{borrow::Cow, sync::Arc};
 
 use serde::Deserialize;
 use zarrs::array::{
-    ArrayBuilder, ArrayBytes, ArrayError, DataTypeSize, Element, ElementOwned, FillValueMetadataV3,
+    ArrayBuilder, ArrayBytes, ArrayError, DataType, DataTypeSize, Element, ElementOwned,
+    FillValueMetadataV3,
 };
 use zarrs_data_type::{
-    DataType, DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
+    DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
     DataTypeExtensionError, DataTypePlugin, FillValue, IncompatibleFillValueError,
     IncompatibleFillValueMetadataError,
 };
@@ -38,9 +39,11 @@ fn is_custom_dtype(name: &str) -> bool {
     name == FLOAT8_E3M4
 }
 
-fn create_custom_dtype(metadata: &MetadataV3) -> Result<DataType, PluginCreateError> {
+fn create_custom_dtype(
+    metadata: &MetadataV3,
+) -> Result<Arc<dyn DataTypeExtension>, PluginCreateError> {
     if metadata.configuration_is_none_or_empty() {
-        Ok(DataType::Extension(Arc::new(CustomDataTypeFloat8e3m4)))
+        Ok(Arc::new(CustomDataTypeFloat8e3m4))
     } else {
         Err(PluginMetadataInvalidError::new(FLOAT8_E3M4, "codec", metadata.to_string()).into())
     }

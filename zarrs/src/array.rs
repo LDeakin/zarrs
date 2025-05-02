@@ -29,13 +29,14 @@ mod array_metadata_options;
 mod array_representation;
 mod bytes_representation;
 mod chunk_cache;
+mod element;
+
 pub mod chunk_grid;
 pub mod chunk_key_encoding;
 pub mod codec;
 pub mod concurrency;
-mod element;
+pub mod data_type;
 pub mod storage_transformer;
-pub use crate::data_type; // re-export for zarrs < 0.20 compat
 
 #[cfg(feature = "dlpack")]
 mod array_dlpack_ext;
@@ -69,7 +70,7 @@ pub use self::{
     element::{Element, ElementFixedLength, ElementOwned},
     storage_transformer::StorageTransformerChain,
 };
-pub use crate::data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
+pub use data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
 
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{

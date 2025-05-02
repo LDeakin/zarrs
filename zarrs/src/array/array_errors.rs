@@ -1,11 +1,11 @@
 use thiserror::Error;
 
 use crate::{
+    array::data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     array_subset::{
         ArraySubset, IncompatibleDimensionalityError, IncompatibleOffsetError,
         IncompatibleStartEndIndicesError,
     },
-    data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
     metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
     plugin::PluginCreateError,

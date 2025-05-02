@@ -6,11 +6,11 @@ use derive_more::Deref;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use zarrs::array::{
-    ArrayBuilder, ArrayBytes, ArrayError, DataTypeSize, Element, ElementOwned, FillValueMetadataV3,
-    RawBytesOffsets,
+    ArrayBuilder, ArrayBytes, ArrayError, DataType, DataTypeSize, Element, ElementOwned,
+    FillValueMetadataV3, RawBytesOffsets,
 };
 use zarrs_data_type::{
-    DataType, DataTypeExtension, DataTypePlugin, FillValue, IncompatibleFillValueError,
+    DataTypeExtension, DataTypePlugin, FillValue, IncompatibleFillValueError,
     IncompatibleFillValueMetadataError,
 };
 use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
@@ -91,9 +91,11 @@ fn is_custom_dtype(name: &str) -> bool {
     name == CUSTOM_NAME
 }
 
-fn create_custom_dtype(metadata: &MetadataV3) -> Result<DataType, PluginCreateError> {
+fn create_custom_dtype(
+    metadata: &MetadataV3,
+) -> Result<Arc<dyn DataTypeExtension>, PluginCreateError> {
     if metadata.configuration_is_none_or_empty() {
-        Ok(DataType::Extension(Arc::new(CustomDataTypeVariableSize)))
+        Ok(Arc::new(CustomDataTypeVariableSize))
     } else {
         Err(PluginMetadataInvalidError::new(CUSTOM_NAME, "codec", metadata.to_string()).into())
     }

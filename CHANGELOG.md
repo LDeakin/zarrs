@@ -11,7 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
 - Add `ArrayBytesFixedDisjointView[CreateError]`
-- Add support for data type extensions with `zarrs_data_type` 0.2.0
+- Add support for data type extensions
+  - The data type extension API is defined in the `zarrs_data_type` crate
+  - Add `Extension` variant to `DataType`
+  - **Breaking**: `DataType::metadata_fill_value()` is now fallible
+  - **Breaking**: `DataType::from_metadata()` now returns a `PluginCreateError` on error instead of `UnsupportedDataTypeError`
+  - **Breaking**: `DataType::from_metadata()` has an additional `ExtensionAliasesDataTypeV3` parameter
+  - **Breaking**: `DataType::[fixed_]size()` are no longer `const`
+  - **Breaking**: Remove `TryFrom<DataTypeMetadataV3>` for `DataType`
+  - **Breaking**: Remove `DataType::identifier()`
+  - **Breaking**: move the `zarrs::array::{data_type,fill_value}` modules into the `zarrs_data_type` crate
 - Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
 - Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop
   - Gated by the `dlpack` feature
@@ -40,7 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: change `RawBytesOffsets` into a validated newtype
 - **Breaking**: `ArrayBytes::new_vlen()` not returns a `Result` and validates bytes/offsets compatibility
 - Reenable broken compatibility tests since fixed in `zarr-python`/`numcodecs`
-- **Breaking**: move the `zarrs::array::{data_type,fill_value}` modules into the `zarrs_data_type` crate
 - Bump `lru` to 0.13
 - Use codec identifiers in the example for `experimental_codec_names` remapping
 - Allow `{Array,Group}::new_with_metadata()` and `{Array,Group}Builder` to create arrays with `"must_understand": true` additional fields

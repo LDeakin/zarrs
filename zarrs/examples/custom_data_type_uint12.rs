@@ -7,13 +7,13 @@ use std::{borrow::Cow, sync::Arc};
 use serde::Deserialize;
 use zarrs::{
     array::{
-        ArrayBuilder, ArrayBytes, ArrayError, DataTypeSize, Element, ElementOwned,
+        ArrayBuilder, ArrayBytes, ArrayError, DataType, DataTypeSize, Element, ElementOwned,
         FillValueMetadataV3,
     },
     array_subset::ArraySubset,
 };
 use zarrs_data_type::{
-    DataType, DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
+    DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
     DataTypeExtensionError, DataTypeExtensionPackBitsCodec, DataTypePlugin, FillValue,
     IncompatibleFillValueError, IncompatibleFillValueMetadataError,
 };
@@ -41,9 +41,11 @@ fn is_custom_dtype(name: &str) -> bool {
     name == UINT12
 }
 
-fn create_custom_dtype(metadata: &MetadataV3) -> Result<DataType, PluginCreateError> {
+fn create_custom_dtype(
+    metadata: &MetadataV3,
+) -> Result<Arc<dyn DataTypeExtension>, PluginCreateError> {
     if metadata.configuration_is_none_or_empty() {
-        Ok(DataType::Extension(Arc::new(CustomDataTypeUInt12)))
+        Ok(Arc::new(CustomDataTypeUInt12))
     } else {
         Err(PluginMetadataInvalidError::new(UINT12, "codec", metadata.to_string()).into())
     }

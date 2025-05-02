@@ -2,7 +2,36 @@
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#fill-value>.
 
-/// The fill value of the Zarr array.
+use thiserror::Error;
+use zarrs_metadata::v3::array::fill_value::FillValueMetadataV3;
+
+/// A fill value metadata incompatibility error.
+#[derive(Debug, Error)]
+#[error("incompatible fill value {} for data type {}", _1.to_string(), _0.to_string())]
+pub struct IncompatibleFillValueMetadataError(String, FillValueMetadataV3);
+
+impl IncompatibleFillValueMetadataError {
+    /// Create a new [`IncompatibleFillValueMetadataError`].
+    #[must_use]
+    pub fn new(data_type: String, fill_value_metadata: FillValueMetadataV3) -> Self {
+        Self(data_type, fill_value_metadata)
+    }
+}
+
+/// A fill value incompatibility error.
+#[derive(Debug, Error)]
+#[error("incompatible fill value {1} for data type {0}")]
+pub struct IncompatibleFillValueError(String, FillValue);
+
+impl IncompatibleFillValueError {
+    /// Create a new incompatible fill value error.
+    #[must_use]
+    pub const fn new(data_type_name: String, fill_value: FillValue) -> Self {
+        Self(data_type_name, fill_value)
+    }
+}
+
+/// A fill value.
 ///
 /// Provides an element value to use for uninitialised portions of the Zarr array.
 #[derive(Clone, Eq, PartialEq, Debug)]

@@ -2,7 +2,8 @@
 
 use std::sync::Arc;
 
-use zarrs_data_type::{DataType, DataTypeExtensionError};
+use crate::array::DataType;
+use zarrs_data_type::DataTypeExtensionError;
 use zarrs_metadata::{codec::BYTES, v3::MetadataConfiguration};
 use zarrs_plugin::PluginCreateError;
 
