@@ -47,11 +47,11 @@ pub const COMPLEX128: &str = "complex128";
 /// Unique identifier for the `r*` data type (core).
 pub const RAWBITS: &str = "r*";
 
-/// Unique identifier for the `bfloat16` data type (extension).
+/// Unique identifier for the `bfloat16` data type (registered).
 pub const BFLOAT16: &str = "bfloat16";
 
-/// Unique identifier for the `string` data type (extension).
+/// Unique identifier for the `string` data type (registered).
 pub const STRING: &str = "string";
 
-/// Unique identifier for the `bytes` data type (extension).
+/// Unique identifier for the `bytes` data type (registered).
 pub const BYTES: &str = "bytes";
