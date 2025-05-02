@@ -10,23 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add support for data type extensions
   - Add `DataTypePlugin` and `DataTypeExtension`
-  - Add `Extension` variant to `DataType`
   - Add `DataTypeExtensionBytesCodec`, `DataTypeExtensionBytesCodecError`
   - Add `DataTypeExtensionPackBitsCodec`
+  - This crate no longer defines explicit data types
 
 ### Changed
-- **Breaking**: `DataType::metadata_fill_value()` is now fallible
-- **Breaking**: `DataType::from_metadata()` now returns a `PluginCreateError` on error instead of `UnsupportedDataTypeError`
-- **Breaking**: `DataType::from_metadata()` has an additional `ExtensionAliasesDataTypeV3` parameter
-- **Breaking**: `DataType::[fixed_]size()` are no longer `const`
 - Bump `derive_more` to 2.0.0
 - Bump `half` to 2.3.1
 - Bump `thiserror` to 2.0.12
 
 ### Removed
+- **Breaking**: Remove `DataType` (moved to `zarrs::array[::data_type]::DataType`)
 - **Breaking**: Remove `UnsupportedDataTypeError`
-- **Breaking**: Remove `DataType::identifier()`
-- **Breaking**: Remove `TryFrom<DataTypeMetadataV3>` for `DataType`
 
 ## [0.1.0] - 2025-01-24
 

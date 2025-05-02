@@ -4,8 +4,11 @@
 
 use std::{fmt::Debug, mem::discriminant, sync::Arc};
 
-use thiserror::Error;
-
+pub use zarrs_data_type::{
+    DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
+    DataTypeExtensionError, DataTypeExtensionPackBitsCodec, DataTypePlugin, FillValue,
+    IncompatibleFillValueError, IncompatibleFillValueMetadataError,
+};
 use zarrs_metadata::{
     extension::ExtensionAliasesDataTypeV3,
     v3::{
@@ -18,10 +21,6 @@ use zarrs_metadata::{
     DataTypeSize,
 };
 use zarrs_plugin::{PluginCreateError, PluginUnsupportedError};
-
-use crate::{DataTypeExtension, DataTypePlugin};
-
-use super::FillValue;
 
 /// A data type.
 #[derive(Clone, Debug)]
@@ -60,13 +59,9 @@ pub enum DataType {
     Complex128,
     /// `r*` raw bits, variable size given by *, limited to be a multiple of 8.
     RawBits(usize), // the stored usize is the size in bytes
-    /// A UTF-8 encoded string. **Experimental**.
-    ///
-    /// This data type is not standardised in the Zarr V3 specification.
+    /// A UTF-8 encoded string.
     String,
-    /// Variable-sized binary data. **Experimental**.
-    ///
-    /// This data type is not standardised in the Zarr V3 specification.
+    /// Variable-sized binary data.
     Bytes,
     /// An extension data type.
     Extension(Arc<dyn DataTypeExtension>)
@@ -85,32 +80,6 @@ impl PartialEq for DataType {
 }
 
 impl Eq for DataType {}
-
-/// A fill value metadata incompatibility error.
-#[derive(Debug, Error)]
-#[error("incompatible fill value {} for data type {}", _1.to_string(), _0.to_string())]
-pub struct IncompatibleFillValueMetadataError(String, FillValueMetadataV3);
-
-impl IncompatibleFillValueMetadataError {
-    /// Create a new [`IncompatibleFillValueMetadataError`].
-    #[must_use]
-    pub fn new(data_type: String, fill_value_metadata: FillValueMetadataV3) -> Self {
-        Self(data_type, fill_value_metadata)
-    }
-}
-
-/// A fill value incompatibility error.
-#[derive(Debug, Error)]
-#[error("incompatible fill value {1} for data type {0}")]
-pub struct IncompatibleFillValueError(String, FillValue);
-
-impl IncompatibleFillValueError {
-    /// Create a new incompatible fill value error.
-    #[must_use]
-    pub const fn new(data_type_name: String, fill_value: FillValue) -> Self {
-        Self(data_type_name, fill_value)
-    }
-}
 
 impl DataType {
     /// Returns the name.
@@ -247,7 +216,7 @@ impl DataType {
         let identifier = data_type_aliases.identifier(metadata.name());
         for plugin in inventory::iter::<DataTypePlugin> {
             if plugin.match_name(identifier) {
-                return plugin.create(&metadata.clone());
+                return plugin.create(&metadata.clone()).map(DataType::Extension);
             }
         }
 
@@ -268,8 +237,8 @@ impl DataType {
         fill_value: &FillValueMetadataV3,
     ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
         use FillValue as FV;
-        let err0 = || IncompatibleFillValueMetadataError(self.name(), fill_value.clone());
-        let err = |_| IncompatibleFillValueMetadataError(self.name(), fill_value.clone());
+        let err0 = || IncompatibleFillValueMetadataError::new(self.name(), fill_value.clone());
+        let err = |_| IncompatibleFillValueMetadataError::new(self.name(), fill_value.clone());
         match self {
             Self::Bool => Ok(FV::from(fill_value.as_bool().ok_or_else(err0)?)),
             Self::Int8 => {

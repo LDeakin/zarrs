@@ -1,9 +1,9 @@
 use std::{ffi::c_void, sync::Arc};
 
+use crate::array::DataType;
 use derive_more::Display;
 use dlpark::{ffi::Device, ShapeAndStrides, ToTensor};
 use thiserror::Error;
-use zarrs_data_type::DataType;
 
 use super::{ChunkRepresentation, RawBytes};
 
@@ -95,11 +95,10 @@ impl ToTensor for RawBytesDlPack {
 #[cfg(test)]
 mod tests {
     use dlpark::{IntoDLPack, ManagedTensor};
-    use zarrs_data_type::{DataType, FillValue};
     use zarrs_storage::store::MemoryStore;
 
     use crate::{
-        array::{codec::CodecOptions, ArrayBuilder, ArrayDlPackExt},
+        array::{codec::CodecOptions, ArrayBuilder, ArrayDlPackExt, DataType, FillValue},
         array_subset::ArraySubset,
     };
 

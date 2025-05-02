@@ -1,11 +1,13 @@
+use std::sync::Arc;
+
 use zarrs_metadata::v3::MetadataV3;
 use zarrs_plugin::{Plugin, PluginCreateError};
 
-use crate::DataType;
+use crate::DataTypeExtension;
 
 /// A data type plugin.
 #[derive(derive_more::Deref)]
-pub struct DataTypePlugin(Plugin<DataType, MetadataV3>);
+pub struct DataTypePlugin(Plugin<Arc<dyn DataTypeExtension>, MetadataV3>);
 inventory::collect!(DataTypePlugin);
 
 impl DataTypePlugin {
@@ -13,7 +15,9 @@ impl DataTypePlugin {
     pub const fn new(
         identifier: &'static str,
         match_name_fn: fn(name: &str) -> bool,
-        create_fn: fn(metadata: &MetadataV3) -> Result<DataType, PluginCreateError>,
+        create_fn: fn(
+            metadata: &MetadataV3,
+        ) -> Result<Arc<dyn DataTypeExtension>, PluginCreateError>,
     ) -> Self {
         Self(Plugin::new(identifier, match_name_fn, create_fn))
     }
@@ -74,8 +78,10 @@ mod tests {
         name == "zarrs.test_void"
     }
 
-    fn create_test_void(_metadata: &MetadataV3) -> Result<DataType, PluginCreateError> {
-        Ok(DataType::Extension(Arc::new(TestVoidDataType)))
+    fn create_test_void(
+        _metadata: &MetadataV3,
+    ) -> Result<Arc<dyn DataTypeExtension>, PluginCreateError> {
+        Ok(Arc::new(TestVoidDataType))
     }
 
     #[test]
@@ -87,20 +93,16 @@ mod tests {
                 let data_type = plugin.create(&MetadataV3::new("zarrs.test_void")).unwrap();
                 assert_eq!(data_type.name(), "zarrs.test_void");
                 assert_eq!(data_type.size(), DataTypeSize::Fixed(0));
-                assert!(data_type.metadata().configuration_is_none_or_empty());
-                assert!(data_type
-                    .fill_value_from_metadata(&FillValueMetadataV3::Null)
-                    .is_ok());
+                assert!(data_type.configuration().is_empty());
+                assert!(data_type.fill_value(&FillValueMetadataV3::Null).is_ok());
                 assert_eq!(
                     data_type
                         .metadata_fill_value(&FillValue::new(vec![]))
                         .unwrap(),
                     FillValueMetadataV3::Null
                 );
-                if let DataType::Extension(ext) = data_type {
-                    assert!(ext.codec_bytes().is_err());
-                    assert!(ext.codec_packbits().is_err());
-                }
+                assert!(data_type.codec_bytes().is_err());
+                assert!(data_type.codec_packbits().is_err());
             }
         }
         assert!(found);

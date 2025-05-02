@@ -74,7 +74,6 @@ pub(crate) fn create_codec_fixedscaleoffset(
 mod tests {
     use std::num::NonZeroU64;
 
-    use zarrs_data_type::DataType;
     use zarrs_metadata::codec::fixedscaleoffset::FixedScaleOffsetCodecConfiguration;
 
     use crate::array::{
@@ -82,7 +81,7 @@ mod tests {
             array_to_array::fixedscaleoffset::FixedScaleOffsetCodec, ArrayToArrayCodecTraits,
             CodecOptions,
         },
-        ArrayBytes, ChunkRepresentation,
+        ArrayBytes, ChunkRepresentation, DataType,
     };
 
     #[test]

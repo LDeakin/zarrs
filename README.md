@@ -103,7 +103,7 @@ println!("{array_ndarray:4}");
 
 ### Core
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
-- [`zarrs_data_type`]: Zarr data types (re-exported as `zarrs::data_type`).
+- [`zarrs_data_type`]: Zarr data type extension support (re-exported in `zarrs::array::data_type`).
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
 - [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).

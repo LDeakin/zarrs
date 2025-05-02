@@ -34,9 +34,9 @@ pub use crate::metadata::codec::packbits::{
 };
 use crate::{array::codec::CodecError, metadata::codec::PACKBITS};
 
+use crate::array::DataType;
 use num::Integer;
 pub use packbits_codec::PackBitsCodec;
-use zarrs_data_type::DataType;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
@@ -156,14 +156,13 @@ mod tests {
     use std::{num::NonZeroU64, sync::Arc};
 
     use num::Integer;
-    use zarrs_data_type::{DataType, FillValue};
     use zarrs_metadata::codec::packbits::PackBitsPaddingEncoding;
 
     use crate::{
         array::{
             codec::{ArrayToBytesCodecTraits, BytesCodec, CodecOptions},
             element::{Element, ElementOwned},
-            ChunkRepresentation,
+            ChunkRepresentation, DataType, FillValue,
         },
         array_subset::ArraySubset,
     };
