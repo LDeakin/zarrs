@@ -1,9 +1,9 @@
 #### Core
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
-- [`zarrs_data_type`]: Zarr data type extension support (re-exported in `zarrs::array::data_type`).
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
-- [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
+- [`zarrs_data_type`]: The data type extension API for `zarrs` (re-exported in `zarrs::array::data_type`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
+- [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
 
 #### Stores
 - [`zarrs_filesystem`]: A filesystem store (re-exported as `zarrs::filesystem`).
@@ -23,7 +23,7 @@
 - [`ome_zarr_metadata`]: A library for OME-Zarr (previously OME-NGFF) metadata.
 
 #### Tools
-- [`zarrs_tools`]: Various tools for creating and manipulating Zarr V3 data with the zarrs rust crate
+- [`zarrs_tools`]: Various tools for creating and manipulating Zarr V3 data with the `zarrs` rust crate
   - A reencoder that can change codecs, chunk shape, convert Zarr V2 to V3, etc.
   - Create an [OME-Zarr] hierarchy from a Zarr array.
   - Transform arrays: crop, rescale, downsample, gradient magnitude, gaussian, noise filtering, etc.
