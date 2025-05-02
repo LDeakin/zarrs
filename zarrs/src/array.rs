@@ -56,7 +56,7 @@ pub use self::{
     array_bytes_fixed_disjoint_view::{
         ArrayBytesFixedDisjointView, ArrayBytesFixedDisjointViewCreateError,
     },
-    array_errors::{ArrayCreateError, ArrayError},
+    array_errors::{AdditionalFieldUnsupportedError, ArrayCreateError, ArrayError},
     array_metadata_options::ArrayMetadataOptions,
     array_representation::{
         ArrayRepresentation, ArrayRepresentationBase, ArraySize, ChunkRepresentation,
@@ -101,7 +101,7 @@ pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
 
-use zarrs_metadata::{v2::array::DataTypeMetadataV2, v3::UnsupportedAdditionalFieldError};
+use zarrs_metadata::v2::array::DataTypeMetadataV2;
 // TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use crate::{
@@ -907,8 +907,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
             ArrayMetadata::V3(metadata) => {
                 for extension in &metadata.extensions {
                     if extension.must_understand() {
-                        return Err(ArrayCreateError::UnsupportedAdditionalFieldError(
-                            UnsupportedAdditionalFieldError::new(
+                        return Err(ArrayCreateError::AdditionalFieldUnsupportedError(
+                            AdditionalFieldUnsupportedError::new(
                                 extension.name().to_string(),
                                 extension
                                     .configuration()
@@ -929,8 +929,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
         };
         for (name, field) in additional_fields {
             if field.must_understand() {
-                return Err(ArrayCreateError::UnsupportedAdditionalFieldError(
-                    UnsupportedAdditionalFieldError::new(name.clone(), field.as_value().clone()),
+                return Err(ArrayCreateError::AdditionalFieldUnsupportedError(
+                    AdditionalFieldUnsupportedError::new(name.clone(), field.as_value().clone()),
                 ));
             }
         }

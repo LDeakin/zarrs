@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Remove the `consolidated_metadata` field from `GroupMetadataV3` and `GroupMetadataV3::with_consolidated_metadata`
   - **Breaking**: Remove the `must_understand` field of `ConsolidatedMetadata`
   - Consolidated metadata must be manually deserialised from `additional_fields` instead
+- **Breaking**: Move `zarrs_metadata::v3::UnsupportedAdditionalFieldError` to `zarrs::array::AdditionalFieldUnsupportedError`
 
 ### Fixed
 - Stricter parameter validation for the `zfpy` Codec

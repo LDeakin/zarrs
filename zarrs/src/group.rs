@@ -35,15 +35,11 @@ use zarrs_metadata::NodeMetadata;
 use zarrs_storage::ListableStorageTraits;
 
 use crate::{
-    array::{Array, ArrayCreateError},
+    array::{AdditionalFieldUnsupportedError, Array, ArrayCreateError},
     config::{
         global_config, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
-    metadata::{
-        v2::GroupMetadataV2,
-        v2_to_v3::group_metadata_v2_to_v3,
-        v3::{AdditionalFields, UnsupportedAdditionalFieldError},
-    },
+    metadata::{v2::GroupMetadataV2, v2_to_v3::group_metadata_v2_to_v3, v3::AdditionalFields},
     node::{
         get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node,
         NodeCreateError, NodePath, NodePathError,
@@ -230,8 +226,8 @@ impl<TStorage: ?Sized> Group<TStorage> {
             GroupMetadata::V3(metadata) => {
                 for extension in &metadata.extensions {
                     if extension.must_understand() {
-                        return Err(GroupCreateError::UnsupportedAdditionalFieldError(
-                            UnsupportedAdditionalFieldError::new(
+                        return Err(GroupCreateError::AdditionalFieldUnsupportedError(
+                            AdditionalFieldUnsupportedError::new(
                                 extension.name().to_string(),
                                 extension
                                     .configuration()
@@ -252,8 +248,8 @@ impl<TStorage: ?Sized> Group<TStorage> {
         };
         for (name, field) in additional_fields {
             if field.must_understand() {
-                return Err(GroupCreateError::UnsupportedAdditionalFieldError(
-                    UnsupportedAdditionalFieldError::new(name.clone(), field.as_value().clone()),
+                return Err(GroupCreateError::AdditionalFieldUnsupportedError(
+                    AdditionalFieldUnsupportedError::new(name.clone(), field.as_value().clone()),
                 ));
             }
         }
@@ -607,7 +603,7 @@ pub enum GroupCreateError {
     NodePathError(#[from] NodePathError),
     /// Unsupported additional field.
     #[error(transparent)]
-    UnsupportedAdditionalFieldError(UnsupportedAdditionalFieldError),
+    AdditionalFieldUnsupportedError(AdditionalFieldUnsupportedError),
     /// Storage error.
     #[error(transparent)]
     StorageError(#[from] StorageError),

@@ -284,37 +284,6 @@ impl ConfigurationInvalidError {
     }
 }
 
-// FIXME: Move to `zarrs` itself in 0.4.0
-/// An unsupported additional field error.
-///
-/// An unsupported field in array or group metadata is an unrecognised field without `"must_understand": false`.
-#[derive(Debug, Error)]
-#[error("unsupported additional field {name} with value {value}")]
-pub struct UnsupportedAdditionalFieldError {
-    name: String,
-    value: Value,
-}
-
-impl UnsupportedAdditionalFieldError {
-    /// Create a new [`UnsupportedAdditionalFieldError`].
-    #[must_use]
-    pub fn new(name: String, value: Value) -> UnsupportedAdditionalFieldError {
-        Self { name, value }
-    }
-
-    /// Return the name of the unsupported additional field.
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    /// Return the value of the unsupported additional field.
-    #[must_use]
-    pub const fn value(&self) -> &Value {
-        &self.value
-    }
-}
-
 /// An additional field in array or group metadata.
 ///
 /// A field that is not recognised / supported by `zarrs` will be considered an additional field.

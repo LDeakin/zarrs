@@ -1,3 +1,4 @@
+use serde_json::Value;
 use thiserror::Error;
 
 use crate::{
@@ -6,7 +7,6 @@ use crate::{
         ArraySubset, IncompatibleDimensionalityError, IncompatibleOffsetError,
         IncompatibleStartEndIndicesError,
     },
-    metadata::v3::UnsupportedAdditionalFieldError,
     node::NodePathError,
     plugin::PluginCreateError,
     storage::StorageError,
@@ -22,7 +22,7 @@ pub enum ArrayCreateError {
     NodePathError(#[from] NodePathError),
     /// Unsupported additional field.
     #[error(transparent)]
-    UnsupportedAdditionalFieldError(#[from] UnsupportedAdditionalFieldError),
+    AdditionalFieldUnsupportedError(#[from] AdditionalFieldUnsupportedError),
     /// Unsupported data type.
     #[error(transparent)]
     DataTypeCreateError(PluginCreateError),
@@ -124,4 +124,34 @@ pub enum ArrayError {
     /// A `DLPack` error
     #[error(transparent)]
     DlPackError(#[from] super::array_dlpack_ext::ArrayDlPackExtError),
+}
+
+/// An unsupported additional field error.
+///
+/// An unsupported field in array or group metadata is an unrecognised field without `"must_understand": false`.
+#[derive(Debug, Error)]
+#[error("unsupported additional field {name} with value {value}")]
+pub struct AdditionalFieldUnsupportedError {
+    name: String,
+    value: Value,
+}
+
+impl AdditionalFieldUnsupportedError {
+    /// Create a new [`AdditionalFieldUnsupportedError`].
+    #[must_use]
+    pub fn new(name: String, value: Value) -> AdditionalFieldUnsupportedError {
+        Self { name, value }
+    }
+
+    /// Return the name of the unsupported additional field.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Return the value of the unsupported additional field.
+    #[must_use]
+    pub const fn value(&self) -> &Value {
+        &self.value
+    }
 }
