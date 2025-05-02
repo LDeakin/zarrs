@@ -1,13 +1,18 @@
 //! Zarr data types.
 //!
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#data-types>.
+//!
+//! This submodule re-exports much of the [`zarrs_data_type`] crate.
+//!
+//! Custom data types can be implemented by registering structs that implement the traits of [`zarrs_data_type`].
+//! A custom data type guide can be found in [The `zarrs` book](https://book.zarrs.dev).
 
 use std::{fmt::Debug, mem::discriminant, sync::Arc};
 
 pub use zarrs_data_type::{
     DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
-    DataTypeExtensionError, DataTypeExtensionPackBitsCodec, DataTypePlugin, FillValue,
-    IncompatibleFillValueError, IncompatibleFillValueMetadataError,
+    DataTypeExtensionError, DataTypeExtensionPackBitsCodec, DataTypeFillValueError,
+    DataTypeFillValueMetadataError, DataTypePlugin, FillValue,
 };
 use zarrs_metadata::{
     extension::ExtensionAliasesDataTypeV3,
@@ -231,14 +236,14 @@ impl DataType {
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleFillValueMetadataError`] if the fill value is incompatible with the data type.
+    /// Returns [`DataTypeFillValueMetadataError`] if the fill value is incompatible with the data type.
     pub fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadataV3,
-    ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
+    ) -> Result<FillValue, DataTypeFillValueMetadataError> {
         use FillValue as FV;
-        let err0 = || IncompatibleFillValueMetadataError::new(self.name(), fill_value.clone());
-        let err = |_| IncompatibleFillValueMetadataError::new(self.name(), fill_value.clone());
+        let err0 = || DataTypeFillValueMetadataError::new(self.name(), fill_value.clone());
+        let err = |_| DataTypeFillValueMetadataError::new(self.name(), fill_value.clone());
         match self {
             Self::Bool => Ok(FV::from(fill_value.as_bool().ok_or_else(err0)?)),
             Self::Int8 => {
@@ -322,13 +327,13 @@ impl DataType {
     ///
     /// # Errors
     ///
-    /// Returns an [`IncompatibleFillValueError`] if the metadata cannot be created from the fill value.
+    /// Returns an [`DataTypeFillValueError`] if the metadata cannot be created from the fill value.
     #[allow(clippy::too_many_lines)]
     pub fn metadata_fill_value(
         &self,
         fill_value: &FillValue,
-    ) -> Result<FillValueMetadataV3, IncompatibleFillValueError> {
-        let error = || IncompatibleFillValueError::new(self.name(), fill_value.clone());
+    ) -> Result<FillValueMetadataV3, DataTypeFillValueError> {
+        let error = || DataTypeFillValueError::new(self.name(), fill_value.clone());
         match self {
             Self::Bool => {
                 let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
@@ -1225,8 +1230,7 @@ mod tests {
 
     #[test]
     fn incompatible_fill_value() {
-        let err =
-            IncompatibleFillValueError::new(data_type::BOOL.to_string(), FillValue::from(1.0f32));
+        let err = DataTypeFillValueError::new(data_type::BOOL.to_string(), FillValue::from(1.0f32));
         assert_eq!(
             err.to_string(),
             "incompatible fill value [0, 0, 128, 63] for data type bool"

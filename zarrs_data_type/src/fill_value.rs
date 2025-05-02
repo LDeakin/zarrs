@@ -5,25 +5,25 @@
 use thiserror::Error;
 use zarrs_metadata::v3::array::fill_value::FillValueMetadataV3;
 
-/// A fill value metadata incompatibility error.
+/// A data type and fill value metadata incompatibility error.
 #[derive(Debug, Error)]
 #[error("incompatible fill value {} for data type {}", _1.to_string(), _0.to_string())]
-pub struct IncompatibleFillValueMetadataError(String, FillValueMetadataV3);
+pub struct DataTypeFillValueMetadataError(String, FillValueMetadataV3);
 
-impl IncompatibleFillValueMetadataError {
-    /// Create a new [`IncompatibleFillValueMetadataError`].
+impl DataTypeFillValueMetadataError {
+    /// Create a new [`DataTypeFillValueMetadataError`].
     #[must_use]
     pub fn new(data_type: String, fill_value_metadata: FillValueMetadataV3) -> Self {
         Self(data_type, fill_value_metadata)
     }
 }
 
-/// A fill value incompatibility error.
+/// A data type and fill value incompatibility error.
 #[derive(Debug, Error)]
 #[error("incompatible fill value {1} for data type {0}")]
-pub struct IncompatibleFillValueError(String, FillValue);
+pub struct DataTypeFillValueError(String, FillValue);
 
-impl IncompatibleFillValueError {
+impl DataTypeFillValueError {
     /// Create a new incompatible fill value error.
     #[must_use]
     pub const fn new(data_type_name: String, fill_value: FillValue) -> Self {

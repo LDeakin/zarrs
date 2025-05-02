@@ -28,8 +28,7 @@ mod tests {
     use std::sync::Arc;
 
     use crate::{
-        DataTypeExtension, FillValue, IncompatibleFillValueError,
-        IncompatibleFillValueMetadataError,
+        DataTypeExtension, DataTypeFillValueError, DataTypeFillValueMetadataError, FillValue,
     };
 
     use super::*;
@@ -62,14 +61,14 @@ mod tests {
         fn fill_value(
             &self,
             _fill_value_metadata: &FillValueMetadataV3,
-        ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
+        ) -> Result<FillValue, DataTypeFillValueMetadataError> {
             Ok(FillValue::new(vec![]))
         }
 
         fn metadata_fill_value(
             &self,
             _fill_value: &FillValue,
-        ) -> Result<FillValueMetadataV3, IncompatibleFillValueError> {
+        ) -> Result<FillValueMetadataV3, DataTypeFillValueError> {
             Ok(FillValueMetadataV3::Null)
         }
     }

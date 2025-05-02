@@ -10,8 +10,8 @@ use zarrs::array::{
     FillValueMetadataV3, RawBytesOffsets,
 };
 use zarrs_data_type::{
-    DataTypeExtension, DataTypePlugin, FillValue, IncompatibleFillValueError,
-    IncompatibleFillValueMetadataError,
+    DataTypeExtension, DataTypeFillValueError, DataTypeFillValueMetadataError, DataTypePlugin,
+    FillValue,
 };
 use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
@@ -117,13 +117,13 @@ impl DataTypeExtension for CustomDataTypeVariableSize {
     fn fill_value(
         &self,
         fill_value_metadata: &FillValueMetadataV3,
-    ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
+    ) -> Result<FillValue, DataTypeFillValueMetadataError> {
         if let Some(f) = fill_value_metadata.as_f32() {
             Ok(FillValue::new(f.to_ne_bytes().to_vec()))
         } else if fill_value_metadata.is_null() {
             Ok(FillValue::new(vec![]))
         } else {
-            Err(IncompatibleFillValueMetadataError::new(
+            Err(DataTypeFillValueMetadataError::new(
                 self.name(),
                 fill_value_metadata.clone(),
             ))
@@ -133,7 +133,7 @@ impl DataTypeExtension for CustomDataTypeVariableSize {
     fn metadata_fill_value(
         &self,
         fill_value: &FillValue,
-    ) -> Result<FillValueMetadataV3, IncompatibleFillValueError> {
+    ) -> Result<FillValueMetadataV3, DataTypeFillValueError> {
         let fill_value = fill_value.as_ne_bytes();
         if fill_value.len() == 0 {
             Ok(FillValueMetadataV3::Null)
@@ -141,10 +141,7 @@ impl DataTypeExtension for CustomDataTypeVariableSize {
             let value = f32::from_ne_bytes(fill_value.try_into().unwrap());
             Ok(FillValueMetadataV3::from(value))
         } else {
-            Err(IncompatibleFillValueError::new(
-                self.name(),
-                fill_value.into(),
-            ))
+            Err(DataTypeFillValueError::new(self.name(), fill_value.into()))
         }
     }
 

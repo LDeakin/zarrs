@@ -50,6 +50,18 @@ pub const RAWBITS: &str = "r*";
 /// Unique identifier for the `bfloat16` data type (registered).
 pub const BFLOAT16: &str = "bfloat16";
 
+/// Unique identifier for the `complex_bfloat16` data type (registered).
+pub const COMPLEX_BFLOAT16: &str = "complex_bfloat16";
+
+/// Unique identifier for the `complex_float16` data type (registered).
+pub const COMPLEX_FLOAT16: &str = "complex_float16";
+
+/// Unique identifier for the `complex_float32` data type (registered, alias of `complex64`).
+pub const COMPLEX_FLOAT32: &str = COMPLEX64;
+
+/// Unique identifier for the `complex_float64` data type (registered, alias of `complex128`).
+pub const COMPLEX_FLOAT64: &str = COMPLEX128;
+
 /// Unique identifier for the `string` data type (registered).
 pub const STRING: &str = "string";
 

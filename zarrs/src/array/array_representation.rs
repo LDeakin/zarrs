@@ -1,7 +1,7 @@
 use std::num::NonZeroU64;
 
 use super::{ArrayShape, DataType, DataTypeSize, FillValue};
-use crate::array::data_type::IncompatibleFillValueError;
+use crate::array::data_type::DataTypeFillValueError;
 use derive_more::Display;
 
 /// The shape, data type, and fill value of an `array`.
@@ -103,12 +103,12 @@ where
     ///
     /// # Errors
     ///
-    /// Returns [`IncompatibleFillValueError`] if the `data_type` and `fill_value` are incompatible.
+    /// Returns [`DataTypeFillValueError`] if the `data_type` and `fill_value` are incompatible.
     pub fn new(
         array_shape: Vec<TDim>,
         data_type: DataType,
         fill_value: FillValue,
-    ) -> Result<Self, IncompatibleFillValueError> {
+    ) -> Result<Self, DataTypeFillValueError> {
         match data_type.size() {
             DataTypeSize::Fixed(size) => {
                 if size == fill_value.size() {
@@ -118,10 +118,7 @@ where
                         fill_value,
                     })
                 } else {
-                    Err(IncompatibleFillValueError::new(
-                        data_type.name(),
-                        fill_value,
-                    ))
+                    Err(DataTypeFillValueError::new(data_type.name(), fill_value))
                 }
             }
             DataTypeSize::Variable => Ok(Self {

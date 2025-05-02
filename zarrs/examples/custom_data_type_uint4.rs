@@ -14,8 +14,8 @@ use zarrs::{
 };
 use zarrs_data_type::{
     DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
-    DataTypeExtensionError, DataTypeExtensionPackBitsCodec, DataTypePlugin, FillValue,
-    IncompatibleFillValueError, IncompatibleFillValueMetadataError,
+    DataTypeExtensionError, DataTypeExtensionPackBitsCodec, DataTypeFillValueError,
+    DataTypeFillValueMetadataError, DataTypePlugin, FillValue,
 };
 use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
@@ -64,12 +64,11 @@ impl DataTypeExtension for CustomDataTypeUInt4 {
     fn fill_value(
         &self,
         fill_value_metadata: &FillValueMetadataV3,
-    ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
-        let err =
-            || IncompatibleFillValueMetadataError::new(self.name(), fill_value_metadata.clone());
+    ) -> Result<FillValue, DataTypeFillValueMetadataError> {
+        let err = || DataTypeFillValueMetadataError::new(self.name(), fill_value_metadata.clone());
         let element_metadata: u64 = fill_value_metadata.as_u64().ok_or_else(err)?;
         let element = CustomDataTypeUInt4Element::try_from(element_metadata).map_err(|_| {
-            IncompatibleFillValueMetadataError::new(UINT4.to_string(), fill_value_metadata.clone())
+            DataTypeFillValueMetadataError::new(UINT4.to_string(), fill_value_metadata.clone())
         })?;
         Ok(FillValue::new(element.to_ne_bytes().to_vec()))
     }
@@ -77,12 +76,12 @@ impl DataTypeExtension for CustomDataTypeUInt4 {
     fn metadata_fill_value(
         &self,
         fill_value: &FillValue,
-    ) -> Result<FillValueMetadataV3, IncompatibleFillValueError> {
+    ) -> Result<FillValueMetadataV3, DataTypeFillValueError> {
         let element = CustomDataTypeUInt4Element::from_ne_bytes(
             fill_value
                 .as_ne_bytes()
                 .try_into()
-                .map_err(|_| IncompatibleFillValueError::new(self.name(), fill_value.clone()))?,
+                .map_err(|_| DataTypeFillValueError::new(self.name(), fill_value.clone()))?,
         );
         Ok(FillValueMetadataV3::from(element.as_u8()))
     }

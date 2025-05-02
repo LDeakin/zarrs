@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `derive_more` to 2.0.0
 - Bump `half` to 2.3.1
 - Bump `thiserror` to 2.0.12
+- **Breaking**: Rename `IncompatibleFillValueError` to `DataTypeFillValueError`
+- **Breaking**: Rename `IncompatibleFillValueMetadataError` to `DataTypeFillValueMetadataError`
 
 ### Removed
 - **Breaking**: Remove `DataType` (moved to `zarrs::array[::data_type]::DataType`)

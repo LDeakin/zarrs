@@ -12,4 +12,4 @@ pub use data_type_extension_bytes_codec::{
 };
 pub use data_type_extension_packbits_codec::DataTypeExtensionPackBitsCodec;
 pub use data_type_plugin::DataTypePlugin;
-pub use fill_value::{FillValue, IncompatibleFillValueError, IncompatibleFillValueMetadataError};
+pub use fill_value::{DataTypeFillValueError, DataTypeFillValueMetadataError, FillValue};

@@ -7,8 +7,8 @@ use zarrs_metadata::{
 
 use crate::{
     data_type_extension_packbits_codec::DataTypeExtensionPackBitsCodec,
-    DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError, FillValue,
-    IncompatibleFillValueError, IncompatibleFillValueMetadataError,
+    DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError, DataTypeFillValueError,
+    DataTypeFillValueMetadataError, FillValue,
 };
 
 /// Traits for a data type extension.
@@ -41,20 +41,20 @@ pub trait DataTypeExtension: Debug + Send + Sync {
     /// Create a fill value from metadata.
     ///
     /// # Errors
-    /// Returns [`IncompatibleFillValueMetadataError`] if the fill value is incompatible with the data type.
+    /// Returns [`DataTypeFillValueMetadataError`] if the fill value is incompatible with the data type.
     fn fill_value(
         &self,
         fill_value_metadata: &FillValueMetadataV3,
-    ) -> Result<FillValue, IncompatibleFillValueMetadataError>;
+    ) -> Result<FillValue, DataTypeFillValueMetadataError>;
 
     /// Create fill value metadata.
     ///
     /// # Errors
-    /// Returns an [`IncompatibleFillValueError`] if the metadata cannot be created from the fill value.
+    /// Returns an [`DataTypeFillValueError`] if the metadata cannot be created from the fill value.
     fn metadata_fill_value(
         &self,
         fill_value: &FillValue,
-    ) -> Result<FillValueMetadataV3, IncompatibleFillValueError>;
+    ) -> Result<FillValueMetadataV3, DataTypeFillValueError>;
 
     /// Return [`DataTypeExtensionBytesCodec`] if the data type supports the `bytes` codec.
     ///

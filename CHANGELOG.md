@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: Remove `TryFrom<DataTypeMetadataV3>` for `DataType`
   - **Breaking**: Remove `DataType::identifier()`
   - **Breaking**: move the `zarrs::array::{data_type,fill_value}` modules into the `zarrs_data_type` crate
+  - **Breaking**: Rename `IncompatibleFillValueError` to `DataTypeFillValueError`
+  - **Breaking**: Rename `IncompatibleFillValueMetadataError` to `DataTypeFillValueMetadataError`
 - Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
 - Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop
   - Gated by the `dlpack` feature

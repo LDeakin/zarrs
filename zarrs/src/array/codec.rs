@@ -108,7 +108,7 @@ mod bytes_to_bytes_partial_decoder_default;
 pub use bytes_to_bytes_partial_decoder_default::AsyncBytesToBytesPartialDecoderDefault;
 pub use bytes_to_bytes_partial_decoder_default::BytesToBytesPartialDecoderDefault;
 
-use zarrs_data_type::{DataTypeExtensionError, FillValue, IncompatibleFillValueError};
+use zarrs_data_type::{DataTypeExtensionError, DataTypeFillValueError, FillValue};
 use zarrs_metadata::{extension::ExtensionAliasesCodecV3, v3::MetadataV3, ArrayShape};
 use zarrs_plugin::PluginUnsupportedError;
 
@@ -1398,7 +1398,7 @@ pub enum CodecError {
     DataTypeExtension(#[from] DataTypeExtensionError),
     /// An incompatible fill value error
     #[error(transparent)]
-    IncompatibleFillValueError(#[from] IncompatibleFillValueError),
+    DataTypeFillValueError(#[from] DataTypeFillValueError),
 }
 
 impl From<&str> for CodecError {

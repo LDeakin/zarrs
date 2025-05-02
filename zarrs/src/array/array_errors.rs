@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 use crate::{
-    array::data_type::{IncompatibleFillValueError, IncompatibleFillValueMetadataError},
+    array::data_type::{DataTypeFillValueError, DataTypeFillValueMetadataError},
     array_subset::{
         ArraySubset, IncompatibleDimensionalityError, IncompatibleOffsetError,
         IncompatibleStartEndIndicesError,
@@ -28,10 +28,10 @@ pub enum ArrayCreateError {
     DataTypeCreateError(PluginCreateError),
     /// Invalid fill value.
     #[error(transparent)]
-    InvalidFillValue(#[from] IncompatibleFillValueError),
+    InvalidFillValue(#[from] DataTypeFillValueError),
     /// Invalid fill value metadata.
     #[error(transparent)]
-    InvalidFillValueMetadata(#[from] IncompatibleFillValueMetadataError),
+    InvalidFillValueMetadata(#[from] DataTypeFillValueMetadataError),
     /// Error creating codecs.
     #[error(transparent)]
     CodecsCreateError(PluginCreateError),

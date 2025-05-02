@@ -12,8 +12,8 @@ use zarrs::array::{
 };
 use zarrs_data_type::{
     DataTypeExtension, DataTypeExtensionBytesCodec, DataTypeExtensionBytesCodecError,
-    DataTypeExtensionError, DataTypePlugin, FillValue, IncompatibleFillValueError,
-    IncompatibleFillValueMetadataError,
+    DataTypeExtensionError, DataTypeFillValueError, DataTypeFillValueMetadataError, DataTypePlugin,
+    FillValue,
 };
 use zarrs_metadata::v3::{MetadataConfiguration, MetadataV3};
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
@@ -62,9 +62,8 @@ impl DataTypeExtension for CustomDataTypeFloat8e3m4 {
     fn fill_value(
         &self,
         fill_value_metadata: &FillValueMetadataV3,
-    ) -> Result<FillValue, IncompatibleFillValueMetadataError> {
-        let err =
-            || IncompatibleFillValueMetadataError::new(self.name(), fill_value_metadata.clone());
+    ) -> Result<FillValue, DataTypeFillValueMetadataError> {
+        let err = || DataTypeFillValueMetadataError::new(self.name(), fill_value_metadata.clone());
         let element_metadata: f32 = fill_value_metadata.as_f32().ok_or_else(err)?;
         let element = CustomDataTypeFloat8e3m4Element::from(element_metadata);
         Ok(FillValue::new(element.to_ne_bytes().to_vec()))
@@ -73,12 +72,12 @@ impl DataTypeExtension for CustomDataTypeFloat8e3m4 {
     fn metadata_fill_value(
         &self,
         fill_value: &FillValue,
-    ) -> Result<FillValueMetadataV3, IncompatibleFillValueError> {
+    ) -> Result<FillValueMetadataV3, DataTypeFillValueError> {
         let element = CustomDataTypeFloat8e3m4Element::from_ne_bytes(
             fill_value
                 .as_ne_bytes()
                 .try_into()
-                .map_err(|_| IncompatibleFillValueError::new(self.name(), fill_value.clone()))?,
+                .map_err(|_| DataTypeFillValueError::new(self.name(), fill_value.clone()))?,
         );
         Ok(FillValueMetadataV3::from(element.as_f32()))
     }
