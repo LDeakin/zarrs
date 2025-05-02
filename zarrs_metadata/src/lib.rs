@@ -34,9 +34,9 @@ pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endian
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
 pub enum ArrayMetadata {
-    /// Zarr Version 3.0.
+    /// Zarr Version 3.
     V3(v3::ArrayMetadataV3),
-    /// Zarr Version 2.0.
+    /// Zarr Version 2.
     V2(v2::ArrayMetadataV2),
 }
 
@@ -60,9 +60,9 @@ impl TryFrom<&str> for ArrayMetadata {
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum GroupMetadata {
-    /// Zarr Version 3.0.
+    /// Zarr Version 3.
     V3(v3::GroupMetadataV3),
-    /// Zarr Version 2.0.
+    /// Zarr Version 2.
     V2(v2::GroupMetadataV2),
 }
 
