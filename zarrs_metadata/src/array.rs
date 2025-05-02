@@ -5,8 +5,8 @@
 mod chunk_key_separator;
 pub use chunk_key_separator::ChunkKeySeparator;
 
-mod dimension_name;
-pub use dimension_name::DimensionName;
+/// A dimension name.
+pub type DimensionName = Option<String>;
 
 /// An array shape.
 pub type ArrayShape = Vec<u64>;
@@ -16,3 +16,33 @@ pub use chunk_shape::ChunkShape;
 
 mod endianness;
 pub use endianness::Endianness;
+
+/// Trait for types convertible to a [`DimensionName`].
+pub trait IntoDimensionName {
+    /// Convert into a [`DimensionName`].
+    fn into_dimension_name(self) -> DimensionName;
+}
+
+impl IntoDimensionName for &str {
+    fn into_dimension_name(self) -> DimensionName {
+        Some(self.to_string())
+    }
+}
+
+impl IntoDimensionName for Option<&str> {
+    fn into_dimension_name(self) -> DimensionName {
+        self.map(ToString::to_string)
+    }
+}
+
+impl IntoDimensionName for String {
+    fn into_dimension_name(self) -> DimensionName {
+        Some(self)
+    }
+}
+
+impl IntoDimensionName for Option<String> {
+    fn into_dimension_name(self) -> DimensionName {
+        self
+    }
+}

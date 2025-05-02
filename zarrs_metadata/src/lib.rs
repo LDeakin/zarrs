@@ -27,7 +27,9 @@ pub mod extension;
 
 pub use crate::v3::array::{chunk_grid, chunk_key_encoding, codec, data_type};
 
-pub use array::{ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness};
+pub use array::{
+    ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness, IntoDimensionName,
+};
 
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::{codec, v3::AdditionalFields, ChunkKeySeparator};
+use zarrs_metadata::{codec, v3::AdditionalFields, ChunkKeySeparator, IntoDimensionName};
 
 use crate::node::NodePath;
 
@@ -287,13 +287,13 @@ impl ArrayBuilder {
     pub fn dimension_names<I, D>(&mut self, dimension_names: Option<I>) -> &mut Self
     where
         I: IntoIterator<Item = D>,
-        D: Into<DimensionName>,
+        D: IntoDimensionName,
     {
         if let Some(dimension_names) = dimension_names {
             self.dimension_names = Some(
                 dimension_names
                     .into_iter()
-                    .map(Into::<DimensionName>::into)
+                    .map(IntoDimensionName::into_dimension_name)
                     .collect(),
             );
         } else {
@@ -431,7 +431,10 @@ mod tests {
         assert_eq!(array.data_type(), &DataType::Int8);
         assert_eq!(array.chunk_grid_shape(), Some(vec![4, 4]));
         assert_eq!(array.fill_value(), &FillValue::from(0i8));
-        assert_eq!(array.dimension_names(), &Some(vec!["y".into(), "x".into()]));
+        assert_eq!(
+            array.dimension_names(),
+            &Some(vec![Some("y".to_string()), Some("x".to_string())])
+        );
         assert_eq!(array.attributes(), &attributes);
         assert_eq!(array.additional_fields(), &additional_fields);
 

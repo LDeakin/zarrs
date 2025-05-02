@@ -3,7 +3,7 @@ use derive_more::Display;
 use fill_value::FillValueMetadataV3;
 use serde::{Deserialize, Serialize};
 
-use crate::{v3::MetadataV3, ArrayShape, DimensionName};
+use crate::{array::IntoDimensionName, v3::MetadataV3, ArrayShape, DimensionName};
 
 use super::AdditionalFields;
 
@@ -217,8 +217,21 @@ impl ArrayMetadataV3 {
 
     /// Set the dimension names.
     #[must_use]
-    pub fn with_dimension_names(mut self, dimension_names: Option<Vec<DimensionName>>) -> Self {
-        self.dimension_names = dimension_names;
+    pub fn with_dimension_names<I, D>(mut self, dimension_names: Option<I>) -> Self
+    where
+        I: IntoIterator<Item = D>,
+        D: IntoDimensionName,
+    {
+        if let Some(dimension_names) = dimension_names {
+            self.dimension_names = Some(
+                dimension_names
+                    .into_iter()
+                    .map(IntoDimensionName::into_dimension_name)
+                    .collect(),
+            );
+        } else {
+            self.dimension_names = None;
+        }
         self
     }
 

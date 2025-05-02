@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `zfpy` codec: add support for reversible mode in case it gets fixed in `numcodecs`
 - Bump `half` to 2.3.1
 - Bump `thiserror` to 2.0.12
+- **Breaking**: Change `DimensionName` to an alias for `Option<String>` rather than a newtype
+  - Adds `IntoDimensionName`
 
 ### Removed
 - **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`
