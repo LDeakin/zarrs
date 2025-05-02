@@ -292,19 +292,27 @@ impl ConfigurationInvalidError {
 ///
 /// ### Example additional field JSON
 /// ```json
-//  "unknown_field": {
-//      "key": "value",
-//      "must_understand": false
-//  },
-//  "unsupported_field_1": {
-//      "key": "value",
-//      "must_understand": true
-//  },
-//  "unsupported_field_2": {
-//      "key": "value"
-//  },
-//  "unsupported_field_3": [],
-//  "unsupported_field_4": "test"
+///  "unknown_field": {
+///      "key": "value",
+///      "must_understand": false
+///  }
+/// ```
+/// ```json
+///  "unsupported_field_1": {
+///      "key": "value",
+///      "must_understand": true
+///  }
+/// ```
+/// ```json
+///  "unsupported_field_2": {
+///      "key": "value"
+///  }
+/// ```
+/// ```json
+///  "unsupported_field_3": []
+/// ```
+/// ```json
+///  "unsupported_field_4": "test"
 /// ```
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct AdditionalField {
