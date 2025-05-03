@@ -160,7 +160,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [`zarrs_data_type`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_data_type
 [`zarrs_metadata`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
 [`zarrs_plugin`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_plugin
-[`zarrs_registry`]: https://docs.rs/zarrs_plugin/latest/zarrs_registry/
+[`zarrs_registry`]: https://docs.rs/zarrs_registry/latest/zarrs_registry/
 [`zarrs_storage`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
 [`zarrs_filesystem`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
 [`zarrs_http`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http

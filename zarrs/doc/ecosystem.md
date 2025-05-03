@@ -43,7 +43,7 @@ The `zarrs` crate has been split into multiple crates to:
 [`zarrs_data_type`]: https://docs.rs/zarrs_data_type/latest/zarrs_data_type/
 [`zarrs_metadata`]: https://docs.rs/zarrs_metadata/latest/zarrs_metadata/
 [`zarrs_plugin`]: https://docs.rs/zarrs_plugin/latest/zarrs_plugin/
-[`zarrs_registry`]: https://docs.rs/zarrs_plugin/latest/zarrs_registry/
+[`zarrs_registry`]: https://docs.rs/zarrs_registry/latest/zarrs_registry/
 [`zarrs_storage`]: https://docs.rs/zarrs_storage/latest/zarrs_storage/
 [`zarrs_filesystem`]: https://docs.rs/zarrs_filesystem/latest/zarrs_filesystem/
 [`zarrs_http`]: https://docs.rs/zarrs_http/latest/zarrs_http/
