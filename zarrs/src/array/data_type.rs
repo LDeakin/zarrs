@@ -1190,8 +1190,8 @@ mod tests {
             FillValueMetadataV3::from(ZARR_NAN_F32),
             serde_json::from_str(r#""NaN""#).unwrap()
         );
-        let f32_nan_alt =
-            unsafe { std::mem::transmute::<u32, f32>(0b0_11111111_10000000000000000000001) };
+
+        let f32_nan_alt = f32::from_bits(0b0_11111111_10000000000000000000001);
         assert!(f32_nan_alt.is_nan());
         assert_eq!(
             FillValueMetadataV3::from(f32_nan_alt),
@@ -1209,11 +1209,8 @@ mod tests {
             FillValueMetadataV3::from(ZARR_NAN_F64),
             serde_json::from_str(r#""NaN""#).unwrap()
         );
-        let f64_nan_alt = unsafe {
-            std::mem::transmute::<u64, f64>(
-                0b0_11111111111_1000000000000000000000000000000000000000000000000001,
-            )
-        };
+        let f64_nan_alt =
+            f64::from_bits(0b0_11111111111_1000000000000000000000000000000000000000000000000001);
         assert!(f64_nan_alt.is_nan());
         assert_eq!(
             FillValueMetadataV3::from(f64_nan_alt),
