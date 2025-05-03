@@ -37,7 +37,7 @@ use std::sync::Arc;
 use crate::metadata::Endianness;
 
 pub use crate::metadata::codec::bytes::{BytesCodecConfiguration, BytesCodecConfigurationV1};
-use crate::metadata::codec::BYTES;
+use zarrs_registry::codec::BYTES;
 
 pub use bytes_codec::BytesCodec;
 

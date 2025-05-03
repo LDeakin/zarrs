@@ -76,10 +76,10 @@ use crate::{
         BytesRepresentation, ChunkRepresentation, ChunkShape, CodecChain, DataType, FillValue,
     },
     byte_range::ByteRange,
-    metadata::codec::SHARDING,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
+use zarrs_registry::codec::SHARDING;
 
 // Register the codec.
 inventory::submit! {

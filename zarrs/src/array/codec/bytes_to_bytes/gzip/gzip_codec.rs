@@ -5,8 +5,9 @@ use std::{
 };
 
 use flate2::bufread::{GzDecoder, GzEncoder};
-use zarrs_metadata::{codec::GZIP, v3::MetadataConfiguration};
+use zarrs_metadata::v3::MetadataConfiguration;
 use zarrs_plugin::PluginCreateError;
+use zarrs_registry::codec::GZIP;
 
 use crate::array::{
     codec::{

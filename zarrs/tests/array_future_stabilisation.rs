@@ -11,7 +11,7 @@ use zarrs::{
     config::global_config_mut,
 };
 use zarrs_filesystem::FilesystemStore;
-use zarrs_metadata::codec::BZ2;
+use zarrs_registry::codec::BZ2;
 
 /// bz2 could stabilise as is, so test supporting that via the codec map
 #[test]

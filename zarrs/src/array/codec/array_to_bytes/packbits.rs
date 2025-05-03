@@ -29,10 +29,11 @@ mod packbits_partial_decoder;
 
 use std::sync::Arc;
 
+use crate::array::codec::CodecError;
 pub use crate::metadata::codec::packbits::{
     PackBitsCodecConfiguration, PackBitsCodecConfigurationV1,
 };
-use crate::{array::codec::CodecError, metadata::codec::PACKBITS};
+use zarrs_registry::codec::PACKBITS;
 
 use crate::array::DataType;
 use num::Integer;

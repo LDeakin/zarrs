@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::{codec, v3::AdditionalFields, ChunkKeySeparator, IntoDimensionName};
+use zarrs_metadata::{v3::AdditionalFields, ChunkKeySeparator, IntoDimensionName};
 
 use crate::node::NodePath;
 
@@ -102,11 +102,11 @@ impl ArrayBuilder {
             // FIXME: Default to VlenCodec if ever stabilised
             match data_type {
                 DataType::String => NamedArrayToBytesCodec::new(
-                    codec::VLEN_UTF8.to_string(),
+                    zarrs_registry::codec::VLEN_UTF8.to_string(),
                     Arc::new(VlenV2Codec::new()),
                 ),
                 DataType::RawBits(_) => NamedArrayToBytesCodec::new(
-                    codec::VLEN_BYTES.to_string(),
+                    zarrs_registry::codec::VLEN_BYTES.to_string(),
                     Arc::new(VlenV2Codec::new()),
                 ),
                 _ => Arc::new(VlenCodec::default()).into(),

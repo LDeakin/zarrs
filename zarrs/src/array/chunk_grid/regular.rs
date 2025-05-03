@@ -4,7 +4,7 @@
 
 use std::num::NonZeroU64;
 
-use zarrs_metadata::chunk_grid::REGULAR;
+use zarrs_registry::chunk_grid::REGULAR;
 
 use crate::{
     array::{chunk_grid::ChunkGridPlugin, ArrayIndices, ArrayShape, ChunkShape},

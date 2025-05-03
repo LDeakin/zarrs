@@ -4,6 +4,7 @@
 - [`zarrs_data_type`]: The data type extension API for `zarrs` (re-exported in `zarrs::array::data_type`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
 - [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
+- [`zarrs_registry`]: The Zarr extension point registry for `zarrs` (re-exported as `zarrs::registry`).
 
 #### Stores
 - [`zarrs_filesystem`]: A filesystem store (re-exported as `zarrs::filesystem`).
@@ -33,6 +34,7 @@
 [`zarrs_data_type`]: https://docs.rs/zarrs_data_type/latest/zarrs_data_type/
 [`zarrs_metadata`]: https://docs.rs/zarrs_metadata/latest/zarrs_metadata/
 [`zarrs_plugin`]: https://docs.rs/zarrs_plugin/latest/zarrs_plugin/
+[`zarrs_registry`]: https://docs.rs/zarrs_plugin/latest/zarrs_registry/
 [`zarrs_storage`]: https://docs.rs/zarrs_storage/latest/zarrs_storage/
 [`zarrs_filesystem`]: https://docs.rs/zarrs_filesystem/latest/zarrs_filesystem/
 [`zarrs_http`]: https://docs.rs/zarrs_http/latest/zarrs_http/

@@ -107,6 +107,7 @@ println!("{array_ndarray:4}");
 - [`zarrs_data_type`]: The data type extension API for `zarrs` (re-exported in `zarrs::array::data_type`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
 - [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
+- [`zarrs_registry`]: The Zarr extension point registry for `zarrs` (re-exported as `zarrs::registry`).
 
 ### Stores
 - [`zarrs_filesystem`]: A filesystem store (re-exported as `zarrs::filesystem`).
@@ -150,6 +151,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [`zarrs_data_type`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_data_type
 [`zarrs_metadata`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
 [`zarrs_plugin`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_plugin
+[`zarrs_registry`]: https://docs.rs/zarrs_plugin/latest/zarrs_registry/
 [`zarrs_storage`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
 [`zarrs_filesystem`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
 [`zarrs_http`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http

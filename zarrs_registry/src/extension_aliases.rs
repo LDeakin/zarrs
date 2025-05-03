@@ -1,8 +1,6 @@
 use std::{borrow::Cow, collections::HashMap, marker::PhantomData};
 
-use super::ExtensionType;
-
-use crate::version::ZarrVersion;
+use crate::{ExtensionType, ZarrVersion};
 
 /// A mapping of extension identifiers to default extension `name`s.
 pub type ExtensionNameMap = HashMap<&'static str, Cow<'static, str>>;

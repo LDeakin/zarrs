@@ -39,7 +39,7 @@ pub use crate::metadata::codec::fletcher32::{
     Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1,
 };
 pub use fletcher32_codec::Fletcher32Codec;
-use zarrs_metadata::codec::FLETCHER32;
+use zarrs_registry::codec::FLETCHER32;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

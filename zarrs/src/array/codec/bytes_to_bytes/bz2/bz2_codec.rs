@@ -4,8 +4,9 @@ use std::{
     sync::Arc,
 };
 
-use zarrs_metadata::{codec::BZ2, v3::MetadataConfiguration};
+use zarrs_metadata::v3::MetadataConfiguration;
 use zarrs_plugin::PluginCreateError;
+use zarrs_registry::codec::BZ2;
 
 use crate::array::{
     codec::{

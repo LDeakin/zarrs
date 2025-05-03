@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::codec::BYTES;
+use zarrs_registry::codec::BYTES;
 
 use crate::{
     array::{

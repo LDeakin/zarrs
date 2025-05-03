@@ -51,9 +51,10 @@ pub use pcodec_codec::PcodecCodec;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},
-    metadata::{codec::PCODEC, v3::MetadataV3},
+    metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
+use zarrs_registry::codec::PCODEC;
 
 // Register the codec.
 inventory::submit! {

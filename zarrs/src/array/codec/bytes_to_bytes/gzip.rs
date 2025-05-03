@@ -34,7 +34,7 @@ pub use crate::metadata::codec::gzip::{
     GzipCompressionLevelError,
 };
 pub use gzip_codec::GzipCodec;
-use zarrs_metadata::codec::GZIP;
+use zarrs_registry::codec::GZIP;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

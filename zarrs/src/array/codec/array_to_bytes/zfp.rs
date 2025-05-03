@@ -113,10 +113,11 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
-    metadata::codec::{zfp::ZfpMode, ZFP},
+    metadata::codec::zfp::ZfpMode,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
+use zarrs_registry::codec::ZFP;
 
 use self::{
     zfp_array::ZfpArray, zfp_bitstream::ZfpBitstream, zfp_field::ZfpField, zfp_stream::ZfpStream,

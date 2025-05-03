@@ -39,8 +39,8 @@ use std::sync::Arc;
 pub use crate::metadata::codec::fixedscaleoffset::{
     FixedScaleOffsetCodecConfiguration, FixedScaleOffsetCodecConfigurationNumcodecs,
 };
-use crate::metadata::codec::FIXEDSCALEOFFSET;
 pub use fixedscaleoffset_codec::FixedScaleOffsetCodec;
+use zarrs_registry::codec::FIXEDSCALEOFFSET;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

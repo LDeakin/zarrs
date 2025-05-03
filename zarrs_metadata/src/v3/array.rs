@@ -13,12 +13,6 @@ pub mod codec;
 
 /// Zarr V3 chunk grid metadata.
 pub mod chunk_grid {
-    /// Unique identifier for the `regular` chunk grid (core).
-    pub const REGULAR: &str = "regular";
-
-    /// Unique identifier for the `rectangular` chunk grid (extension).
-    pub const RECTANGULAR: &str = "rectangular";
-
     /// `rectangular` chunk grid metadata.
     pub mod rectangular;
     /// `regular` chunk grid metadata.
@@ -27,12 +21,6 @@ pub mod chunk_grid {
 
 /// Zarr V3 chunk key encoding metadata.
 pub mod chunk_key_encoding {
-    /// Unique identifier for the `default` chunk key encoding (core).
-    pub const DEFAULT: &str = "default";
-
-    /// Unique identifier for the `v2` chunk key encoding (core).
-    pub const V2: &str = "v2";
-
     /// `default` chunk key encoding metadata.
     pub mod default;
     /// `v2` chunk key encoding metadata.
@@ -159,7 +147,7 @@ impl ArrayMetadataV3 {
         let chunk_key_encoding = unsafe {
             // SAFETY: The default chunk key encoding configuration is valid JSON.
             MetadataV3::new_with_serializable_configuration(
-                chunk_key_encoding::DEFAULT.to_string(),
+                zarrs_registry::chunk_key_encoding::DEFAULT.to_string(),
                 &DefaultChunkKeyEncodingConfiguration {
                     separator: crate::ChunkKeySeparator::Slash,
                 },

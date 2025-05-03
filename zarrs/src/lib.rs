@@ -202,6 +202,7 @@ pub mod version;
 
 pub use zarrs_metadata as metadata;
 pub use zarrs_plugin as plugin;
+pub use zarrs_registry as registry;
 pub use zarrs_storage as storage;
 
 #[cfg(feature = "filesystem")]

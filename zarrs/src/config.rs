@@ -4,7 +4,7 @@
 
 use std::sync::{LazyLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use zarrs_metadata::extension::{
+use zarrs_registry::{
     ExtensionAliasesCodecV2, ExtensionAliasesCodecV3, ExtensionAliasesDataTypeV2,
     ExtensionAliasesDataTypeV3,
 };

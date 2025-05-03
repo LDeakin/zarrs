@@ -14,7 +14,7 @@ use crate::{
 
 use derive_more::From;
 use itertools::Itertools;
-use zarrs_metadata::chunk_grid::RECTANGULAR;
+use zarrs_registry::chunk_grid::RECTANGULAR;
 
 use super::{ChunkGrid, ChunkGridTraits};
 pub use super::{RectangularChunkGridConfiguration, RectangularChunkGridDimensionConfiguration};

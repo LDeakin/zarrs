@@ -4,11 +4,10 @@ use std::{borrow::Cow, sync::Arc};
 
 use num::Integer;
 use zarrs_metadata::{
-    codec::{packbits::PackBitsPaddingEncoding, PACKBITS},
-    v3::MetadataConfiguration,
-    Endianness,
+    codec::packbits::PackBitsPaddingEncoding, v3::MetadataConfiguration, Endianness,
 };
 use zarrs_plugin::PluginCreateError;
+use zarrs_registry::codec::PACKBITS;
 
 use crate::array::{
     codec::{

@@ -1,7 +1,8 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::{codec::SHUFFLE, v3::MetadataConfiguration};
+use zarrs_metadata::v3::MetadataConfiguration;
 use zarrs_plugin::PluginCreateError;
+use zarrs_registry::codec::SHUFFLE;
 
 use crate::array::{
     codec::{

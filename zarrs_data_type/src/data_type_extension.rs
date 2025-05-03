@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use zarrs_metadata::{
-    codec::{BYTES, PACKBITS},
     v3::{array::fill_value::FillValueMetadataV3, MetadataConfiguration},
     DataTypeSize,
 };
@@ -67,7 +66,7 @@ pub trait DataTypeExtension: Debug + Send + Sync {
     fn codec_bytes(&self) -> Result<&dyn DataTypeExtensionBytesCodec, DataTypeExtensionError> {
         Err(DataTypeExtensionError::CodecUnsupported {
             data_type: self.name(),
-            codec: BYTES.to_string(),
+            codec: "bytes".to_string(),
         })
     }
 
@@ -84,7 +83,7 @@ pub trait DataTypeExtension: Debug + Send + Sync {
     ) -> Result<&dyn DataTypeExtensionPackBitsCodec, DataTypeExtensionError> {
         Err(DataTypeExtensionError::CodecUnsupported {
             data_type: self.name(),
-            codec: PACKBITS.to_string(),
+            codec: "packbits".to_string(),
         })
     }
 }
