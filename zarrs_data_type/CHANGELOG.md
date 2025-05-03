@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-05-03
+
 ### Added
 - Add support for data type extensions
   - Add `DataTypePlugin` and `DataTypeExtension`
@@ -15,14 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This crate no longer defines explicit data types
 
 ### Changed
+- **Breaking**: Rename `IncompatibleFillValueError` to `DataTypeFillValueError`
+- **Breaking**: Rename `IncompatibleFillValueMetadataError` to `DataTypeFillValueMetadataError`
 - Bump `derive_more` to 2.0.0
 - Bump `half` to 2.3.1
 - Bump `thiserror` to 2.0.12
-- **Breaking**: Rename `IncompatibleFillValueError` to `DataTypeFillValueError`
-- **Breaking**: Rename `IncompatibleFillValueMetadataError` to `DataTypeFillValueMetadataError`
 
 ### Removed
-- **Breaking**: Remove `DataType` (moved to `zarrs::array[::data_type]::DataType`)
+- **Breaking**: Move `DataType` to `zarrs::array[::data_type]::DataType`
 - **Breaking**: Remove `UnsupportedDataTypeError`
 
 ## [0.1.0] - 2025-01-24
@@ -31,5 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `zarrs::array::{data_type,fill_value}` modules of `zarrs` 0.20.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_data_type-v0.1.0...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_data_type-v0.2.0...HEAD
+[0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_data_type-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_data_type-v0.1.0
