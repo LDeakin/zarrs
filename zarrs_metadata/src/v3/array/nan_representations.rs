@@ -10,7 +10,7 @@ use half::{bf16, f16};
 
 /// The Zarr "NaN" fill value for a 64-bit IEEE 754 floating point number.
 #[allow(clippy::unusual_byte_groupings)]
-#[allow(unnecessary_transmutes)] // lint is wrong until MSVC is 1.83
+// #[allow(unnecessary_transmutes)] // lint is wrong until MSVC is 1.83
 pub const ZARR_NAN_F64: f64 = unsafe {
     transmute::<u64, f64>(0b0_11111111111_1000000000000000000000000000000000000000000000000000)
 };
@@ -18,7 +18,7 @@ pub const ZARR_NAN_F64: f64 = unsafe {
 
 /// The Zarr "NaN" fill value for a 32-bit IEEE 754 floating point number.
 #[allow(clippy::unusual_byte_groupings)]
-#[allow(unnecessary_transmutes)] // lint is wrong until MSVC is 1.83
+// #[allow(unnecessary_transmutes)] // lint is wrong until MSVC is 1.83
 pub const ZARR_NAN_F32: f32 =
     unsafe { transmute::<u32, f32>(0b0_11111111_10000000000000000000000) };
 // const ZARR_NAN_F32: f32 = f32::from_bits(0b0_11111111_10000000000000000000000);
