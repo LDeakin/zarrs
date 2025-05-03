@@ -1,4 +1,4 @@
-//! [Zarr](https://zarr-specs.readthedocs.io/) data types for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
+//! The data type API for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 
 mod data_type_extension;
 mod data_type_extension_bytes_codec;
