@@ -8,7 +8,7 @@ use zarrs_storage::{
 
 use crate::{handle_result, handle_result_notfound};
 
-/// An asynchronous store backed by an [`opendal::BlockingOperator`].
+/// A synchronous store backed by an [`opendal::BlockingOperator`].
 pub struct OpendalStore {
     operator: BlockingOperator,
     // locks: StoreLocks,
