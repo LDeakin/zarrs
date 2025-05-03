@@ -1,3 +1,12 @@
+The Zarr specification is inherently unstable.
+It is under active development and new extensions are continually being introduced.
+
+The `zarrs` crate has been split into multiple crates to:
+- allow external implementations of stores and extensions points to target a relatively stable API compatible with a range of `zarrs` versions,
+- enable automatic backporting of metadata compatibility fixes and changes due to standardisation,
+- stay up-to-date with unstable public dependencies (e.g. `opendal`, `object_store`, `icechunk`, etc) without impacting the release cycle of `zarrs`, and
+- improve compilation times.
+
 #### Core
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
