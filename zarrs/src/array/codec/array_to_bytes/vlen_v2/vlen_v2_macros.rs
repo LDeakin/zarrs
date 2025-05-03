@@ -8,9 +8,10 @@ macro_rules! vlen_v2_module {
 
         use crate::{
             array::codec::{Codec, CodecPlugin},
-            metadata::{codec::$identifier, v3::MetadataV3},
+            metadata::v3::MetadataV3,
             plugin::{PluginCreateError, PluginMetadataInvalidError},
         };
+        use zarrs_registry::codec::$identifier;
 
         // Register the codec.
         inventory::submit! {

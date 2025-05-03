@@ -40,7 +40,7 @@ use std::sync::Arc;
 
 pub use crate::metadata::codec::shuffle::{ShuffleCodecConfiguration, ShuffleCodecConfigurationV1};
 pub use shuffle_codec::ShuffleCodec;
-use zarrs_metadata::codec::SHUFFLE;
+use zarrs_registry::codec::SHUFFLE;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

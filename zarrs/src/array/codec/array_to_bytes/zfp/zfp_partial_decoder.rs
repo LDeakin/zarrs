@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::codec::ZFP;
+use zarrs_registry::codec::ZFP;
 
 use crate::{
     array::{

@@ -33,8 +33,8 @@ mod squeeze_partial_decoder;
 use std::sync::Arc;
 
 pub use crate::metadata::codec::squeeze::{SqueezeCodecConfiguration, SqueezeCodecConfigurationV1};
-use crate::metadata::codec::SQUEEZE;
 pub use squeeze_codec::SqueezeCodec;
+use zarrs_registry::codec::SQUEEZE;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

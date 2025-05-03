@@ -30,7 +30,7 @@ use std::sync::Arc;
 
 pub use crate::metadata::codec::crc32c::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1};
 pub use crc32c_codec::Crc32cCodec;
-use zarrs_metadata::codec::CRC32C;
+use zarrs_registry::codec::CRC32C;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

@@ -1,6 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::{codec::CRC32C, v3::MetadataConfiguration};
+use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_registry::codec::CRC32C;
 
 use crate::array::{
     codec::{

@@ -66,8 +66,9 @@ use std::sync::Arc;
 
 use crate::array::codec::{Codec, CodecPlugin};
 
-use zarrs_metadata::{codec::ZFPY, v3::MetadataV3};
+use zarrs_metadata::v3::MetadataV3;
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
+use zarrs_registry::codec::ZFPY;
 
 use super::zfp::ZfpCodec;
 

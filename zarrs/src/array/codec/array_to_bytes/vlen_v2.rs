@@ -33,10 +33,8 @@ pub(crate) mod vlen_v2_macros;
 use std::sync::Arc;
 
 use crate::metadata::codec::vlen_v2::{self};
-use crate::metadata::codec::VLEN_V2;
 
 pub use vlen_v2::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1};
-use zarrs_metadata::codec;
 
 use crate::array::{
     codec::{CodecError, InvalidBytesLengthError},
@@ -53,32 +51,32 @@ use crate::{
 
 // Register the codec.
 inventory::submit! {
-    CodecPlugin::new(VLEN_V2, is_identifier_vlen_v2, create_codec_vlen_v2)
+    CodecPlugin::new(zarrs_registry::codec::VLEN_V2, is_identifier_vlen_v2, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(codec::VLEN_ARRAY, is_identifier_vlen_array, create_codec_vlen_v2)
+    CodecPlugin::new(zarrs_registry::codec::VLEN_ARRAY, is_identifier_vlen_array, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(codec::VLEN_BYTES, is_identifier_vlen_bytes, create_codec_vlen_v2)
+    CodecPlugin::new(zarrs_registry::codec::VLEN_BYTES, is_identifier_vlen_bytes, create_codec_vlen_v2)
 }
 inventory::submit! {
-    CodecPlugin::new(codec::VLEN_UTF8, is_identifier_vlen_utf8, create_codec_vlen_v2)
+    CodecPlugin::new(zarrs_registry::codec::VLEN_UTF8, is_identifier_vlen_utf8, create_codec_vlen_v2)
 }
 
 fn is_identifier_vlen_v2(identifier: &str) -> bool {
-    identifier == VLEN_V2
+    identifier == zarrs_registry::codec::VLEN_V2
 }
 
 fn is_identifier_vlen_array(identifier: &str) -> bool {
-    identifier == codec::VLEN_ARRAY
+    identifier == zarrs_registry::codec::VLEN_ARRAY
 }
 
 fn is_identifier_vlen_bytes(identifier: &str) -> bool {
-    identifier == codec::VLEN_BYTES
+    identifier == zarrs_registry::codec::VLEN_BYTES
 }
 
 fn is_identifier_vlen_utf8(identifier: &str) -> bool {
-    identifier == codec::VLEN_UTF8
+    identifier == zarrs_registry::codec::VLEN_UTF8
 }
 
 pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, PluginCreateError> {
@@ -86,7 +84,12 @@ pub(crate) fn create_codec_vlen_v2(metadata: &MetadataV3) -> Result<Codec, Plugi
         let codec = Arc::new(VlenV2Codec::new());
         Ok(Codec::ArrayToBytes(codec))
     } else {
-        Err(PluginMetadataInvalidError::new(VLEN_V2, "codec", metadata.to_string()).into())
+        Err(PluginMetadataInvalidError::new(
+            zarrs_registry::codec::VLEN_V2,
+            "codec",
+            metadata.to_string(),
+        )
+        .into())
     }
 }
 

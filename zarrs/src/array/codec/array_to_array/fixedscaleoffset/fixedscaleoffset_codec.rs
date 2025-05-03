@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use zarrs_metadata::{
-    codec::FIXEDSCALEOFFSET, v2::array::DataTypeMetadataV2, v2_to_v3::data_type_metadata_v2_to_v3,
-    v3::MetadataConfiguration,
+    v2::array::DataTypeMetadataV2, v2_to_v3::data_type_metadata_v2_to_v3, v3::MetadataConfiguration,
 };
 use zarrs_plugin::PluginCreateError;
+use zarrs_registry::codec::FIXEDSCALEOFFSET;
 
 use crate::{
     array::{

@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use zarrs_metadata::{codec::BITROUND, v3::MetadataConfiguration};
+use zarrs_metadata::v3::MetadataConfiguration;
 use zarrs_plugin::PluginCreateError;
+use zarrs_registry::codec::BITROUND;
 
 use crate::array::{
     codec::{

@@ -35,7 +35,7 @@ use super::{
 
 use rayon::prelude::*;
 use unsafe_cell_slice::UnsafeCellSlice;
-use zarrs_metadata::codec::SHARDING;
+use zarrs_registry::codec::SHARDING;
 
 /// A `sharding` codec implementation.
 #[derive(Clone, Debug)]

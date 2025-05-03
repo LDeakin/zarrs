@@ -1,6 +1,6 @@
 //! The v2 chunk key encoding.
 
-use zarrs_metadata::chunk_key_encoding::V2;
+use zarrs_registry::chunk_key_encoding::V2;
 
 use crate::{
     array::chunk_key_encoding::ChunkKeyEncodingPlugin,

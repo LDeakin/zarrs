@@ -95,15 +95,13 @@ use std::{num::NonZeroU64, sync::Arc};
 
 use itertools::Itertools;
 
-pub use crate::metadata::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
-use crate::{
-    array::{
-        codec::{ArrayToBytesCodecTraits, CodecError, CodecOptions, InvalidBytesLengthError},
-        convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
-        RawBytes,
-    },
-    metadata::codec::VLEN,
+use crate::array::{
+    codec::{ArrayToBytesCodecTraits, CodecError, CodecOptions, InvalidBytesLengthError},
+    convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
+    RawBytes,
 };
+pub use crate::metadata::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
+use zarrs_registry::codec::VLEN;
 
 pub use vlen_codec::VlenCodec;
 

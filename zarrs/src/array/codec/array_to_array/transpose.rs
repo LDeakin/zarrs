@@ -35,8 +35,8 @@ pub use crate::metadata::codec::transpose::{
     InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
     TransposeOrder,
 };
-use crate::metadata::codec::TRANSPOSE;
 pub use transpose_codec::TransposeCodec;
+use zarrs_registry::codec::TRANSPOSE;
 
 use crate::{
     array::{

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::codec::BITROUND;
+use zarrs_registry::codec::BITROUND;
 
 use crate::{
     array::{

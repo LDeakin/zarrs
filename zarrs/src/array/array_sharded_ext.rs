@@ -1,4 +1,4 @@
-use zarrs_metadata::codec::SHARDING;
+use zarrs_registry::codec::SHARDING;
 
 use super::{codec::ShardingCodecConfiguration, Array, ArrayShape, ChunkGrid, ChunkShape};
 

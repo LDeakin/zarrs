@@ -48,7 +48,7 @@ pub use crate::metadata::codec::gdeflate::{
     GDeflateCompressionLevelError,
 };
 pub use gdeflate_codec::GDeflateCodec;
-use zarrs_metadata::codec::GDEFLATE;
+use zarrs_registry::codec::GDEFLATE;
 
 use crate::{
     array::{

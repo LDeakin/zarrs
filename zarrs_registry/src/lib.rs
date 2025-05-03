@@ -1,6 +1,4 @@
-//! Zarr extension point support.
-//!
-//! This module currently provides functionality to manage extension point aliases.
+//! The Zarr extension point registry for the `zarrs` crate.
 //!
 //! Zarr V3 extension points include data types, codecs, chunk grids, chunk key encodings, and storage transformers.
 //! Additionally, [`ZEP0009`] introduces a new `extension` metadata field for arbitrary array and group extensions.
@@ -11,10 +9,10 @@
 //!
 //! An extension point `name` (or `id` in Zarr V2) may change over time as the Zarr specification and extensions evolve.
 //! For example, the `bytes` codec was originally called `endian` in the provisionally accepted Zarr V3 specification.
-//! Aliasing of `name`s permits for seamless backward compatibility and interoperability between different Zarr versions, Zarr implementations, and extension versions (where compatible).
+//! Aliasing of `name`s enables seamless backward compatibility and interoperability between different Zarr versions, Zarr implementations, and extension versions (where compatible).
 //!
-//! [`zarrs_metadata`](`crate`) defines a *unique extension identifier* for each known extension in each extension point.
-//! Known aliases for an extension can be mapped to their unique extension identifier, and this can subsequently be mapped to a default `name` for metadata serialisation.
+//! This crate defines a *unique extension identifier* for each known extension in each extension point.
+//! Known aliases for an extension can be mapped to their unique extension identifier that can be mapped to a default `name` for metadata serialisation.
 //! Extension alias maps can be mutated to support custom extensions or to override the defaults.
 //!
 //! *Unique extension identifiers* are an implementation detail and may not match extension `name`s.
@@ -24,7 +22,7 @@
 //! Prior to [`ZEP0009`], a Zarr V3 extension point `name` was encouraged to be a unique URI pointing to a specification of the extension.
 //! [`ZEP0009`] revises conventions for extension point naming:
 //! - private or experimental extensions must use a *namespaced name* (e.g. `numcodecs.bitround`, `zarrs.vlen`, etc.), and
-//! - extensions registered  at [`zarr-extensions`] can use a *raw name*, such as `bfloat16`.
+//! - extensions registered  at [`zarr-extensions`] can use a *raw name*, such as `bfloat16`, or a *namespaced name*.
 //!
 //! ### Alias Maps
 //! This crate provides [`Default`] alias maps for Zarr V2 and V3 extension points.
@@ -39,6 +37,9 @@
 //! [`zarrs`]: https://docs.rs/zarrs/latest/zarrs/index.html
 //! [`zarr-extensions`]: https://github.com/zarr-developers/zarr-extensions
 
+mod zarr_version;
+pub use zarr_version::{ZarrVersion, ZarrVersion2, ZarrVersion3};
+
 mod extension_type;
 pub use extension_type::{
     ExtensionType, ExtensionTypeChunkGrid, ExtensionTypeChunkKeyEncoding, ExtensionTypeCodec,
@@ -50,8 +51,32 @@ pub use extension_aliases::{
     ExtensionAliasMapRegex, ExtensionAliasMapString, ExtensionAliases, ExtensionNameMap,
 };
 
+mod extension_aliases_chunk_grid;
+pub use extension_aliases_chunk_grid::ExtensionAliasesChunkGridV3;
+
+mod extension_aliases_chunk_key_encoding;
+pub use extension_aliases_chunk_key_encoding::ExtensionAliasesChunkKeyEncodingV3;
+
 mod extension_aliases_codec;
 pub use extension_aliases_codec::{ExtensionAliasesCodecV2, ExtensionAliasesCodecV3};
 
 mod extension_aliases_data_type;
 pub use extension_aliases_data_type::{ExtensionAliasesDataTypeV2, ExtensionAliasesDataTypeV3};
+
+mod extension_aliases_storage_transformer;
+pub use extension_aliases_storage_transformer::ExtensionAliasesStorageTransformerV3;
+
+/// Unique identifiers for _chunk grid_ extensions.
+pub mod chunk_grid;
+
+/// Unique identifiers for _chunk key encoding_ extensions.
+pub mod chunk_key_encoding;
+
+/// Unique identifiers for _codec_ extensions.
+pub mod codec;
+
+/// Unique identifiers for _data type_ extensions.
+pub mod data_type;
+
+/// Unique identifiers for _storage transformer_ extensions.
+pub mod storage_transformer;

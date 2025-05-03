@@ -1,6 +1,6 @@
 //! The default chunk key encoding.
 
-use zarrs_metadata::chunk_key_encoding::DEFAULT;
+use zarrs_registry::chunk_key_encoding::DEFAULT;
 
 use crate::{
     array::chunk_key_encoding::ChunkKeyEncodingPlugin,

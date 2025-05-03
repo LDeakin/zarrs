@@ -49,8 +49,8 @@ use std::sync::Arc;
 pub use crate::metadata::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
-use crate::metadata::codec::BITROUND;
 pub use bitround_codec::BitroundCodec;
+use zarrs_registry::codec::BITROUND;
 
 use crate::{
     array::{

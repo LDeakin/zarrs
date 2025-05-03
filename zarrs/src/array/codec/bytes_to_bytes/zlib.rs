@@ -34,7 +34,7 @@ mod zlib_codec;
 
 use std::sync::Arc;
 
-use zarrs_metadata::codec::ZLIB;
+use zarrs_registry::codec::ZLIB;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

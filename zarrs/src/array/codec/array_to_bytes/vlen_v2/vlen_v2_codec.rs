@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use zarrs_metadata::{codec::VLEN_V2, v3::MetadataConfiguration};
+use zarrs_metadata::v3::MetadataConfiguration;
 
 use crate::array::{
     codec::{
@@ -29,7 +29,7 @@ impl VlenV2Codec {
 
 impl CodecTraits for VlenV2Codec {
     fn identifier(&self) -> &str {
-        VLEN_V2
+        zarrs_registry::codec::VLEN_V2
     }
 
     fn configuration_opt(
@@ -146,7 +146,7 @@ impl ArrayToBytesCodecTraits for VlenV2Codec {
             DataTypeSize::Variable => Ok(BytesRepresentation::UnboundedSize),
             DataTypeSize::Fixed(_) => Err(CodecError::UnsupportedDataType(
                 decoded_representation.data_type().clone(),
-                VLEN_V2.to_string(),
+                zarrs_registry::codec::VLEN_V2.to_string(),
             )),
         }
     }

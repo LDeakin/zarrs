@@ -59,7 +59,7 @@ use blosc_sys::{
 };
 use derive_more::From;
 use thiserror::Error;
-use zarrs_metadata::codec::BLOSC;
+use zarrs_registry::codec::BLOSC;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

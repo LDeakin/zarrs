@@ -35,7 +35,7 @@ mod bz2_codec;
 
 use std::sync::Arc;
 
-use zarrs_metadata::codec::BZ2;
+use zarrs_registry::codec::BZ2;
 
 use crate::{
     array::codec::{Codec, CodecPlugin},

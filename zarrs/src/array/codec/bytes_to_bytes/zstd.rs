@@ -37,7 +37,7 @@ use std::sync::Arc;
 pub use crate::metadata::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
-use zarrs_metadata::codec::ZSTD;
+use zarrs_registry::codec::ZSTD;
 pub use zstd_codec::ZstdCodec;
 
 use crate::{
