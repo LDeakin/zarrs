@@ -160,7 +160,11 @@ impl GDeflateCompressor {
     fn get_npages_compress_bound(&self, input_length: usize) -> (usize, usize) {
         let mut out_npages = 0;
         let compress_bound = unsafe {
-            gdeflate_sys::libdeflate_gdeflate_compress_bound(self.0, input_length, &mut out_npages)
+            gdeflate_sys::libdeflate_gdeflate_compress_bound(
+                self.0,
+                input_length,
+                &raw mut out_npages,
+            )
         };
         (out_npages, compress_bound)
     }
@@ -190,7 +194,7 @@ impl GDeflateCompressor {
                     self.0,
                     data_in.as_ptr().cast(),
                     data_in.len(),
-                    &mut out_page,
+                    &raw mut out_page,
                     1,
                 )
             };
@@ -237,11 +241,11 @@ impl GDeflateDecompressor {
         let result = unsafe {
             gdeflate_sys::libdeflate_gdeflate_decompress(
                 self.0,
-                &mut in_page,
+                &raw mut in_page,
                 1,
                 out.cast(),
                 out_nbytes_avail,
-                &mut actual_out_nbytes,
+                &raw mut actual_out_nbytes,
             )
         };
         assert_eq!(actual_out_nbytes, out_nbytes_avail);
