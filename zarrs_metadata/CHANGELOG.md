@@ -7,23 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-05-03
+
 ### Added
 - Add support for a `must_understand` field to `MetadataV3` (ZEP0009)
   - Extensions can now be parsed in more than just the additional fields of array/group metadata (e.g. codecs)
   - Automatically skip unsupported codecs/storage transformers with `"must_understand": false`
 - Add `extensions` field to `v3::{Array,Group}MetadataV3` (ZEP0009)
-- Add `ExtensionAliases[Codec,DataType]{V2,V3}` and `Extension{Name,Alias}Map` for extension `name` overriding and aliasing
-  - **Breaking**: these are now parameters for `{array,codec}_metadata_v2_to_v3`
-  - `zarrs` has a default codec map accessible via `zarrs::config::global_config().codec_aliases()`
 - Implement `From<T> for MetadataConfiguration` for all codec configuration enums
 - Implement `Copy` for `ZstdCompressionLevel`
 - Add new codec metadata: `zlib`, `shuffle`, `packbits`, `squeeze`, `fixedscaleoffset`, `zfpy` (unmerged from `zfp`)
 - Add `MetadataConfigurationSerialize` trait
-- Add `ExtensionType` marker trait and `ExtensionType{DataType,ChunkGrid,ChunkKeyEncoding,Codec,StorageTranformer}`
 - Add `{Array,Group,Node}Metadata::to_string_pretty()` and `{Array,Group}Metadata{V2,V3}::to_string_pretty()`
 - Add `MetadataV3::set_{name,id}()`
 - Add `ZarrVersion` marker trait and `ZarrVersion{2,3}`
 - Add re-exports for `v3::array::{chunk_grid,chunk_key_encoding,codec,data_type}` at the crate root
+- Add support for reversible mode to the `zfpy` codec in case it gets fixed in `numcodecs`
 
 ### Changed
 - **Breaking**: Refactor `FillValueMetadataV3` to support arbitrary fill value metadata (for ZEP0009)
@@ -34,12 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Move `v3::array::data_type::DataTypeSize` to the crate root
 - **Breaking**: Rename `v2_to_v3::array_metadata_fill_value_v2_to_v3` to `fill_value_metadata_v2_to_v3`
 - **Breaking**: Rename `v2_to_v3::data_type_metadata_v2_to_v3_data_type` to `data_type_metadata_v2_to_v3`
-- **Breaking**: Rename all `IDENTIFIER`s for extensions to match the extension (e.g. `BLOSC`, `ZSTD`, etc.)
-- `zfpy` codec: add support for reversible mode in case it gets fixed in `numcodecs`
+- **Breaking**: Remove all `IDENTIFIER` consts, they are moved to the `zarrs_registry` crate
+- **Breaking**: Change `DimensionName` to an alias for `Option<String>` rather than a newtype and add `IntoDimensionName`
+- **Breaking**: Add parameters to `{array,codec}_metadata_v2_to_v3` for extension alias handling
 - Bump `half` to 2.3.1
 - Bump `thiserror` to 2.0.12
-- **Breaking**: Change `DimensionName` to an alias for `Option<String>` rather than a newtype
-  - Adds `IntoDimensionName`
 
 ### Removed
 - **Breaking**: Remove `fill_value::{HexString,FillValueFloat,FillValueFloatStringNonFinite}`
@@ -154,7 +152,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.3.7...HEAD
+[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.4.0...HEAD
+[0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.4.0
 [0.3.7]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.7
 [0.3.6]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.6
 [0.3.5]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.5
