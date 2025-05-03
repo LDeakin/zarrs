@@ -29,3 +29,4 @@ zarrs_storage = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
+zarrs_storage = { workspace = true, features = ["tests"] }
