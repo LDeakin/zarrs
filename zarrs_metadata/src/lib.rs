@@ -4,12 +4,12 @@
 //!
 //! [`ArrayMetadata`] and [`GroupMetadata`] can hold any conformant array/group metadata.
 //!
-//! This crate includes known metadata for Zarr V3 extension points (chunk grids, chunk key encodings, codecs, and data types).
-//! This includes the following extension types:
-//! - Core extensions defined in the [Zarr V3 specification](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html),
-//! - Registered extensions defined at [zarr-developers/zarr-extensions](https://github.com/zarr-developers/zarr-extensions/),
-//! - Experimental extensions used in `zarrs` that have yet to be registered, and
-//! - `numcodecs` codecs supported by `zarrs` that have yet to be registered.
+//! This crate includes known metadata for Zarr V3 extension points (chunk grids, chunk key encodings, codecs, and data types), including:
+//! - _Core_ extensions defined in the [Zarr V3 specification](https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html),
+//! - _Registered_ extensions defined at [zarr-developers/zarr-extensions](https://github.com/zarr-developers/zarr-extensions/), and
+//! - `numcodecs` codecs and _experimental_ extensions in `zarrs` that have yet to be registered.
+//!
+//! Functions for converting Zarr V2 to equivalent Zarr V3 metadata are included.
 
 use derive_more::derive::{Display, From};
 use serde::{Deserialize, Serialize};

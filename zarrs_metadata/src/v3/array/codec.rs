@@ -1,4 +1,8 @@
 //! Zarr V3 codec metadata.
+//!
+//! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#array-metadata-codecs>
+//!
+//! This module defines versioned structures that map to the `configuration` field of codecs.
 
 /// Registered codec metadata.
 /// See <https://github.com/zarr-developers/zarr-extensions>.

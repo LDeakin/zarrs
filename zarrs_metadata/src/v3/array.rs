@@ -12,6 +12,8 @@ pub mod data_type;
 pub mod codec;
 
 /// Zarr V3 chunk grid metadata.
+///
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#chunk-grid>.
 pub mod chunk_grid {
     /// `rectangular` chunk grid metadata.
     pub mod rectangular;
@@ -20,6 +22,8 @@ pub mod chunk_grid {
 }
 
 /// Zarr V3 chunk key encoding metadata.
+///
+/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#chunk-key-encoding>.
 pub mod chunk_key_encoding {
     /// `default` chunk key encoding metadata.
     pub mod default;
