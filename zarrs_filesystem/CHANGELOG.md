@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Skip `direct_io` test on linux systems that do not support direct IO
+
 ## [0.2.1] - 2025-04-26
 
 ### Changed

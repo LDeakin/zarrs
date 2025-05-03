@@ -454,8 +454,23 @@ pub enum FilesystemStoreCreateError {
 
 #[cfg(test)]
 mod tests {
+    use libc::{open, O_RDONLY};
+
     use super::*;
-    use std::error::Error;
+    use std::{error::Error, os::fd::FromRawFd};
+
+    fn try_open_direct_io(path: &str) -> std::io::Result<File> {
+        use std::ffi::CString;
+        let c_path = CString::new(path).unwrap();
+        unsafe {
+            let fd = open(c_path.as_ptr(), O_RDONLY | O_DIRECT);
+            if fd < 0 {
+                Err(std::io::Error::last_os_error())
+            } else {
+                Ok(File::from_raw_fd(fd))
+            }
+        }
+    }
 
     #[test]
     #[cfg_attr(miri, ignore)]
@@ -473,6 +488,12 @@ mod tests {
     #[test]
     // #[cfg_attr(miri, ignore)]
     fn direct_io() -> Result<(), Box<dyn Error>> {
+        let tmpfile = tempfile::NamedTempFile::new()?;
+        if try_open_direct_io(tmpfile.path().to_str().unwrap()).is_err() {
+            // Skip this test if direct I/O is not supported
+            return Ok(());
+        }
+
         let path = tempfile::TempDir::new()?;
         let mut opts = FilesystemStoreOptions::default();
         opts.direct_io(true);
