@@ -94,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `Group::consolidated_metadata` now returns an owned `ConsolidatedMetadata` instead of a reference
 - Bump `lru` to 0.14.0
 - **Breaking**: Move `zarrs_metadata::v3::UnsupportedAdditionalFieldError` to `zarrs::array::AdditionalFieldUnsupportedError`
+- **Breaking**: Bump the maximum supported version of `dlpark` to 0.5
 
 ### Removed
 - **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
