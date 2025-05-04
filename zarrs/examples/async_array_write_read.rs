@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#![feature(ergonomic_clones)]
 
 use futures::TryStreamExt;
 use zarrs::storage::{
@@ -64,7 +65,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     .build_arc(store.clone(), array_path)?;
 
     // Write array metadata to store
-    array.clone().async_store_metadata().await?;
+    array.use.async_store_metadata().await?;
 
     println!(
         "The array metadata is:\n{}\n",
@@ -73,16 +74,18 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     // Write some chunks
     let store_chunk = |i: u64| {
-        let array = array.clone();
+        let array = array.use; // FIXME: Why do I need this with ergonomic borrowing?
         async move {
             let chunk_indices: Vec<u64> = vec![0, i];
             let chunk_subset = array
+                .use
                 .chunk_grid()
                 .subset(&chunk_indices, array.shape())?
                 .ok_or_else(|| {
                     zarrs::array::ArrayError::InvalidChunkGridIndicesError(chunk_indices.to_vec())
                 })?;
             array
+                .use
                 .async_store_chunk_elements(
                     &chunk_indices,
                     &vec![i as f32 * 0.1; chunk_subset.num_elements() as usize],
@@ -97,14 +100,14 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
 
     let subset_all = array.subset_all();
     let data_all = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
         .await?;
     println!("async_store_chunk [0, 0] and [0, 1]:\n{data_all:+4.1}\n");
 
     // Store multiple chunks
     array
-        .clone()
+        .use
         .async_store_chunks_elements::<f32>(
             &ArraySubset::new_with_ranges(&[1..2, 0..2]),
             &[
@@ -116,42 +119,42 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
     let data_all = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
         .await?;
     println!("async_store_chunks [1..2, 0..2]:\n{data_all:+4.1}\n");
 
     // Write a subset spanning multiple chunks, including updating chunks already written
     array
-        .clone()
+        .use
         .async_store_array_subset_elements::<f32>(
             &ArraySubset::new_with_ranges(&[3..6, 3..6]),
             &[-3.3, -3.4, -3.5, -4.3, -4.4, -4.5, -5.3, -5.4, -5.5],
         )
         .await?;
     let data_all = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
         .await?;
     println!("async_store_array_subset [3..6, 3..6]:\n{data_all:+4.1}\n");
 
     // Store array subset
     array
-        .clone()
+        .use
         .async_store_array_subset_elements::<f32>(
             &ArraySubset::new_with_ranges(&[0..8, 6..7]),
             &[-0.6, -1.6, -2.6, -3.6, -4.6, -5.6, -6.6, -7.6],
         )
         .await?;
     let data_all = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
         .await?;
     println!("async_store_array_subset [0..8, 6..7]:\n{data_all:+4.1}\n");
 
     // Store chunk subset
     array
-        .clone()
+        .use
         .async_store_chunk_subset_elements::<f32>(
             // chunk indices
             &[1, 1],
@@ -161,15 +164,15 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
     let data_all = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
         .await?;
     println!("async_store_chunk_subset [3..4, 0..4] of chunk [1, 1]:\n{data_all:+4.1}\n");
 
     // Erase a chunk
-    array.clone().async_erase_chunk(&[0, 0]).await?;
+    array.use.async_erase_chunk(&[0, 0]).await?;
     let data_all = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&subset_all)
         .await?;
     println!("async_erase_chunk [0, 0]:\n{data_all:+4.1}\n");
@@ -177,7 +180,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Read a chunk
     let chunk_indices = vec![0, 1];
     let data_chunk = array
-        .clone()
+        .use
         .async_retrieve_chunk_ndarray::<f32>(&chunk_indices)
         .await?;
     println!("async_retrieve_chunk [0, 1]:\n{data_chunk:+4.1}\n");
@@ -185,7 +188,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Read chunks
     let chunks = ArraySubset::new_with_ranges(&[0..2, 1..2]);
     let data_chunks = array
-        .clone()
+        .use
         .async_retrieve_chunks_ndarray::<f32>(&chunks)
         .await?;
     println!("async_retrieve_chunks [0..2, 1..2]:\n{data_chunks:+4.1}\n");
@@ -193,7 +196,7 @@ async fn async_array_write_read() -> Result<(), Box<dyn std::error::Error>> {
     // Retrieve an array subset
     let subset = ArraySubset::new_with_ranges(&[2..6, 3..5]); // the center 4x2 region
     let data_subset = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&subset)
         .await?;
     println!("async_retrieve_array_subset [2..6, 3..5]:\n{data_subset:+4.1}\n");

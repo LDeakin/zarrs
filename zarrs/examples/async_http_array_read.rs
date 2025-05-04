@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#![feature(ergonomic_clones)]
 
 use std::sync::Arc;
 use zarrs::{
@@ -56,7 +57,7 @@ async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Err
 
     // Read the whole array
     let data_all = array
-        .clone()
+        .use
         .async_retrieve_array_subset_ndarray::<f32>(&array.subset_all())
         .await?;
     println!("The whole array is:\n{data_all}\n");
@@ -64,7 +65,7 @@ async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Err
     // Read a chunk back from the store
     let chunk_indices = vec![1, 0];
     let data_chunk = array
-        .clone()
+        .use
         .async_retrieve_chunk_ndarray::<f32>(&chunk_indices)
         .await?;
     println!("Chunk [1,0] is:\n{data_chunk}\n");
