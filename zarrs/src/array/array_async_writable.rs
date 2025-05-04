@@ -19,7 +19,7 @@ use super::{
 impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_metadata`](Array::store_metadata).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_store_metadata(&self) -> Result<(), StorageError> {
+    pub async fn async_store_metadata(self: Arc<Self>) -> Result<(), StorageError> {
         self.async_store_metadata_opt(&ArrayMetadataOptions::default())
             .await
     }
@@ -27,7 +27,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_metadata_opt`](Array::store_metadata_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_metadata_opt(
-        &self,
+        self: Arc<Self>,
         options: &ArrayMetadataOptions,
     ) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
@@ -76,7 +76,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunk`](Array::store_chunk).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk<'a>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_bytes: impl Into<ArrayBytes<'a>> + Send,
     ) -> Result<(), ArrayError> {
@@ -87,7 +87,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunk_elements`](Array::store_chunk_elements).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_elements<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_elements: &[T],
     ) -> Result<(), ArrayError> {
@@ -99,7 +99,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunk_ndarray`](Array::store_chunk_ndarray).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_ndarray<T: Element + Send + Sync, D: ndarray::Dimension>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_array: impl Into<ndarray::Array<T, D>> + Send,
     ) -> Result<(), ArrayError> {
@@ -111,7 +111,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc)]
     #[allow(clippy::similar_names)]
     pub async fn async_store_chunks<'a>(
-        &self,
+        self: Arc<Self>,
         chunks: &ArraySubset,
         chunks_bytes: impl Into<ArrayBytes<'a>> + Send,
     ) -> Result<(), ArrayError> {
@@ -122,7 +122,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunks_elements`](Array::store_chunks_elements).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_elements<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         chunks: &ArraySubset,
         chunks_elements: &[T],
     ) -> Result<(), ArrayError> {
@@ -134,7 +134,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunks_ndarray`](Array::store_chunks_ndarray).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_ndarray<T: Element + Send + Sync, D: ndarray::Dimension>(
-        &self,
+        self: Arc<Self>,
         chunks: &ArraySubset,
         chunks_array: impl Into<ndarray::Array<T, D>> + Send,
     ) -> Result<(), ArrayError> {
@@ -144,7 +144,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
 
     /// Async variant of [`erase_metadata`](Array::erase_metadata).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_erase_metadata(&self) -> Result<(), StorageError> {
+    pub async fn async_erase_metadata(self: Arc<Self>) -> Result<(), StorageError> {
         let erase_version = global_config().metadata_erase_version();
         self.async_erase_metadata_opt(erase_version).await
     }
@@ -152,7 +152,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`erase_metadata_opt`](Array::erase_metadata_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_erase_metadata_opt(
-        &self,
+        self: Arc<Self>,
         options: MetadataEraseVersion,
     ) -> Result<(), StorageError> {
         let storage_handle = StorageHandle::new(self.storage.clone());
@@ -191,7 +191,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
 
     /// Async variant of [`erase_chunk`](Array::erase_chunk).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_erase_chunk(&self, chunk_indices: &[u64]) -> Result<(), StorageError> {
+    pub async fn async_erase_chunk(
+        self: Arc<Self>,
+        chunk_indices: &[u64],
+    ) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
@@ -204,7 +207,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
 
     /// Async variant of [`erase_chunks`](Array::erase_chunks).
     #[allow(clippy::missing_errors_doc)]
-    pub async fn async_erase_chunks(&self, chunks: &ArraySubset) -> Result<(), StorageError> {
+    pub async fn async_erase_chunks(
+        self: Arc<Self>,
+        chunks: &ArraySubset,
+    ) -> Result<(), StorageError> {
         let storage_handle = Arc::new(StorageHandle::new(self.storage.clone()));
         let storage_transformer = self
             .storage_transformers()
@@ -212,9 +218,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
             .await?;
         let erase_chunk = |chunk_indices: Vec<u64>| {
             let storage_transformer = storage_transformer.clone();
+            let self_ = self.clone();
             async move {
                 storage_transformer
-                    .erase(&self.chunk_key(&chunk_indices))
+                    .erase(&self_.chunk_key(&chunk_indices))
                     .await
             }
         };
@@ -231,7 +238,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunk_opt`](Array::store_chunk_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_opt<'a>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_bytes: impl Into<ArrayBytes<'a>> + Send,
         options: &CodecOptions,
@@ -263,7 +270,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_encoded_chunk`](Array::store_encoded_chunk)
     #[allow(clippy::missing_errors_doc, clippy::missing_safety_doc)]
     pub async unsafe fn async_store_encoded_chunk(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         encoded_chunk_bytes: AsyncBytes,
     ) -> Result<(), ArrayError> {
@@ -281,7 +288,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunk_elements_opt`](Array::store_chunk_elements_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_elements_opt<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_elements: &[T],
         options: &CodecOptions,
@@ -295,7 +302,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunk_ndarray_opt`](Array::store_chunk_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunk_ndarray_opt<T: Element + Send + Sync, D: ndarray::Dimension>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_array: impl Into<ndarray::Array<T, D>> + Send,
         options: &CodecOptions,
@@ -318,7 +325,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     #[allow(clippy::similar_names)]
     pub async fn async_store_chunks_opt<'a>(
-        &self,
+        self: Arc<Self>,
         chunks: &ArraySubset,
         chunks_bytes: impl Into<ArrayBytes<'a>> + Send,
         options: &CodecOptions,
@@ -361,8 +368,10 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
                         )
                         .unwrap(); // FIXME: unwrap
                     let options = options.clone();
+                    let self_ = self.clone();
                     async move {
-                        self.async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
+                        self_
+                            .async_store_chunk_opt(&chunk_indices, chunk_bytes, &options)
                             .await
                     }
                 };
@@ -379,7 +388,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunks_elements_opt`](Array::store_chunks_elements_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_elements_opt<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         chunks: &ArraySubset,
         chunks_elements: &[T],
         options: &CodecOptions,
@@ -393,7 +402,7 @@ impl<TStorage: ?Sized + AsyncWritableStorageTraits + 'static> Array<TStorage> {
     /// Async variant of [`store_chunks_ndarray_opt`](Array::store_chunks_ndarray_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_chunks_ndarray_opt<T: Element + Send + Sync, D: ndarray::Dimension>(
-        &self,
+        self: Arc<Self>,
         chunks: &ArraySubset,
         chunks_array: impl Into<ndarray::Array<T, D>> + Send,
         options: &CodecOptions,

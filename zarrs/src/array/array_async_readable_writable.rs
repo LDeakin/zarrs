@@ -1,4 +1,5 @@
 use futures::{StreamExt, TryStreamExt};
+use std::sync::Arc;
 
 use crate::{
     array::ArrayBytes, array_subset::ArraySubset, storage::AsyncReadableWritableStorageTraits,
@@ -13,7 +14,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// Async variant of [`store_chunk_subset`](Array::store_chunk_subset).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_chunk_subset<'a>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_bytes: impl Into<ArrayBytes<'a>> + Send,
@@ -30,7 +31,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// Async variant of [`store_chunk_subset_elements`](Array::store_chunk_subset_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_chunk_subset_elements<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_elements: &[T],
@@ -51,7 +52,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         T: Element + Send + Sync,
         D: ndarray::Dimension,
     >(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
         chunk_subset_array: impl Into<ndarray::Array<T, D>> + Send,
@@ -68,7 +69,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// Async variant of [`store_array_subset`](Array::store_array_subset).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_array_subset<'a>(
-        &self,
+        self: Arc<Self>,
         array_subset: &ArraySubset,
         subset_bytes: impl Into<ArrayBytes<'a>> + Send,
     ) -> Result<(), ArrayError> {
@@ -79,7 +80,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// Async variant of [`store_array_subset_elements`](Array::store_array_subset_elements).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_array_subset_elements<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         array_subset: &ArraySubset,
         subset_elements: &[T],
     ) -> Result<(), ArrayError> {
@@ -98,7 +99,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         T: Element + Send + Sync,
         D: ndarray::Dimension,
     >(
-        &self,
+        self: Arc<Self>,
         subset_start: &[u64],
         subset_array: impl Into<ndarray::Array<T, D>> + Send,
     ) -> Result<(), ArrayError> {
@@ -117,7 +118,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// Async variant of [`store_chunk_subset_opt`](Array::store_chunk_subset_opt).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_chunk_subset_opt<'a>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_bytes: impl Into<ArrayBytes<'a>> + Send,
@@ -154,6 +155,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
 
             // Decode the entire chunk
             let chunk_bytes_old = self
+                .clone()
                 .async_retrieve_chunk_opt(chunk_indices, options)
                 .await?;
 
@@ -175,7 +177,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// Async variant of [`store_chunk_subset_elements_opt`](Array::store_chunk_subset_elements_opt).
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     pub async fn async_store_chunk_subset_elements_opt<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset: &ArraySubset,
         chunk_subset_elements: &[T],
@@ -192,7 +194,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         T: Element + Send + Sync,
         D: ndarray::Dimension,
     >(
-        &self,
+        self: Arc<Self>,
         chunk_indices: &[u64],
         chunk_subset_start: &[u64],
         chunk_subset_array: impl Into<ndarray::Array<T, D>> + Send,
@@ -221,7 +223,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
     #[allow(clippy::too_many_lines)]
     pub async fn async_store_array_subset_opt<'a>(
-        &self,
+        self: Arc<Self>,
         array_subset: &ArraySubset,
         subset_bytes: impl Into<ArrayBytes<'a>> + Send,
         options: &CodecOptions,
@@ -291,14 +293,16 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
                     )
                     .unwrap(); // FIXME: unwrap
                 let options = options.clone();
+                let self_ = self.clone();
                 async move {
-                    self.async_store_chunk_subset_opt(
-                        &chunk_indices,
-                        &array_subset_in_chunk_subset,
-                        chunk_subset_bytes,
-                        &options,
-                    )
-                    .await
+                    self_
+                        .async_store_chunk_subset_opt(
+                            &chunk_indices,
+                            &array_subset_in_chunk_subset,
+                            chunk_subset_bytes,
+                            &options,
+                        )
+                        .await
                 }
             };
 
@@ -313,7 +317,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
     /// Async variant of [`store_array_subset_elements_opt`](Array::store_array_subset_elements_opt).
     #[allow(clippy::missing_errors_doc)]
     pub async fn async_store_array_subset_elements_opt<T: Element + Send + Sync>(
-        &self,
+        self: Arc<Self>,
         array_subset: &ArraySubset,
         subset_elements: &[T],
         options: &CodecOptions,
@@ -330,7 +334,7 @@ impl<TStorage: ?Sized + AsyncReadableWritableStorageTraits + 'static> Array<TSto
         T: Element + Send + Sync,
         D: ndarray::Dimension,
     >(
-        &self,
+        self: Arc<Self>,
         subset_start: &[u64],
         subset_array: impl Into<ndarray::Array<T, D>> + Send,
         options: &CodecOptions,
