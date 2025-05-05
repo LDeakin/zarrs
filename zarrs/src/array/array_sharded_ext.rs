@@ -64,19 +64,15 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
     }
 
     fn effective_inner_chunk_shape(&self) -> Option<ChunkShape> {
-        let inner_chunk_shape = self.inner_chunk_shape();
-        if let Some(mut inner_chunk_shape) = inner_chunk_shape {
-            for codec in self.codecs().array_to_array_codecs().iter().rev() {
-                if let Ok(Some(inner_chunk_shape_)) = codec.decoded_shape(&inner_chunk_shape) {
-                    inner_chunk_shape = inner_chunk_shape_;
-                } else {
-                    return None;
-                }
+        let mut inner_chunk_shape = self.inner_chunk_shape()?;
+        for codec in self.codecs().array_to_array_codecs().iter().rev() {
+            if let Ok(Some(inner_chunk_shape_)) = codec.decoded_shape(&inner_chunk_shape) {
+                inner_chunk_shape = inner_chunk_shape_;
+            } else {
+                return None;
             }
-            Some(inner_chunk_shape)
-        } else {
-            None
         }
+        Some(inner_chunk_shape)
     }
 
     fn inner_chunk_grid(&self) -> ChunkGrid {
