@@ -67,6 +67,9 @@ pub use sharding_codec::ShardingCodec;
 pub use sharding_codec_builder::ShardingCodecBuilder;
 pub(crate) use sharding_partial_decoder::ShardingPartialDecoder;
 
+#[cfg(feature = "async")]
+pub(crate) use sharding_partial_decoder::AsyncShardingPartialDecoder;
+
 use crate::{
     array::{
         codec::{
