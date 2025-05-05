@@ -92,6 +92,10 @@ pub use chunk_cache::{
     chunk_cache_lru::*, ChunkCache, ChunkCacheType, ChunkCacheTypeDecoded, ChunkCacheTypeEncoded,
 };
 
+#[cfg(all(feature = "sharding", feature = "async"))]
+pub use array_async_sharded_readable_ext::{
+    AsyncArrayShardedReadableExt, AsyncArrayShardedReadableExtCache,
+};
 #[cfg(feature = "dlpack")]
 pub use array_dlpack_ext::{
     ArrayDlPackExt, ArrayDlPackExtError, AsyncArrayDlPackExt, RawBytesDlPack,
@@ -102,7 +106,6 @@ pub use array_sharded_ext::ArrayShardedExt;
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
 
 use zarrs_metadata::v2::array::DataTypeMetadataV2;
-// TODO: Add AsyncArrayShardedReadableExt and AsyncArrayShardedReadableExtCache
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
@@ -964,6 +967,9 @@ mod array_async_writable;
 
 #[cfg(feature = "async")]
 mod array_async_readable_writable;
+
+#[cfg(feature = "async")]
+mod array_async_sharded_readable_ext;
 
 /// Transmute from `Vec<u8>` to `Vec<T>`.
 #[must_use]
