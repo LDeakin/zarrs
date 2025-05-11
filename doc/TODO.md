@@ -1,25 +1,30 @@
 ## TODO
 
-### Features/API
-- Add array methods supporting efficient advanced indexing
-    `Array::{store,retrieve}[_elements](indexer: impl Indexer)`
-- Stabilise the async API
-    - Support internal task spawning?
-    - Add `array_sharded_ext::{AsyncArrayShardedExt,AsyncArrayShardedReadableExt}`
-    - Async support for `StorageValueIO` to enable `ZipStorageAdapter` with async stores
-- Remove most/all `_opt` methods when Rust [`import-trait-associated-functions`](https://github.com/rust-lang/rfcs/pull/3591) stabilises
-- Use lending iterators where/if possible to avoid `Vec` allocations in iterators?
-- Test an io_uring backed filesystem store
-    - **Pending**: OpenDAL [real async filesystem IO](https://github.com/apache/opendal/issues/4520)
-- Support additional registered extension points [zarr-developers/zarr-extensions]
+### Features
+- Add array methods supporting advanced indexing <https://github.com/LDeakin/zarrs/issues/52>
+- Stabilise the async `Array` API <https://github.com/LDeakin/zarrs/issues/127>
+- Stabilise the partial encoding API
+- Stabilise the data type API
+  - Support data type fallbacks
+- Stabilise the codec API and move into the `zarrs_codec` crate
+- Stabilise the chunk grid API and move into the `zarrs_chunk_grid` crate
+
+### Ergonomics
+- Remove most/all `_opt` methods when Rust [`import-trait-associated-functions`](https://github.com/rust-lang/rust/issues/134691) stabilises
+- Move array `store_`/`retrieve_` variants into `Array` `Ext` traits, and remove `async_` prefix?
+
+### Performance
+- More codec parallelism (where efficient) <https://github.com/LDeakin/zarrs/issues/128>
+- Optimise the async `Array` API and async partial decoders
+  - Test an `io_uring` filesystem store
 
 ### Maintenance/Code Quality
 - Increase test coverage
-- Use `async_generic` to reduce `async` code duplication
-  - Reduce code duplication in async tests
-- Conformance test suite for `zarrs`, `zarr-python`, `tensorstore`, `zarrita.js`, etc?
+- Use the `async_generic` crate to reduce `async` code duplication (pending https://github.com/scouten/async-generic/pull/17) or wait for keyword generics
 
-### Register experimental codecs at [zarr-developers/zarr-extensions]
+### Zarr Extensions at [zarr-developers/zarr-extensions]
+- Support newly registered extension points <https://github.com/LDeakin/zarrs/issues/191>
+- Register the following:
   - `bitround` (integer data types)
   - `vlen`/`vlen_v2`: ZEP0007
   - `gdeflate`
