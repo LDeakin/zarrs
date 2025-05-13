@@ -152,7 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - Split from the `metadata` module of `zarrs` 0.17.0-dev
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_metadata-v0.4.0...HEAD
+[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs_metadata-v0.4.0...HEAD
 [0.4.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.4.0
 [0.3.7]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.7
 [0.3.6]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_metadata-v0.3.6

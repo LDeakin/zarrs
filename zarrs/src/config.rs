@@ -95,7 +95,7 @@ use crate::array::{codec::CodecOptions, ArrayMetadataOptions};
 /// ```json
 /// "_zarrs": {
 ///    "description": "This array was created with zarrs",
-///    "repository": "https://github.com/LDeakin/zarrs",
+///    "repository": "https://github.com/zarrs/zarrs",
 ///    "version": "0.15.0"
 ///  }
 /// ```

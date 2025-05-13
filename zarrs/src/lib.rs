@@ -14,15 +14,15 @@
 //! - experimental codecs and data types intended for future registration, and
 //! - user-defined custom extensions and stores.
 //!
-//! A changelog can be found [here](https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md).
-//! Correctness issues with past versions are [detailed here](https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md).
+//! A changelog can be found [here](https://github.com/zarrs/zarrs/blob/main/CHANGELOG.md).
+//! Correctness issues with past versions are [detailed here](https://github.com/zarrs/zarrs/blob/main/doc/correctness_issues.md).
 //!
 //! Developed at the [Department of Materials Physics](https://physics.anu.edu.au/research/mp/), Australian National University, Canberra, Australia.
 //!
 //! ## Getting Started
 //! - Review the [implementation status](#implementation-status) which summarises zarr version support, array support (codecs, data types, etc.) and storage support.
 //! - Read [The `zarrs` Book].
-//! - View the [examples](https://github.com/LDeakin/zarrs/tree/main/zarrs/examples) and [the example below](#examples).
+//! - View the [examples](https://github.com/zarrs/zarrs/tree/main/zarrs/examples) and [the example below](#examples).
 //! - Read the [documentation](https://docs.rs/zarrs/latest/zarrs/).
 //! - Check out the [`zarrs` ecosystem](#zarrs-ecosystem).
 //!
@@ -34,7 +34,7 @@
 //! - can be converted to V3 with only a metadata change, and
 //! - uses array metadata that is recognised and supported for encoding/decoding.
 //!
-//! `zarrs` supports forward conversion from Zarr V2 to V3. See ["Converting Zarr V2 to V3"](https://book.zarrs.dev/v2_to_v3.html) in [The `zarrs` Book], or try the [`zarrs_reencode`](https://github.com/LDeakin/zarrs_tools/blob/main/docs/zarrs_reencode.md) CLI tool.
+//! `zarrs` supports forward conversion from Zarr V2 to V3. See ["Converting Zarr V2 to V3"](https://book.zarrs.dev/v2_to_v3.html) in [The `zarrs` Book], or try the [`zarrs_reencode`](https://github.com/zarrs/zarrs_tools/blob/main/docs/zarrs_reencode.md) CLI tool.
 //!
 //! #### Array Support
 //!
@@ -158,7 +158,7 @@
 //! ```
 //!
 //! ### More examples
-//! Various examples can be found in the [examples](https://github.com/LDeakin/zarrs/blob/main/zarrs/examples) directory that demonstrate:
+//! Various examples can be found in the [examples](https://github.com/zarrs/zarrs/blob/main/zarrs/examples) directory that demonstrate:
 //! - creating and manipulating zarr hierarchies with various stores (sync and async), codecs, etc,
 //! - converting between Zarr V2 and V3, and
 //! - creating custom data types.

@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 title: "zarrs: A High-Performance Rust Library for the Zarr Array Storage Format"
 version: 0.19.2
 date-released: 2025-02-13
-repository-code: "https://github.com/LDeakin/zarrs"
+repository-code: "https://github.com/zarrs/zarrs"
 url: "https://zarrs.dev"
 abstract: "zarrs is a Rust library for the Zarr storage format for multidimensional arrays and metadata."
 authors:

@@ -3,8 +3,8 @@
 [![Latest Version](https://img.shields.io/crates/v/zarrs_http.svg)](https://crates.io/crates/zarrs_http)
 [![zarrs_http documentation](https://docs.rs/zarrs_http/badge.svg)](https://docs.rs/zarrs_http)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_http)
-[![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_http)](https://codecov.io/gh/LDeakin/zarrs)
+[![build](https://github.com/zarrs/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/zarrs/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/zarrs/zarrs/graph/badge.svg?component=zarrs_http)](https://codecov.io/gh/zarrs/zarrs)
 
 A synchronous `http` store for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

@@ -3,8 +3,8 @@
 [![Latest Version](https://img.shields.io/crates/v/zarrs_metadata.svg)](https://crates.io/crates/zarrs_metadata)
 [![zarrs_metadata documentation](https://docs.rs/zarrs_metadata/badge.svg)](https://docs.rs/zarrs_metadata)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_metadata)
-[![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_metadata)](https://codecov.io/gh/LDeakin/zarrs)
+[![build](https://github.com/zarrs/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/zarrs/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/zarrs/zarrs/graph/badge.svg?component=zarrs_metadata)](https://codecov.io/gh/zarrs/zarrs)
 
 [Zarr](https://zarr-specs.readthedocs.io/) metadata support for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

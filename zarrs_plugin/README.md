@@ -3,8 +3,8 @@
 [![Latest Version](https://img.shields.io/crates/v/zarrs_plugin.svg)](https://crates.io/crates/zarrs_plugin)
 [![zarrs_plugin documentation](https://docs.rs/zarrs_plugin/badge.svg)](https://docs.rs/zarrs_plugin)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_plugin)
-[![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_plugin)](https://codecov.io/gh/LDeakin/zarrs)
+[![build](https://github.com/zarrs/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/zarrs/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/zarrs/zarrs/graph/badge.svg?component=zarrs_plugin)](https://codecov.io/gh/zarrs/zarrs)
 
 The plugin API for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

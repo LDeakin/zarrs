@@ -3,8 +3,8 @@
 [![Latest Version](https://img.shields.io/crates/v/zarrs_registry.svg)](https://crates.io/crates/zarrs_registry)
 [![zarrs_registry documentation](https://docs.rs/zarrs_registry/badge.svg)](https://docs.rs/zarrs_registry)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_registry)
-[![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_registry)](https://codecov.io/gh/LDeakin/zarrs)
+[![build](https://github.com/zarrs/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/zarrs/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/zarrs/zarrs/graph/badge.svg?component=zarrs_registry)](https://codecov.io/gh/zarrs/zarrs)
 
 The [Zarr](https://zarr-specs.readthedocs.io/) extension point registry for the [`zarrs`](https://crates.io/crates/zarrs) crate.
 

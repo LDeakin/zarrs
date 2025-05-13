@@ -14,7 +14,7 @@ enum Backend {
 
 async fn http_array_read(backend: Backend) -> Result<(), Box<dyn std::error::Error>> {
     const HTTP_URL: &str =
-        "https://raw.githubusercontent.com/LDeakin/zarrs/main/zarrs/tests/data/array_write_read.zarr";
+        "https://raw.githubusercontent.com/zarrs/zarrs/main/zarrs/tests/data/array_write_read.zarr";
     const ARRAY_PATH: &str = "/group/array";
 
     // Create a HTTP store

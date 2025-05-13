@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Split from the `zarrs_storage` crate
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs_http-v0.2.1...HEAD
+[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs_http-v0.2.1...HEAD
 [0.2.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_http-v0.2.1
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_http-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_http-v0.1.0

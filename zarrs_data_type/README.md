@@ -3,8 +3,8 @@
 [![Latest Version](https://img.shields.io/crates/v/zarrs_data_type.svg)](https://crates.io/crates/zarrs_data_type)
 [![zarrs_data_type documentation](https://docs.rs/zarrs_data_type/badge.svg)](https://docs.rs/zarrs_data_type)
 ![msrv](https://img.shields.io/crates/msrv/zarrs_data_type)
-[![build](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/LDeakin/zarrs/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/LDeakin/zarrs/graph/badge.svg?component=zarrs_data_type)](https://codecov.io/gh/LDeakin/zarrs)
+[![build](https://github.com/zarrs/zarrs/actions/workflows/ci.yml/badge.svg)](https://github.com/zarrs/zarrs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/zarrs/zarrs/graph/badge.svg?component=zarrs_data_type)](https://codecov.io/gh/zarrs/zarrs)
 
 The data type API for the [`zarrs`](https://crates.io/crates/zarrs) Rust crate.
 

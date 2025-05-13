@@ -1,8 +1,8 @@
 ## TODO
 
 ### Features
-- Add array methods supporting advanced indexing <https://github.com/LDeakin/zarrs/issues/52>
-- Stabilise the async `Array` API <https://github.com/LDeakin/zarrs/issues/127>
+- Add array methods supporting advanced indexing <https://github.com/zarrs/zarrs/issues/52>
+- Stabilise the async `Array` API <https://github.com/zarrs/zarrs/issues/127>
 - Stabilise the partial encoding API
 - Stabilise the data type API
   - Support data type fallbacks
@@ -14,7 +14,7 @@
 - Move array `store_`/`retrieve_` variants into `Array` `Ext` traits, and remove `async_` prefix?
 
 ### Performance
-- More codec parallelism (where efficient) <https://github.com/LDeakin/zarrs/issues/128>
+- More codec parallelism (where efficient) <https://github.com/zarrs/zarrs/issues/128>
 - Optimise the async `Array` API and async partial decoders
   - Test an `io_uring` filesystem store
 
@@ -23,7 +23,7 @@
 - Use the `async_generic` crate to reduce `async` code duplication (pending https://github.com/scouten/async-generic/pull/17) or wait for keyword generics
 
 ### Zarr Extensions at [zarr-developers/zarr-extensions]
-- Support newly registered extension points <https://github.com/LDeakin/zarrs/issues/191>
+- Support newly registered extension points <https://github.com/zarrs/zarrs/issues/191>
 - Register the following:
   - `bitround` (integer data types)
   - `vlen`/`vlen_v2`: ZEP0007

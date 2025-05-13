@@ -107,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Check offset is valid in `ArraySubset::relative_to`
 - Reject arrays and groups with unsupported `"must_understand": true` extensions
 
-[#156]: https://github.com/LDeakin/zarrs/pull/156
+[#156]: https://github.com/zarrs/zarrs/pull/156
 
 ## [0.20.0-beta.0] - 2025-05-03
 
@@ -1340,7 +1340,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/LDeakin/zarrs/compare/zarrs-v0.19.2...HEAD
+[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs-v0.19.2...HEAD
 [0.20.0-beta.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0-beta.1
 [0.20.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0-beta.0
 [0.19.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.19.2
