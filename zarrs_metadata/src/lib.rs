@@ -30,7 +30,7 @@ pub use array::{
 };
 use thiserror::Error;
 
-/// A wrapper to handle various versions of Zarr array metadata.
+/// Zarr array metadata (V2 or V3).
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
@@ -57,7 +57,7 @@ impl TryFrom<&str> for ArrayMetadata {
     }
 }
 
-/// A wrapper to handle various versions of Zarr group metadata.
+/// Zarr group metadata (V2 or V3).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
 #[serde(untagged)]
 pub enum GroupMetadata {
@@ -83,7 +83,7 @@ impl TryFrom<&str> for GroupMetadata {
     }
 }
 
-/// Node metadata ([`ArrayMetadata`] or [`GroupMetadata`]).
+/// Zarr node metadata ([`ArrayMetadata`] or [`GroupMetadata`]).
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
