@@ -8,17 +8,17 @@ use zarrs_metadata::{v3::MetadataV3, ConfigurationSerialize};
 #[non_exhaustive]
 #[serde(untagged)]
 pub enum VlenCodecConfiguration {
-    /// Version 1.0.
-    V1(VlenCodecConfigurationV1),
+    /// Version 0.0 draft.
+    V0(VlenCodecConfigurationV0),
 }
 
 impl ConfigurationSerialize for VlenCodecConfiguration {}
 
-/// `vlen` codec configuration parameters (version 1.0).
+/// `vlen` codec configuration parameters (version 0.0 draft).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
-pub struct VlenCodecConfigurationV1 {
+pub struct VlenCodecConfigurationV0 {
     /// Encoding for the variable length data indices (offsets).
     pub index_codecs: Vec<MetadataV3>,
     /// Encoding for the variable length data.
@@ -41,7 +41,7 @@ pub enum VlenIndexDataType {
     UInt64,
 }
 
-impl VlenCodecConfigurationV1 {
+impl VlenCodecConfigurationV0 {
     /// Create a new `vlen` codec configuration.
     #[must_use]
     pub fn new(

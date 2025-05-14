@@ -100,7 +100,7 @@ use crate::array::{
     convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
     RawBytes,
 };
-pub use zarrs_metadata_ext::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
+pub use zarrs_metadata_ext::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV0};
 use zarrs_registry::codec::VLEN;
 
 pub use vlen_codec::VlenCodec;

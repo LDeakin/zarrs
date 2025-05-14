@@ -8,13 +8,13 @@ use zarrs_metadata::ConfigurationSerialize;
 #[non_exhaustive]
 #[serde(untagged)]
 pub enum GDeflateCodecConfiguration {
-    /// Version 1.0 draft.
-    V1(GDeflateCodecConfigurationV1),
+    /// Version 0.0 draft.
+    V0(GDeflateCodecConfigurationV0),
 }
 
 impl ConfigurationSerialize for GDeflateCodecConfiguration {}
 
-/// `gdeflate` codec configuration parameters (version 1.0 draft).
+/// `gdeflate` codec configuration parameters (version 0.0 draft).
 ///
 /// ### Example: encode with a compression level of 12
 /// ```rust
@@ -23,12 +23,12 @@ impl ConfigurationSerialize for GDeflateCodecConfiguration {}
 ///     "level": 12
 /// }
 /// # "#;
-/// # use zarrs_metadata_ext::codec::gdeflate::GDeflateCodecConfigurationV1;
-/// # let configuration: GDeflateCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
+/// # use zarrs_metadata_ext::codec::gdeflate::GDeflateCodecConfigurationV0;
+/// # let configuration: GDeflateCodecConfigurationV0 = serde_json::from_str(JSON).unwrap();
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
-pub struct GDeflateCodecConfigurationV1 {
+pub struct GDeflateCodecConfigurationV0 {
     /// The compression level.
     pub level: GDeflateCompressionLevel,
 }
