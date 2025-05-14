@@ -13,7 +13,7 @@ mod nan_representations;
 pub use fill_value::FillValueMetadataV3;
 pub use nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
 
-/// Zarr array metadata (storage specification v3).
+/// Zarr V3 array metadata.
 ///
 /// An example `JSON` document for a Zarr V3 array:
 /// ```json

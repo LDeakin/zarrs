@@ -1,11 +1,12 @@
 /// Zarr V3 group metadata.
-pub mod group;
+mod group;
+pub use group::GroupMetadataV3;
 
 /// Zarr V3 array metadata.
-pub mod array;
-
-pub use array::ArrayMetadataV3;
-pub use group::GroupMetadataV3;
+mod array;
+pub use array::{
+    ArrayMetadataV3, FillValueMetadataV3, ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64,
+};
 
 mod metadata;
 pub use metadata::{

@@ -33,7 +33,7 @@ mod tests {
 
     use super::*;
     use zarrs_metadata::{
-        v3::{array::FillValueMetadataV3, MetadataConfiguration},
+        v3::{FillValueMetadataV3, MetadataConfiguration},
         DataTypeSize,
     };
     use zarrs_plugin::PluginCreateError;

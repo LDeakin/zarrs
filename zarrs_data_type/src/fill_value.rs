@@ -3,7 +3,7 @@
 //! See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#fill-value>.
 
 use thiserror::Error;
-use zarrs_metadata::v3::array::FillValueMetadataV3;
+use zarrs_metadata::v3::FillValueMetadataV3;
 
 /// A data type and fill value metadata incompatibility error.
 #[derive(Debug, Error)]

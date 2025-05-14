@@ -22,7 +22,7 @@ use zarrs_metadata::{
         DataTypeMetadataV2, DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
         GroupMetadataV2, MetadataV2,
     },
-    v3::{array::FillValueMetadataV3, ArrayMetadataV3, GroupMetadataV3, MetadataV3},
+    v3::{ArrayMetadataV3, FillValueMetadataV3, GroupMetadataV3, MetadataV3},
     DataTypeSize, Endianness,
 };
 use zarrs_registry::{
