@@ -5,9 +5,9 @@ use std::sync::Arc;
 use zarrs::array::ArrayMetadataOptions;
 use zarrs::config::MetadataConvertVersion;
 use zarrs::group::{Group, GroupMetadataOptions};
-use zarrs::metadata::v2::ArrayMetadataV2;
-use zarrs_metadata::v2::array::{ArrayMetadataV2Order, FillValueMetadataV2};
-use zarrs_metadata::v2::GroupMetadataV2;
+use zarrs_metadata::v2::{
+    ArrayMetadataV2, ArrayMetadataV2Order, FillValueMetadataV2, GroupMetadataV2,
+};
 use zarrs_metadata::{ChunkKeySeparator, GroupMetadata};
 use zarrs_storage::{ListableStorageTraits, ReadableStorageTraits, StoreKey};
 

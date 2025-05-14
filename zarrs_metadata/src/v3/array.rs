@@ -1,5 +1,4 @@
 use derive_more::Display;
-use fill_value::FillValueMetadataV3;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,10 +7,13 @@ use crate::{
 
 use super::AdditionalFields;
 
-pub mod fill_value;
-pub mod nan_representations;
+mod fill_value;
+mod nan_representations;
 
-/// Zarr array metadata (storage specification v3).
+pub use fill_value::FillValueMetadataV3;
+pub use nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
+
+/// Zarr V3 array metadata.
 ///
 /// An example `JSON` document for a Zarr V3 array:
 /// ```json

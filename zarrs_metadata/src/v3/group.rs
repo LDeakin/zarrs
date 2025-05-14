@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{AdditionalFields, MetadataV3};
 
-/// Zarr group metadata (storage specification v3).
+/// Zarr V3 group metadata.
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#group-metadata>.
 ///

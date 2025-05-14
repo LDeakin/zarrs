@@ -73,20 +73,14 @@ pub use self::{
 pub use data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
 
 use crate::config::global_config;
-pub use crate::metadata::v2::ArrayMetadataV2;
+pub use crate::metadata::v2::{ArrayMetadataV2, FillValueMetadataV2};
 pub use crate::metadata::v3::{
-    array::fill_value::FillValueMetadataV3,
-    array::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
-    ArrayMetadataV3,
+    ArrayMetadataV3, FillValueMetadataV3, ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64,
 };
 pub use crate::metadata::{
     ArrayMetadata, ArrayShape, ChunkShape, DataTypeSize, DimensionName, Endianness,
 };
 use zarrs_metadata_ext::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
-
-/// An alias for [`FillValueMetadataV3`].
-#[deprecated(since = "0.17.0", note = "use FillValueMetadataV3 instead")]
-pub type FillValueMetadata = crate::metadata::v3::array::fill_value::FillValueMetadataV3;
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;
 pub use chunk_cache::{
@@ -106,7 +100,7 @@ pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
 
-use zarrs_metadata::v2::array::DataTypeMetadataV2;
+use zarrs_metadata::v2::DataTypeMetadataV2;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},

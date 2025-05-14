@@ -7,7 +7,6 @@
 //!
 //! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
-
 mod data_type_extension;
 mod data_type_extension_bytes_codec;
 mod data_type_extension_packbits_codec;

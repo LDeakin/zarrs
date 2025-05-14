@@ -422,7 +422,7 @@ impl Node {
 
     /// Consolidate metadata. Returns [`None`] for an array.
     ///
-    /// [`ConsolidatedMetadataMetadata`] can be converted into [`ConsolidatedMetadata`](zarrs_metadata_ext::group::consolidated_metadata::ConsolidatedMetadata) in [`GroupMetadataV3`](crate::metadata::v3::group::GroupMetadataV3).
+    /// [`ConsolidatedMetadataMetadata`] can be converted into [`ConsolidatedMetadata`](zarrs_metadata_ext::group::consolidated_metadata::ConsolidatedMetadata) in [`GroupMetadataV3`](crate::metadata::v3::GroupMetadataV3).
     #[must_use]
     #[allow(clippy::items_after_statements)]
     pub fn consolidate_metadata(&self) -> Option<ConsolidatedMetadataMetadata> {

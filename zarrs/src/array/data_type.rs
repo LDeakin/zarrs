@@ -15,7 +15,7 @@ pub use zarrs_data_type::{
     DataTypeFillValueMetadataError, DataTypePlugin, FillValue,
 };
 use zarrs_metadata::{
-    v3::{array::fill_value::FillValueMetadataV3, MetadataV3},
+    v3::{FillValueMetadataV3, MetadataV3},
     DataTypeSize,
 };
 use zarrs_plugin::{PluginCreateError, PluginUnsupportedError};
@@ -441,9 +441,7 @@ mod tests {
     use super::*;
 
     use half::bf16;
-    use zarrs_metadata::v3::array::nan_representations::{
-        ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64,
-    };
+    use zarrs_metadata::v3::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64};
 
     #[test]
     fn data_type_unknown() {
