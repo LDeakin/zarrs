@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Flatten the crate:
+  - Move `v3::array::*` and `v3::*::*` to `v3`
+  - Move `v2::*::*` to `v2::*`
+
 ### Removed
 - The following modules have been moved to `zarrs_metadata_ext`
   - `v3::array::codec` (and `crate::codec`)
