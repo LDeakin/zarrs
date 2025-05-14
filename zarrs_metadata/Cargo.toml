@@ -1,6 +1,6 @@
 [package]
 name = "zarrs_metadata"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.77"
@@ -22,4 +22,3 @@ monostate = "0.1.0"
 serde = { version = "1.0.185", features = ["derive"] }
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }
 thiserror.workspace = true
-zarrs_registry.workspace = true

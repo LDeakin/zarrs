@@ -31,11 +31,11 @@ missing_panics_doc = "warn"
 missing_errors_doc = "warn"
 
 [workspace.dependencies.zarrs_data_type]
-version = "0.2.0"
+version = "0.3.0"
 path = "zarrs_data_type"
 
 [workspace.dependencies.zarrs_metadata]
-version = "0.4.0"
+version = "0.5.0"
 path = "zarrs_metadata"
 
 [workspace.dependencies.zarrs_metadata_ext]

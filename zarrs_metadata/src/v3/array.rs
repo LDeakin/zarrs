@@ -133,7 +133,7 @@ impl ArrayMetadataV3 {
         let chunk_key_encoding = unsafe {
             // SAFETY: The default chunk key encoding configuration is valid JSON.
             MetadataV3::new_with_serializable_configuration(
-                zarrs_registry::chunk_key_encoding::DEFAULT.to_string(),
+                "default".to_string(),
                 &DefaultChunkKeyEncodingConfiguration {
                     separator: crate::ChunkKeySeparator::Slash,
                 },
