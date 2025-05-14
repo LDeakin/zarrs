@@ -106,7 +106,7 @@ pub use array_sharded_ext::ArrayShardedExt;
 #[cfg(feature = "sharding")]
 pub use array_sync_sharded_readable_ext::{ArrayShardedReadableExt, ArrayShardedReadableExtCache};
 
-use zarrs_metadata::v2::array::DataTypeMetadataV2;
+use zarrs_metadata::v2::DataTypeMetadataV2;
 
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},

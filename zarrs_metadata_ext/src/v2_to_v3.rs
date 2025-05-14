@@ -18,11 +18,9 @@ use crate::{
 
 use zarrs_metadata::{
     v2::{
-        array::{
-            data_type_metadata_v2_to_endianness, ArrayMetadataV2Order, DataTypeMetadataV2,
-            DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
-        },
-        ArrayMetadataV2, GroupMetadataV2, MetadataV2,
+        data_type_metadata_v2_to_endianness, ArrayMetadataV2, ArrayMetadataV2Order,
+        DataTypeMetadataV2, DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
+        GroupMetadataV2, MetadataV2,
     },
     v3::{array::FillValueMetadataV3, ArrayMetadataV3, GroupMetadataV3, MetadataV3},
     DataTypeSize, Endianness,

@@ -1,11 +1,14 @@
 /// Zarr V2 group metadata.
-pub mod group;
+mod group;
+pub use group::GroupMetadataV2;
 
 /// Zarr V2 array metadata.
-pub mod array;
+mod array;
 
-pub use array::ArrayMetadataV2;
-pub use group::GroupMetadataV2;
+pub use array::{
+    data_type_metadata_v2_to_endianness, ArrayMetadataV2, ArrayMetadataV2Order, DataTypeMetadataV2,
+    DataTypeMetadataV2InvalidEndiannessError, DataTypeMetadataV2Structured, FillValueMetadataV2,
+};
 
 mod metadata;
 pub use metadata::MetadataV2;
