@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-/// Metadata with an `id` and optional `configuration`.
+use crate::Configuration;
+
+/// Metadata with an `id` and optional flattened `configuration`.
 ///
-/// Can be deserialised from a JSON string or name/configuration map.
 /// For example:
 /// ```json
 /// {
@@ -16,25 +17,25 @@ use serde::{Deserialize, Serialize};
 pub struct MetadataV2 {
     id: String,
     #[serde(flatten)]
-    configuration: serde_json::Map<String, serde_json::Value>,
+    configuration: Configuration,
 }
 
 impl MetadataV2 {
-    /// Return the "id" key.
+    /// Return the value of the `id` field.
     #[must_use]
     pub fn id(&self) -> &str {
         &self.id
     }
 
-    /// Mutate the "id".
+    /// Mutate the value of the `id` field.
     pub fn set_id(&mut self, id: String) -> &mut Self {
         self.id = id;
         self
     }
 
-    /// Return the configuration, which includes all fields excluding the "id".
+    /// Return the configuration, which includes all fields excluding the `id`.
     #[must_use]
-    pub fn configuration(&self) -> &serde_json::Map<String, serde_json::Value> {
+    pub fn configuration(&self) -> &Configuration {
         &self.configuration
     }
 }

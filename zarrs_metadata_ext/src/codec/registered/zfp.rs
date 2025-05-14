@@ -1,7 +1,7 @@
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `zfp` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, From)]
@@ -12,7 +12,7 @@ pub enum ZfpCodecConfiguration {
     V1(ZfpCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for ZfpCodecConfiguration {}
+impl ConfigurationSerialize for ZfpCodecConfiguration {}
 
 /// `zfp` codec configuration parameters (version 1.0 draft).
 ///

@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 
 use super::{
     ArrayToArrayCodecTraits, ArrayToBytesCodecTraits, BytesToBytesCodecTraits,
@@ -31,10 +31,7 @@ impl<T: CodecTraits + ?Sized> NamedCodec<T> {
     ///
     /// See [`CodecTraits::configuration_opt`].
     #[must_use]
-    pub fn configuration_opt(
-        &self,
-        options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    pub fn configuration_opt(&self, options: &CodecMetadataOptions) -> Option<Configuration> {
         self.codec().configuration_opt(self.name(), options)
     }
 
@@ -42,7 +39,7 @@ impl<T: CodecTraits + ?Sized> NamedCodec<T> {
     ///
     /// See [`CodecTraits::configuration`].
     #[must_use]
-    pub fn configuration(&self) -> Option<MetadataConfiguration> {
+    pub fn configuration(&self) -> Option<Configuration> {
         self.codec().configuration(self.name())
     }
 

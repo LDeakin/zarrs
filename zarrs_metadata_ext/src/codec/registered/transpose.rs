@@ -2,7 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of Transpose codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -13,7 +13,7 @@ pub enum TransposeCodecConfiguration {
     V1(TransposeCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for TransposeCodecConfiguration {}
+impl ConfigurationSerialize for TransposeCodecConfiguration {}
 
 /// `transpose` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

@@ -25,10 +25,7 @@ use zarrs_data_type::{
     DataTypeExtensionError, DataTypeFillValueError, DataTypeFillValueMetadataError, DataTypePlugin,
     FillValue,
 };
-use zarrs_metadata::{
-    v3::{MetadataConfiguration, MetadataV3},
-    Endianness,
-};
+use zarrs_metadata::{v3::MetadataV3, Configuration, Endianness};
 use zarrs_plugin::{PluginCreateError, PluginMetadataInvalidError};
 use zarrs_storage::store::MemoryStore;
 
@@ -174,8 +171,8 @@ impl DataTypeExtension for CustomDataTypeFixedSize {
         CUSTOM_NAME.to_string()
     }
 
-    fn configuration(&self) -> MetadataConfiguration {
-        MetadataConfiguration::default()
+    fn configuration(&self) -> Configuration {
+        Configuration::default()
     }
 
     fn fill_value(

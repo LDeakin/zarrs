@@ -1,7 +1,7 @@
 use std::{num::NonZeroU64, sync::Arc};
 
 use crate::array::{DataType, FillValue};
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_registry::codec::SQUEEZE;
 
 use crate::{
@@ -55,7 +55,7 @@ impl CodecTraits for SqueezeCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = SqueezeCodecConfiguration::V1(SqueezeCodecConfigurationV1 {});
         Some(configuration.into())
     }

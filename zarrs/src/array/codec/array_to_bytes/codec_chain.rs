@@ -16,7 +16,7 @@ use crate::{
         ChunkShape, RawBytes,
     },
     config::global_config,
-    metadata::v3::{MetadataConfiguration, MetadataV3},
+    metadata::{v3::MetadataV3, Configuration},
     plugin::PluginCreateError,
 };
 
@@ -281,7 +281,7 @@ impl CodecTraits for CodecChain {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         None
     }
 

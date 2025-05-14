@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::BZ2;
 
@@ -57,7 +57,7 @@ impl CodecTraits for Bz2Codec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = Bz2CodecConfiguration::V1(Bz2CodecConfigurationV1 {
             level: Bz2CompressionLevel::try_from(self.compression.level())
                 .expect("checked on init"),

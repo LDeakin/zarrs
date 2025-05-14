@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::SHUFFLE;
 
@@ -54,7 +54,7 @@ impl CodecTraits for ShuffleCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = ShuffleCodecConfiguration::V1(ShuffleCodecConfigurationV1 {
             elementsize: self.elementsize,
         });

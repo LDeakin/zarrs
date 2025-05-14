@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `zlib` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum ZlibCodecConfiguration {
     V1(ZlibCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for ZlibCodecConfiguration {}
+impl ConfigurationSerialize for ZlibCodecConfiguration {}
 
 /// `zlib` codec configuration parameters (version 1.0 draft).
 ///

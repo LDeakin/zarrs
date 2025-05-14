@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::ZSTD;
 use zstd::zstd_safe;
@@ -64,7 +64,7 @@ impl CodecTraits for ZstdCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = ZstdCodecConfiguration::V1(ZstdCodecConfigurationV1 {
             level: self.compression.into(),
             checksum: self.checksum,

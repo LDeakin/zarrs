@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 
 use crate::array::{
     codec::{
@@ -38,7 +38,7 @@ impl CodecTraits for TestUnboundedCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         None
     }
 

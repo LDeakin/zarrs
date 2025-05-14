@@ -1,7 +1,7 @@
 use std::{num::NonZeroU64, sync::Arc};
 
 use crate::array::{DataType, FillValue};
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_registry::codec::TRANSPOSE;
 
 use crate::{
@@ -65,7 +65,7 @@ impl CodecTraits for TransposeCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = TransposeCodecConfiguration::V1(TransposeCodecConfigurationV1 {
             order: self.order.clone(),
         });

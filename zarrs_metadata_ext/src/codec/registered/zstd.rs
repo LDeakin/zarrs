@@ -2,7 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `zstd` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -15,7 +15,7 @@ pub enum ZstdCodecConfiguration {
     Numcodecs(ZstdCodecConfigurationNumcodecs),
 }
 
-impl MetadataConfigurationSerialize for ZstdCodecConfiguration {}
+impl ConfigurationSerialize for ZstdCodecConfiguration {}
 
 /// `zstd` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

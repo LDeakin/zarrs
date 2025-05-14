@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use zarrs_metadata::{v3::MetadataConfigurationSerialize, Endianness};
+use zarrs_metadata::{ConfigurationSerialize, Endianness};
 
 /// A wrapper to handle various versions of `bytes` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum BytesCodecConfiguration {
     V1(BytesCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for BytesCodecConfiguration {}
+impl ConfigurationSerialize for BytesCodecConfiguration {}
 
 /// `bytes` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

@@ -32,10 +32,7 @@ mod tests {
     };
 
     use super::*;
-    use zarrs_metadata::{
-        v3::{FillValueMetadataV3, MetadataConfiguration},
-        DataTypeSize,
-    };
+    use zarrs_metadata::{v3::FillValueMetadataV3, Configuration, DataTypeSize};
     use zarrs_plugin::PluginCreateError;
 
     inventory::submit! {
@@ -54,8 +51,8 @@ mod tests {
             DataTypeSize::Fixed(0)
         }
 
-        fn configuration(&self) -> MetadataConfiguration {
-            MetadataConfiguration::default()
+        fn configuration(&self) -> Configuration {
+            Configuration::default()
         }
 
         fn fill_value(

@@ -3,7 +3,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use num::Integer;
-use zarrs_metadata::{v3::MetadataConfiguration, Endianness};
+use zarrs_metadata::{Configuration, Endianness};
 use zarrs_metadata_ext::codec::packbits::PackBitsPaddingEncoding;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::PACKBITS;
@@ -112,7 +112,7 @@ impl CodecTraits for PackBitsCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = PackBitsCodecConfiguration::V1(PackBitsCodecConfigurationV1 {
             padding_encoding: Some(self.padding_encoding),
             first_bit: self.first_bit,
