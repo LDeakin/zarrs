@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use zarrs_metadata::{
-    v3::{array::fill_value::FillValueMetadataV3, MetadataConfiguration},
+    v3::{array::FillValueMetadataV3, MetadataConfiguration},
     DataTypeSize,
 };
 

@@ -24,7 +24,7 @@ use zarrs_metadata::{
         },
         ArrayMetadataV2, GroupMetadataV2, MetadataV2,
     },
-    v3::{array::fill_value::FillValueMetadataV3, ArrayMetadataV3, GroupMetadataV3, MetadataV3},
+    v3::{array::FillValueMetadataV3, ArrayMetadataV3, GroupMetadataV3, MetadataV3},
     DataTypeSize, Endianness,
 };
 use zarrs_registry::{

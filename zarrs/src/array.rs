@@ -75,8 +75,8 @@ pub use data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
 use crate::config::global_config;
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{
-    array::fill_value::FillValueMetadataV3,
-    array::nan_representations::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
+    array::FillValueMetadataV3,
+    array::{ZARR_NAN_BF16, ZARR_NAN_F16, ZARR_NAN_F32, ZARR_NAN_F64},
     ArrayMetadataV3,
 };
 pub use crate::metadata::{
@@ -86,7 +86,7 @@ use zarrs_metadata_ext::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 
 /// An alias for [`FillValueMetadataV3`].
 #[deprecated(since = "0.17.0", note = "use FillValueMetadataV3 instead")]
-pub type FillValueMetadata = crate::metadata::v3::array::fill_value::FillValueMetadataV3;
+pub type FillValueMetadata = crate::metadata::v3::array::FillValueMetadataV3;
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;
 pub use chunk_cache::{
