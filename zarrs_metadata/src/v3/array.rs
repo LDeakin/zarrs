@@ -1,35 +1,12 @@
-use chunk_key_encoding::default::DefaultChunkKeyEncodingConfiguration;
 use derive_more::Display;
 use fill_value::FillValueMetadataV3;
 use serde::{Deserialize, Serialize};
 
-use crate::{array::IntoDimensionName, v3::MetadataV3, ArrayShape, DimensionName};
+use crate::{
+    array::IntoDimensionName, v3::MetadataV3, ArrayShape, ChunkKeySeparator, DimensionName,
+};
 
 use super::AdditionalFields;
-
-pub mod data_type;
-
-pub mod codec;
-
-/// Zarr V3 chunk grid metadata.
-///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#chunk-grid>.
-pub mod chunk_grid {
-    /// `rectangular` chunk grid metadata.
-    pub mod rectangular;
-    /// `regular` chunk grid metadata.
-    pub mod regular;
-}
-
-/// Zarr V3 chunk key encoding metadata.
-///
-/// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#chunk-key-encoding>.
-pub mod chunk_key_encoding {
-    /// `default` chunk key encoding metadata.
-    pub mod default;
-    /// `v2` chunk key encoding metadata.
-    pub mod v2;
-}
 
 pub mod fill_value;
 pub mod nan_representations;
@@ -148,10 +125,15 @@ impl ArrayMetadataV3 {
         fill_value: FillValueMetadataV3,
         codecs: Vec<MetadataV3>,
     ) -> Self {
+        #[derive(Serialize)]
+        struct DefaultChunkKeyEncodingConfiguration {
+            pub separator: ChunkKeySeparator,
+        }
+
         let chunk_key_encoding = unsafe {
             // SAFETY: The default chunk key encoding configuration is valid JSON.
             MetadataV3::new_with_serializable_configuration(
-                zarrs_registry::chunk_key_encoding::DEFAULT.to_string(),
+                "default".to_string(),
                 &DefaultChunkKeyEncodingConfiguration {
                     separator: crate::ChunkKeySeparator::Slash,
                 },

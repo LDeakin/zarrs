@@ -32,7 +32,7 @@ pub(crate) mod vlen_v2_macros;
 
 use std::sync::Arc;
 
-use crate::metadata::codec::vlen_v2::{self};
+use zarrs_metadata_ext::codec::vlen_v2::{self};
 
 pub use vlen_v2::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1};
 

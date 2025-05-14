@@ -26,7 +26,7 @@
 //!     "level": 9
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zlib::ZlibCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::zlib::ZlibCodecConfiguration;
 //! # serde_json::from_str::<ZlibCodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -42,7 +42,7 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use crate::metadata::codec::zlib::{
+pub use zarrs_metadata_ext::codec::zlib::{
     ZlibCodecConfiguration, ZlibCodecConfigurationV1, ZlibCompressionLevel,
 };
 

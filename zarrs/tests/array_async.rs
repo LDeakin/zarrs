@@ -10,7 +10,7 @@ use zarrs::array_subset::ArraySubset;
 
 use object_store::memory::InMemory;
 
-use zarrs::metadata::codec::transpose::TransposeOrder;
+use zarrs_metadata_ext::codec::transpose::TransposeOrder;
 
 #[rustfmt::skip]
 async fn array_async_read(shard: bool) -> Result<(), Box<dyn std::error::Error>> {

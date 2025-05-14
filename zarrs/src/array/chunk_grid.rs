@@ -15,10 +15,10 @@ pub mod regular;
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-pub use crate::metadata::chunk_grid::rectangular::{
+pub use zarrs_metadata_ext::chunk_grid::rectangular::{
     RectangularChunkGridConfiguration, RectangularChunkGridDimensionConfiguration,
 };
-pub use crate::metadata::chunk_grid::regular::RegularChunkGridConfiguration;
+pub use zarrs_metadata_ext::chunk_grid::regular::RegularChunkGridConfiguration;
 
 pub use rectangular::RectangularChunkGrid;
 pub use regular::RegularChunkGrid;

@@ -28,7 +28,7 @@
 //!     "astype": "u1"
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::fixedscaleoffset::FixedScaleOffsetCodecConfigurationNumcodecs;
+//! # use zarrs_metadata_ext::codec::fixedscaleoffset::FixedScaleOffsetCodecConfigurationNumcodecs;
 //! # let configuration: FixedScaleOffsetCodecConfigurationNumcodecs = serde_json::from_str(JSON).unwrap();
 //! ```
 
@@ -36,10 +36,10 @@ mod fixedscaleoffset_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::fixedscaleoffset::{
+pub use fixedscaleoffset_codec::FixedScaleOffsetCodec;
+pub use zarrs_metadata_ext::codec::fixedscaleoffset::{
     FixedScaleOffsetCodecConfiguration, FixedScaleOffsetCodecConfigurationNumcodecs,
 };
-pub use fixedscaleoffset_codec::FixedScaleOffsetCodec;
 use zarrs_registry::codec::FIXEDSCALEOFFSET;
 
 use crate::{
@@ -74,7 +74,7 @@ pub(crate) fn create_codec_fixedscaleoffset(
 mod tests {
     use std::num::NonZeroU64;
 
-    use zarrs_metadata::codec::fixedscaleoffset::FixedScaleOffsetCodecConfiguration;
+    use zarrs_metadata_ext::codec::fixedscaleoffset::FixedScaleOffsetCodecConfiguration;
 
     use crate::array::{
         codec::{

@@ -28,7 +28,7 @@
 //!     "blocksize": 0
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::blosc::BloscCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::blosc::BloscCodecConfiguration;
 //! # serde_json::from_str::<BloscCodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -48,10 +48,6 @@ use std::{
     sync::Arc,
 };
 
-pub use crate::metadata::codec::blosc::{
-    BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
-    BloscShuffleMode,
-};
 pub use blosc_codec::BloscCodec;
 use blosc_sys::{
     blosc_cbuffer_metainfo, blosc_cbuffer_sizes, blosc_cbuffer_validate, blosc_compress_ctx,
@@ -59,6 +55,10 @@ use blosc_sys::{
 };
 use derive_more::From;
 use thiserror::Error;
+pub use zarrs_metadata_ext::codec::blosc::{
+    BloscCodecConfiguration, BloscCodecConfigurationV1, BloscCompressionLevel, BloscCompressor,
+    BloscShuffleMode,
+};
 use zarrs_registry::codec::BLOSC;
 
 use crate::{

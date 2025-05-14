@@ -14,11 +14,10 @@ use zarrs::{
             array_to_bytes::{
                 sharding::ShardingCodecBuilder, vlen::VlenCodec, vlen_utf8::VlenUtf8Codec,
             },
-            ArrayToBytesCodecTraits, ZstdCodec,
+            ArrayToBytesCodecTraits, VlenCodecConfiguration, ZstdCodec,
         },
         ArrayBuilder, ArrayMetadataOptions, DataType, FillValue,
     },
-    metadata::codec::vlen::VlenCodecConfiguration,
     storage::{store::MemoryStore, ReadableWritableListableStorage},
 };
 use zarrs_filesystem::FilesystemStore;

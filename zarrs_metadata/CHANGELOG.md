@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- The following modules have been moved to `zarrs_metadata_ext`
+  - `v3::array::codec` (and `crate::codec`)
+  - `v3::array::chunk_grid` (and `crate::chunk_grid`)
+  - `v3::array::chunk_key_encoding` (and `crate::chunk_key_encoding`)
+  - `v3::array::data_type` (and `crate::data_type`)
+  - `v2_to_v3`
+
 ## [0.4.0] - 2025-05-03
 
 ### Added

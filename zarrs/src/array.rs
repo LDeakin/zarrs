@@ -72,6 +72,7 @@ pub use self::{
 };
 pub use data_type::{DataType, FillValue}; // re-export for zarrs < 0.20 compat
 
+use crate::config::global_config;
 pub use crate::metadata::v2::ArrayMetadataV2;
 pub use crate::metadata::v3::{
     array::fill_value::FillValueMetadataV3,
@@ -81,7 +82,7 @@ pub use crate::metadata::v3::{
 pub use crate::metadata::{
     ArrayMetadata, ArrayShape, ChunkShape, DataTypeSize, DimensionName, Endianness,
 };
-use crate::{config::global_config, metadata::v2_to_v3::ArrayMetadataV2ToV3ConversionError};
+use zarrs_metadata_ext::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
 
 /// An alias for [`FillValueMetadataV3`].
 #[deprecated(since = "0.17.0", note = "use FillValueMetadataV3 instead")]
@@ -110,10 +111,11 @@ use zarrs_metadata::v2::array::DataTypeMetadataV2;
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
     config::MetadataConvertVersion,
-    metadata::{v2_to_v3::array_metadata_v2_to_v3, v3::AdditionalFields},
+    metadata::v3::AdditionalFields,
     node::{data_key, NodePath},
     storage::StoreKey,
 };
+use zarrs_metadata_ext::v2_to_v3::array_metadata_v2_to_v3;
 
 /// An ND index to an element in an array.
 pub type ArrayIndices = Vec<u64>;
@@ -261,7 +263,7 @@ pub fn chunk_shape_to_array_shape(chunk_shape: &[std::num::NonZeroU64]) -> Array
 /// If using Linux, enabling direct IO with the [`FilesystemStore`](https://docs.rs/zarrs_filesystem/latest/zarrs_filesystem/struct.FilesystemStore.html) may improve write performance.
 ///
 /// Currently, the most performant path for uncompressed writing is to reuse page aligned buffers via [`store_encoded_chunk`](Array::store_encoded_chunk).
-/// See [`zarrs` GitHub issue #58](https://github.com/LDeakin/zarrs/pull/58) for a discussion on this method.
+/// See [`zarrs` GitHub issue #58](https://github.com/zarrs/zarrs/pull/58) for a discussion on this method.
 //  TODO: Add example?
 ///
 /// ### Parallel Writing

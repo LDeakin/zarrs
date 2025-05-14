@@ -27,14 +27,14 @@
 //!     "checksum": true
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zstd::ZstdCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::zstd::ZstdCodecConfiguration;
 //! # serde_json::from_str::<ZstdCodecConfiguration>(JSON).unwrap();
 
 mod zstd_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::zstd::{
+pub use zarrs_metadata_ext::codec::zstd::{
     ZstdCodecConfiguration, ZstdCodecConfigurationV1, ZstdCompressionLevel,
 };
 use zarrs_registry::codec::ZSTD;

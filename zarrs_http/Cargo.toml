@@ -1,6 +1,6 @@
 [package]
 name = "zarrs_http"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Lachlan Deakin <ljdgit@gmail.com>"]
 edition = "2021"
 rust-version = "1.77"
@@ -17,7 +17,7 @@ workspace = true
 
 [dependencies]
 itertools = "0.14.0"
-thiserror = { workspace = true }
+thiserror.workspace = true
 reqwest = { version = ">=0.11.8,<0.13", features = ["blocking"] }
 url = { version = "2.2.0" }
-zarrs_storage = { workspace = true }
+zarrs_storage.workspace = true

@@ -1,8 +1,9 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::{
-    codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode},
-    v3::MetadataConfiguration,
+use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata_ext::codec::{
+    zfp::ZfpMode,
+    zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode},
 };
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::ZFP;
@@ -15,16 +16,13 @@ use zfp_sys::{
     // zfp_exec_policy_zfp_exec_omp, zfp_stream_set_execution
 };
 
-use crate::{
-    array::{
-        codec::{
-            ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
-            BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
-            RawBytes, RecommendedConcurrency,
-        },
-        BytesRepresentation, ChunkRepresentation, DataType,
+use crate::array::{
+    codec::{
+        ArrayBytes, ArrayCodecTraits, ArrayPartialDecoderTraits, ArrayToBytesCodecTraits,
+        BytesPartialDecoderTraits, CodecError, CodecMetadataOptions, CodecOptions, CodecTraits,
+        RawBytes, RecommendedConcurrency,
     },
-    metadata::codec::zfp::ZfpMode,
+    BytesRepresentation, ChunkRepresentation, DataType,
 };
 
 #[cfg(feature = "async")]

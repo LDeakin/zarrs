@@ -3,12 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use super::{AdditionalFields, MetadataV3};
 
-mod consolidated_metadata;
-
-pub use consolidated_metadata::{
-    ConsolidatedMetadata, ConsolidatedMetadataKind, ConsolidatedMetadataMetadata,
-};
-
 /// Zarr group metadata (storage specification v3).
 ///
 /// See <https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html#group-metadata>.

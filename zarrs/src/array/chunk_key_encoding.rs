@@ -7,12 +7,11 @@ pub mod v2;
 
 use std::sync::Arc;
 
-pub use crate::metadata::{
-    chunk_key_encoding::{
-        default::DefaultChunkKeyEncodingConfiguration, v2::V2ChunkKeyEncodingConfiguration,
-    },
-    ChunkKeySeparator,
+pub use zarrs_metadata::ChunkKeySeparator;
+pub use zarrs_metadata_ext::chunk_key_encoding::{
+    default::DefaultChunkKeyEncodingConfiguration, v2::V2ChunkKeyEncodingConfiguration,
 };
+
 pub use default::DefaultChunkKeyEncoding;
 pub use v2::V2ChunkKeyEncoding;
 use zarrs_plugin::PluginUnsupportedError;

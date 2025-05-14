@@ -10,6 +10,7 @@ The `zarrs` crate has been split into multiple crates to:
 #### Core
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
+- [`zarrs_metadata_ext`]: Zarr extensions metadata support.
 - [`zarrs_data_type`]: The data type extension API for `zarrs` (re-exported in `zarrs::array::data_type`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
 - [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
@@ -42,6 +43,7 @@ The `zarrs` crate has been split into multiple crates to:
 [`zarrs`]: https://docs.rs/zarrs/latest/zarrs/
 [`zarrs_data_type`]: https://docs.rs/zarrs_data_type/latest/zarrs_data_type/
 [`zarrs_metadata`]: https://docs.rs/zarrs_metadata/latest/zarrs_metadata/
+[`zarrs_metadata_ext`]: https://docs.rs/zarrs_metadata_ext/latest/zarrs_metadata_ext/
 [`zarrs_plugin`]: https://docs.rs/zarrs_plugin/latest/zarrs_plugin/
 [`zarrs_registry`]: https://docs.rs/zarrs_registry/latest/zarrs_registry/
 [`zarrs_storage`]: https://docs.rs/zarrs_storage/latest/zarrs_storage/

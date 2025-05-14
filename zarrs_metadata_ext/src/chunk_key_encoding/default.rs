@@ -1,0 +1,21 @@
+//! `default` chunk key encoding metadata.
+
+use serde::{Deserialize, Serialize};
+
+use derive_more::Display;
+
+use zarrs_metadata::ChunkKeySeparator;
+
+/// A `default` chunk key encoding configuration.
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
+#[serde(deny_unknown_fields)]
+#[display("{}", serde_json::to_string(self).unwrap_or_default())]
+pub struct DefaultChunkKeyEncodingConfiguration {
+    /// The chunk key separator.
+    #[serde(default = "default_separator")]
+    pub separator: ChunkKeySeparator,
+}
+
+const fn default_separator() -> ChunkKeySeparator {
+    ChunkKeySeparator::Slash
+}

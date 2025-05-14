@@ -113,6 +113,7 @@ The `zarrs` crate has been split into multiple crates to:
 ### Core
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
+- [`zarrs_metadata_ext`]: Zarr extensions metadata support.
 - [`zarrs_data_type`]: The data type extension API for `zarrs` (re-exported in `zarrs::array::data_type`).
 - [`zarrs_storage`]: The storage API for `zarrs` (re-exported as `zarrs::storage`).
 - [`zarrs_plugin`]: The plugin API for `zarrs` (re-exported as `zarrs::plugin`).
@@ -149,30 +150,31 @@ The `zarrs` crate has been split into multiple crates to:
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
-[CHANGELOG]: https://github.com/LDeakin/zarrs/blob/main/CHANGELOG.md
-[correctness_issues]: https://github.com/LDeakin/zarrs/blob/main/doc/correctness_issues.md
+[CHANGELOG]: https://github.com/zarrs/zarrs/blob/main/CHANGELOG.md
+[correctness_issues]: https://github.com/zarrs/zarrs/blob/main/doc/correctness_issues.md
 [implementation status]: https://docs.rs/zarrs/latest/zarrs/#implementation-status
-[examples]: https://github.com/LDeakin/zarrs/tree/main/zarrs/examples
+[examples]: https://github.com/zarrs/zarrs/tree/main/zarrs/examples
 [documentation]: https://docs.rs/zarrs/latest/zarrs/
 [The `zarrs` Book]: https://book.zarrs.dev
 
-[`zarrs`]: https://github.com/LDeakin/zarrs/tree/main/zarrs
-[`zarrs_data_type`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_data_type
-[`zarrs_metadata`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_metadata
-[`zarrs_plugin`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_plugin
-[`zarrs_registry`]: https://docs.rs/zarrs_registry/latest/zarrs_registry/
-[`zarrs_storage`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_storage
-[`zarrs_filesystem`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_filesystem
-[`zarrs_http`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_http
-[`zarrs_object_store`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_object_store
-[`zarrs_opendal`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_opendal
-[`zarrs_zip`]: https://github.com/LDeakin/zarrs/tree/main/zarrs_zip
-[`zarrs_icechunk`]: https://github.com/LDeakin/zarrs_icechunk
-[`zarrs_ffi`]: https://github.com/LDeakin/zarrs_ffi
+[`zarrs`]: https://github.com/zarrs/zarrs/tree/main/zarrs
+[`zarrs_data_type`]: https://github.com/zarrs/zarrs/tree/main/zarrs_data_type
+[`zarrs_metadata`]: https://github.com/zarrs/zarrs/tree/main/zarrs_metadata
+[`zarrs_metadata_ext`]: https://github.com/zarrs/zarrs/tree/main/zarrs_metadata_ext
+[`zarrs_plugin`]: https://github.com/zarrs/zarrs/tree/main/zarrs_plugin
+[`zarrs_registry`]: https://github.com/zarrs/zarrs/tree/main/zarrs_registry
+[`zarrs_storage`]: https://github.com/zarrs/zarrs/tree/main/zarrs_storage
+[`zarrs_filesystem`]: https://github.com/zarrs/zarrs/tree/main/zarrs_filesystem
+[`zarrs_http`]: https://github.com/zarrs/zarrs/tree/main/zarrs_http
+[`zarrs_object_store`]: https://github.com/zarrs/zarrs/tree/main/zarrs_object_store
+[`zarrs_opendal`]: https://github.com/zarrs/zarrs/tree/main/zarrs_opendal
+[`zarrs_zip`]: https://github.com/zarrs/zarrs/tree/main/zarrs_zip
+[`zarrs_icechunk`]: https://github.com/zarrs/zarrs_icechunk
+[`zarrs_ffi`]: https://github.com/zarrs/zarrs_ffi
 [`zarrs-python`]: https://github.com/ilan-gold/zarrs-python
 [`zarr-python`]: https://github.com/zarr-developers/zarr-python
-[`zarrs_tools`]: https://github.com/LDeakin/zarrs_tools
-[`ome_zarr_metadata`]: https://github.com/LDeakin/rust_ome_zarr_metadata
+[`zarrs_tools`]: https://github.com/zarrs/zarrs_tools
+[`ome_zarr_metadata`]: https://github.com/zarrs/rust_ome_zarr_metadata
 [`object_store`]: https://github.com/apache/arrow-rs/tree/main/object_store
 [`opendal`]: https://github.com/apache/OpenDAL
 [`icechunk`]: https://github.com/earth-mover/icechunk

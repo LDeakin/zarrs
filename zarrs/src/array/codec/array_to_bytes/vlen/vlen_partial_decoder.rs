@@ -2,17 +2,14 @@
 
 use std::{num::NonZeroU64, sync::Arc};
 
-use crate::{
-    array::{
-        array_bytes::extract_decoded_regions_vlen,
-        codec::{
-            ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError,
-            CodecOptions,
-        },
-        ArrayBytes, ArraySize, ChunkRepresentation, CodecChain, DataType, FillValue, RawBytes,
+use crate::array::{
+    array_bytes::extract_decoded_regions_vlen,
+    codec::{
+        ArrayPartialDecoderTraits, ArraySubset, BytesPartialDecoderTraits, CodecError, CodecOptions,
     },
-    metadata::codec::vlen::VlenIndexDataType,
+    ArrayBytes, ArraySize, ChunkRepresentation, CodecChain, DataType, FillValue, RawBytes,
 };
+use zarrs_metadata_ext::codec::vlen::VlenIndexDataType;
 
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};

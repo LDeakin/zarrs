@@ -284,10 +284,7 @@ fn array_str_sync_simple() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(feature = "sharding")]
 #[test]
 fn array_str_sync_sharded_transpose() -> Result<(), Box<dyn std::error::Error>> {
-    use zarrs::{
-        array::codec::{array_to_bytes::vlen::VlenCodec, TransposeCodec},
-        metadata::codec::transpose::TransposeOrder,
-    };
+    use zarrs::array::codec::{array_to_bytes::vlen::VlenCodec, TransposeCodec, TransposeOrder};
 
     let store = std::sync::Arc::new(MemoryStore::default());
     let array_path = "/array";

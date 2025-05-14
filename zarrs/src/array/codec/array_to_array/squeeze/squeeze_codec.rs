@@ -12,9 +12,9 @@ use crate::{
         },
         ChunkRepresentation, ChunkShape,
     },
-    metadata::codec::squeeze::{SqueezeCodecConfiguration, SqueezeCodecConfigurationV1},
     plugin::PluginCreateError,
 };
+use zarrs_metadata_ext::codec::squeeze::{SqueezeCodecConfiguration, SqueezeCodecConfigurationV1};
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
