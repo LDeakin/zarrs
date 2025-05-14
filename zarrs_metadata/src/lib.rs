@@ -138,12 +138,12 @@ pub trait ConfigurationSerialize: Serialize + DeserializeOwned {}
 /// An invalid configuration error.
 #[derive(Debug, Error, From)]
 #[error("{name} is unsupported, configuration: {configuration:?}")]
-pub struct ConfigurationInvalidError {
+pub struct ConfigurationError {
     name: String,
     configuration: Option<Configuration>,
 }
 
-impl ConfigurationInvalidError {
+impl ConfigurationError {
     /// Create a new invalid configuration error.
     #[must_use]
     pub fn new(name: String, configuration: Option<Configuration>) -> Self {

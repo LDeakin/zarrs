@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Move `v2::*::*` to `v2::*`
 - **Breaking**: rename `MetadataConfiguration[Serialize]` to `Configuration[Serialize]` and move to `zarrs_metadata` root
 - **Breaking**: rename `AdditionalField[s]` to `AdditionalField[s]V3`
+- **Breaking**: rename `ConfigurationInvalidError` to `ConfigurationError`
+- **Breaking**: rename `DataTypeMetadataV2InvalidEndiannessError` to `DataTypeMetadataV2EndiannessError`
 
 ### Removed
 - **Breaking**: The following modules have been moved to `zarrs_metadata_ext`

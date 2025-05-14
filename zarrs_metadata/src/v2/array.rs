@@ -196,15 +196,15 @@ pub enum DataTypeMetadataV2 {
 /// A Zarr V2 invalid data type endianness error.
 #[derive(Debug, Error)]
 #[error("invalid V2 data type for {_0:?} endianness, must begin with |, < or >")]
-pub struct DataTypeMetadataV2InvalidEndiannessError(DataTypeMetadataV2);
+pub struct DataTypeMetadataV2EndiannessError(DataTypeMetadataV2);
 
 /// Get the endianness of a Zarr V2 data type.
 ///
 /// # Errors
-/// Returns a [`DataTypeMetadataV2InvalidEndiannessError`] if the data type is not supported or the endianness prefix is invalid.
+/// Returns a [`DataTypeMetadataV2EndiannessError`] if the data type is not supported or the endianness prefix is invalid.
 pub fn data_type_metadata_v2_to_endianness(
     data_type: &DataTypeMetadataV2,
-) -> Result<Option<Endianness>, DataTypeMetadataV2InvalidEndiannessError> {
+) -> Result<Option<Endianness>, DataTypeMetadataV2EndiannessError> {
     match data_type {
         DataTypeMetadataV2::Simple(data_type_str) => {
             if data_type_str.starts_with('|') {
@@ -214,11 +214,11 @@ pub fn data_type_metadata_v2_to_endianness(
             } else if data_type_str.starts_with('>') {
                 Ok(Some(Endianness::Big))
             } else {
-                Err(DataTypeMetadataV2InvalidEndiannessError(data_type.clone()))
+                Err(DataTypeMetadataV2EndiannessError(data_type.clone()))
             }
         }
         DataTypeMetadataV2::Structured(_) => {
-            Err(DataTypeMetadataV2InvalidEndiannessError(data_type.clone()))
+            Err(DataTypeMetadataV2EndiannessError(data_type.clone()))
         }
     }
 }

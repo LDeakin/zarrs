@@ -7,7 +7,7 @@ mod array;
 
 pub use array::{
     data_type_metadata_v2_to_endianness, ArrayMetadataV2, ArrayMetadataV2Order, DataTypeMetadataV2,
-    DataTypeMetadataV2InvalidEndiannessError, DataTypeMetadataV2Structured, FillValueMetadataV2,
+    DataTypeMetadataV2EndiannessError, DataTypeMetadataV2Structured, FillValueMetadataV2,
 };
 
 mod metadata;

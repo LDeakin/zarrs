@@ -41,18 +41,18 @@ pub struct TransposeOrder(pub Vec<usize>);
 /// An invalid permutation order error.
 #[derive(Clone, Debug, Error, From)]
 #[error("permutation order {0:?} is invalid. It must be an array of integers specifying a permutation of 0, 1, …, n-1, where n is the number of dimensions")]
-pub struct InvalidPermutationError(Vec<usize>);
+pub struct TransposeOrderError(Vec<usize>);
 
 impl TransposeOrder {
     /// Create a new [`TransposeOrder`].
     ///
     /// # Errors
-    /// Returns [`InvalidPermutationError`] if the permutation order is invalid.
-    pub fn new(order: &[usize]) -> Result<Self, InvalidPermutationError> {
+    /// Returns [`TransposeOrderError`] if the permutation order is invalid.
+    pub fn new(order: &[usize]) -> Result<Self, TransposeOrderError> {
         if validate_permutation(order) {
             Ok(Self(order.to_vec()))
         } else {
-            Err(InvalidPermutationError::from(order.to_vec()))
+            Err(TransposeOrderError::from(order.to_vec()))
         }
     }
 }

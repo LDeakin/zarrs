@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{Configuration, ConfigurationInvalidError};
+use crate::{Configuration, ConfigurationError};
 
 /// Metadata with a `name`, and optional `configuration` and `must_understand`.
 ///
@@ -188,11 +188,11 @@ impl MetadataV3 {
     /// Try and convert [`MetadataV3`] to a serializable configuration.
     ///
     /// # Errors
-    /// Returns a [`ConfigurationInvalidError`] if the metadata cannot be converted.
+    /// Returns a [`ConfigurationError`] if the metadata cannot be converted.
     pub fn to_configuration<TConfiguration: DeserializeOwned>(
         &self,
-    ) -> Result<TConfiguration, ConfigurationInvalidError> {
-        let err = |_| ConfigurationInvalidError::new(self.name.clone(), self.configuration.clone());
+    ) -> Result<TConfiguration, ConfigurationError> {
+        let err = |_| ConfigurationError::new(self.name.clone(), self.configuration.clone());
         let configuration = self.configuration.clone().unwrap_or_default();
         let value = serde_json::to_value(configuration).map_err(err)?;
         serde_json::from_value(value).map_err(err)

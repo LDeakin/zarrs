@@ -33,8 +33,7 @@ use std::sync::Arc;
 
 pub use transpose_codec::TransposeCodec;
 pub use zarrs_metadata_ext::codec::transpose::{
-    InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
-    TransposeOrder,
+    TransposeCodecConfiguration, TransposeCodecConfigurationV1, TransposeOrder, TransposeOrderError,
 };
 use zarrs_registry::codec::TRANSPOSE;
 
