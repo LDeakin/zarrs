@@ -80,7 +80,7 @@ pub use crate::metadata::v3::{
 pub use crate::metadata::{
     ArrayMetadata, ArrayShape, ChunkShape, DataTypeSize, DimensionName, Endianness,
 };
-use zarrs_metadata_ext::v2_to_v3::ArrayMetadataV2ToV3ConversionError;
+use zarrs_metadata_ext::v2_to_v3::ArrayMetadataV2ToV3Error;
 
 pub use chunk_cache::array_chunk_cache_ext_sync::ArrayChunkCacheExt;
 pub use chunk_cache::{
@@ -848,8 +848,8 @@ impl<TStorage: ?Sized> Array<TStorage> {
     /// Convert the array to Zarr V3.
     ///
     /// # Errors
-    /// Returns a [`ArrayMetadataV2ToV3ConversionError`] if the metadata is not compatible with Zarr V3 metadata.
-    pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3ConversionError> {
+    /// Returns a [`ArrayMetadataV2ToV3Error`] if the metadata is not compatible with Zarr V3 metadata.
+    pub fn to_v3(self) -> Result<Self, ArrayMetadataV2ToV3Error> {
         match self.metadata {
             ArrayMetadata::V2(metadata) => {
                 let metadata: ArrayMetadata = {
