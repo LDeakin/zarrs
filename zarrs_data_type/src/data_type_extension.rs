@@ -1,8 +1,5 @@
 use std::fmt::Debug;
-use zarrs_metadata::{
-    v3::{FillValueMetadataV3, MetadataConfiguration},
-    DataTypeSize,
-};
+use zarrs_metadata::{v3::FillValueMetadataV3, Configuration, DataTypeSize};
 
 use crate::{
     data_type_extension_packbits_codec::DataTypeExtensionPackBitsCodec,
@@ -29,7 +26,7 @@ pub trait DataTypeExtension: Debug + Send + Sync {
     fn name(&self) -> String;
 
     /// The configuration of the data type.
-    fn configuration(&self) -> MetadataConfiguration;
+    fn configuration(&self) -> Configuration;
 
     /// The size of the data type.
     ///

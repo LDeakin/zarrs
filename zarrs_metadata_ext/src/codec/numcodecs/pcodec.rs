@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `pcodec` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum PcodecCodecConfiguration {
     V1(PcodecCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for PcodecCodecConfiguration {}
+impl ConfigurationSerialize for PcodecCodecConfiguration {}
 
 impl Default for PcodecCodecConfiguration {
     fn default() -> Self {

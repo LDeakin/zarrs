@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
-use derive_more::{Deref, From, Into};
 use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize};
 use serde_json::Value;
-use thiserror::Error;
+
+use crate::{Configuration, ConfigurationInvalidError};
 
 /// Metadata with a `name`, and optional `configuration` and `must_understand`.
 ///
@@ -46,29 +46,9 @@ use thiserror::Error;
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct MetadataV3 {
     name: String,
-    configuration: Option<MetadataConfiguration>,
+    configuration: Option<Configuration>,
     must_understand: bool,
 }
-
-/// Configuration metadata.
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Deref, From, Into, Eq, PartialEq)]
-pub struct MetadataConfiguration(serde_json::Map<String, Value>);
-
-impl<T: MetadataConfigurationSerialize> From<T> for MetadataConfiguration {
-    fn from(value: T) -> Self {
-        match serde_json::to_value(value) {
-            Ok(serde_json::Value::Object(configuration)) => configuration.into(),
-            _ => {
-                panic!("the configuration could not be converted to a JSON object")
-            }
-        }
-    }
-}
-
-/// A marker trait indicating metadata is JSON serialisable.
-///
-/// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
-pub trait MetadataConfigurationSerialize: Serialize + DeserializeOwned {}
 
 impl TryFrom<&str> for MetadataV3 {
     type Error = serde_json::Error;
@@ -126,7 +106,7 @@ impl<'de> serde::Deserialize<'de> for MetadataV3 {
         struct MetadataNameConfiguration {
             name: String,
             #[serde(default)]
-            configuration: Option<MetadataConfiguration>,
+            configuration: Option<Configuration>,
             #[serde(default = "default_must_understand")]
             must_understand: bool,
         }
@@ -171,7 +151,7 @@ impl MetadataV3 {
     #[must_use]
     pub fn new_with_configuration(
         name: impl Into<String>,
-        configuration: impl Into<MetadataConfiguration>,
+        configuration: impl Into<Configuration>,
     ) -> Self {
         Self {
             name: name.into(),
@@ -232,7 +212,7 @@ impl MetadataV3 {
 
     /// Returns the metadata configuration.
     #[must_use]
-    pub const fn configuration(&self) -> Option<&MetadataConfiguration> {
+    pub const fn configuration(&self) -> Option<&Configuration> {
         self.configuration.as_ref()
     }
 
@@ -250,37 +230,6 @@ impl MetadataV3 {
         self.configuration
             .as_ref()
             .map_or(true, |configuration| configuration.is_empty())
-    }
-}
-
-/// An invalid configuration error.
-#[derive(Debug, Error, From)]
-#[error("{name} is unsupported, configuration: {configuration:?}")]
-pub struct ConfigurationInvalidError {
-    name: String,
-    configuration: Option<MetadataConfiguration>,
-}
-
-impl ConfigurationInvalidError {
-    /// Create a new invalid configuration error.
-    #[must_use]
-    pub fn new(name: String, configuration: Option<MetadataConfiguration>) -> Self {
-        Self {
-            name,
-            configuration,
-        }
-    }
-
-    /// Return the name of the invalid configuration.
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    /// Return the underlying configuration metadata of the invalid configuration.
-    #[must_use]
-    pub const fn configuration(&self) -> Option<&MetadataConfiguration> {
-        self.configuration.as_ref()
     }
 }
 

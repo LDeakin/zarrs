@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `gdeflate` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum GDeflateCodecConfiguration {
     V1(GDeflateCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for GDeflateCodecConfiguration {}
+impl ConfigurationSerialize for GDeflateCodecConfiguration {}
 
 /// `gdeflate` codec configuration parameters (version 1.0 draft).
 ///

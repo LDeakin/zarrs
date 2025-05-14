@@ -1,7 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use num::Integer;
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_registry::codec::FLETCHER32;
 
 use crate::array::{
@@ -48,7 +48,7 @@ impl CodecTraits for Fletcher32Codec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = Fletcher32CodecConfiguration::V1(Fletcher32CodecConfigurationV1 {});
         Some(configuration.into())
     }

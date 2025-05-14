@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::BITROUND;
 
@@ -61,7 +61,7 @@ impl CodecTraits for BitroundCodec {
         &self,
         _name: &str,
         options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         if options.experimental_codec_store_metadata_if_encode_only() {
             let configuration = BitroundCodecConfiguration::V1(BitroundCodecConfigurationV1 {
                 keepbits: self.keepbits,

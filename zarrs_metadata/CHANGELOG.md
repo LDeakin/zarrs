@@ -27,10 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Extensions can now be parsed in more than just the additional fields of array/group metadata (e.g. codecs)
   - Automatically skip unsupported codecs/storage transformers with `"must_understand": false`
 - Add `extensions` field to `v3::{Array,Group}MetadataV3` (ZEP0009)
-- Implement `From<T> for MetadataConfiguration` for all codec configuration enums
+- Implement `From<T> for Configuration` for all codec configuration enums
 - Implement `Copy` for `ZstdCompressionLevel`
 - Add new codec metadata: `zlib`, `shuffle`, `packbits`, `squeeze`, `fixedscaleoffset`, `zfpy` (unmerged from `zfp`)
-- Add `MetadataConfigurationSerialize` trait
+- Add `ConfigurationSerialize` trait
 - Add `{Array,Group,Node}Metadata::to_string_pretty()` and `{Array,Group}Metadata{V2,V3}::to_string_pretty()`
 - Add `MetadataV3::set_{name,id}()`
 - Add `ZarrVersion` marker trait and `ZarrVersion{2,3}`

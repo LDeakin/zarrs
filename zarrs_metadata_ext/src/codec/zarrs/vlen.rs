@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use zarrs_metadata::v3::{MetadataConfigurationSerialize, MetadataV3};
+use zarrs_metadata::{v3::MetadataV3, ConfigurationSerialize};
 
 /// A wrapper to handle various versions of `vlen` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum VlenCodecConfiguration {
     V1(VlenCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for VlenCodecConfiguration {}
+impl ConfigurationSerialize for VlenCodecConfiguration {}
 
 /// `vlen` codec configuration parameters (version 1.0).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

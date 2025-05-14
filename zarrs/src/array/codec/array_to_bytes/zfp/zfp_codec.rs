@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_metadata_ext::codec::{
     zfp::ZfpMode,
     zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationMode},
@@ -163,7 +163,7 @@ impl CodecTraits for ZfpCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         // ZfpyCodecConfigurationNumcodecs is forward compatible with ZfpCodecConfigurationV1
         Some(ZfpCodecConfiguration::V1(ZfpCodecConfigurationV1 { mode: self.mode }).into())
     }

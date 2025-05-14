@@ -85,7 +85,7 @@ mod array_to_bytes_partial_encoder_default;
 pub use array_to_bytes_partial_encoder_default::ArrayToBytesPartialEncoderDefault;
 #[cfg(feature = "async")]
 pub use array_to_bytes_partial_encoder_default::AsyncArrayToBytesPartialEncoderDefault;
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 
 use crate::array_subset::IncompatibleDimensionalityError;
 mod array_to_array_partial_decoder_default;
@@ -268,12 +268,12 @@ pub trait CodecTraits: Send + Sync {
         &self,
         name: &str,
         options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration>;
+    ) -> Option<Configuration>;
 
     /// Create the codec configuration with default options.
     ///
     /// A hidden codec (e.g. a cache) will return [`None`], since it will not have any associated metadata.
-    fn configuration(&self, name: &str) -> Option<MetadataConfiguration> {
+    fn configuration(&self, name: &str) -> Option<Configuration> {
         self.configuration_opt(name, &CodecMetadataOptions::default())
     }
 

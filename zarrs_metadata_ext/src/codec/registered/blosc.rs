@@ -2,7 +2,7 @@ use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use zarrs_metadata::{v3::MetadataConfigurationSerialize, DataTypeSize};
+use zarrs_metadata::{ConfigurationSerialize, DataTypeSize};
 
 /// A wrapper to handle various versions of `blosc` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -15,7 +15,7 @@ pub enum BloscCodecConfiguration {
     Numcodecs(BloscCodecConfigurationNumcodecs),
 }
 
-impl MetadataConfigurationSerialize for BloscCodecConfiguration {}
+impl ConfigurationSerialize for BloscCodecConfiguration {}
 
 /// An integer from 0 to 9 controlling the compression level
 ///

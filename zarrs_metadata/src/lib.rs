@@ -11,8 +11,11 @@
 //!
 //! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
-use derive_more::derive::{Display, From};
-use serde::{Deserialize, Serialize};
+use derive_more::{
+    derive::{Display, From},
+    Deref, Into,
+};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 mod array;
 
@@ -25,6 +28,7 @@ pub mod v2;
 pub use array::{
     ArrayShape, ChunkKeySeparator, ChunkShape, DimensionName, Endianness, IntoDimensionName,
 };
+use thiserror::Error;
 
 /// A wrapper to handle various versions of Zarr array metadata.
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug, Display, From)]
@@ -109,6 +113,57 @@ pub enum DataTypeSize {
     ///
     /// <https://github.com/zarr-developers/zeps/pull/47>
     Variable,
+}
+
+/// Configuration metadata.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Deref, From, Into, Eq, PartialEq)]
+pub struct Configuration(serde_json::Map<String, serde_json::Value>);
+
+impl<T: ConfigurationSerialize> From<T> for Configuration {
+    fn from(value: T) -> Self {
+        match serde_json::to_value(value) {
+            Ok(serde_json::Value::Object(configuration)) => configuration.into(),
+            _ => {
+                panic!("the configuration could not be converted to a JSON object")
+            }
+        }
+    }
+}
+
+/// A marker trait indicating metadata is JSON serialisable.
+///
+/// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
+pub trait ConfigurationSerialize: Serialize + DeserializeOwned {}
+
+/// An invalid configuration error.
+#[derive(Debug, Error, From)]
+#[error("{name} is unsupported, configuration: {configuration:?}")]
+pub struct ConfigurationInvalidError {
+    name: String,
+    configuration: Option<Configuration>,
+}
+
+impl ConfigurationInvalidError {
+    /// Create a new invalid configuration error.
+    #[must_use]
+    pub fn new(name: String, configuration: Option<Configuration>) -> Self {
+        Self {
+            name,
+            configuration,
+        }
+    }
+
+    /// Return the name of the invalid configuration.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Return the underlying configuration metadata of the invalid configuration.
+    #[must_use]
+    pub const fn configuration(&self) -> Option<&Configuration> {
+        self.configuration.as_ref()
+    }
 }
 
 #[cfg(test)]

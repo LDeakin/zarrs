@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `bz2` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum Bz2CodecConfiguration {
     V1(Bz2CodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for Bz2CodecConfiguration {}
+impl ConfigurationSerialize for Bz2CodecConfiguration {}
 
 /// `bz2` codec configuration parameters (version 1.0 draft).
 ///

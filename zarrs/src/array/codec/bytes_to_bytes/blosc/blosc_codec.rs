@@ -1,7 +1,7 @@
 use std::{borrow::Cow, ffi::c_char, sync::Arc};
 
 use blosc_sys::{blosc_get_complib_info, BLOSC_MAX_OVERHEAD};
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_registry::codec::BLOSC;
 
 use crate::{
@@ -150,7 +150,7 @@ impl CodecTraits for BloscCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = BloscCodecConfiguration::V1(BloscCodecConfigurationV1 {
             cname: self.cname,
             clevel: self.clevel,

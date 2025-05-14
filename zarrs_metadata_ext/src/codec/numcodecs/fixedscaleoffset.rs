@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `fixedscaleoffset` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum FixedScaleOffsetCodecConfiguration {
     Numcodecs(FixedScaleOffsetCodecConfigurationNumcodecs),
 }
 
-impl MetadataConfigurationSerialize for FixedScaleOffsetCodecConfiguration {}
+impl ConfigurationSerialize for FixedScaleOffsetCodecConfiguration {}
 
 /// `fixedscaleoffset` codec configuration parameters (numcodecs).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]

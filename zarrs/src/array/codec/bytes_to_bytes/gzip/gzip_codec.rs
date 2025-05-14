@@ -5,7 +5,7 @@ use std::{
 };
 
 use flate2::bufread::{GzDecoder, GzEncoder};
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::GZIP;
 
@@ -65,7 +65,7 @@ impl CodecTraits for GzipCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = GzipCodecConfiguration::V1(GzipCodecConfigurationV1 {
             level: self.compression_level,
         });

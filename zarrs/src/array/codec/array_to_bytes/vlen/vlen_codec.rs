@@ -1,6 +1,6 @@
 use std::{num::NonZeroU64, sync::Arc};
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_metadata_ext::codec::vlen::VlenIndexDataType;
 
 use crate::{
@@ -98,7 +98,7 @@ impl CodecTraits for VlenCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = VlenCodecConfiguration::V1(VlenCodecConfigurationV1 {
             index_codecs: self.index_codecs.create_metadatas(),
             data_codecs: self.data_codecs.create_metadatas(),

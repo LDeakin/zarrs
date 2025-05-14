@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::array::DataType;
 use zarrs_data_type::DataTypeExtensionError;
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::BYTES;
 
@@ -113,7 +113,7 @@ impl CodecTraits for BytesCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = BytesCodecConfiguration::V1(BytesCodecConfigurationV1 {
             endian: self.endian,
         });

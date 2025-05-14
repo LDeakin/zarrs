@@ -9,10 +9,7 @@ pub use array::{
 };
 
 mod metadata;
-pub use metadata::{
-    AdditionalField, AdditionalFields, ConfigurationInvalidError, MetadataConfiguration,
-    MetadataConfigurationSerialize, MetadataV3,
-};
+pub use metadata::{AdditionalField, AdditionalFields, MetadataV3};
 
 /// Zarr V3 node metadata ([`ArrayMetadataV3`] or [`GroupMetadataV3`]).
 #[derive(serde::Serialize, serde::Deserialize)]

@@ -4,7 +4,7 @@ use std::{
     sync::{atomic::AtomicUsize, Arc},
 };
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 
 use crate::{
     array::{
@@ -103,7 +103,7 @@ impl CodecTraits for ShardingCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = ShardingCodecConfiguration::V1(ShardingCodecConfigurationV1 {
             chunk_shape: self.chunk_shape.clone(),
             codecs: self.inner_codecs.create_metadatas(),

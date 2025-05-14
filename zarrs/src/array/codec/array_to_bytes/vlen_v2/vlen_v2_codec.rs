@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 
 use crate::array::{
     codec::{
@@ -36,8 +36,8 @@ impl CodecTraits for VlenV2Codec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
-        Some(MetadataConfiguration::default())
+    ) -> Option<Configuration> {
+        Some(Configuration::default())
     }
 
     fn partial_decoder_should_cache_input(&self) -> bool {

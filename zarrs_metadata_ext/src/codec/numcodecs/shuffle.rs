@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `shuffle` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum ShuffleCodecConfiguration {
     V1(ShuffleCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for ShuffleCodecConfiguration {}
+impl ConfigurationSerialize for ShuffleCodecConfiguration {}
 
 /// `shuffle` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]

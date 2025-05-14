@@ -40,7 +40,7 @@ macro_rules! vlen_v2_codec {
     ($struct:ident,$identifier:ident) => {
         use std::sync::Arc;
 
-        use zarrs_metadata::v3::MetadataConfiguration;
+        use zarrs_metadata::Configuration;
 
         use crate::array::{
             codec::{
@@ -87,7 +87,7 @@ macro_rules! vlen_v2_codec {
                 &self,
                 name: &str,
                 options: &CodecMetadataOptions,
-            ) -> Option<MetadataConfiguration> {
+            ) -> Option<Configuration> {
                 self.inner.configuration_opt(name, options)
             }
 

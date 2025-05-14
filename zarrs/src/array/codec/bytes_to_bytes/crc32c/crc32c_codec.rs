@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_registry::codec::CRC32C;
 
 use crate::array::{
@@ -47,7 +47,7 @@ impl CodecTraits for Crc32cCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = Crc32cCodecConfiguration::V1(Crc32cCodecConfigurationV1 {});
         Some(configuration.into())
     }

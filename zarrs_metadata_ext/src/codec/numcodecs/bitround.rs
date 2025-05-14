@@ -1,7 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `bitround` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -12,7 +12,7 @@ pub enum BitroundCodecConfiguration {
     V1(BitroundCodecConfigurationV1),
 }
 
-impl MetadataConfigurationSerialize for BitroundCodecConfiguration {}
+impl ConfigurationSerialize for BitroundCodecConfiguration {}
 
 /// `bitround` codec configuration parameters (version 1.0 draft).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]

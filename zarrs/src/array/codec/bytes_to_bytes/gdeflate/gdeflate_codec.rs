@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata::Configuration;
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::GDEFLATE;
 
@@ -60,7 +60,7 @@ impl CodecTraits for GDeflateCodec {
         &self,
         _name: &str,
         _options: &CodecMetadataOptions,
-    ) -> Option<MetadataConfiguration> {
+    ) -> Option<Configuration> {
         let configuration = GDeflateCodecConfiguration::V1(GDeflateCodecConfigurationV1 {
             level: self.compression_level,
         });

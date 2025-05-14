@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::codec::zfp::{ZfpCodecConfigurationV1, ZfpMode};
 
-use zarrs_metadata::v3::MetadataConfigurationSerialize;
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `zfpy` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display, From)]
@@ -14,7 +14,7 @@ pub enum ZfpyCodecConfiguration {
     Numcodecs(ZfpyCodecConfigurationNumcodecs),
 }
 
-impl MetadataConfigurationSerialize for ZfpyCodecConfiguration {}
+impl ConfigurationSerialize for ZfpyCodecConfiguration {}
 
 /// `zfpy` codec configuration parameters (numcodecs).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Display)]
