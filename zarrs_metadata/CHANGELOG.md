@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Move `v3::array::*` and `v3::*::*` to `v3`
   - Move `v2::*::*` to `v2::*`
 - **Breaking**: rename `MetadataConfiguration[Serialize]` to `Configuration[Serialize]` and move to `zarrs_metadata` root
+- **Breaking**: rename `AdditionalField[s]` to `AdditionalField[s]V3`
 
 ### Removed
 - **Breaking**: The following modules have been moved to `zarrs_metadata_ext`
@@ -20,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `v3::array::chunk_key_encoding` (and `crate::chunk_key_encoding`)
   - `v3::array::data_type` (and `crate::data_type`)
   - `v2_to_v3`
+- **Breaking**: Remove the `additional_fields` member of `{Array,Group}MetadataV2`
+- **Breaking**: Remove `{Array,Group}MetadataV2::with_additional_fields`
 
 ## [0.4.0] - 2025-05-03
 

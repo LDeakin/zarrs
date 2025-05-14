@@ -2,9 +2,7 @@ use derive_more::{derive::From, Display};
 use serde::{Deserialize, Serialize, Serializer};
 use thiserror::Error;
 
-use crate::{
-    v2::MetadataV2, v3::AdditionalFields, ArrayShape, ChunkKeySeparator, ChunkShape, Endianness,
-};
+use crate::{v2::MetadataV2, ArrayShape, ChunkKeySeparator, ChunkShape, Endianness};
 
 /// Zarr V2 array metadata.
 ///
@@ -61,11 +59,6 @@ pub struct ArrayMetadataV2 {
     /// Optional user defined attributes contained in a separate `.zattrs` file.
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub attributes: serde_json::Map<String, serde_json::Value>,
-    /// Additional fields.
-    ///
-    /// These are not part of Zarr V2, but are retained for compatibility/flexibility.
-    #[serde(flatten)]
-    pub additional_fields: AdditionalFields,
 }
 
 #[allow(clippy::ref_option)]
@@ -111,7 +104,6 @@ impl ArrayMetadataV2 {
             filters,
             dimension_separator: ChunkKeySeparator::Dot,
             attributes: serde_json::Map::default(),
-            additional_fields: AdditionalFields::default(),
         }
     }
 
@@ -143,13 +135,6 @@ impl ArrayMetadataV2 {
         attributes: serde_json::Map<String, serde_json::Value>,
     ) -> Self {
         self.attributes = attributes;
-        self
-    }
-
-    /// Set the additional fields.
-    #[must_use]
-    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
-        self.additional_fields = additional_fields;
         self
     }
 }
@@ -322,7 +307,6 @@ mod tests {
             filters: Some(vec![]),
             dimension_separator: ChunkKeySeparator::Dot,
             attributes: serde_json::Map::new(),
-            additional_fields: Default::default(),
         };
         let serialized = serde_json::to_string(&array).unwrap();
         assert_eq!(

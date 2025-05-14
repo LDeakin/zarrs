@@ -1,15 +1,12 @@
 use std::sync::Arc;
 
-use crate::metadata::{
-    v3::{AdditionalFields, GroupMetadataV3},
-    GroupMetadata,
-};
+use crate::metadata::v3::{AdditionalFieldsV3, GroupMetadataV3};
 
 use super::{Group, GroupCreateError};
 
 /// A [`Group`] builder.
 pub struct GroupBuilder {
-    metadata: GroupMetadata,
+    metadata: GroupMetadataV3,
 }
 
 impl Default for GroupBuilder {
@@ -23,7 +20,7 @@ impl GroupBuilder {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            metadata: GroupMetadataV3::default().into(),
+            metadata: GroupMetadataV3::default(),
         }
     }
 
@@ -32,10 +29,7 @@ impl GroupBuilder {
         &mut self,
         attributes: serde_json::Map<String, serde_json::Value>,
     ) -> &mut Self {
-        match &mut self.metadata {
-            GroupMetadata::V3(metadata) => metadata.attributes = attributes,
-            GroupMetadata::V2(metadata) => metadata.attributes = attributes,
-        }
+        self.metadata.attributes = attributes;
         self
     }
 
@@ -45,11 +39,8 @@ impl GroupBuilder {
     /// Use this cautiously. In general, store user defined attributes using [`GroupBuilder::attributes`].
     ///
     /// `zarrs` and other implementations are expected to error when opening a group with unsupported additional fields, unless they are a JSON object containing `"must_understand": false`.
-    pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
-        match &mut self.metadata {
-            GroupMetadata::V3(metadata) => metadata.additional_fields = additional_fields,
-            GroupMetadata::V2(metadata) => metadata.additional_fields = additional_fields,
-        }
+    pub fn additional_fields(&mut self, additional_fields: AdditionalFieldsV3) -> &mut Self {
+        self.metadata.additional_fields = additional_fields;
         self
     }
 
@@ -63,12 +54,14 @@ impl GroupBuilder {
         storage: Arc<TStorage>,
         path: &str,
     ) -> Result<Group<TStorage>, GroupCreateError> {
-        Group::new_with_metadata(storage, path, self.metadata.clone())
+        Group::new_with_metadata(storage, path, self.metadata.clone().into())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use zarrs_metadata::GroupMetadata;
+
     use crate::storage::store::MemoryStore;
 
     use super::*;
@@ -81,7 +74,7 @@ mod tests {
         attributes.insert("key".to_string(), "value".into());
         builder.attributes(attributes.clone());
 
-        let mut additional_fields = AdditionalFields::new();
+        let mut additional_fields = AdditionalFieldsV3::new();
         let additional_field = serde_json::Map::new();
         additional_fields.insert("key".to_string(), additional_field.into());
         builder.additional_fields(additional_fields.clone());
@@ -91,8 +84,9 @@ mod tests {
         let mut group = builder.build(storage, "/").unwrap();
 
         assert_eq!(group.attributes(), &attributes);
-        assert_eq!(group.additional_fields(), &additional_fields);
         assert_eq!(group.attributes_mut(), &attributes);
-        assert_eq!(group.additional_fields_mut(), &additional_fields);
+        if let GroupMetadata::V3(metadata) = group.metadata() {
+            assert_eq!(metadata.additional_fields, additional_fields);
+        }
     }
 }

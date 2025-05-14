@@ -105,7 +105,6 @@ use zarrs_metadata::v2::DataTypeMetadataV2;
 use crate::{
     array_subset::{ArraySubset, IncompatibleDimensionalityError},
     config::MetadataConvertVersion,
-    metadata::v3::AdditionalFields,
     node::{data_key, NodePath},
     storage::StoreKey,
 };
@@ -568,24 +567,6 @@ impl<TStorage: ?Sized> Array<TStorage> {
         }
     }
 
-    /// Get the additional fields.
-    #[must_use]
-    pub const fn additional_fields(&self) -> &AdditionalFields {
-        match &self.metadata {
-            ArrayMetadata::V3(metadata) => &metadata.additional_fields,
-            ArrayMetadata::V2(metadata) => &metadata.additional_fields,
-        }
-    }
-
-    /// Mutably borrow the additional fields.
-    #[must_use]
-    pub fn additional_fields_mut(&mut self) -> &mut AdditionalFields {
-        match &mut self.metadata {
-            ArrayMetadata::V3(metadata) => &mut metadata.additional_fields,
-            ArrayMetadata::V2(metadata) => &mut metadata.additional_fields,
-        }
-    }
-
     /// Return the underlying array metadata.
     #[must_use]
     pub fn metadata(&self) -> &ArrayMetadata {
@@ -922,15 +903,20 @@ impl<TStorage: ?Sized> Array<TStorage> {
             }
         }
 
-        let additional_fields = match &metadata {
-            ArrayMetadata::V2(metadata) => &metadata.additional_fields,
-            ArrayMetadata::V3(metadata) => &metadata.additional_fields,
-        };
-        for (name, field) in additional_fields {
-            if field.must_understand() {
-                return Err(ArrayCreateError::AdditionalFieldUnsupportedError(
-                    AdditionalFieldUnsupportedError::new(name.clone(), field.as_value().clone()),
-                ));
+        match metadata {
+            ArrayMetadata::V2(_metadata) => {}
+            ArrayMetadata::V3(metadata) => {
+                let additional_fields = &metadata.additional_fields;
+                for (name, field) in additional_fields {
+                    if field.must_understand() {
+                        return Err(ArrayCreateError::AdditionalFieldUnsupportedError(
+                            AdditionalFieldUnsupportedError::new(
+                                name.clone(),
+                                field.as_value().clone(),
+                            ),
+                        ));
+                    }
+                }
             }
         }
         Ok(())
@@ -1069,7 +1055,7 @@ pub fn bytes_to_ndarray<T: bytemuck::Pod>(
 mod tests {
     use crate::storage::store::MemoryStore;
     use zarrs_filesystem::FilesystemStore;
-    use zarrs_metadata::v3::AdditionalField;
+    use zarrs_metadata::v3::{AdditionalFieldV3, AdditionalFieldsV3};
 
     use super::*;
 
@@ -1466,8 +1452,8 @@ mod tests {
 
         for must_understand in [true, false] {
             let additional_field = serde_json::Map::new();
-            let additional_field = AdditionalField::new(additional_field, must_understand);
-            let mut additional_fields = AdditionalFields::new();
+            let additional_field = AdditionalFieldV3::new(additional_field, must_understand);
+            let mut additional_fields = AdditionalFieldsV3::new();
             additional_fields.insert("key".to_string(), additional_field);
 
             // Permit array creation with manually added additional fields

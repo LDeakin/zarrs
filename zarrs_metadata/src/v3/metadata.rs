@@ -264,15 +264,15 @@ impl MetadataV3 {
 ///  "unsupported_field_4": "test"
 /// ```
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
-pub struct AdditionalField {
+pub struct AdditionalFieldV3 {
     field: Value,
     must_understand: bool,
 }
 
-impl AdditionalField {
+impl AdditionalFieldV3 {
     /// Create a new additional field.
     #[must_use]
-    pub fn new(field: impl Into<Value>, must_understand: bool) -> AdditionalField {
+    pub fn new(field: impl Into<Value>, must_understand: bool) -> Self {
         Self {
             field: field.into(),
             must_understand,
@@ -292,7 +292,7 @@ impl AdditionalField {
     }
 }
 
-impl Serialize for AdditionalField {
+impl Serialize for AdditionalFieldV3 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -311,14 +311,14 @@ impl Serialize for AdditionalField {
     }
 }
 
-impl<'de> serde::Deserialize<'de> for AdditionalField {
+impl<'de> serde::Deserialize<'de> for AdditionalFieldV3 {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let value = Value::deserialize(d)?;
         Ok(value.into())
     }
 }
 
-impl<T> From<T> for AdditionalField
+impl<T> From<T> for AdditionalFieldV3
 where
     T: Into<Value>,
 {
@@ -342,7 +342,7 @@ where
 
 /// Additional fields in array or group metadata.
 // NOTE: It would be nice if this was just a serde_json::Map, but it only has implementations for `<String, Value>`.
-pub type AdditionalFields = std::collections::BTreeMap<String, AdditionalField>;
+pub type AdditionalFieldsV3 = std::collections::BTreeMap<String, AdditionalFieldV3>;
 
 #[cfg(test)]
 mod tests {

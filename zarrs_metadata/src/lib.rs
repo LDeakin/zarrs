@@ -169,7 +169,7 @@ impl ConfigurationInvalidError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use v3::{AdditionalField, AdditionalFields, MetadataV3};
+    use v3::{AdditionalFieldV3, AdditionalFieldsV3, MetadataV3};
 
     #[test]
     fn metadata() {
@@ -207,19 +207,19 @@ mod tests {
     #[test]
     fn additional_fields_constructors() {
         let additional_field = serde_json::Map::new();
-        let additional_field: AdditionalField = additional_field.into();
+        let additional_field: AdditionalFieldV3 = additional_field.into();
         assert!(additional_field.must_understand());
         assert!(
             additional_field.as_value() == &serde_json::Value::Object(serde_json::Map::default())
         );
         assert!(serde_json::to_string(&additional_field).unwrap() == r#"{"must_understand":true}"#);
 
-        let additional_field: AdditionalField = AdditionalField::new("test", true);
+        let additional_field = AdditionalFieldV3::new("test", true);
         assert!(additional_field.must_understand());
         assert!(additional_field.as_value() == &serde_json::Value::String("test".to_string()));
         assert!(serde_json::to_string(&additional_field).unwrap() == r#""test""#);
 
-        let additional_field: AdditionalField = AdditionalField::new(123, false);
+        let additional_field = AdditionalFieldV3::new(123, false);
         assert!(!additional_field.must_understand());
         assert!(
             additional_field.as_value()
@@ -245,7 +245,7 @@ mod tests {
             "unsupported_field_3": [],
             "unsupported_field_4": "test"
         }"#;
-        let additional_fields = serde_json::from_str::<AdditionalFields>(json).unwrap();
+        let additional_fields = serde_json::from_str::<AdditionalFieldsV3>(json).unwrap();
         assert!(additional_fields.len() == 5);
         assert!(!additional_fields["unknown_field"].must_understand());
         assert!(additional_fields["unsupported_field_1"].must_understand());
