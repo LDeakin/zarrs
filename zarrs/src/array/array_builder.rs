@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zarrs_metadata::{v3::AdditionalFields, ChunkKeySeparator, IntoDimensionName};
+use zarrs_metadata::{v3::AdditionalFieldsV3, ChunkKeySeparator, IntoDimensionName};
 
 use crate::node::NodePath;
 
@@ -81,7 +81,7 @@ pub struct ArrayBuilder {
     /// Dimension names.
     pub dimension_names: Option<Vec<DimensionName>>,
     /// Additional fields.
-    pub additional_fields: AdditionalFields,
+    pub additional_fields: AdditionalFieldsV3,
 }
 
 impl ArrayBuilder {
@@ -125,7 +125,7 @@ impl ArrayBuilder {
             attributes: serde_json::Map::default(),
             storage_transformers: StorageTransformerChain::default(),
             dimension_names: None,
-            additional_fields: AdditionalFields::default(),
+            additional_fields: AdditionalFieldsV3::default(),
         }
     }
 
@@ -138,8 +138,13 @@ impl ArrayBuilder {
             array.chunk_grid().clone(),
             array.fill_value().clone(),
         );
+        let additional_fields = match array.metadata() {
+            ArrayMetadata::V2(_metadata) => AdditionalFieldsV3::default(),
+            ArrayMetadata::V3(metadata) => metadata.additional_fields.clone(),
+        };
+
         builder
-            .additional_fields(array.additional_fields().clone())
+            .additional_fields(additional_fields)
             .attributes(array.attributes().clone())
             .chunk_key_encoding(array.chunk_key_encoding().clone())
             .dimension_names(array.dimension_names().clone())
@@ -276,7 +281,7 @@ impl ArrayBuilder {
     /// Use this cautiously. In general, store user defined attributes using [`ArrayBuilder::attributes`].
     ///
     /// `zarrs` and other implementations are expected to error when opening an array with unsupported additional fields, unless they are a JSON object containing `"must_understand": false`.
-    pub fn additional_fields(&mut self, additional_fields: AdditionalFields) -> &mut Self {
+    pub fn additional_fields(&mut self, additional_fields: AdditionalFieldsV3) -> &mut Self {
         self.additional_fields = additional_fields;
         self
     }
@@ -412,7 +417,7 @@ mod tests {
         attributes.insert("key".to_string(), "value".into());
         builder.attributes(attributes.clone());
 
-        let mut additional_fields = AdditionalFields::new();
+        let mut additional_fields = AdditionalFieldsV3::new();
         let additional_field = serde_json::Map::new();
         additional_fields.insert("key".to_string(), additional_field.into());
         builder.additional_fields(additional_fields.clone());
@@ -436,7 +441,9 @@ mod tests {
             &Some(vec![Some("y".to_string()), Some("x".to_string())])
         );
         assert_eq!(array.attributes(), &attributes);
-        assert_eq!(array.additional_fields(), &additional_fields);
+        if let ArrayMetadata::V3(metadata) = array.metadata() {
+            assert_eq!(metadata.additional_fields, additional_fields);
+        }
 
         let builder2 = array.builder();
         assert_eq!(builder.shape, builder2.shape);

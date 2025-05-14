@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.20.0-beta.1] - 2025-05-12
-
 ### Added
 - Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
@@ -101,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
+- **Breaking**: Remove `{Array,Group}::additional_fields[_mut]`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
@@ -108,6 +107,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reject arrays and groups with unsupported `"must_understand": true` extensions
 
 [#156]: https://github.com/zarrs/zarrs/pull/156
+
+## [0.20.0-beta.1] - 2025-05-12
 
 ## [0.20.0-beta.0] - 2025-05-03
 

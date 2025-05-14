@@ -5,7 +5,7 @@ use crate::{
     array::IntoDimensionName, v3::MetadataV3, ArrayShape, ChunkKeySeparator, DimensionName,
 };
 
-use super::AdditionalFields;
+use super::AdditionalFieldsV3;
 
 mod fill_value;
 mod nan_representations;
@@ -106,7 +106,7 @@ pub struct ArrayMetadataV3 {
     pub extensions: Vec<MetadataV3>,
     /// Additional fields.
     #[serde(flatten)]
-    pub additional_fields: AdditionalFields,
+    pub additional_fields: AdditionalFieldsV3,
 }
 
 impl ArrayMetadataV3 {
@@ -155,7 +155,7 @@ impl ArrayMetadataV3 {
             attributes: serde_json::Map::default(),
             storage_transformers: Vec::default(),
             dimension_names: None,
-            additional_fields: AdditionalFields::default(),
+            additional_fields: AdditionalFieldsV3::default(),
             extensions: Vec::default(),
         }
     }
@@ -179,7 +179,7 @@ impl ArrayMetadataV3 {
 
     /// Set the additional fields.
     #[must_use]
-    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+    pub fn with_additional_fields(mut self, additional_fields: AdditionalFieldsV3) -> Self {
         self.additional_fields = additional_fields;
         self
     }

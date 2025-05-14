@@ -34,9 +34,7 @@ use zarrs_registry::{
 #[allow(clippy::too_many_lines)]
 #[must_use]
 pub fn group_metadata_v2_to_v3(group_metadata_v2: &GroupMetadataV2) -> GroupMetadataV3 {
-    GroupMetadataV3::new()
-        .with_attributes(group_metadata_v2.attributes.clone())
-        .with_additional_fields(group_metadata_v2.additional_fields.clone())
+    GroupMetadataV3::new().with_attributes(group_metadata_v2.attributes.clone())
 }
 
 /// An error converting Zarr V2 array metadata to Zarr V3.
@@ -331,7 +329,6 @@ pub fn array_metadata_v2_to_v3(
     Ok(
         ArrayMetadataV3::new(shape, chunk_grid, data_type, fill_value, codecs)
             .with_attributes(attributes)
-            .with_additional_fields(array_metadata_v2.additional_fields.clone())
             .with_chunk_key_encoding(chunk_key_encoding),
     )
 }

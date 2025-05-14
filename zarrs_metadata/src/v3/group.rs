@@ -1,7 +1,7 @@
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
-use super::{AdditionalFields, MetadataV3};
+use super::{AdditionalFieldsV3, MetadataV3};
 
 /// Zarr V3 group metadata.
 ///
@@ -33,7 +33,7 @@ pub struct GroupMetadataV3 {
     pub extensions: Vec<MetadataV3>,
     /// Additional fields.
     #[serde(flatten)]
-    pub additional_fields: AdditionalFields,
+    pub additional_fields: AdditionalFieldsV3,
 }
 
 impl std::cmp::PartialEq for GroupMetadataV3 {
@@ -61,7 +61,7 @@ impl GroupMetadataV3 {
             node_type: monostate::MustBe!("group"),
             attributes: serde_json::Map::new(),
             extensions: Vec::default(),
-            additional_fields: AdditionalFields::default(),
+            additional_fields: AdditionalFieldsV3::default(),
         }
     }
 
@@ -84,7 +84,7 @@ impl GroupMetadataV3 {
 
     /// Set the additional fields.
     #[must_use]
-    pub fn with_additional_fields(mut self, additional_fields: AdditionalFields) -> Self {
+    pub fn with_additional_fields(mut self, additional_fields: AdditionalFieldsV3) -> Self {
         self.additional_fields = additional_fields;
         self
     }

@@ -30,8 +30,8 @@ use std::sync::Arc;
 
 use derive_more::Display;
 use thiserror::Error;
-use zarrs_metadata::v3::AdditionalField;
 use zarrs_metadata::NodeMetadata;
+use zarrs_metadata::{v2::GroupMetadataV2, v3::AdditionalFieldV3};
 use zarrs_metadata_ext::group::consolidated_metadata::ConsolidatedMetadata;
 use zarrs_storage::ListableStorageTraits;
 
@@ -40,7 +40,6 @@ use crate::{
     config::{
         global_config, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
-    metadata::{v2::GroupMetadataV2, v3::AdditionalFields},
     node::{
         get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node,
         NodeCreateError, NodePath, NodePathError,
@@ -121,23 +120,6 @@ impl<TStorage: ?Sized> Group<TStorage> {
         }
     }
 
-    /// Get additional fields.
-    #[must_use]
-    pub const fn additional_fields(&self) -> &AdditionalFields {
-        match &self.metadata {
-            GroupMetadata::V3(metadata) => &metadata.additional_fields,
-            GroupMetadata::V2(metadata) => &metadata.additional_fields,
-        }
-    }
-
-    /// Mutably borrow the additional fields.
-    #[must_use]
-    pub fn additional_fields_mut(&mut self) -> &mut AdditionalFields {
-        match &mut self.metadata {
-            GroupMetadata::V3(metadata) => &mut metadata.additional_fields,
-            GroupMetadata::V2(metadata) => &mut metadata.additional_fields,
-        }
-    }
     /// Return the underlying group metadata.
     #[must_use]
     pub fn metadata(&self) -> &GroupMetadata {
@@ -193,7 +175,7 @@ impl<TStorage: ?Sized> Group<TStorage> {
             if let Some(consolidated_metadata) = consolidated_metadata {
                 group_metadata.additional_fields.insert(
                     "consolidated_metadata".to_string(),
-                    AdditionalField::new(consolidated_metadata, false),
+                    AdditionalFieldV3::new(consolidated_metadata, false),
                 );
             } else {
                 group_metadata
@@ -244,15 +226,20 @@ impl<TStorage: ?Sized> Group<TStorage> {
             }
         }
 
-        let additional_fields = match &metadata {
-            GroupMetadata::V2(metadata) => &metadata.additional_fields,
-            GroupMetadata::V3(metadata) => &metadata.additional_fields,
-        };
-        for (name, field) in additional_fields {
-            if field.must_understand() {
-                return Err(GroupCreateError::AdditionalFieldUnsupportedError(
-                    AdditionalFieldUnsupportedError::new(name.clone(), field.as_value().clone()),
-                ));
+        match &metadata {
+            GroupMetadata::V2(_metadata) => {}
+            GroupMetadata::V3(metadata) => {
+                let additional_fields = &metadata.additional_fields;
+                for (name, field) in additional_fields {
+                    if field.must_understand() {
+                        return Err(GroupCreateError::AdditionalFieldUnsupportedError(
+                            AdditionalFieldUnsupportedError::new(
+                                name.clone(),
+                                field.as_value().clone(),
+                            ),
+                        ));
+                    }
+                }
             }
         }
         Ok(())
