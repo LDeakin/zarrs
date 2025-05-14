@@ -3,6 +3,13 @@
 //! This crate supports serialisation and deserialisation of Zarr V2 and V3 metadata.
 //!
 //! [`ArrayMetadata`] and [`GroupMetadata`] can hold any conformant array/group metadata.
+//!
+//! ## Licence
+//! `zarrs_metadata` is licensed under either of
+//!  - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_metadata/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
+//!  - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs_metadata/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
+//!
+//! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 use derive_more::derive::{Display, From};
 use serde::{Deserialize, Serialize};

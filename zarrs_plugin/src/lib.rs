@@ -6,6 +6,13 @@
 //! In `zarrs`, plugins are registered at compile time using the [`inventory`](https://docs.rs/inventory/latest/inventory/) crate.
 //! At runtime, a name matching function is applied to identify which registered plugin is associated with the metadata.
 //! If a match is found, the plugin is created from the metadata and other relevant inputs.
+//!
+//! ## Licence
+//! `zarrs_plugin` is licensed under either of
+//!  - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_plugin/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
+//!  - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs_plugin/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
+//!
+//! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 use thiserror::Error;
 

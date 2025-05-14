@@ -33,6 +33,13 @@
 //! In the [`zarrs`] crate, the extension point aliases can be configured to support custom extensions or to override the defaults, such as if [`zarrs_metadata`](`crate`) is lagging [`zarr-extensions`].
 //! This crate will be continually updated to include new compatible extension point aliases as they are developed in other implementations and registered at [`zarr-extensions`].
 //!
+//! ## Licence
+//! `zarrs_registry` is licensed under either of
+//!  - the Apache License, Version 2.0 [LICENSE-APACHE](https://docs.rs/crate/zarrs_registry/latest/source/LICENCE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0> or
+//!  - the MIT license [LICENSE-MIT](https://docs.rs/crate/zarrs_registry/latest/source/LICENCE-MIT) or <http://opensource.org/licenses/MIT>, at your option.
+//!
+//! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+//!
 //! [`ZEP0009`]: https://zarr.dev/zeps/draft/ZEP0009.html
 //! [`zarrs`]: https://docs.rs/zarrs/latest/zarrs/index.html
 //! [`zarr-extensions`]: https://github.com/zarr-developers/zarr-extensions
