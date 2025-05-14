@@ -19,7 +19,7 @@ use crate::{
 use zarrs_metadata::{
     v2::{
         data_type_metadata_v2_to_endianness, ArrayMetadataV2, ArrayMetadataV2Order,
-        DataTypeMetadataV2, DataTypeMetadataV2InvalidEndiannessError, FillValueMetadataV2,
+        DataTypeMetadataV2, DataTypeMetadataV2EndiannessError, FillValueMetadataV2,
         GroupMetadataV2, MetadataV2,
     },
     v3::{ArrayMetadataV3, FillValueMetadataV3, GroupMetadataV3, MetadataV3},
@@ -45,7 +45,7 @@ pub enum ArrayMetadataV2ToV3ConversionError {
     UnsupportedDataType(DataTypeMetadataV2),
     /// Invalid data type endianness.
     #[error(transparent)]
-    InvalidEndianness(DataTypeMetadataV2InvalidEndiannessError),
+    InvalidEndianness(DataTypeMetadataV2EndiannessError),
     /// An unsupported codec.
     #[error("unsupported codec {_0} with configuration {_1:?}")]
     UnsupportedCodec(String, serde_json::Map<String, serde_json::Value>),
