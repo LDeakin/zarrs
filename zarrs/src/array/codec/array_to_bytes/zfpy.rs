@@ -32,7 +32,7 @@
 //!     "rate": 10.5
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfpy::ZfpyCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::zfpy::ZfpyCodecConfiguration;
 //! # let configuration: ZfpyCodecConfiguration = serde_json::from_str(JSON).unwrap();
 //! ```
 //!
@@ -44,7 +44,7 @@
 //!     "precision": 19
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfpy::ZfpyCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::zfpy::ZfpyCodecConfiguration;
 //! # let configuration: ZfpyCodecConfiguration = serde_json::from_str(JSON).unwrap();
 //! ```
 //!
@@ -56,11 +56,13 @@
 //!     "tolerance": 0.05
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfpy::ZfpyCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::zfpy::ZfpyCodecConfiguration;
 //! # let configuration: ZfpyCodecConfiguration = serde_json::from_str(JSON).unwrap();
 //! ```
 
-pub use zarrs_metadata::codec::zfpy::{ZfpyCodecConfiguration, ZfpyCodecConfigurationNumcodecs};
+pub use zarrs_metadata_ext::codec::zfpy::{
+    ZfpyCodecConfiguration, ZfpyCodecConfigurationNumcodecs,
+};
 
 use std::sync::Arc;
 

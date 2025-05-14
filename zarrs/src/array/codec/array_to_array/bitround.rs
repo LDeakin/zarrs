@@ -37,7 +37,7 @@
 //!     "keepbits": 10
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::bitround::BitroundCodecConfigurationV1;
+//! # use zarrs_metadata_ext::codec::bitround::BitroundCodecConfigurationV1;
 //! # let configuration: BitroundCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 //! ```
 
@@ -46,10 +46,10 @@ mod bitround_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::bitround::{
+pub use bitround_codec::BitroundCodec;
+pub use zarrs_metadata_ext::codec::bitround::{
     BitroundCodecConfiguration, BitroundCodecConfigurationV1,
 };
-pub use bitround_codec::BitroundCodec;
 use zarrs_registry::codec::BITROUND;
 
 use crate::{

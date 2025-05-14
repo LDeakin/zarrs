@@ -19,13 +19,13 @@ workspace = true
 all-features = true
 
 [dependencies]
-half = { workspace = true }
-num = { workspace = true }
-thiserror = { workspace = true }
+half.workspace = true
+num.workspace = true
+thiserror.workspace = true
 derive_more = { version = "2.0.0", features = ["deref", "display", "from"] }
-zarrs_metadata = { workspace = true }
-zarrs_plugin = { workspace = true }
-inventory = { workspace = true }
+zarrs_metadata.workspace = true
+zarrs_plugin.workspace = true
+inventory.workspace = true
 
 [dev-dependencies]
 serde_json = { version = "1.0.71", features = ["float_roundtrip", "preserve_order"] }

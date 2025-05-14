@@ -12,9 +12,9 @@ use crate::{
         },
         ChunkRepresentation, ChunkShape,
     },
-    metadata::codec::transpose::TransposeCodecConfigurationV1,
     plugin::PluginCreateError,
 };
+use zarrs_metadata_ext::codec::transpose::TransposeCodecConfigurationV1;
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncArrayPartialDecoderTraits;

@@ -37,7 +37,7 @@
 //!     "rate": 10.5
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # use zarrs_metadata_ext::codec::zfp::ZfpCodecConfigurationV1;
 //! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 //! ```
 //!
@@ -49,7 +49,7 @@
 //!     "precision": 19
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # use zarrs_metadata_ext::codec::zfp::ZfpCodecConfigurationV1;
 //! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 //! ```
 //!
@@ -61,7 +61,7 @@
 //!     "tolerance": 0.05
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # use zarrs_metadata_ext::codec::zfp::ZfpCodecConfigurationV1;
 //! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 //! ```
 //!
@@ -72,7 +72,7 @@
 //!     "mode": "reversible"
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # use zarrs_metadata_ext::codec::zfp::ZfpCodecConfigurationV1;
 //! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 //! ```
 //!
@@ -87,7 +87,7 @@
 //!     "minexp": -2
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::zfp::ZfpCodecConfigurationV1;
+//! # use zarrs_metadata_ext::codec::zfp::ZfpCodecConfigurationV1;
 //! # let configuration: ZfpCodecConfigurationV1 = serde_json::from_str(JSON).unwrap();
 
 mod zfp_array;
@@ -99,7 +99,7 @@ mod zfp_stream;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1};
+pub use zarrs_metadata_ext::codec::zfp::{ZfpCodecConfiguration, ZfpCodecConfigurationV1, ZfpMode};
 pub use zfp_codec::ZfpCodec;
 
 use zfp_sys::{
@@ -113,7 +113,6 @@ use crate::{
         codec::{Codec, CodecError, CodecPlugin},
         convert_from_bytes_slice, transmute_to_bytes_vec, ChunkRepresentation, DataType,
     },
-    metadata::codec::zfp::ZfpMode,
     metadata::v3::MetadataV3,
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };

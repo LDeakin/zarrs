@@ -48,7 +48,7 @@
 //!     ]
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::sharding::ShardingCodecConfigurationV1;
+//! # use zarrs_metadata_ext::codec::sharding::ShardingCodecConfigurationV1;
 //! # serde_json::from_str::<ShardingCodecConfigurationV1>(JSON).unwrap();
 //!
 
@@ -59,7 +59,7 @@ mod sharding_partial_encoder;
 
 use std::{borrow::Cow, num::NonZeroU64, sync::Arc};
 
-pub use crate::metadata::codec::sharding::{
+pub use zarrs_metadata_ext::codec::sharding::{
     ShardingCodecConfiguration, ShardingCodecConfigurationV1, ShardingIndexLocation,
 };
 

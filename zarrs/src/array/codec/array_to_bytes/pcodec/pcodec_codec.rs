@@ -1,11 +1,9 @@
 use std::{borrow::Cow, sync::Arc};
 
 use pco::{standalone::guarantee::file_size, ChunkConfig, DeltaSpec, ModeSpec, PagingSpec};
-use zarrs_metadata::{
-    codec::pcodec::{
-        PcodecDeltaSpecConfiguration, PcodecModeSpecConfiguration, PcodecPagingSpecConfiguration,
-    },
-    v3::MetadataConfiguration,
+use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata_ext::codec::pcodec::{
+    PcodecDeltaSpecConfiguration, PcodecModeSpecConfiguration, PcodecPagingSpecConfiguration,
 };
 use zarrs_plugin::PluginCreateError;
 use zarrs_registry::codec::PCODEC;

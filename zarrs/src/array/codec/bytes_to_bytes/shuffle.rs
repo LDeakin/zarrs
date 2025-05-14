@@ -28,7 +28,7 @@
 //!   "elementsize": 2
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::shuffle::ShuffleCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::shuffle::ShuffleCodecConfiguration;
 //! # serde_json::from_str::<ShuffleCodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -38,8 +38,10 @@ mod shuffle_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::shuffle::{ShuffleCodecConfiguration, ShuffleCodecConfigurationV1};
 pub use shuffle_codec::ShuffleCodec;
+pub use zarrs_metadata_ext::codec::shuffle::{
+    ShuffleCodecConfiguration, ShuffleCodecConfigurationV1,
+};
 use zarrs_registry::codec::SHUFFLE;
 
 use crate::{

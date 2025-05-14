@@ -6,6 +6,7 @@ members = [
     "zarrs",
     "zarrs_data_type",
     "zarrs_metadata",
+    "zarrs_metadata_ext",
     "zarrs_plugin",
     "zarrs_registry",
     "zarrs_storage",
@@ -36,6 +37,10 @@ path = "zarrs_data_type"
 [workspace.dependencies.zarrs_metadata]
 version = "0.4.0"
 path = "zarrs_metadata"
+
+[workspace.dependencies.zarrs_metadata_ext]
+version = "0.1.0"
+path = "zarrs_metadata_ext"
 
 [workspace.dependencies.zarrs_plugin]
 version = "0.2.0"

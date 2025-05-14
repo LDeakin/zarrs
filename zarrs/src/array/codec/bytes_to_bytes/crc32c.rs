@@ -20,7 +20,7 @@
 //! # let JSON = r#"
 //! {}
 //! # "#;
-//! # use zarrs_metadata::codec::crc32c::Crc32cCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::crc32c::Crc32cCodecConfiguration;
 //! # serde_json::from_str::<Crc32cCodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -28,8 +28,8 @@ mod crc32c_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::crc32c::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1};
 pub use crc32c_codec::Crc32cCodec;
+pub use zarrs_metadata_ext::codec::crc32c::{Crc32cCodecConfiguration, Crc32cCodecConfigurationV1};
 use zarrs_registry::codec::CRC32C;
 
 use crate::{

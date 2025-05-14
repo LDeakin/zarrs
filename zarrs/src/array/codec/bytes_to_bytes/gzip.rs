@@ -22,18 +22,18 @@
 //!     "level": 1
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::gzip::GzipCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::gzip::GzipCodecConfiguration;
 //! # serde_json::from_str::<GzipCodecConfiguration>(JSON).unwrap();
 
 mod gzip_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::gzip::{
+pub use gzip_codec::GzipCodec;
+pub use zarrs_metadata_ext::codec::gzip::{
     GzipCodecConfiguration, GzipCodecConfigurationV1, GzipCompressionLevel,
     GzipCompressionLevelError,
 };
-pub use gzip_codec::GzipCodec;
 use zarrs_registry::codec::GZIP;
 
 use crate::{

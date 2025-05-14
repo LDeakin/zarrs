@@ -27,7 +27,7 @@
 //! # let JSON = r#"
 //! {}
 //! # "#;
-//! # use zarrs_metadata::codec::fletcher32::Fletcher32CodecConfiguration;
+//! # use zarrs_metadata_ext::codec::fletcher32::Fletcher32CodecConfiguration;
 //! # serde_json::from_str::<Fletcher32CodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -35,10 +35,10 @@ mod fletcher32_codec;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::fletcher32::{
+pub use fletcher32_codec::Fletcher32Codec;
+pub use zarrs_metadata_ext::codec::fletcher32::{
     Fletcher32CodecConfiguration, Fletcher32CodecConfigurationV1,
 };
-pub use fletcher32_codec::Fletcher32Codec;
 use zarrs_registry::codec::FLETCHER32;
 
 use crate::{

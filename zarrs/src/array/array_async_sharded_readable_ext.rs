@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use futures::{StreamExt, TryStreamExt};
 use unsafe_cell_slice::UnsafeCellSlice;
-use zarrs_metadata::codec::sharding::ShardingCodecConfiguration;
+use zarrs_metadata_ext::codec::sharding::ShardingCodecConfiguration;
 use zarrs_storage::byte_range::ByteRange;
 use zarrs_storage::StorageHandle;
 
@@ -731,7 +731,7 @@ mod private {
 mod tests {
     use std::sync::Arc;
 
-    use zarrs_metadata::codec::transpose::TransposeOrder;
+    use zarrs_metadata_ext::codec::transpose::TransposeOrder;
 
     use crate::{
         array::{

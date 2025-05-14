@@ -23,7 +23,7 @@
 //! # let JSON = r#"
 //! {}
 //! # "#;
-//! # use zarrs_metadata::codec::squeeze::SqueezeCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::squeeze::SqueezeCodecConfiguration;
 //! # let configuration: SqueezeCodecConfiguration = serde_json::from_str(JSON).unwrap();
 //! ```
 
@@ -32,8 +32,10 @@ mod squeeze_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::squeeze::{SqueezeCodecConfiguration, SqueezeCodecConfigurationV1};
 pub use squeeze_codec::SqueezeCodec;
+pub use zarrs_metadata_ext::codec::squeeze::{
+    SqueezeCodecConfiguration, SqueezeCodecConfigurationV1,
+};
 use zarrs_registry::codec::SQUEEZE;
 
 use crate::{

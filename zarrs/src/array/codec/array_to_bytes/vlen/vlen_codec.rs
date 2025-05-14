@@ -1,6 +1,7 @@
 use std::{num::NonZeroU64, sync::Arc};
 
-use zarrs_metadata::{codec::vlen::VlenIndexDataType, v3::MetadataConfiguration};
+use zarrs_metadata::v3::MetadataConfiguration;
+use zarrs_metadata_ext::codec::vlen::VlenIndexDataType;
 
 use crate::{
     array::{

@@ -40,6 +40,10 @@ component_management:
       name: zarrs_metadata
       paths:
         - zarrs_metadata/**
+    - component_id: zarrs_metadata_ext
+      name: zarrs_metadata_ext
+      paths:
+        - zarrs_metadata_ext/**
     - component_id: zarrs_object_store
       name: zarrs_object_store
       paths:

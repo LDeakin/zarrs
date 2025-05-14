@@ -23,9 +23,9 @@ libc = "0.2.158"
 page_size = "0.6.0"
 parking_lot = "0.12.0" # TODO: Remove with Rust 1.78+
 pathdiff = "0.2.0"
-thiserror = { workspace = true }
+thiserror.workspace = true
 walkdir = "2.3.2"
-zarrs_storage = { workspace = true }
+zarrs_storage.workspace = true
 
 [dev-dependencies]
 tempfile = "3"

@@ -16,4 +16,4 @@ categories = ["encoding"]
 workspace = true
 
 [dependencies]
-thiserror = { workspace = true }
+thiserror.workspace = true

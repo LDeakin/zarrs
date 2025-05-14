@@ -24,7 +24,7 @@ pub use key::{
 mod node_async;
 #[cfg(feature = "async")]
 pub use node_async::{async_get_child_nodes, async_node_exists, async_node_exists_listable};
-use zarrs_metadata::v3::group::ConsolidatedMetadataMetadata;
+use zarrs_metadata_ext::group::consolidated_metadata::ConsolidatedMetadataMetadata;
 use zarrs_storage::StorePrefixError;
 
 use std::{collections::HashMap, sync::Arc};
@@ -422,7 +422,7 @@ impl Node {
 
     /// Consolidate metadata. Returns [`None`] for an array.
     ///
-    /// [`ConsolidatedMetadataMetadata`] can be converted into [`ConsolidatedMetadata`](crate::metadata::v3::group::ConsolidatedMetadata) in [`GroupMetadataV3`](crate::metadata::v3::group::GroupMetadataV3).
+    /// [`ConsolidatedMetadataMetadata`] can be converted into [`ConsolidatedMetadata`](zarrs_metadata_ext::group::consolidated_metadata::ConsolidatedMetadata) in [`GroupMetadataV3`](crate::metadata::v3::group::GroupMetadataV3).
     #[must_use]
     #[allow(clippy::items_after_statements)]
     pub fn consolidate_metadata(&self) -> Option<ConsolidatedMetadataMetadata> {

@@ -4,7 +4,7 @@ use std::{ops::Div, sync::Arc};
 
 use num::Integer;
 
-use zarrs_metadata::codec::packbits::PackBitsPaddingEncoding;
+use zarrs_metadata_ext::codec::packbits::PackBitsPaddingEncoding;
 use zarrs_storage::byte_range::ByteRange;
 
 use crate::{

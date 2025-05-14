@@ -27,7 +27,7 @@
 //!     "level": 9
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::bz2::Bz2CodecConfiguration;
+//! # use zarrs_metadata_ext::codec::bz2::Bz2CodecConfiguration;
 //! # serde_json::from_str::<Bz2CodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -43,7 +43,7 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
-pub use crate::metadata::codec::bz2::{
+pub use zarrs_metadata_ext::codec::bz2::{
     Bz2CodecConfiguration, Bz2CodecConfigurationV1, Bz2CompressionLevel,
 };
 

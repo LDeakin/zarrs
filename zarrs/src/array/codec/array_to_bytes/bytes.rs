@@ -25,7 +25,7 @@
 //!     "endian": "little"
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::bytes::BytesCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::bytes::BytesCodecConfiguration;
 //! # serde_json::from_str::<BytesCodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -36,7 +36,7 @@ use std::sync::Arc;
 
 use crate::metadata::Endianness;
 
-pub use crate::metadata::codec::bytes::{BytesCodecConfiguration, BytesCodecConfigurationV1};
+pub use zarrs_metadata_ext::codec::bytes::{BytesCodecConfiguration, BytesCodecConfigurationV1};
 use zarrs_registry::codec::BYTES;
 
 pub use bytes_codec::BytesCodec;

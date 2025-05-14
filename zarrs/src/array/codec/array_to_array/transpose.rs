@@ -22,7 +22,7 @@
 //!     "order": [2, 1, 0]
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::transpose::TransposeCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::transpose::TransposeCodecConfiguration;
 //! # let configuration: TransposeCodecConfiguration = serde_json::from_str(JSON).unwrap();
 //! ```
 
@@ -31,11 +31,11 @@ mod transpose_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::transpose::{
+pub use transpose_codec::TransposeCodec;
+pub use zarrs_metadata_ext::codec::transpose::{
     InvalidPermutationError, TransposeCodecConfiguration, TransposeCodecConfigurationV1,
     TransposeOrder,
 };
-pub use transpose_codec::TransposeCodec;
 use zarrs_registry::codec::TRANSPOSE;
 
 use crate::{

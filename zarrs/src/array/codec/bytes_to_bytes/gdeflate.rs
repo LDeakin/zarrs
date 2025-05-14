@@ -37,17 +37,17 @@
 //!     "level": 9
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::gdeflate::GDeflateCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::gdeflate::GDeflateCodecConfiguration;
 //! # serde_json::from_str::<GDeflateCodecConfiguration>(JSON).unwrap();
 //! ```
 
 mod gdeflate_codec;
 
-pub use crate::metadata::codec::gdeflate::{
+pub use gdeflate_codec::GDeflateCodec;
+pub use zarrs_metadata_ext::codec::gdeflate::{
     GDeflateCodecConfiguration, GDeflateCodecConfigurationV1, GDeflateCompressionLevel,
     GDeflateCompressionLevelError,
 };
-pub use gdeflate_codec::GDeflateCodec;
 use zarrs_registry::codec::GDEFLATE;
 
 use crate::{

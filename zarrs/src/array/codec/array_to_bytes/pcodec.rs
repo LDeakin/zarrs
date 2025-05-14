@@ -33,7 +33,7 @@
 //!     "equal_pages_up_to": 262144
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::pcodec::PcodecCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::pcodec::PcodecCodecConfiguration;
 //! # serde_json::from_str::<PcodecCodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -42,7 +42,7 @@ mod pcodec_partial_decoder;
 
 use std::sync::Arc;
 
-pub use crate::metadata::codec::pcodec::{
+pub use zarrs_metadata_ext::codec::pcodec::{
     PcodecCodecConfiguration, PcodecCodecConfigurationV1, PcodecCompressionLevel,
     PcodecDeltaEncodingOrder,
 };

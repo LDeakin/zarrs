@@ -20,7 +20,7 @@
 //!     "last_bit": null
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::packbits::PackBitsCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::packbits::PackBitsCodecConfiguration;
 //! # serde_json::from_str::<PackBitsCodecConfiguration>(JSON).unwrap();
 //! ```
 
@@ -30,7 +30,7 @@ mod packbits_partial_decoder;
 use std::sync::Arc;
 
 use crate::array::codec::CodecError;
-pub use crate::metadata::codec::packbits::{
+pub use zarrs_metadata_ext::codec::packbits::{
     PackBitsCodecConfiguration, PackBitsCodecConfigurationV1,
 };
 use zarrs_registry::codec::PACKBITS;
@@ -157,7 +157,7 @@ mod tests {
     use std::{num::NonZeroU64, sync::Arc};
 
     use num::Integer;
-    use zarrs_metadata::codec::packbits::PackBitsPaddingEncoding;
+    use zarrs_metadata_ext::codec::packbits::PackBitsPaddingEncoding;
 
     use crate::{
         array::{

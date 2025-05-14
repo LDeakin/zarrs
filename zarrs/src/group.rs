@@ -30,8 +30,9 @@ use std::sync::Arc;
 
 use derive_more::Display;
 use thiserror::Error;
-use zarrs_metadata::v3::{group::ConsolidatedMetadata, AdditionalField};
+use zarrs_metadata::v3::AdditionalField;
 use zarrs_metadata::NodeMetadata;
+use zarrs_metadata_ext::group::consolidated_metadata::ConsolidatedMetadata;
 use zarrs_storage::ListableStorageTraits;
 
 use crate::{
@@ -39,13 +40,14 @@ use crate::{
     config::{
         global_config, MetadataConvertVersion, MetadataEraseVersion, MetadataRetrieveVersion,
     },
-    metadata::{v2::GroupMetadataV2, v2_to_v3::group_metadata_v2_to_v3, v3::AdditionalFields},
+    metadata::{v2::GroupMetadataV2, v3::AdditionalFields},
     node::{
         get_child_nodes, meta_key_v2_attributes, meta_key_v2_group, meta_key_v3, Node,
         NodeCreateError, NodePath, NodePathError,
     },
     storage::{ReadableStorageTraits, StorageError, StorageHandle, WritableStorageTraits},
 };
+use zarrs_metadata_ext::v2_to_v3::group_metadata_v2_to_v3;
 
 #[cfg(feature = "async")]
 use crate::node::async_get_child_nodes;

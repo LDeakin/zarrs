@@ -85,7 +85,7 @@
 //!     "index_data_type": "uint32"
 //! }
 //! # "#;
-//! # use zarrs_metadata::codec::vlen::VlenCodecConfiguration;
+//! # use zarrs_metadata_ext::codec::vlen::VlenCodecConfiguration;
 //! # let configuration: VlenCodecConfiguration = serde_json::from_str(JSON).unwrap();
 
 mod vlen_codec;
@@ -100,7 +100,7 @@ use crate::array::{
     convert_from_bytes_slice, ChunkRepresentation, CodecChain, DataType, Endianness, FillValue,
     RawBytes,
 };
-pub use crate::metadata::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
+pub use zarrs_metadata_ext::codec::vlen::{VlenCodecConfiguration, VlenCodecConfigurationV1};
 use zarrs_registry::codec::VLEN;
 
 pub use vlen_codec::VlenCodec;

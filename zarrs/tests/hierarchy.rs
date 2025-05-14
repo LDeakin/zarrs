@@ -3,10 +3,8 @@
 
 use std::sync::Arc;
 
-use zarrs::{
-    filesystem::FilesystemStore, group::Group, metadata::v3::group::ConsolidatedMetadata,
-    node::Node,
-};
+use zarrs::{filesystem::FilesystemStore, group::Group, node::Node};
+use zarrs_metadata_ext::group::consolidated_metadata::ConsolidatedMetadata;
 
 #[test]
 fn hierarchy_tree() {
