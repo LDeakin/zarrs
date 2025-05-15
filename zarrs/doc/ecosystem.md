@@ -38,7 +38,9 @@ The `zarrs` crate has been split into multiple crates to:
   - A reencoder that can change codecs, chunk shape, convert Zarr V2 to V3, etc.
   - Create an [OME-Zarr] hierarchy from a Zarr array.
   - Transform arrays: crop, rescale, downsample, gradient magnitude, gaussian, noise filtering, etc.
-  - Benchmarking tools and performance benchmarks of `zarrs`.
+
+### Benchmarks
+- [`zarr_benchmarks`]: Benchmarks of various Zarr V3 implementations: `zarrs`, `zarr-python`, `tensorstore`
 
 [`zarrs`]: https://docs.rs/zarrs/latest/zarrs/
 [`zarrs_data_type`]: https://docs.rs/zarrs_data_type/latest/zarrs_data_type/
@@ -57,6 +59,7 @@ The `zarrs` crate has been split into multiple crates to:
 [`zarrs-python`]: https://github.com/ilan-gold/zarrs-python
 [`zarr-python`]: https://github.com/zarr-developers/zarr-python
 [`zarrs_tools`]: https://docs.rs/zarrs_tools/latest/zarrs_tools/
+[`zarr_benchmarks`]: https://github.com/zarrs/zarr_benchmarks
 [`ome_zarr_metadata`]: https://docs.rs/ome_zarr_metadata/latest/ome_zarr_metadata/
 [`object_store`]: https://docs.rs/object_store/latest/object_store/
 [`opendal`]: https://docs.rs/opendal/latest/opendal/
