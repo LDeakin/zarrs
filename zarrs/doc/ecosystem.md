@@ -56,7 +56,7 @@ The `zarrs` crate has been split into multiple crates to:
 [`zarrs_zip`]: https://docs.rs/zarrs_zip/latest/zarrs_zip/
 [`zarrs_icechunk`]: https://docs.rs/zarrs_icechunk/latest/zarrs_icechunk/
 [`zarrs_ffi`]: https://docs.rs/zarrs_ffi/latest/zarrs_ffi/
-[`zarrs-python`]: https://github.com/ilan-gold/zarrs-python
+[`zarrs-python`]: https://github.com/zarrs/zarrs-python
 [`zarr-python`]: https://github.com/zarr-developers/zarr-python
 [`zarrs_tools`]: https://docs.rs/zarrs_tools/latest/zarrs_tools/
 [`zarr_benchmarks`]: https://github.com/zarrs/zarr_benchmarks

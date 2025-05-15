@@ -173,7 +173,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [`zarrs_zip`]: https://github.com/zarrs/zarrs/tree/main/zarrs_zip
 [`zarrs_icechunk`]: https://github.com/zarrs/zarrs_icechunk
 [`zarrs_ffi`]: https://github.com/zarrs/zarrs_ffi
-[`zarrs-python`]: https://github.com/ilan-gold/zarrs-python
+[`zarrs-python`]: https://github.com/zarrs/zarrs-python
 [`zarr-python`]: https://github.com/zarr-developers/zarr-python
 [`zarrs_tools`]: https://github.com/zarrs/zarrs_tools
 [`zarr_benchmarks`]: https://github.com/zarrs/zarr_benchmarks
