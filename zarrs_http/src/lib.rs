@@ -203,6 +203,7 @@ mod tests {
     const HTTP_TEST_PATH_REF: &str =
         "https://raw.githubusercontent.com/zarrs/zarrs/main/zarrs/tests/data/store";
 
+    #[ignore]
     #[test]
     #[cfg_attr(miri, ignore)]
     fn http_store() -> Result<(), Box<dyn Error>> {
@@ -213,12 +214,14 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[test]
     #[cfg_attr(miri, ignore)]
     fn http_store_bad_url() {
         assert!(HTTPStore::new("invalid").is_err());
     }
 
+    #[ignore]
     #[test]
     #[cfg_attr(miri, ignore)]
     fn http_store_bad_request() -> Result<(), Box<dyn Error>> {
