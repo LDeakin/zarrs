@@ -1,6 +1,6 @@
 use derive_more::Display;
 
-/// A chunk key separator.
+/// A chunk key separator. `/` or `.`.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 pub enum ChunkKeySeparator {
     /// The slash '/' character.

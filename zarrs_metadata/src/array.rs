@@ -17,7 +17,7 @@ pub use chunk_shape::ChunkShape;
 mod endianness;
 pub use endianness::Endianness;
 
-/// Trait for types convertible to a [`DimensionName`].
+/// A trait for types convertible to a [`DimensionName`].
 pub trait IntoDimensionName {
     /// Convert into a [`DimensionName`].
     fn into_dimension_name(self) -> DimensionName;

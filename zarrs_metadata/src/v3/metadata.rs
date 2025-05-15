@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::{Configuration, ConfigurationError};
 
-/// Metadata with a `name`, and optional `configuration` and `must_understand`.
+/// Zarr V3 generic metadata with a `name`, optional `configuration`, and optional `must_understand`.
 ///
 /// Represents most fields in Zarr V3 array metadata (see [`ArrayMetadataV3`](crate::v3::ArrayMetadataV3)) which is either:
 /// - a string name / identifier, or
@@ -233,7 +233,7 @@ impl MetadataV3 {
     }
 }
 
-/// An additional field in array or group metadata.
+/// A Zarr V3 additional field in array or group metadata.
 ///
 /// A field that is not recognised / supported by `zarrs` will be considered an additional field.
 /// Additional fields can be any JSON type.
@@ -340,7 +340,7 @@ where
     }
 }
 
-/// Additional fields in array or group metadata.
+/// Zarr V3 additional fields in array or group metadata.
 // NOTE: It would be nice if this was just a serde_json::Map, but it only has implementations for `<String, Value>`.
 pub type AdditionalFieldsV3 = std::collections::BTreeMap<String, AdditionalFieldV3>;
 

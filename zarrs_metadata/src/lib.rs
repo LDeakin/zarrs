@@ -1,8 +1,9 @@
 //! [Zarr](https://zarr-specs.readthedocs.io/) metadata support for the [`zarrs`](https://docs.rs/zarrs/latest/zarrs/index.html) crate.
 //!
-//! This crate supports serialisation and deserialisation of Zarr V2 and V3 metadata.
+//! This crate supports serialisation and deserialisation of Zarr V2 and V3 core metadata.
 //!
-//! [`ArrayMetadata`] and [`GroupMetadata`] can hold any conformant array/group metadata.
+//! [`ArrayMetadata`] and [`GroupMetadata`] can represent any conformant Zarr array/group metadata.
+//! The [`zarrs_metadata_ext`](https://docs.rs/zarrs/latest/zarrs_metadata_ext/) crate supports the serialisation and deserialisation of known Zarr extension point metadata into concrete structures.
 //!
 //! ## Licence
 //! `zarrs_metadata` is licensed under either of
@@ -130,7 +131,7 @@ impl<T: ConfigurationSerialize> From<T> for Configuration {
     }
 }
 
-/// A marker trait indicating metadata is JSON serialisable.
+/// A trait for configurations that are JSON serialisable.
 ///
 /// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
 pub trait ConfigurationSerialize: Serialize + DeserializeOwned {

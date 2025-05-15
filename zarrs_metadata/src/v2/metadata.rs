@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Configuration;
 
-/// Metadata with an `id` and optional flattened `configuration`.
+/// Zarr V2 generic metadata with an `id` and optional flattened `configuration`.
 ///
 /// For example:
 /// ```json

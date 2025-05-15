@@ -281,7 +281,7 @@ impl Serialize for FillValueMetadataV2 {
     }
 }
 
-/// The layout of bytes within a Zarr V2 array chunk.
+/// Zarr V2 order metadata. Indicates the layout of bytes within a chunk.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ArrayMetadataV2Order {
     /// Row-major order. The last dimension varies fastest.
