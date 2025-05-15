@@ -1,5 +1,6 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
+use zarrs_metadata::ConfigurationSerialize;
 
 /// A wrapper to handle various versions of `vlen_v2` codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -9,6 +10,8 @@ pub enum VlenV2CodecConfiguration {
     /// Version 0.0 draft.
     V0(VlenV2CodecConfigurationV0),
 }
+
+impl ConfigurationSerialize for VlenV2CodecConfiguration {}
 
 /// `vlen_v2` codec configuration parameters (version 0.0 draft).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, Default)]
