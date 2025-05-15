@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use derive_more::Display;
 
-use zarrs_metadata::ChunkKeySeparator;
+use zarrs_metadata::{ChunkKeySeparator, ConfigurationSerialize};
 
 /// A `v2` chunk key encoding configuration.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display)]
@@ -15,6 +15,8 @@ pub struct V2ChunkKeyEncodingConfiguration {
     #[serde(default = "v2_separator")]
     pub separator: ChunkKeySeparator,
 }
+
+impl ConfigurationSerialize for V2ChunkKeyEncodingConfiguration {}
 
 const fn v2_separator() -> ChunkKeySeparator {
     ChunkKeySeparator::Dot
