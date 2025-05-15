@@ -45,7 +45,7 @@ mod gdeflate_codec;
 
 pub use gdeflate_codec::GDeflateCodec;
 pub use zarrs_metadata_ext::codec::gdeflate::{
-    GDeflateCodecConfiguration, GDeflateCodecConfigurationV1, GDeflateCompressionLevel,
+    GDeflateCodecConfiguration, GDeflateCodecConfigurationV0, GDeflateCompressionLevel,
     GDeflateCompressionLevelError,
 };
 use zarrs_registry::codec::GDEFLATE;

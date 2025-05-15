@@ -10,7 +10,7 @@ use crate::array::{
 };
 
 use super::{
-    gdeflate_decode, GDeflateCodecConfiguration, GDeflateCodecConfigurationV1,
+    gdeflate_decode, GDeflateCodecConfiguration, GDeflateCodecConfigurationV0,
     GDeflateCompressionLevel, GDeflateCompressionLevelError, GDeflateCompressor,
     GDEFLATE_STATIC_HEADER_LENGTH,
 };
@@ -40,7 +40,7 @@ impl GDeflateCodec {
         configuration: &GDeflateCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         match configuration {
-            GDeflateCodecConfiguration::V1(configuration) => {
+            GDeflateCodecConfiguration::V0(configuration) => {
                 let compression_level = configuration.level;
                 Ok(Self { compression_level })
             }
@@ -61,7 +61,7 @@ impl CodecTraits for GDeflateCodec {
         _name: &str,
         _options: &CodecMetadataOptions,
     ) -> Option<Configuration> {
-        let configuration = GDeflateCodecConfiguration::V1(GDeflateCodecConfigurationV1 {
+        let configuration = GDeflateCodecConfiguration::V0(GDeflateCodecConfigurationV0 {
             level: self.compression_level,
         });
         Some(configuration.into())

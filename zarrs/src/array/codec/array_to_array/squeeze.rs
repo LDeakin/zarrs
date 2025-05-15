@@ -34,7 +34,7 @@ use std::sync::Arc;
 
 pub use squeeze_codec::SqueezeCodec;
 pub use zarrs_metadata_ext::codec::squeeze::{
-    SqueezeCodecConfiguration, SqueezeCodecConfigurationV1,
+    SqueezeCodecConfiguration, SqueezeCodecConfigurationV0,
 };
 use zarrs_registry::codec::SQUEEZE;
 

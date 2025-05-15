@@ -14,7 +14,7 @@ use crate::{
     },
     plugin::PluginCreateError,
 };
-use zarrs_metadata_ext::codec::squeeze::{SqueezeCodecConfiguration, SqueezeCodecConfigurationV1};
+use zarrs_metadata_ext::codec::squeeze::{SqueezeCodecConfiguration, SqueezeCodecConfigurationV0};
 
 #[cfg(feature = "async")]
 use crate::array::codec::AsyncArrayPartialDecoderTraits;
@@ -32,7 +32,7 @@ impl SqueezeCodec {
         configuration: &SqueezeCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         match configuration {
-            SqueezeCodecConfiguration::V1(_configuration) => Ok(Self::new()),
+            SqueezeCodecConfiguration::V0(_configuration) => Ok(Self::new()),
             _ => Err(PluginCreateError::Other(
                 "this squeeze codec configuration variant is unsupported".to_string(),
             )),
@@ -56,7 +56,7 @@ impl CodecTraits for SqueezeCodec {
         _name: &str,
         _options: &CodecMetadataOptions,
     ) -> Option<Configuration> {
-        let configuration = SqueezeCodecConfiguration::V1(SqueezeCodecConfigurationV1 {});
+        let configuration = SqueezeCodecConfiguration::V0(SqueezeCodecConfigurationV0 {});
         Some(configuration.into())
     }
 

@@ -6,17 +6,17 @@ use serde::{Deserialize, Serialize};
 #[non_exhaustive]
 #[serde(untagged)]
 pub enum VlenV2CodecConfiguration {
-    /// Version 1.0 draft.
-    V1(VlenV2CodecConfigurationV1),
+    /// Version 0.0 draft.
+    V0(VlenV2CodecConfigurationV0),
 }
 
-/// `vlen_v2` codec configuration parameters (version 1.0 draft).
+/// `vlen_v2` codec configuration parameters (version 0.0 draft).
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, Default)]
 #[serde(deny_unknown_fields)]
 #[display("{}", serde_json::to_string(self).unwrap_or_default())]
-pub struct VlenV2CodecConfigurationV1 {}
+pub struct VlenV2CodecConfigurationV0 {}
 
-impl VlenV2CodecConfigurationV1 {
+impl VlenV2CodecConfigurationV0 {
     /// Create a new `vlen_v2` codec configuration.
     #[must_use]
     pub const fn new() -> Self {

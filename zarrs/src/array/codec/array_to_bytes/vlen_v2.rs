@@ -34,7 +34,7 @@ use std::sync::Arc;
 
 use zarrs_metadata_ext::codec::vlen_v2::{self};
 
-pub use vlen_v2::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV1};
+pub use vlen_v2::{VlenV2CodecConfiguration, VlenV2CodecConfigurationV0};
 
 use crate::array::{
     codec::{CodecError, InvalidBytesLengthError},

@@ -19,7 +19,7 @@ use crate::{
 #[cfg(feature = "async")]
 use crate::array::codec::{AsyncArrayPartialDecoderTraits, AsyncBytesPartialDecoderTraits};
 
-use super::{vlen_partial_decoder, VlenCodecConfiguration, VlenCodecConfigurationV1};
+use super::{vlen_partial_decoder, VlenCodecConfiguration, VlenCodecConfigurationV0};
 
 /// A `vlen` codec implementation.
 #[derive(Debug, Clone)]
@@ -72,7 +72,7 @@ impl VlenCodec {
         configuration: &VlenCodecConfiguration,
     ) -> Result<Self, PluginCreateError> {
         match configuration {
-            VlenCodecConfiguration::V1(configuration) => {
+            VlenCodecConfiguration::V0(configuration) => {
                 let index_codecs =
                     Arc::new(CodecChain::from_metadata(&configuration.index_codecs)?);
                 let data_codecs = Arc::new(CodecChain::from_metadata(&configuration.data_codecs)?);
@@ -99,7 +99,7 @@ impl CodecTraits for VlenCodec {
         _name: &str,
         _options: &CodecMetadataOptions,
     ) -> Option<Configuration> {
-        let configuration = VlenCodecConfiguration::V1(VlenCodecConfigurationV1 {
+        let configuration = VlenCodecConfiguration::V0(VlenCodecConfigurationV0 {
             index_codecs: self.index_codecs.create_metadatas(),
             data_codecs: self.data_codecs.create_metadatas(),
             index_data_type: self.index_data_type,
