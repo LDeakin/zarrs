@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use futures::{StreamExt, TryStreamExt};
 use unsafe_cell_slice::UnsafeCellSlice;
+use zarrs_metadata::ConfigurationSerialize;
 use zarrs_metadata_ext::codec::sharding::ShardingCodecConfiguration;
 use zarrs_storage::byte_range::ByteRange;
 use zarrs_storage::StorageHandle;
@@ -154,7 +155,7 @@ impl AsyncArrayShardedReadableExtCache {
                 .configuration()
                 .expect("valid sharding metadata");
             let sharding_codec_configuration =
-                ShardingCodecConfiguration::try_from(sharding_codec_configuration)
+                ShardingCodecConfiguration::try_from_configuration(sharding_codec_configuration)
                     .expect("valid sharding configuration");
             let sharding_codec = Arc::new(
                 ShardingCodec::new_with_configuration(&sharding_codec_configuration).expect(

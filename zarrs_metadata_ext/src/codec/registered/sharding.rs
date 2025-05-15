@@ -1,8 +1,7 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
-use zarrs_metadata::{v3::MetadataV3, ChunkShape, Configuration, ConfigurationSerialize};
+use zarrs_metadata::{v3::MetadataV3, ChunkShape, ConfigurationSerialize};
 
 /// A wrapper to handle various versions of Sharding codec configuration parameters.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug, Display, From)]
@@ -14,14 +13,6 @@ pub enum ShardingCodecConfiguration {
 }
 
 impl ConfigurationSerialize for ShardingCodecConfiguration {}
-
-impl TryFrom<Configuration> for ShardingCodecConfiguration {
-    type Error = serde_json::Error;
-
-    fn try_from(value: Configuration) -> Result<Self, Self::Error> {
-        serde_json::from_value(Value::Object(value.into()))
-    }
-}
 
 /// Sharding codec configuration parameters.
 ///

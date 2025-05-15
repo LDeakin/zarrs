@@ -1,3 +1,4 @@
+use zarrs_metadata::ConfigurationSerialize;
 use zarrs_registry::codec::SHARDING;
 
 use super::{codec::ShardingCodecConfiguration, Array, ArrayShape, ChunkGrid, ChunkShape};
@@ -55,7 +56,7 @@ impl<TStorage: ?Sized> ArrayShardedExt for Array<TStorage> {
             .configuration()
             .expect("the array to bytes codec should have metadata");
         if let Ok(ShardingCodecConfiguration::V1(sharding_configuration)) =
-            ShardingCodecConfiguration::try_from(configuration)
+            ShardingCodecConfiguration::try_from_configuration(configuration)
         {
             Some(sharding_configuration.chunk_shape)
         } else {

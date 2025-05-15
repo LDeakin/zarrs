@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `ConfigurationSerialize::try_from_configuration`
+
 ### Changed
 - **Breaking**: Flatten the crate:
   - Move `v3::array::*` and `v3::*::*` to `v3`
@@ -25,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `v2_to_v3`
 - **Breaking**: Remove the `additional_fields` member of `{Array,Group}MetadataV2`
 - **Breaking**: Remove `{Array,Group}MetadataV2::with_additional_fields`
+- **Breaking**: Remove `TryFrom<Configuration>` for `ShardingCodecConfiguration`
 
 ## [0.4.0] - 2025-05-03
 

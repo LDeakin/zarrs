@@ -133,7 +133,15 @@ impl<T: ConfigurationSerialize> From<T> for Configuration {
 /// A marker trait indicating metadata is JSON serialisable.
 ///
 /// Implementors of this trait guarantee that the configuration is always serialisable to a JSON object.
-pub trait ConfigurationSerialize: Serialize + DeserializeOwned {}
+pub trait ConfigurationSerialize: Serialize + DeserializeOwned {
+    /// Convert from a configuration.
+    ///
+    /// ### Errors
+    /// Returns a [`serde_json::Error`] if `configuration` cannot be deserialised into the concrete implementation.
+    fn try_from_configuration(configuration: Configuration) -> Result<Self, serde_json::Error> {
+        serde_json::from_value(serde_json::Value::Object(configuration.0))
+    }
+}
 
 /// An invalid configuration error.
 #[derive(Debug, Error, From)]
