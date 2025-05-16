@@ -51,7 +51,7 @@ version = "0.1.1"
 path = "zarrs_registry"
 
 [workspace.dependencies.zarrs_storage]
-version = "0.3.3"
+version = "0.3.4"
 path = "zarrs_storage"
 
 [workspace.dependencies.zarrs_filesystem]
