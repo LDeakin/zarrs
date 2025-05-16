@@ -142,7 +142,7 @@ The `zarrs` crate has been split into multiple crates to:
   - Create an [OME-Zarr] hierarchy from a Zarr array.
   - Transform arrays: crop, rescale, downsample, gradient magnitude, gaussian, noise filtering, etc.
 
-### Benchmarks
+## Benchmarks
 - [`zarr_benchmarks`]: Benchmarks of various Zarr V3 implementations: `zarrs`, `zarr-python`, `tensorstore`
 
 ## Licence
