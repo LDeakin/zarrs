@@ -7,13 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Highlights
+- Added support for ZEP0009: array/group `extensions` metadata, broader `must_understand` support, new extension naming policy
+- Added support for data type extensions
+
 ### Added
-- Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
-- Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
-- Add `ArrayBytesFixedDisjointView[CreateError]`
+- Add codecs: `numcodecs.zlib`, `numcodecs.shuffle`, `numcodecs.fixedscaleoffset`, `packbits`, `squeeze`
 - Add support for data type extensions
   - The data type extension API is defined in the `zarrs_data_type` crate
-  - Add `Extension` variant to `DataType`
   - **Breaking**: `DataType::metadata_fill_value()` is now fallible
   - **Breaking**: `DataType::from_metadata()` now returns a `PluginCreateError` on error instead of `UnsupportedDataTypeError`
   - **Breaking**: `DataType::from_metadata()` has an additional `ExtensionAliasesDataTypeV3` parameter
@@ -23,27 +24,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: move the `zarrs::array::{data_type,fill_value}` modules into the `zarrs_data_type` crate
   - **Breaking**: Rename `IncompatibleFillValueError` to `DataTypeFillValueError`
   - **Breaking**: Rename `IncompatibleFillValueMetadataError` to `DataTypeFillValueMetadataError`
-- Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
-- Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop
-  - Gated by the `dlpack` feature
+  - Add `Extension` variant to `DataType`
+  - Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
+- Add `zarrs_registry` crate that tracks extension aliases
+- Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
+- Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
+- Add `ArrayBytesFixedDisjointView[CreateError]`
+- Add `[Async]ArrayDlPackExt` traits that add methods to `Array` for `DLPack` tensor interop (needs `dlpack` feature)
 - Add missing `Group::async_child_*` methods
-- Add `numcodecs.zlib` codec support
 - Add `[Async]{Array,Bytes}PartialDecoderDefault`
-- Add `numcodecs.shuffle` codec support
 - Add `Config::{codec,data_type}_aliases_{v2,v3}[_mut]`
-- Add `packbits` codec support
 - Add `Async{Array,Bytes}PartialEncoderTraits` and `*CodecTraits::async_partial_encoder()`
 - Add `array_subset::ArraySubsetError` [#156] by [@ilan-gold]
 - Add `array_subset::IncompatibleOffsetError`
-- Implement `From<T: IntoIterator<Item = Range<u64>>>` for `ArraySubset`
 - Add `AsyncArrayShardedReadableExt` and `AsyncArrayShardedReadableExtCache`
+- Add `ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError` [#156] by [@ilan-gold]
+- Add `CodecError::IncompatibleDimensionalityError` variant [#156] by [@ilan-gold]
+- Add `CodecError::{DataTypeExtension,IncompatibleFillValueError,InvalidArrayShape,InvalidNumberOfElements,SubsetOutOfBounds,RawBytesOffsetsCreate,RawBytesOffsetsOutOfBounds}` variants
+- Add `ArrayError::{ArrayBytesFixedDisjointViewCreateError,IncompatibleStartEndIndicesError,IncompatibleOffset,DlPackError}` variants
+- Implement `From<T: IntoIterator<Item = Range<u64>>>` for `ArraySubset`
 
 ### Changed
+- **Breaking Behaviour**: Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
+  - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
+- **Breaking Behaviour**: Refactor `codec` name handling and `CodecTraits` in alignment with ZEP0009 and the [`zarr-extensions`] repository
+  - All "experimental" codecs now use the `zarrs.` prefix (or `numcodecs.` if fully compatible)
+  - Add support for aliased codec names
+  - Enables pass-through of codecs from Zarr V2 to V3 without converting to a V3 equivalent (if supported)
+- **Breaking**: Split the `zarrs_metadata` crate into `zarrs_metadata` (core) and `zarrs_metadata_ext` (extensions)
+- **Breaking**: Split the `plugin` module to the `zarrs_plugin` crate
+  - `zarrs_plugin` is re-exported as `zarrs::plugin`
+  - **Breaking**: `Plugin` is now generic over the creation arguments
+  - **Breaking**: `StorageTransformerPlugin` now uses a `Plugin`
 - **Breaking**: change `ArraySubset::inbounds` to take another subset rather than a shape
-- **Breaking**: `CodecError` enum changes:
-  - Change `CodecError::UnexpectedChunkDecodedSize` to an `InvalidBytesLengthError`
-  - Add `CodecError::{InvalidArrayShape,InvalidNumberOfElements,SubsetOutOfBounds,RawBytesOffsetsCreate,RawBytesOffsetsOutOfBounds}`
-- **Breaking**: Change output args to `ArrayBytesFixedDisjointView` and make safe the following:
+- **Breaking**: Change `CodecError::UnexpectedChunkDecodedSize` to an `InvalidBytesLengthError`
+- **Breaking**: Make the following safe and change output args to `ArrayBytesFixedDisjointView`:
   - `Array::[async_]retrieve_chunk[_subset]_into`
   - `[Async]ArrayPartialDecoderTraits::partial_decode_into`
   - `ArrayToBytesCodecTraits::decode_into`
@@ -51,60 +66,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `zarrs::array::update_array_bytes`
 - **Breaking**: change `RawBytesOffsets` into a validated newtype
 - **Breaking**: `ArrayBytes::new_vlen()` not returns a `Result` and validates bytes/offsets compatibility
-- Reenable broken compatibility tests since fixed in `zarr-python`/`numcodecs`
-- Bump `lru` to 0.13
-- Use codec identifiers in the example for `experimental_codec_names` remapping
-- Allow `{Array,Group}::new_with_metadata()` and `{Array,Group}Builder` to create arrays with `"must_understand": true` additional fields
-  - `{Array,Group}::[async_]open[_opt]` continue to fail with additional fields with `"must_understand": true`
-- Bump `derive_more` to 2.0.0
-- Split the `plugin` module to the `zarrs_plugin` crate
-  - `zarrs_plugin` is re-exported as `zarrs::plugin`
-  - **Breaking**: `Plugin` is now generic over the creation arguments
-  - **Breaking**: `StorageTransformerPlugin` now uses a `Plugin`
-- Add `DataTypeExtension` variant to `CodecError`
-- `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
-- **Breaking**: `ArrayError` is now marked as non-exhaustive
-  - Add `ArrayBytesFixedDisjointViewCreateError`, `IncompatibleStartEndIndicesError`, `IncompatibleOffset`, `DlPackError` variants
-- Bump `half` to 2.3.1
-- Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
-  - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
-- Refactor `codec` name handling and `CodecTraits` in alignment with ZEP0009 and the [`zarr-extensions`] repository
-  - All "experimental" codecs now use the `zarrs.` prefix (or `numcodecs.` if fully compatible)
-  - Add support for aliased codec names
-  - Enables pass-through of codecs from Zarr V2 to V3 without converting to a V3 equivalent (if supported)
-  - **Breaking**: Add `CodecTraits::{identifier,default_name,configuration[_opt]}()`
-  - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
+- **Breaking**: `ArrayError` and `CodecErorr` are now marked as non-exhaustive
+- **Breaking**: Add `CodecTraits::{identifier,default_name,configuration[_opt]}()`
 - **Breaking**: Change the error type of `node::[async_]get_child_nodes()` and `Group::{children,child_*}()` to `NodeCreateError` instead of `StorageError`
-- Bump `thiserror` to 2.0.2
 - **Breaking**: Refactor `ArrayToArrayCodecTraits`:
   - Rename `compute_encoded_size()` to `encoded_representation()` and add a default implementation
   - Rename `compute_decoded_shape()` to `decoded_shape()`
-  - Add `encoded_shape()`
-  - Add `encoded_fill_value()`
+  - Add `encoded_shape()` and `encoded_fill_value()`
 - **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::compute_encoded_size()` to `encoded_representation()`
 - **Breaking**: Rename `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::dynamic()` to `into_dyn()`
-- **Breaking**: Mark `CodecError` as non-exhaustive
-    - Add `IncompatibleFillValueError` variant to `CodecError::IncompatibleFillValueError`
-- Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
 - **Breaking**: Rename `[Async]ArrayPartial{Encoder,Decoder}Default` to `[Async]ArrayToBytesPartial{Encoder,Decoder}Default`
 - **Breaking**: Rename `[Async]BytesPartial{Encoder,Decoder}Default` to `[Async]BytesToBytesPartial{Encoder,Decoder}Default`
-- Add `ArrayBytesFixedDisjointViewCreateError::IncompatibleArraySubsetAndShapeError` [#156] by [@ilan-gold]
-- Add `CodecError::IncompatibleDimensionalityError` [#156] by [@ilan-gold]
 - **Breaking**: `ArraySubset::bound` error type changed to `ArraySubsetError` [#156] by [@ilan-gold]
 - **Breaking**: `ArraySubset::relative_to` error type changed to `ArraySubsetError`
 - **Breaking**: `Group::consolidated_metadata` now returns an owned `ConsolidatedMetadata` instead of a reference
-- Bump `lru` to 0.14.0
 - **Breaking**: Move `zarrs_metadata::v3::UnsupportedAdditionalFieldError` to `zarrs::array::AdditionalFieldUnsupportedError`
-- **Breaking**: Bump the maximum supported version of `dlpark` to 0.5
+- `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
+- Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
+- Bump `thiserror` to 2.0.2
+- Bump `lru` to 0.14.0
+- Bump `half` to 2.3.1
+- Bump `derive_more` to 2.0.0
 
 ### Removed
 - **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
 - **Breaking**: Remove `{Array,Group}::additional_fields[_mut]`
+- **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
 - Check offset is valid in `ArraySubset::relative_to`
 - Reject arrays and groups with unsupported `"must_understand": true` extensions
+- Reenable broken compatibility tests since fixed in `zarr-python`/`numcodecs`
+- Use codec identifiers in the example for `experimental_codec_names` remapping
+- Allow `{Array,Group}::new_with_metadata()` and `{Array,Group}Builder` to create arrays with `"must_understand": true` additional fields
+  - `{Array,Group}::[async_]open[_opt]` continue to fail with additional fields with `"must_understand": true`
 
 [#156]: https://github.com/zarrs/zarrs/pull/156
 
