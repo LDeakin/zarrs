@@ -59,7 +59,7 @@ version = "0.2.3"
 path = "zarrs_filesystem"
 
 [workspace.dependencies.zarrs_http]
-version = "0.2.1"
+version = "0.2.2"
 path = "zarrs_http"
 
 [workspace.dependencies.zarrs_object_store]

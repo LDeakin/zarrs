@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-05-16
+
+## Changed
+- Update URLs to point to new `zarrs` GitHub organisation
+
 ## [0.2.1] - 2025-04-26
 
 ### Changed
@@ -28,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Split from the `zarrs_storage` crate
 
-[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs_http-v0.2.1...HEAD
+[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs_http-v0.2.2...HEAD
+[0.2.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_http-v0.2.2
 [0.2.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_http-v0.2.1
 [0.2.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_http-v0.2.0
 [0.1.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs_http-v0.1.0
