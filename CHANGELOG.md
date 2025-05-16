@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Highlights
 - Added support for ZEP0009: array/group `extensions` metadata, broader `must_understand` support, new extension naming policy
 - Added support for data type extensions
+- Add various new codecs
 
 ### Added
 - Add codecs: `numcodecs.zlib`, `numcodecs.shuffle`, `numcodecs.fixedscaleoffset`, `packbits`, `squeeze`
@@ -26,7 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: Rename `IncompatibleFillValueMetadataError` to `DataTypeFillValueMetadataError`
   - Add `Extension` variant to `DataType`
   - Add `custom_data_type_{fixed_size,variable_size,uint4,uint12,float8_e3m4}` examples
-- Add `zarrs_registry` crate that tracks extension aliases
+- Add `zarrs_registry` crate that tracks extension `name`/`id` aliases
+  - Add `config::{{codec,data_type}_aliases_{v3,v2}}[_mut]`
 - Add `array:codec::{InvalidBytesLengthError,InvalidArrayShapeError,InvalidNumberOfElementsError,SubsetOutOfBoundsError}`
 - Add `ArraySubset::inbounds_shape()` (matches the old `ArraySubset::inbounds` behaviour)
 - Add `ArrayBytesFixedDisjointView[CreateError]`
@@ -42,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `CodecError::IncompatibleDimensionalityError` variant [#156] by [@ilan-gold]
 - Add `CodecError::{DataTypeExtension,IncompatibleFillValueError,InvalidArrayShape,InvalidNumberOfElements,SubsetOutOfBounds,RawBytesOffsetsCreate,RawBytesOffsetsOutOfBounds}` variants
 - Add `ArrayError::{ArrayBytesFixedDisjointViewCreateError,IncompatibleStartEndIndicesError,IncompatibleOffset,DlPackError}` variants
+- Add `CodecMetadataOptions` and `ArrayMetadataOptions::codec_options[_mut]`
 - Implement `From<T: IntoIterator<Item = Range<u64>>>` for `ArraySubset`
 
 ### Changed
@@ -81,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: `ArraySubset::relative_to` error type changed to `ArraySubsetError`
 - **Breaking**: `Group::consolidated_metadata` now returns an owned `ConsolidatedMetadata` instead of a reference
 - **Breaking**: Move `zarrs_metadata::v3::UnsupportedAdditionalFieldError` to `zarrs::array::AdditionalFieldUnsupportedError`
+- **Breaking**: Move `ArrayMetadataOptions::*experimental_codec_store_metadata_if_encode_only` into `CodecMetadataOptions`
 - `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
 - Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
 - Bump `thiserror` to 2.0.2
@@ -92,13 +96,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Remove `ArraySubset` unchecked methods [#156] by [@ilan-gold]
 - **Breaking**: Remove `{Array,Group}::additional_fields[_mut]`
 - **Breaking**: Remove `CodecTraits::create_metadata[_opt]()`
+- **Breaking**: Remove `Config::experimental_codec_names[_mut]`
 
 ### Fixed
 - Fixed reserving one more element than necessary when retrieving `string` or `bytes` array elements
 - Check offset is valid in `ArraySubset::relative_to`
-- Reject arrays and groups with unsupported `"must_understand": true` extensions
 - Reenable broken compatibility tests since fixed in `zarr-python`/`numcodecs`
-- Use codec identifiers in the example for `experimental_codec_names` remapping
+- Reject arrays and groups with unsupported `"must_understand": true` extensions
 - Allow `{Array,Group}::new_with_metadata()` and `{Array,Group}Builder` to create arrays with `"must_understand": true` additional fields
   - `{Array,Group}::[async_]open[_opt]` continue to fail with additional fields with `"must_understand": true`
 
