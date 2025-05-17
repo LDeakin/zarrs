@@ -171,14 +171,14 @@
 //! #### Default
 //!  - `filesystem`: Re-export `zarrs_filesystem` as `zarrs::filesystem`
 //!  - `ndarray`: [`ndarray`] utility functions for [`Array`](crate::array::Array).
-//!  - Codecs: `blosc`, `gzip`, `transpose`, `zstd`, `sharding`, `crc32c`.
+//!  - Codecs: `blosc`, `crc32c`, `gzip`, `sharding`, `transpose`, `zstd`.
 //!
 //! #### Non-Default
 //!  - `async`: an **experimental** asynchronous API for [`stores`](storage), [`Array`](crate::array::Array), and [`Group`](group::Group).
 //!    - The async API is runtime-agnostic. This has some limitations that are detailed in the [`Array`](crate::array::Array) docs.
 //!    - The async API is not as performant as the sync API.
-//!  - Codecs: `bitround`, `bz2`, `pcodec`, `zfp`, `zstd`.
 //!  - `dlpack`: adds convenience methods for [`DLPack`](https://arrow.apache.org/docs/python/dlpack.html) tensor interop to [`Array`](crate::array::Array)
+//!  - Codecs: `bitround`, `bz2`, `fletcher32`, `gdeflate`, `pcodec`, `zfp`, `zlib`.
 //!
 //! ## `zarrs` Ecosystem
 #![doc = include_str!("../doc/ecosystem.md")]
