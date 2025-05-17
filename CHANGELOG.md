@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2025-05-17
+
 ### Highlights
 - Added support for ZEP0009 — Zarr Extension Naming
 - Added support for ZEP0010 — Generic Extensions (Draft as at 2025/05/17)
@@ -1347,7 +1349,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs-v0.19.2...HEAD
+[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs-v0.20.0...HEAD
+[0.20.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0
 [0.20.0-beta.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0-beta.2
 [0.20.0-beta.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0-beta.1
 [0.20.0-beta.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0-beta.0
