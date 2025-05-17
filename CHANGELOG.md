@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Highlights
-- Added support for ZEP0009: array/group `extensions` metadata, broader `must_understand` support, new extension naming policy
+- Added support for ZEP0009 — Zarr Extension Naming
+- Added support for ZEP0010 — Generic Extensions (Draft as at 2025/05/17)
+  - array/group `extensions` metadata, broader `must_understand` support
 - Added support for data type extensions
 - Add various new codecs
 
@@ -55,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Add support for aliased codec names
   - Enables pass-through of codecs from Zarr V2 to V3 without converting to a V3 equivalent (if supported)
 - **Breaking**: Split the `zarrs_metadata` crate into `zarrs_metadata` (core) and `zarrs_metadata_ext` (extensions)
+  - `zarrs_metadata_ext` is re-exported as `zarrs::metadata_ext`
 - **Breaking**: Split the `plugin` module to the `zarrs_plugin` crate
   - `zarrs_plugin` is re-exported as `zarrs::plugin`
   - **Breaking**: `Plugin` is now generic over the creation arguments
@@ -87,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Move `ArrayMetadataOptions::*experimental_codec_store_metadata_if_encode_only` into `CodecMetadataOptions`
 - `ArrayCreateError::DataTypeCreateError` now uses a `PluginCreateError` internally
 - Add default implementations for `{ArrayToArray,ArrayToBytes,BytesToBytes}CodecTraits::[async_]partial_{encoder,decoder}`
+- **Breaking**: Bump `zarrs_metadata` to 0.5.0
 - Bump `thiserror` to 2.0.2
 - Bump `lru` to 0.14.0
 - Bump `half` to 2.3.1
