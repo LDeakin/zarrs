@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "zarrs: A High-Performance Rust Library for the Zarr Array Storage Format"
-version: 0.19.2
-date-released: 2025-02-13
+version: 0.20.0
+date-released: 2025-05-17
 repository-code: "https://github.com/zarrs/zarrs"
 url: "https://zarrs.dev"
 abstract: "zarrs is a Rust library for the Zarr storage format for multidimensional arrays and metadata."
@@ -24,11 +24,15 @@ references:
     abstract: "This specification defines the Zarr format for N-dimensional typed arrays."
     repository-code: "https://github.com/zarr-developers/zarr-specs"
     title: Zarr core specification
-    version: 3.0
+    version: 3.1
     authors:
       - family-names: Miles
         given-names: Alistair
       - family-names: Striebel
         given-names: Jonathan
+      - family-names: Rzepka
+        given-names: Norman
       - family-names: Maitin-Shepard
         given-names: Jeremy
+      - family-names: Moore
+        given-names: Josh
