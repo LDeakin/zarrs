@@ -7,6 +7,8 @@ The `zarrs` crate has been split into multiple crates to:
 - stay up-to-date with unstable public dependencies (e.g. `opendal`, `object_store`, `icechunk`, etc) without impacting the release cycle of `zarrs`, and
 - improve compilation times.
 
+A hierarchical overview of these crates can be found in the [The `zarrs` Book].
+
 #### Core
 - [`zarrs`]: The core library for manipulating Zarr hierarchies.
 - [`zarrs_metadata`]: Zarr metadata support (re-exported as `zarrs::metadata`).
@@ -41,6 +43,8 @@ The `zarrs` crate has been split into multiple crates to:
 
 ### Benchmarks
 - [`zarr_benchmarks`]: Benchmarks of various Zarr V3 implementations: `zarrs`, `zarr-python`, `tensorstore`
+
+[The `zarrs` Book]: https://book.zarrs.dev
 
 [`zarrs`]: https://docs.rs/zarrs/latest/zarrs/
 [`zarrs_data_type`]: https://docs.rs/zarrs_data_type/latest/zarrs_data_type/
