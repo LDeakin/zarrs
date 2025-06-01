@@ -100,15 +100,11 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         decoded_value: RawBytes<'a>,
         _options: &CodecOptions,
     ) -> Result<RawBytes<'a>, CodecError> {
-        let mut result = Vec::<u8>::new();
-        let mut encoder = zstd::Encoder::new(&mut result, self.compression)?;
-        encoder.include_checksum(self.checksum)?;
-        // if parallel {
-        //     let n_threads = std::thread::available_parallelism().unwrap().get();
-        //     encoder.multithread(u32::try_from(n_threads).unwrap())?; // TODO: Check overhead of zstd par_encode
-        // }
-        std::io::copy(&mut std::io::Cursor::new(&decoded_value), &mut encoder)?;
-        encoder.finish()?;
+        let mut compressor = zstd::bulk::Compressor::new(self.compression)?;
+        compressor.include_checksum(self.checksum)?;
+        // compressor.include_contentsize(true);
+        // compressor.set_pledged_src_size(Some(decoded_value.len()))?; // unpublished
+        let result = compressor.compress(&decoded_value)?;
         Ok(Cow::Owned(result))
     }
 
@@ -118,9 +114,18 @@ impl BytesToBytesCodecTraits for ZstdCodec {
         _decoded_representation: &BytesRepresentation,
         _options: &CodecOptions,
     ) -> Result<RawBytes<'a>, CodecError> {
-        zstd::decode_all(std::io::Cursor::new(&encoded_value))
-            .map_err(CodecError::IOError)
-            .map(Cow::Owned)
+        let upper_bound = zstd::bulk::Decompressor::upper_bound(&encoded_value); // requires zstd experimental feature
+        if let Some(upper_bound) = upper_bound {
+            // Bulk decompression
+            let mut result = zstd::bulk::decompress(&encoded_value, upper_bound)?;
+            result.shrink_to_fit();
+            Ok(Cow::Owned(result))
+        } else {
+            // Streaming decompression (slower)
+            zstd::decode_all(std::io::Cursor::new(&encoded_value))
+                .map_err(CodecError::IOError)
+                .map(Cow::Owned)
+        }
     }
 
     fn encoded_representation(
