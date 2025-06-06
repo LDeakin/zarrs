@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Implement `Element` for `&[u8; N]` for `r*` data type
+
 ### Fixed
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
 

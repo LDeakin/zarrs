@@ -136,6 +136,25 @@ impl_element_pod!(half::bf16, DataType::BFloat16);
 impl_element_pod!(num::complex::Complex32, DataType::Complex64);
 impl_element_pod!(num::complex::Complex64, DataType::Complex128);
 
+impl<const N: usize> Element for &[u8; N] {
+    fn validate_data_type(data_type: &DataType) -> Result<(), ArrayError> {
+        if let DataType::RawBits(n) = data_type {
+            (*n == N).then_some(()).ok_or(IET)
+        } else {
+            Err(IET)
+        }
+    }
+
+    fn into_array_bytes<'a>(
+        data_type: &DataType,
+        elements: &'a [Self],
+    ) -> Result<ArrayBytes<'a>, ArrayError> {
+        Self::validate_data_type(data_type)?;
+        let bytes: Vec<u8> = elements.iter().flat_map(|i| i.iter()).copied().collect();
+        Ok(bytes.into())
+    }
+}
+
 impl<const N: usize> Element for [u8; N] {
     fn validate_data_type(data_type: &DataType) -> Result<(), ArrayError> {
         if let DataType::RawBits(n) = data_type {
@@ -227,7 +246,7 @@ impl ElementOwned for String {
     }
 }
 
-macro_rules! impl_element_binary {
+macro_rules! impl_element_bytes {
     ($raw_type:ty) => {
         impl Element for $raw_type {
             fn validate_data_type(data_type: &DataType) -> Result<(), ArrayError> {
@@ -266,8 +285,8 @@ macro_rules! impl_element_binary {
     };
 }
 
-impl_element_binary!(&[u8]);
-impl_element_binary!(Vec<u8>);
+impl_element_bytes!(&[u8]);
+impl_element_bytes!(Vec<u8>);
 
 impl ElementOwned for Vec<u8> {
     fn from_array_bytes(
