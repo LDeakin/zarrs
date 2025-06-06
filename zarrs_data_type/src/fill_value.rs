@@ -145,6 +145,24 @@ impl From<f64> for FillValue {
     }
 }
 
+impl From<num::complex::Complex<half::bf16>> for FillValue {
+    fn from(value: num::complex::Complex<half::bf16>) -> Self {
+        let mut bytes = Vec::with_capacity(size_of::<num::complex::Complex<half::bf16>>());
+        bytes.extend(value.re.to_ne_bytes());
+        bytes.extend(value.im.to_ne_bytes());
+        Self(bytes)
+    }
+}
+
+impl From<num::complex::Complex<half::f16>> for FillValue {
+    fn from(value: num::complex::Complex<half::f16>) -> Self {
+        let mut bytes = Vec::with_capacity(size_of::<num::complex::Complex<half::f16>>());
+        bytes.extend(value.re.to_ne_bytes());
+        bytes.extend(value.im.to_ne_bytes());
+        Self(bytes)
+    }
+}
+
 impl From<num::complex::Complex32> for FillValue {
     fn from(value: num::complex::Complex32) -> Self {
         let mut bytes = Vec::with_capacity(size_of::<num::complex::Complex32>());
