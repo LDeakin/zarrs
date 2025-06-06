@@ -35,7 +35,9 @@ impl NodeName {
     /// `name` is not validated, so this can result in an invalid node name.
     #[must_use]
     pub unsafe fn new_unchecked(name: impl Into<String>) -> Self {
-        Self(name.into())
+        let name: String = name.into();
+        debug_assert!(Self::validate(&name));
+        Self(name)
     }
 
     /// The root node.
