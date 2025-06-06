@@ -19,8 +19,6 @@ impl Default for ExtensionAliasesDataTypeV3 {
             // `name` aliases (string match)
             HashMap::from([
                 ("binary".into(), data_type::BYTES), // ZEP0007 uses binary, zarr-python uses bytes
-                ("complex_float32".into(), data_type::COMPLEX_FLOAT32),
-                ("complex_float64".into(), data_type::COMPLEX_FLOAT64),
             ]),
             // `name` aliases (regex match)
             vec![],

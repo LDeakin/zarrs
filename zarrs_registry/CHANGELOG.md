@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Add Zarr V3 `complex_float32` alias for `complex64` data type
-- Add Zarr V3 `complex_float64` alias for `complex128` data type
+### Changed
+- Give `COMPLEX_FLOAT32` a unique identifier instead of `COMPLEX64`
+- Give `COMPLEX_FLOAT64` a unique identifier instead of `COMPLEX128`
 
 ## [0.1.1] - 2025-05-16
 

@@ -53,10 +53,10 @@ pub const COMPLEX_BFLOAT16: &str = "complex_bfloat16";
 pub const COMPLEX_FLOAT16: &str = "complex_float16";
 
 /// Unique identifier for the `complex_float32` data type (registered, `complex64` alias).
-pub const COMPLEX_FLOAT32: &str = COMPLEX64;
+pub const COMPLEX_FLOAT32: &str = "complex_float32";
 
 /// Unique identifier for the `complex_float64` data type (registered, `complex128` alias).
-pub const COMPLEX_FLOAT64: &str = COMPLEX128;
+pub const COMPLEX_FLOAT64: &str = "complex_float64";
 
 /// Unique identifier for the `string` data type (registered).
 pub const STRING: &str = "string";
