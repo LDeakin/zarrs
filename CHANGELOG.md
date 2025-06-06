@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
+
+[#200]: https://github.com/zarrs/zarrs/pull/200
+
 ## [0.20.1] - 2025-06-01
 
 ### Changed
@@ -1423,3 +1428,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [@sk1p]: https://github.com/sk1p
 [@niklasmueboe]: https://github.com/niklasmueboe
 [@ilan-gold]: https://github.com/ilan-gold
+[@jder]: https://github.com/jder
