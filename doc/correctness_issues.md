@@ -1,4 +1,5 @@
 ## Correctness Issues with Past Versions
+- Data encoded with `packbits` with a non-zero `first_bit` is not correct in `zarrs` 0.20.x
 - Prior to `zarrs_metadata` [v0.3.5](https://github.com/zarrs/zarrs/releases/tag/zarrs_metadata-v0.3.5) (`zarrs` <= 0.19), it was possible for a user to create non-conformant Zarr V2 metadata with `filters: []`
   - Empty filters now always correctly serialise to `null`
   - `zarrs` will indefinitely support reading Zarr V2 data with `filters: []`
