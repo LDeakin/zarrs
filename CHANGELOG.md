@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
 - Fix missing support for `bitround` `[u]int8` partial decoding
 - Fix missing support for `pcodec` `{int,uint,float}16` partial decoding
+- Fixed `packbits` codec with a non-zero `first_bit`
 
 [#200]: https://github.com/zarrs/zarrs/pull/200
 

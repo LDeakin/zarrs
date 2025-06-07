@@ -218,7 +218,7 @@ impl ArrayToBytesCodecTraits for PackBitsCodec {
 
         // Encode the components
         for component_idx in 0..num_elements * num_components {
-            let bit_dec0 = component_idx * component_size_bits;
+            let bit_dec0 = component_idx * component_size_bits + first_bit;
             let bit_enc0 = component_idx * component_size_bits_extracted;
             for bit in 0..component_size_bits_extracted {
                 let (byte_enc, bit_enc) = (bit_enc0 + bit).div_rem(&8);
@@ -308,7 +308,7 @@ impl ArrayToBytesCodecTraits for PackBitsCodec {
 
         // Decode the components
         for component_idx in 0..num_elements * num_components {
-            let bit_dec0 = component_idx * component_size_bits;
+            let bit_dec0 = component_idx * component_size_bits + first_bit;
             let bit_enc0 = component_idx * component_size_bits_extracted;
             for bit in 0..component_size_bits_extracted {
                 let (byte_enc, bit_enc) = (bit_enc0 + bit).div_rem(&8);
