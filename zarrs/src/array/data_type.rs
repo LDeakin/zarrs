@@ -52,6 +52,18 @@ pub enum DataType {
     UInt32,
     /// `uint64` Integer in `[0, 2^64-1]`.
     UInt64,
+    /// `float4_e2m1fn` a 4-bit floating point representation: sign bit, 2 bit exponent (bias 1), 1 bit mantissa.
+    /// - Extended range: no infinity, no NaN.
+    /// - Subnormal numbers when biased exponent is 0.
+    Float4E2M1FN,
+    /// `float6_e2m3fn` a 6-bit floating point representation: sign bit, 2 bit exponent (bias 1), 3 bit mantissa.
+    /// - Extended range: no infinity, no NaN.
+    /// - Subnormal numbers when biased exponent is 0.
+    Float6E2M3FN,
+    /// `float6_e3m2fn` a 6-bit floating point representation: sign bit, 3 bit exponent (bias 3), 2 bit mantissa.
+    /// - Extended range: no infinity, no NaN.
+    /// - Subnormal numbers when biased exponent is 0.
+    Float6E3M2FN,
     /// `float8_e3m4` an 8-bit floating point representation: sign bit, 3 bit exponent (bias 3), 4 bit mantissa.
     /// - IEEE 754-compliant, with NaN and +/-inf.
     //  - Subnormal numbers when biased exponent is 0.
@@ -80,14 +92,14 @@ pub enum DataType {
     /// - No zero, no infinity, NaN represented by `0b1111'1111`.
     /// - No subnormal numbers.
     Float8E8M0FNU,
+    /// `bfloat16` brain floating point data type: sign bit, 5 bits exponent, 10 bits mantissa.
+    BFloat16,
     /// `float16` IEEE 754 half-precision floating point: sign bit, 5 bits exponent, 10 bits mantissa.
     Float16,
     /// `float32` IEEE 754 single-precision floating point: sign bit, 8 bits exponent, 23 bits mantissa.
     Float32,
     /// `float64` IEEE 754 double-precision floating point: sign bit, 11 bits exponent, 52 bits mantissa.
     Float64,
-    /// `bfloat16` brain floating point data type: sign bit, 5 bits exponent, 10 bits mantissa.
-    BFloat16,
     /// `complex_float32` real and complex components are each brain floating point data type.
     ComplexBFloat16,
     /// `complex_float32` real and complex components are each IEEE 754 half-precision floating point.
@@ -142,6 +154,9 @@ impl DataType {
             Self::UInt16 => zarrs_registry::data_type::UINT16.to_string(),
             Self::UInt32 => zarrs_registry::data_type::UINT32.to_string(),
             Self::UInt64 => zarrs_registry::data_type::UINT64.to_string(),
+            Self::Float4E2M1FN => zarrs_registry::data_type::FLOAT4_E2M1FN.to_string(),
+            Self::Float6E2M3FN => zarrs_registry::data_type::FLOAT6_E2M3FN.to_string(),
+            Self::Float6E3M2FN => zarrs_registry::data_type::FLOAT6_E3M2FN.to_string(),
             Self::Float8E3M4 => zarrs_registry::data_type::FLOAT8_E3M4.to_string(),
             Self::Float8E4M3 => zarrs_registry::data_type::FLOAT8_E4M3.to_string(),
             Self::Float8E4M3B11FNUZ => zarrs_registry::data_type::FLOAT8_E4M3B11FNUZ.to_string(),
@@ -149,10 +164,10 @@ impl DataType {
             Self::Float8E5M2 => zarrs_registry::data_type::FLOAT8_E5M2.to_string(),
             Self::Float8E5M2FNUZ => zarrs_registry::data_type::FLOAT8_E5M2FNUZ.to_string(),
             Self::Float8E8M0FNU => zarrs_registry::data_type::FLOAT8_E8M0FNU.to_string(),
+            Self::BFloat16 => zarrs_registry::data_type::BFLOAT16.to_string(),
             Self::Float16 => zarrs_registry::data_type::FLOAT16.to_string(),
             Self::Float32 => zarrs_registry::data_type::FLOAT32.to_string(),
             Self::Float64 => zarrs_registry::data_type::FLOAT64.to_string(),
-            Self::BFloat16 => zarrs_registry::data_type::BFLOAT16.to_string(),
             Self::Complex64 => zarrs_registry::data_type::COMPLEX64.to_string(),
             Self::Complex128 => zarrs_registry::data_type::COMPLEX128.to_string(),
             Self::ComplexBFloat16 => zarrs_registry::data_type::COMPLEX_BFLOAT16.to_string(),
@@ -183,6 +198,9 @@ impl DataType {
             Self::UInt16 => MetadataV3::new(zarrs_registry::data_type::UINT16),
             Self::UInt32 => MetadataV3::new(zarrs_registry::data_type::UINT32),
             Self::UInt64 => MetadataV3::new(zarrs_registry::data_type::UINT64),
+            Self::Float4E2M1FN => MetadataV3::new(zarrs_registry::data_type::FLOAT4_E2M1FN),
+            Self::Float6E2M3FN => MetadataV3::new(zarrs_registry::data_type::FLOAT6_E2M3FN),
+            Self::Float6E3M2FN => MetadataV3::new(zarrs_registry::data_type::FLOAT6_E3M2FN),
             Self::Float8E3M4 => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E3M4),
             Self::Float8E4M3 => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E4M3),
             Self::Float8E4M3B11FNUZ => {
@@ -192,10 +210,10 @@ impl DataType {
             Self::Float8E5M2 => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E5M2),
             Self::Float8E5M2FNUZ => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E5M2FNUZ),
             Self::Float8E8M0FNU => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E8M0FNU),
+            Self::BFloat16 => MetadataV3::new(zarrs_registry::data_type::BFLOAT16),
             Self::Float16 => MetadataV3::new(zarrs_registry::data_type::FLOAT16),
             Self::Float32 => MetadataV3::new(zarrs_registry::data_type::FLOAT32),
             Self::Float64 => MetadataV3::new(zarrs_registry::data_type::FLOAT64),
-            Self::BFloat16 => MetadataV3::new(zarrs_registry::data_type::BFLOAT16),
             Self::Complex64 => MetadataV3::new(zarrs_registry::data_type::COMPLEX64),
             Self::Complex128 => MetadataV3::new(zarrs_registry::data_type::COMPLEX128),
             Self::ComplexBFloat16 => MetadataV3::new(zarrs_registry::data_type::COMPLEX_BFLOAT16),
@@ -222,6 +240,9 @@ impl DataType {
             | Self::UInt2
             | Self::UInt4
             | Self::UInt8
+            | Self::Float4E2M1FN
+            | Self::Float6E2M3FN
+            | Self::Float6E3M2FN
             | Self::Float8E3M4
             | Self::Float8E4M3
             | Self::Float8E4M3B11FNUZ
@@ -284,6 +305,9 @@ impl DataType {
                 zarrs_registry::data_type::UINT16 => return Ok(Self::UInt16),
                 zarrs_registry::data_type::UINT32 => return Ok(Self::UInt32),
                 zarrs_registry::data_type::UINT64 => return Ok(Self::UInt64),
+                zarrs_registry::data_type::FLOAT4_E2M1FN => return Ok(Self::Float4E2M1FN),
+                zarrs_registry::data_type::FLOAT6_E2M3FN => return Ok(Self::Float6E2M3FN),
+                zarrs_registry::data_type::FLOAT6_E3M2FN => return Ok(Self::Float6E3M2FN),
                 zarrs_registry::data_type::FLOAT8_E3M4 => return Ok(Self::Float8E3M4),
                 zarrs_registry::data_type::FLOAT8_E4M3 => return Ok(Self::Float8E4M3),
                 zarrs_registry::data_type::FLOAT8_E4M3B11FNUZ => {
@@ -293,10 +317,10 @@ impl DataType {
                 zarrs_registry::data_type::FLOAT8_E5M2 => return Ok(Self::Float8E5M2),
                 zarrs_registry::data_type::FLOAT8_E5M2FNUZ => return Ok(Self::Float8E5M2FNUZ),
                 zarrs_registry::data_type::FLOAT8_E8M0FNU => return Ok(Self::Float8E8M0FNU),
+                zarrs_registry::data_type::BFLOAT16 => return Ok(Self::BFloat16),
                 zarrs_registry::data_type::FLOAT16 => return Ok(Self::Float16),
                 zarrs_registry::data_type::FLOAT32 => return Ok(Self::Float32),
                 zarrs_registry::data_type::FLOAT64 => return Ok(Self::Float64),
-                zarrs_registry::data_type::BFLOAT16 => return Ok(Self::BFloat16),
                 zarrs_registry::data_type::COMPLEX_BFLOAT16 => return Ok(Self::ComplexBFloat16),
                 zarrs_registry::data_type::COMPLEX_FLOAT16 => return Ok(Self::ComplexFloat16),
                 zarrs_registry::data_type::COMPLEX_FLOAT32 => return Ok(Self::ComplexFloat32),
@@ -427,7 +451,10 @@ impl DataType {
                 let int = fill_value.as_u64().ok_or_else(err0)?;
                 Ok(FV::from(int))
             }
-            Self::Float8E3M4
+            Self::Float4E2M1FN
+            | Self::Float6E2M3FN
+            | Self::Float6E3M2FN
+            | Self::Float8E3M4
             | Self::Float8E4M3
             | Self::Float8E4M3B11FNUZ
             | Self::Float8E4M3FNUZ
@@ -594,7 +621,10 @@ impl DataType {
                 let number = u64::from_ne_bytes(bytes);
                 Ok(FillValueMetadataV3::from(number))
             }
-            Self::Float8E3M4
+            Self::Float4E2M1FN
+            | Self::Float6E2M3FN
+            | Self::Float6E3M2FN
+            | Self::Float8E3M4
             | Self::Float8E4M3
             | Self::Float8E4M3B11FNUZ
             | Self::Float8E4M3FNUZ
@@ -605,6 +635,11 @@ impl DataType {
                 let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let hex_string = bytes_to_hex_string(&bytes);
                 Ok(FillValueMetadataV3::from(hex_string))
+            }
+            Self::BFloat16 => {
+                let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let number = half::bf16::from_ne_bytes(bytes);
+                Ok(FillValueMetadataV3::from(number))
             }
             Self::Float16 => {
                 let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
@@ -619,11 +654,6 @@ impl DataType {
             Self::Float64 => {
                 let bytes: [u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let number = f64::from_ne_bytes(bytes);
-                Ok(FillValueMetadataV3::from(number))
-            }
-            Self::BFloat16 => {
-                let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
-                let number = half::bf16::from_ne_bytes(bytes);
                 Ok(FillValueMetadataV3::from(number))
             }
             Self::ComplexBFloat16 => {
@@ -1175,6 +1205,60 @@ mod tests {
                 .unwrap()
                 .as_ne_bytes(),
             f64::NEG_INFINITY.to_ne_bytes()
+        );
+    }
+
+    #[test]
+    fn data_type_float4_e2m1fn() {
+        let json = r#""float4_e2m1fn""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float4_e2m1fn");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0x0f""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [15]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float6_e2m3fn() {
+        let json = r#""float6_e2m3fn""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float6_e2m3fn");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0x3f""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [63]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float6_e3m2fn() {
+        let json = r#""float6_e3m2fn""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float6_e3m2fn");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0x3f""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [63]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
         );
     }
 
