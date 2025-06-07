@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Only hex string fill values are supported
 - Add `[u]int{2,4}` data types
 
+### Changed
+- Sign extend to the nearest byte when decoding in the `packbits` codec
+
 ### Fixed
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
 - Fix missing support for `bitround` `[u]int8` partial decoding
