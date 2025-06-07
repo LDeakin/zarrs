@@ -154,20 +154,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
 
     fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
         match decoded_data_type {
-            DataType::Float16
-            | DataType::BFloat16
-            | DataType::Float32
-            | DataType::Float64
-            | DataType::UInt8
-            | DataType::Int8
-            | DataType::UInt16
-            | DataType::Int16
-            | DataType::UInt32
-            | DataType::Int32
-            | DataType::UInt64
-            | DataType::Int64
-            | DataType::Complex64
-            | DataType::Complex128 => Ok(decoded_data_type.clone()),
+            super::supported_dtypes!() => Ok(decoded_data_type.clone()),
             _ => Err(CodecError::UnsupportedDataType(
                 decoded_data_type.clone(),
                 BITROUND.to_string(),

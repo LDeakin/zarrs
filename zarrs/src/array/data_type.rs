@@ -52,6 +52,14 @@ pub enum DataType {
     Float64,
     /// `bfloat16` brain floating point data type: sign bit, 5 bits exponent, 10 bits mantissa.
     BFloat16,
+    /// `complex_float32` real and complex components are each brain floating point data type.
+    ComplexBFloat16,
+    /// `complex_float32` real and complex components are each IEEE 754 half-precision floating point.
+    ComplexFloat16,
+    /// `complex_float32` real and complex components are each IEEE 754 single-precision floating point.
+    ComplexFloat32,
+    /// `complex_float64` real and complex components are each IEEE 754 double-precision floating point.
+    ComplexFloat64,
     /// `complex64` real and complex components are each IEEE 754 single-precision floating point.
     Complex64,
     /// `complex128` real and complex components are each IEEE 754 double-precision floating point.
@@ -100,6 +108,10 @@ impl DataType {
             Self::BFloat16 => zarrs_registry::data_type::BFLOAT16.to_string(),
             Self::Complex64 => zarrs_registry::data_type::COMPLEX64.to_string(),
             Self::Complex128 => zarrs_registry::data_type::COMPLEX128.to_string(),
+            Self::ComplexBFloat16 => zarrs_registry::data_type::COMPLEX_BFLOAT16.to_string(),
+            Self::ComplexFloat16 => zarrs_registry::data_type::COMPLEX_FLOAT16.to_string(),
+            Self::ComplexFloat32 => zarrs_registry::data_type::COMPLEX_FLOAT32.to_string(),
+            Self::ComplexFloat64 => zarrs_registry::data_type::COMPLEX_FLOAT64.to_string(),
             Self::RawBits(size) => format!("r{}", size * 8),
             Self::String => zarrs_registry::data_type::STRING.to_string(),
             Self::Bytes => zarrs_registry::data_type::BYTES.to_string(),
@@ -126,6 +138,10 @@ impl DataType {
             Self::BFloat16 => MetadataV3::new(zarrs_registry::data_type::BFLOAT16),
             Self::Complex64 => MetadataV3::new(zarrs_registry::data_type::COMPLEX64),
             Self::Complex128 => MetadataV3::new(zarrs_registry::data_type::COMPLEX128),
+            Self::ComplexBFloat16 => MetadataV3::new(zarrs_registry::data_type::COMPLEX_BFLOAT16),
+            Self::ComplexFloat16 => MetadataV3::new(zarrs_registry::data_type::COMPLEX_FLOAT16),
+            Self::ComplexFloat32 => MetadataV3::new(zarrs_registry::data_type::COMPLEX_FLOAT32),
+            Self::ComplexFloat64 => MetadataV3::new(zarrs_registry::data_type::COMPLEX_FLOAT64),
             Self::RawBits(size) => MetadataV3::new(format!("r{}", size * 8)),
             Self::String => MetadataV3::new(zarrs_registry::data_type::STRING),
             Self::Bytes => MetadataV3::new(zarrs_registry::data_type::BYTES),
@@ -141,9 +157,15 @@ impl DataType {
         match self {
             Self::Bool | Self::Int8 | Self::UInt8 => DataTypeSize::Fixed(1),
             Self::Int16 | Self::UInt16 | Self::Float16 | Self::BFloat16 => DataTypeSize::Fixed(2),
-            Self::Int32 | Self::UInt32 | Self::Float32 => DataTypeSize::Fixed(4),
-            Self::Int64 | Self::UInt64 | Self::Float64 | Self::Complex64 => DataTypeSize::Fixed(8),
-            Self::Complex128 => DataTypeSize::Fixed(16),
+            Self::Int32
+            | Self::UInt32
+            | Self::Float32
+            | Self::ComplexFloat16
+            | Self::ComplexBFloat16 => DataTypeSize::Fixed(4),
+            Self::Int64 | Self::UInt64 | Self::Float64 | Self::Complex64 | Self::ComplexFloat32 => {
+                DataTypeSize::Fixed(8)
+            }
+            Self::Complex128 | Self::ComplexFloat64 => DataTypeSize::Fixed(16),
             Self::RawBits(size) => DataTypeSize::Fixed(*size),
             Self::String | Self::Bytes => DataTypeSize::Variable,
             Self::Extension(extension) => extension.size(),
@@ -189,6 +211,10 @@ impl DataType {
                 zarrs_registry::data_type::FLOAT32 => return Ok(Self::Float32),
                 zarrs_registry::data_type::FLOAT64 => return Ok(Self::Float64),
                 zarrs_registry::data_type::BFLOAT16 => return Ok(Self::BFloat16),
+                zarrs_registry::data_type::COMPLEX_BFLOAT16 => return Ok(Self::ComplexBFloat16),
+                zarrs_registry::data_type::COMPLEX_FLOAT16 => return Ok(Self::ComplexFloat16),
+                zarrs_registry::data_type::COMPLEX_FLOAT32 => return Ok(Self::ComplexFloat32),
+                zarrs_registry::data_type::COMPLEX_FLOAT64 => return Ok(Self::ComplexFloat64),
                 zarrs_registry::data_type::COMPLEX64 => return Ok(Self::Complex64),
                 zarrs_registry::data_type::COMPLEX128 => return Ok(Self::Complex128),
                 zarrs_registry::data_type::STRING => return Ok(Self::String),
@@ -282,7 +308,25 @@ impl DataType {
             Self::Float16 => Ok(FV::from(fill_value.as_f16().ok_or_else(err0)?)),
             Self::Float32 => Ok(FV::from(fill_value.as_f32().ok_or_else(err0)?)),
             Self::Float64 => Ok(FV::from(fill_value.as_f64().ok_or_else(err0)?)),
-            Self::Complex64 => {
+            Self::ComplexBFloat16 => {
+                if let [re, im] = fill_value.as_array().ok_or_else(err0)? {
+                    let re = re.as_bf16().ok_or_else(err0)?;
+                    let im = im.as_bf16().ok_or_else(err0)?;
+                    Ok(FV::from(num::complex::Complex::<half::bf16>::new(re, im)))
+                } else {
+                    Err(err0())?
+                }
+            }
+            Self::ComplexFloat16 => {
+                if let [re, im] = fill_value.as_array().ok_or_else(err0)? {
+                    let re = re.as_f16().ok_or_else(err0)?;
+                    let im = im.as_f16().ok_or_else(err0)?;
+                    Ok(FV::from(num::complex::Complex::<half::f16>::new(re, im)))
+                } else {
+                    Err(err0())?
+                }
+            }
+            Self::Complex64 | Self::ComplexFloat32 => {
                 if let [re, im] = fill_value.as_array().ok_or_else(err0)? {
                     let re = re.as_f32().ok_or_else(err0)?;
                     let im = im.as_f32().ok_or_else(err0)?;
@@ -291,7 +335,7 @@ impl DataType {
                     Err(err0())?
                 }
             }
-            Self::Complex128 => {
+            Self::Complex128 | Self::ComplexFloat64 => {
                 if let [re, im] = fill_value.as_array().ok_or_else(err0)? {
                     let re = re.as_f64().ok_or_else(err0)?;
                     let im = im.as_f64().ok_or_else(err0)?;
@@ -397,7 +441,27 @@ impl DataType {
                 let number = half::bf16::from_ne_bytes(bytes);
                 Ok(FillValueMetadataV3::from(number))
             }
-            Self::Complex64 => {
+            Self::ComplexBFloat16 => {
+                let bytes: &[u8; 4] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let re =
+                    half::bf16::from_ne_bytes(unsafe { bytes[0..2].try_into().unwrap_unchecked() });
+                let im =
+                    half::bf16::from_ne_bytes(unsafe { bytes[2..4].try_into().unwrap_unchecked() });
+                let re = FillValueMetadataV3::from(re);
+                let im = FillValueMetadataV3::from(im);
+                Ok(FillValueMetadataV3::from([re, im]))
+            }
+            Self::ComplexFloat16 => {
+                let bytes: &[u8; 4] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let re =
+                    half::f16::from_ne_bytes(unsafe { bytes[0..2].try_into().unwrap_unchecked() });
+                let im =
+                    half::f16::from_ne_bytes(unsafe { bytes[2..4].try_into().unwrap_unchecked() });
+                let re = FillValueMetadataV3::from(re);
+                let im = FillValueMetadataV3::from(im);
+                Ok(FillValueMetadataV3::from([re, im]))
+            }
+            Self::Complex64 | Self::ComplexFloat32 => {
                 let bytes: &[u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let re = f32::from_ne_bytes(unsafe { bytes[0..4].try_into().unwrap_unchecked() });
                 let im = f32::from_ne_bytes(unsafe { bytes[4..8].try_into().unwrap_unchecked() });
@@ -405,7 +469,7 @@ impl DataType {
                 let im = FillValueMetadataV3::from(im);
                 Ok(FillValueMetadataV3::from([re, im]))
             }
-            Self::Complex128 => {
+            Self::Complex128 | Self::ComplexFloat64 => {
                 let bytes: &[u8; 16] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let re = f64::from_ne_bytes(unsafe { bytes[0..8].try_into().unwrap_unchecked() });
                 let im = f64::from_ne_bytes(unsafe { bytes[8..16].try_into().unwrap_unchecked() });
@@ -910,6 +974,126 @@ mod tests {
                 .as_ne_bytes(),
             bf16::NEG_INFINITY.to_ne_bytes()
         );
+    }
+
+    #[test]
+    fn data_type_complex_bfloat16() {
+        let json = r#""complex_bfloat16""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexBFloat16);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (half::bf16::from_f32(-7.0f32))
+                .to_ne_bytes()
+                .iter()
+                .chain(half::bf16::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
+    }
+
+    #[test]
+    fn data_type_complex_float16() {
+        let json = r#""complex_float16""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexFloat16);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (half::f16::from_f32(-7.0f32))
+                .to_ne_bytes()
+                .iter()
+                .chain(half::f16::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
+    }
+
+    #[test]
+    fn data_type_complex_float32() {
+        let json = r#""complex_float32""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexFloat32);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (-7.0f32)
+                .to_ne_bytes()
+                .iter()
+                .chain(f32::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
+    }
+
+    #[test]
+    fn data_type_complexfloat64() {
+        let json = r#""complex_float64""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexFloat64);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (-7.0f64)
+                .to_ne_bytes()
+                .iter()
+                .chain(f64::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
     }
 
     #[test]

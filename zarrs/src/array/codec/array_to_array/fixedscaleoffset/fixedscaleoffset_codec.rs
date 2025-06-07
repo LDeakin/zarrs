@@ -406,20 +406,25 @@ impl ArrayToArrayCodecTraits for FixedScaleOffsetCodec {
 
     fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
         match decoded_data_type {
-            DataType::Float16
-            | DataType::BFloat16
+            DataType::Int8
+            | DataType::Int16
+            | DataType::Int32
+            | DataType::Int64
+            | DataType::UInt8
+            | DataType::UInt16
+            | DataType::UInt32
+            | DataType::UInt64
+            // | DataType::Float16
+            // | DataType::BFloat16
             | DataType::Float32
             | DataType::Float64
-            | DataType::UInt8
-            | DataType::Int8
-            | DataType::UInt16
-            | DataType::Int16
-            | DataType::UInt32
-            | DataType::Int32
-            | DataType::UInt64
-            | DataType::Int64
-            | DataType::Complex64
-            | DataType::Complex128 => {
+            // | DataType::ComplexBFloat16
+            // | DataType::ComplexFloat16
+            // | DataType::ComplexFloat32
+            // | DataType::ComplexFloat64
+            // | DataType::Complex64
+            // | DataType::Complex128
+            => {
                 if let Some(astype) = &self.astype {
                     Ok(astype.clone())
                 } else {

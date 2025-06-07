@@ -61,6 +61,30 @@ use crate::{
     plugin::{PluginCreateError, PluginMetadataInvalidError},
 };
 
+macro_rules! supported_dtypes {
+    () => {
+        DataType::Int8
+            | DataType::Int16
+            | DataType::Int32
+            | DataType::Int64
+            | DataType::UInt8
+            | DataType::UInt16
+            | DataType::UInt32
+            | DataType::UInt64
+            | DataType::BFloat16
+            | DataType::Float16
+            | DataType::Float32
+            | DataType::Float64
+            | DataType::ComplexBFloat16
+            | DataType::ComplexFloat16
+            | DataType::ComplexFloat32
+            | DataType::ComplexFloat64
+            | DataType::Complex64
+            | DataType::Complex128
+    };
+}
+use supported_dtypes;
+
 // Register the codec.
 inventory::submit! {
     CodecPlugin::new(BITROUND, is_identifier_bitround, create_codec_bitround)
@@ -131,7 +155,10 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
             bytes.iter_mut().for_each(round);
             Ok(())
         }
-        DataType::Float16 | DataType::BFloat16 => {
+        DataType::Float16
+        | DataType::BFloat16
+        | DataType::ComplexBFloat16
+        | DataType::ComplexFloat16 => {
             let round = |chunk: &mut [u8]| {
                 let element = u16::from_ne_bytes(chunk.try_into().unwrap());
                 let element = u16::to_ne_bytes(round_bits16(element, keepbits, 10));
@@ -153,7 +180,7 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
             bytes.chunks_exact_mut(2).for_each(round);
             Ok(())
         }
-        DataType::Float32 | DataType::Complex64 => {
+        DataType::Float32 | DataType::Complex64 | DataType::ComplexFloat32 => {
             let round = |chunk: &mut [u8]| {
                 let element = u32::from_ne_bytes(chunk.try_into().unwrap());
                 let element = u32::to_ne_bytes(round_bits32(element, keepbits, 23));
@@ -175,7 +202,7 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
             bytes.chunks_exact_mut(4).for_each(round);
             Ok(())
         }
-        DataType::Float64 | DataType::Complex128 => {
+        DataType::Float64 | DataType::Complex128 | DataType::ComplexFloat64 => {
             let round = |chunk: &mut [u8]| {
                 let element = u64::from_ne_bytes(chunk.try_into().unwrap());
                 let element = u64::to_ne_bytes(round_bits64(element, keepbits, 52));

@@ -73,11 +73,17 @@ fn do_partial_decode<'a>(
 
             let data_type = decoded_representation.data_type();
             match data_type {
+                DataType::UInt16 => {
+                    pcodec_partial_decode!(u16);
+                }
                 DataType::UInt32 => {
                     pcodec_partial_decode!(u32);
                 }
                 DataType::UInt64 => {
                     pcodec_partial_decode!(u64);
+                }
+                DataType::Int16 => {
+                    pcodec_partial_decode!(i16);
                 }
                 DataType::Int32 => {
                     pcodec_partial_decode!(i32);
@@ -85,10 +91,13 @@ fn do_partial_decode<'a>(
                 DataType::Int64 => {
                     pcodec_partial_decode!(i64);
                 }
-                DataType::Float32 | DataType::Complex64 => {
+                DataType::Float16 | DataType::ComplexFloat16 => {
+                    pcodec_partial_decode!(half::f16);
+                }
+                DataType::Float32 | DataType::Complex64 | DataType::ComplexFloat32 => {
                     pcodec_partial_decode!(f32);
                 }
-                DataType::Float64 | DataType::Complex128 => {
+                DataType::Float64 | DataType::Complex128 | DataType::ComplexFloat64 => {
                     pcodec_partial_decode!(f64);
                 }
                 _ => {

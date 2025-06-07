@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Implement `Element` for `&[u8; N]` for `r*` data type
+- Add `Complex{BFloat16,Float16,Float32,Float64}` data types
 
 ### Fixed
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
+- Fix missing support for `bitround` `[u]int8` partial decoding
+- Fix missing support for `pcodec` `{int,uint,float}16` partial decoding
 
 [#200]: https://github.com/zarrs/zarrs/pull/200
 

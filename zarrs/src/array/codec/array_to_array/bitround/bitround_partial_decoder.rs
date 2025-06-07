@@ -30,18 +30,7 @@ impl BitroundPartialDecoder {
         keepbits: u32,
     ) -> Result<Self, CodecError> {
         match data_type {
-            DataType::Float16
-            | DataType::BFloat16
-            | DataType::UInt16
-            | DataType::Int16
-            | DataType::Float32
-            | DataType::Complex64
-            | DataType::UInt32
-            | DataType::Int32
-            | DataType::Float64
-            | DataType::Complex128
-            | DataType::UInt64
-            | DataType::Int64 => Ok(Self {
+            super::supported_dtypes!() => Ok(Self {
                 input_handle,
                 data_type: data_type.clone(),
                 keepbits,
@@ -94,18 +83,7 @@ impl AsyncBitroundPartialDecoder {
         keepbits: u32,
     ) -> Result<Self, CodecError> {
         match data_type {
-            DataType::Float16
-            | DataType::BFloat16
-            | DataType::UInt16
-            | DataType::Int16
-            | DataType::Float32
-            | DataType::Complex64
-            | DataType::UInt32
-            | DataType::Int32
-            | DataType::Float64
-            | DataType::Complex128
-            | DataType::UInt64
-            | DataType::Int64 => Ok(Self {
+            super::supported_dtypes!() => Ok(Self {
                 input_handle,
                 data_type: data_type.clone(),
                 keepbits,
