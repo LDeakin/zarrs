@@ -68,88 +68,105 @@ struct DataTypeExtensionPackBitsCodecComponents {
     pub sign_extension: bool,
 }
 
+#[allow(clippy::too_many_lines)]
 fn pack_bits_components(
     data_type: &DataType,
 ) -> Result<DataTypeExtensionPackBitsCodecComponents, CodecError> {
+    type DT = DataType;
     match data_type {
-        DataType::Bool => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Bool => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 1,
             num_components: 1,
             sign_extension: false,
         }),
-        DataType::UInt2 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::UInt2 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 2,
             num_components: 1,
             sign_extension: false,
         }),
-        DataType::Int2 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Int2 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 2,
             num_components: 1,
             sign_extension: true,
         }),
-        DataType::UInt4 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::UInt4 | DT::Float4E2M1FN => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 4,
             num_components: 1,
             sign_extension: false,
         }),
-        DataType::Int4 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Int4 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 4,
             num_components: 1,
             sign_extension: true,
         }),
-        DataType::UInt8 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Float6E2M3FN | DT::Float6E3M2FN => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 6,
+            num_components: 1,
+            sign_extension: false,
+        }),
+        DT::UInt8
+        | DT::Float8E3M4
+        | DT::Float8E4M3
+        | DT::Float8E4M3B11FNUZ
+        | DT::Float8E4M3FNUZ
+        | DT::Float8E5M2
+        | DT::Float8E5M2FNUZ
+        | DT::Float8E8M0FNU => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 8,
             num_components: 1,
             sign_extension: false,
         }),
-        DataType::Int8 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Int8 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 8,
             num_components: 1,
             sign_extension: true,
         }),
-        DataType::UInt16 | DataType::Float16 | DataType::BFloat16 => {
-            Ok(DataTypeExtensionPackBitsCodecComponents {
-                component_size_bits: 16,
-                num_components: 1,
-                sign_extension: false,
-            })
-        }
-        DataType::Int16 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::UInt16 | DT::Float16 | DT::BFloat16 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 16,
+            num_components: 1,
+            sign_extension: false,
+        }),
+        DT::Int16 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 16,
             num_components: 1,
             sign_extension: true,
         }),
-        DataType::UInt32 | DataType::Float32 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::ComplexBFloat16 | DT::ComplexFloat16 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 16,
+            num_components: 2,
+            sign_extension: false,
+        }),
+        DT::UInt32 | DT::Float32 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 32,
             num_components: 1,
             sign_extension: false,
         }),
-        DataType::Int32 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Int32 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 32,
             num_components: 1,
             sign_extension: true,
         }),
-        DataType::UInt64 | DataType::Float64 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::UInt64 | DT::Float64 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 64,
             num_components: 1,
             sign_extension: false,
         }),
-        DataType::Int64 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Int64 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 64,
             num_components: 1,
             sign_extension: true,
         }),
-        DataType::Complex64 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Complex64 | DT::ComplexFloat32 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 32,
             num_components: 2,
             sign_extension: false,
         }),
-        DataType::Complex128 => Ok(DataTypeExtensionPackBitsCodecComponents {
+        DT::Complex128 | DT::ComplexFloat64 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 64,
             num_components: 2,
             sign_extension: false,
         }),
-        DataType::Extension(ext) => {
+        DT::Extension(ext) => {
             let packbits = ext.codec_packbits()?;
             Ok(DataTypeExtensionPackBitsCodecComponents {
                 component_size_bits: packbits.component_size_bits(),
@@ -157,7 +174,7 @@ fn pack_bits_components(
                 sign_extension: packbits.sign_extension(),
             })
         }
-        _ => Err(CodecError::UnsupportedDataType(
+        DT::String | DT::Bytes | DT::RawBits(_) => Err(CodecError::UnsupportedDataType(
             data_type.clone(),
             PACKBITS.to_string(),
         )),
@@ -183,7 +200,7 @@ mod tests {
         array::{
             codec::{ArrayToBytesCodecTraits, BytesCodec, CodecOptions},
             element::{Element, ElementOwned},
-            ChunkRepresentation, DataType, FillValue,
+            ArrayBytes, ChunkRepresentation, DataType, FillValue,
         },
         array_subset::ArraySubset,
     };
@@ -522,6 +539,117 @@ mod tests {
                 )
                 .unwrap();
             assert_eq!(elements, i8::from_array_bytes(&data_type, decoded)?);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codec_packbits_float4_e2m1fn() -> Result<(), Box<dyn std::error::Error>> {
+        for encoding in [
+            PackBitsPaddingEncoding::None,
+            PackBitsPaddingEncoding::FirstByte,
+            PackBitsPaddingEncoding::LastByte,
+        ] {
+            let codec = Arc::new(super::PackBitsCodec::new(encoding, None, None).unwrap());
+            let data_type = DataType::Float4E2M1FN;
+            let fill_value = FillValue::from(0u8);
+
+            let chunk_shape = vec![NonZeroU64::new(16).unwrap(), NonZeroU64::new(1).unwrap()];
+            let chunk_representation =
+                ChunkRepresentation::new(chunk_shape, data_type.clone(), fill_value).unwrap();
+            let bytes = ArrayBytes::new_flen((0..16).map(|i| i as u8).collect::<Vec<u8>>());
+
+            // Encoding
+            let encoded = codec.encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )?;
+            assert!((encoded.len() as u64) <= (4 * 16).div_ceil(&8) + 1);
+
+            // Decoding
+            let decoded = codec
+                .decode(
+                    encoded.clone(),
+                    &chunk_representation,
+                    &CodecOptions::default(),
+                )
+                .unwrap();
+            assert_eq!(bytes, decoded);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codec_packbits_float6_e2m3fn() -> Result<(), Box<dyn std::error::Error>> {
+        for encoding in [
+            PackBitsPaddingEncoding::None,
+            PackBitsPaddingEncoding::FirstByte,
+            PackBitsPaddingEncoding::LastByte,
+        ] {
+            let codec = Arc::new(super::PackBitsCodec::new(encoding, None, None).unwrap());
+            let data_type = DataType::Float6E2M3FN;
+            let fill_value = FillValue::from(0u8);
+
+            let chunk_shape = vec![NonZeroU64::new(64).unwrap(), NonZeroU64::new(1).unwrap()];
+            let chunk_representation =
+                ChunkRepresentation::new(chunk_shape, data_type.clone(), fill_value).unwrap();
+            let bytes = ArrayBytes::new_flen((0..64).map(|i| i as u8).collect::<Vec<u8>>());
+
+            // Encoding
+            let encoded = codec.encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )?;
+            assert!((encoded.len() as u64) <= (6 * 64).div_ceil(&8) + 1);
+
+            // Decoding
+            let decoded = codec
+                .decode(
+                    encoded.clone(),
+                    &chunk_representation,
+                    &CodecOptions::default(),
+                )
+                .unwrap();
+            assert_eq!(bytes, decoded);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codec_packbits_float6_e3m2fn() -> Result<(), Box<dyn std::error::Error>> {
+        for encoding in [
+            PackBitsPaddingEncoding::None,
+            PackBitsPaddingEncoding::FirstByte,
+            PackBitsPaddingEncoding::LastByte,
+        ] {
+            let codec = Arc::new(super::PackBitsCodec::new(encoding, None, None).unwrap());
+            let data_type = DataType::Float6E3M2FN;
+            let fill_value = FillValue::from(0u8);
+
+            let chunk_shape = vec![NonZeroU64::new(64).unwrap(), NonZeroU64::new(1).unwrap()];
+            let chunk_representation =
+                ChunkRepresentation::new(chunk_shape, data_type.clone(), fill_value).unwrap();
+            let bytes = ArrayBytes::new_flen((0..64).map(|i| i as u8).collect::<Vec<u8>>());
+
+            // Encoding
+            let encoded = codec.encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )?;
+            assert!((encoded.len() as u64) <= (6 * 64).div_ceil(&8) + 1);
+
+            // Decoding
+            let decoded = codec
+                .decode(
+                    encoded.clone(),
+                    &chunk_representation,
+                    &CodecOptions::default(),
+                )
+                .unwrap();
+            assert_eq!(bytes, decoded);
         }
         Ok(())
     }
