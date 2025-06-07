@@ -53,6 +53,8 @@ impl ElementFixedLength for half::f16 {}
 impl ElementFixedLength for half::bf16 {}
 impl ElementFixedLength for f32 {}
 impl ElementFixedLength for f64 {}
+impl ElementFixedLength for num::complex::Complex<half::bf16> {}
+impl ElementFixedLength for num::complex::Complex<half::f16> {}
 impl ElementFixedLength for num::complex::Complex32 {}
 impl ElementFixedLength for num::complex::Complex64 {}
 impl<const N: usize> ElementFixedLength for [u8; N] {}
@@ -93,10 +95,14 @@ impl ElementOwned for bool {
 }
 
 macro_rules! impl_element_pod {
-    ($raw_type:ty, $data_type:expr) => {
+    ($raw_type:ty, $pattern:pat $(if $guard:expr)? $(,)?) => {
         impl Element for $raw_type {
             fn validate_data_type(data_type: &DataType) -> Result<(), ArrayError> {
-                (data_type == &$data_type).then_some(()).ok_or(IET)
+                if matches!(data_type, $pattern) {
+                    Ok(())
+                } else {
+                    Err(IET)
+                }
             }
 
             fn into_array_bytes<'a>(
@@ -133,8 +139,16 @@ impl_element_pod!(half::f16, DataType::Float16);
 impl_element_pod!(f32, DataType::Float32);
 impl_element_pod!(f64, DataType::Float64);
 impl_element_pod!(half::bf16, DataType::BFloat16);
-impl_element_pod!(num::complex::Complex32, DataType::Complex64);
-impl_element_pod!(num::complex::Complex64, DataType::Complex128);
+impl_element_pod!(num::complex::Complex<half::bf16>, DataType::ComplexBFloat16);
+impl_element_pod!(num::complex::Complex<half::f16>, DataType::ComplexFloat16);
+impl_element_pod!(
+    num::complex::Complex32,
+    DataType::Complex64 | DataType::ComplexFloat32
+);
+impl_element_pod!(
+    num::complex::Complex64,
+    DataType::Complex128 | DataType::ComplexFloat64
+);
 
 impl<const N: usize> Element for &[u8; N] {
     fn validate_data_type(data_type: &DataType) -> Result<(), ArrayError> {
