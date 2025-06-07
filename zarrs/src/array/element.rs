@@ -127,11 +127,11 @@ macro_rules! impl_element_pod {
     };
 }
 
-impl_element_pod!(i8, DataType::Int8);
+impl_element_pod!(i8, DataType::Int8 | DataType::Int4 | DataType::Int2);
 impl_element_pod!(i16, DataType::Int16);
 impl_element_pod!(i32, DataType::Int32);
 impl_element_pod!(i64, DataType::Int64);
-impl_element_pod!(u8, DataType::UInt8);
+impl_element_pod!(u8, DataType::UInt8 | DataType::UInt4 | DataType::UInt2);
 impl_element_pod!(u16, DataType::UInt16);
 impl_element_pod!(u32, DataType::UInt32);
 impl_element_pod!(u64, DataType::UInt64);
