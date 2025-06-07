@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
+- Fix missing support for `bitround` `[u]int8` partial decoding
 
 [#200]: https://github.com/zarrs/zarrs/pull/200
 
