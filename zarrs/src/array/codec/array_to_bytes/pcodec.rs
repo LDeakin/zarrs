@@ -229,6 +229,42 @@ mod tests {
     }
 
     #[test]
+    fn codec_pcodec_round_trip_complex_float16() {
+        codec_pcodec_round_trip_impl(
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
+            DataType::ComplexFloat16,
+            FillValue::from(num::complex::Complex::<half::f16>::new(
+                half::f16::from_f32(0f32),
+                half::f16::from_f32(0f32),
+            )),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_pcodec_round_trip_complex_float32() {
+        codec_pcodec_round_trip_impl(
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
+            DataType::ComplexFloat32,
+            FillValue::from(num::complex::Complex::<f32>::new(0f32, 0f32)),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn codec_pcodec_round_trip_complex_float64() {
+        codec_pcodec_round_trip_impl(
+            &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())
+                .unwrap(),
+            DataType::ComplexFloat64,
+            FillValue::from(num::complex::Complex::<f64>::new(0f64, 0f64)),
+        )
+        .unwrap();
+    }
+
+    #[test]
     fn codec_pcodec_round_trip_complex64() {
         codec_pcodec_round_trip_impl(
             &PcodecCodec::new_with_configuration(&serde_json::from_str(JSON_VALID).unwrap())

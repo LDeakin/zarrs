@@ -211,6 +211,10 @@ impl DataType {
                 zarrs_registry::data_type::FLOAT32 => return Ok(Self::Float32),
                 zarrs_registry::data_type::FLOAT64 => return Ok(Self::Float64),
                 zarrs_registry::data_type::BFLOAT16 => return Ok(Self::BFloat16),
+                zarrs_registry::data_type::COMPLEX_BFLOAT16 => return Ok(Self::ComplexBFloat16),
+                zarrs_registry::data_type::COMPLEX_FLOAT16 => return Ok(Self::ComplexFloat16),
+                zarrs_registry::data_type::COMPLEX_FLOAT32 => return Ok(Self::ComplexFloat32),
+                zarrs_registry::data_type::COMPLEX_FLOAT64 => return Ok(Self::ComplexFloat64),
                 zarrs_registry::data_type::COMPLEX64 => return Ok(Self::Complex64),
                 zarrs_registry::data_type::COMPLEX128 => return Ok(Self::Complex128),
                 zarrs_registry::data_type::STRING => return Ok(Self::String),
@@ -438,7 +442,7 @@ impl DataType {
                 Ok(FillValueMetadataV3::from(number))
             }
             Self::ComplexBFloat16 => {
-                let bytes: &[u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let bytes: &[u8; 4] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let re =
                     half::bf16::from_ne_bytes(unsafe { bytes[0..2].try_into().unwrap_unchecked() });
                 let im =
@@ -448,7 +452,7 @@ impl DataType {
                 Ok(FillValueMetadataV3::from([re, im]))
             }
             Self::ComplexFloat16 => {
-                let bytes: &[u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let bytes: &[u8; 4] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let re =
                     half::f16::from_ne_bytes(unsafe { bytes[0..2].try_into().unwrap_unchecked() });
                 let im =
@@ -970,6 +974,126 @@ mod tests {
                 .as_ne_bytes(),
             bf16::NEG_INFINITY.to_ne_bytes()
         );
+    }
+
+    #[test]
+    fn data_type_complex_bfloat16() {
+        let json = r#""complex_bfloat16""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexBFloat16);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (half::bf16::from_f32(-7.0f32))
+                .to_ne_bytes()
+                .iter()
+                .chain(half::bf16::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
+    }
+
+    #[test]
+    fn data_type_complex_float16() {
+        let json = r#""complex_float16""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexFloat16);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (half::f16::from_f32(-7.0f32))
+                .to_ne_bytes()
+                .iter()
+                .chain(half::f16::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
+    }
+
+    #[test]
+    fn data_type_complex_float32() {
+        let json = r#""complex_float32""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexFloat32);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (-7.0f32)
+                .to_ne_bytes()
+                .iter()
+                .chain(f32::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
+    }
+
+    #[test]
+    fn data_type_complexfloat64() {
+        let json = r#""complex_float64""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::ComplexFloat64);
+
+        let metadata =
+            serde_json::from_str::<FillValueMetadataV3>(r#"[-7.0, "Infinity"]"#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(
+            fill_value.as_ne_bytes(),
+            (-7.0f64)
+                .to_ne_bytes()
+                .iter()
+                .chain(f64::INFINITY.to_ne_bytes().iter())
+                .copied()
+                .collect::<Vec<u8>>()
+        );
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#"-7.0"#).unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err())
     }
 
     #[test]
