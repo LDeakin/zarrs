@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - These have no associated `Element`/`ElementOwned` type and cannot be used with `Array::*_elements()` methods
   - Only hex string fill values are supported
 
+### Changed
+- Sign extend to the nearest byte when decoding in the `packbits` codec
+
 ### Fixed
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
 - Fix missing support for `bitround` `[u]int8` partial decoding
