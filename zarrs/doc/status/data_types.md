@@ -13,6 +13,9 @@
 | [`UInt16`]            | uint16             | >u2 <u2     | [`u16`]                        |              |
 | [`UInt32`]            | uint32             | >u4 <u4     | [`u32`]                        |              |
 | [`UInt64`]            | uint64             | >u8 <u8     | [`u64`]                        |              |
+| [`Float4E2M1FN`]      | float4_e2m1fn      |             |                                |              |
+| [`Float6E2M3FN`]      | float6_e2m3fn      |             |                                |              |
+| [`Float6E3M2FN`]      | float6_e3m2fn      |             |                                |              |
 | [`Float8E3M4`]        | float8_e3m4        |             |                                |              |
 | [`Float8E4M3`]        | float8_e4m3        |             |                                |              |
 | [`Float8E4M3B11FNUZ`] | float8_e4m3b11fnuz |             |                                |              |
@@ -49,6 +52,9 @@
 [`UInt16`]: crate::array::DataType::UInt16
 [`UInt32`]: crate::array::DataType::UInt32
 [`UInt64`]: crate::array::DataType::UInt64
+[`Float4E2M1FN`]: crate::array::DataType::Float4E2M1FN
+[`Float6E2M3FN`]: crate::array::DataType::Float6E2M3FN
+[`Float6E3M2FN`]: crate::array::DataType::Float6E3M2FN
 [`Float8E3M4`]: crate::array::DataType::Float8E3M4
 [`Float8E4M3`]: crate::array::DataType::Float8E4M3
 [`Float8E4M3B11FNUZ`]: crate::array::DataType::Float8E4M3B11FNUZ
