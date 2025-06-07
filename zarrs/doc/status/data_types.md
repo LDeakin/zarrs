@@ -1,10 +1,14 @@
 | [`DataType`]          | V3 `name`          | V2 `dtype`  | [`ElementOwned`] / [`Element`] | Feature Flag |
 | --------------------- | ------------------ | ----------- | ------------------------------ | ------------ |
 | [`Bool`]              | bool               | \|b1        | [`bool`]                       |              |
+| [`Int2`]              | int2               |             | [`i8`]                         |              |
+| [`Int4`]              | int4               |             | [`i8`]                         |              |
 | [`Int8`]              | int8               | \|i1        | [`i8`]                         |              |
 | [`Int16`]             | int16              | >i2 <i2     | [`i16`]                        |              |
 | [`Int32`]             | int32              | >i4 <i4     | [`i32`]                        |              |
 | [`Int64`]             | int64              | >i8 <i8     | [`i64`]                        |              |
+| [`UInt2`]             | uint2              |             | [`u8`]                         |              |
+| [`UInt4`]             | uint4              |             | [`u8`]                         |              |
 | [`UInt8`]             | uint8              | \|u1        | [`u8`]                         |              |
 | [`UInt16`]            | uint16             | >u2 <u2     | [`u16`]                        |              |
 | [`UInt32`]            | uint32             | >u4 <u4     | [`u32`]                        |              |
@@ -33,14 +37,18 @@
 [`DataType`]: crate::array::DataType
 
 [`Bool`]: crate::array::DataType::Bool
+[`Int2`]: crate::array::DataType::Int2
+[`Int4`]: crate::array::DataType::Int4
 [`Int8`]: crate::array::DataType::Int8
 [`Int16`]: crate::array::DataType::Int16
 [`Int32`]: crate::array::DataType::Int32
 [`Int64`]: crate::array::DataType::Int64
-[`Uint8`]: crate::array::DataType::UInt8
-[`Uint16`]: crate::array::DataType::UInt16
-[`Uint32`]: crate::array::DataType::UInt32
-[`Uint64`]: crate::array::DataType::UInt64
+[`UInt2`]: crate::array::DataType::UInt2
+[`UInt4`]: crate::array::DataType::UInt4
+[`UInt8`]: crate::array::DataType::UInt8
+[`UInt16`]: crate::array::DataType::UInt16
+[`UInt32`]: crate::array::DataType::UInt32
+[`UInt64`]: crate::array::DataType::UInt64
 [`Float8E3M4`]: crate::array::DataType::Float8E3M4
 [`Float8E4M3`]: crate::array::DataType::Float8E4M3
 [`Float8E4M3B11FNUZ`]: crate::array::DataType::Float8E4M3B11FNUZ

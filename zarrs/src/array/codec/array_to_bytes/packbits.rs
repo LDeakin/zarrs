@@ -77,6 +77,26 @@ fn pack_bits_components(
             num_components: 1,
             sign_extension: false,
         }),
+        DataType::UInt2 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 2,
+            num_components: 1,
+            sign_extension: false,
+        }),
+        DataType::Int2 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 2,
+            num_components: 1,
+            sign_extension: true,
+        }),
+        DataType::UInt4 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 4,
+            num_components: 1,
+            sign_extension: false,
+        }),
+        DataType::Int4 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 4,
+            num_components: 1,
+            sign_extension: true,
+        }),
         DataType::UInt8 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 8,
             num_components: 1,
@@ -350,6 +370,158 @@ mod tests {
                     assert_eq!(elements, i16::from_array_bytes(&data_type, decoded)?);
                 }
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codec_packbits_uint2() -> Result<(), Box<dyn std::error::Error>> {
+        for encoding in [
+            PackBitsPaddingEncoding::None,
+            PackBitsPaddingEncoding::FirstByte,
+            PackBitsPaddingEncoding::LastByte,
+        ] {
+            let codec = Arc::new(super::PackBitsCodec::new(encoding, None, None).unwrap());
+            let data_type = DataType::UInt2;
+            let fill_value = FillValue::from(0u8);
+
+            let chunk_shape = vec![NonZeroU64::new(4).unwrap(), NonZeroU64::new(1).unwrap()];
+            let chunk_representation =
+                ChunkRepresentation::new(chunk_shape, data_type.clone(), fill_value).unwrap();
+            let elements: Vec<u8> = (0..4).map(|i| i as u8).collect();
+            let bytes = u8::into_array_bytes(&data_type, &elements)?.into_owned();
+
+            // Encoding
+            let encoded = codec.encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )?;
+            assert!((encoded.len() as u64) <= (4 * 4).div_ceil(&8) + 1);
+
+            // Decoding
+            let decoded = codec
+                .decode(
+                    encoded.clone(),
+                    &chunk_representation,
+                    &CodecOptions::default(),
+                )
+                .unwrap();
+            assert_eq!(elements, u8::from_array_bytes(&data_type, decoded)?);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codec_packbits_uint4() -> Result<(), Box<dyn std::error::Error>> {
+        for encoding in [
+            PackBitsPaddingEncoding::None,
+            PackBitsPaddingEncoding::FirstByte,
+            PackBitsPaddingEncoding::LastByte,
+        ] {
+            let codec = Arc::new(super::PackBitsCodec::new(encoding, None, None).unwrap());
+            let data_type = DataType::UInt4;
+            let fill_value = FillValue::from(0u8);
+
+            let chunk_shape = vec![NonZeroU64::new(16).unwrap(), NonZeroU64::new(1).unwrap()];
+            let chunk_representation =
+                ChunkRepresentation::new(chunk_shape, data_type.clone(), fill_value).unwrap();
+            let elements: Vec<u8> = (0..16).map(|i| i as u8).collect();
+            let bytes = u8::into_array_bytes(&data_type, &elements)?.into_owned();
+
+            // Encoding
+            let encoded = codec.encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )?;
+            assert!((encoded.len() as u64) <= (4 * 16).div_ceil(&8) + 1);
+
+            // Decoding
+            let decoded = codec
+                .decode(
+                    encoded.clone(),
+                    &chunk_representation,
+                    &CodecOptions::default(),
+                )
+                .unwrap();
+            assert_eq!(elements, u8::from_array_bytes(&data_type, decoded)?);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codec_packbits_int2() -> Result<(), Box<dyn std::error::Error>> {
+        for encoding in [
+            PackBitsPaddingEncoding::None,
+            PackBitsPaddingEncoding::FirstByte,
+            PackBitsPaddingEncoding::LastByte,
+        ] {
+            let codec = Arc::new(super::PackBitsCodec::new(encoding, None, None).unwrap());
+            let data_type = DataType::Int2;
+            let fill_value = FillValue::from(0i8);
+
+            let chunk_shape = vec![NonZeroU64::new(4).unwrap(), NonZeroU64::new(1).unwrap()];
+            let chunk_representation =
+                ChunkRepresentation::new(chunk_shape, data_type.clone(), fill_value).unwrap();
+            let elements: Vec<i8> = (-2..2).map(|i| i as i8).collect();
+            let bytes = i8::into_array_bytes(&data_type, &elements)?.into_owned();
+
+            // Encoding
+            let encoded = codec.encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )?;
+            assert!((encoded.len() as u64) <= (4 * 4).div_ceil(&8) + 1);
+
+            // Decoding
+            let decoded = codec
+                .decode(
+                    encoded.clone(),
+                    &chunk_representation,
+                    &CodecOptions::default(),
+                )
+                .unwrap();
+            assert_eq!(elements, i8::from_array_bytes(&data_type, decoded)?);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn codec_packbits_int4() -> Result<(), Box<dyn std::error::Error>> {
+        for encoding in [
+            PackBitsPaddingEncoding::None,
+            PackBitsPaddingEncoding::FirstByte,
+            PackBitsPaddingEncoding::LastByte,
+        ] {
+            let codec = Arc::new(super::PackBitsCodec::new(encoding, None, None).unwrap());
+            let data_type = DataType::Int4;
+            let fill_value = FillValue::from(0i8);
+
+            let chunk_shape = vec![NonZeroU64::new(16).unwrap(), NonZeroU64::new(1).unwrap()];
+            let chunk_representation =
+                ChunkRepresentation::new(chunk_shape, data_type.clone(), fill_value).unwrap();
+            let elements: Vec<i8> = (-8..8).map(|i| i as i8).collect();
+            let bytes = i8::into_array_bytes(&data_type, &elements)?.into_owned();
+
+            // Encoding
+            let encoded = codec.encode(
+                bytes.clone(),
+                &chunk_representation,
+                &CodecOptions::default(),
+            )?;
+            assert!((encoded.len() as u64) <= (4 * 16).div_ceil(&8) + 1);
+
+            // Decoding
+            let decoded = codec
+                .decode(
+                    encoded.clone(),
+                    &chunk_representation,
+                    &CodecOptions::default(),
+                )
+                .unwrap();
+            assert_eq!(elements, i8::from_array_bytes(&data_type, decoded)?);
         }
         Ok(())
     }

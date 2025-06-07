@@ -13,11 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `float8_{e3m4,e4m3,e4m3b11fnuz,e4m3fnuz,e5m2,e5m2fnuz,e8m0fnu}` data types
   - These have no associated `Element`/`ElementOwned` type and cannot be used with `Array::*_elements()` methods
   - Only hex string fill values are supported
+- Add `[u]int{2,4}` data types
+
+### Changed
+- Sign extend to the nearest byte when decoding in the `packbits` codec
 
 ### Fixed
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
 - Fix missing support for `bitround` `[u]int8` partial decoding
 - Fix missing support for `pcodec` `{int,uint,float}16` partial decoding
+- Fixed `packbits` codec with a non-zero `first_bit`
 
 [#200]: https://github.com/zarrs/zarrs/pull/200
 
