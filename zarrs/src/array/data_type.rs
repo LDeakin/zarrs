@@ -260,6 +260,15 @@ impl DataType {
                 zarrs_registry::data_type::UINT16 => return Ok(Self::UInt16),
                 zarrs_registry::data_type::UINT32 => return Ok(Self::UInt32),
                 zarrs_registry::data_type::UINT64 => return Ok(Self::UInt64),
+                zarrs_registry::data_type::FLOAT8_E3M4 => return Ok(Self::Float8E3M4),
+                zarrs_registry::data_type::FLOAT8_E4M3 => return Ok(Self::Float8E4M3),
+                zarrs_registry::data_type::FLOAT8_E4M3B11FNUZ => {
+                    return Ok(Self::Float8E4M3B11FNUZ)
+                }
+                zarrs_registry::data_type::FLOAT8_E4M3FNUZ => return Ok(Self::Float8E4M3FNUZ),
+                zarrs_registry::data_type::FLOAT8_E5M2 => return Ok(Self::Float8E5M2),
+                zarrs_registry::data_type::FLOAT8_E5M2FNUZ => return Ok(Self::Float8E5M2FNUZ),
+                zarrs_registry::data_type::FLOAT8_E8M0FNU => return Ok(Self::Float8E8M0FNU),
                 zarrs_registry::data_type::FLOAT16 => return Ok(Self::Float16),
                 zarrs_registry::data_type::FLOAT32 => return Ok(Self::Float32),
                 zarrs_registry::data_type::FLOAT64 => return Ok(Self::Float64),
@@ -961,6 +970,132 @@ mod tests {
                 .unwrap()
                 .as_ne_bytes(),
             f64::NEG_INFINITY.to_ne_bytes()
+        );
+    }
+
+    #[test]
+    fn data_type_float8_e3m4() {
+        let json = r#""float8_e3m4""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float8_e3m4");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0xaa""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [170]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float8_e4m3() {
+        let json = r#""float8_e4m3""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float8_e4m3");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0xaa""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [170]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float8_e4m3b11fnuz() {
+        let json = r#""float8_e4m3b11fnuz""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float8_e4m3b11fnuz");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0xaa""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [170]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float8_e4m3fnuz() {
+        let json = r#""float8_e4m3fnuz""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float8_e4m3fnuz");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0xaa""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [170]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float8_e5m2() {
+        let json = r#""float8_e5m2""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float8_e5m2");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0xaa""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [170]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float8_e5m2fnuz() {
+        let json = r#""float8_e5m2fnuz""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float8_e5m2fnuz");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0xaa""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [170]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+    }
+
+    #[test]
+    fn data_type_float8_e8m0fnu() {
+        let json = r#""float8_e8m0fnu""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type.name(), "float8_e8m0fnu");
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>(r#""0xaa""#).unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), [170]);
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
         );
     }
 
