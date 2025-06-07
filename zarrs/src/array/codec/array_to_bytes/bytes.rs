@@ -74,34 +74,60 @@ pub(crate) fn create_codec_bytes(metadata: &MetadataV3) -> Result<Codec, PluginC
 /// Reverse the endianness of bytes for a given data type.
 pub(crate) fn reverse_endianness(v: &mut [u8], data_type: &DataType) {
     match data_type {
-        DataType::Bool | DataType::Int8 | DataType::UInt8 | DataType::RawBits(_) => {}
-        DataType::Int16 | DataType::UInt16 | DataType::Float16 | DataType::BFloat16 => {
+        DataType::Bool
+        | DataType::Int2
+        | DataType::Int4
+        | DataType::Int8
+        | DataType::UInt2
+        | DataType::UInt4
+        | DataType::UInt8
+        | DataType::Float4E2M1FN
+        | DataType::Float6E2M3FN
+        | DataType::Float6E3M2FN
+        | DataType::Float8E3M4
+        | DataType::Float8E4M3
+        | DataType::Float8E4M3B11FNUZ
+        | DataType::Float8E4M3FNUZ
+        | DataType::Float8E5M2
+        | DataType::Float8E5M2FNUZ
+        | DataType::Float8E8M0FNU
+        | DataType::RawBits(_) => {}
+        DataType::Int16
+        | DataType::UInt16
+        | DataType::Float16
+        | DataType::BFloat16
+        | DataType::ComplexFloat16
+        | DataType::ComplexBFloat16 => {
             let swap = |chunk: &mut [u8]| {
                 let bytes = u16::from_ne_bytes(unsafe { chunk.try_into().unwrap_unchecked() });
                 chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
             };
             v.chunks_exact_mut(2).for_each(swap);
         }
-        DataType::Int32 | DataType::UInt32 | DataType::Float32 | DataType::Complex64 => {
+        DataType::Int32
+        | DataType::UInt32
+        | DataType::Float32
+        | DataType::Complex64
+        | DataType::ComplexFloat32 => {
             let swap = |chunk: &mut [u8]| {
                 let bytes = u32::from_ne_bytes(unsafe { chunk.try_into().unwrap_unchecked() });
                 chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
             };
             v.chunks_exact_mut(4).for_each(swap);
         }
-        DataType::Int64 | DataType::UInt64 | DataType::Float64 | DataType::Complex128 => {
+        DataType::Int64
+        | DataType::UInt64
+        | DataType::Float64
+        | DataType::Complex128
+        | DataType::ComplexFloat64 => {
             let swap = |chunk: &mut [u8]| {
                 let bytes = u64::from_ne_bytes(unsafe { chunk.try_into().unwrap_unchecked() });
                 chunk.copy_from_slice(bytes.swap_bytes().to_ne_bytes().as_slice());
             };
             v.chunks_exact_mut(8).for_each(swap);
         }
-        // Variable-sized data types are not supported and are rejected outside of this function
-        DataType::String | DataType::Bytes => unreachable!(),
-        _ => {
-            // FIXME: Data type extensions, endianness reversal for custom data types
-            unimplemented!("Reverse endianness for data type {:?}", data_type)
-        }
+        // Variable-sized data types and extensions are not supported and are rejected outside of this function
+        DataType::Extension(_) | DataType::String | DataType::Bytes => unreachable!(),
     }
 }
 
