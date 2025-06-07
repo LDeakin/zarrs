@@ -28,6 +28,10 @@ use zarrs_registry::ExtensionAliasesDataTypeV3;
 pub enum DataType {
     /// `bool` Boolean.
     Bool,
+    /// `int2` Integer in `[-2, 1]`.
+    Int2,
+    /// `int4` Integer in `[-8, 7]`.
+    Int4,
     /// `int8` Integer in `[-2^7, 2^7-1]`.
     Int8,
     /// `int16` Integer in `[-2^15, 2^15-1]`.
@@ -36,6 +40,10 @@ pub enum DataType {
     Int32,
     /// `int64` Integer in `[-2^63, 2^63-1]`.
     Int64,
+    /// `uint2` Integer in `[0, 3]`.
+    UInt2,
+    /// `uint4` Integer in `[0, 15]`.
+    UInt4,
     /// `uint8` Integer in `[0, 2^8-1]`.
     UInt8,
     /// `uint16` Integer in `[0, 2^16-1]`.
@@ -122,10 +130,14 @@ impl DataType {
     pub fn name(&self) -> String {
         match self {
             Self::Bool => zarrs_registry::data_type::BOOL.to_string(),
+            Self::Int2 => zarrs_registry::data_type::INT2.to_string(),
+            Self::Int4 => zarrs_registry::data_type::INT4.to_string(),
             Self::Int8 => zarrs_registry::data_type::INT8.to_string(),
             Self::Int16 => zarrs_registry::data_type::INT16.to_string(),
             Self::Int32 => zarrs_registry::data_type::INT32.to_string(),
             Self::Int64 => zarrs_registry::data_type::INT64.to_string(),
+            Self::UInt2 => zarrs_registry::data_type::UINT2.to_string(),
+            Self::UInt4 => zarrs_registry::data_type::UINT4.to_string(),
             Self::UInt8 => zarrs_registry::data_type::UINT8.to_string(),
             Self::UInt16 => zarrs_registry::data_type::UINT16.to_string(),
             Self::UInt32 => zarrs_registry::data_type::UINT32.to_string(),
@@ -159,10 +171,14 @@ impl DataType {
     pub fn metadata(&self) -> MetadataV3 {
         match self {
             Self::Bool => MetadataV3::new(zarrs_registry::data_type::BOOL),
+            Self::Int2 => MetadataV3::new(zarrs_registry::data_type::INT2),
+            Self::Int4 => MetadataV3::new(zarrs_registry::data_type::INT4),
             Self::Int8 => MetadataV3::new(zarrs_registry::data_type::INT8),
             Self::Int16 => MetadataV3::new(zarrs_registry::data_type::INT16),
             Self::Int32 => MetadataV3::new(zarrs_registry::data_type::INT32),
             Self::Int64 => MetadataV3::new(zarrs_registry::data_type::INT64),
+            Self::UInt2 => MetadataV3::new(zarrs_registry::data_type::UINT2),
+            Self::UInt4 => MetadataV3::new(zarrs_registry::data_type::UINT4),
             Self::UInt8 => MetadataV3::new(zarrs_registry::data_type::UINT8),
             Self::UInt16 => MetadataV3::new(zarrs_registry::data_type::UINT16),
             Self::UInt32 => MetadataV3::new(zarrs_registry::data_type::UINT32),
@@ -200,7 +216,11 @@ impl DataType {
     pub fn size(&self) -> DataTypeSize {
         match self {
             Self::Bool
+            | Self::Int2
+            | Self::Int4
             | Self::Int8
+            | Self::UInt2
+            | Self::UInt4
             | Self::UInt8
             | Self::Float8E3M4
             | Self::Float8E4M3
@@ -252,10 +272,14 @@ impl DataType {
         if metadata.configuration_is_none_or_empty() {
             match metadata.name() {
                 zarrs_registry::data_type::BOOL => return Ok(Self::Bool),
+                zarrs_registry::data_type::INT2 => return Ok(Self::Int2),
+                zarrs_registry::data_type::INT4 => return Ok(Self::Int4),
                 zarrs_registry::data_type::INT8 => return Ok(Self::Int8),
                 zarrs_registry::data_type::INT16 => return Ok(Self::Int16),
                 zarrs_registry::data_type::INT32 => return Ok(Self::Int32),
                 zarrs_registry::data_type::INT64 => return Ok(Self::Int64),
+                zarrs_registry::data_type::UINT2 => return Ok(Self::UInt2),
+                zarrs_registry::data_type::UINT4 => return Ok(Self::UInt4),
                 zarrs_registry::data_type::UINT8 => return Ok(Self::UInt8),
                 zarrs_registry::data_type::UINT16 => return Ok(Self::UInt16),
                 zarrs_registry::data_type::UINT32 => return Ok(Self::UInt32),
@@ -329,6 +353,24 @@ impl DataType {
         let err = |_| DataTypeFillValueMetadataError::new(self.name(), fill_value.clone());
         match self {
             Self::Bool => Ok(FV::from(fill_value.as_bool().ok_or_else(err0)?)),
+            Self::Int2 => {
+                let int = fill_value.as_i64().ok_or_else(err0)?;
+                let int = i8::try_from(int).map_err(err)?;
+                if (-2..2).contains(&int) {
+                    Ok(FV::from(int))
+                } else {
+                    Err(err0())
+                }
+            }
+            Self::Int4 => {
+                let int = fill_value.as_i64().ok_or_else(err0)?;
+                let int = i8::try_from(int).map_err(err)?;
+                if (-8..8).contains(&int) {
+                    Ok(FV::from(int))
+                } else {
+                    Err(err0())
+                }
+            }
             Self::Int8 => {
                 let int = fill_value.as_i64().ok_or_else(err0)?;
                 let int = i8::try_from(int).map_err(err)?;
@@ -347,6 +389,24 @@ impl DataType {
             Self::Int64 => {
                 let int = fill_value.as_i64().ok_or_else(err0)?;
                 Ok(FV::from(int))
+            }
+            Self::UInt2 => {
+                let int = fill_value.as_u64().ok_or_else(err0)?;
+                let int = u8::try_from(int).map_err(err)?;
+                if (0..4).contains(&int) {
+                    Ok(FV::from(int))
+                } else {
+                    Err(err0())
+                }
+            }
+            Self::UInt4 => {
+                let int = fill_value.as_u64().ok_or_else(err0)?;
+                let int = u8::try_from(int).map_err(err)?;
+                if (0..16).contains(&int) {
+                    Ok(FV::from(int))
+                } else {
+                    Err(err0())
+                }
             }
             Self::UInt8 => {
                 let int = fill_value.as_u64().ok_or_else(err0)?;
@@ -458,6 +518,24 @@ impl DataType {
                     _ => Err(error()),
                 }
             }
+            Self::Int2 => {
+                let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let number = i8::from_ne_bytes(bytes);
+                if (-2..2).contains(&number) {
+                    Ok(FillValueMetadataV3::from(number))
+                } else {
+                    Err(error())
+                }
+            }
+            Self::Int4 => {
+                let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let number = i8::from_ne_bytes(bytes);
+                if (-8..8).contains(&number) {
+                    Ok(FillValueMetadataV3::from(number))
+                } else {
+                    Err(error())
+                }
+            }
             Self::Int8 => {
                 let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let number = i8::from_ne_bytes(bytes);
@@ -477,6 +555,24 @@ impl DataType {
                 let bytes: [u8; 8] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let number = i64::from_ne_bytes(bytes);
                 Ok(FillValueMetadataV3::from(number))
+            }
+            Self::UInt2 => {
+                let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let number = u8::from_ne_bytes(bytes);
+                if (0..4).contains(&number) {
+                    Ok(FillValueMetadataV3::from(number))
+                } else {
+                    Err(error())
+                }
+            }
+            Self::UInt4 => {
+                let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let number = u8::from_ne_bytes(bytes);
+                if (0..16).contains(&number) {
+                    Ok(FillValueMetadataV3::from(number))
+                } else {
+                    Err(error())
+                }
             }
             Self::UInt8 => {
                 let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
@@ -673,6 +769,70 @@ mod tests {
     }
 
     #[test]
+    fn data_type_int2() {
+        let json = r#""int2""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::Int2);
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("-1").unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), (-1i8).to_ne_bytes());
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadataV3>("1").unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            1i8.to_ne_bytes()
+        );
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("-3").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("2").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
+    }
+
+    #[test]
+    fn data_type_int4() {
+        let json = r#""int4""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::Int4);
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("-7").unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), (-7i8).to_ne_bytes());
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        assert_eq!(
+            data_type
+                .fill_value_from_metadata(
+                    &serde_json::from_str::<FillValueMetadataV3>("7").unwrap()
+                )
+                .unwrap()
+                .as_ne_bytes(),
+            7i8.to_ne_bytes()
+        );
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("8").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("-9").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
+    }
+
+    #[test]
     fn data_type_int8() {
         let json = r#""int8""#;
         let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
@@ -782,6 +942,51 @@ mod tests {
                 .as_ne_bytes(),
             7i64.to_ne_bytes()
         );
+    }
+
+    #[test]
+    fn data_type_uint2() {
+        let json = r#""uint2""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::UInt2);
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("3").unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), 3u8.to_ne_bytes());
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("4").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("-1").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
+    }
+
+    #[test]
+    fn data_type_uint4() {
+        let json = r#""uint4""#;
+        let metadata: MetadataV3 = serde_json::from_str(json).unwrap();
+        let data_type =
+            DataType::from_metadata(&metadata, &ExtensionAliasesDataTypeV3::default()).unwrap();
+        assert_eq!(json, serde_json::to_string(&data_type.metadata()).unwrap());
+        assert_eq!(data_type, DataType::UInt4);
+
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("15").unwrap();
+        let fill_value = data_type.fill_value_from_metadata(&metadata).unwrap();
+        assert_eq!(fill_value.as_ne_bytes(), 15u8.to_ne_bytes());
+        assert_eq!(
+            metadata,
+            data_type.metadata_fill_value(&fill_value).unwrap()
+        );
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("16").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
+        let metadata = serde_json::from_str::<FillValueMetadataV3>("-1").unwrap();
+        assert!(data_type.fill_value_from_metadata(&metadata).is_err());
     }
 
     #[test]

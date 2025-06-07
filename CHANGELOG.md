@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `float8_{e3m4,e4m3,e4m3b11fnuz,e4m3fnuz,e5m2,e5m2fnuz,e8m0fnu}` data types
   - These have no associated `Element`/`ElementOwned` type and cannot be used with `Array::*_elements()` methods
   - Only hex string fill values are supported
+- Add `[u]int{2,4}` data types
 
 ### Changed
 - Sign extend to the nearest byte when decoding in the `packbits` codec
