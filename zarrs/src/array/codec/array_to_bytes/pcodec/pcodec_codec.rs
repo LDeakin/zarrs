@@ -197,13 +197,13 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             DataType::Int64 => {
                 pcodec_encode!(i64)
             }
-            DataType::Float16 => {
+            DataType::Float16 | DataType::ComplexFloat16 => {
                 pcodec_encode!(half::f16)
             }
-            DataType::Float32 | DataType::Complex64 => {
+            DataType::Float32 | DataType::Complex64 | DataType::ComplexFloat32 => {
                 pcodec_encode!(f32)
             }
-            DataType::Float64 | DataType::Complex128 => {
+            DataType::Float64 | DataType::Complex128 | DataType::ComplexFloat64 => {
                 pcodec_encode!(f64)
             }
             _ => Err(CodecError::UnsupportedDataType(
@@ -247,13 +247,13 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             DataType::Int64 => {
                 pcodec_decode!(i64)
             }
-            DataType::Float16 => {
+            DataType::Float16 | DataType::ComplexFloat16 => {
                 pcodec_decode!(half::f16)
             }
-            DataType::Float32 | DataType::Complex64 => {
+            DataType::Float32 | DataType::Complex64 | DataType::ComplexFloat32 => {
                 pcodec_decode!(f32)
             }
-            DataType::Float64 | DataType::Complex128 => {
+            DataType::Float64 | DataType::Complex128 | DataType::ComplexFloat64 => {
                 pcodec_decode!(f64)
             }
             _ => Err(CodecError::UnsupportedDataType(
@@ -302,19 +302,30 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
         }
 
         let size = match data_type {
-            DataType::UInt16 | DataType::Int16 | DataType::Float16 => Ok(file_size::<u16>(
+            DataType::UInt16 | DataType::Int16 | DataType::Float16 | DataType::ComplexFloat16 => {
+                Ok(
+                    file_size::<u16>(num_elements, &self.chunk_config.paging_spec)
+                        .map_err(|err| CodecError::from(err.to_string()))?,
+                )
+            }
+            DataType::UInt32
+            | DataType::Int32
+            | DataType::Float32
+            | DataType::Complex64
+            | DataType::ComplexFloat32 => Ok(file_size::<u32>(
                 num_elements,
                 &self.chunk_config.paging_spec,
             )
             .map_err(|err| CodecError::from(err.to_string()))?),
-            DataType::UInt32 | DataType::Int32 | DataType::Float32 | DataType::Complex64 => Ok(
-                file_size::<u32>(num_elements, &self.chunk_config.paging_spec)
-                    .map_err(|err| CodecError::from(err.to_string()))?,
-            ),
-            DataType::UInt64 | DataType::Int64 | DataType::Float64 | DataType::Complex128 => Ok(
-                file_size::<u64>(num_elements, &self.chunk_config.paging_spec)
-                    .map_err(|err| CodecError::from(err.to_string()))?,
-            ),
+            DataType::UInt64
+            | DataType::Int64
+            | DataType::Float64
+            | DataType::Complex128
+            | DataType::ComplexFloat64 => Ok(file_size::<u64>(
+                num_elements,
+                &self.chunk_config.paging_spec,
+            )
+            .map_err(|err| CodecError::from(err.to_string()))?),
             _ => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 PCODEC.to_string(),
