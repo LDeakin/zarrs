@@ -77,6 +77,26 @@ fn pack_bits_components(
             num_components: 1,
             sign_extension: false,
         }),
+        DataType::UInt2 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 2,
+            num_components: 1,
+            sign_extension: false,
+        }),
+        DataType::Int2 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 2,
+            num_components: 1,
+            sign_extension: true,
+        }),
+        DataType::UInt4 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 4,
+            num_components: 1,
+            sign_extension: false,
+        }),
+        DataType::Int4 => Ok(DataTypeExtensionPackBitsCodecComponents {
+            component_size_bits: 4,
+            num_components: 1,
+            sign_extension: true,
+        }),
         DataType::UInt8 => Ok(DataTypeExtensionPackBitsCodecComponents {
             component_size_bits: 8,
             num_components: 1,

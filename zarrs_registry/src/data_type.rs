@@ -1,6 +1,12 @@
 /// Unique identifier for the `bool` data type (core).
 pub const BOOL: &str = "bool";
 
+/// Unique identifier for the `int2` data type (registered).
+pub const INT2: &str = "int2";
+
+/// Unique identifier for the `int4` data type (registered).
+pub const INT4: &str = "int4";
+
 /// Unique identifier for the `int8` data type (core).
 pub const INT8: &str = "int8";
 
@@ -12,6 +18,12 @@ pub const INT32: &str = "int32";
 
 /// Unique identifier for the `int64` data type (core).
 pub const INT64: &str = "int64";
+
+/// Unique identifier for the `uint2` data type (registered).
+pub const UINT2: &str = "uint2";
+
+/// Unique identifier for the `uint4` data type (registered).
+pub const UINT4: &str = "uint4";
 
 /// Unique identifier for the `uint8` data type (core).
 pub const UINT8: &str = "uint8";
