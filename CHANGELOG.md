@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Implement `Element` for `&[u8; N]` for `r*` data type
-- Add `Complex{BFloat16,Float16,Float32,Float64}` data types
+- Add `complex_{bfloat16,float16,float32,float64}` data types
+- Add `float8_{e3m4,e4m3,e4m3b11fnuz,e4m3fnuz,e5m2,e5m2fnuz,e8m0fnu}` data types
+  - These have no associated `Element`/`ElementOwned` type and cannot be used with `Array::*_elements()` methods
+  - Only hex string fill values are supported
 
 ### Fixed
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])

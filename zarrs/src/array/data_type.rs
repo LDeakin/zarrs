@@ -44,6 +44,34 @@ pub enum DataType {
     UInt32,
     /// `uint64` Integer in `[0, 2^64-1]`.
     UInt64,
+    /// `float8_e3m4` an 8-bit floating point representation: sign bit, 3 bit exponent (bias 3), 4 bit mantissa.
+    /// - IEEE 754-compliant, with NaN and +/-inf.
+    //  - Subnormal numbers when biased exponent is 0.
+    Float8E3M4,
+    /// `float8_e4m3` an 8-bit floating point representation: sign bit, 4 bit exponent (bias 7), 3 bit mantissa.
+    /// - IEEE 754-compliant, with NaN and +/-inf.
+    //  - Subnormal numbers when biased exponent is 0.
+    Float8E4M3,
+    /// `float8_e4m3b11fnuz` an 8-bit floating point representation: sign bit, 4 bit exponent (bias 11), 3 bit mantissa.
+    /// - Extended range: no infinity, NaN represented by `0b1000'0000`.
+    /// - Subnormal numbers when biased exponent is 0.
+    Float8E4M3B11FNUZ,
+    /// `float8_e4m3fnuz` an 8-bit floating point representation: sign bit, 4 bit exponent (bias 8), 3 bit mantissa.
+    /// - Extended range: no infinity, NaN represented by `0b1000'0000`.
+    /// - Subnormal numbers when biased exponent is 0.
+    Float8E4M3FNUZ,
+    /// `float8_e5m2` an 8-bit floating point representation: sign bit, 5 bit exponent (bias 15), 2 bit mantissa.
+    /// - IEEE 754-compliant, with NaN and +/-inf.
+    /// - Subnormal numbers when biased exponent is 0.
+    Float8E5M2,
+    /// `float8_e5m2fnuz` an 8-bit floating point representation: sign bit, 5 bit exponent (bias 16), 2 bit mantissa.
+    /// - Extended range: no infinity, NaN represented by `0b1000'0000`.
+    /// - Subnormal numbers when biased exponent is 0.
+    Float8E5M2FNUZ,
+    /// `float8_e8m0fnu` an 8-bit floating point representation: no sign bit, 8 bit exponent (bias 127), 0 bit mantissa.
+    /// - No zero, no infinity, NaN represented by `0b1111'1111`.
+    /// - No subnormal numbers.
+    Float8E8M0FNU,
     /// `float16` IEEE 754 half-precision floating point: sign bit, 5 bits exponent, 10 bits mantissa.
     Float16,
     /// `float32` IEEE 754 single-precision floating point: sign bit, 8 bits exponent, 23 bits mantissa.
@@ -102,6 +130,13 @@ impl DataType {
             Self::UInt16 => zarrs_registry::data_type::UINT16.to_string(),
             Self::UInt32 => zarrs_registry::data_type::UINT32.to_string(),
             Self::UInt64 => zarrs_registry::data_type::UINT64.to_string(),
+            Self::Float8E3M4 => zarrs_registry::data_type::FLOAT8_E3M4.to_string(),
+            Self::Float8E4M3 => zarrs_registry::data_type::FLOAT8_E4M3.to_string(),
+            Self::Float8E4M3B11FNUZ => zarrs_registry::data_type::FLOAT8_E4M3B11FNUZ.to_string(),
+            Self::Float8E4M3FNUZ => zarrs_registry::data_type::FLOAT8_E4M3FNUZ.to_string(),
+            Self::Float8E5M2 => zarrs_registry::data_type::FLOAT8_E5M2.to_string(),
+            Self::Float8E5M2FNUZ => zarrs_registry::data_type::FLOAT8_E5M2FNUZ.to_string(),
+            Self::Float8E8M0FNU => zarrs_registry::data_type::FLOAT8_E8M0FNU.to_string(),
             Self::Float16 => zarrs_registry::data_type::FLOAT16.to_string(),
             Self::Float32 => zarrs_registry::data_type::FLOAT32.to_string(),
             Self::Float64 => zarrs_registry::data_type::FLOAT64.to_string(),
@@ -132,6 +167,15 @@ impl DataType {
             Self::UInt16 => MetadataV3::new(zarrs_registry::data_type::UINT16),
             Self::UInt32 => MetadataV3::new(zarrs_registry::data_type::UINT32),
             Self::UInt64 => MetadataV3::new(zarrs_registry::data_type::UINT64),
+            Self::Float8E3M4 => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E3M4),
+            Self::Float8E4M3 => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E4M3),
+            Self::Float8E4M3B11FNUZ => {
+                MetadataV3::new(zarrs_registry::data_type::FLOAT8_E4M3B11FNUZ)
+            }
+            Self::Float8E4M3FNUZ => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E4M3FNUZ),
+            Self::Float8E5M2 => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E5M2),
+            Self::Float8E5M2FNUZ => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E5M2FNUZ),
+            Self::Float8E8M0FNU => MetadataV3::new(zarrs_registry::data_type::FLOAT8_E8M0FNU),
             Self::Float16 => MetadataV3::new(zarrs_registry::data_type::FLOAT16),
             Self::Float32 => MetadataV3::new(zarrs_registry::data_type::FLOAT32),
             Self::Float64 => MetadataV3::new(zarrs_registry::data_type::FLOAT64),
@@ -155,7 +199,16 @@ impl DataType {
     #[must_use]
     pub fn size(&self) -> DataTypeSize {
         match self {
-            Self::Bool | Self::Int8 | Self::UInt8 => DataTypeSize::Fixed(1),
+            Self::Bool
+            | Self::Int8
+            | Self::UInt8
+            | Self::Float8E3M4
+            | Self::Float8E4M3
+            | Self::Float8E4M3B11FNUZ
+            | Self::Float8E4M3FNUZ
+            | Self::Float8E5M2
+            | Self::Float8E5M2FNUZ
+            | Self::Float8E8M0FNU => DataTypeSize::Fixed(1),
             Self::Int16 | Self::UInt16 | Self::Float16 | Self::BFloat16 => DataTypeSize::Fixed(2),
             Self::Int32
             | Self::UInt32
@@ -257,6 +310,7 @@ impl DataType {
     /// # Errors
     ///
     /// Returns [`DataTypeFillValueMetadataError`] if the fill value is incompatible with the data type.
+    #[allow(clippy::too_many_lines)]
     pub fn fill_value_from_metadata(
         &self,
         fill_value: &FillValueMetadataV3,
@@ -304,6 +358,20 @@ impl DataType {
                 let int = fill_value.as_u64().ok_or_else(err0)?;
                 Ok(FV::from(int))
             }
+            Self::Float8E3M4
+            | Self::Float8E4M3
+            | Self::Float8E4M3B11FNUZ
+            | Self::Float8E4M3FNUZ
+            | Self::Float8E5M2
+            | Self::Float8E5M2FNUZ
+            | Self::Float8E8M0FNU => match fill_value {
+                // FIXME: Support normal floating point fill value metadata for these data types.
+                FillValueMetadataV3::String(string) => match string.as_str() {
+                    "Infinity" | "-Infinity" | "NaN" => Err(err0()),
+                    _ => Ok(FV::from(hex_string_to_be_bytes(string).ok_or_else(err0)?)),
+                },
+                _ => Err(err0()),
+            },
             Self::BFloat16 => Ok(FV::from(fill_value.as_bf16().ok_or_else(err0)?)),
             Self::Float16 => Ok(FV::from(fill_value.as_f16().ok_or_else(err0)?)),
             Self::Float32 => Ok(FV::from(fill_value.as_f32().ok_or_else(err0)?)),
@@ -421,6 +489,18 @@ impl DataType {
                 let number = u64::from_ne_bytes(bytes);
                 Ok(FillValueMetadataV3::from(number))
             }
+            Self::Float8E3M4
+            | Self::Float8E4M3
+            | Self::Float8E4M3B11FNUZ
+            | Self::Float8E4M3FNUZ
+            | Self::Float8E5M2
+            | Self::Float8E5M2FNUZ
+            | Self::Float8E8M0FNU => {
+                // FIXME: Support normal floating point fill value metadata for these data types.
+                let bytes: [u8; 1] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
+                let hex_string = bytes_to_hex_string(&bytes);
+                Ok(FillValueMetadataV3::from(hex_string))
+            }
             Self::Float16 => {
                 let bytes: [u8; 2] = fill_value.as_ne_bytes().try_into().map_err(|_| error())?;
                 let number = half::f16::from_ne_bytes(bytes);
@@ -497,6 +577,31 @@ impl DataType {
 impl core::fmt::Display for DataType {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "{}", self.name())
+    }
+}
+
+// copy of zarrs_metadata::v3::array::bytes_to_hex_string
+fn bytes_to_hex_string(v: &[u8]) -> String {
+    let mut string = String::with_capacity(2 + v.len() * 2);
+    string.push('0');
+    string.push('x');
+    for byte in v {
+        string.push(char::from_digit((byte / 16).into(), 16).unwrap());
+        string.push(char::from_digit((byte % 16).into(), 16).unwrap());
+    }
+    string
+}
+
+// copy of zarrs_metadata::v3::array::hex_string_to_be_bytes
+fn hex_string_to_be_bytes(s: &str) -> Option<Vec<u8>> {
+    if s.starts_with("0x") && s.len() % 2 == 0 {
+        (2..s.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+            .collect::<Result<Vec<_>, _>>()
+            .ok()
+    } else {
+        None
     }
 }
 

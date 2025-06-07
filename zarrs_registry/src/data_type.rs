@@ -25,6 +25,27 @@ pub const UINT32: &str = "uint32";
 /// Unique identifier for the `uint64` data type (core).
 pub const UINT64: &str = "uint64";
 
+/// Unique identifier for the `float8_e3m4` data type (registered).
+pub const FLOAT8_E3M4: &str = "float8_e3m4";
+
+/// Unique identifier for the `float8_e4m3` data type (registered).
+pub const FLOAT8_E4M3: &str = "float8_e4m3";
+
+/// Unique identifier for the `float8_e4m3b11fnuz` data type (registered).
+pub const FLOAT8_E4M3B11FNUZ: &str = "float8_e4m3b11fnuz";
+
+/// Unique identifier for the `float8_e4m3fnuz` data type (registered).
+pub const FLOAT8_E4M3FNUZ: &str = "float8_e4m3fnuz";
+
+/// Unique identifier for the `float8_e5m2` data type (registered).
+pub const FLOAT8_E5M2: &str = "float8_e5m2";
+
+/// Unique identifier for the `float8_e5m2fnuz` data type (registered).
+pub const FLOAT8_E5M2FNUZ: &str = "float8_e5m2fnuz";
+
+/// Unique identifier for the `float8_e8m0fnu` data type (registered).
+pub const FLOAT8_E8M0FNU: &str = "float8_e8m0fnu";
+
 /// Unique identifier for the `float16` data type (core).
 pub const FLOAT16: &str = "float16";
 
