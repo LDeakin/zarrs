@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2025-06-08
+
 ### Added
 - Implement `Element` for `&[u8; N]` for `r*` data type
 - Add `complex_{bfloat16,float16,float32,float64}` data types
@@ -20,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Breaking behaviour**: The `bytes` data type now uses the `vlen-bytes` codec rather than `vlen` by default
-  - This was an intended change in 0.20.0 (the changelog has been amended)
+  - This was intended for 0.20.0 but incorrectly implemented (the changelog has been amended)
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
 - Fix missing support for `bitround` `[u]int8` partial decoding
 - Fix missing support for `pcodec` `{int,uint,float}16` partial decoding
@@ -1375,7 +1377,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Initial public release
 
-[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs-v0.20.1...HEAD
+[unreleased]: https://github.com/zarrs/zarrs/compare/zarrs-v0.21.0...HEAD
+[0.21.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.21.0
 [0.20.1]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.1
 [0.20.0]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0
 [0.20.0-beta.2]: https://github.com/LDeakin/zarrs/releases/tag/zarrs-v0.20.0-beta.2
