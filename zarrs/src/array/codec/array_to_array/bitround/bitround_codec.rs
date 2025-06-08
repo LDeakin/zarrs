@@ -155,7 +155,7 @@ impl ArrayToArrayCodecTraits for BitroundCodec {
     fn encoded_data_type(&self, decoded_data_type: &DataType) -> Result<DataType, CodecError> {
         match decoded_data_type {
             super::supported_dtypes!() => Ok(decoded_data_type.clone()),
-            _ => Err(CodecError::UnsupportedDataType(
+            super::unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 decoded_data_type.clone(),
                 BITROUND.to_string(),
             )),

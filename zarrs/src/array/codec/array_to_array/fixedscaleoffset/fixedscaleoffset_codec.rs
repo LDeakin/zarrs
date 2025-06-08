@@ -18,6 +18,40 @@ use crate::{
 
 use super::{FixedScaleOffsetCodecConfiguration, FixedScaleOffsetCodecConfigurationNumcodecs};
 
+macro_rules! unsupported_dtypes {
+    // TODO: Add support for all int/float types?
+    // TODO: Add support for extensions?
+    () => {
+        DataType::Bool
+            | DataType::Int2
+            | DataType::Int4
+            | DataType::UInt2
+            | DataType::UInt4
+            | DataType::Float4E2M1FN
+            | DataType::Float6E2M3FN
+            | DataType::Float6E3M2FN
+            | DataType::Float8E3M4
+            | DataType::Float8E4M3
+            | DataType::Float8E4M3B11FNUZ
+            | DataType::Float8E4M3FNUZ
+            | DataType::Float8E5M2
+            | DataType::Float8E5M2FNUZ
+            | DataType::Float8E8M0FNU
+            | DataType::BFloat16
+            | DataType::Float16
+            | DataType::ComplexBFloat16
+            | DataType::ComplexFloat16
+            | DataType::ComplexFloat32
+            | DataType::ComplexFloat64
+            | DataType::Complex64
+            | DataType::Complex128
+            | DataType::RawBits(_)
+            | DataType::String
+            | DataType::Bytes
+            | DataType::Extension(_)
+    };
+}
+
 /// A `fixedscaleoffset` codec implementation.
 #[derive(Clone, Debug)]
 pub struct FixedScaleOffsetCodec {
@@ -165,7 +199,7 @@ macro_rules! scale_data_type {
                 $bytes.chunks_exact_mut(std::mem::size_of::<$ty>()).for_each(round);
                 Ok(())
             }),*
-            _ => Err(CodecError::UnsupportedDataType(
+            unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 $data_type.clone(),
                 FIXEDSCALEOFFSET.to_string(),
             )),
@@ -187,7 +221,7 @@ macro_rules! unscale_data_type {
                 $bytes.chunks_exact_mut(std::mem::size_of::<$ty>()).for_each(round);
                 Ok(())
             }),*
-            _ => Err(CodecError::UnsupportedDataType(
+            unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 $data_type.clone(),
                 FIXEDSCALEOFFSET.to_string(),
             )),
@@ -414,24 +448,15 @@ impl ArrayToArrayCodecTraits for FixedScaleOffsetCodec {
             | DataType::UInt16
             | DataType::UInt32
             | DataType::UInt64
-            // | DataType::Float16
-            // | DataType::BFloat16
             | DataType::Float32
-            | DataType::Float64
-            // | DataType::ComplexBFloat16
-            // | DataType::ComplexFloat16
-            // | DataType::ComplexFloat32
-            // | DataType::ComplexFloat64
-            // | DataType::Complex64
-            // | DataType::Complex128
-            => {
+            | DataType::Float64 => {
                 if let Some(astype) = &self.astype {
                     Ok(astype.clone())
                 } else {
                     Ok(decoded_data_type.clone())
                 }
             }
-            _ => Err(CodecError::UnsupportedDataType(
+            unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 decoded_data_type.clone(),
                 FIXEDSCALEOFFSET.to_string(),
             )),

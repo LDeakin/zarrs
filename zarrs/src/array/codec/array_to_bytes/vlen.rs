@@ -154,6 +154,7 @@ fn get_vlen_bytes_and_offsets(
     if Endianness::Big.is_native() {
         reverse_endianness(index_bytes.to_mut(), &DataType::UInt64);
     }
+    #[allow(clippy::wildcard_enum_match_arm)]
     let index = match index_chunk_representation.data_type() {
         // DataType::UInt8 => {
         //     let index = convert_from_bytes_slice::<u8>(&index_bytes);

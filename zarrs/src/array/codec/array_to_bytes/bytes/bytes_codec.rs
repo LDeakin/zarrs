@@ -167,12 +167,12 @@ impl ArrayToBytesCodecTraits for BytesCodec {
             decoded_representation.data_type().size(),
         )?;
         let bytes = bytes.into_fixed()?;
-        let bytes_encoded = match decoded_representation.data_type() {
-            DataType::Extension(ext) => ext
-                .codec_bytes()?
+        let bytes_encoded = if let DataType::Extension(ext) = decoded_representation.data_type() {
+            ext.codec_bytes()?
                 .encode(bytes, self.endian)
-                .map_err(DataTypeExtensionError::from)?,
-            _ => self.do_encode_or_decode(bytes, decoded_representation)?,
+                .map_err(DataTypeExtensionError::from)?
+        } else {
+            self.do_encode_or_decode(bytes, decoded_representation)?
         };
         Ok(bytes_encoded)
     }
@@ -183,12 +183,12 @@ impl ArrayToBytesCodecTraits for BytesCodec {
         decoded_representation: &ChunkRepresentation,
         _options: &CodecOptions,
     ) -> Result<ArrayBytes<'a>, CodecError> {
-        let bytes_decoded = match decoded_representation.data_type() {
-            DataType::Extension(ext) => ext
-                .codec_bytes()?
+        let bytes_decoded = if let DataType::Extension(ext) = decoded_representation.data_type() {
+            ext.codec_bytes()?
                 .decode(bytes, self.endian)
-                .map_err(DataTypeExtensionError::from)?,
-            _ => self.do_encode_or_decode(bytes, decoded_representation)?,
+                .map_err(DataTypeExtensionError::from)?
+        } else {
+            self.do_encode_or_decode(bytes, decoded_representation)?
         };
         Ok(ArrayBytes::from(bytes_decoded))
     }

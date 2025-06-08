@@ -73,6 +73,37 @@ pub(crate) fn create_codec_pcodec(metadata: &MetadataV3) -> Result<Codec, Plugin
     Ok(Codec::ArrayToBytes(codec))
 }
 
+macro_rules! unsupported_dtypes {
+    // TODO: Add support for all int/float types?
+    // TODO: Add support for extensions?
+    () => {
+        DataType::Bool
+            | DataType::Int2
+            | DataType::Int4
+            | DataType::Int8
+            | DataType::UInt2
+            | DataType::UInt4
+            | DataType::UInt8
+            | DataType::Float4E2M1FN
+            | DataType::Float6E2M3FN
+            | DataType::Float6E3M2FN
+            | DataType::Float8E3M4
+            | DataType::Float8E4M3
+            | DataType::Float8E4M3B11FNUZ
+            | DataType::Float8E4M3FNUZ
+            | DataType::Float8E5M2
+            | DataType::Float8E5M2FNUZ
+            | DataType::Float8E8M0FNU
+            | DataType::BFloat16
+            | DataType::ComplexBFloat16
+            | DataType::RawBits(_)
+            | DataType::String
+            | DataType::Bytes
+            | DataType::Extension(_)
+    };
+}
+use unsupported_dtypes;
+
 #[cfg(test)]
 mod tests {
     use std::{num::NonZeroU64, sync::Arc};

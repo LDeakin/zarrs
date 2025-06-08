@@ -28,6 +28,36 @@ pub enum ArrayDlPackExtError {
     UnsupportedDataType,
 }
 
+macro_rules! unsupported_dtypes {
+    // TODO: Add support for extensions?
+    () => {
+        DataType::Int2
+            | DataType::Int4
+            | DataType::UInt2
+            | DataType::UInt4
+            | DataType::Float4E2M1FN
+            | DataType::Float6E2M3FN
+            | DataType::Float6E3M2FN
+            | DataType::Float8E3M4
+            | DataType::Float8E4M3
+            | DataType::Float8E4M3B11FNUZ
+            | DataType::Float8E4M3FNUZ
+            | DataType::Float8E5M2
+            | DataType::Float8E5M2FNUZ
+            | DataType::Float8E8M0FNU
+            | DataType::ComplexBFloat16
+            | DataType::ComplexFloat16
+            | DataType::ComplexFloat32
+            | DataType::ComplexFloat64
+            | DataType::Complex64
+            | DataType::Complex128
+            | DataType::RawBits(_)
+            | DataType::String
+            | DataType::Bytes
+            | DataType::Extension(_)
+    };
+}
+
 impl RawBytesDlPack {
     /// Create a new [`RawBytesDlPack`].
     ///
@@ -54,8 +84,7 @@ impl RawBytesDlPack {
             DataType::Float32 => dlpark::ffi::DataType::F32,
             DataType::Float64 => dlpark::ffi::DataType::F64,
             DataType::BFloat16 => dlpark::ffi::DataType::BF16,
-            // TODO: Support extension data types with fallback?
-            _ => Err(ArrayDlPackExtError::UnsupportedDataType)?,
+            unsupported_dtypes!() => Err(ArrayDlPackExtError::UnsupportedDataType)?,
         };
         let shape = representation
             .shape()

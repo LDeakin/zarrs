@@ -109,7 +109,42 @@ impl ArrayBuilder {
                     zarrs_registry::codec::VLEN_BYTES.to_string(),
                     Arc::new(VlenV2Codec::new()),
                 ),
-                _ => Arc::new(VlenCodec::default()).into(),
+                DataType::Extension(_) => Arc::new(VlenCodec::default()).into(),
+                // Fixed size data types
+                DataType::Bool
+                | DataType::Int2
+                | DataType::Int4
+                | DataType::Int8
+                | DataType::Int16
+                | DataType::Int32
+                | DataType::Int64
+                | DataType::UInt2
+                | DataType::UInt4
+                | DataType::UInt8
+                | DataType::UInt16
+                | DataType::UInt32
+                | DataType::UInt64
+                | DataType::Float4E2M1FN
+                | DataType::Float6E2M3FN
+                | DataType::Float6E3M2FN
+                | DataType::Float8E3M4
+                | DataType::Float8E4M3
+                | DataType::Float8E4M3B11FNUZ
+                | DataType::Float8E4M3FNUZ
+                | DataType::Float8E5M2
+                | DataType::Float8E5M2FNUZ
+                | DataType::Float8E8M0FNU
+                | DataType::BFloat16
+                | DataType::Float16
+                | DataType::Float32
+                | DataType::Float64
+                | DataType::ComplexBFloat16
+                | DataType::ComplexFloat16
+                | DataType::ComplexFloat32
+                | DataType::ComplexFloat64
+                | DataType::Complex64
+                | DataType::Complex128
+                | DataType::RawBits(_) => unreachable!(),
             }
         };
 

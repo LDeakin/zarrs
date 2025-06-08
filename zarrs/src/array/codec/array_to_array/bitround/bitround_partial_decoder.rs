@@ -35,7 +35,7 @@ impl BitroundPartialDecoder {
                 data_type: data_type.clone(),
                 keepbits,
             }),
-            _ => Err(CodecError::UnsupportedDataType(
+            super::unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 BITROUND.to_string(),
             )),
@@ -88,7 +88,7 @@ impl AsyncBitroundPartialDecoder {
                 data_type: data_type.clone(),
                 keepbits,
             }),
-            _ => Err(CodecError::UnsupportedDataType(
+            super::unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 BITROUND.to_string(),
             )),

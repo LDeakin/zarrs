@@ -135,9 +135,11 @@ fn compute_index_encoded_size(
     let bytes_representation = index_codecs.encoded_representation(index_array_representation)?;
     match bytes_representation {
         BytesRepresentation::FixedSize(size) => Ok(size),
-        _ => Err(CodecError::Other(
-            "the array index cannot include a variable size output codec".to_string(),
-        )),
+        BytesRepresentation::BoundedSize(_) | BytesRepresentation::UnboundedSize => {
+            Err(CodecError::Other(
+                "the array index cannot include a variable size output codec".to_string(),
+            ))
+        }
     }
 }
 

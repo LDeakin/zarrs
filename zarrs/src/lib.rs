@@ -192,6 +192,7 @@
 //!
 //! [The `zarrs` Book]: https://book.zarrs.dev
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![warn(clippy::wildcard_enum_match_arm)]
 
 pub mod array;
 pub mod array_subset;

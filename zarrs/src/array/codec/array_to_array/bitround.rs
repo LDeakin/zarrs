@@ -83,7 +83,34 @@ macro_rules! supported_dtypes {
             | DataType::Complex128
     };
 }
+macro_rules! unsupported_dtypes {
+    // TODO: Add support for all int/float types?
+    // TODO: Add support for extensions?
+    () => {
+        DataType::Bool
+            | DataType::Int2
+            | DataType::Int4
+            | DataType::UInt2
+            | DataType::UInt4
+            | DataType::Float4E2M1FN
+            | DataType::Float6E2M3FN
+            | DataType::Float6E3M2FN
+            | DataType::Float8E3M4
+            | DataType::Float8E4M3
+            | DataType::Float8E4M3B11FNUZ
+            | DataType::Float8E4M3FNUZ
+            | DataType::Float8E5M2
+            | DataType::Float8E5M2FNUZ
+            | DataType::Float8E8M0FNU
+            | DataType::RawBits(_)
+            | DataType::String
+            | DataType::Bytes
+            | DataType::Extension(_)
+    };
+}
+
 use supported_dtypes;
+use unsupported_dtypes;
 
 // Register the codec.
 inventory::submit! {
@@ -224,7 +251,7 @@ fn round_bytes(bytes: &mut [u8], data_type: &DataType, keepbits: u32) -> Result<
             bytes.chunks_exact_mut(8).for_each(round);
             Ok(())
         }
-        _ => Err(CodecError::UnsupportedDataType(
+        unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
             data_type.clone(),
             BITROUND.to_string(),
         )),

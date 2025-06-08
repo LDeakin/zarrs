@@ -40,6 +40,7 @@ fn mode_spec_config_to_pco(mode_spec: PcodecModeSpecConfiguration) -> ModeSpec {
 }
 
 fn mode_spec_pco_to_config(mode_spec: &ModeSpec) -> PcodecModeSpecConfiguration {
+    #[allow(clippy::wildcard_enum_match_arm)]
     match mode_spec {
         ModeSpec::Auto => PcodecModeSpecConfiguration::Auto,
         ModeSpec::Classic => PcodecModeSpecConfiguration::Classic,
@@ -206,7 +207,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             DataType::Float64 | DataType::Complex128 | DataType::ComplexFloat64 => {
                 pcodec_encode!(f64)
             }
-            _ => Err(CodecError::UnsupportedDataType(
+            super::unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 PCODEC.to_string(),
             )),
@@ -256,7 +257,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
             DataType::Float64 | DataType::Complex128 | DataType::ComplexFloat64 => {
                 pcodec_decode!(f64)
             }
-            _ => Err(CodecError::UnsupportedDataType(
+            super::unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 PCODEC.to_string(),
             )),
@@ -326,7 +327,7 @@ impl ArrayToBytesCodecTraits for PcodecCodec {
                 &self.chunk_config.paging_spec,
             )
             .map_err(|err| CodecError::from(err.to_string()))?),
-            _ => Err(CodecError::UnsupportedDataType(
+            super::unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
                 data_type.clone(),
                 PCODEC.to_string(),
             )),

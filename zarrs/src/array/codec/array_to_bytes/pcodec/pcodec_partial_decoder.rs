@@ -100,7 +100,7 @@ fn do_partial_decode<'a>(
                 DataType::Float64 | DataType::Complex128 | DataType::ComplexFloat64 => {
                     pcodec_partial_decode!(f64);
                 }
-                _ => {
+                super::unsupported_dtypes!() => {
                     return Err(CodecError::UnsupportedDataType(
                         data_type.clone(),
                         PCODEC.to_string(),

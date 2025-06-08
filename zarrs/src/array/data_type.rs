@@ -466,7 +466,11 @@ impl DataType {
                     "Infinity" | "-Infinity" | "NaN" => Err(err0()),
                     _ => Ok(FV::from(hex_string_to_be_bytes(string).ok_or_else(err0)?)),
                 },
-                _ => Err(err0()),
+                FillValueMetadataV3::Null
+                | FillValueMetadataV3::Bool(_)
+                | FillValueMetadataV3::Number(_)
+                | FillValueMetadataV3::Array(_)
+                | FillValueMetadataV3::Object(_) => Err(err0()),
             },
             Self::BFloat16 => Ok(FV::from(fill_value.as_bf16().ok_or_else(err0)?)),
             Self::Float16 => Ok(FV::from(fill_value.as_f16().ok_or_else(err0)?)),

@@ -139,6 +139,41 @@ pub(crate) fn create_codec_zfp(metadata: &MetadataV3) -> Result<Codec, PluginCre
     Ok(Codec::ArrayToBytes(codec))
 }
 
+macro_rules! unsupported_dtypes {
+    // TODO: Add support for extensions?
+    // TODO: Add support for complex types (as a dimension of size 2)?
+    () => {
+        DataType::Bool
+            | DataType::Int2
+            | DataType::Int4
+            | DataType::UInt2
+            | DataType::UInt4
+            | DataType::Float4E2M1FN
+            | DataType::Float6E2M3FN
+            | DataType::Float6E3M2FN
+            | DataType::Float8E3M4
+            | DataType::Float8E4M3
+            | DataType::Float8E4M3B11FNUZ
+            | DataType::Float8E4M3FNUZ
+            | DataType::Float8E5M2
+            | DataType::Float8E5M2FNUZ
+            | DataType::Float8E8M0FNU
+            | DataType::BFloat16
+            | DataType::Float16
+            | DataType::ComplexBFloat16
+            | DataType::ComplexFloat16
+            | DataType::ComplexFloat32
+            | DataType::ComplexFloat64
+            | DataType::Complex64
+            | DataType::Complex128
+            | DataType::RawBits(_)
+            | DataType::String
+            | DataType::Bytes
+            | DataType::Extension(_)
+    };
+}
+use unsupported_dtypes;
+
 const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type> {
     match data_type {
         DataType::Int8
@@ -150,7 +185,7 @@ const fn zarr_to_zfp_data_type(data_type: &DataType) -> Option<zfp_sys::zfp_type
         DataType::Int64 | DataType::UInt64 => Some(zfp_sys::zfp_type_zfp_type_int64),
         DataType::Float32 => Some(zfp_sys::zfp_type_zfp_type_float),
         DataType::Float64 => Some(zfp_sys::zfp_type_zfp_type_double),
-        _ => None,
+        unsupported_dtypes!() => None,
     }
 }
 
@@ -220,7 +255,7 @@ fn promote_before_zfp_encoding(
         DataType::Float64 => Ok(ZfpArray::Double(convert_from_bytes_slice::<f64>(
             decoded_value,
         ))),
-        _ => Err(CodecError::UnsupportedDataType(
+        unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
             ZFP.to_string(),
         )),
@@ -241,7 +276,7 @@ fn init_zfp_decoding_output(
         DataType::Int64 | DataType::UInt64 => Ok(ZfpArray::Int64(vec![0; num_elements])),
         DataType::Float32 => Ok(ZfpArray::Float(vec![0.0; num_elements])),
         DataType::Float64 => Ok(ZfpArray::Double(vec![0.0; num_elements])),
-        _ => Err(CodecError::UnsupportedDataType(
+        unsupported_dtypes!() => Err(CodecError::UnsupportedDataType(
             decoded_representation.data_type().clone(),
             ZFP.to_string(),
         )),
