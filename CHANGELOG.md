@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sign extend to the nearest byte when decoding in the `packbits` codec
 
 ### Fixed
+- **Breaking behaviour**: The `bytes` data type now uses the `vlen-bytes` codec rather than `vlen` by default
+  - This was an intended change in 0.20.0 (the changelog has been amended)
 - **Breaking**: Resolve bugs in `Group::child_*` methods and remove no-op `recursive` boolean ([#200] by [@jder])
 - Fix missing support for `bitround` `[u]int8` partial decoding
 - Fix missing support for `pcodec` `{int,uint,float}16` partial decoding
@@ -76,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `From<T: IntoIterator<Item = Range<u64>>>` for `ArraySubset`
 
 ### Changed
-- **Breaking Behaviour**: Use the `vlen-{utf8,bytes}` codec by default for `string`/`r*` data types
+- **Breaking Behaviour**: Use the `vlen-utf8` codec by default for `string` data types
   - `zarrs` previously used `vlen`, an experimental codec not supported by other implementations
 - **Breaking Behaviour**: Refactor `codec` name handling and `CodecTraits` in alignment with ZEP0009 and the [`zarr-extensions`] repository
   - All "experimental" codecs now use the `zarrs.` prefix (or `numcodecs.` if fully compatible)

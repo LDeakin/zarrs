@@ -105,7 +105,7 @@ impl ArrayBuilder {
                     zarrs_registry::codec::VLEN_UTF8.to_string(),
                     Arc::new(VlenV2Codec::new()),
                 ),
-                DataType::RawBits(_) => NamedArrayToBytesCodec::new(
+                DataType::Bytes => NamedArrayToBytesCodec::new(
                     zarrs_registry::codec::VLEN_BYTES.to_string(),
                     Arc::new(VlenV2Codec::new()),
                 ),
