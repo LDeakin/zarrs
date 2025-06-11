@@ -341,20 +341,27 @@ pub fn fill_value_metadata_v2_to_v3(
         // A missing fill value is "undefined", so we choose something reasonable
         (name, None) => match name {
             // Support zarr-python encoded string arrays with a `null` fill value
-            "string" => FillValueMetadataV3::from(""),
-            // Any other null fill value is "undefined"; we pick false/zero
-            "bool" => FillValueMetadataV3::from(false),
+            zarrs_registry::data_type::STRING => FillValueMetadataV3::from(""),
+            // Any other null fill value is "undefined"; we pick false for bools
+            zarrs_registry::data_type::BOOL => FillValueMetadataV3::from(false),
+            // And zero for other data types
             _ => FillValueMetadataV3::from(0),
         },
         // Add a special case for `zarr-python` string data with a 0 fill value -> empty string
-        ("string", Some(FillValueMetadataV3::Number(n))) if n.as_u64() == Some(0) => {
+        (zarrs_registry::data_type::STRING, Some(FillValueMetadataV3::Number(n)))
+            if n.as_u64() == Some(0) =>
+        {
             FillValueMetadataV3::from("")
         }
         // Map a 0/1 scalar fill value to a bool
-        ("bool", Some(FillValueMetadataV3::Number(n))) if n.as_u64() == Some(0) => {
+        (zarrs_registry::data_type::BOOL, Some(FillValueMetadataV3::Number(n)))
+            if n.as_u64() == Some(0) =>
+        {
             FillValueMetadataV3::from(false)
         }
-        ("bool", Some(FillValueMetadataV3::Number(n))) if n.as_u64() == Some(1) => {
+        (zarrs_registry::data_type::BOOL, Some(FillValueMetadataV3::Number(n)))
+            if n.as_u64() == Some(1) =>
+        {
             FillValueMetadataV3::from(true)
         }
         // NB this passed-through fill value may be incompatible; we will get errors when creating DataType
