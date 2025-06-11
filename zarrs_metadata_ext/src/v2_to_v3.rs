@@ -322,7 +322,6 @@ pub fn data_type_metadata_v2_to_v3(
 ///
 /// # Errors
 /// Returns a [`ArrayMetadataV2ToV3Error`] if the fill value is not supported for the given data type.
-#[must_use]
 pub fn fill_value_metadata_v2_to_v3(
     fill_value: &FillValueMetadataV2,
     data_type: &MetadataV3,
