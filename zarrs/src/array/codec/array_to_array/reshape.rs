@@ -75,7 +75,7 @@ mod tests {
         data_type: DataType,
         fill_value: FillValue,
         output_shape: Vec<NonZeroU64>,
-    ) {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let chunk_representation = ChunkRepresentation::new(
             vec![
                 NonZeroU64::new(5).unwrap(),
@@ -85,31 +85,27 @@ mod tests {
             ],
             data_type,
             fill_value,
-        )
-        .unwrap();
+        )?;
         let size = chunk_representation.num_elements_usize()
             * chunk_representation.data_type().fixed_size().unwrap();
         let bytes: Vec<u8> = (0..size).map(|s| s as u8).collect();
         let bytes: ArrayBytes = bytes.into();
 
-        let configuration: ReshapeCodecConfiguration = serde_json::from_str(json).unwrap();
-        let codec = ReshapeCodec::new_with_configuration(&configuration).unwrap();
+        let configuration: ReshapeCodecConfiguration = serde_json::from_str(json)?;
+        let codec = ReshapeCodec::new_with_configuration(&configuration)?;
         assert_eq!(
-            codec.encoded_shape(chunk_representation.shape()).unwrap(),
+            codec.encoded_shape(chunk_representation.shape())?,
             output_shape.into()
         );
 
-        let encoded = codec
-            .encode(
-                bytes.clone(),
-                &chunk_representation,
-                &CodecOptions::default(),
-            )
-            .unwrap();
-        let decoded = codec
-            .decode(encoded, &chunk_representation, &CodecOptions::default())
-            .unwrap();
+        let encoded = codec.encode(
+            bytes.clone(),
+            &chunk_representation,
+            &CodecOptions::default(),
+        )?;
+        let decoded = codec.decode(encoded, &chunk_representation, &CodecOptions::default())?;
         assert_eq!(bytes, decoded);
+        Ok(())
     }
 
     #[test]
@@ -122,7 +118,13 @@ mod tests {
             NonZeroU64::new(4).unwrap(),
             NonZeroU64::new(3).unwrap(),
         ];
-        codec_reshape_round_trip_impl(JSON, DataType::UInt32, FillValue::from(0u32), output_shape);
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_ok());
     }
 
     #[test]
@@ -135,7 +137,13 @@ mod tests {
             NonZeroU64::new(4).unwrap(),
             NonZeroU64::new(3).unwrap(),
         ];
-        codec_reshape_round_trip_impl(JSON, DataType::UInt32, FillValue::from(0u32), output_shape);
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_ok());
     }
 
     #[test]
@@ -144,7 +152,13 @@ mod tests {
             "shape": [[0, 1, 2], 3]
         }"#;
         let output_shape = vec![NonZeroU64::new(80).unwrap(), NonZeroU64::new(3).unwrap()];
-        codec_reshape_round_trip_impl(JSON, DataType::UInt32, FillValue::from(0u32), output_shape);
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_ok());
     }
 
     #[test]
@@ -157,7 +171,13 @@ mod tests {
             NonZeroU64::new(4).unwrap(),
             NonZeroU64::new(12).unwrap(),
         ];
-        codec_reshape_round_trip_impl(JSON, DataType::UInt32, FillValue::from(0u32), output_shape);
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_ok());
     }
 
     #[test]
@@ -170,7 +190,13 @@ mod tests {
             NonZeroU64::new(16).unwrap(),
             NonZeroU64::new(3).unwrap(),
         ];
-        codec_reshape_round_trip_impl(JSON, DataType::UInt32, FillValue::from(0u32), output_shape);
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_ok());
     }
 
     #[test]
@@ -184,6 +210,52 @@ mod tests {
             NonZeroU64::new(2).unwrap(),
             NonZeroU64::new(3).unwrap(),
         ];
-        codec_reshape_round_trip_impl(JSON, DataType::UInt32, FillValue::from(0u32), output_shape);
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn codec_reshape_invalid1() {
+        const JSON: &str = r#"{
+            "shape": [-1, 2, 2, [4]]
+        }"#;
+        let output_shape = vec![
+            NonZeroU64::new(20).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+        ];
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn codec_reshape_invalid2() {
+        const JSON: &str = r#"{
+            "shape": [2, 2, 2]
+        }"#;
+        let output_shape = vec![
+            NonZeroU64::new(20).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(2).unwrap(),
+            NonZeroU64::new(3).unwrap(),
+        ];
+        assert!(codec_reshape_round_trip_impl(
+            JSON,
+            DataType::UInt32,
+            FillValue::from(0u32),
+            output_shape
+        )
+        .is_err());
     }
 }

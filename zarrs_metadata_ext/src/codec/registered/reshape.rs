@@ -213,4 +213,12 @@ mod tests {
         }"#;
         assert!(serde_json::from_str::<ReshapeCodecConfiguration>(json).is_err());
     }
+
+    #[test]
+    fn codec_reshape_array_invalid5() {
+        let json = r#"{
+            "shape": [-1, -1]
+        }"#;
+        assert!(serde_json::from_str::<ReshapeCodecConfiguration>(json).is_err());
+    }
 }
