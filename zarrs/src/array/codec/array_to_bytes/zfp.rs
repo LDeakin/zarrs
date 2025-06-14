@@ -169,6 +169,10 @@ macro_rules! unsupported_dtypes {
             | DataType::RawBits(_)
             | DataType::String
             | DataType::Bytes
+            | DataType::NumpyDateTime64 {
+                unit: _,
+                scale_factor: _,
+            }
             | DataType::Extension(_)
     };
 }

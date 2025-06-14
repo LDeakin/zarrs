@@ -18,6 +18,7 @@ workspace = true
 [dependencies]
 derive_more = { version = "2.0.0", features = ["deref", "display", "from", "into"] }
 half.workspace = true
+jiff = { version = "0.2.15", optional = true }
 monostate = "0.1.0"
 num.workspace = true
 serde = { version = "1.0.185", features = ["derive"] }
@@ -26,3 +27,6 @@ serde_repr = "0.1.19"
 thiserror.workspace = true
 zarrs_metadata.workspace = true
 zarrs_registry.workspace = true
+
+[features]
+jiff = ["dep:jiff"]

@@ -71,3 +71,158 @@ fn zarr_python_v2_compat_str_fv_null() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[cfg(feature = "jiff")]
+#[test]
+fn zarr_python_v3_numpy_datetime_read_jiff() -> Result<(), Box<dyn Error>> {
+    use jiff::{Timestamp, TimestampRound, Unit};
+    // https://github.com/BurntSushi/jiff/issues/1
+    for (path, unit) in [
+        // (
+        //     "tests/data/zarr_python_compat/datetime64[Y].zarr",
+        //     Unit::Year,
+        // ),
+        // (
+        //     "tests/data/zarr_python_compat/datetime64[M].zarr",
+        //     Unit::Month,
+        // ),
+        // (
+        //     "tests/data/zarr_python_compat/datetime64[W].zarr",
+        //     Unit::Week,
+        // ),
+        // (
+        //     "tests/data/zarr_python_compat/datetime64[D].zarr",
+        //     Unit::Day,
+        // ),
+        (
+            "tests/data/zarr_python_compat/datetime64[h].zarr",
+            Unit::Hour,
+        ),
+        (
+            "tests/data/zarr_python_compat/datetime64[s].zarr",
+            Unit::Second,
+        ),
+        (
+            "tests/data/zarr_python_compat/datetime64[ms].zarr",
+            Unit::Millisecond,
+        ),
+        (
+            "tests/data/zarr_python_compat/datetime64[us].zarr",
+            Unit::Microsecond,
+        ),
+        (
+            "tests/data/zarr_python_compat/datetime64[ns].zarr",
+            Unit::Nanosecond,
+        ),
+        (
+            "tests/data/zarr_python_compat/datetime64[10ms].zarr",
+            Unit::Millisecond,
+        ),
+        (
+            "tests/data/zarr_python_compat/datetime64[10us].zarr",
+            Unit::Microsecond,
+        ),
+    ] {
+        let store = Arc::new(FilesystemStore::new(path)?);
+        let array = zarrs::array::Array::open(store.clone(), "/")?;
+        let subset_all = array.subset_all();
+        let elements = array.retrieve_array_subset_elements::<jiff::Timestamp>(&subset_all)?;
+
+        println!("{path:?}");
+        println!("{elements:?}");
+        let round = TimestampRound::new().smallest(unit);
+        assert_eq!(
+            elements,
+            &[
+                jiff::Timestamp::UNIX_EPOCH,
+                jiff::Timestamp::MIN,
+                "2005-02-03T00:00:00Z"
+                    .parse::<Timestamp>()
+                    .unwrap()
+                    .round(round)
+                    .unwrap(),
+                "2005-02-03T04:05Z"
+                    .parse::<Timestamp>()
+                    .unwrap()
+                    .round(round)
+                    .unwrap(),
+                "2005-02-03T04:05:06Z"
+                    .parse::<Timestamp>()
+                    .unwrap()
+                    .round(round)
+                    .unwrap(),
+                jiff::Timestamp::MIN,
+            ]
+        );
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "jiff")]
+#[test]
+fn zarr_python_v3_numpy_datetime_write_jiff() -> Result<(), Box<dyn Error>> {
+    use zarrs_metadata_ext::data_type::NumpyDateTime64DataTypeUnit;
+    // Write to store, check equality
+
+    for unit in [
+        // NumpyDateTime64DataTypeUnit::Year,
+        // NumpyDateTime64DataTypeUnit::Month,
+        // NumpyDateTime64DataTypeUnit::Week,
+        // NumpyDateTime64DataTypeUnit::Day,
+        // NumpyDateTime64DataTypeUnit::Hour,
+        NumpyDateTime64DataTypeUnit::Minute,
+        NumpyDateTime64DataTypeUnit::Second,
+        NumpyDateTime64DataTypeUnit::Millisecond,
+        NumpyDateTime64DataTypeUnit::Microsecond,
+        NumpyDateTime64DataTypeUnit::Nanosecond,
+    ] {
+        println!("{unit:?}");
+        use jiff::{Timestamp, TimestampRound};
+        use zarrs::array::ArrayBuilder;
+        use zarrs_data_type::FillValue;
+        use zarrs_storage::store::MemoryStore;
+
+        let store = Arc::new(MemoryStore::new());
+        let array = ArrayBuilder::new(
+            vec![6],
+            zarrs::array::DataType::NumpyDateTime64 {
+                unit,
+                scale_factor: 1.try_into().unwrap(),
+            },
+            vec![5].try_into().unwrap(),
+            FillValue::from(i64::MIN),
+        )
+        .build(store.clone(), "/")?;
+
+        let round = TimestampRound::new().smallest(unit.try_into().unwrap());
+        let elements = [
+            "2005-02-25T00:00:00Z"
+                .parse::<Timestamp>()
+                .unwrap()
+                .round(round)
+                .unwrap(),
+            jiff::Timestamp::UNIX_EPOCH,
+            jiff::Timestamp::MIN,
+            "2005-02-01T00:00:00Z"
+                .parse::<Timestamp>()
+                .unwrap()
+                .round(round)
+                .unwrap(),
+            "2005-02-25T03:00:00Z"
+                .parse::<Timestamp>()
+                .unwrap()
+                .round(round)
+                .unwrap(),
+            jiff::Timestamp::MIN,
+        ];
+
+        array.store_array_subset_elements(&array.subset_all(), &elements)?;
+        assert_eq!(
+            array.retrieve_array_subset_elements::<jiff::Timestamp>(&array.subset_all())?,
+            elements
+        );
+    }
+
+    Ok(())
+}

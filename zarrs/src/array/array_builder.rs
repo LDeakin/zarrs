@@ -144,6 +144,10 @@ impl ArrayBuilder {
                 | DataType::ComplexFloat64
                 | DataType::Complex64
                 | DataType::Complex128
+                | DataType::NumpyDateTime64 {
+                    unit: _,
+                    scale_factor: _,
+                }
                 | DataType::RawBits(_) => unreachable!(),
             }
         };

@@ -105,3 +105,6 @@ pub const STRING: &str = "string";
 
 /// Unique identifier for the `bytes` data type (registered).
 pub const BYTES: &str = "bytes";
+
+/// Unique identifier for the `numpy.datetime64` data type (registered)
+pub const NUMPY_DATETIME64: &str = "numpy.datetime64";

@@ -174,7 +174,13 @@ fn pack_bits_components(
                 sign_extension: packbits.sign_extension(),
             })
         }
-        DT::String | DT::Bytes | DT::RawBits(_) => Err(CodecError::UnsupportedDataType(
+        DT::String
+        | DT::Bytes
+        | DT::RawBits(_)
+        | DT::NumpyDateTime64 {
+            unit: _,
+            scale_factor: _,
+        } => Err(CodecError::UnsupportedDataType(
             data_type.clone(),
             PACKBITS.to_string(),
         )),
