@@ -45,9 +45,9 @@ pub(super) fn int_to_chrono_timedelta(
         NumpyTimeUnit::Millisecond => TimeDelta::try_milliseconds(i),
         NumpyTimeUnit::Microsecond => Some(TimeDelta::microseconds(i)),
         NumpyTimeUnit::Nanosecond => Some(TimeDelta::nanoseconds(i)),
-        NumpyTimeUnit::Picosecond => TimeDelta::try_milliseconds(i / 1_000),
-        NumpyTimeUnit::Femtosecond => TimeDelta::try_milliseconds(i / 1_000_000),
-        NumpyTimeUnit::Attosecond => TimeDelta::try_milliseconds(i / 1_000_000_000),
+        NumpyTimeUnit::Picosecond => Some(TimeDelta::nanoseconds(i / 1_000)),
+        NumpyTimeUnit::Femtosecond => Some(TimeDelta::nanoseconds(i / 1_000_000)),
+        NumpyTimeUnit::Attosecond => Some(TimeDelta::nanoseconds(i / 1_000_000_000)),
     }
 }
 
