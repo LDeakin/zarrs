@@ -20,11 +20,11 @@ pub(super) fn chrono_timedelta_to_int(
         NumpyTimeUnit::Millisecond => Some(timedelta.num_milliseconds()),
         NumpyTimeUnit::Microsecond => timedelta.num_microseconds(),
         NumpyTimeUnit::Nanosecond => timedelta.num_nanoseconds(),
-        NumpyTimeUnit::Picosecond => (timedelta / 1_000).num_nanoseconds(),
-        NumpyTimeUnit::Femtosecond => (timedelta / 1_000_000).num_nanoseconds(),
-        NumpyTimeUnit::Attosecond => (timedelta / 1_000_000_000).num_nanoseconds(),
-    }
-    .and_then(|i| i.checked_div(scale_factor))
+        NumpyTimeUnit::Picosecond => timedelta.checked_mul(1_000)?.num_nanoseconds(),
+        NumpyTimeUnit::Femtosecond => timedelta.checked_mul(1_000_000)?.num_nanoseconds(),
+        NumpyTimeUnit::Attosecond => timedelta.checked_mul(1_000_000_000)?.num_nanoseconds(),
+    }?
+    .checked_div(scale_factor)
 }
 
 #[cfg(feature = "chrono")]
@@ -34,21 +34,20 @@ pub(super) fn int_to_chrono_timedelta(
     scale_factor: i64,
 ) -> Option<chrono::TimeDelta> {
     use chrono::TimeDelta;
+    let i = i.saturating_mul(scale_factor);
     match unit {
         NumpyTimeUnit::Generic | NumpyTimeUnit::Year | NumpyTimeUnit::Month => None, // year/month units are not strictly correct with this API
-        NumpyTimeUnit::Week => TimeDelta::try_weeks(i * scale_factor),
-        NumpyTimeUnit::Day => TimeDelta::try_days(i * scale_factor),
-        NumpyTimeUnit::Hour => TimeDelta::try_hours(i * scale_factor),
-        NumpyTimeUnit::Minute => TimeDelta::try_minutes(i * scale_factor),
-        NumpyTimeUnit::Second => TimeDelta::try_seconds(i * scale_factor),
-        NumpyTimeUnit::Millisecond => TimeDelta::try_milliseconds(i * scale_factor),
-        NumpyTimeUnit::Microsecond => Some(TimeDelta::microseconds(i * scale_factor)),
-        NumpyTimeUnit::Nanosecond => Some(TimeDelta::nanoseconds(i * scale_factor)),
-        NumpyTimeUnit::Picosecond => TimeDelta::try_milliseconds((i * scale_factor) / 1_000),
-        NumpyTimeUnit::Femtosecond => TimeDelta::try_milliseconds((i * scale_factor) / 1_000_000),
-        NumpyTimeUnit::Attosecond => {
-            TimeDelta::try_milliseconds((i * scale_factor) / 1_000_000_000)
-        }
+        NumpyTimeUnit::Week => TimeDelta::try_weeks(i),
+        NumpyTimeUnit::Day => TimeDelta::try_days(i),
+        NumpyTimeUnit::Hour => TimeDelta::try_hours(i),
+        NumpyTimeUnit::Minute => TimeDelta::try_minutes(i),
+        NumpyTimeUnit::Second => TimeDelta::try_seconds(i),
+        NumpyTimeUnit::Millisecond => TimeDelta::try_milliseconds(i),
+        NumpyTimeUnit::Microsecond => Some(TimeDelta::microseconds(i)),
+        NumpyTimeUnit::Nanosecond => Some(TimeDelta::nanoseconds(i)),
+        NumpyTimeUnit::Picosecond => TimeDelta::try_milliseconds(i / 1_000),
+        NumpyTimeUnit::Femtosecond => TimeDelta::try_milliseconds(i / 1_000_000),
+        NumpyTimeUnit::Attosecond => TimeDelta::try_milliseconds(i / 1_000_000_000),
     }
 }
 
@@ -71,16 +70,16 @@ pub(super) fn jiff_duration_to_int(
         NumpyTimeUnit::Millisecond => span.total(Unit::Millisecond)?,
         NumpyTimeUnit::Microsecond => span.total(Unit::Microsecond)?,
         NumpyTimeUnit::Nanosecond => span.total(Unit::Nanosecond)?,
-        NumpyTimeUnit::Picosecond => span.total(Unit::Nanosecond)? / 1e3,
-        NumpyTimeUnit::Femtosecond => span.total(Unit::Nanosecond)? / 1e6,
-        NumpyTimeUnit::Attosecond => span.total(Unit::Nanosecond)? / 1e9,
+        NumpyTimeUnit::Picosecond => span.total(Unit::Nanosecond)? * 1e3,
+        NumpyTimeUnit::Femtosecond => span.total(Unit::Nanosecond)? * 1e6,
+        NumpyTimeUnit::Attosecond => span.total(Unit::Nanosecond)? * 1e9,
         NumpyTimeUnit::Generic => Err(jiff::Error::from_args(format_args!(
             "datetime64 generic unit is not supported"
         )))?,
     };
+    let delta = (delta / scale_factor as f64).trunc();
     #[allow(clippy::cast_possible_truncation)]
-    let delta: i64 = delta.trunc() as i64 / scale_factor;
-    Ok(delta)
+    Ok(delta as i64)
 }
 
 #[cfg(feature = "jiff")]
@@ -91,23 +90,24 @@ pub(super) fn int_to_jiff_duration(
 ) -> Result<jiff::SignedDuration, jiff::Error> {
     const EPOCH: jiff::civil::Date = jiff::civil::date(1970, 1, 1);
     let span = jiff::Span::new();
+    let i = i.saturating_mul(scale_factor);
     match unit {
         NumpyTimeUnit::Generic => Err(jiff::Error::from_args(format_args!(
             "datetime64 generic unit is not supported"
         )))?,
-        NumpyTimeUnit::Year => span.try_years(i * scale_factor)?,
-        NumpyTimeUnit::Month => span.try_months(i * scale_factor)?,
-        NumpyTimeUnit::Week => span.try_weeks(i * scale_factor)?,
-        NumpyTimeUnit::Day => span.try_days(i * scale_factor)?,
-        NumpyTimeUnit::Hour => span.try_hours(i * scale_factor)?,
-        NumpyTimeUnit::Minute => span.try_minutes(i * scale_factor)?,
-        NumpyTimeUnit::Second => span.try_seconds(i * scale_factor)?,
-        NumpyTimeUnit::Millisecond => span.try_milliseconds(i * scale_factor)?,
-        NumpyTimeUnit::Microsecond => span.try_microseconds(i * scale_factor)?,
-        NumpyTimeUnit::Nanosecond => span.try_nanoseconds(i * scale_factor)?,
-        NumpyTimeUnit::Picosecond => span.try_nanoseconds((i * scale_factor) / 1_000)?,
-        NumpyTimeUnit::Femtosecond => span.try_nanoseconds((i * scale_factor) / 1_000_000)?,
-        NumpyTimeUnit::Attosecond => span.try_nanoseconds((i * scale_factor) / 1_000_000_000)?,
-    }
+        NumpyTimeUnit::Year => span.try_years(i),
+        NumpyTimeUnit::Month => span.try_months(i),
+        NumpyTimeUnit::Week => span.try_weeks(i),
+        NumpyTimeUnit::Day => span.try_days(i),
+        NumpyTimeUnit::Hour => span.try_hours(i),
+        NumpyTimeUnit::Minute => span.try_minutes(i),
+        NumpyTimeUnit::Second => span.try_seconds(i),
+        NumpyTimeUnit::Millisecond => span.try_milliseconds(i),
+        NumpyTimeUnit::Microsecond => span.try_microseconds(i),
+        NumpyTimeUnit::Nanosecond => span.try_nanoseconds(i),
+        NumpyTimeUnit::Picosecond => span.try_nanoseconds(i / 1_000),
+        NumpyTimeUnit::Femtosecond => span.try_nanoseconds(i / 1_000_000),
+        NumpyTimeUnit::Attosecond => span.try_nanoseconds(i / 1_000_000_000),
+    }?
     .to_duration(EPOCH)
 }
