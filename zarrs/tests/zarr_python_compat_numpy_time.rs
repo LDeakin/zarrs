@@ -191,6 +191,7 @@ fn zarr_python_v3_numpy_datetime_write() -> Result<(), Box<dyn Error>> {
             FillValue::from(i64::MIN),
         )
         .build(store.clone(), "/")?;
+        array.store_metadata()?;
 
         #[cfg(feature = "chrono")]
         // The underlying chrono API does not support year/month
@@ -383,6 +384,7 @@ fn zarr_python_v3_numpy_timedelta_write() -> Result<(), Box<dyn Error>> {
                 FillValue::from(i64::MIN),
             )
             .build(store.clone(), "/")?;
+            array.store_metadata()?;
 
             #[cfg(feature = "chrono")]
             {
