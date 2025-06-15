@@ -271,27 +271,30 @@ fn zarr_python_v3_numpy_datetime_write() -> Result<(), Box<dyn Error>> {
 #[cfg(any(feature = "chrono", feature = "jiff"))]
 #[test]
 fn zarr_python_v3_numpy_timedelta_read() -> Result<(), Box<dyn Error>> {
-    use jiff::{Timestamp, TimestampRound, Unit};
     for (path, unit) in [
         (
             "tests/data/zarr_python_compat/timedelta64[ms].zarr",
-            Unit::Millisecond,
+            NumpyTimeUnit::Millisecond,
         ),
         (
             "tests/data/zarr_python_compat/timedelta64[us].zarr",
-            Unit::Microsecond,
+            NumpyTimeUnit::Microsecond,
         ),
         (
             "tests/data/zarr_python_compat/timedelta64[ns].zarr",
-            Unit::Nanosecond,
+            NumpyTimeUnit::Nanosecond,
         ),
         (
             "tests/data/zarr_python_compat/timedelta64[10ms].zarr",
-            Unit::Millisecond,
+            NumpyTimeUnit::Millisecond,
+        ),
+        (
+            "tests/data/zarr_python_compat/timedelta64[ps].zarr",
+            NumpyTimeUnit::Picosecond,
         ),
         (
             "tests/data/zarr_python_compat/timedelta64[10us].zarr",
-            Unit::Microsecond,
+            NumpyTimeUnit::Microsecond,
         ),
     ] {
         use zarrs::array::DataType;
@@ -305,11 +308,17 @@ fn zarr_python_v3_numpy_timedelta_read() -> Result<(), Box<dyn Error>> {
             use chrono::TimeDelta;
             let elements = array.retrieve_array_subset_elements::<TimeDelta>(&subset_all)?;
 
+            let start_elem = if matches!(unit, NumpyTimeUnit::Picosecond) {
+                // first element overflows in numpy
+                1
+            } else {
+                0
+            };
+
             println!("{path:?}");
             println!("{elements:?}");
-            let round = TimestampRound::new().smallest(unit);
             assert_eq!(
-                elements,
+                &elements[start_elem..],
                 &[
                     TimeDelta::hours(24 * 365),
                     TimeDelta::hours(24 * 7 * 2),
@@ -322,18 +331,18 @@ fn zarr_python_v3_numpy_timedelta_read() -> Result<(), Box<dyn Error>> {
                     TimeDelta::nanoseconds(9_000_000_000),
                     TimeDelta::default(),
                     TimeDelta::MIN,
-                ]
+                ][start_elem..]
             );
         }
 
         #[cfg(feature = "jiff")]
-        {
-            use jiff::SignedDuration;
+        if !matches!(unit, NumpyTimeUnit::Picosecond) {
+            use jiff::{SignedDuration, Timestamp, TimestampRound, Unit};
             let elements = array.retrieve_array_subset_elements::<SignedDuration>(&subset_all)?;
 
             println!("{path:?}");
             println!("{elements:?}");
-            let round = TimestampRound::new().smallest(unit);
+            let round = TimestampRound::new().smallest(try_numpy_to_jiff_unit(unit).unwrap());
             assert_eq!(
                 elements,
                 &[

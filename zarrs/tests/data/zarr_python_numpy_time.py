@@ -32,7 +32,7 @@ for unit in ["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"]:
             np.datetime64('nat'),
         ])
 
-for unit in ["ms", "us", "ns"]:
+for unit in ["ms", "us", "ns", "ps"]:
     for scale_factor in ["", "10"]:
         if scale_factor == "10" and unit not in ["ms", "us"]:
             continue
