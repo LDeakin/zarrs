@@ -77,6 +77,7 @@ pub(super) fn jiff_duration_to_int(
             "datetime64 generic unit is not supported"
         )))?,
     };
+    #[allow(clippy::cast_precision_loss)]
     let delta = (delta / scale_factor as f64).trunc();
     #[allow(clippy::cast_possible_truncation)]
     Ok(delta as i64)
